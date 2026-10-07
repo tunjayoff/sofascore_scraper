@@ -236,7 +236,7 @@ Desktop (from 1024 px):
   or the last connection check failed (`frontend/src/app/statusStore.ts:46-60` at `b6caf2f`). FX-14a kept a
   failed check in the browser tab; since FX-14b the state is the server's `/status.connection`
   (`never_tried`, `ok`, `failed`, with `last_check`; FX-19, #156), the same in every browser. The amber
-  "sink lagging" case is still not read: `/status.sinks` exists since FX-13 (`src/web/api/v1/meta.py:284`)
+  "sink lagging" case is still not read: `/status.sinks` exists since FX-13 (`sofascore_scraper/web/api/v1/meta.py:284`)
   but the shell does not read it (G22, 7.3).
 - **Job pill**: shown while a job runs; "Sync · 42 %"; opens that Job detail. With two or more: "2 jobs".
 - **Quick search** (`Ctrl K` / `⌘ K`): finds follows by name, tournaments in the catalog by name, and
@@ -253,7 +253,7 @@ Desktop (from 1024 px):
   is FX-20 (owner decision of 2026-10-06; 7.3, G29).
 - **As built: the Sinks warning dot is not shown** (#132). The shell does not poll `/sinks`, so the rail
   cannot know that a sink fails or lags; Overview and the Sinks screen show it. FX-13 (#152) added the sink
-  state to `/status` (`sinks`: `served`, `max_lag_events` and more; `src/web/api/v1/meta.py:255-284` at
+  state to `/status` (`sinks`: `served`, `max_lag_events` and more; `sofascore_scraper/web/api/v1/meta.py:255-284` at
   `b6caf2f`), but no screen reads it yet (G22, 7.3).
 
 Phone (below 768 px):
@@ -582,7 +582,7 @@ screen differs say so ("As built"). Section 7 lists the state of every route and
 | Matches | stored matches | `/status` (P21: data summary) | `summary.matches` |
 | With details | matches with details, and the share | `/status` (P21) | `summary.details`, `summary.matches` |
 | Follows | number and sports | `GET /follows` (P21) | count, distinct `sport` |
-| Disk | data folder size | `/status` (P21) | design: `summary.disk.total`. As built (#132): the sum of `summary.disk.entries` (every top-level entry, `v3/` and `.meta/` included), because `disk.total` counts only the 2.x trees (seasons, matches, details, datasets; `src/services/status.py:133-135` at `b3cb819`) and reads 0 for a v3 data folder (G21) |
+| Disk | data folder size | `/status` (P21) | design: `summary.disk.total`. As built (#132): the sum of `summary.disk.entries` (every top-level entry, `v3/` and `.meta/` included), because `disk.total` counts only the 2.x trees (seasons, matches, details, datasets; `sofascore_scraper/services/status.py:133-135` at `b3cb819`) and reads 0 for a v3 data folder (G21) |
 | Connection | state and last success | `/status` | `bridge.state`, `bridge.last_success_at` |
 | Request rate | the limit | `/status` | `throttle.requests_per_second`, `throttle.enabled` |
 | Live service | running, source, number of sports | `/status` (P21: live fields) | `live.running`, `live.source`, `live.sports`, `live.blocked` |
@@ -1126,7 +1126,7 @@ CSV, JSONL, Parquet or SQLite, with Parquet disabled and the reason shown when
 or every data type). The filter adds **status classes** (not for score changes) and a **date range** (for
 score changes "recorded since") to sport, added leagues, season and match numbers. The **list** shows the
 readable file names of FX-19 (`<league or dataset>_<UTC date>_<last 8 characters of the job id>.<ext>`,
-`src/services/data_jobs.py:157-174` at `b6caf2f`) and also the files that `ssc export` wrote: `source:
+`sofascore_scraper/services/data_jobs.py:157-174` at `b6caf2f`) and also the files that `ssc export` wrote: `source:
 "file"`, a badge "by ssc export", a download and no job link
 (`frontend/src/screens/exports/ExportsScreen.vue:107`). Before, a file was named by the job id
 (`sofascore-export-01M….csv`), and `/exports` listed export jobs only.
@@ -1173,7 +1173,7 @@ row ⋯ : Download · Check (dry run) · Restore…
 
   **As built.** P21 (#126) enabled the kind `restore` as a check only: `dry_run` must be true, and
   `dry_run: false` answers 501 `not_supported`, because a restore replaces `state.db`, which holds the job's
-  own row (`src/web/api/v1/jobs.py:617-620` at `b3cb819`). So the dialog (#132) runs step 1 as a dry run,
+  own row (`sofascore_scraper/web/api/v1/jobs.py:617-620` at `b3cb819`). So the dialog (#132) runs step 1 as a dry run,
   step 2 runs a second dry run with `force` that says what would be moved to the trash folder, and step 3
   gives the exact server command (`ssc backup restore <name> [--force] --yes`) and what must be stopped
   first, instead of a button; there is nothing to confirm by typing. The kind is named "Restore check" in
@@ -1416,7 +1416,7 @@ the UI (new in the server): shown in a generic text field under "Other", so noth
 The first version of this section (at `aff0bb0`) listed P20's routes as existing, P21's, P27's, P28's,
 P29's, P13's and SC-2's as planned, and thirteen gaps G1 to G13 with a proposed owner. The fifth revision
 gave the state at `b3cb819` and proposed FX-13 (API) and FX-14 (frontend) for every route still missing.
-This version, the sixth, gives the state at `b6caf2f` (checked in `src/web/api/v1/*.py`,
+This version, the sixth, gives the state at `b6caf2f` (checked in `sofascore_scraper/web/api/v1/*.py`,
 `docs/api/openapi-v1.json` and `frontend/src`): P27 (#134), P28 (#140), FX-13 (#152, #153) and FX-19 (#156)
 built the routes, and FX-14, split on 2026-10-06 into FX-14a (#154) and FX-14b (#161), built the screens on
 them. What is still open has an owner in `03-implementation-plan.md` (FX-20, P30, or section 17 there).
@@ -1499,7 +1499,7 @@ G1 to G13 are the gaps of the first version; G14 to G24 were found while FE-2 wa
 | G19 | `/changes` by sport and "status regressed", with the match names | **Built**: `sport`, `regressed`, `include=names` (FX-13; names as an `include`, not as fields of every change). UI: Score changes and Overview still filter within the page and read the event of each row (`frontend/src/screens/CorrectionsScreen.vue:37-47`). | open, after 3.0.0 (`03-implementation-plan.md` section 17) |
 | G20 | The data-folder path in `/status` | **Built**: `summary.data_dir` (FX-13). UI: Health still shows the path only in the Diagnostics tab. | open, after 3.0.0 (`03-implementation-plan.md` section 17) |
 | G21 | A disk total that counts the v3 tree | **Built**: `disk.v3`, `disk.changes`, and `total` counts both (FX-13). UI: still sums `disk.entries` (`frontend/src/app/statusStore.ts:12-19`), which gives the same size. | — (the fallback is correct) |
-| G22 | Sink state in `/status` | **Built**: top-level `sinks` (FX-13; `src/web/api/v1/meta.py:255-284`). UI: not read; no warning dot on Sinks in the rail and no amber pill for a lagging sink. | open, after 3.0.0 (`03-implementation-plan.md` section 17) |
+| G22 | Sink state in `/status` | **Built**: top-level `sinks` (FX-13; `sofascore_scraper/web/api/v1/meta.py:255-284`). UI: not read; no warning dot on Sinks in the rail and no amber pill for a lagging sink. | open, after 3.0.0 (`03-implementation-plan.md` section 17) |
 | G23 | Job spec by target | **Built**: `sync {follows}` for every kind (FX-13, FX-19), `fetch` and `refresh` with `event_ids` (FX-13). UI: Download now and Fetch again (FX-14b). | done |
 | G24 | Codes for the job log lines, texts for the diagnostics checks | **Built**: every line of the sync and fetch path has a code (FX-13, FX-19); UI: texts in both locales (FX-14b). The diagnostics checks still have no translated texts. | log lines done; the check texts: open, after 3.0.0 (`03` section 17) |
 | G25 | A job's follow name: `sync {follows: ["team:42"]}` reads "Team #42" unless the follows were read in this tab; the job record has only `progress.league_name` while listing | **Missing** (#161). | FX-20 |
@@ -1545,7 +1545,7 @@ added as a dev dependency for the accessibility checks. The stack at `b6caf2f`: 
 |---|---|---|
 | `frontend/src/api/client.ts` error parsing (`parseError`, `apiError`) | handles three error shapes and the 401 hook | reduce to the v1 shape `{error: {code, message, details, request_id}}`; generate the types from `docs/api/openapi-v1.json` (for example `openapi-typescript`, a dev dependency, with a CI check that the generated file is current). As built (#107): `openapi-typescript` cannot be installed next to TypeScript 6 (its peer is `typescript@^5`), so `frontend/scripts/gen-api-types.mjs` (`npm run gen:api`) generates `frontend/src/api/v1/schema.ts`; it fails loudly on a JSON Schema form it does not know, and `frontend/tests/apiTypes.test.ts` fails when the committed file differs |
 | `frontend/src/i18n.ts` (`langOf`, `resolveLang`, server language) | the language rule of R6, already tested | keep; replace the server-language source with `/api/v1/settings` `display.language` |
-| `frontend/vite.config.ts` `__INTLIFY_JIT_COMPILATION__` and the `<meta name="sofascore-csp" content="no-eval">` marker (#43) | the server's Content-Security-Policy has no `'unsafe-eval'` | keep as is; `frontend/tests/csp.test.ts` keeps it so. As built: vue-i18n 10 and later compile messages without `eval` always, so #137 (vue-i18n 11) removed the define from `frontend/vite.config.ts`; the marker stays. `frontend/tests/csp.test.ts` now renders messages in a child Node process started with `--disallow-code-generation-from-strings` and scans the built `dist` for `eval` and `new Function` (`:68-82` at `b6caf2f`), and `tests/test_web_hardening.py:1041-1042` asserts vue-i18n 10 or later. The comment above `CSP_MARKER` in `src/web/security.py` named the define until FX-15 (#155) |
+| `frontend/vite.config.ts` `__INTLIFY_JIT_COMPILATION__` and the `<meta name="sofascore-csp" content="no-eval">` marker (#43) | the server's Content-Security-Policy has no `'unsafe-eval'` | keep as is; `frontend/tests/csp.test.ts` keeps it so. As built: vue-i18n 10 and later compile messages without `eval` always, so #137 (vue-i18n 11) removed the define from `frontend/vite.config.ts`; the marker stays. `frontend/tests/csp.test.ts` now renders messages in a child Node process started with `--disallow-code-generation-from-strings` and scans the built `dist` for `eval` and `new Function` (`:68-82` at `b6caf2f`), and `tests/test_web_hardening.py:1041-1042` asserts vue-i18n 10 or later. The comment above `CSP_MARKER` in `sofascore_scraper/web/security.py` named the define until FX-15 (#155) |
 | `TokenPrompt.vue` and `lib/auth.ts` | session cookie flow, no token in page storage | move to the v1 auth routes; add the countdown for `too_many_attempts` |
 | `lib/theme.ts` | light / dark / system with storage guarded by try/catch | keep; add density |
 | `lib/upstream.ts` | translated reasons of an upstream refusal | keep for the buttons that call SofaScore |

@@ -32,7 +32,7 @@ pull request.
   after them and ends with "What changed while it was built".
 - `03` is the only PR list. The PR ids that appear in `01` and `02` are the ids of `03`.
 - `04` is the field-level contract for section 3 of `00`. Its field tables are generated from the models in
-  `src/schema`, and its examples are validated against the generated JSON Schema; a test fails when they
+  `sofascore_scraper/schema`, and its examples are validated against the generated JSON Schema; a test fails when they
   differ. It was written by the pull request of its plan item (SC-1) and approved before that was merged.
 - A pull request that runs alone and finds a document wrong corrects it in the same pull request. Pull
   requests of a parallel batch leave these documents and the changelog alone: each lists its mismatches and
@@ -45,7 +45,7 @@ pull request.
 
 ## The design in ten lines
 
-1. Only `src/store` touches the data directory; only `src/client` talks to SofaScore; faces contain no logic.
+1. Only `sofascore_scraper/store` touches the data directory; only `sofascore_scraper/client` talks to SofaScore; faces contain no logic.
 2. Raw payloads stay as files, one file per slice, gzip-compressed (measured: 10.8 times smaller than today).
 3. New writes go to an id-keyed layout under `DATA_DIR/v3/`; the old layout is read in place and never
    changed outside the explicit `migrate` command and a delete or clear that the user asks for.

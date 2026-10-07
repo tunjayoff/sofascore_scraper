@@ -16,13 +16,13 @@ The requirement is `00-platform.md`, section 3. Where this document is more spec
 document is the contract. `schema_version` is **1**. The schema's id is `sofascore.data/1`; the envelope of
 stream events keeps the id `sofascore.event/1` that `02-services.md` 5.1 gave it.
 
-The field tables below are generated from the models in `src/schema/models.py`, and a test fails when a table
+The field tables below are generated from the models in `sofascore_scraper/schema/models.py`, and a test fails when a table
 and the code differ (`tests/test_schema_v1.py`). The same models produce the JSON Schema that
 `ssc describe schemas` will print. So the tables, the JSON Schema and the code cannot drift apart.
 
 Revised on 2026-10-06 (the sixth revision of the design documents, checked against `origin/main` at
 `b6caf2f`). P28 (#140) added the models of odds and standings, `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine`
-and `StandingsRow` (`src/schema/models.py:708-829`). They are in `models.PENDING_MODELS`, not in `MODELS` and
+and `StandingsRow` (`sofascore_scraper/schema/models.py:708-829`). They are in `models.PENDING_MODELS`, not in `MODELS` and
 `RECORDS`: API v1 and the exports use them, but `ssc describe schemas` and the JSON Schema golden do not show
 them yet. Section 4, "Odds and standings", describes them with field tables copied from the models; plan item
 FX-21 moves them into `MODELS` (and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`), makes those tables
@@ -743,13 +743,13 @@ Keys of an event today (the slice registry, `ssc describe slices`):
 requested but does not count for completeness, come from PR #121 (`not_in` and `optional_in` of the slice
 registry; `docs/all-sports/README.md`, "Maç detay dilimleri, spor başına"), on the evidence of one match page
 per sport. The known values of `Slice.key` in the field table above do not list `innings` yet: the field is an
-open set, and the list follows `src/schema/models.py`, which PR #121 did not change.
+open set, and the list follows `sofascore_scraper/schema/models.py`, which PR #121 did not change.
 
 Slices of other owners today: `seasons` of a tournament (the season list), and `schedule` of a season, one
 payload per round or page with `sub` such as `round_12` or `last_0`. More keys come with P28 (odds, standings,
 …); `key` is an open set.
 
-Keys added by P28 (#140; `src/sports.py:556-608` at `b6caf2f`), all off unless a selection names them and none
+Keys added by P28 (#140; `sofascore_scraper/sports.py:556-608` at `b6caf2f`), all off unless a selection names them and none
 counting for completeness. Event slices of group `odds`, with the provider id as `sub` (`[client]
 odds_provider`, default `1`): `odds_featured` (`/event/{id}/odds/{provider}/featured`), `odds_all`
 (`/event/{id}/odds/{provider}/all`), `odds_changes` (`/event/{id}/odds/{provider}/changes`) and `winning_odds`
@@ -870,7 +870,7 @@ connection gap the events of one match may skip intermediate states.
 
 Version 1 fixes the envelope. The content of `data` depends on `type`. It was not fixed when version 1 was
 approved and was left to the live service (plan item P23; section 9, point 18). P23 (PR #91) settled it
-(`stream_data` in `src/services/live/reducer.py` and the supervisor in `src/services/live/supervisor.py`).
+(`stream_data` in `sofascore_scraper/services/live/reducer.py` and the supervisor in `sofascore_scraper/services/live/supervisor.py`).
 The model still types `data` as an object, so the field table above and the JSON Schema do not change;
 this table is the contract for `data`:
 
@@ -918,7 +918,7 @@ What was stored before P23, and what was proposed when version 1 was approved:
 
 Job events carry the origin of the job. The `origin` of `job.started` says which interface started the job
 (`face`: `cli`, `api`, `scheduler` or `library`) and gives the process id (`pid`) and the host name (`host`)
-of the process that started it (`src/jobs/manager.py:319-329` at `e0bae0c`). A sink that is subscribed to
+of the process that started it (`sofascore_scraper/jobs/manager.py:319-329` at `e0bae0c`). A sink that is subscribed to
 `job.*` therefore delivers a host name and a pid, and API v1 shows the same `origin` on a job. This is kept
 on purpose (decision D20 in `03-implementation-plan.md`, section 13, settled on 2026-10-02): a sink and the
 API deliver to the operator's own systems. The diagnostics bundle, which is made to be handed to other
@@ -933,13 +933,13 @@ snapshot) and the export dataset `odds` as `OddsLine` rows; standings come from 
 at `/seasons/{id}/standings` and the export dataset `standings`. `odds_featured` gives the values of its
 `featured` object, each with its key as `label`; `odds_all` its `markets`. Prices are fractions as SofaScore
 gives them, with a decimal derived as 1 + the fraction, rounded to three places (`fraction_decimal`,
-`src/schema/mappers.py:632`). The mappers are `odds_from_payload`, `odds_lines` and `standings_rows`
+`sofascore_scraper/schema/mappers.py:632`). The mappers are `odds_from_payload`, `odds_lines` and `standings_rows`
 (`:680-742`); `standings_rows` skips rows that have neither a team nor a position. The country SofaScore
 answered for is not a field of `Odds`: it is in the slice's meta (`meta.country`) when the user set `[client]
 odds_country`, and the provider id is in `meta.provider_id` as well as in the record. `winning_odds` and
 `season_odds` have no model (their only samples were 404s); they are raw slices.
 
-These models are in `models.PENDING_MODELS` (`src/schema/models.py:845`), not in `MODELS`: `ssc describe
+These models are in `models.PENDING_MODELS` (`sofascore_scraper/schema/models.py:845`), not in `MODELS`: `ssc describe
 schemas` and the JSON Schema (`tests/golden/schema/`) do not include them, while API v1 and the exports use
 them, and a test applies the field-contract checks of the other models to them. Plan item FX-21 moves them
 into `MODELS`, and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`.
@@ -1119,7 +1119,7 @@ which no test checks.
 
 ## 6. JSON Schema
 
-`src/schema/jsonschema.py` produces one JSON Schema document (draft 2020-12) with every record under `$defs`.
+`sofascore_scraper/schema/jsonschema.py` produces one JSON Schema document (draft 2020-12) with every record under `$defs`.
 `ssc describe schemas` will print it; a copy is kept as a test golden in
 `tests/golden/schema/json_schema.json`. How the rules of section 2 appear in it:
 
@@ -1161,17 +1161,17 @@ What a raw request returns:
 
 ## 8. Implementation and tests
 
-- `src/schema/models.py`: the records as frozen dataclasses; each field's description, unit and source are
+- `sofascore_scraper/schema/models.py`: the records as frozen dataclasses; each field's description, unit and source are
   field metadata. `SCHEMA_VERSION = 1`.
-- `src/schema/mappers.py`: pure functions from the Store's rows to the records: `event_from_row` (EventRow),
+- `sofascore_scraper/schema/mappers.py`: pure functions from the Store's rows to the records: `event_from_row` (EventRow),
   `tournament_from_row`, `season_from_row`, `participant_from_row`, `category_from_row`, `sport_from_row`,
   `slice_from_info` (SliceInfo), `change_from_row` (ChangeRow), `live_event_from_record` (StreamRecord). The
   refresh window is passed in; nothing reads a setting, a file or the clock.
-- `src/schema/jsonschema.py`: the JSON Schema, generated from the models.
+- `sofascore_scraper/schema/jsonschema.py`: the JSON Schema, generated from the models.
 - Since P28 (#140): the models `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine` and `StandingsRow` in
   `models.PENDING_MODELS`, and the mappers `odds_from_payload`, `odds_lines`, `standings_rows` and
   `fraction_decimal`; they are outside the JSON Schema and the generated tables until FX-21 (section 4).
-- The package imports only the pure domain modules (`src.sports`, `src.status`, `src.refresh`).
+- The package imports only the pure domain modules (`sofascore_scraper.sports`, `sofascore_scraper.status`, `sofascore_scraper.refresh`).
 - `tests/test_schema_v1.py`, with goldens under `tests/golden/schema/`:
   - each of the real status payloads maps to a golden Event record (154 of three sports at SC-1; 231 of the
     21 registered sports since SP-3);

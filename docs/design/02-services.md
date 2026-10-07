@@ -72,32 +72,32 @@ The CLI executable is written `ssc` below (final name: decision D2).
 
 | File (lines) | What it does today | Target home |
 |---|---|---|
-| `main.py` (402) | argparse with 20 flags (`main.py:52-202`), mode dispatch (`:244-374`), exit-code policy (`:327`, `:348`, `:376-378`, `:384`, `:390`), `os.chdir` to the checkout (`:25-26`), web server start incl. widening allowed hosts to `*` (`:251-257`) | `src/cli/` (commands), shim stays one release |
+| `main.py` (402) | argparse with 20 flags (`main.py:52-202`), mode dispatch (`:244-374`), exit-code policy (`:327`, `:348`, `:376-378`, `:384`, `:390`), `os.chdir` to the checkout (`:25-26`), web server start incl. widening allowed hosts to `*` (`:251-257`) | `sofascore_scraper/cli/` (commands), shim stays one release |
 | `src/SofaScoreUi.py` (397) | interactive menu loop **and** the headless orchestration used by cron: `run_headless_fetch` (`:311-368`), `update_all_leagues` (`:370-392`), `export_all_to_csv` (`:394-397`); builds the three fetchers (`:93-95`) and creates data dirs (`:79-83`) | orchestration to `services/sync.py`; rest deleted |
 | `src/ui/*.py` (2,199) | menus with `input()`; handler methods double as headless steps (`menu_ui.py`, `match_ui.py`); directory-copy backup/restore/clear (`settings_ui.py:297-669`) | deleted (section 7) |
-| `src/season_fetcher.py` (484) | season list request + save (`:49-78`), "current season" heuristic that also looks at files on disk, stale season-id resolution (`:263-287`), reading the list back with three legacy file names (`:423-463`) | `services/listing.py` + Store |
-| `src/match_fetcher.py` (735) | schedule fetch: rounds metadata (`:202-219`), week-based vs event-page strategy (`:176-187`, `:325-388`), round cache policy (`:390-425`), finished filter (`:111-142`, `:189-200`), season summary JSON+CSV writer (`:514-595`), previous-season fallback (`:91-109`) | `services/listing.py` + Store |
-| `src/match_data_fetcher.py` (2,482) | see 1.2 | split across client, Store, pipeline, export, status |
-| `src/utils.py` (696) | the request layer: cancel and wait-notifier ContextVars (`:50-97`), throttle hooks (`:126-135`), sync request (`:299-456`), async request (to `:624`); also module-level settings read at import (`:32-41`) | `src/client/` |
-| `src/refresh.py` (147) | pure refresh policy: `refresh_due` (`:63-81`), `diff_basic` (`:95-98`), `change_row` (`:112-140`) | stays (domain); driven by `services/refresh.py` |
-| `src/watcher.py` (407) | polling watcher: state reducer `_observe`, tick, JSON state file per sport (`:204-214`), JSONL event append without sequence numbers (`:216-222`), one sport per process (`:146-178`) | `services/live/` |
+| `sofascore_scraper/season_fetcher.py` (484) | season list request + save (`:49-78`), "current season" heuristic that also looks at files on disk, stale season-id resolution (`:263-287`), reading the list back with three legacy file names (`:423-463`) | `services/listing.py` + Store |
+| `sofascore_scraper/match_fetcher.py` (735) | schedule fetch: rounds metadata (`:202-219`), week-based vs event-page strategy (`:176-187`, `:325-388`), round cache policy (`:390-425`), finished filter (`:111-142`, `:189-200`), season summary JSON+CSV writer (`:514-595`), previous-season fallback (`:91-109`) | `services/listing.py` + Store |
+| `sofascore_scraper/match_data_fetcher.py` (2,482) | see 1.2 | split across client, Store, pipeline, export, status |
+| `sofascore_scraper/utils.py` (696) | the request layer: cancel and wait-notifier ContextVars (`:50-97`), throttle hooks (`:126-135`), sync request (`:299-456`), async request (to `:624`); also module-level settings read at import (`:32-41`) | `sofascore_scraper/client/` |
+| `sofascore_scraper/refresh.py` (147) | pure refresh policy: `refresh_due` (`:63-81`), `diff_basic` (`:95-98`), `change_row` (`:112-140`) | stays (domain); driven by `services/refresh.py` |
+| `sofascore_scraper/watcher.py` (407) | polling watcher: state reducer `_observe`, tick, JSON state file per sport (`:204-214`), JSONL event append without sequence numbers (`:216-222`), one sport per process (`:146-178`) | `services/live/` |
 | `src/web/fetch_job.py` (343) | the web job: its own copy of the full-update orchestration (`:108-232`), breaker activation (`:86-87`), result/exception mapping (`:234-262`), detail phase planning (`:273-343`) | `services/sync.py`; file becomes a small adapter, then disappears |
-| `src/web/jobs.py` (417) | SQLite job history plus an **in-memory** mirror, active id and exclusive slot (`:54-58`), i.e. single-process | persistence in `src/store/jobs.py` (on `state.db`), behaviour in `src/jobs/` |
-| `src/web/progress.py` (207) | phase/percent/ETA/failed list; phases hard-wired to seasons/matches/details/export (`:12`) | `src/jobs/progress.py` |
-| `src/web/routes/*` (1,459) | HTTP plus business logic, see 1.5 | `src/web/api/v1/*` (thin) + services |
-| `src/web/league_sports.py` (110) | league→sport sidecar and inference by globbing `match_details` (`:77-89`) | `services/follows.py` + Store |
-| `src/services/stats.py` (150) | the only service today; walks the tree for counts and sizes (`:84-147`) | `services/status.py` over the catalog |
-| `src/sports.py`, `src/status.py`, `src/throttle.py`, `src/breaker.py`, `src/bridge_health.py`, `src/doctor.py` | already single-purpose | stay; wrapped by `src/client/` and services |
+| `sofascore_scraper/web/jobs.py` (417) | SQLite job history plus an **in-memory** mirror, active id and exclusive slot (`:54-58`), i.e. single-process | persistence in `sofascore_scraper/store/jobs.py` (on `state.db`), behaviour in `sofascore_scraper/jobs/` |
+| `sofascore_scraper/web/progress.py` (207) | phase/percent/ETA/failed list; phases hard-wired to seasons/matches/details/export (`:12`) | `sofascore_scraper/jobs/progress.py` |
+| `src/web/routes/*` (1,459) | HTTP plus business logic, see 1.5 | `sofascore_scraper/web/api/v1/*` (thin) + services |
+| `sofascore_scraper/web/league_sports.py` (110) | league→sport sidecar and inference by globbing `match_details` (`:77-89`) | `services/follows.py` + Store |
+| `sofascore_scraper/services/stats.py` (150) | the only service today; walks the tree for counts and sizes (`:84-147`) | `services/status.py` over the catalog |
+| `sofascore_scraper/sports.py`, `sofascore_scraper/status.py`, `sofascore_scraper/throttle.py`, `sofascore_scraper/breaker.py`, `sofascore_scraper/bridge_health.py`, `sofascore_scraper/doctor.py` | already single-purpose | stay; wrapped by `sofascore_scraper/client/` and services |
 
 The table is the state at `3ae2599` and is history for most rows. At `b3cb819`: `main.py` (285 lines) is a
-shim that hands a subcommand to `src/cli/main.py`, translates the legacy flags through
-`src/cli/legacy_flags.py` and prints a short help with exit code 2 when no action is given (P19 #119, P25
+shim that hands a subcommand to `sofascore_scraper/cli/main.py`, translates the legacy flags through
+`sofascore_scraper/cli/legacy_flags.py` and prints a short help with exit code 2 when no action is given (P19 #119, P25
 #125, P26 #131; 4.7). `src/SofaScoreUi.py` and `src/ui/` are deleted (P26). `src/web/fetch_job.py` and
-`src/web/routes/*` are deleted: the legacy routes are adapters in `src/web/api/legacy.py` and the module
-state of `routes/common.py` is in `src/web/deps.py` (P21 #127; 6.1). The CSV flattening and export moved to
-`src/services/export.py` (EX-1 #99, FX-7 #103); `MatchDataFetcher` keeps only forwarding entries for it.
+`src/web/routes/*` are deleted: the legacy routes are adapters in `sofascore_scraper/web/api/legacy.py` and the module
+state of `routes/common.py` is in `sofascore_scraper/web/deps.py` (P21 #127; 6.1). The CSV flattening and export moved to
+`sofascore_scraper/services/export.py` (EX-1 #99, FX-7 #103); `MatchDataFetcher` keeps only forwarding entries for it.
 
-### 1.2 `src/match_data_fetcher.py`: twelve responsibilities in one class
+### 1.2 `sofascore_scraper/match_data_fetcher.py`: twelve responsibilities in one class
 
 | # | Responsibility | Lines |
 |---|---|---|
@@ -133,10 +133,10 @@ reports a tripped breaker through an environment variable read back at exit (`ma
 Since P10 (PR #64) one of the three is left in use. The web job and the headless runs of `main.py` both call
 `SyncService`; the two CLI orchestrators (`run_headless_fetch`, `update_all_leagues` and `export_all_to_csv`
 in `src/SofaScoreUi.py`) have no caller and go with the terminal UI (P26). The exit code of a breaker stop
-comes from `SyncResult.breaker` in the service modes; `src/match_data_fetcher.py` still writes
+comes from `SyncResult.breaker` in the service modes; `sofascore_scraper/match_data_fetcher.py` still writes
 `APP_EXIT_CODE` on a breaker stop (`:2110` at `f286723`, in the web server process too) and only the
 interactive branch of `main.py` still reads it. Both ended with P26 (#131): the terminal UI with its two
-orchestrators is deleted, `src/match_data_fetcher.py` no longer writes `APP_EXIT_CODE`, and no code reads
+orchestrators is deleted, `sofascore_scraper/match_data_fetcher.py` no longer writes `APP_EXIT_CODE`, and no code reads
 it. The download ends after the details: the CSV phase left the flow with EX-1 (#99; 2.7).
 
 ### 1.4 Where the two detail pipelines diverge
@@ -155,7 +155,7 @@ it. The download ends after the details: the CSV phase left the flow with EX-1 (
 | Breaker scope | job breaker via `scope()` (`:286`) | batch has one (`:1483`); the single-match route has none |
 | "Not finished" outcome | reported as a failed match (`:368-379`, `:415-417`) | reported as a failed match (`:1519-1521`) |
 | Slice markers | both paths: only for `required` slices (`:684`) and only when the event is finished (`:1228-1229`) | same |
-| Falsy body (`0`, `false`, `""`), found by FX-5 (PR #77) | `_fetch_endpoint_async` answers `empty` / `empty` for any falsy body without asking the rule (`if data:`, `src/match_data_fetcher.py:315` at `9b03c64`), so such a body counts towards "unavailable" | the rule is asked: a falsy body of the wrong shape is `failed` / `parse`. Pinned by `test_falsy_malformed_body_is_still_empty_on_the_async_path`; P13 removes the shortcut |
+| Falsy body (`0`, `false`, `""`), found by FX-5 (PR #77) | `_fetch_endpoint_async` answers `empty` / `empty` for any falsy body without asking the rule (`if data:`, `sofascore_scraper/match_data_fetcher.py:315` at `9b03c64`), so such a body counts towards "unavailable" | the rule is asked: a falsy body of the wrong shape is `failed` / `parse`. Pinned by `test_falsy_malformed_body_is_still_empty_on_the_async_path`; P13 removes the shortcut |
 | Reason of a 404, found by FX-5 | `empty` / `404` | `empty` / `empty` (the helper returns None for a 404). Both count towards "unavailable"; P13 gives a 404 one reason |
 
 Consequence visible to users: the same match downloaded by "select matches" and by "download league" ends up
@@ -168,7 +168,7 @@ with different files, and `FETCH_ONLY_FINISHED=false` works on one path only.
 | `routes/matches.py:134-281` | building the match list from summary CSVs with pandas, de-duplication, date parsing, `has_details` by walking `match_details` (`:219-242`) |
 | `routes/matches.py:309-358` | "missing details" = CSV ids minus a recursive glob of `basic.json` |
 | `routes/matches.py:361-393` | assembling a match from slice files (third copy of `match_data_fetcher.py:534-557`) |
-| `routes/matches.py:396-418` | single-event fetch policy (refill, then full), error-to-status mapping by substring (`:416-417`). At `0aa73b4` the mapping was not reached for a blocked upstream: `_fetch_match_basic` swallowed the error, so the route answered 404 for a blocked `/event` and 200 when only the slices were blocked. FX-1 (PR #60) removed the substring mapping: the route keeps the outcome of its requests and answers the typed upstream error of `src/web/upstream.py` (6) |
+| `routes/matches.py:396-418` | single-event fetch policy (refill, then full), error-to-status mapping by substring (`:416-417`). At `0aa73b4` the mapping was not reached for a blocked upstream: `_fetch_match_basic` swallowed the error, so the route answered 404 for a blocked `/event` and 200 when only the slices were blocked. FX-1 (PR #60) removed the substring mapping: the route keeps the outcome of its requests and answers the typed upstream error of `sofascore_scraper/web/upstream.py` (6) |
 | `routes/data.py:103-149`, `:152-182` | backup (zip) and clear |
 | `routes/data.py:185-221` | CSV export; a **GET** that generates files when none exist (`:192-198`) |
 | `routes/leagues.py:51-86` | remote tournament search incl. parsing SofaScore's payload, with a hard-coded URL (`:54`) |
@@ -179,7 +179,7 @@ with different files, and `FETCH_ONLY_FINISHED=false` works on one path only.
 | `ui/settings_ui.py:459-549` | **restore**, which exists only in the TUI and only for its directory-copy backups; the web backup is a zip (`routes/data.py:117`) that nothing can restore |
 | `match_data_fetcher.py:2323-2482` | coverage report |
 
-At `b3cb819` the route rows are history: every legacy route is an adapter in `src/web/api/legacy.py` over the
+At `b3cb819` the route rows are history: every legacy route is an adapter in `sofascore_scraper/web/api/legacy.py` over the
 services (P21 #127; 6.1). The CSV export streams `ExportService` and writes no file (EX-1 #99); backup and
 clear call `BackupService` and `MaintenanceService` (ST-19 #90); the remote tournament search has a
 service, `FollowsService.search_tournaments`, which the v1 route `POST /tournaments/search` uses, while the
@@ -203,25 +203,25 @@ v1 job from the Backups screen (FX-13 #152, #153; 6).
 - Three test modules patch that name in the web job (`tests/test_breaker_phases.py:238`,
   `tests/test_job_progress.py:187`, `tests/test_storage_errors.py:256`).
 
-All of this ended with P08 (PR #57): `src/web` imports neither `src.SofaScoreUi` nor `src.ui`, and
+All of this ended with P08 (PR #57): `sofascore_scraper/web` imports neither `src.SofaScoreUi` nor `src.ui`, and
 `tests/test_sync_service.py::test_web_imports_nothing_from_the_terminal_ui` keeps it so. Four test modules
 patched the name by then (the fourth, `tests/test_web_hardening.py`, came with PR #43); they now replace
 `fetch_job.build_context` and `export_all_csv`. The headless paths of `main.py` followed with P10 (PR #64);
 the terminal menu keeps its own wiring in `src/SofaScoreUi.py` until P26. The section is history at
 `b3cb819`: `src/SofaScoreUi.py` and `src/ui/` are deleted (P26 #131) and `tests/test_no_terminal_menu.py`
-checks that no module imports them; the web job is `run_fetch_job` in `src/web/api/legacy.py` (P21 #127),
-and tests patch `legacy.build_context` and `src.services.export.export_all_csv`.
+checks that no module imports them; the web job is `run_fetch_job` in `sofascore_scraper/web/api/legacy.py` (P21 #127),
+and tests patch `legacy.build_context` and `sofascore_scraper.services.export.export_all_csv`.
 
 ### 1.7 Other findings that shape the design
 
-- **Logs go to stdout.** `src/logger.py:39` installs `RichHandler` with the default console, whose stream is
+- **Logs go to stdout.** `sofascore_scraper/logger.py:39` installs `RichHandler` with the default console, whose stream is
   `sys.stdout`. `main.py:221` prints watch events to the same stream. Since PR #24 a plain stream handler
   with the file format is used when stdout is not a terminal; the stream is still stdout, so log lines, user
   text and the watcher's JSON event lines share it (pinned by the CLI goldens of G-03). Since P19 (#119)
   the log lines of every CLI process, the translated `main.py` runs included, go to stderr and stdout
   carries only the result; P25 (#125) does the same for `serve` and uvicorn's access lines.
 - **`--config` is a dead flag.** `ConfigManager` is a singleton that ignores arguments after first
-  construction (`config_manager.py:46-67`); `src/utils.py:41` constructs it at import, which happens before
+  construction (`config_manager.py:46-67`); `sofascore_scraper/utils.py:41` constructs it at import, which happens before
   `main.py:296` passes the path. G-03 pins it: a run with `--config` equals the plain full update. The
   `main.py` line numbers of this section and of 4.7 are from `3ae2599` and no longer exist; the behaviour
   they describe is unchanged. Since P10 the flag is dead explicitly: `main.py` constructs `ConfigManager()`
@@ -238,8 +238,8 @@ and tests patch `legacy.build_context` and `src.services.export.export_all_csv`.
   more places: an unused attribute in `match_fetcher.py`, the bridge, which completes relative paths with a
   literal base and has a literal probe URL, and the default in `config_manager.py`. Since P05 (PR #48) and
   P08 (PR #57) every request of the fetchers, the watcher and the league search follows the setting, and
-  the default lives in the Settings model (`src/config/settings.py:39` at `f286723`). What is left: the two
-  literals in the bridge (`src/challenge_solver.py:43` and `:432` at `f286723`; P24. The transport hands the
+  the default lives in the Settings model (`sofascore_scraper/config/settings.py:39` at `f286723`). What is left: the two
+  literals in the bridge (`sofascore_scraper/challenge_solver.py:43` and `:432` at `f286723`; P24. The transport hands the
   bridge full URLs, so they are not used for requests of the client) and the connection test of
   `src/web/routes/scrape.py` (`:164`), which calls the bridge directly with a relative path and so always
   uses the bridge's literal base (P21).
@@ -264,16 +264,16 @@ and tests patch `legacy.build_context` and `src.services.export.export_all_csv`.
   (`match_fetcher.py:471`); only the summary and the event pages are filtered. In 184 locally stored football
   events, the object in a round listing lacks only `venue`, `referee`, `attendance`, period defaults and a few
   promo flags compared with `/event/{id}`; status, teams, scores and start time are present.
-- **Defaults.** At `3ae2599` the default language was Turkish (`src/i18n.py:13`, `:36`) and the default
+- **Defaults.** At `3ae2599` the default language was Turkish (`sofascore_scraper/i18n.py:13`, `:36`) and the default
   request rate was 10 per second per concurrent request, 100 with default settings (`throttle.py:55-57`). Both
-  changed since: the rate is 5 requests per second in total (PR #33, `src/throttle.py:54` at `0aa73b4`) and
-  the language is English unless the system language is Turkish (PR #39, `src/language.py`).
+  changed since: the rate is 5 requests per second in total (PR #33, `sofascore_scraper/throttle.py:54` at `0aa73b4`) and
+  the language is English unless the system language is Turkish (PR #39, `sofascore_scraper/language.py`).
 - **Pull requests merged since the baseline.** #24 (`feat/log-files-diagnostics`), #23
   (`fix/blocked-state-ux`) and #32 (`chore/post-wave2`), which this design assumed, are merged. Together they
-  changed `main.py`, `src/config_manager.py`, `src/logger.py`, `src/utils.py`, `src/season_fetcher.py`,
-  `src/doctor.py`, `src/web/app.py`, four route modules (`api.py`, `leagues.py`, `scrape.py`, `settings.py`),
-  `tests/conftest.py`, the installers, the CI workflow and the changelog, and added `src/diagnostics.py`,
-  `src/redact.py`, `src/web/upstream.py` and the routes of `src/web/routes/diagnostics.py`. PR #43 (web
+  changed `main.py`, `sofascore_scraper/config_manager.py`, `sofascore_scraper/logger.py`, `sofascore_scraper/utils.py`, `sofascore_scraper/season_fetcher.py`,
+  `sofascore_scraper/doctor.py`, `sofascore_scraper/web/app.py`, four route modules (`api.py`, `leagues.py`, `scrape.py`, `settings.py`),
+  `tests/conftest.py`, the installers, the CI workflow and the changelog, and added `sofascore_scraper/diagnostics.py`,
+  `sofascore_scraper/redact.py`, `sofascore_scraper/web/upstream.py` and the routes of `src/web/routes/diagnostics.py`. PR #43 (web
   security hardening) followed; what it changed is in `03-implementation-plan.md` section 1.
 - **Settings since P09 (PR #56).** `ConfigManager`'s getters read the active `Settings` (4.3). The module
   constants frozen at import and the modules that read `os.environ` themselves are unchanged; they are
@@ -286,35 +286,35 @@ and tests patch `legacy.build_context` and `src.services.export.export_all_csv`.
 
 ### 2.1 Layer rules (enforced by an import-linter test)
 
-1. Faces (`src/cli`, `src/web`, `src/api.py`) import only `src/services`, `src/jobs`, `src/config`, `src/errors`.
+1. Faces (`sofascore_scraper/cli`, `sofascore_scraper/web`, `sofascore_scraper/api.py`) import only `sofascore_scraper/services`, `sofascore_scraper/jobs`, `sofascore_scraper/config`, `sofascore_scraper/errors`.
    They contain argument parsing, serialisation and nothing else.
-   As built so far (P18, PR #65) the new CLI also imports `src.doctor`, `src.diagnostics`, `src.sports`,
-   `src.logger` and `src.redact`, and for `config init --from-legacy` `src.config_manager` and
-   `src.web.league_sports`: no service exists for these yet. The status and follows services replace them
-   (P19, P21, P26). Command modules keep their module-level imports light; a test allows only `src.cli.*`,
-   `src.errors`, `src.exceptions`, `src.language`, `src.sports` and `src.version` at import time.
-   The `events` command (P22, PR #73) imports `src.sinks` and `src.store` inside its function: it reads the
+   As built so far (P18, PR #65) the new CLI also imports `sofascore_scraper.doctor`, `sofascore_scraper.diagnostics`, `sofascore_scraper.sports`,
+   `sofascore_scraper.logger` and `sofascore_scraper.redact`, and for `config init --from-legacy` `sofascore_scraper.config_manager` and
+   `sofascore_scraper.web.league_sports`: no service exists for these yet. The status and follows services replace them
+   (P19, P21, P26). Command modules keep their module-level imports light; a test allows only `sofascore_scraper.cli.*`,
+   `sofascore_scraper.errors`, `sofascore_scraper.exceptions`, `sofascore_scraper.language`, `sofascore_scraper.sports` and `sofascore_scraper.version` at import time.
+   The `events` command (P22, PR #73) imports `sofascore_scraper.sinks` and `sofascore_scraper.store` inside its function: it reads the
    stream log itself, because there is no `LiveService.events` yet. The v1 routes (P20, PR #74) import
-   `src.sports`, `src.bridge_health`, `src.throttle`, `src.redact` and, for the error classes, `src.store`
-   (`src/web/errors.py:39`, `src/web/api/v1/settings.py:46` at `e0bae0c`); the query and status services
+   `sofascore_scraper.sports`, `sofascore_scraper.bridge_health`, `sofascore_scraper.throttle`, `sofascore_scraper.redact` and, for the error classes, `sofascore_scraper.store`
+   (`sofascore_scraper/web/errors.py:39`, `sofascore_scraper/web/api/v1/settings.py:46` at `e0bae0c`); the query and status services
    replace the direct reads (P21).
-   The `watch` command (P23, PR #91) imports `src.sinks`, `src.config.loader`, `src.store` and
-   `src.services.live.supervisor` inside its function (`src/cli/commands/watch.py:112-115` at `9b03c64`): it
+   The `watch` command (P23, PR #91) imports `sofascore_scraper.sinks`, `sofascore_scraper.config.loader`, `sofascore_scraper.store` and
+   `sofascore_scraper.services.live.supervisor` inside its function (`sofascore_scraper/cli/commands/watch.py:112-115` at `9b03c64`): it
    opens the Store and hosts the dispatcher itself, because the context has no Store field and no live
    service (2.3). The legacy routes that read through the Store since RD-1, RD-2, RD-4 and RD-5 open it with
    `open_store` and hand it to the service (`src/web/routes/matches.py:101`, `src/web/routes/data.py:34`).
-   Two modules below the services import a service, the reverse direction: `src.match_data_fetcher` imports
-   `src.services.query` (RD-1) and `src.season_fetcher` imports `src.services.tournaments` (RD-5). It lasts
+   Two modules below the services import a service, the reverse direction: `sofascore_scraper.match_data_fetcher` imports
+   `sofascore_scraper.services.query` (RD-1) and `sofascore_scraper.season_fetcher` imports `sofascore_scraper.services.tournaments` (RD-5). It lasts
    until the fetchers leave the context (P15).
    As built at `b3cb819`. The web face has a test of its own since P21 (#127): `tests/test_layers.py`
-   allows `src/web` to import `src.services`, `src.jobs`, `src.config`, `src.errors` and itself, plus the
+   allows `sofascore_scraper/web` to import `sofascore_scraper.services`, `sofascore_scraper.jobs`, `sofascore_scraper.config`, `sofascore_scraper.errors` and itself, plus the
    modules of `WEB_ALSO_IMPORTS`, each with its reason: 22 modules, most of them for the legacy adapters
-   (`src/web/api/legacy.py`), which P30 deletes. The list is a ratchet: a new module fails, and so does a
-   stale entry. The web layer does not import `src.sinks` (decision D11's test); `GET /api/v1/sinks` reads
-   through `src/services/sink_status.py`. The CLI face has no such test yet (P21 left `src/cli` to P19,
-   and P19 did not add it): its data commands (P19 #119) import the Store, `src.sinks`, the job manager
+   (`sofascore_scraper/web/api/legacy.py`), which P30 deletes. The list is a ratchet: a new module fails, and so does a
+   stale entry. The web layer does not import `sofascore_scraper.sinks` (decision D11's test); `GET /api/v1/sinks` reads
+   through `sofascore_scraper/services/sink_status.py`. The CLI face has no such test yet (P21 left `sofascore_scraper/cli` to P19,
+   and P19 did not add it): its data commands (P19 #119) import the Store, `sofascore_scraper.sinks`, the job manager
    and the services inside their functions, as `watch` does.
-2. Only `src/client` sends requests to SofaScore. Only `src/store` touches `DATA_DIR`, including every SQLite
+2. Only `sofascore_scraper/client` sends requests to SofaScore. Only `sofascore_scraper/store` touches `DATA_DIR`, including every SQLite
    file and every lock file in it.
 3. Services never print, never read `os.environ`, never call `sys.exit`. They take a `ServiceContext`,
    return typed results and raise `PlatformError` subclasses.
@@ -323,35 +323,35 @@ and tests patch `legacy.build_context` and `src.services.export.export_all_csv`.
    constructor; it went with the terminal progress bar: at `b3cb819` the logger sets it at process start
    and the context does not touch the environment), `SyncService` reads one job-log text
    from the locale files (`fetch_zero_matches`, as today), and the storage error
-   is `src.exceptions.StorageError` until `src/errors.py` arrives with P18.
+   is `sofascore_scraper.exceptions.StorageError` until `sofascore_scraper/errors.py` arrives with P18.
    P11 (PR #69) did not replace that text by a code: `JobHandle.log` accepts `code=`
-   (`src/jobs/manager.py:153` at `e0bae0c`), but `SyncService` still logs the translated text
-   (`src/services/sync.py:425`), so it reaches the job log in the server's language. P13 passes
+   (`sofascore_scraper/jobs/manager.py:153` at `e0bae0c`), but `SyncService` still logs the translated text
+   (`sofascore_scraper/services/sync.py:425`), so it reaches the job log in the server's language. P13 passes
    `code="fetch_zero_matches"`.
-   RD-4 (PR #78) added a fourth leftover: `src/services/status.py` reads `FETCH_ONLY_FINISHED` from the
-   environment at call time (`only_finished_setting`, `src/services/status.py:56-61` at `9b03c64`), as the
+   RD-4 (PR #78) added a fourth leftover: `sofascore_scraper/services/status.py` reads `FETCH_ONLY_FINISHED` from the
+   environment at call time (`only_finished_setting`, `sofascore_scraper/services/status.py:56-61` at `9b03c64`), as the
    Settings route does, and the legacy match lists take it from there too. The writers read
-   `src.utils.FETCH_ONLY_FINISHED` once at import, so after a change in the web UI the counts and lists follow
+   `sofascore_scraper.utils.FETCH_ONLY_FINISHED` once at import, so after a change in the web UI the counts and lists follow
    at once and the downloads only after a restart. P30 switches the read to `fetch.only_finished` of the
    Settings. Since ST-27 (#129) the setting no longer changes what is stored: matches of every status are
    stored and details are fetched once a match has finished, so the setting applies at read time only (the
    legacy lists and the dashboard), and the restart no longer matters for it.
 4. Domain modules (`sports`, `status`, `refresh`, `slices`, `schema`) are pure and import nothing above them.
-   As built (SC-1, PR #72): `src/schema` imports `src.sports`, `src.status` and `src.refresh` at run time
-   and names the Store's row classes only under `TYPE_CHECKING` (`src/schema/mappers.py:53-54` at
+   As built (SC-1, PR #72): `sofascore_scraper/schema` imports `sofascore_scraper.sports`, `sofascore_scraper.status` and `sofascore_scraper.refresh` at run time
+   and names the Store's row classes only under `TYPE_CHECKING` (`sofascore_scraper/schema/mappers.py:53-54` at
    `e0bae0c`), which is how "pure" and "mappers from Store rows" fit together. `tests/test_layers.py`
-   checks the Store's imports only; the purity of `src/schema` is checked in `tests/test_schema_v1.py`
-   (`test_package_imports_only_domain_modules` and a subprocess test that pins the exact set of `src`
+   checks the Store's imports only; the purity of `sofascore_scraper/schema` is checked in `tests/test_schema_v1.py`
+   (`test_package_imports_only_domain_modules` and a subprocess test that pins the exact set of `sofascore_scraper`
    modules that importing the package loads).
-5. `src/client` and `src/store` do not import each other. `src/jobs` uses `src/store` for persistence and
+5. `sofascore_scraper/client` and `sofascore_scraper/store` do not import each other. `sofascore_scraper/jobs` uses `sofascore_scraper/store` for persistence and
    leases and contains no SQL and no access to the data directory. The test enforces what imports can show:
-   no face module and no `sqlite3` in `src/jobs` (`tests/test_jobs_model.py`); the manager may use `os` for
+   no face module and no `sqlite3` in `sofascore_scraper/jobs` (`tests/test_jobs_model.py`); the manager may use `os` for
    the pid.
 
 ### 2.2 Module layout
 
 ```
-src/
+sofascore_scraper/          (src/ until REN-1, #168)
   api.py                    public Python API: Platform, re-exports of result types
   errors.py                 PlatformError hierarchy and the code table (2.6)
   config/
@@ -365,7 +365,7 @@ src/
     context.py              RequestContext: cancel, wait notifier, breaker (the ContextVars of utils.py:61-97, breaker.py:252-268)
     endpoints.py            every URL template in one place
     bridge.py               BrowserBridge                      (from challenge_solver.py)
-    (throttle.py, breaker.py, bridge_health.py stay at src/ and are re-exported; moving them is cosmetic)
+    (throttle.py, breaker.py, bridge_health.py stay at the package root and are re-exported; moving them is cosmetic)
   store/                    designed in 01-storage.md; services use its public API directly
   sports.py status.py refresh.py                 domain
   slices.py                 Outcome, presence predicates (match_data_fetcher.py:65-89, :559-637)
@@ -383,7 +383,7 @@ src/
     export.py               ExportService
     backup.py               BackupService
     maintenance.py          MaintenanceService
-    status.py               StatusService (health, summary, coverage); doctor stays src/doctor.py
+    status.py               StatusService (health, summary, coverage); doctor stays sofascore_scraper/doctor.py
     follows.py              FollowsService
     query.py                QueryService (read side), incl. the legacy response shapes
     tournaments.py          season lists, schedule pages and sports of tournaments: functions on a Store (RD-5)
@@ -406,12 +406,12 @@ src/
 ```
 
 What of this layout exists at `e0bae0c`: `errors.py`, `config/` (with `overrides.py` since P20, PR #74),
-`client/` (the bridge is still `src/challenge_solver.py`), `store/`, the domain modules, `schema/` (SC-1,
+`client/` (the bridge is still `sofascore_scraper/challenge_solver.py`), `store/`, the domain modules, `schema/` (SC-1,
 PR #72), `services/context.py`, `sync.py`, `export.py` and `maintenance.py`, `jobs/model.py`, `manager.py`
 (P11, PR #69) and `progress.py`, `sinks/` (P22, PR #73), `cli/main.py`, `output.py`, `exit_codes.py` and
 the command modules `meta.py` and `events.py`, and in `web/` everything listed except `api/legacy.py`: the
 legacy routes are still the modules of `src/web/routes/` (P21 turns them into adapters). Not there yet:
-`src/api.py`, the other service modules, `jobs/scheduler.py`, `cli/signals.py` and `cli/legacy_flags.py`.
+`api.py`, the other service modules, `jobs/scheduler.py`, `cli/signals.py` and `cli/legacy_flags.py`.
 
 What was added by `9b03c64`: `services/query.py` (RD-1, PR #80; the match lists with RD-2, PR #89),
 `services/status.py` (RD-4, PR #78), `services/tournaments.py` (RD-5, PR #79), `services/backup.py` and
@@ -419,7 +419,7 @@ What was added by `9b03c64`: `services/query.py` (RD-1, PR #80; the match lists 
 `poll_source.py` (P23, PR #91; the push sources and the arbiter are P24 and P31), and the command module
 `cli/commands/watch.py`. `tournaments.py` is not a class under `QueryService`, as the layout first said: it
 is a module of functions that take a Store (`seasons_of`, `season_lists`, `schedule_pages`, `has_matches`,
-`sport_of`; `src/services/tournaments.py:89-165` at `9b03c64`), because `SeasonFetcher`, a member of the
+`sport_of`; `sofascore_scraper/services/tournaments.py:89-165` at `9b03c64`), because `SeasonFetcher`, a member of the
 context, calls it. `services/stats.py` stays as the
 forwarder that turns `StatusService.summary()` into the old response keys for the web routes and the
 terminal menu (2.7); only its per-league disk sizes, which the terminal menu alone shows, still walk the
@@ -436,22 +436,32 @@ P21 #122); and the pipeline modules `planning.py`, `pipeline.py` and `listing.py
 (ST-23) and `serve` (P25 #125). `web/` has `api/legacy.py` (P21 #127) and `api/proxy.py` (the proxy-password
 rule, used by v1 too), and `api/v1/` has `auth.py`, `tournaments.py`, `events.py`, `records.py` (the pydantic
 mirrors of the schema records), `follows.py`, `exports.py`, `backups.py`, `downloads.py` and `diagnostics.py`
-next to P20's three. `src/web/jobs.py` and `src/web/progress.py` are forwarders of a few lines to the Store's
-job store and `src/jobs/progress.py`. Not there yet: `src/api.py` (the library face) and
-`services/refresh.py` (the refresh is `SyncService` with mode `refresh`). `src/services/stats.py` stays as
-the forwarder of the legacy dashboard; its `league_stats` and `system_stats` lost their last caller in `src`
+next to P20's three. `sofascore_scraper/web/jobs.py` and `sofascore_scraper/web/progress.py` are forwarders of a few lines to the Store's
+job store and `sofascore_scraper/jobs/progress.py`. Not there yet: `api.py` (the library face) and
+`services/refresh.py` (the refresh is `SyncService` with mode `refresh`). `sofascore_scraper/services/stats.py` stays as
+the forwarder of the legacy dashboard; its `league_stats` and `system_stats` lost their last caller in the package
 with the terminal menu (P26).
 
-`src/` stays the import package during the build-out (decision D1).
+The package was `src/` during the build-out. The owner decided on 2026-10-03 that it becomes
+`sofascore_scraper` (decision D1), and REN-1 (#168, `6f79344`) renamed it in one pull request: the folder
+moved with its history, every import and module-path string followed, the console script is
+`ssc = "sofascore_scraper.cli.main:main"`, and the Docker image runs `pip install --no-deps -e .`, so it has
+`ssc` on its PATH. There is no `src` alias: `import src` fails, and a checkout needs `pip install -e .` again
+after the update, because the old `ssc` script still imports `src`. `sofascore_scraper` is an implicit
+namespace package, as `src` was (no top-level `__init__.py`, so no `sofascore_scraper.__version__`; the
+version is read by `sofascore_scraper/version.py`); `api.py`, the library face of this layout, is still to
+come. `python -m sofascore_scraper.cli.main` is the same as `ssc`; there is no `python -m sofascore_scraper`.
+Paths of files removed before the rename (`src/web/routes/`, `src/ui/`, `src/fsutil.py`, …) keep their old
+form in this document.
 
 ### 2.3 Composition
 
 ```python
-# src/services/context.py
+# sofascore_scraper/services/context.py
 @dataclass(frozen=True)
 class ServiceContext:
     settings: Settings
-    store: Store            # src.store.Store
+    store: Store            # sofascore_scraper.store.Store
     client: Client | None   # None when opened read-only
     jobs: JobManager
     clock: Clock
@@ -460,7 +470,7 @@ def build_context(settings: Settings, *, readonly: bool = False) -> ServiceConte
     # opens the Store, applies config follows (store.follows.apply(..., origin="config")), mirrors the legacy
     # league files, and wires client health changes to store.runtime.set("bridge_health", ...)
 
-# src/api.py: the library face
+# sofascore_scraper/api.py: the library face
 class Platform:
     @classmethod
     def open(cls, config: str | os.PathLike | None = None, *, data_dir: str | None = None,
@@ -481,7 +491,7 @@ adapter that reads from the active `Settings`, so existing call sites keep worki
 every getter reads `loader.active()`, and `ConfigManager.get_settings()` returns the active `Settings`.
 
 The block above is the target. The current stage, as built by P08 (PR #57), ST-17 (PR #62) and P11
-(PR #69; `src/services/context.py` at `e0bae0c`):
+(PR #69; `sofascore_scraper/services/context.py` at `e0bae0c`):
 
 ```python
 @dataclass(frozen=True)
@@ -507,12 +517,12 @@ def build_context(config_manager: ConfigManager, *, data_dir: str | None = None)
 - It carries the fetchers, because today's flow is theirs. There is no `settings` and no `clock` field and
   no `readonly` argument. Since P11 it has a `client` field, and `store` and `jobs` as properties.
   At `b3cb819` the three fetchers are no longer fields: they are `cached_property` members, built at the
-  first access and kept for the life of the context (P15 #117; `src/services/context.py:72-89`), so
+  first access and kept for the life of the context (P15 #117; `sofascore_scraper/services/context.py:72-89`), so
   building or importing a context loads none of them. `build_context` still creates the data directory and
   its four subdirectories, brings the follows table up to date and builds the client; `NO_COLOR` is set by
   the logger at process start, no longer by the context.
 - The Store is opened lazily (P11). `store` and `jobs` are properties, not fields
-  (`src/services/context.py:66-77` at `e0bae0c`): building a context opens no Store, and the first access
+  (`sofascore_scraper/services/context.py:66-77` at `e0bae0c`): building a context opens no Store, and the first access
   to `ctx.store` creates what is missing under `.meta/` (`schema.json`, `state.db`, `catalog.db`). The
   first version of this section had `build_context` open the Store. Two tests of earlier items pin the lazy
   form: a context without follows creates no `.meta/` and survives an unusable `state.db`
@@ -532,9 +542,9 @@ def build_context(config_manager: ConfigManager, *, data_dir: str | None = None)
   `.meta/schema.json` and `.meta/catalog.db` appear next to `state.db` at the first job, and a directory
   used only through the web UI is a Store for `open_store(create=False)`. If the Store cannot be opened
   (newer layout, busy, corrupt file) a warning is logged and the job runs as before. The v1 job body does
-  the same (`src/web/api/v1/jobs.py:303-308`).
+  the same (`sofascore_scraper/web/api/v1/jobs.py:303-308`).
 - Bridge health (P11). `build_context` builds a `Client` with one module-level function as its
-  `on_health_change` callback (`_record_bridge_health`, `src/services/context.py:132-143`). The health
+  `on_health_change` callback (`_record_bridge_health`, `sofascore_scraper/services/context.py:132-143`). The health
   source keeps a callback once, so the function is added once however many contexts are built, and no
   `client.close()` is needed when a context is replaced (the first version asked for it). The function
   writes the snapshot to `store.runtime` under the key `bridge_health` in the data directory of the latest
@@ -554,12 +564,12 @@ def build_context(config_manager: ConfigManager, *, data_dir: str | None = None)
   `build_context` create `state.db`.
 - Services that take a Store, not a context (RD-1, RD-4, ST-19; `9b03c64`). The block above shows every
   service as a member of `Platform` built on the context. As built, the read services and the two data
-  operations are constructed on a Store: `QueryService(store)` (`src/services/query.py:98-102`),
-  `StatusService(store)` (`src/services/status.py:177-181`), `BackupService(store)`
-  (`src/services/backup.py:25-29`) and `MaintenanceService(ctx=None, *, store=None)`
-  (`src/services/maintenance.py:60-65`), where `clear` needs only the Store and `recheck_unavailable` still
+  operations are constructed on a Store: `QueryService(store)` (`sofascore_scraper/services/query.py:98-102`),
+  `StatusService(store)` (`sofascore_scraper/services/status.py:177-181`), `BackupService(store)`
+  (`sofascore_scraper/services/backup.py:25-29`) and `MaintenanceService(ctx=None, *, store=None)`
+  (`sofascore_scraper/services/maintenance.py:60-65`), where `clear` needs only the Store and `recheck_unavailable` still
   needs the context for its fetcher. The reason is the cost and the side effects of a context: importing
-  `src/services/context.py` loads the three fetchers and the request layer, which a dashboard route must not
+  `sofascore_scraper/services/context.py` loads the three fetchers and the request layer, which a dashboard route must not
   do, and `build_context` creates `seasons/`, `matches/`, `match_details/` and `datasets/`, which would change
   what a clear leaves behind. The context still has no `store` field (`ctx.store` is the property above),
   and nothing wires `query`, `status` or `backup` into it; the faces build the service on
@@ -568,7 +578,7 @@ def build_context(config_manager: ConfigManager, *, data_dir: str | None = None)
   At `b3cb819` the services of this revision follow the same pattern: `ExportService(store)` (EX-1),
   `FollowsService(store, legacy, *, config_file)` (P21 #124), and the functions of `data_jobs` and
   `sink_status` take a Store. The web builds them on `deps.store()`, `open_store` of the configured data
-  directory (`src/web/deps.py:87-94`), and `deps.follows_service()` passes the writer of the legacy league
+  directory (`sofascore_scraper/web/deps.py:87-94`), and `deps.follows_service()` passes the writer of the legacy league
   files and whether a config file is active. `MaintenanceService(store=...)` serves clear, migrate and the
   catalog operations; only `recheck_unavailable` still needs a context.
 - Reading opens the Store. Since RD-1, RD-2, RD-4 and RD-5 the legacy GET routes of match detail, match
@@ -584,15 +594,15 @@ def build_context(config_manager: ConfigManager, *, data_dir: str | None = None)
   `match_data_fetcher` (`test_breaker_phases`, `test_job_progress`, `test_storage_errors`,
   `test_sync_service`), so a new field that a service reads has to be added to those fakes.
 - The web imports the fetchers and the request layer inside functions. A module-level import of
-  `src.services.context` in a route module would load `curl_cffi`, `rich`, `tqdm` and the three fetchers at
+  `sofascore_scraper.services.context` in a route module would load `curl_cffi`, `rich`, `tqdm` and the three fetchers at
   web start-up; `routes/data.py` and `routes/leagues.py` keep the import at function level. Since P21
-  (#127) that is `src/web/api/legacy.py` (`legacy.build_context`, the name tests replace); since P15 the
+  (#127) that is `sofascore_scraper/web/api/legacy.py` (`legacy.build_context`, the name tests replace); since P15 the
   context no longer loads the fetchers at import, and `tqdm` is no longer a dependency (P26 #131).
 
 ### 2.4 Client
 
 ```python
-# src/slices.py — one outcome type for client, pipeline and Store (01-storage.md 2.3)
+# sofascore_scraper/slices.py — one outcome type for client, pipeline and Store (01-storage.md 2.3)
 class Outcome:                 # generalises SliceOutcome (match_data_fetcher.py:65-89)
     status: Literal["ok", "empty", "failed", "skipped"]
     data: Any | None
@@ -604,7 +614,7 @@ class Outcome:                 # generalises SliceOutcome (match_data_fetcher.py
     meta: Mapping[str, Any] | None
 
 @dataclass(frozen=True)
-class ClientSettings:               # src/client (P05); see "As built" below for its relation to 4.3
+class ClientSettings:               # sofascore_scraper/client (P05); see "As built" below for its relation to 4.3
     base_url: str = endpoints.DEFAULT_BASE_URL
     retries: int | None = None              # None: the MAX_RETRIES setting, read per request
     timeout_seconds: float | None = None    # None: the REQUEST_TIMEOUT setting, read per request
@@ -628,7 +638,7 @@ def request_context(*, cancel: Callable[[], bool] | None, on_wait: Callable[[str
                     breaker: CircuitBreaker | None) -> Iterator[RequestContext]: ...
 ```
 
-The block is the client as built by P05 (PR #48, `src/client/__init__.py` at `f286723`). The first version of
+The block is the client as built by P05 (PR #48, `sofascore_scraper/client/__init__.py` at `f286723`). The first version of
 this section gave `Client` a `throttle` argument, `get` a `lane` argument and one `aclose()`, and named
 `ClientSettings` without defining it; "As built" at the end of the section says why each differs.
 
@@ -643,14 +653,14 @@ Semantics:
   `ResourceNotFoundError` as a definitive empty: an `APIError` with status 404 of another class becomes
   `failed/404` (pinned in `tests/test_slices.py`); the transport raises `ResourceNotFoundError` for every
   404, so the client's answer to a 404 is `empty/404`. `Outcome` exists since ST-02 (PR #36) in
-  `src/slices.py`; `fetched_at`, `via` and `meta` are left None by `from_error` and filled by the client.
+  `sofascore_scraper/slices.py`; `fetched_at`, `via` and `meta` are left None by `from_error` and filled by the client.
 - A 200 whose body is empty (`{}`, `[]`) is `empty` with reason `empty` and the body in `data`. Whether a
   non-empty body carries data for its slice is decided by `slices.slice_body_state(key, body)`
-  (`src/slices.py:225` at `9b03c64`; FX-5, PR #77), which has three answers, not the two of a presence
+  (`sofascore_scraper/slices.py:225` at `9b03c64`; FX-5, PR #77), which has three answers, not the two of a presence
   predicate: `BODY_DATA` (`ok`), `BODY_NO_DATA` (`empty` / `empty`, the body kept; `{"pointByPoint": []}` is
   no data since FX-5) and `BODY_MALFORMED` (a body of an unexpected shape). As built by the fix commit of
   FX-5 (`5456182`), `MatchDataFetcher._answered_outcome` maps a fetched malformed body to `failed` / `parse`
-  (`src/match_data_fetcher.py:319-345`): it is not counted as an empty answer, not written to disk, not
+  (`sofascore_scraper/match_data_fetcher.py:319-345`): it is not counted as an empty answer, not written to disk, not
   reported to the circuit breaker, and requested again on the next run. Before FX-5 the presence predicate
   raised on such a body: the async path reached the same result through the exception (reason `other`), the
   async refill retried the match three times and reported it failed, and the sync path ended the whole batch
@@ -665,11 +675,11 @@ Semantics:
   with at least one retry).
 - Two request bodies remain. The first version said "one transport implementation (async); `get_sync`
   drives it on the bridge's background loop; the duplicated sync body is deleted". P05 moved the sync body
-  to `src/client/transport.py` instead: the G-01 goldens pin sync requests as such, and five callers still
+  to `sofascore_scraper/client/transport.py` instead: the G-01 goldens pin sync requests as such, and five callers still
   use `make_api_request`. `get_sync` uses that body and opens no session; every request is its own
   connection. The sync body can go when its callers have moved to the client (the fetch paths in P13, the
   watcher's default fetch in P23). P23 (PR #91) kept it: the live service's default fetch is still
-  `make_api_request(api_url(path), raise_on_failure=True)` (`src/services/live/supervisor.py:613-628` at
+  `make_api_request(api_url(path), raise_on_failure=True)` (`sofascore_scraper/services/live/supervisor.py:613-628` at
   `9b03c64`), because the client has no "blocked" report for that path (8.1).
 - A curl session belongs to the event loop that opened it, and every job runs its own `asyncio.run`. The
   client therefore keeps one session per loop, opened (with the warm-up request) by the first `get` on that
@@ -677,12 +687,12 @@ Semantics:
   `async with client:` inside its loop. With an open breaker or a cancelled job no session is opened: the
   warm-up is a request too.
 - Paths are relative to the API root and start with `/` (`ValueError` otherwise); `endpoints.py` builds them
-  (`event_slice(key, id)` reads the path from the slice table of `src/sports.py` and raises `KeyError` for an
+  (`event_slice(key, id)` reads the path from the slice table of `sofascore_scraper/sports.py` and raises `KeyError` for an
   unknown key), and the base is added only in `Client.url`. `ClientSettings` rejects a base that is not
   http(s). `ClientSettings.from_environment()` takes the base from `transport.base_url()`, which is read
   once at import: a base URL changed on the Settings page still needs a restart.
-- The throttle stays where it is: every request reserves a slot in the shared budget (`src/throttle.py`; the
-  curl path in `src/client/transport.py`, the bridge in `challenge_solver.py`). The default rate is 5 req/s
+- The throttle stays where it is: every request reserves a slot in the shared budget (`sofascore_scraper/throttle.py`; the
+  curl path in `sofascore_scraper/client/transport.py`, the bridge in `challenge_solver.py`). The default rate is 5 req/s
   since PR #33; `0`/`off` removes the limit. After idle time up to one second of budget goes out at once;
   that stays (decision D14, settled). Since FX-6 (PR #58) a reservation can be given back:
   `throttle.reserve()` returns a `Reservation` (a float subclass whose value is the seconds to wait), and a
@@ -700,31 +710,31 @@ Semantics:
   (Out of date: P24 made the sync path interruptible and FX-18 the async path; see the FX-18 bullet below.)
 - Requests that already waited for the request semaphore could still be sent after a stop, until FX-9.
   `_request_async` checked for a cancel before it waited for the semaphore and not after
-  (`src/client/transport.py:553` and `:564` at `e0bae0c`), so a waiter whose reserved slot was already due
+  (`sofascore_scraper/client/transport.py:553` and `:564` at `e0bae0c`), so a waiter whose reserved slot was already due
   was sent: with the budget off or not the limit every waiter, and with the budget as the limit one request
   per interval for as long as cancelling the queue took. The diagnostics fix (PR #71) found it through
   `tests/test_throttle.py::test_stopped_bulk_job_leaves_no_queue_behind`, which flaked on a slow runner.
   As built by FX-9 (PR #83): one `raise_if_cancelled()` directly after `async with semaphore:`, before
   `breaker.check(url)` and before the reservation, on the curl path and on the browser-first path of
-  `_request_async` (`src/client/transport.py:539-541` and `:566-573` at `9b03c64`). A waiter that gets the
+  `_request_async` (`sofascore_scraper/client/transport.py:539-541` and `:566-573` at `9b03c64`). A waiter that gets the
   semaphore after the stop raises `FetchCancelled`, makes no reservation and is not reported to the breaker.
   Measured offline with the budget not the limit and `MAX_CONCURRENT=10`: of 70 requests 70 were sent
   before and 10 (those in flight at the stop) after; browser-first, of 30 requests 30 before and 10 after.
   P13 keeps both checks when it rewrites the request paths.
 - What FX-9 left. (1) A request that already holds the semaphore and is inside the bridge call when the job
-  stops is still sent if its slot is due: `_wait_for_slot` (`src/challenge_solver.py:170-189`) looks at the
+  stops is still sent if its slot is due: `_wait_for_slot` (`sofascore_scraper/challenge_solver.py:170-189`) looks at the
   cancel only while it sleeps, so a browser-first request that waits for `ensure_ready()` at the stop goes
   on to `fetch_json`. `test_stop_reaches_browser_first_requests_waiting_for_a_request_slot` pins that number
   (10 sent) and expects 0 once the bridge checks the cancel before the reservation (P24, which moves the
   bridge). (2) The two paths disagree about a response that arrives during a stop: the curl path returns
   the data that is in hand, while the browser-first path raises `FetchCancelled` from the pause after the
-  bridge's answer (`src/client/transport.py:549-550`) and drops the data. Not pinned. (3) The sync path and
+  bridge's answer (`sofascore_scraper/client/transport.py:549-550`) and drops the data. Not pinned. (3) The sync path and
   the bridge still have no check between the reservation and the send. The FX-6 rule "a slot whose time has
   come is not given back" was made because waiters behind the semaphore did not look at the cancel; on the
   async curl path that reason is gone, and the rule is left as it is.
 - Since FX-18 (PR #139; `b6caf2f`) points (1) and (2) are done and the bullet above about a shared solve
-  holds for no path. `_wait_for_slot` (`src/client/bridge.py:188-215`, P24 moved it out of
-  `src/challenge_solver.py`, which is only an alias now) checks the cancel before it reserves a slot
+  holds for no path. `_wait_for_slot` (`sofascore_scraper/client/bridge.py:188-215`, P24 moved it out of
+  `sofascore_scraper/challenge_solver.py`, which is only an alias now) checks the cancel before it reserves a slot
   (`:204-206`), except for the verification request of a shared challenge solve (`_SlotWait.shared`), so a
   request that waited inside the bridge (`ensure_ready`, a shared solve) when the job stopped is not sent.
   The async bridge path has the caller-side check of the sync path: `_run_on_background_loop(...,
@@ -734,7 +744,7 @@ Semantics:
   solve (`asyncio.shield`) goes on for the other waiters. `fetch_json` and `solve_challenge` are called with
   `cancellable=True`, `ensure_ready` is not (a half-open browser leaves the profile locked; `:660-700`). A
   browser-first answer that arrives during a stop is returned, as on the curl path
-  (`src/client/transport.py:350-355` and `:555-560`). Point (3) holds only for the sync curl path, which only
+  (`sofascore_scraper/client/transport.py:350-355` and `:555-560`). Point (3) holds only for the sync curl path, which only
   the doctor, the status check and the league search use; for the bridge it is the FX-6 rule: a slot whose
   time has come counts as sent, so the check stands before the reservation. P30, the next owner of both
   files, keeps both checks (`tests/test_bridge_cancel.py`).
@@ -746,19 +756,19 @@ Semantics:
 As built (P05), where the first version of this section differed:
 
 - **No `throttle` and no `lane` argument.** The request bodies are module-level functions that read
-  `src.throttle` themselves; an argument that changes nothing would mislead. The watcher still does its own
+  `sofascore_scraper.throttle` themselves; an argument that changes nothing would mislead. The watcher still does its own
   wait on its throttle lane.
 - **`aclose()` and `close()`** are two things, as above.
-- **`ClientSettings` exists twice.** P05 defined the class above in `src/client`; proxy, the post-request
+- **`ClientSettings` exists twice.** P05 defined the class above in `sofascore_scraper/client`; proxy, the post-request
   wait, `max_concurrent` and the budget are still read by the request layer from `ConfigManager` and
-  `src/throttle.py` per request. P09's model has a `ClientSettings` section class with the same three field
+  `sofascore_scraper/throttle.py` per request. P09's model has a `ClientSettings` section class with the same three field
   names and the rest of 4.3; a test builds P05's class from the model (`base_url=effective_base_url`,
   `retries`, `timeout_seconds`). The next owner of the client takes the model's class or keeps building from
   it.
 - **Old entry points stay.** `make_api_request` and `make_api_request_async` live in
-  `src/client/transport.py`; `src/utils.py` forwards to it through a module class (`_UtilsModule`), so that
-  existing patches on `src.utils` keep reaching the moved code. The forwarding is load-bearing: without it
-  the suite sleeps through real back-offs. It goes when no test patches `src.utils` (P30). The moved code
+  `sofascore_scraper/client/transport.py`; `sofascore_scraper/utils.py` forwards to it through a module class (`_UtilsModule`), so that
+  existing patches on `sofascore_scraper.utils` keep reaching the moved code. The forwarding is load-bearing: without it
+  the suite sleeps through real back-offs. It goes when no test patches `sofascore_scraper.utils` (P30). The moved code
   still logs under the logger name `Utils`, so no log line changed.
 - `request_context(cancel=..., on_wait=..., breaker=...)` restores the previous values on exit. The web job
   uses it since P08; before, the cancel check stayed set after the job.
@@ -766,31 +776,31 @@ As built (P05), where the first version of this section differed:
 ### 2.5 What services need from the Store, and where the Store provides it
 
 The parallel draft of this document proposed its own `Store` and `EventLog` protocols. They were replaced by
-the Store's API (`01-storage.md` 2.3); services import `src.store` directly and tests use a real Store in a
+the Store's API (`01-storage.md` 2.3); services import `sofascore_scraper.store` directly and tests use a real Store in a
 temporary directory. The proposed operations map as follows:
 
 | Need of the services | Store API |
 |---|---|
 | write one event with its slices atomically; an older observation must not win; get back what changed | `store.events.put(event_id, outcomes, on_event_change=..., count_empties=..., keep_history=...)` → `PutResult` (`created`, `event_written`, `superseded`, `written`, `change_seq`) |
-| compare old and new event payload under the same lock as the write | the `on_event_change(old, new)` callback of `put`; the service passes a function built from `diff_basic` and `change_row` (`src/refresh.py:95-140`) |
+| compare old and new event payload under the same lock as the write | the `on_event_change(old, new)` callback of `put`; the service passes a function built from `diff_basic` and `change_row` (`sofascore_scraper/refresh.py:95-140`) |
 | write a season list, a round or an event page and upsert the listed events | `store.entities.put(Ref.season(...), {("schedule", "round_12"): outcome}, index_listed_events=True)` |
 | write a season/team/player/sport slice | `store.entities.put(ref, {key or (key, sub): outcome})` |
 | reset "unavailable" marks | `store.events.reset_empty_markers(scope, include_confirmed=...)` |
 | per-event state for planning, without a tree walk | `store.events.missing(...)`, `refresh_candidates(...)`, `stale(...)`, `open_events(...)` for the common questions; `store.events.states(scope)` for the general case |
 | listing state (complete flag, age) | `store.entities.slice(ref, "schedule", sub)` → `SliceInfo.meta["complete"]`, `fetched_at` |
-| event rows and lists for the faces | `store.events.get/list/count/iter` return catalog rows; `src/schema` maps the rows to the normalized v1 records (it maps rows, not payloads; see below the table) |
+| event rows and lists for the faces | `store.events.get/list/count/iter` return catalog rows; `sofascore_scraper/schema` maps the rows to the normalized v1 records (it maps rows, not payloads; see below the table) |
 | raw payload | `store.events.payload(id, key, sub, raw=True)`, `store.entities.payload(...)`: the stored JSON bytes. They are the parsed response serialised again, value-identical but not byte-identical to the wire (`01-storage.md` 4.1) |
 | tournaments, seasons, changes, summary | `store.entities.tournaments/seasons`, `store.changes.list`, `store.events.summary`, `store.info` |
-| export rows | `store.events.iter` + `src/schema` mappers + `store.export.rows`; raw export is `store.export.raw` |
+| export rows | `store.events.iter` + `sofascore_scraper/schema` mappers + `store.export.rows`; raw export is `store.export.raw` |
 | clear, verify, rebuild, migrate | `store.clear`, `store.catalog.verify/rebuild`, `store.migrate.plan/run` |
 | durable streams with sequence numbers | `store.streams.append/read/wait/head/prune`; sink positions with `store.streams.cursor/set_cursor` |
 | watcher state | `store.watch.load/save` |
 | jobs, job events, cancel across processes, leases | `store.jobs`, `store.lease(name)` |
 
-As built (SC-1, PR #72; `src/schema` at `e0bae0c`). The mappers take the Store's row classes (`EventRow`,
+As built (SC-1, PR #72; `sofascore_scraper/schema` at `e0bae0c`). The mappers take the Store's row classes (`EventRow`,
 `TournamentRow`, `SeasonRow`, `ParticipantRow`, `SliceInfo`, `ChangeRow`, `StreamRecord`) and the dicts that
 `store.derive` returns, never a SofaScore payload. The only reader of a status class and a score from a
-payload is `src/store/derive.py`, and `src/schema` may not import the Store at run time (2.1), so a payload
+payload is `sofascore_scraper/store/derive.py`, and `sofascore_scraper/schema` may not import the Store at run time (2.1), so a payload
 is mapped as `schema.event_from_row(derive.event_row(payload, "event", observed_at))` by a caller that may
 import both. The earlier text of 2.2 and of this table said "rows and payloads". Slice payloads are given
 out raw in schema v1 (`schema.slice_from_info(info, payload=...)`); normalized slice models are later,
@@ -802,7 +812,7 @@ read methods come with ST-22, and P21 needs them for `/tournaments`. `store.jobs
 The rows of the table that were still ahead at `9b03c64` are built at `b3cb819`, with these differences.
 Export: `store.export.rows(rows, columns, dest, fmt, *, table, overwrite, types)` and `store.export.raw(q,
 dest, *, keys, fmt, pretty, overwrite)` (ST-25 #108, `types` added by SC-2 #130); `ExportService` builds the
-rows from the `src/schema` mappers and maps a `StoreError` with detail `pyarrow` to `not_supported`.
+rows from the `sofascore_scraper/schema` mappers and maps a `StoreError` with detail `pyarrow` to `not_supported`.
 Migrate: `store.migrate.plan/run` take `tournaments=` ids, not a `Scope` (ST-23 #110, `01-storage.md` 2.3).
 Sink positions: next to `cursor` and `set_cursor` the stream log has `cursors()`, the listing of every
 sink's `SinkCursor(sink, seq, updated_at, last_error)` (ST-24 #109), which `ssc status` and
@@ -821,8 +831,8 @@ Requirements and how they are met:
 
 ### 2.6 Errors: one table for all three faces
 
-`src/errors.py` defines `PlatformError(code, message, details=None)`; the existing request-level exceptions
-(`src/exceptions.py:24-88`) stay inside `src/client`.
+`sofascore_scraper/errors.py` defines `PlatformError(code, message, details=None)`; the existing request-level exceptions
+(`sofascore_scraper/exceptions.py:24-88`) stay inside `sofascore_scraper/client`.
 
 | `code` | Class | Exit code | HTTP | Meaning |
 |---|---|---|---|---|
@@ -848,9 +858,9 @@ Requirements and how they are met:
 
 The Store raises `LeaseHeld`; the job manager turns it into `job_running`, `data_operation_running` or
 `instance_running` from the name and purpose of the held lease. The existing classes `JobRunningError` and
-`DataOperationRunningError` (`src/web/jobs.py:30-46`) and their 409 handler (`src/web/app.py:59-65`) are kept.
+`DataOperationRunningError` (`sofascore_scraper/web/jobs.py:30-46`) and their 409 handler (`sofascore_scraper/web/app.py:59-65`) are kept.
 
-As built. `src/errors.py` exists since P18 (PR #65) and holds this table as `ERROR_TABLE`: per code the
+As built. `sofascore_scraper/errors.py` exists since P18 (PR #65) and holds this table as `ERROR_TABLE`: per code the
 class, the exit code and the HTTP statuses; `describe errors` prints it and a test compares it with the
 table above, row by row.
 
@@ -858,7 +868,7 @@ table above, row by row.
   `ConflictError`, `InstanceRunningError`, `UpstreamError`, `UpstreamBlockedError`, `NotSupportedError`,
   `Cancelled`) take `(message, details=None, *, code=None)`, because the class fixes the code.
 - `ConfigError`, `StorageError` and `JobRunningError` in the table are the classes that already existed
-  (`src/exceptions.py`, the job store); they are not `PlatformError` subclasses. `to_platform_error()` maps
+  (`sofascore_scraper/exceptions.py`, the job store); they are not `PlatformError` subclasses. `to_platform_error()` maps
   them and the Store's `LeaseHeld`, `FollowExists` and `FollowManaged`, Ctrl+C becomes `cancelled`, and
   anything else `internal`. `data_operation_running` therefore has two classes in the code: `ConflictError`
   and the job store's `DataOperationRunningError`.
@@ -866,23 +876,23 @@ table above, row by row.
   `instance_running` for a held lease, with the holder in `details`. The job store (ST-10) uses its own
   `conflict_from_lease`, which until P23 had no `instance_running`: a `live` or `watcher:<sport>` holder
   that blocked a data operation was reported there as `data_operation_running`. The previous revision
-  expected that to end with the job manager. P11 (PR #69) did not change it (`src/store/jobs.py:207-218` at
+  expected that to end with the job manager. P11 (PR #69) did not change it (`sofascore_scraper/store/jobs.py:207-218` at
   `e0bae0c`), and the job manager raises the job store's classes. A job cannot meet the case: it takes
   `writer`, which `live` and `watcher` never hold, so the case exists only for data operations. P23 (PR #91) added
   the case with the lease that makes it reachable: a data operation (clear, restore) that a running live
   service or `--watch` blocks raises `InstanceRunningConflict`, a subclass of `DataOperationRunningError`
-  with the code `instance_running` (`src/store/jobs.py:210-238` at `9b03c64`); `.operation` is still the
+  with the code `instance_running` (`sofascore_scraper/store/jobs.py:210-238` at `9b03c64`); `.operation` is still the
   holder's purpose and `.lease` the lease name, so callers that catch `DataOperationRunningError` keep
   working. API v1 does not go through that mapping when the conflict comes from a lease: it maps the
   `LeaseHeld` behind the conflict with `lease_error_code`, so v1 can answer `instance_running`
-  (`src/web/errors.py:176-177`). `LeaseHeld` is a `StorageError`, so a caller that catches `StorageError`
+  (`sofascore_scraper/web/errors.py:176-177`). `LeaseHeld` is a `StorageError`, so a caller that catches `StorageError`
   catches `LeaseHeld` first, as `main.py` does since P10.
 - `message` is meant to be English. The messages of `StorageError` and of the Store's errors are Turkish in
   the code. The mapping builds an English message from the OS reason and the path when they exist and passes
   the Store's text through otherwise.
-- The module imports only the standard library and `src/exceptions.py`, so `version` and `doctor` run
+- The module imports only the standard library and `sofascore_scraper/exceptions.py`, so `version` and `doctor` run
   before the packages are installed; it recognises the Store's classes through `sys.modules`.
-- HTTP statuses as used by API v1 (P20, PR #74; `src/web/errors.py:137-144` at `e0bae0c`).
+- HTTP statuses as used by API v1 (P20, PR #74; `sofascore_scraper/web/errors.py:137-144` at `e0bae0c`).
   `invalid_request` is 422 for a rejected value (body, query or header validation; a route raises
   `errors.ValidationFailed`) and 400 for a well-formed request that is refused (a locked or read-only
   setting, an unknown cursor; a route raises `UsageError`). `cancelled` has no HTTP status; if it ever
@@ -891,16 +901,16 @@ table above, row by row.
   locked (section 6), a v1 route answers 401 `unauthorized` with a `Retry-After` header and
   `details = {reason: "too_many_attempts", retry_after}`; a legacy route and `POST /api/auth/login` answer
   429 with the legacy body `{"detail": {"code": "too_many_attempts", "message", "retry_after"}}`
-  (`src/web/app.py:87-101`). `too_many_attempts` is therefore a legacy code and a v1 detail, not a code of
+  (`sofascore_scraper/web/app.py:87-101`). `too_many_attempts` is therefore a legacy code and a v1 detail, not a code of
   this table.
 - A refused Host header is outside the error model: it is Starlette's plain-text `400 Invalid host header`
   from the outermost middleware, on v1 as on the legacy routes, without a request id.
-- The table is unchanged at `b3cb819` (`src/errors.py` has not changed since `9b03c64`); the items of this
+- The table is unchanged at `b3cb819` (`sofascore_scraper/errors.py` has not changed since `9b03c64`); the items of this
   revision use its codes. A restore into a folder that holds data is `confirmation_required` (exit 2) with
   `details.occupied`, an archive that is not a valid backup `invalid_request`, an unknown backup name
   `not_found` (ST-24 #109; there is no code of its own). A migrate that could not convert some items ends
   with exit 3 like `partial` (ST-23 #110). `POST /api/v1/tournaments/search` answers 503 `blocked` or
-  `rate_limited` and 502 `upstream_error`, with `details.reason` in the words of `src/web/upstream.py`
+  `rate_limited` and 502 `upstream_error`, with `details.reason` in the words of `sofascore_scraper/web/upstream.py`
   (P21 #124). A Parquet export without `pyarrow` is `not_supported` (SC-2 #130).
 
 `describe errors` prints this table; a test asserts that every `PlatformError` subclass has a row.
@@ -938,7 +948,7 @@ class SyncResult:
     duration_seconds: float
 ```
 
-The block above is the target. The current stage, as built by P08 (PR #57, `src/services/sync.py` at
+The block above is the target. The current stage, as built by P08 (PR #57, `sofascore_scraper/services/sync.py` at
 `f286723`), carries today's web flow unchanged (season lists, schedules, details, CSV):
 
 ```python
@@ -976,17 +986,17 @@ class SyncResult:
   the pipeline (P12, P13), which also replace `mode` by `targets` and `phases`, and `counts`, `failed`,
   `stopped` and `duration_seconds` replace the fields above.
 - `ExportService` and `ExportSpec` do not exist. P08 added one function, `export_all_csv(ctx)` in
-  `src/services/export.py`, which returns the path of the file or None. It swallows and logs every error,
+  `sofascore_scraper/services/export.py`, which returns the path of the file or None. It swallows and logs every error,
   as the terminal menu's CSV step did, so an export error does not fail the job that called it: a full disk
   during the export phase ends a web job as Completed without a CSV (pinned in
   `tests/test_sync_service.py`). The class and the typed result come with EX-1, which also removes the
   export phase from `SyncService` (decision D9). EX-1 (#99) did both: `ExportService` exists (below), the
   phases of a sync are seasons, matches and details (`FULL_PHASES`, `DETAILS_PHASES = ("details",)`), and
-  `SyncSpec.export` is kept but not read (`src/services/sync.py:88-95`), because callers and stored job
+  `SyncSpec.export` is kept but not read (`sofascore_scraper/services/sync.py:88-95`), because callers and stored job
   specs still pass it; its removal was left to P13, which did not remove it. `export_all_csv(ctx)` survives
   as a forwarder for `MatchDataFetcher.convert_all_matches_to_csv` and has no caller in `src` or `main.py`
   since P19, which writes the CSV through `ExportService.write_legacy_csv`; only tests still use the name.
-  FX-15 (PR #155) removed both: `SyncSpec` has no `export` field (`src/services/sync.py:102-120` at
+  FX-15 (PR #155) removed both: `SyncSpec` has no `export` field (`sofascore_scraper/services/sync.py:102-120` at
   `b6caf2f`; a stored job spec is a dict and is not read back), `PHASE_WEIGHTS` has no `export` weight, and
   `export_all_csv` and the two `MatchDataFetcher` CSV forwarders are gone.
 - The service installs the request context itself (`cancel=handle.cancelled`,
@@ -999,7 +1009,7 @@ class SyncResult:
   `RefreshCounts(due, refreshed, changed, failed, skipped)` in refresh mode and None otherwise; the state is
   `partial` when a refresh failed. There is no `RefreshService` and no `phases` field yet, and
   `--refresh-legacy` is still the `REFRESH_LEGACY` environment variable that `main.py` sets.
-- `src/services/maintenance.py` exists since P10 with one method,
+- `sofascore_scraper/services/maintenance.py` exists since P10 with one method,
   `MaintenanceService(ctx).recheck_unavailable(league_id=None, *, include_confirmed=False) -> ResetCounts`
   (`matches`, `slices`, `scanned`), a typed wrapper of `MatchDataFetcher.reset_unavailable_markers`. It takes
   a league id, because there is no `Scope` type yet; `clear`, `migrate` and `rebuild_catalog` come with
@@ -1065,8 +1075,8 @@ class StatusService:
     def health(self) -> Health: ...          # bridge (stored snapshot), throttle, leases, live, last job, last success
     def summary(self) -> DataSummary: ...    # counts, coverage, disk use, by tournament
     def coverage(self, scope: Scope) -> CoverageReport: ...
-    def doctor(self, *, only=None, skip=None, live=False) -> DoctorReport: ...   # src/doctor.py run_checks/report
-    def diagnostics_bundle(self, dest: Path | None = None) -> Path: ...          # src/diagnostics.py (PR #24)
+    def doctor(self, *, only=None, skip=None, live=False) -> DoctorReport: ...   # sofascore_scraper/doctor.py run_checks/report
+    def diagnostics_bundle(self, dest: Path | None = None) -> Path: ...          # sofascore_scraper/diagnostics.py (PR #24)
 
 # services/follows.py
 class FollowsService:
@@ -1158,18 +1168,18 @@ class MaintenanceService:
   with stored details that no schedule lists counts as a match. `details` counts every event with a stored
   `/event` payload wherever its directory is (league or season directory, flat, `_no_tournament/`, combined
   file only), so it is always a subset of `matches`. `StatusService._match_counts`
-  (`src/services/status.py:242-257` at `9b03c64`) applies (a) as finished events plus one pass over the
+  (`sofascore_scraper/services/status.py:242-257` at `9b03c64`) applies (a) as finished events plus one pass over the
   unfinished events with details. RD-2 applies the same rule to the two match lists, so a list total and
   the dashboard agree. On the owner's data every count equals main's.
 - **The setting is read at call time.** `only_finished_setting()` reads the environment at each call
   (2.1, rule 3); P30 moves it to the Settings.
 - **Disk usage.** The walk is inside the Store (`Store.info(sizes=True)`), which has no cache of its own.
-  The cache is in the service (`_sizes`, `forget_sizes(store)`; `src/services/status.py:150-174`): one
+  The cache is in the service (`_sizes`, `forget_sizes(store)`; `sofascore_scraper/services/status.py:150-174`): one
   measurement per Store is kept for 60 s (`SIZES_MAX_AGE`) and is dropped at once when the catalog changes
   (its row counts or its newest `updated_at`), that is after a download or a clear. Changes the catalog does
   not see (a CSV export, a backup, files deleted by hand) show after at most a minute. If `Store.info`
   gets a cache of its own, this one goes. The per-league disk sizes of the terminal menu
-  (`league_stats(...)["disk"]` in `src/services/stats.py`) still walk the league directories, because
+  (`league_stats(...)["disk"]` in `sofascore_scraper/services/stats.py`) still walk the league directories, because
   `StoreInfo.bytes` has one number per top-level entry; eight file-system calls stay in the boundary
   baseline for them.
 - **Cost.** `summary()` takes about 1.9 ms on the owner's data with kept sizes (17 ms when the sizes are
@@ -1184,12 +1194,12 @@ class MaintenanceService:
   from `*_score_current` with 0 as default, tournament from `stage_name`, `match_date` as local ISO text).
   `EventQuery` joins its conditions with AND, so rule (a) runs as two disjoint queries, finished events and
   unfinished events with details, merged in the catalog's order (`_list_queries`, `_merged`;
-  `src/services/query.py:203-227`); an OR option on `EventQuery` would let the list page in SQL. Both lists
+  `sofascore_scraper/services/query.py:203-227`); an OR option on `EventQuery` would let the list page in SQL. Both lists
   are ordered by start time with ties broken by event id; the season list used to keep the order of the
   summary files, and ties on the kick-off time are common on real data. The date filter stays what it was,
   a substring of the local ISO text of `match_date`: the service narrows the query to a start-time range
   only when the text is an ISO prefix, and then keeps the substring test. `league_folder` comes from the
-  legacy detail directory when there is one and otherwise from `src/paths.league_dir_name(id, name)` with
+  legacy detail directory when there is one and otherwise from `sofascore_scraper/paths.league_dir_name(id, name)` with
   the configured or the catalog's tournament name, because a listing-only row or a v3 event has no path. A
   match with stored details shows the score and status of its stored payload. The export CSV is no longer a
   fallback (decision S14). On the owner's data all 738 rows and every total equal main's; only the order of
@@ -1203,20 +1213,20 @@ class MaintenanceService:
   newest list file of a league by modification time, whatever its name. `seasons_of` returns SofaScore's
   own season objects from the stored payload, because `SeasonRow` does not carry them. The has-matches
   check of `SeasonFetcher` is `has_matches` (stored schedule pages, or events known from a listing), and
-  `schedule_pages` gives the page count. `src/web/league_sports.sports_for` is the sport lookup that writes
+  `schedule_pages` gives the page count. `sofascore_scraper/web/league_sports.sports_for` is the sport lookup that writes
   nothing: `GET /api/leagues` no longer writes `config/league_sports.json`, so a sport learned from the data
   no longer reaches that file, the follows table or `config init --from-legacy` (a sport the user chose
   still wins). `league_sports.resolve_all` has no caller in `src` any more; two tests keep it until P21.
   FX-15 (PR #155) removed it; its tests read `sports_for`.
 - **Is the catalog current.** `open_store` does not fail when the catalog could not be synced, and a
   reader then sees a stale or empty catalog; for a need computation an empty catalog would mean "full" for
-  every match. Since ST-19 `Store.catalog_current` (`src/store/api.py:504-512`) says whether the catalog was
+  every match. Since ST-19 `Store.catalog_current` (`sofascore_scraper/store/api.py:504-512`) says whether the catalog was
   synced in this process and every hook has updated it since. No reader asks it yet. A reader that plans
   work (RD-3, P12) refuses to plan when it is False.
 - **Backup (ST-19).** `BackupService(store).create` writes today's zip (five scopes, config files at the
   root of the zip, `.env` only with `include_secrets=True`) through `Store.backup`; there is no `dest` and
   no `handle`. The caller passes the config files, because the path of the sport sidecar lives in
-  `src/web/league_sports.py`, and the caller holds the `writer` lease (the route through
+  `sofascore_scraper/web/league_sports.py`, and the caller holds the `writer` lease (the route through
   `JobStore.exclusive("backup")`). `verify`, `restore`, the format 2 and pruning are ST-24's.
 - **Clear (ST-19).** `MaintenanceService(store=...).clear(scope, confirm=True)` calls `Store.clear`, which
   takes `maintenance` itself when this process does not hold it and rebuilds the catalog under the same
@@ -1412,18 +1422,18 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
 
 - **Where follows live (FX-19).** The target block said that without a config file new follows are written
   to `leagues.txt`, and P21 built it so. Built: `FollowsService.add` always writes an `api` row of the
-  follows table, with or without a config file (`src/services/follows.py:278-295` at `b6caf2f`), so every
+  follows table, with or without a config file (`sofascore_scraper/services/follows.py:278-295` at `b6caf2f`), so every
   field of a follow added through the API, the web UI or `ssc follows add` stays editable. `config/leagues.txt`
   is a read-only legacy source: its rows are mirrored as origin `legacy`, `writable` is `["sport",
   "origin"]` (`:51-52`), and only `sport` can change. `PATCH {"origin": "api"}` moves such a row into the
-  table (`adopt`, `:349-372`; `FollowStore.adopt`, `src/store/follows.py:440`): the row keeps its fields and
+  table (`adopt`, `:349-372`; `FollowStore.adopt`, `sofascore_scraper/store/follows.py:440`): the row keeps its fields and
   position and becomes `api`, then the league leaves `leagues.txt` and its sport sidecar, and the next mirror
   does not bring it back, because `api` outranks `legacy`; other fields of the same request are written after
   the move. The move is explicit: no rule moves rows on its own, and there is no `ssc follows` command for it
   (only the PATCH). `config_file` no longer decides anything (`:219-226`; kept for callers). A follow added
   while `leagues.txt` names the same league is `follow_exists` (409). Removing a `legacy` follow removes it
   from the file (FX-13), so it no longer comes back with the next mirror. Since FX-13 the CLI's `follows
-  list|add|remove` go through the service (`src/cli/commands/follows.py:82-89`).
+  list|add|remove` go through the service (`sofascore_scraper/cli/commands/follows.py:82-89`).
 - **Search (FX-19).** `search(query, sport=, kinds=)` (`:399-444`) sends one request through the client, on
   the shared budget: tournaments alone ask `/search/unique-tournaments/{q}` (the 2.x endpoint), any other
   choice asks `/search/all?q=…&page=0`, whose answer types hits as `team`, `player` or `uniqueTournament`.
@@ -1434,7 +1444,7 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   component name `TournamentHit`, because the frontend imports it; a neutral `/search` could replace both
   in P30. One request searches the chosen kinds; the web editor searches one kind at a time (FX-14b), and a
   search across kinds as the user types is FX-20's.
-- **The sync reads the follows table (FX-13).** `sync_targets(ctx)` (`src/services/sync.py:168-190`) reads
+- **The sync reads the follows table (FX-13).** `sync_targets(ctx)` (`sofascore_scraper/services/sync.py:168-190`) reads
   the enabled tournament follows of every origin (`sync_tournaments`) after refreshing the mirror of
   `leagues.txt`, and each follow is downloaded with its season choice (`all`, `current`, `last:N`, ids); a
   run for one league (`league_id`, `--tournament`) keeps every season. When the Store cannot be read the
@@ -1443,23 +1453,23 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   an older spec keeps its shape. `mode="seasons"` reads the season lists only, without the freshness limit
   and without schedules or details. The job-log lines of the sync path carry `code` and `params` (G24 of
   `05-web-ui.md`).
-- **Team, player and match follows download (FX-19; owner decision of 2026-10-06).** `src/services/follow_sync.py`
+- **Team, player and match follows download (FX-19; owner decision of 2026-10-06).** `sofascore_scraper/services/follow_sync.py`
   (new). A sync without a target, `ssc sync`, the scheduler and `POST /jobs {"kind": "sync"}` also download
   every enabled team, player and event follow (`sync_others`), in the full mode only; `follows=[…]` takes
   `team:`, `player:` and `event:` ids (it answered 400 `unsupported` after FX-13). The rules of the follow
   sync are in 3.2. Their matches go through the fetch pipeline with the follows' selection (3.1). An
   unreadable list is a `FailedListing` of kind `team_events` or `player_events`, whose `league_id` holds the
-  team's or the player's id (`src/services/sync.py:214-227`; a separate field would have changed the job
+  team's or the player's id (`sofascore_scraper/services/sync.py:214-227`; a separate field would have changed the job
   records and the CLI output of every failed listing), and the job ends `partial`.
 - **Per-league delete (FX-19).** `MaintenanceService.clear_tournament(tournament_id, season_id=None,
-  confirm=True)` (`src/services/maintenance.py:106-119`) calls `Store.purge.tournament` (`01-storage.md`
+  confirm=True)` (`sofascore_scraper/services/maintenance.py:106-119`) calls `Store.purge.tournament` (`01-storage.md`
   9.3): one tournament's events in both layouts with their history, its schedules and, for the whole
   tournament, its season list; follows, the change log, the job history, backups, exports and the team and
   player directories stay. It holds `maintenance` like `clear` and rebuilds the catalog under the same
   lease. The `clear` job takes `tournament_id` and `season_id`, and `DELETE /follows/{id}?delete_data=true`
   starts that job (6). There is no CLI command for it.
-- **Connection state (FX-19).** The request layer reports the end of every request (`src/breaker.py:298-326`)
-  to `ConnectionState` (`src/bridge_health.py:247-306`): an answer (200 or 404) is success; 403, 429, 5xx,
+- **Connection state (FX-19).** The request layer reports the end of every request (`sofascore_scraper/breaker.py:298-326`)
+  to `ConnectionState` (`sofascore_scraper/bridge_health.py:247-306`): an answer (200 or 404) is success; 403, 429, 5xx,
   a timeout, a network or a parse error is failure; a request the breaker held back counts for neither.
   `state` is `never_tried` (no request has ended), `ok` (the last one was answered) or `failed`, with the
   last success and failure times, reason and HTTP status, and `last_check {at, ok, reason}` of the last
@@ -1468,26 +1478,26 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   because curl answers never reach the bridge. The state is per process: the web server does not see the
   requests of `ssc` commands or `ssc watch`.
 - **Export names (FX-19).** An export job writes `exports/<label>_<UTC date>_<id8>.<ext>`
-  (`src/services/data_jobs.py:157-174`): the label is the tournament's name (from the follows table, else
+  (`sofascore_scraper/services/data_jobs.py:157-174`): the label is the tournament's name (from the follows table, else
   the catalog) when the filter names one tournament, else the dataset, as a lower-case ASCII slug of at most
   40 characters, with `-raw` for a raw export and `-wide` for the 2.x wide CSV; `id8` is the last 8 letters
   or digits of the job id. For example `premier-league_2026-10-06_x7k2m9qa.csv`. Jobs before FX-19 keep
   `<job id>.<ext>`. `ssc export` still names a dataset `exports/<dataset>_<epoch>.<format>`
-  (`src/cli/commands/export.py:166`); `GET /exports` lists those files too (6).
-- **Odds and season data (P28).** `OwnerDataService` (`src/services/owner_data.py`, new) reads odds
+  (`sofascore_scraper/cli/commands/export.py:166`); `GET /exports` lists those files too (6).
+- **Odds and season data (P28).** `OwnerDataService` (`sofascore_scraper/services/owner_data.py`, new) reads odds
   snapshot by snapshot from the slice history (`store.history.snapshots`), falling back to the stored
   payload of a slice without history, and maps them to the schema's `Odds` records; it reads the season
   slices and the standings rows. `ExportService` has two more normalized datasets, `odds` (one row per
   outcome per snapshot) and `standings` (the seasons of the matched events), reachable from `ssc export
   --dataset` and the v1 export job. Their models are in `models.PENDING_MODELS`, not in `MODELS`
   (`04-schema-v1.md` section 4, FX-21).
-- **Counts and the selection (P27, FX-13).** `StatusService.season_counts` (FX-13, `src/services/status.py:458`)
+- **Counts and the selection (P27, FX-13).** `StatusService.season_counts` (FX-13, `sofascore_scraper/services/status.py:458`)
   gives per season `events`, `finished`, `details`, `complete`, `completion_rate`, `missing` per slice and
   the schedule's `fetched_at`. It and `summary`'s per-tournament coverage count the missing slices with
   `planning.missing_slice_keys` without a Store, that is with the configured selection only
   (`:430`, `:481`): a follow's own selection in the follows table is not applied there, and with a narrower
   selection those counts can call a match incomplete while the planner needs `none`. The same holds for
-  `slices_summary` and the `not_requested` placeholders of `/events/{id}/slices` (`src/services/query.py:496-536`,
+  `slices_summary` and the `not_requested` placeholders of `/events/{id}/slices` (`sofascore_scraper/services/query.py:496-536`,
   the registry's default selection) and the legacy completeness (`required_detail_keys`, `:129-140`). P30, the
   next owner of `query.py`, passes `planning.configured_policy(store)` there; the placeholders of slices
   with subs (odds) then need `spec.sub_keys(policy.provider)`.
@@ -1564,15 +1574,15 @@ class JobHandle:                                           # what a service sees
     def publish(self, fields: Mapping[str, Any]) -> None   # job fields that JobProgress does not carry
 ```
 
-The block is the job model and the job manager as built by P07 (PR #35) and P11 (PR #69; `src/jobs/model.py`
-and `src/jobs/manager.py` at `e0bae0c`). The first version of this section had `submit` as the only entry of
+The block is the job model and the job manager as built by P07 (PR #35) and P11 (PR #69; `sofascore_scraper/jobs/model.py`
+and `sofascore_scraper/jobs/manager.py` at `e0bae0c`). The first version of this section had `submit` as the only entry of
 the manager, a handle without `publish`, and neither `JobOutcome` nor `JobNotActive`; "As built" at the end
 of the section says why each differs. Both faces use the manager since P11: the web job of
 `POST /api/fetch`, `POST /api/v1/jobs` (section 6), and the headless downloads (`--headless --update-all`,
 kind `sync`) and refreshes (`--refresh-only`, kind `refresh`) of `main.py`. A headless run therefore appears
 in the job history (`/api/jobs`) with its progress, log lines and result. At `b3cb819` the users of the
 manager are `ssc sync`, `fetch` and `refresh` (P19 #119; the legacy flags of `main.py` are translated to
-them), the web download job of the legacy routes (`src/web/api/legacy.py`), `POST /api/v1/jobs` with the
+them), the web download job of the legacy routes (`sofascore_scraper/web/api/legacy.py`), `POST /api/v1/jobs` with the
 kinds `sync`, `fetch`, `refresh`, `export`, `backup`, `clear`, `rebuild` and a `restore` check (P21 #126),
 and the in-app scheduler (P29 #128). The other CLI commands that write are not jobs: `ssc export` takes no
 lease, `ssc backup create` takes `writer` itself (purpose `op:backup`), `data recheck-unavailable` takes
@@ -1582,7 +1592,7 @@ Store or the service, which take their lease (2.7).
 Mechanics:
 
 - **Storage.** The `jobs` and `job_events` tables of `DATA_DIR/.meta/state.db` (`01-storage.md` 3.3),
-  written by the job store (`src/store/jobs.py`). The manager stands on a job store and holds no state of
+  written by the job store (`sofascore_scraper/store/jobs.py`). The manager stands on a job store and holds no state of
   its own: the context builds it on `JobStore.for_store(store)` (2.3; since ST-11, PR #75, the same object
   is `store.jobs`), the web on its process-wide job store. Today's columns are kept, so old rows stay
   readable; `.meta/jobs.db` is imported once and left in place. Migration 0002 (P11) added the columns
@@ -1593,7 +1603,7 @@ Mechanics:
   `completed`, the 2.x name, and read as `succeeded`; `partial` is the only new value in the column. A
   `completed` row whose `circuit_breaker_triggered` column is set (a row from before P11) reads as `partial`
   (the column, not the text, because the text is localised), and a status text that is not recognised reads
-  as `failed`. `Origin` and `ErrorInfo` are defined in `src/jobs/model.py` since P07 (PR #35), `JobEvent`
+  as `failed`. `Origin` and `ErrorInfo` are defined in `sofascore_scraper/jobs/model.py` since P07 (PR #35), `JobEvent`
   since P11.
 - **Leases** are the Store's (`01-storage.md` 6.1), taken with `store.lease(name)`:
 
@@ -1652,19 +1662,19 @@ Mechanics:
   could crash the process; #88 found it while making the tests join the job thread before teardown (4 of
   100 runs crashed before), and a stress run crashed 14 of 60 processes on main. As built since #93:
   `JobManager.run` wraps its last store accesses (the final row, the `job.finished` stream event, the
-  read-back) in the job store's private `_job_finishing()` block (`src/jobs/manager.py:358-375`,
-  `src/store/jobs.py:417-448` at `9b03c64`), and the `writer` lease is released when the block ends. While
+  read-back) in the job store's private `_job_finishing()` block (`sofascore_scraper/jobs/manager.py:358-375`,
+  `sofascore_scraper/store/jobs.py:417-448` at `9b03c64`), and the `writer` lease is released when the block ends. While
   the block lasts, `rebind` and `exclusive` raise `JobRunningError` (409 `job_running`), `JobStore.close`
   waits for it (at most 30 s, then it logs a warning and closes), and `create_running` on the same job store
   waits instead of reusing the lease that is still held. Another process can see the row terminal while the
   lease is held a few milliseconds longer; that window existed between the commit and the release before.
   A direct caller of `update(finished=True)` outside the block releases the lease in the update, as before.
   Not covered: `Store.close()` closes its state database directly and does not wait for a finishing job of
-  `store.jobs` (`src/store/api.py:655-666`); one wait through a small public `JobStore` helper closes that
+  `store.jobs` (`sofascore_scraper/store/api.py:655-666`); one wait through a small public `JobStore` helper closes that
   last path (plan item FX-12). Closing a Store while a job is in the middle of its run is not covered
   either.
 - **Liveness.** A job is running if its row says so **and** the `writer` lease is held. A running row whose
-  lease is free is marked `interrupted` by whoever notices (`reap_stale`, `src/store/jobs.py:449` at
+  lease is free is marked `interrupted` by whoever notices (`reap_stale`, `sofascore_scraper/store/jobs.py:449` at
   `e0bae0c`): when a job store is opened or rebound, when a job is created (under the lease) and whenever
   the history is read (`get`, `list`, `active`, `cancel`). As long as another process holds `writer`, no row
   is touched, so starting a second server or a CLI run no longer marks the first one's running job
@@ -1684,7 +1694,7 @@ Mechanics:
   way prints `Program terminated by user.`, as after Ctrl+C, without the summary line, and exits with 0
   (`main.py:248-251`). The progress write of the job store used to write `cancel_requested` from its
   in-memory copy and could overwrite a request of another process; it now writes the larger of the row and
-  the copy (`src/store/jobs.py:802`).
+  the copy (`sofascore_scraper/store/jobs.py:802`).
 - **Progress and events.** `JobProgress` publishes into the row (as today), and the handle derives the job's
   events from two successive progress snapshots: every phase change, log line, failed item and breaker stop
   is appended to `job_events`, progress events at most two per second (the last pending one is written by
@@ -1715,7 +1725,7 @@ Mechanics:
   row is written after the lease is taken. The scheduler did not change that (P29 #128): a due task either
   starts, its row written after the lease is taken, or is skipped and logged, so `queued` exists in the
   model and is written by nothing; a queued row would also contradict "skipped and logged".
-- **The in-app scheduler (P29 #128; `src/jobs/scheduler.py`).** It runs inside `ssc serve` and is off by
+- **The in-app scheduler (P29 #128; `sofascore_scraper/jobs/scheduler.py`).** It runs inside `ssc serve` and is off by
   default: `--scheduler` or `[schedule] enabled = true` turns it on (either one is enough), and
   `--no-scheduler` turns the setting off for one run. It does not run with `--dev` (the reloading server
   runs the app in a child process): `--scheduler --dev` is a usage error, and with the setting alone `--dev`
@@ -1735,7 +1745,7 @@ Mechanics:
   `cron`, `options`, `next_run_at_utc`, `last_run_at_utc`, `last_job_id`, `last_result`) and
   `capabilities.scheduler`; both describe the scheduler of the answering process only, so `ssc status` and
   any other process see it as off.
-  Changed since (`src/jobs/scheduler.py` at `b6caf2f`): `ssc config validate` runs the same task check and
+  Changed since (`sofascore_scraper/jobs/scheduler.py` at `b6caf2f`): `ssc config validate` runs the same task check and
   fails with `config_invalid` (exit 2) on a task `serve` would refuse, and `describe config` lists
   `schedule_runs` (FX-13). An `every` task counts from its last run in the job history, not from the start
   of the server (FX-15; a delegated decision of 2026-10-03; `:31-35`, `_anchor` at `:515`): the last run is the
@@ -1755,12 +1765,12 @@ Mechanics:
   with the breaker's error code in `error`. A job that finishes after a cancel request is stored as
   `cancelled`, including the case where its body returned success while the status was still Running. A
   final status the job store does not recognise is stored as `failed` with a warning instead of verbatim
-  (`src/store/jobs.py:839-858`). At `0aa73b4` a breaker stop was shown as "Completed" with a text
+  (`sofascore_scraper/store/jobs.py:839-858`). At `0aa73b4` a breaker stop was shown as "Completed" with a text
   (`fetch_job.py:223-226`); the legacy API and the live mirror still show a `partial` job as `completed` /
   `Completed`, because the goldens of G-04 pin those shapes.
 - **Retention.** When a job is created, finished job rows beyond the newest 500 are removed, with their
   events; each job keeps its newest 2,000 events (`JOB_HISTORY_LIMIT`, `JOB_EVENTS_LIMIT`,
-  `src/store/jobs.py:66-67`). The events of a job are pruned at every hundredth event, so a job can briefly
+  `sofascore_scraper/store/jobs.py:66-67`). The events of a job are pruned at every hundredth event, so a job can briefly
   hold up to 99 more.
 - **Ids.** New jobs get a 26-character sortable id (a ULID: 48 bits of time, 80 random bits, Crockford
   base32; `model.new_job_id`) instead of a UUID; ids made in the same millisecond of one process still
@@ -1781,26 +1791,26 @@ Mechanics:
   live card. The web adapter wraps the handle only to print the console line of the CSV phase
   (`_ConsoleHandle`); EX-1 removes it with that phase. EX-1 (#99) did: the last job-log line of a web
   download is `Background update completed.`, and the module state behind these routes (the job store, the
-  live mirror) is in `src/web/deps.py`, created at the first request, not at import (P21 #127).
+  live mirror) is in `sofascore_scraper/web/deps.py`, created at the first request, not at import (P21 #127).
 - **The command line.** `main.py` submits inline with origin `cli`
   (`ctx.jobs.submit(..., background=False)`, `main.py:412`). It catches the job store's conflict and
   re-raises the `LeaseHeld` behind it, so a refused lease still prints the holder and exits with 6. Its exit
   codes are today's: a breaker stop exits 2, and `partial` has no exit code of its own until P19 (4.5).
-  `DetachedHandle` of `src/services/sync.py` is no longer used by `main.py`. For P19:
+  `DetachedHandle` of `sofascore_scraper/services/sync.py` is no longer used by `main.py`. For P19:
   `ssc jobs list|show|cancel|tail` are `ctx.jobs.list`, `get`, `cancel` and `events(follow=True)`, and
   `--wait` is `submit(wait_for_lease=)`.
   As built by P19 (#119): `main.py` no longer submits anything; its flags run `ssc sync`, `fetch` or
   `refresh`, which call `ctx.jobs.start(..., origin=cli, wait_for_lease=<--wait>, lease_purpose=<the
-  command's name>)` and then `run` in the caller's thread (`src/cli/commands/sync.py:321-355`), so the
+  command's name>)` and then `run` in the caller's thread (`sofascore_scraper/cli/commands/sync.py:321-355`), so the
   purposes are `sync`, `fetch` and `refresh` instead of P10's `headless`. The exit code comes from the typed
   result: 3 for `partial` without a breaker stop, 4 for a breaker stop, 5 for a storage error, 6 for a held
   lease, 130 or 143 for a signal and 130 for a cancel from another process (4.5). `ssc jobs list|show|
   cancel|tail` are built as planned; `jobs list` filters by `--kind` and `--state`, and `jobs tail` takes
   `--after` and `--follow`.
 - **Job rows in the diagnostics bundle (PR #71).** Since migration 0002 a job row holds the host name of the
-  process that ran the job, and `src/diagnostics.py` read the history with `SELECT *`, so every bundle built
+  process that ran the job, and `sofascore_scraper/diagnostics.py` read the history with `SELECT *`, so every bundle built
   after a job carried it. The bundle now selects the job columns by name (`_JOB_COLUMNS`,
-  `src/diagnostics.py:63-69` at `e0bae0c`); a column added to the table later is not in the bundle unless it
+  `sofascore_scraper/diagnostics.py:63-69` at `e0bae0c`); a column added to the table later is not in the bundle unless it
   is added to that list, and a column the file does not have is skipped, so the 2.x `jobs.db` is read as
   before. Kept: the 18 columns of 2.x, `kind`, `created_at` and `heartbeat_at`. The origin is given as
   {face, pid, same_host} without the host name (`same_host` says whether the job was started on the machine
@@ -1812,7 +1822,7 @@ Mechanics:
   left: `log_tail.txt` in the bundle was not masked for the host name, so a `LeaseHeld` text that a caller
   logs carried the name. FX-10 (PR #84) closed it: `log_tail_text()` applies the same masking after the
   secret redaction and the home-directory scrub, for this machine's name and the host names recorded in the
-  listed job rows (`_log_hosts`, `src/diagnostics.py:288-328` at `9b03c64`); if the job history cannot be
+  listed job rows (`_log_hosts`, `sofascore_scraper/diagnostics.py:288-328` at `9b03c64`); if the job history cannot be
   read, the tail is masked for this machine's name alone. The order matters: with the host names first, a
   home directory named like the machine would no longer become `~`. `GET /api/logs` (the log view of the
   web UI) is not masked: it shows the log on the machine itself.
@@ -1820,7 +1830,7 @@ Mechanics:
 As built (P11), where the first version of this section differed:
 
 - **`start` and `run` next to `submit`**, for the web's route and thread, as above.
-- **`JobHandle.publish(fields)`.** The Protocol in `src/services/sync.py` needs it: the flow writes
+- **`JobHandle.publish(fields)`.** The Protocol in `sofascore_scraper/services/sync.py` needs it: the flow writes
   `schedule_empty_seasons` to the job record in the middle of a run and `JobProgress` does not carry it.
   `log(message, **fields)` is as designed; the services do not pass `code=` yet (2.1).
 - **More arguments.** `phases`, `payload`, `lease_purpose`, `on_change` and `on_log` on `submit` and `start`
@@ -1848,7 +1858,7 @@ Not built yet (with the owning item where the plan names one):
   still creates a job database under the data directory even when the job store in use lives elsewhere. P21
   moves the creation out of import time. Done by P21 (#127): `deps.job_store()` and `deps.config_manager()`
   are created at the first request, and `tests/test_web_deps.py` pins that importing the app creates
-  neither the league file nor the job store. Importing `src.match_data_fetcher` still creates both
+  neither the league file nor the job store. Importing `sofascore_scraper.match_data_fetcher` still creates both
   (`03-implementation-plan.md` section 15).
 
 ---
@@ -1857,7 +1867,7 @@ Not built yet (with the owning item where the plan names one):
 
 ### 3.1 Slice registry
 
-`src/sports.py` already has the table and the single selection point (`sports.py:170-218`, whose docstring
+`sofascore_scraper/sports.py` already has the table and the single selection point (`sports.py:170-218`, whose docstring
 reserves the user setting). It is extended, not replaced:
 
 ```python
@@ -1896,7 +1906,7 @@ Non-match data are slices with another owner, for example `standings` with subs 
 owner, not per event; the owner set is derived from the followed seasons and the teams seen in their events.
 The exact list and their `max_age` values are wave 5 work; the mechanism lands with the pipeline.
 
-As built (P12, PR #106; per-sport slices, PR #121; `src/sports.py:383-457` at `b3cb819`): `DetailSlice`
+As built (P12, PR #106; per-sport slices, PR #121; `sofascore_scraper/sports.py:383-457` at `b3cb819`): `DetailSlice`
 became `SliceSpec` and stays an alias. The fields `owner`, `subs`, `phases`, `group`, `keep_history` and
 `max_age` exist and are checked when a row is built; every registered row is still an `event` slice of group
 `core` without subs, history or `max_age` (owner slices, odds and the other groups are P28). Where the block
@@ -1929,10 +1939,10 @@ above differs:
   "Maç detay dilimleri, spor başına" of `docs/all-sports/README.md`; the proposals for football, basketball
   and tennis wait for the live validation run (section 11).
 
-As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`src/sports.py` and
-`src/services/planning.py` at `b6caf2f`). Where the text above differs:
+As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`sofascore_scraper/sports.py` and
+`sofascore_scraper/services/planning.py` at `b6caf2f`). Where the text above differs:
 
-- **The selection is resolved per event, not per follow** (`SelectionPolicy`, `src/services/planning.py:104-253`).
+- **The selection is resolved per event, not per follow** (`SelectionPolicy`, `sofascore_scraper/services/planning.py:104-253`).
   An event can be covered by an event, a tournament, a team or a player follow, or by none, and the narrowest
   follow that gives a selection wins: the event follow, the tournament follow, the home team's, the away
   team's, and last the player follow whose list brought the match (`via_events`, `with_follow_events`,
@@ -1940,7 +1950,7 @@ As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`
   leaves the sport's selection. `for_owner` resolves the selection of a non-match owner: its own follow (team,
   player), else the follow of its tournament (season), then the sport and the defaults; the sport owner takes
   the sport's selection only (`:208-222`).
-- **The chain** (`sports.resolve_selection`, `src/sports.py:712-734`): a follow's `{"include": [...]}` (or a
+- **The chain** (`sports.resolve_selection`, `sofascore_scraper/sports.py:712-734`): a follow's `{"include": [...]}` (or a
   plain list) is the base and nothing else applies; otherwise `[defaults] slices` is the base, then
   `[slices.<sport>]` enable/disable, then the follow's enable/disable, each later layer overriding the earlier
   one, and inside one layer disable wins. The arrow notation above left the include case open.
@@ -1962,18 +1972,18 @@ As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`
   Narrowing them waits for the live validation, which records which slices exist before kick-off; then the
   planner and the pipeline skip them per phase, and the need row "not started or void, no pre-match slice
   selected" of 3.2 can become real.
-- **Odds (P28).** `ODDS_SLICES` (`src/sports.py:556-570`): `odds_featured`, `odds_all`, `odds_changes` and
+- **Odds (P28).** `ODDS_SLICES` (`sofascore_scraper/sports.py:556-570`): `odds_featured`, `odds_all`, `odds_changes` and
   `winning_odds`, owner `event`, group `odds`, `subs="provider"`, `keep_history=True`, `max_age` 30 minutes,
   `default_enabled=False`, `required=False`; `winning_odds` is `experimental` (its only sample is a 404). The
   sub is `[client] odds_provider` (default 1; `DEFAULT_ODDS_PROVIDER`, `:385`). "Pre-match odds are refetched
   on each sync until kick-off" is built with a window: a not-started event's odds are read only within 7 days
-  before kick-off (`PREMATCH_WINDOW_S`, `src/services/planning.py:402`) when never read or older than
+  before kick-off (`PREMATCH_WINDOW_S`, `sofascore_scraper/services/planning.py:402`) when never read or older than
   `max_age`, and once more after the event ended when the last read was before kick-off; live and void
   events never. Without the window a season's whole fixture list would be requested on every sync, because
   the empty answer of an unfinished event is not counted. Each odds outcome records its provider in
   `meta.provider_id`; the country goes into `meta.country` only when the user sets `[client] odds_country`
   (FX-15; a delegated decision of 2026-10-06: opt-in, never derived from the machine; 4.3).
-- **Non-match slices (P28).** `OWNER_SLICES` (`src/sports.py:576-608`), all `default_enabled=False`,
+- **Non-match slices (P28).** `OWNER_SLICES` (`sofascore_scraper/sports.py:576-608`), all `default_enabled=False`,
   `required=False`, each with a `max_age`: season `standings` (subs `total` and `home`; there is no `away`,
   which the catalog does not have), `season_info`, `cuptrees`, `top_players` and `top_teams` (football),
   `season_odds` (football, provider sub, history, experimental); team `team_rankings` (tennis); player
@@ -2020,7 +2030,7 @@ Need rules for an event (today's `match_data_fetcher.py:830-843` generalised):
 event (`match_data_fetcher.py:45-49`, `:664-717`). Empty answers on a non-terminal event are recorded but do
 not count (`count_empties=False` in the Store call).
 
-As built (P12, PR #106; P13, PR #113; ST-27, PR #129; `src/services/planning.py` at `b3cb819`):
+As built (P12, PR #106; P13, PR #113; ST-27, PR #129; `sofascore_scraper/services/planning.py` at `b3cb819`):
 
 - `compute_need(state, selection, policy, *, threshold, layout)` (`:163-187`) takes no `now`, because
   `RefreshPolicy` carries it; `threshold` and `layout` are keywords, as in RD-3's `detail_needs`. `WorkItem`
@@ -2054,7 +2064,7 @@ As built (P12, PR #106; P13, PR #113; ST-27, PR #129; `src/services/planning.py`
   (3.3); owner items are not built (P28). `MatchDataFetcher.refresh_due_ids` re-sorts the refresh list by
   legacy path, so "stale first" holds for the planner's list, not for that face.
 
-As built by P28 (PR #140) and FX-19 (PR #156) (`src/services/planning.py` and `src/services/follow_sync.py`
+As built by P28 (PR #140) and FX-19 (PR #156) (`sofascore_scraper/services/planning.py` and `sofascore_scraper/services/follow_sync.py`
 at `b6caf2f`):
 
 - **Odds in the event rules.** `compute_need` returns `refill` for an event whose odds are due by the rule
@@ -2076,13 +2086,13 @@ at `b6caf2f`):
   page) and `/team/{id}/events/last/{n}` backwards from `n = 0`; a player follow only
   `/player/{id}/events/last/{n}` (the catalog has no `next` page for players, so a player's upcoming matches
   are not read); an event follow is its match. The follow's `seasons` value is a window (`window_of`,
-  `src/services/follow_sync.py:104-115`): `current` the matches that started in the last 365 days,
+  `sofascore_scraper/services/follow_sync.py:104-115`): `current` the matches that started in the last 365 days,
   `last:N` the last N × 365 days, `all` up to `MAX_LAST_PAGES` = 5 pages back (`:76`), season ids only the
   matches of those seasons. Reading back stops at `hasNextPage: false` or a 404, at the page limit, or when a
   page's oldest match is older than the window; upcoming matches are not cut by the time window. The lists
   are not stored (the Store has no team or player schedule slice), so they are read again on every sync: at
   least 2 requests per team and 1 per player, and a team with `all` up to 6 list requests plus its matches.
-  The need is the planner's `compute_need` with three more rules (`follow_need`, `src/services/follow_sync.py:228-242`): a match the list shows as
+  The need is the planner's `compute_need` with three more rules (`follow_need`, `sofascore_scraper/services/follow_sync.py:228-242`): a match the list shows as
   ended that the catalog does not hold as ended is `full` (a team's list gives no `stale` mark); an unknown
   match that has not ended is read with its `/event` only (one request, no slices), so it becomes visible
   and is downloaded once a later list shows it ended; an event follow whose stored match should have started
@@ -2141,7 +2151,7 @@ What unification settles (each line is a deliberate behaviour change against one
   (`season_fetcher.py:63-67`, `match_fetcher.py:480-482`).
 - The job no longer exports CSV at the end (`fetch_job.py:213-218`); export is on demand (decision D9).
 
-As built (P13, PR #113; P14, PR #116; P15, PR #117; ST-27, PR #129; `src/services/pipeline.py` at
+As built (P13, PR #113; P14, PR #116; P15, PR #117; ST-27, PR #129; `sofascore_scraper/services/pipeline.py` at
 `b3cb819`): one pipeline replaces the async and the sync detail paths, and every entry point runs it: league
 and season downloads, matches picked by id, the single-match fetch, refills and `--refresh-only`.
 
@@ -2164,7 +2174,7 @@ and season downloads, matches picked by id, the single-match fetch, refills and 
 - `change.recorded` is appended to the `change` stream by downloads and refreshes since P13 (before, only
   by the live service).
 - Listing items (P14): `planning.season_list_item(tid)` and `schedule_item(tid, sid)`. The pipeline hands
-  every `listing` item to its `listing` handler, `ListingFetcher` of `src/services/listing.py`, with the run's
+  every `listing` item to its `listing` handler, `ListingFetcher` of `sofascore_scraper/services/listing.py`, with the run's
   session and writer. The schedule strategy moved there from `match_fetcher.py`. A listing result is `ok`,
   `failed` (the request reason, `not_found`, `parse` or `storage`) or `skipped` (`breaker`, or `fresh`, 3.5);
   a failed listing makes the job `partial` and is listed in `SyncResult.failed_listings`. Follow-up `full` or
@@ -2227,7 +2237,7 @@ and season downloads, matches picked by id, the single-match fetch, refills and 
 - Running the same command twice in a row performs zero requests the second time, except listings past
   their TTL and provisional events that are due. A golden test asserts this.
 
-As built (P13, PR #113; P14, PR #116; ST-27, PR #129; `src/services/listing.py:109-112` at `b3cb819`):
+As built (P13, PR #113; P14, PR #116; ST-27, PR #129; `sofascore_scraper/services/listing.py:109-112` at `b3cb819`):
 
 - Only round pages carry `complete`. Event pages carry `{filtered: true}`, which since ST-27 means "a page
   of the de-duplicated event list", not "finished matches only": they are stored with every match on them.
@@ -2263,7 +2273,7 @@ is safe to repeat; exit codes are part of the contract.
 | `ssc export` | write a dataset in an open format | `--dataset`, `--format jsonl\|csv\|parquet\|sqlite\|json`, `--schema normalized\|raw`, `--out PATH\|-`, filters `--sport --tournament --season --from --to --status` |
 | `ssc serve` | HTTP API and web UI (no live service) | `--host`, `--port`, `--allowed-hosts`, `--allow-any-host`, `--scheduler`, `--dev` |
 | `ssc status` | data summary, health, leases, last job, live state | `--check` (exit code only), `--coverage` |
-| `ssc doctor` | environment check (`src/doctor.py`) | `--strict`, `--live`, `--only`, `--skip` |
+| `ssc doctor` | environment check (`sofascore_scraper/doctor.py`) | `--strict`, `--live`, `--only`, `--skip` |
 | `ssc describe [sports\|slices\|commands\|schemas\|config\|errors\|exit-codes]` | machine-readable self-description for agents | always JSON |
 | `ssc diagnostics` | write the diagnostics bundle | `--out PATH` |
 | `ssc migrate` | convert the old layout (Store) | `--dry-run [--exact]`, `--tournament ID`, `--limit N`, `--delete-legacy`, `--purge-derived`, `--yes` |
@@ -2276,10 +2286,10 @@ is safe to repeat; exit codes are part of the contract.
 | `ssc version` | version, schema versions | |
 
 `describe` is generated from the argparse tree, the slice registry, the error table and the response models,
-so it cannot drift from the implementation. Each command is one module under `src/cli/commands/` that
+so it cannot drift from the implementation. Each command is one module under `sofascore_scraper/cli/commands/` that
 registers itself, so a PR that adds a command adds a file and does not edit a shared one.
 
-As built so far (P18, PR #65; `src/cli/` at `f286723`). The entry point is `python -m src.cli.main <command>`,
+As built so far (P18, PR #65; `sofascore_scraper/cli/` at `f286723`). The entry point is `python -m sofascore_scraper.cli.main <command>`,
 or `ssc <command>` after `pip install -e .`; only an editable install is supported, because the version, the
 locale files and the web UI build are read from the project folder. `main.py` is untouched until P19. The
 commands that exist are `version`, `doctor`, `describe`, `config show|validate|init|path`, `diagnostics`
@@ -2293,7 +2303,7 @@ and, since P22 (PR #73), `events`, and since P23 (PR #91), `watch`.
   file's. The Store does not export its layout, catalog and state versions from its root yet. The version
   of the data schema is not printed either: `schema.SCHEMA_VERSION` exists since SC-1 (PR #72) and is not
   wired, and `describe schemas` does not include `schema.describe()` (the JSON Schema of the normalized
-  records). `src/cli/commands/meta.py` was not owned by SC-1; P19 wires both.
+  records). `sofascore_scraper/cli/commands/meta.py` was not owned by SC-1; P19 wires both.
 - `doctor` reads `.env` and the environment, as `main.py --doctor` does, not the config file. `ssc doctor`
   passes the effective request rate (config file and `--rate` included) to a new check, `budget`, which
   warns when the budget is above the default or off. That check runs only in the new CLI
@@ -2304,13 +2314,13 @@ and, since P22 (PR #73), `events`, and since P23 (PR #91), `watch`.
   and P27. `describe` has no topic for the watch sources, because `tests/test_cli_describe.py` pins the
   topic list: P23 added the key `live_sources` to `describe config` instead (name, default, available,
   opt_in, description and, for `direct`, the warning; `describe_live_sources`,
-  `src/cli/commands/meta.py:217-232` at `9b03c64`). Only `poll` is available today; P24 and P31 update its
+  `sofascore_scraper/cli/commands/meta.py:217-232` at `9b03c64`). Only `poll` is available today; P24 and P31 update its
   `available` list together with `AVAILABLE_SOURCES` of the supervisor. The `--source` help text carries the
   four warnings of 8.3.
 - `--version`, `version`, `--help` and `doctor` run with only the standard library. A command that needs a
   missing package ends with `internal` and a pointer to `doctor`.
 - The `--help` description names the sports of the registry.
-- `events` (P22, PR #73; `src/cli/commands/events.py` at `e0bae0c`) reads the stream log with the options of
+- `events` (P22, PR #73; `sofascore_scraper/cli/commands/events.py` at `e0bae0c`) reads the stream log with the options of
   the table: `--stream` (repeatable), `--after SEQ`, `--follow`, `--type` (repeatable; shell patterns such
   as `live.*`), `--event` (repeatable) and `--limit N`. It opens the Store read-only, takes no lease and
   writes no cursor and no event, so it can run next to a download or a watcher (opening a Store brings the
@@ -2327,9 +2337,9 @@ and, since P22 (PR #73), `events`, and since P23 (PR #91), `watch`.
   error in the middle of a stream is printed as the error envelope, which has no `type` field (P19 gives the
   output module that path, for `jobs tail` and `watch --stdout` too). `ssc events | head -1` exits with 1 on
   the closed pipe, without a traceback: the CLI's general handling of a closed stdout, not changed by P22.
-- `diagnostics` writes the bundle of `src/diagnostics.py`. What the bundle takes from a job row is in 2.8
+- `diagnostics` writes the bundle of `sofascore_scraper/diagnostics.py`. What the bundle takes from a job row is in 2.8
   (PR #71); how it shows a webhook address is in 4.3 (PR #73).
-- `watch` (P23, PR #91; `src/cli/commands/watch.py` at `9b03c64`) runs the live service in the foreground
+- `watch` (P23, PR #91; `sofascore_scraper/cli/commands/watch.py` at `9b03c64`) runs the live service in the foreground
   (section 8) with the options `--sport` (repeatable), `--event ID` and `--tournament ID` (repeatable; both
   need `--sport` and replace the follows), `--source page|direct|poll`, `--stdout` and `--hours H`. The
   table's `--for DURATION` is `--hours` as built. Without `--event` and `--tournament` it watches the follows
@@ -2348,7 +2358,7 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   `--dry-run`. Not built: `--follow NAME…`, `--only listing,non-match,refresh`, `--slices`, `--force` and
   `--limit N`. The download still reads the leagues from the configuration (`ConfigManager.get_leagues()`),
   not from the follows table (FX-13). There is no command that fetches season lists alone.
-  At `b6caf2f` (`src/cli/commands/sync.py:88-90`): the sync reads the follows table (FX-13; 2.7);
+  At `b6caf2f` (`sofascore_scraper/cli/commands/sync.py:88-90`): the sync reads the follows table (FX-13; 2.7);
   `--only seasons` reads the season lists alone, without the freshness limit (FX-13), next to `--only events`;
   `--follow KIND:ID` (repeatable; `tournament`, `team`, `player`, `event`) syncs named follows, not with
   `--tournament` or `--only events` (exit 2), and `--dry-run` counts the team, player and event follows
@@ -2414,7 +2424,7 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
 - `version` prints the application version, the CLI envelope and config schema versions, the data schema
   version and the Store's layout, catalog and state versions; `describe schemas` includes the JSON Schema
   of the normalized records (P19). The P28 models are not in it yet (`models.PENDING_MODELS`; FX-21).
-- `doctor` has a `config` check since FX-15 (`check_config`, `src/doctor.py:597-634` at `b6caf2f`): it finds the file the
+- `doctor` has a `config` check since FX-15 (`check_config`, `sofascore_scraper/doctor.py:597-634` at `b6caf2f`): it finds the file the
   app would read (`--config`, `SOFASCORE_CONFIG`, `./sofascore.toml`, `CONFIG_DIR/sofascore.toml`), loads
   it with the loader inside the check (the doctor stays stdlib-only at import) and probes the
   `storage.data_dir` and `log.dir` it names. Codes: `config_ok`, `config_none`, `config_invalid` (a broken
@@ -2422,7 +2432,7 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   packages the loader needs are missing).
 - `config init --from-legacy` reads `leagues.txt` itself (`config_manager.read_league_file`) since FX-15; it
   no longer builds `ConfigManager`, so it creates no `config/leagues.txt` and mirrors nothing into
-  `state.db` (`src/cli/commands/meta.py:612-634`).
+  `state.db` (`sofascore_scraper/cli/commands/meta.py:612-634`).
 - `describe slices` lists the whole registry with each slice's `group`, `owner`, `phases`, `keep_history`,
   `max_age_seconds` and `selected_in` (the sports whose configured defaults select it; P27, P28). `describe
   config` lists `schedule_runs` (FX-13).
@@ -2440,7 +2450,7 @@ flags are accepted before or after the command. `main.py` has no `--wait` either
 once. The job manager can wait since P11 (`submit(wait_for_lease=)`, 2.8); no face passes a wait yet.
 P19 (#119) added the three: every flag of the list exists at `b3cb819`. `--log-format json` writes one
 object per line on stderr (`time`, `level`, `logger`, `pid`, `message`, `exc`; redacted); the log file stays
-text, because `src/diagnostics.py` parses it. `--wait SECONDS` is passed to the job manager by `sync`,
+text, because `sofascore_scraper/diagnostics.py` parses it. `--wait SECONDS` is passed to the job manager by `sync`,
 `fetch` and `refresh` and to the lease of `data recheck-unavailable`. `--progress text|ndjson` writes the
 job's events to stderr. Through `main.py` the old flags reach the same commands, and since P19 `--data-dir`
 and `--config` go to the loader as flags there too.
@@ -2452,9 +2462,9 @@ One declarative file, `sofascore.toml` (decision D3), found in this order: `--co
 explicitly and does not exist is an error. `SOFASCORE_CONFIG=none` turns the search off, so that no file is
 read; the test suite sets it, and it helps when a stray file is suspected.
 
-This section describes the model and the loader as built by P09 (PR #56; `src/config/settings.py`,
+This section describes the model and the loader as built by P09 (PR #56; `sofascore_scraper/config/settings.py`,
 `loader.py` and `schema.py` at `f286723`). The file is honoured since that pull request: it is read when
-`src.config_manager` is imported, once per process. `main.py` does not hand its `--config` to the loader yet
+`sofascore_scraper.config_manager` is imported, once per process. `main.py` does not hand its `--config` to the loader yet
 (it is still the dead leagues-file flag of 1.7); an explicit file reaches the loader through
 `loader.activate(config_file=..., flags=...)`, which the new CLI calls since P18. Since P19 (#119)
 `main.py` translates its flags to the new CLI, so its `--config` names the config file as well. TOML is read with
@@ -2465,7 +2475,7 @@ folder, not in the directory the command was run in; `.env`, `config/` and `data
 The new CLI resolves a relative `--config`, `--data-dir` and `--out` against the directory the command was
 run in. `loader.load_settings()` sees only the `.env` values that are already in the process environment (it
 expects python-dotenv to have loaded the file); commands that must not touch the process (`config validate`,
-`doctor`, `config init`) build that view themselves (`read_settings()` in `src/cli/commands`), and any later
+`doctor`, `config init`) build that view themselves (`read_settings()` in `sofascore_scraper/cli/commands`), and any later
 caller of `load_settings` in a fresh process needs the same.
 
 The sample shows the scalar keys with their defaults; `use_proxy` and `proxy_env`, which it names only in a
@@ -2596,7 +2606,7 @@ environment and are rejected in the file: the access token and the captcha token
 |---|---|
 | `default` | the defaults in the code |
 | `dotenv` | a legacy name (`DATA_DIR`, `MAX_CONCURRENT`, …) whose value this process applied from `.env` |
-| `overrides` | `CONFIG_DIR/overrides.json`, machine-written: since P20 (PR #74) by `PATCH /api/v1/settings` through `src/config/overrides.py` (below); the Settings page of the web UI still writes `.env`. The shape of the config file without `[[follow]]`, `[[sink]]` and `[[schedule.task]]` (decision D11) |
+| `overrides` | `CONFIG_DIR/overrides.json`, machine-written: since P20 (PR #74) by `PATCH /api/v1/settings` through `sofascore_scraper/config/overrides.py` (below); the Settings page of the web UI still writes `.env`. The shape of the config file without `[[follow]]`, `[[sink]]` and `[[schedule.task]]` (decision D11) |
 | `file` | `sofascore.toml` |
 | `env` | the process environment: the legacy names, then `SOFASCORE_<SECTION>__<KEY>`; when both are given the new name wins |
 | `flag` | command-line flags, handed over by the caller as `flags={"storage.data_dir": ...}` |
@@ -2633,7 +2643,7 @@ settled on 2026-10-02 as built by P09, with all four of its points: the `.env` l
 file and the config file; a proxy given in the config file switches the proxy on; the legacy-name warning is
 logged only when a config file is present; and an empty `token_env` means "no other variable".
 
-**The overrides writer** (P20, PR #74; `src/config/overrides.py` at `e0bae0c`).
+**The overrides writer** (P20, PR #74; `sofascore_scraper/config/overrides.py` at `e0bae0c`).
 `write_overrides({"client.rate": 3, "display.language": None})` is the one writer of
 `CONFIG_DIR/overrides.json`, and `PATCH /api/v1/settings` is its one caller. A value of None removes the
 key, so that the weaker layer's value is in force again. Every value is checked with the loader's own rule
@@ -2642,7 +2652,7 @@ before it is written; the file is written atomically under a lock file (`overrid
 file is put back and the previous settings stay in force. The writer does not look at locks: refusing a
 value that a stronger layer pins is the caller's job.
 
-The route (`src/web/api/v1/settings.py`) applies a request as a whole or not at all. A key whose value comes
+The route (`sofascore_scraper/web/api/v1/settings.py`) applies a request as a whole or not at all. A key whose value comes
 from `sofascore.toml`, the process environment or a flag is refused with 400 `invalid_request` and
 `details.locked` (key, layer and source name); removing such a key with `null` is allowed. A key the API may
 not change is refused with `details.read_only`. The keys it may change are the table `WRITABLE` of that
@@ -2662,7 +2672,7 @@ above `.env`. Once `PATCH /api/v1/settings` has written a key, the legacy `POST 
 Settings page) still writes that key to `.env`, reports success, and the value has no effect until the key
 is removed through v1 with `null`. It takes someone who uses both routes; the web UI uses only the legacy
 one. `tests/test_api_v1_settings.py::test_a_value_written_here_shadows_a_later_save_of_the_legacy_route`
-pins it. It ends when P21's legacy adapter writes through `src.config.overrides`.
+pins it. It ends when P21's legacy adapter writes through `sofascore_scraper.config.overrides`.
 It ended with P21 (#127). `POST /api/settings` still writes `.env` and then removes the saved keys from
 `overrides.json` through `write_overrides`, so the saved value takes effect; keys it did not save stay, and
 a file that does not hold the key is not rewritten. The test is now
@@ -2706,12 +2716,12 @@ or empty is a `ConfigError`, for both keys, so protection cannot be switched off
 and `proxy_env` in the same layer is an error; `proxy_env` from the same or a stronger layer replaces
 `proxy`. The token itself is `settings.server.token`.
 
-Since P20 (PR #74) `[server] token_env` takes effect for the web app: `src/web/app.py` reads the token
-through Settings and hands it to `security._startup_token` (`_token_from_settings`, `src/web/app.py:28-38`
-at `e0bae0c`), because `src/web/security.py` still reads the environment itself (P30 makes it read Settings,
+Since P20 (PR #74) `[server] token_env` takes effect for the web app: `sofascore_scraper/web/app.py` reads the token
+through Settings and hands it to `security._startup_token` (`_token_from_settings`, `sofascore_scraper/web/app.py:28-38`
+at `e0bae0c`), because `sofascore_scraper/web/security.py` still reads the environment itself (P30 makes it read Settings,
 and the hand-over goes). A `token_env` that names an unset variable stops the start of the web app. The
 start-up warning for a token that is too short names `SOFASCORE_API_TOKEN` even when `token_env` names
-another variable (`src/web/app.py:41-44`).
+another variable (`sofascore_scraper/web/app.py:41-44`).
 
 **Proxy.** With the legacy names a proxy is used only when `USE_PROXY=true`, as today. In the config file
 (and in the new names and flags) giving `proxy` or `proxy_env` switches the proxy on, unless
@@ -2719,23 +2729,23 @@ another variable (`src/web/app.py:41-44`).
 
 **Lists.** `[slices.<sport>]` merges sport by sport across layers; `[[follow]]`, `[[sink]]` and
 `[[schedule.task]]` are replaced as a whole by the strongest layer that gives them. Sport names are checked
-against the registry (`src.sports.sport_slugs()`), so a config that names a sport that is not registered
+against the registry (`sofascore_scraper.sports.sport_slugs()`), so a config that names a sport that is not registered
 yet is rejected. Slice names and the `run` names of schedule tasks are not checked against a registry yet
 (P12, P27, P29). P29 (#128) checks the tasks when `serve` starts the scheduler (`check_tasks`: run name,
 options and their values; `config_invalid`, exit 2); the loader and `ssc config validate` still do not.
 
 - A `[[follow]]` names exactly one of `tournament`, `team`, `player`, `event`, and optionally `name`,
   `sport`, `seasons`, `slices`, `live`, `enabled`. It becomes a `FollowSpec` with the fields of
-  `01-storage.md` 2.3; the class is defined in `src/config/settings.py` as well, because the Store may not
-  import `src.config`. A follow without a name is named `<kind>-<id>`; without `seasons` it takes
+  `01-storage.md` 2.3; the class is defined in `sofascore_scraper/config/settings.py` as well, because the Store may not
+  import `sofascore_scraper.config`. A follow without a name is named `<kind>-<id>`; without `seasons` it takes
   `[defaults] seasons`. An entity or a name may appear once. `slices` is None (the default selection),
   `{"include": [...]}` for a plain list in the file, or `{"enable": [...], "disable": [...]}` for a table.
 - A `[[sink]]` becomes a `SinkSpec`. `secret_env` is a name; the loader does not read its value. Keys the
   model does not know go to `SinkSpec.options` for the sink's own code. The path of a file sink is made
   absolute. A webhook without `secret_env` and without `allow_unsigned = true` is rejected at load
   (decision D12).
-  The option keys are defined and checked by `src/sinks` since P22 (PR #73; `TYPE_OPTIONS` and `build_sink`
-  in `src/sinks/__init__.py` at `e0bae0c`):
+  The option keys are defined and checked by `sofascore_scraper/sinks` since P22 (PR #73; `TYPE_OPTIONS` and `build_sink`
+  in `sofascore_scraper/sinks/__init__.py` at `e0bae0c`):
 
   | Sink type | Option keys | Default |
   |---|---|---|
@@ -2749,7 +2759,7 @@ options and their values; `config_invalid`, exit 2); the loader and `ssc config 
   tests until `ssc watch` (P23, PR #91) built the sinks at its start; a bad option makes `watch` exit 2.
   `config validate` does not build sinks, so it accepts a wrong option today; P19 makes it call
   `build_sinks`. P19 (#119) did: `config validate` builds the sinks without opening them
-  (`_check_sinks`, `src/cli/commands/meta.py:358-376`), reading a secret from the environment or `.env`, so
+  (`_check_sinks`, `sofascore_scraper/cli/commands/meta.py:358-376`), reading a secret from the environment or `.env`, so
   an unknown option, a missing secret or a file sink inside the data folder is reported there. Three more
   rules of `build_sink`: the secret is read from the environment when the sink is
   built, and a named variable that is empty is an error; the name in `secret_env` must look like a secret
@@ -2765,7 +2775,7 @@ options and their values; `config_invalid`, exit 2); the loader and `ssc config 
   left two places to FX-10, and one of them was described wrongly: a `SOFASCORE_SINKS` value that is a JSON
   list of strings was never quoted (`_table_list` answers `expected a list of tables` and has not quoted the
   value since P09); what did quote the rejected value were the errors of one sink row in `parse_sinks`. As
-  built by FX-10 (PR #84; `src/config/loader.py` at `9b03c64`):
+  built by FX-10 (PR #84; `sofascore_scraper/config/loader.py` at `9b03c64`):
   - The errors of a sink row (`[[sink]]` or an item of `SOFASCORE_SINKS`) name the type of a rejected value,
     never the value: `url: expected a string, got a list`, `type: expected one of stdout, file, webhook`,
     `events: expected a list of strings, got a whole number at #1`. A `secret_env` that is not a variable
@@ -2785,7 +2795,7 @@ options and their values; `config_invalid`, exit 2); the loader and `ssc config 
 
 **The environment bridge.** Many modules still read their setting from `os.environ` themselves (the
 throttle, the refresh policy, the logger, the bridge health, the breaker, the web security module, the
-watcher, the paths module, `src/store/files.py`, the transport). So that they honour the config file too,
+watcher, the paths module, `sofascore_scraper/store/files.py`, the transport). So that they honour the config file too,
 the loader writes the effective value of every setting that did not come from a legacy name back into
 `os.environ` under its legacy name (`loader.projection`). Nothing is written when there is neither a config
 file nor a `SOFASCORE_*__*` variable, an overrides file or a flag. The bridge is transition code: a module
@@ -2823,7 +2833,7 @@ unused. There is no `[live] enabled` key and no `sources` list.
 of the file. Constructing the `Settings` creates no file; constructing `ConfigManager` still creates
 `config/leagues.txt` (`03-implementation-plan.md` section 15).
 Two parts of the model got a user in this revision. Since P20 (PR #74) the web app takes its token through
-`[server] token_env`, and API v1 reads and writes the settings (section 6). Since P22 (PR #73) `src/sinks`
+`[server] token_env`, and API v1 reads and writes the settings (section 6). Since P22 (PR #73) `sofascore_scraper/sinks`
 builds sinks from `settings.sinks`; since P23 (PR #91) `ssc watch` hosts the dispatcher, so a configured
 `[[sink]]` is served while `watch` runs (section 5).
 
@@ -2854,7 +2864,7 @@ As built at `b3cb819` (P21 #124, P19 #119). The follows service exists, and with
 added through API v1 is origin `api` in `state.db`, as above; without one a tournament follow is still
 written to `config/leagues.txt` (2.7). But "`leagues.txt` is not read" and "`sync` processes every enabled
 follow" do not hold yet: the downloads still read the leagues through `ConfigManager.get_leagues()`
-(`src/services/sync.py:337`), which is the content of `leagues.txt` only, not the follows table; a
+(`sofascore_scraper/services/sync.py:337`), which is the content of `leagues.txt` only, not the follows table; a
 tournament `[[follow]]` of the config file is downloaded by `ssc sync` only when it is also in
 `leagues.txt`. A tournament follow added through the API while a config file is in use, and any tournament added
 with `ssc follows add` (which always writes origin `api`), is therefore watched by `ssc watch` when `live`
@@ -2871,7 +2881,7 @@ into the table with `PATCH {"origin": "api"}` (2.7). `config init --from-legacy`
 `ConfigManager` since FX-15 (4.1), so the last sentence of the ST-17 paragraph above is history.
 
 `[client] odds_provider` got its user with P28 (the sub of the odds slices, default 1; 3.1), and FX-15
-added `[client] odds_country` (`src/config/settings.py:114-118`): empty by default, and when the user sets it
+added `[client] odds_country` (`sofascore_scraper/config/settings.py:114-118`): empty by default, and when the user sets it
 (for example `"TR"`, stripped and upper-cased) it is recorded as `meta.country` of every odds read; it is
 never derived from the machine (a delegated decision of 2026-10-06). The provider id is always recorded
 (`meta.provider_id`). `[defaults] slices` and `[slices.<sport>]` have their user since P27 (3.1), the
@@ -2956,7 +2966,7 @@ failed request per league) and `--headless --csv-export` on an empty data direct
 6 for a held lease. Its other codes are still today's (breaker 2, storage 1), with two unpinned changes of
 P10: an unexpected error in the detail phase ends a headless run with exit 1 instead of being logged and
 swallowed, and an `APP_EXIT_CODE` variable in the calling environment no longer overrides the exit code of
-a headless run. The new CLI (P18) has the whole table in `src/cli/exit_codes.py`, read from the error table,
+a headless run. The new CLI (P18) has the whole table in `sofascore_scraper/cli/exit_codes.py`, read from the error table,
 with `combine()` for the precedence.
 P11 (PR #69) moved the headless download and refresh to the job manager and changed no exit code: a breaker
 stop still exits 2, a download stored as `partial` because of a failed match still exits 0 (a refresh in
@@ -2998,10 +3008,10 @@ waits for the owner's confirmation.
   (2.8); `main.py` takes a lease itself only for `--recheck-unavailable` alone and for `--watch`. What is
   printed and the exit code are unchanged. A Ctrl+C that reaches the job body ends the job as `cancelled`
   and releases the lease (tested on the manager, not through `main.py`).
-- Not built: the SIGHUP reload. `src/sinks` has no reload of its sinks; the reload comes with the hosts
+- Not built: the SIGHUP reload. `sofascore_scraper/sinks` has no reload of its sinks; the reload comes with the hosts
   (P23, P25). The 10 s flush of the sinks at a graceful stop is built into `Dispatcher.run` (5.2). P23
   (PR #91) did not add it: `ssc watch` re-reads the follows every 60 s instead
-  (`SCOPE_RELOAD_SECONDS`, `src/services/live/supervisor.py:64` at `9b03c64`), and a changed `[[sink]]` or
+  (`SCOPE_RELOAD_SECONDS`, `sofascore_scraper/services/live/supervisor.py:64` at `9b03c64`), and a changed `[[sink]]` or
   `[live]` value needs a restart. `watch` handles SIGINT and SIGTERM alike: the service stops after its
   round, saves its state, releases `live`, and the host stops the sink threads within bounded times (8.4);
   the exit code is 0. The signal handling of the other commands is P19's.
@@ -3019,7 +3029,7 @@ waits for the owner's confirmation.
 
 As built at `b3cb819` (P19 #119, P25 #125):
 
-- **Signals of a job command** (`src/cli/signals.py`). As designed: the first SIGINT or SIGTERM requests the
+- **Signals of a job command** (`sofascore_scraper/cli/signals.py`). As designed: the first SIGINT or SIGTERM requests the
   cancel, the row becomes `cancelled`, the lease is released, the JSON result is printed, and the exit code
   is 130 or 143; a second signal exits at once and the row is reaped as `interrupted` later. A read-only
   command stopped by SIGTERM (`status`) prints the `cancelled` envelope with 143; `events --follow` exits 0.
@@ -3028,7 +3038,7 @@ As built at `b3cb819` (P19 #119, P25 #125):
 - **The drain at exit.** A one-shot command that runs a job registers the configured sinks before the job
   and drains them for up to 10 s at exit (`sinks.drain_at_exit`), so a sink receives `job.started` and
   `job.finished` of a CLI run; a bad sink is `config_invalid` before the job starts.
-- **`serve`** (`src/cli/commands/serve.py`). Host and port default to `[server] host` and `port`. The Host
+- **`serve`** (`sofascore_scraper/cli/commands/serve.py`). Host and port default to `[server] host` and `port`. The Host
   allow-list rules of #43 are kept as they are (`security.allowed_hosts_for_bind`): names the user set are
   used as written, wherever they come from (`--allowed-hosts` goes into the loader's flag layer, so a config
   file cannot override it); a loopback bind changes nothing; one concrete address gets the loopback names
@@ -3040,7 +3050,7 @@ As built at `b3cb819` (P19 #119, P25 #125):
   when the thread hung; without sinks no Store is opened), so a configured sink is delivered while the web
   server runs. SIGINT and SIGTERM end it with 0; a server that cannot start (a port in use) ends it with 1
   and the warning `server_failed`. It writes the final allow-list to `SOFASCORE_ALLOWED_HOSTS` before
-  uvicorn imports `src.web.app`, which reads it at import. The `*` warning of `src/web/app.py` is still
+  uvicorn imports `sofascore_scraper.web.app`, which reads it at import. The `*` warning of `sofascore_scraper/web/app.py` is still
   logged in Turkish (rule 8 of the plan; P30).
 - **No SIGHUP reload.** Neither `watch` nor `serve` reloads anything on SIGHUP; a changed `[[sink]]`,
   `[live]` or `[schedule]` value needs a restart. `watch` re-reads its follows every 60 s (8.1).
@@ -3054,10 +3064,10 @@ As built at `b3cb819` (P19 #119, P25 #125):
   with the memory each source needs and the four warnings of `direct`. None of the units was installed or run
   anywhere, and the proxy snippets are untested. The attempt limit behind a proxy is in section 6.
 - **Docker** (decision D17). The image's default command is `serve` (`CMD ["serve"]`), and the entrypoint
-  runs `python -m src.cli.main serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000}` for no arguments,
+  runs `python -m sofascore_scraper.cli.main serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000}` for no arguments,
   `serve …` or the old `web`. Other arguments go to `python main.py "$@"`, not to `ssc` as this section said:
   the image has no `ssc` console script (no `pip install -e`), and `main.py` both dispatches commands and
-  keeps the old flags for one release; in 3.1 the fallback becomes `python -m src.cli.main "$@"`. D17 said
+  keeps the old flags for one release; in 3.1 the fallback becomes `python -m sofascore_scraper.cli.main "$@"`. D17 said
   only that the Compose example sets the allowed hosts. As built the entrypoint also exports the loopback
   names (`SOFASCORE_SERVER__ALLOWED_HOSTS=localhost,127.0.0.1,[::1]`) when no allow-list is set anywhere
   (neither variable, no `ALLOWED_HOSTS` line in the env file, no config file found), so a plain `docker run`
@@ -3066,13 +3076,13 @@ As built at `b3cb819` (P19 #119, P25 #125):
   `ssc watch` uses `<profile>-live` and `/app` belongs to root (not a volume; 8.4 and D10 did not mention
   Docker). The image was not built or smoke-tested: `release.yml` builds it only on a tag, so the
   Dockerfile and `docker/smoke-test.sh` are checked in the live validation run before the release.
-- **Launchers.** `scripts/start_web.py` starts `python -m src.cli.main serve --host 127.0.0.1`, and the
+- **Launchers.** `scripts/start_web.py` starts `python -m sofascore_scraper.cli.main serve --host 127.0.0.1`, and the
   `.sh`, `.bat`, `.command` and `.desktop` launchers go through it.
 
 ### 4.7 Mapping from today's flags
 
 `main.py` stays as a shim for one release: a known subcommand goes to the new CLI; legacy flags are
-translated by `src/cli/legacy_flags.py`, which prints one deprecation line to stderr and runs the new command.
+translated by `sofascore_scraper/cli/legacy_flags.py`, which prints one deprecation line to stderr and runs the new command.
 
 | Today (`main.py`) | New | Fate |
 |---|---|---|
@@ -3094,8 +3104,8 @@ translated by `src/cli/legacy_flags.py`, which prints one deprecation line to st
 
 Aliases use the new exit codes and the new output rules (decision D5).
 
-As built at `b3cb819` (P19 #119, P25 #125, P26 #131; `src/cli/legacy_flags.py`). A subcommand
-(`python main.py sync …`, also after global flags) goes to `src.cli.main.main(argv, prog="python main.py")`.
+As built at `b3cb819` (P19 #119, P25 #125, P26 #131; `sofascore_scraper/cli/legacy_flags.py`). A subcommand
+(`python main.py sync …`, also after global flags) goes to `sofascore_scraper.cli.main.main(argv, prog="python main.py")`.
 Legacy flags are parsed by the unchanged legacy parser (help texts, choices and argparse errors as before),
 one line `main.py flags are deprecated and will be removed; this run is: ssc …` goes to stderr, and the
 translated commands run one after the other, each in a restored process state; the next runs only when the
@@ -3121,13 +3131,13 @@ Two rows of the design table differ in substance. `--config` with a `.txt` path 
 file is still not read as a leagues file (`ConfigManager` has no way to read another leagues file); only the
 warning is new. "No arguments → prints help, exit 2" is built by P26 for `main.py` (`print_no_menu_help`,
 locale key `cli_no_menu`); P19 had left the menu in place. P30 removes the legacy parser, and then `python
-main.py` without arguments can hand over to `src.cli.main`.
+main.py` without arguments can hand over to `sofascore_scraper.cli.main`.
 
 ---
 
 ## 5. Output sinks and event streams
 
-As built (P22, PR #73; `src/sinks/` at `e0bae0c`): the sink library, its dispatcher and the command
+As built (P22, PR #73; `sofascore_scraper/sinks/` at `e0bae0c`): the sink library, its dispatcher and the command
 `ssc events` (4.1) exist. **No process hosts the dispatcher yet**: nothing outside the tests calls
 `Dispatcher.run`, `register` or `drain`, so the options of a configured `[[sink]]` are checked by nothing
 and the sink is served by nothing after P22 alone. The hosts are `ssc watch` (P23), `ssc serve` (P25) and
@@ -3178,7 +3188,7 @@ events with the fields it has always written, as they are: `from`, `to`, `at_utc
 The envelope's `source` was always `poll`, and no `dedup_key` was set. The `data` shape shown above and the
 key were the live service's to settle (P23, 8.1).
 
-As built by P23 (PR #91; `src/services/live/reducer.py:306-327` at `9b03c64`). The live service and the
+As built by P23 (PR #91; `sofascore_scraper/services/live/reducer.py:306-327` at `9b03c64`). The live service and the
 legacy `--watch` alias share one reducer, so both append the settled `data`; the 2.x fields remain only in
 the alias's own stdout lines and `watch_events.jsonl`. The `data` per type (also in `04-schema-v1.md`,
 "LiveEvent data"):
@@ -3225,21 +3235,21 @@ The envelope as built (SC-1, PR #72 and P22, PR #73):
   of the example.
 - Two functions build the envelope. `schema.live_event_from_record(record).to_dict()` is the schema's form
   (SC-1), and SC-1 asked the sinks to write the envelope with it. The sinks and `ssc events` do not call it:
-  they use their own `Envelope.from_record(record).to_dict()` (`src/sinks/base.py:103-122` at `e0bae0c`),
-  because nothing outside `src/schema` imports the schema package yet. The two give the same document for
+  they use their own `Envelope.from_record(record).to_dict()` (`sofascore_scraper/sinks/base.py:103-122` at `e0bae0c`),
+  because nothing outside `sofascore_scraper/schema` imports the schema package yet. The two give the same document for
   the same record. P23 (PR #91) pinned that with a test for live, change and job records rather than
-  building `Envelope.to_dict` from the schema, so that `src/sinks/base.py` stays standard-library only.
+  building `Envelope.to_dict` from the schema, so that `sofascore_scraper/sinks/base.py` stays standard-library only.
 
 ### 5.2 Sink interface
 
 ```python
-class Sink(Protocol):                                          # src/sinks/base.py
+class Sink(Protocol):                                          # sofascore_scraper/sinks/base.py
     name: str
     def accepts(self, env: Envelope) -> bool: ...              # compiled from the `events` globs and filters
     def deliver(self, batch: Sequence[Envelope]) -> None: ...  # raise RetryableSinkError / FatalSinkError
     def close(self) -> None: ...
 
-class Dispatcher:                                              # src/sinks/dispatcher.py
+class Dispatcher:                                              # sofascore_scraper/sinks/dispatcher.py
     def __init__(self, store: Store, sinks: Sequence[Sink], *, clock: Clock | None = None,
                  jitter: Callable[[], float] | None = None, read_limit: int = 500): ...
     def register(self) -> None: ...                            # records new sinks at "now"; needs no lease
@@ -3251,17 +3261,17 @@ class Dispatcher:                                              # src/sinks/dispa
     def status(self) -> tuple[SinkStatus, ...]: ...            # per sink, in this process
     def close(self) -> None: ...                               # closes the sinks
 
-# src/sinks/__init__.py
+# sofascore_scraper/sinks/__init__.py
 def build_sinks(specs: Sequence[SinkSpec], *, environ=None, data_dir=None, clock=None) -> list[Sink]: ...
 def dispatcher_for(store: Store, specs: Sequence[SinkSpec], *, environ=None, clock=None) -> Dispatcher | None: ...
 def drain_at_exit(dispatcher: Dispatcher | None, timeout: float | None = None) -> DrainReport | None: ...
 ```
 
-The block is the interface as built by P22 (PR #73, `src/sinks/` at `e0bae0c`). The `Sink` protocol is the
+The block is the interface as built by P22 (PR #73, `sofascore_scraper/sinks/` at `e0bae0c`). The `Sink` protocol is the
 one of the first version. The first version's `Dispatcher` had `run` and `drain` only; `register`,
 `step(until=)`, `follow`, `status` and `close` were added, and the three functions of the package root are
 what a host calls. `StopToken` (anything with `is_set()` and `wait(timeout)`, for example a
-`threading.Event`) and `Clock` are defined in `src/sinks/base.py`, because `src/services/context.py` has no
+`threading.Event`) and `Clock` are defined in `sofascore_scraper/sinks/base.py`, because `sofascore_scraper/services/context.py` has no
 `Clock` yet. Besides the protocol the dispatcher reads four optional attributes of a sink (`uses_cursor`,
 `batch_size`, `linger_seconds`, `max_age_seconds`) and an optional `last_delivered()`; `BaseSink` carries
 their defaults.
@@ -3303,7 +3313,7 @@ one process dispatches at a time (the `sinks` lease). How that is built:
   configured sinks; the configured sinks still share one dispatcher thread. The shutdown is bounded: both
   threads are daemon threads, joined for at most 15 s (sinks) and 5 s (stdout), then `drain_at_exit`
   delivers for up to 10 s, which is skipped and replaced by `close()` when the sink thread hung
-  (`src/cli/commands/watch.py:157-174` at `9b03c64`).
+  (`sofascore_scraper/cli/commands/watch.py:157-174` at `9b03c64`).
 - **Retries.** A `RetryableSinkError`, and any unexpected exception of a sink, is retried with exponential
   back-off and jitter, 1 s doubling to 5 min, each delay multiplied by a random factor between 0.5 and 1; a
   receiver's `Retry-After` is honoured up to the 5 min cap. The head batch blocks its sink, and the other
@@ -3320,7 +3330,7 @@ one process dispatches at a time (the `sinks` lease). How that is built:
 - **Store errors.** The design did not say that Store calls can raise plain `sqlite3.Error`. The Store turns
   only a lock time-out into `StoreBusy`; other SQLite errors (a locked database when WAL is not available,
   an I/O error) leave it as `sqlite3.Error`. A long-running caller has to catch both (`STORE_ERRORS`,
-  `src/sinks/dispatcher.py:63`). In the dispatcher either one on a read or a cursor write delays the sink
+  `sofascore_scraper/sinks/dispatcher.py:63`). In the dispatcher either one on a read or a cursor write delays the sink
   and does not end the dispatcher; a cursor that could not be written is written at the next step; `run()`
   logs any other unexpected error and goes on after 5 s.
 - **A replaced log.** The dispatcher remembers the stream id and starts its positions again when a read
@@ -3332,9 +3342,9 @@ one process dispatches at a time (the `sinks` lease). How that is built:
   limits are constants of the dispatcher (`PRUNE_MAX_AGE_SECONDS`, `PRUNE_MAX_ROWS`) until ST-24 makes them
   the defaults of `StreamLog.prune`. When no sink is configured there is no dispatcher, so the live service
   prunes itself: once per hour while it holds `live`, with the same two limits, which it imports from
-  `src.sinks.dispatcher` (P23; ST-24 moves the constants for both). ST-24 (#109) did: the limits are
+  `sofascore_scraper.sinks.dispatcher` (P23; ST-24 moves the constants for both). ST-24 (#109) did: the limits are
   `DEFAULT_PRUNE_MAX_AGE_SECONDS` (7 days) and `DEFAULT_PRUNE_MAX_ROWS` (1,000,000), exported from
-  `src.store` and the defaults of `StreamLog.prune()`, which before removed nothing when called without
+  `sofascore_scraper.store` and the defaults of `StreamLog.prune()`, which before removed nothing when called without
   arguments; `None` still turns a limit off. The dispatcher's constants are gone; it and the live service
   pass the Store's defaults explicitly.
 - **No reload.** A SIGHUP reload of the sinks (4.6) is absent; a changed `[[sink]]` needs a restart of the
@@ -3363,7 +3373,7 @@ an API that registers outbound URLs would be an open relay (decision D11). P22 a
 pins it. The option keys of each sink type are in 4.3. Since P21 (#122) one read-only route exists,
 `GET /api/v1/sinks` (gap G1 of `05-web-ui.md`, approved with that document); the test
 (`tests/test_sinks.py::test_no_http_route_and_no_web_module_knows_sinks`) allows exactly that route and its
-two schemas, no write method and no web module that imports `src.sinks`. D11 holds: sinks are still
+two schemas, no write method and no web module that imports `sofascore_scraper.sinks`. D11 holds: sinks are still
 configured in the config file or the environment only.
 
 Secrets and addresses. The signing secret and the webhook address (its user, password, path and query can be
@@ -3402,7 +3412,7 @@ visible only in the process that hit it), the SIGHUP reload, and a message-queue
 - Receivers de-duplicate on `seq`; replays after a crash are expected.
 - `ssc status` shows per sink: cursor, newest sequence, lag, last error.
 
-As built (P22, PR #73; `src/sinks/webhook.py` at `e0bae0c`, with `tests/test_webhook_contract.py` against a
+As built (P22, PR #73; `sofascore_scraper/sinks/webhook.py` at `e0bae0c`, with `tests/test_webhook_contract.py` against a
 real HTTP server on 127.0.0.1). The request is as above. What the list does not say:
 
 - The delivery id stays the same for the retries of one batch, and the signature is made again with the
@@ -3435,7 +3445,7 @@ real HTTP server on 127.0.0.1). The request is as above. What the list does not 
 The field-level contract is a later task (plan item SC-1 for the schema, P21 for the routes). Fixed here:
 prefix, resources, envelopes, error model, streaming, raw access, aliases.
 
-State at `e0bae0c`. The schema half exists: `04-schema-v1.md` and `src/schema` (SC-1, PR #72), approved on
+State at `e0bae0c`. The schema half exists: `04-schema-v1.md` and `sofascore_scraper/schema` (SC-1, PR #72), approved on
 2026-10-02 (decision P2). The foundation of the API exists (P20, PR #74): the error model with request ids,
 the router, the access token with its attempt limit, the committed OpenAPI document, and the routes for
 health, status, sports, jobs and settings. The resource routes of the table below (tournaments, seasons,
@@ -3445,14 +3455,14 @@ paragraph describes the foundation.
 - Prefix `/api/v1`. `/health` stays unversioned for load balancers and the launcher.
 - Every route declares a response model. `docs/api/openapi-v1.json` is committed;
   `tests/test_openapi_snapshot.py` compares it with `app.openapi()` and fails on any undeclared change;
-  `python -m src.web.openapi --write` regenerates it. Frontend types are generated from the file.
+  `python -m sofascore_scraper.web.openapi --write` regenerates it. Frontend types are generated from the file.
 - Envelopes: single resource `{"data": {…}}`; collection
   `{"data": […], "page": {"limit": 50, "next_cursor": "…"}}` with cursor pagination.
 - State-changing requests are never GET. The origin check (`web/app.py:37-47`) and host check
   (`web/app.py:51`) stay. With a token configured, every `/api/*` route requires
   `Authorization: Bearer <token>` (decision D13). PR #43 implements the token for the existing routes
   (`SOFASCORE_API_TOKEN`; a session cookie set by `POST /api/auth/login` is accepted as well, for the web UI
-  and its SSE stream; `/health` stays open), moves the origin check to `src/web/security.py`, and adds the
+  and its SSE stream; `/health` stays open), moves the origin check to `sofascore_scraper/web/security.py`, and adds the
   response headers and the Content-Security-Policy.
 - No live data over HTTP. There is no `/live/*` resource and no live SSE stream (owner decision of
   2026-10-01). `/status` reports whether a live service is running (lease, leading source, last heartbeat),
@@ -3485,7 +3495,7 @@ line is sent every 15 s. If `after` is older than the retained events of the job
 server sends one `stream.gap` event with `oldest_seq` and closes; the client resynchronises through
 `/jobs/{id}`.
 
-SSE as built (P20; `src/web/sse.py` at `e0bae0c`): as designed, with three additions. The first bytes of a
+SSE as built (P20; `sofascore_scraper/web/sse.py` at `e0bae0c`): as designed, with three additions. The first bytes of a
 stream are the comment line `: stream open`, so that the client sees the connection open. The `data` of a
 message is `{job_id, seq, ts_ms, type, data}`, and the data of `stream.gap` is
 `{job_id, after, oldest_seq}`. The stream ends after the job's last event, when the client leaves and when
@@ -3499,15 +3509,15 @@ request that calls SofaScore is 503 `blocked`/`rate_limited` or 502 `upstream_er
 `0aa73b4` the single-match route had a substring match that would answer 429 (`routes/matches.py:416-417`),
 but that code was not reached for a blocked `/event`: the route answered 404, and 200 when only the slices
 were blocked. FX-1 (PR #60) removed the substring match. The legacy route now answers the typed upstream
-error of `src/web/upstream.py`, which the league routes use since PR #23: `{"detail": {"reason", "message"}}`
+error of `sofascore_scraper/web/upstream.py`, which the league routes use since PR #23: `{"detail": {"reason", "message"}}`
 with reason `blocked`, `browser`, `network` or `upstream` and status 502, or `rate_limited` and status 503.
 So the legacy route answers `blocked` with 502, the status `upstream.py` has always used, while v1 answers
 it with 503 (the table of 2.6); P13 maps the route to the v1 codes when it moves to the pipeline. The same
 route is refused with 409 `job_running` while a job of the same server runs or another process holds the
 writer lease.
 
-As built: the foundation (P20, PR #74; `src/web/app.py`, `errors.py`, `deps.py`, `sse.py`, `openapi.py` and
-`src/web/api/` at `e0bae0c`).
+As built: the foundation (P20, PR #74; `sofascore_scraper/web/app.py`, `errors.py`, `deps.py`, `sse.py`, `openapi.py` and
+`sofascore_scraper/web/api/` at `e0bae0c`).
 
 - **Routes that exist.** `GET /api/v1/health`, `/status`, `/sports` and `/sports/{slug}`; `GET /jobs`
   (filters `state` and `kind`, cursor paging), `GET /jobs/{id}`, `POST /jobs`, `POST /jobs/{id}/cancel` and
@@ -3515,7 +3525,7 @@ As built: the foundation (P20, PR #74; `src/web/app.py`, `errors.py`, `deps.py`,
   is no live route and no live stream, and a test asserts that on the whole OpenAPI document. The
   unversioned `/health` stays as it is.
 - **Jobs.** The routes read and write through `JobManager` on the web's process-wide job store
-  (`src/web/deps.py`), so jobs of other processes are listed and can be cancelled, and a job started through
+  (`sofascore_scraper/web/deps.py`), so jobs of other processes are listed and can be cancelled, and a job started through
   v1 is the job the legacy UI shows. `POST /jobs` answers 202 with a `Location` header and starts the job in
   a background thread. It starts only `sync`, `fetch` and `refresh`, on `SyncService` without the CSV phase;
   the spec is today's `SyncSpec` shape (`league_id`, `selections` with `season_ids` or `match_ids`) and
@@ -3526,10 +3536,10 @@ As built: the foundation (P20, PR #74; `src/web/app.py`, `errors.py`, `deps.py`,
   kept (decision of 2026-10-02, 2.8).
 - **`/status`** has `version`, `api_version`, `auth_required`, `bridge`, `throttle` and `active_job`. It has
   no live-service fields yet (lease, leading source, last heartbeat). P23 was to add them to `Status` in
-  `src/web/api/v1/meta.py` and did not, because that would have needed `docs/api/openapi-v1.json`
+  `sofascore_scraper/web/api/v1/meta.py` and did not, because that would have needed `docs/api/openapi-v1.json`
   regenerated, which its batch could not edit. `services.live.live_status(store)` gives them (`running`,
   `pid`, `host`, `source`, `sports`, `heartbeat_at`, `blocked`, `last`;
-  `src/services/live/supervisor.py:631-649` at `9b03c64`), ready for P21 here and P19 for `ssc status`. It
+  `sofascore_scraper/services/live/supervisor.py:631-649` at `9b03c64`), ready for P21 here and P19 for `ssc status`. It
   has no data summary and no coverage yet (P21).
 - **Settings.** `GET /settings` lists every setting of the model with its value, layer, source name,
   `locked`, `writable` and `secret`; secrets are masked. `PATCH /settings` writes
@@ -3569,19 +3579,19 @@ As built: the foundation (P20, PR #74; `src/web/app.py`, `errors.py`, `deps.py`,
 - **OpenAPI document.** `docs/api/openapi-v1.json` is committed. It is the v1 view of the application's
   document: the paths under `/api/v1` and the schemas they use, with `info.version` "1".
   `tests/test_openapi_snapshot.py` compares it with what the application generates and fails on any
-  undeclared change; `python -m src.web.openapi --write` regenerates it and `--check` exits 1 when it is out
+  undeclared change; `python -m sofascore_scraper.web.openapi --write` regenerates it and `--check` exits 1 when it is out
   of date. Run as a program, the module loads the application with temporary directories and writes log
   lines to stderr. Frontend types are not generated from the file yet; the frontend still uses the legacy
   routes.
-- **Import-time state.** Importing `src.web.app` creates the job store, `config/leagues.txt` and the log
+- **Import-time state.** Importing `sofascore_scraper.web.app` creates the job store, `config/leagues.txt` and the log
   file, because `src/web/routes/common.py` builds its `ConfigManager` and the process-wide job store when it
-  is imported. `src/web/deps.py` reads those objects at call time. P21 removes the module state, which is
+  is imported. `sofascore_scraper/web/deps.py` reads those objects at call time. P21 removes the module state, which is
   also the remaining cause of the job database that a web job creates under the data directory (2.8).
-  Done by P21 (#127): the module state is in `src/web/deps.py` (`config_manager()`, `job_store()`,
+  Done by P21 (#127): the module state is in `sofascore_scraper/web/deps.py` (`config_manager()`, `job_store()`,
   `job_manager()`, `refresh_job_mirror()`, `store()`), created at the first request.
 
 As built at `b3cb819`: the resources (P21 in five pull requests, #122, #123, #124, #126 and #127; the
-routes in `src/web/api/v1/`, the OpenAPI document regenerated each time, and the generated frontend types
+routes in `sofascore_scraper/web/api/v1/`, the OpenAPI document regenerated each time, and the generated frontend types
 `frontend/src/api/v1/schema.ts` with it). Every route of the table exists, with these differences:
 
 - **Session (#122).** `GET /api/v1/auth`, `POST /api/v1/auth/login` and `POST /api/v1/auth/logout` set and
@@ -3603,14 +3613,14 @@ routes in `src/web/api/v1/`, the OpenAPI document regenerated each time, and the
 - **`POST /status/check` (#122)** needs the body `{"target": "sofascore"}`: every v1 route is called
   without a body by the security tests, and an empty POST must not reach SofaScore. It sends one request for
   football's live list through the client (one try, 10 s, the shared budget). A failed check is 200 with
-  `ok: false` and a `reason` in the words of `src/web/upstream.py`, plus the bridge snapshot. Because it goes
+  `ok: false` and a `reason` in the words of `sofascore_scraper/web/upstream.py`, plus the bridge snapshot. Because it goes
   through the client and not the browser bridge, it can report `blocked` where the legacy
   `POST /api/bypass/test` (which keeps the browser path, pinned by `tests/test_bypass_test.py`) succeeds.
 - **`GET /sinks` (#122)** per configured sink in configuration order: `name`, `type`, `target` (file path
   or masked webhook address), `events`, `state`, `served`, `cursor`, `head_seq`, `lag_events`,
   `lag_seconds`, `last_delivered_at_utc`, `last_error` and `dropped` (5.2).
-- **Read resources (#123).** The records are pydantic mirrors of the `src/schema` dataclasses
-  (`src/web/api/v1/records.py`; `Status` is published as `EventStatus`, because `/status` owns the component
+- **Read resources (#123).** The records are pydantic mirrors of the `sofascore_scraper/schema` dataclasses
+  (`sofascore_scraper/web/api/v1/records.py`; `Status` is published as `EventStatus`, because `/status` owns the component
   name), checked against `schema.json_schema()` by a test. `/tournaments` takes `sport`, `q`, `followed`,
   `limit` and `cursor`, and each record adds `category` (the Category record) and `followed` to the
   schema's fields. `/events` takes `sport`, `tournament`, `season`, `participant`, `status` (every status
@@ -3644,7 +3654,7 @@ routes in `src/web/api/v1/`, the OpenAPI document regenerated each time, and the
   `schema_version`), and `/exports/{id}/download` serves the file of a succeeded export from a path built
   from the job id. `GET /backups` lists `name`, `scope`, `created_at_utc`, `bytes`, `format` and
   `with_env`; `GET /backups/{name}` is the zip (there is no metadata route per backup). The downloads are a
-  `FileResponse` subclass (`src/web/api/v1/downloads.py`), so the web layer makes no file-system call and a
+  `FileResponse` subclass (`sofascore_scraper/web/api/v1/downloads.py`), so the web layer makes no file-system call and a
   file that has gone answers a v1 404.
 - **Logs and diagnostics (#126).** `GET /logs` (`limit`, `level`), `/diagnostics` and `/diagnostics/bundle`
   (`log_lines`) give what the legacy routes give.
@@ -3695,7 +3705,7 @@ names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRe
   "seasons"` (season lists only; G15); `fetch`: `event_ids` (at most 500; events whose tournament is unknown
   or not followed, grouped per tournament from the catalog; G16); `refresh`: `event_ids` (only those events'
   `/event`, due or not; G23). Only one of `league_id`, `selections`, `follows` and `event_ids` may be given
-  (`src/web/api/v1/jobs.py:499`; else 400 with `details.fields`); a field the kind does not read is 400;
+  (`sofascore_scraper/web/api/v1/jobs.py:499`; else 400 with `details.fields`); a field the kind does not read is 400;
   an unknown follow is 404, a disabled one is skipped with `sync_follow_skipped`. Without a target a `sync`
   downloads every enabled follow, the team, player and event follows included. `clear` takes `tournament_id`
   and `season_id` (FX-19; `scope` must be `all`; result `clear: {scopes: ["tournament"], tournament_id,
@@ -3726,7 +3736,7 @@ names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRe
   `summary.last_migration` (or null); top-level `sinks {configured, ok, error, pending, served,
   max_lag_events, max_lag_seconds}` (G22; null when the Store cannot be read). `summary.tournaments[].followed`
   is true when a follow of any origin names the tournament (FX-19, `followed_tournaments`,
-  `src/web/api/v1/meta.py:518-523`; it read the configured leagues, so an API follow was downloaded and not
+  `sofascore_scraper/web/api/v1/meta.py:518-523`; it read the configured leagues, so an API follow was downloaded and not
   shown as followed). All three carry `connection` (2.7: `state`, the last success and failure, reason,
   status and `last_check`), and `bridge.last_success_at` / `last_failure_at` cover every transport.
 - **Exports (FX-19).** `GET /exports` lists the export jobs and, merged newest first, the files of
@@ -3738,12 +3748,12 @@ names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRe
   (FX-13, #120), unless this process holds one of its leases (the sink dispatcher of `serve`), which is
   logged.
 - **The legacy routes** are unchanged; no web screen calls them since FX-14b removed the classic views, and
-  P30 removes them. The legacy single-match fetch (`src/web/api/legacy.py`) still asks only `writer_busy()`;
+  P30 removes them. The legacy single-match fetch (`sofascore_scraper/web/api/legacy.py`) still asks only `writer_busy()`;
   its v1 face is the `fetch` job with `event_ids`, which runs under the writer lease.
 
 ### 6.1 Existing `/api` routes
 
-They stay for one release as `src/web/api/legacy.py`: same paths, same response shapes (pinned by the
+They stay for one release as `sofascore_scraper/web/api/legacy.py`: same paths, same response shapes (pinned by the
 goldens of plan items G-02 and G-04), implemented on the same services, marked `deprecated` in OpenAPI and
 answered with `Deprecation: true` and `Link: <…>; rel="successor-version"`. The web UI moves to v1 with the
 frontend update.
@@ -3755,7 +3765,7 @@ response carries `Deprecation: true` and `Link: </api/v1/…>; rel="successor-ve
 and the route list are unchanged, with the one exception of the 429 of the attempt limit (section 6).
 `Deprecation: true` is the form of the Internet-Draft; RFC 9745 defines the field as a date
 (`Deprecation: @<unix time>`). It was built as this section says and is not changed here. The successors are
-the table `LEGACY_SUCCESSORS` (`src/web/api/__init__.py:31-68` at `e0bae0c`), one row per legacy route, with
+the table `LEGACY_SUCCESSORS` (`sofascore_scraper/web/api/__init__.py:31-68` at `e0bae0c`), one row per legacy route, with
 the successors of the table below; the `Link` value is the successor's path only, without a query and
 without the job body.
 `tests/test_openapi_snapshot.py::test_every_legacy_operation_has_a_successor_and_the_table_has_no_stale_row`
@@ -3803,13 +3813,13 @@ The line numbers in this table are at `0aa73b4`; P08, FX-2 and FX-1 have moved l
 
 The auth row is not built. `/api/v1/auth`, `/api/v1/auth/login` and `/api/v1/auth/logout` do not exist,
 although the `Link` header of the three legacy routes already points there. No brief owned them when P20 was
-written; the plan now gives them to P21, together with `security.AUTH_OPEN_PATHS` (`src/web/security.py:123`
+written; the plan now gives them to P21, together with `security.AUTH_OPEN_PATHS` (`sofascore_scraper/web/security.py:123`
 at `e0bae0c`), which has to name the v1 paths so that they can be reached without a token. Built by P21
 (#122; section 6).
 
 As built at `b3cb819` (P21 #127). The 38 legacy operations of `src/web/routes/{leagues,matches,scrape,
 settings,data,sports,diagnostics,auth}.py` and the web download job of `src/web/fetch_job.py` are one
-adapter module, `src/web/api/legacy.py`; `src/web/routes/` and `src/web/fetch_job.py` are deleted. Paths,
+adapter module, `sofascore_scraper/web/api/legacy.py`; `src/web/routes/` and `src/web/fetch_job.py` are deleted. Paths,
 function names (so operation ids), response models, bodies and status codes are unchanged, and the G-02 and
 G-04 goldens pass unchanged; the OpenAPI snapshot of the legacy routes differs in 27 descriptions only,
 because docstrings and log lines of the moved code are English. The adapters call the same services as
@@ -3825,7 +3835,7 @@ of the v1 routes. Where the text above does not hold:
   `POST /api/v1/status/check`).
 - **`Deprecation: true`** stays the draft's form (the open question of `03-implementation-plan.md` section
   14, decided by P21): RFC 9745's form is a date, and the deprecation is tied to the 3.0.0 release, whose
-  date is not known (`src/web/api/__init__.py`).
+  date is not known (`sofascore_scraper/web/api/__init__.py`).
 - **Successors.** `LEGACY_SUCCESSORS` keeps one row per legacy route, and every successor path exists now.
   Two rows of the table name a successor whose path exists but whose job spec does not: `POST
   …/seasons/refresh` → `POST /jobs {kind:"sync", spec:{phases:["listing"]}}` (there is no listing phase in
@@ -3842,13 +3852,13 @@ of the v1 routes. Where the text above does not hold:
   (`required=s.counts_in(spec.slug)` in `_sport_model`), and `tests/snapshots/api/sports.json` is
   unchanged.
 - **Import time.** Importing the web app creates neither `config/leagues.txt` nor the job store; they are
-  created at the first request (`tests/test_web_deps.py`). Importing `src.match_data_fetcher` still creates
+  created at the first request (`tests/test_web_deps.py`). Importing `sofascore_scraper.match_data_fetcher` still creates
   both (`03-implementation-plan.md` section 15).
 - **The legacy backup route** accepts its five scopes only; `state` and `data` exist through `POST
   /api/v1/jobs` (2.7). Its download asks the Store for the path (`Store.backup.path_of`).
-- Comments in `src/services/sync.py`, `src/store/errors.py` and some tests still name
-  `src/web/fetch_job.py`, and comments in `src/sports.py`, `src/diagnostics.py`, `src/store/state.py` and
-  `src/client/context.py` still name `src/web/routes/*`.
+- Comments in `sofascore_scraper/services/sync.py`, `sofascore_scraper/store/errors.py` and some tests still name
+  `src/web/fetch_job.py`, and comments in `sofascore_scraper/sports.py`, `sofascore_scraper/diagnostics.py`, `sofascore_scraper/store/state.py` and
+  `sofascore_scraper/client/context.py` still name `src/web/routes/*`.
 
 ---
 
@@ -3899,20 +3909,20 @@ keys used only by menus (`locales/en.json`, `locales/tr.json`); updates README, 
 exits 2.
 
 As built (P26 #131). `src/ui/` and `src/SofaScoreUi.py` are deleted with their store-boundary baselines; the
-interactive branch of `main.py` and its read of `APP_EXIT_CODE` are gone, and `src/match_data_fetcher.py` no
+interactive branch of `main.py` and its read of `APP_EXIT_CODE` are gone, and `sofascore_scraper/match_data_fetcher.py` no
 longer writes that variable. `python main.py` without arguments, or with only `--data-dir`, `--config`,
 `--refresh-legacy` or `--ignore-rate-limit`, prints a short help on stderr and exits 2 (4.7). `colorama`
 and `tqdm` left `requirements.txt`, `constraints.txt` and `doctor.REQUIRED_MODULES`; `tests/test_doctor.py`
 checks the doctor list against `requirements.txt` in both directions. colorama is still a Windows-only
 transitive dependency of click (through uvicorn) and of pytest, so on Windows it is installed unpinned, as
-the constraints file says for such packages. `rich` stays (`src/logger.py`). 350 locale keys that no code
+the constraints file says for such packages. `rich` stays (`sofascore_scraper/logger.py`). 350 locale keys that no code
 used were removed (324 of the menu, 7 of the old `--web` branch, 19 progress texts the fetchers no longer
 used); every remaining key must be referenced by code (`tests/test_no_terminal_menu.py`). The installers
-say "command line" and point at `python -m src.cli.main --help`. Left: `src/store/api.py`'s
+say "command line" and point at `python -m sofascore_scraper.cli.main --help`. Left: `sofascore_scraper/store/api.py`'s
 `shadow_cleared` has no product caller (ST-28 can remove it with its tests); `league_stats` and
-`system_stats` of `src/services/stats.py` lost their last caller; menu-only code in the fetchers
+`system_stats` of `sofascore_scraper/services/stats.py` lost their last caller; menu-only code in the fetchers
 (`fetch_all_match_details`, `fetch_match_details`, `generate_file_report`, `_season_summary_files`) stays;
-the docstrings of `shadow_cleared` and of `src/services/context.py` still name the deleted modules. The
+the docstrings of `shadow_cleared` and of `sofascore_scraper/services/context.py` still name the deleted modules. The
 doctor's `config` check (a broken `sofascore.toml`, directories from the Settings) was not added: it changes
 the doctor's output and goldens and needs its own item.
 
@@ -3987,7 +3997,7 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   `live.score_changed` and `live.stuck` (the type names carry the stream's prefix, 5.1),
   sets `provisional` by the refresh window, and de-duplicates across sources with the stream's `dedup_key`
   `(event_id, type, change_ts or state hash)`, so a transition seen by push and by poll is stored once.
-  As built (P23): `reduce(state, Observation, sport)` in `src/services/live/reducer.py`, checked against
+  As built (P23): `reduce(state, Observation, sport)` in `sofascore_scraper/services/live/reducer.py`, checked against
   goldens recorded from `_observe` before the move (`tests/golden/live/reducer.json`, 14 scenarios with the
   gap cases). The key is `<id>:<type>:<from>><to>:<change_ts>`, with `-` when there is no `change_ts`, and
   `<id>:stuck:<start_ts>` for `stuck`; there is no state hash (5.1).
@@ -4021,11 +4031,11 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
 - **Confirmation.** A terminal status from push is emitted immediately, then confirmed by one `/event/{id}`
   request that stores the full payload. That stored event is what a later `sync` completes with post-match
   slices; the live service does not download details unless `live.detail_slices` asks for them.
-  As built (P23; `_confirm_terminal`, `src/services/live/supervisor.py:507-534` at `9b03c64`): a
+  As built (P23; `_confirm_terminal`, `sofascore_scraper/services/live/supervisor.py:507-534` at `9b03c64`): a
   `status_changed` to `completed` or `decided_without_play` is confirmed by one `/event/{id}` request, or by
   none when the observation already came from the event page, and stored with `store.events.observe`. The
   design did not say when that writes a change row. As built, it follows the refresh rule of
-  `src/refresh.py`: a row is written only when the stored payload was already terminal and the new one
+  `sofascore_scraper/refresh.py`: a row is written only when the stored payload was already terminal and the new one
   differs (`_change_rule`, `:590-605`); a first stored payload, or an older payload of a match that had not
   finished, is not a change. When a row was written, `change.recorded` is appended with its `change_seq`.
   `live.detail_slices` and `detail_interval_seconds` are not used yet. Since the service calls `observe`,
@@ -4035,7 +4045,7 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   As built for push (P24, PR #95): a terminal status that arrives on push is confirmed the same way. When
   the event page (served by the CDN) still shows the match unfinished, nothing is stored and the request is
   repeated every 20 s, at most 4 attempts in all (`CONFIRM_RETRY_SECONDS`, `CONFIRM_ATTEMPTS`,
-  `src/services/live/supervisor.py:119-120` at `b3cb819`). The live events and the `change.recorded` of a
+  `sofascore_scraper/services/live/supervisor.py:119-120` at `b3cb819`). The live events and the `change.recorded` of a
   push observation carry the source `page` or `direct`, not `push`.
 - **Arbitration and fallback.** Per sport the arbiter tracks push health (connection open, last frame, last
   ping). Push healthy: polling drops to a slow safety interval. Push silent beyond the threshold or
@@ -4044,7 +4054,7 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   Every switch appends `system.live_source_changed`. Events in scope that push never mentions are covered by
   polling. The fallback is polling and only polling: a failing `page` source never makes the service try
   `direct`.
-  As built (P24, PR #95; P31, PR #101; `src/services/live/arbiter.py:31-33`, `supervisor.py:116-120` at
+  As built (P24, PR #95; P31, PR #101; `sofascore_scraper/services/live/arbiter.py:31-33`, `supervisor.py:116-120` at
   `b3cb819`): the arbiter is a pure state machine, one per sport. The design gave no numbers; these were
   chosen:
 
@@ -4079,7 +4089,7 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   As built (P23): a crashed source is built again with back-off (5 s up to 5 min). The client has no
   "blocked" report on the path the service uses (2.4), so a `RateLimitError` (429), an `APIError` with
   status 403 and a `CircuitOpenError` from `make_api_request(raise_on_failure=True)` count as blocked
-  (`_default_fetch`, `src/services/live/supervisor.py:613-628`): the service appends `system.blocked`, waits
+  (`_default_fetch`, `sofascore_scraper/services/live/supervisor.py:613-628`): the service appends `system.blocked`, waits
   1 min doubling up to 10 min, and appends `system.recovered` after the first good round. The heartbeat and
   the counters go to `store.runtime["live"]` every round, and `live_status(store)` reads them with the
   holder of the `live` lease; `LiveService.status()` gives only this process's report. SIGHUP is not
@@ -4122,16 +4132,16 @@ Facts both push sources rest on (`docs/push-channel/README.md`; one evening, one
 throttle or aborts them, and blocks ads, analytics, images, media and fonts. Everything downstream of the
 reducer is identical for the three sources.
 
-As built (P23, PR #91): `PollSource` is in `src/services/live/poll_source.py` and works through a tracker
+As built (P23, PR #91): `PollSource` is in `sofascore_scraper/services/live/poll_source.py` and works through a tracker
 protocol; a source implements `start(tracker, event_ids)` and `tick(tracker)` and is passed to the service
 as `LiveService(source_factory=...)`. Polling is the only source: `AVAILABLE_SOURCES` of the supervisor is
-`("poll",)` (`src/services/live/supervisor.py:55` at `9b03c64`), and `--source page`, `--source direct` and
+`("poll",)` (`sofascore_scraper/services/live/supervisor.py:55` at `9b03c64`), and `--source page`, `--source direct` and
 `[live] source = "page"` (the default) fall back to polling with the warning `live_source_unavailable`. P24
 and P31 add their source to `AVAILABLE_SOURCES` and to the `available` list of `describe config`
 (`live_sources`), merge a partial push frame into the last event object before they build an
 `Observation`, and raise `Blocked` from a fetch to pause the service.
 
-As built (P24, PR #95; P31, PR #101; `src/services/live/push_source.py` at `b3cb819`): all three sources run.
+As built (P24, PR #95; P31, PR #101; `sofascore_scraper/services/live/push_source.py` at `b3cb819`): all three sources run.
 `AVAILABLE_SOURCES` is `("page", "direct", "poll")` and `PUSH_SOURCES` is `("page", "direct")`
 (`supervisor.py:103-105`); `describe config` lists all three as available, and `ssc watch` without
 `--source` runs `page` without a warning. A requested value other than the three (`auto`, `DIRECT`, a padded
@@ -4192,7 +4202,7 @@ value) becomes `poll` inside the service, never `direct`; the flag and the envir
   browser's TLS fingerprint. Not measured: several subjects on one connection, runs of hours, several sports,
   how often the credential changes. The documentation of the source says so.
 
-As built (P31, PR #101; `src/services/live/direct_source.py:71-96` at `b3cb819`):
+As built (P31, PR #101; `sofascore_scraper/services/live/direct_source.py:71-96` at `b3cb819`):
 
 - **Reading the credential.** `BrowserCredentialReader` does not use the bridge page: it starts a
   `BrowserBridge` instance of its own with the live profile `<profile>-live`, opens one sport page (with the
@@ -4200,7 +4210,7 @@ As built (P31, PR #101; `src/services/live/direct_source.py:71-96` at `b3cb819`)
   connection's address and the options of its outgoing `CONNECT` frame, and closes the page and the browser
   (up to 240 s for the read, 60 s for the `CONNECT` after the load). It never takes the bridge profile that
   `serve` or a CLI job may hold. The credential's `repr` and `str` are `***`; every string option except
-  `lang`, `version`, `name` and `protocol`, and the address, are handed to `src/redact.py`
+  `lang`, `version`, `name` and `protocol`, and the address, are handed to `sofascore_scraper/redact.py`
   (`add_runtime_secret`), which masks them, also JSON-escaped and percent-encoded, wherever they would appear.
 - **What goes on the wire.** A WebSocket client written with the standard library (no new dependency):
   certificates verified, outgoing frames masked, a 4 MB message limit. The handshake sends `Origin` (the
@@ -4259,19 +4269,19 @@ As built (P31, PR #101; `src/services/live/direct_source.py:71-96` at `b3cb819`)
   job may hold (8.3).
 - The legacy `main.py --watch` alias runs `ssc watch --source poll`, so that existing cron and systemd setups
   keep polling and do not start a browser (decision D18). Not yet as built: after P23 (PR #91) the alias
-  still runs `MatchWatcher` under `watcher:<sport>`, because `main.py` was not P23's file. `src/watcher.py`
+  still runs `MatchWatcher` under `watcher:<sport>`, because `main.py` was not P23's file. `sofascore_scraper/watcher.py`
   is now a wrapper on the shared reducer and `PollSource`, keeps its public names and its 2.x outputs, and
   shares the state with the service (watcher name = sport), so `--watch` and `ssc watch` exclude each other
-  and either one continues where the other stopped. P19, which owns `main.py` and `src/cli/legacy_flags.py`
-  and translates the legacy flags (4.7), completes the mapping; P30 removes `src/watcher.py`,
+  and either one continues where the other stopped. P19, which owns `main.py` and `sofascore_scraper/cli/legacy_flags.py`
+  and translates the legacy flags (4.7), completes the mapping; P30 removes `sofascore_scraper/watcher.py`,
   `WatchStateStore.append_legacy_events` and `watch_events.jsonl`. As built since P19 (PR #119):
-  `main.py --watch` is translated to `ssc watch --source poll --stdout --sport S` (`src/cli/legacy_flags.py`)
-  and runs the live service; no product code calls `src/watcher.py` any more, and nothing writes
+  `main.py --watch` is translated to `ssc watch --source poll --stdout --sport S` (`sofascore_scraper/cli/legacy_flags.py`)
+  and runs the live service; no product code calls `sofascore_scraper/watcher.py` any more, and nothing writes
   `watch_events.jsonl`.
 - Hosting the sink dispatcher (P22 built it; P23 hosts it). `ssc watch` hosts it with P23:
   `sinks.dispatcher_for(store, settings.sinks)`, which is `None` without sinks, then `dispatcher.run(stop)`
   in a daemon thread next to the live service; on shutdown the host sets `stop`, joins the thread with a
-  time-out and calls `dispatcher.close()`. As built (`src/cli/commands/watch.py:132-174` at `9b03c64`):
+  time-out and calls `dispatcher.close()`. As built (`sofascore_scraper/cli/commands/watch.py:132-174` at `9b03c64`):
   `register()` before the service starts, so that a new sink starts before the first event; `run(stop)` in
   the thread `watch-sinks`; `--stdout` as a lease-free follower
   (`Dispatcher(store, [StdoutSink(...)]).follow(stop)`) in a thread of its own, positioned at "now" with one
@@ -4309,7 +4319,7 @@ processes of the profile.
   the sports, the last heartbeat and whether the service is blocked. As built: since P24 `live_status()`
   also gives `leaders` and `last_switch`; the text of `ssc status` (P19) names the leading source per sport,
   its `--json` output carries the whole live report, and `/api/v1/status` (P21) has `leaders` and
-  `last_switch` (`src/web/api/v1/meta.py:104-107` at `b3cb819`).
+  `last_switch` (`sofascore_scraper/web/api/v1/meta.py:104-107` at `b3cb819`).
 
 ### 8.6 Order of delivery
 
@@ -4407,7 +4417,7 @@ live validation, and P30 after 3.0.0.
   As built there is no single such test. `tests/test_layers.py` checks the Store's imports only; the other
   rules are checked next to the code they are about: `tests/test_jobs_model.py` (rule 5),
   `tests/test_client.py` (client and Store do not import each other), `tests/test_schema_v1.py` (the purity
-  of `src/schema`, rule 4) and the import-time test of the CLI (rule 1).
+  of `sofascore_scraper/schema`, rule 4) and the import-time test of the CLI (rule 1).
 - The webhook contract is tested against a real HTTP server on 127.0.0.1 (`tests/test_webhook_contract.py`),
   the dispatcher with a fake clock, so that no back-off is really waited for (`tests/test_sinks.py`);
   nothing is sent to an address outside the machine.
@@ -4466,8 +4476,8 @@ Claims that did not hold against the code, and what was changed:
    serialised again (`src/fsutil.py:33-36`) and the Store keeps that. Sections 2.5 and 6 now say what "raw"
    is.
 2. **Open PRs.** The draft named #23 and #24 and five files. #23 is stacked on #24, a third open PR (#32) is
-   stacked on both, and together they also change `src/config_manager.py`, `src/web/app.py`,
-   `src/web/routes/api.py`, `tests/conftest.py`, `src/doctor.py`, the installers and the CI workflow (1.7).
+   stacked on both, and together they also change `sofascore_scraper/config_manager.py`, `sofascore_scraper/web/app.py`,
+   `src/web/routes/api.py`, `tests/conftest.py`, `sofascore_scraper/doctor.py`, the installers and the CI workflow (1.7).
    More PRs of the plan have to wait for them than the draft assumed.
 3. **Progress bars.** Five `tqdm` bars, not two (1.2).
 4. **Breaker outcome.** Today an open breaker is a *failed* outcome with reason `breaker`
@@ -4483,7 +4493,7 @@ Changes that come from reconciling with the storage design:
    `LegacyLayoutStore` extraction (draft P06) were dropped. Section 2.5 maps every need onto the Store API.
    Two of the draft's requirements changed the Store: the change comparison under the write lock
    (`on_event_change`) and "an older observation must not win" (`PutResult.superseded`).
-8. **Jobs live in `state.db`**, not in an extended `jobs.db`; `src/jobs` holds no SQL. Leases are the Store's
+8. **Jobs live in `state.db`**, not in an extended `jobs.db`; `sofascore_scraper/jobs` holds no SQL. Leases are the Store's
    (`writer`, `live`, `sinks`, `maintenance`) instead of `data.lock` / `live.lock` / `sinks.lock` in
    `src/jobs/lease.py`.
 9. **One sequence for all streams.** The draft had one sequence per stream and a cursor per sink and stream.
@@ -4511,7 +4521,7 @@ Changes after the first two implementation batches and the owner's decisions of 
     the slices are blocked (1.5, 6). Plan item FX-1.
 19. **Outcome.** `fetched_at` is optional (None means now); `from_error` maps only `ResourceNotFoundError` to
     empty; the breaker switch to `skipped` moves together with `_update_slice_markers` (2.4).
-20. **Job model.** `Origin` and `ErrorInfo` exist in `src/jobs/model.py`; timestamps are typed; ids are uuid4
+20. **Job model.** `Origin` and `ErrorInfo` exist in `sofascore_scraper/jobs/model.py`; timestamps are typed; ids are uuid4
     until P11; a breaker-stopped job is recognised by its column, not its text; `created_at` gets a column in
     migration 0002 (2.8).
 21. **Layer rule 5** says what the test can enforce (2.1).
@@ -4618,9 +4628,9 @@ Changes after batches five to seven (2026-10-02, second revision of that day; re
     same_host}, `spec_json` and `error_json` are decoded and redacted, `owner` is dropped, host names are
     masked in every job string and in the profile-lock detail. The log tail is not masked (FX-10) (2.8;
     PR #71).
-50. **The schema maps rows.** The document said `src/schema` maps "catalog rows and payloads". Built: rows
+50. **The schema maps rows.** The document said `sofascore_scraper/schema` maps "catalog rows and payloads". Built: rows
     and the dicts `store.derive` returns; the only payload reader for status class and score is
-    `src/store/derive.py`, and `src/schema` names the Store only under `TYPE_CHECKING`. Its purity is
+    `sofascore_scraper/store/derive.py`, and `sofascore_scraper/schema` names the Store only under `TYPE_CHECKING`. Its purity is
     checked in `tests/test_schema_v1.py`; `tests/test_layers.py` checks the Store only (2.1, 2.2, 2.5, 10;
     SC-1, PR #72).
 51. **The envelope.** The example showed `ts` in whole seconds; it has milliseconds. The example's `data` is
@@ -4643,7 +4653,7 @@ Changes after batches five to seven (2026-10-02, second revision of that day; re
     own `end` line, and exits 1 on a closed pipe. The pull request said it writes nothing; since ST-11 every
     open of a Store, a read-only one included, brings the catalog up to date (2.1, 4.1, 4.4; P22, PR #73).
 55. **The overrides file has a writer.** 4.3 said nothing writes `overrides.json` yet. Built:
-    `PATCH /api/v1/settings` writes it through `src/config/overrides.py`, for the keys of the `WRITABLE`
+    `PATCH /api/v1/settings` writes it through `sofascore_scraper/config/overrides.py`, for the keys of the `WRITABLE`
     table, and refuses a value pinned by `sofascore.toml`, the environment or a flag. `[server] token_env`
     takes effect for the web app. A value written through v1 shadows a later save of the legacy settings
     route until P21 (4.3, 12; P20, PR #74).
@@ -4838,7 +4848,7 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
     `leases`, `capabilities`, `schedule` and `storage_error`; session routes open without a token
     (6; P21, PRs #122, #123, #124, #126).
 90. **The legacy adapters.** 6.1 said the legacy routes are implemented on the same services. Built:
-    `src/web/api/legacy.py` with unchanged answers, but the leagues routes write `leagues.txt` through
+    `sofascore_scraper/web/api/legacy.py` with unchanged answers, but the leagues routes write `leagues.txt` through
     `ConfigManager`, the remote search keeps its own request, and `POST /api/bypass/test` keeps the
     browser path; `Deprecation: true` kept (RFC 9745's date form not used); every successor path exists,
     two successor job specs do not (G15, G16); nothing is created at import; the settings shadowing ended
@@ -4983,7 +4993,7 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
 ## 12. Risks
 
 - Pull requests merged after the briefs were written changed files that plan items own: #23, #24, #32 and
-  #43 (web security hardening: `main.py`, `src/config_manager.py`, three route modules and more). The line
+  #43 (web security hardening: `main.py`, `sofascore_scraper/config_manager.py`, three route modules and more). The line
   numbers in the briefs of G-03, P05, P08, P09, ST-10 and FX-6 are older than those changes. #47 (the boundary
   ratchet) makes every later PR that moves a file-system call edit a baseline file, and #41 makes every PR
   that changes a route regenerate the legacy OpenAPI snapshot (`03-implementation-plan.md` section 1).
@@ -5023,7 +5033,7 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
   API v1 has the locked fields since P20 (PR #74), but the Settings page still uses the legacy route, so
   the user still sees it. A second form came with P20: a value written through `PATCH /api/v1/settings`
   shadows a later save of the same key on the Settings page, until P21's legacy adapter writes through
-  `src.config.overrides` (4.3). P21 (#127) ended the second form. The first stays while the classic
+  `sofascore_scraper.config.overrides` (4.3). P21 (#127) ended the second form. The first stays while the classic
   Settings page is in use. FX-14b (#161) removed the classic Settings page; the new Settings screen uses
   `/api/v1/settings`, which shows the lock.
 - The environment bridge of 4.3 writes settings into `os.environ`. It is correct only while every direct
@@ -5077,7 +5087,7 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
   Since FX-13 (#152, #153) a real restore runs as a v1 job from the Backups screen (FX-14b), and a change
   of the data folder through `PATCH /settings` closes the old folder's Stores; an archive must still already
   be in the server's `backups/` folder (no upload; decision 15 of `05-web-ui.md`).
-- One file chain is long: `src/match_data_fetcher.py` has exactly one owning PR at a time through eleven PRs
+- One file chain is long: `sofascore_scraper/match_data_fetcher.py` has exactly one owning PR at a time through eleven PRs
   (`03-implementation-plan.md`). A stalled PR in that chain blocks everything behind it.
 - Closing a Store under a job. Since #93 a job store does not close the state database under a finishing
   job thread, but `Store.close()` closes it directly, so a library user who closes the Store while a

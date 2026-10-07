@@ -221,7 +221,7 @@ their successor in a `Link` header. The data resources (`tournaments`, `seasons`
 Note (2026-10-03). The data resources exist since PRs #122 to #127 (plan item P21): tournaments, seasons,
 events with their slices and raw payloads, changes, follows, the job kinds for downloads, exports, backups,
 clear, rebuild and a restore check, logs and diagnostics, and the `auth` routes; the old routes are adapters
-over the same services in `src/web/api/legacy.py`. Exports write the normalized datasets since PR #130
+over the same services in `sofascore_scraper/web/api/legacy.py`. Exports write the normalized datasets since PR #130
 (SC-2). `events/{id}/odds` comes with odds (P28). The new web UI uses only `/api/v1`; a few routes it still
 needs (a season-list job, a fetch of one match by its id alone, a real restore, some filters) are listed in
 `05-web-ui.md` section 7 and planned as FX-13.

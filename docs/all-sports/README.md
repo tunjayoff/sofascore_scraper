@@ -7,11 +7,11 @@ kullanıyor, canlı sayfa nasıl tazeleniyor.
 
 > **Bugünkü durum.** Bu belge 01.10.2026'daki keşfin kaydıdır; "Özet" ve "Sınıf gerekçeleri" o günkü kodu anlatır.
 > Uygulama bundan sonra olay (`event`) modelindeki **21 sporu** destekler hale geldi: futbol, basketbol, tenis ve
-> A/B sınıflarının 18 sporu, her biri kendi skor biçimi ve detay dilimleriyle (`src/sports.py`, `SPORTS`; skor:
-> `src/status.py`, `extract_scores`; kriketin `willcontinue` durumu canlı sayılır). `stage` modeli (motor
+> A/B sınıflarının 18 sporu, her biri kendi skor biçimi ve detay dilimleriyle (`sofascore_scraper/sports.py`, `SPORTS`; skor:
+> `sofascore_scraper/status.py`, `extract_scores`; kriketin `willcontinue` durumu canlı sayılır). `stage` modeli (motor
 > sporları, bisiklet) ile bandy, su topu ve plaj voleybolu desteklenmez. Bahis oranları ve maç dışı veriler
 > (`odds` grubu vb.) varsayılan olarak kapalıdır; seçilmedikçe istenmez. Bir oran okumasıyla ülke kodu yalnızca
-> `[client] odds_country` ayarlanmışsa kaydedilir; bu makineden türetilmez (`src/config/settings.py`).
+> `[client] odds_country` ayarlanmışsa kaydedilir; bu makineden türetilmez (`sofascore_scraper/config/settings.py`).
 
 - **Tarih:** 01.10.2026, 12:00–14:02 UTC (Perşembe; hafta içi programı).
 - **Script'ler:**
@@ -77,7 +77,7 @@ Sütunlar:
   (`research/all_sports/samples/football/sport-id-event-count__1.json`, 14:00 UTC; boşsa o gün maç yok).
 - **Olay:** bu çalışmada yakalanan tekil olay ya da stage sayısı; **bitmiş:** bunların bitmiş olanları.
 - **UNKNOWN:** `classify_status` sonucu UNKNOWN olan olay ve stage oranı.
-- **Yeni kod:** `src/status.py`'deki kod kümelerinde olmayan, görülen `status.code` değerleri.
+- **Yeni kod:** `sofascore_scraper/status.py`'deki kod kümelerinde olmayan, görülen `status.code` değerleri.
 
 Durum üçlüleri ve örnekleri: `docs/all-sports/status/{spor}-triples.csv`. Skor anahtarlarının spor ve turnuva
 bazında sıklığı: `docs/all-sports/summary.json` → `score_structure`.
@@ -372,7 +372,7 @@ her spor aynı altı ortak dilimi zorunlu olarak alıyordu. İki spora özgü di
   tabloyu `requests.jsonl` ve `events/*.jsonl`'dan türetir: yalnızca maç sayfalarının istekleri, bahis hariç,
   maçın durumu HTTP koduyla birlikte. Sonuç `tests/fixtures/sport_slices/evidence.json`; bir test dosyanın
   araştırma verisinden yeniden türetilebildiğini denetler.
-- **Kayıt defteri:** `src/sports.py`, `DETAIL_SLICES` ve üstündeki not. Bir dilim `not_in` sporlarında hiç
+- **Kayıt defteri:** `sofascore_scraper/sports.py`, `DETAIL_SLICES` ve üstündeki not. Bir dilim `not_in` sporlarında hiç
   istenmez; `optional_in` sporlarında istenir ama tamlık hesabına girmez (`SliceSpec.counts_in(spor)`).
   Kayıtlı olmayan ya da bilinmeyen bir spor eskisi gibi altı ortak dilimi alır.
 
