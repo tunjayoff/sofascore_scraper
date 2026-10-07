@@ -1497,6 +1497,10 @@ export interface TournamentHit {
   team?: SearchHitTeam | null
   /** A follow of any origin names this tournament, team or player already. */
   followed: boolean
+  /** Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when SofaScore does not say (tournaments, players, stored names). Tells same-named men's and women's teams apart. */
+  gender?: string | null
+  /** The team is a national team; null when SofaScore does not say. */
+  national?: boolean | null
 }
 
 export interface TournamentHitCategory {

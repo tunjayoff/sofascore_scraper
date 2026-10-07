@@ -98,6 +98,23 @@ def test_teams_and_players_are_found_by_name_with_one_request(store: Store, fake
     assert team["category"] == {"id": None, "name": None, "slug": None, "country_code": "TR"}
     assert (player["sport"], player["country"], player["team"], player["followed"]) == (
         "football", {"code": "NG", "name": "Nigeria"}, {"id": 3061, "name": "Galatasaray"}, True)
+    # FX-23 (F26): takımın cinsiyeti ve milli takım olup olmadığı; oyuncuda SofaScore söylemez
+    assert (team["gender"], team["national"]) == ("M", False)
+    assert (player["gender"], player["national"]) == (None, None)
+
+
+def test_same_named_mens_and_womens_teams_are_told_apart(store: Store, fake: FakeSofaScore) -> None:
+    """F26 (FX-23): "Fenerbahçe · Voleybol · Türkiye" iki kez görünüyordu (erkek ve kadın takımı)."""
+    def team(eid: int, gender: object, national: object) -> Dict[str, Any]:
+        return {"type": "team", "entity": {"id": eid, "name": "Fenerbahçe", "slug": "fenerbahce", "gender": gender,
+                                           "national": national, "sport": {"slug": "volleyball", "name": "Volleyball"},
+                                           "country": {"alpha2": "TR", "name": "Türkiye"}}}
+
+    fake.add(endpoints.search_all("fenerbahce"), {"results": [
+        team(1, "M", False), team(2, "F", False), team(3, "F", True), team(4, "X?", "yes")]})
+    hits = data(client.post("/api/v1/tournaments/search", json={"q": "fenerbahce", "kinds": ["team"]}))
+    assert [(h["id"], h["gender"], h["national"]) for h in hits] == [
+        (1, "M", False), (2, "F", False), (3, "F", True), (4, "X?", None)]
 
 
 def test_every_kind_together_and_by_sport(store: Store, fake: FakeSofaScore) -> None:

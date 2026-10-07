@@ -176,6 +176,14 @@ class TournamentHit(BaseModel):
     )
     team: Optional[SearchHitTeam] = Field(default=None, description="A player's team; null for the other kinds.")
     followed: bool = Field(description="A follow of any origin names this tournament, team or player already.")
+    gender: Optional[str] = Field(
+        default=None,
+        description="Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when SofaScore does not "
+                    "say (tournaments, players, stored names). Tells same-named men's and women's teams apart.",
+    )
+    national: Optional[bool] = Field(
+        default=None, description="The team is a national team; null when SofaScore does not say.",
+    )
 
 
 class TournamentHitListResponse(BaseModel):
@@ -278,6 +286,7 @@ async def search_tournaments(body: TournamentSearch, request: Request) -> Any:
                 country=SearchHitCountry(code=h.country_code, name=h.country_name)
                 if h.country_code or h.country_name else None,
                 team=SearchHitTeam(id=h.team_id, name=h.team_name) if h.team_id is not None else None,
+                gender=h.gender, national=h.national,
             )
             for h in hits
         ],
