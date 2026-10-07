@@ -9,6 +9,7 @@ import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1 } from '@/api/v1/client'
 import type { Odds, OddsChoice, OddsMarket, Slice } from '@/api/v1/schema'
 import { choiceName, decimalText, marketName, periodName } from './oddsText'
+import { sliceLabel } from './eventText'
 
 /**
  * The odds of a match in a table (6.6; FX-24 F11): the normalized odds of P28 (`GET /events/{id}/odds/{key}`,
@@ -51,6 +52,20 @@ watch(
 )
 watch([key, () => props.eventId], () => void load(), { immediate: true })
 
+/**
+ * The markets of a read, each once: SofaScore's featured list names the same market under several labels
+ * (`default`, `fullTime`), which would show the same table twice.
+ */
+function marketsOf(o: Odds): OddsMarket[] {
+  const seen = new Set<string>()
+  return o.markets.filter((m) => {
+    const id = JSON.stringify([m.market_id, m.name, m.period, m.choice_group, m.choices.map((c) => [c.name, c.fractional])])
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
 /** "Match goals 2.5", "Asian handicap -0.5": a market with several lines names its line. */
 function marketTitle(m: OddsMarket): string {
   return [marketName(m.name), m.choice_group].filter(Boolean).join(' ')
@@ -62,7 +77,7 @@ const changeText = (c: OddsChoice) => t(`ui.odds.change.${c.change === 1 ? 'up' 
 <template>
   <div class="flex flex-col gap-4" data-testid="odds-view">
     <div v-if="keys.length > 1" class="u-seg self-start" role="group" :aria-label="t('ui.odds.list')">
-      <button v-for="k in keys" :key="k" type="button" :aria-pressed="k === key" :data-odds-key="k" @click="key = k">{{ t(`ui.odds.kind.${k}`) }}</button>
+      <button v-for="k in keys" :key="k" type="button" :aria-pressed="k === key" :data-odds-key="k" @click="key = k">{{ sliceLabel(k) }}</button>
     </div>
 
     <ErrorState v-if="error" compact :error="error" @retry="load" />
@@ -74,7 +89,7 @@ const changeText = (c: OddsChoice) => t(`ui.odds.change.${c.change === 1 ? 'up' 
         <h2 class="u-h3">{{ o.provider_id != null ? t('ui.odds.provider', { id: o.provider_id }) : t('ui.odds.providerUnknown') }}</h2>
         <span v-if="o.fetched_at_utc" class="u-small u-muted">{{ t('ui.odds.readAt') }} <TimeText :value="o.fetched_at_utc" /></span>
       </div>
-      <div v-for="(m, mi) in o.markets" :key="mi" class="u-odds-market" data-testid="odds-market">
+      <div v-for="(m, mi) in marketsOf(o)" :key="mi" class="u-odds-market" data-testid="odds-market">
         <h3 class="u-h3 flex flex-wrap items-center gap-2">
           <span :lang="marketName(m.name) === m.name ? 'en' : undefined">{{ marketTitle(m) }}</span>
           <span v-if="m.period && periodName(m.period)" class="u-small u-muted font-normal">{{ periodName(m.period) }}</span>
@@ -88,7 +103,6 @@ const changeText = (c: OddsChoice) => t(`ui.odds.change.${c.change === 1 ? 'up' 
               <tr>
                 <th scope="col">{{ t('ui.odds.col.choice') }}</th>
                 <th scope="col" class="text-right">{{ t('ui.odds.col.decimal') }}</th>
-                <th scope="col" class="text-right">{{ t('ui.odds.col.fractional') }}</th>
                 <th scope="col" class="text-right">{{ t('ui.odds.col.opening') }}</th>
                 <th scope="col">{{ t('ui.odds.col.change') }}</th>
               </tr>
@@ -100,12 +114,14 @@ const changeText = (c: OddsChoice) => t(`ui.odds.change.${c.change === 1 ? 'up' 
                     >{{ choiceName(c.name) }}<UiBadge v-if="c.winning" tone="ok" icon="check">{{ t('ui.odds.won') }}</UiBadge></span
                   >
                 </td>
-                <td class="text-right u-num font-semibold">{{ decimalText(c.decimal) }}</td>
-                <td class="text-right u-num u-muted">{{ c.fractional ?? '—' }}</td>
-                <td class="text-right u-num u-muted">{{ decimalText(c.initial_decimal) }}</td>
+                <td class="text-right u-num">
+                  <span class="font-semibold" data-testid="odds-decimal">{{ decimalText(c.decimal) }}</span>
+                  <span v-if="c.fractional" class="block u-small u-muted" :title="t('ui.odds.col.fractional')" data-testid="odds-fraction">{{ c.fractional }}</span>
+                </td>
+                <td class="text-right u-num u-muted" :title="c.initial_fractional ?? undefined">{{ decimalText(c.initial_decimal) }}</td>
                 <td>
                   <span class="inline-flex items-center gap-1 u-small" :data-change="c.change ?? ''">
-                    <UiIcon v-if="changeIcon(c)" :name="changeIcon(c)!" :size="14" />{{ changeText(c) }}
+                    <UiIcon v-if="changeIcon(c)" :name="changeIcon(c)!" :size="14" /><span class="u-odds-change">{{ changeText(c) }}</span>
                   </span>
                 </td>
               </tr>
@@ -129,5 +145,21 @@ const changeText = (c: OddsChoice) => t(`ui.odds.change.${c.change === 1 ? 'up' 
 .u-odds-table td,
 .u-odds-table th {
   white-space: nowrap;
+}
+/* on a phone the direction of the change is its arrow; the word stays for screen readers */
+@media (max-width: 639px) {
+  .u-odds-table td,
+  .u-odds-table th {
+    padding-left: var(--sp-2);
+    padding-right: var(--sp-2);
+  }
+  .u-odds-change {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 </style>

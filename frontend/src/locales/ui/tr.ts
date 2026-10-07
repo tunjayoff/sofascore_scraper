@@ -1118,10 +1118,6 @@ const tr: typeof en = {
   },
   odds: {
     list: 'Oran listesi',
-    kind: {
-      odds_featured: 'Öne çıkan bahisler',
-      odds_all: 'Tüm bahisler',
-    },
     provider: 'Bahis şirketi {id}',
     providerUnknown: 'Bahis şirketi bilinmiyor',
     readAt: 'okunma:',

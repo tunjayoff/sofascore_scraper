@@ -411,6 +411,7 @@ describe('F11: the odds of a match as a table', () => {
     choices: [choice('Over', '8/11', 1.727, '4/5', 1.8, -1), choice('Under', '1/1', 2, '10/11', 1.909, 1)],
   }
   const odds = (key: string, markets: unknown[]) => list([{ event_id: 9100003, key, provider_id: 1, fetched_at_utc: '2026-10-07T19:45:45Z', markets }])
+  const featured = [fullTime, { ...fullTime, label: 'fullTime' }]
   const routes = (over: Record<string, unknown> = {}) => ({
     ...SPORTS,
     'GET /api/v1/tournaments': page([]),
@@ -418,7 +419,7 @@ describe('F11: the odds of a match as a table', () => {
     'GET /api/v1/events/9100003': { data: event() },
     'GET /api/v1/events/9100003/slices': list([slice('event')]),
     'GET /api/v1/events/9100003/odds': list([slice('odds_featured', { sub: '1' }), slice('odds_all', { sub: '1' })]),
-    'GET /api/v1/events/9100003/odds/odds_featured': odds('odds_featured', [fullTime]),
+    'GET /api/v1/events/9100003/odds/odds_featured': odds('odds_featured', featured),
     'GET /api/v1/events/9100003/odds/odds_all': odds('odds_all', [fullTime, goals]),
     'GET /api/v1/changes': page([]),
     ...over,
@@ -436,10 +437,12 @@ describe('F11: the odds of a match as a table', () => {
     const view = w.find('[data-testid="odds-view"]')
     expect(view.text()).toContain(t('ui.odds.provider', { id: 1 }))
     const markets = view.findAll('[data-testid="odds-market"]')
+    // the featured list names the same market twice (default, fullTime): shown once
     expect(markets).toHaveLength(1)
     expect(markets[0].find('h3').text()).toBe('Maç sonucu')
     const home = markets[0].find('[data-choice="1"]')
-    expect(home.findAll('td').map((td) => td.text())).toEqual([`1${t('ui.odds.won')}`, '1,80', '4/5', '1,85', t('ui.odds.change.down')])
+    expect(home.findAll('td').map((td) => td.text())).toEqual([`1${t('ui.odds.won')}`, '1,804/5', '1,85', t('ui.odds.change.down')])
+    expect(home.find('[data-testid="odds-fraction"]').text()).toBe('4/5')
     expect(markets[0].find('[data-choice="X"]').text()).toContain(t('ui.odds.change.up'))
     expect(markets[0].find('[data-choice="2"]').text()).toContain('4,333')
     expect(markets[0].find('[data-choice="2"]').text()).toContain(t('ui.odds.change.none'))

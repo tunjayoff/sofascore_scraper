@@ -1116,10 +1116,6 @@ const en = {
   },
   odds: {
     list: 'Odds list',
-    kind: {
-      odds_featured: 'Featured markets',
-      odds_all: 'All markets',
-    },
     provider: 'Bookmaker {id}',
     providerUnknown: 'Bookmaker unknown',
     readAt: 'read',
