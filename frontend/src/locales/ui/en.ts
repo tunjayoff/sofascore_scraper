@@ -684,6 +684,7 @@ const en = {
   follows: {
     description: 'What is downloaded: leagues, teams, players and single matches, with their seasons and data.',
     syncAll: 'Update all',
+    coveragePlayer: 'Not counted for a player: the stored matches do not say who played in them.',
     sameName: 'Another follow has the same name: compare the numbers on sofascore.com',
     add: 'Add league',
     search: 'Search name',

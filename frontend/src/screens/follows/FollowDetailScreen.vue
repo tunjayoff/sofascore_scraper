@@ -26,6 +26,7 @@ import FollowActions from './FollowActions.vue'
 import MoveFollow from './MoveFollow.vue'
 import SlicePicker from './SlicePicker.vue'
 import { dataText, hasOdds, lastSyncOf, lockReason, placeName, seasonsText, syncIncludes } from './followText'
+import { followCoverage, type FollowCoverage } from './followCoverage'
 
 /**
  * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its downloads.
@@ -71,7 +72,17 @@ function setTab(k: Tab) {
 }
 
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
-const coverage = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
+const leagueCoverage = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
+/** A team's or a match's matches with details, counted from its stored matches (FX-24 F23). */
+const counted = ref<FollowCoverage | null>(null)
+const coverage = computed(() => (isTournament.value ? leagueCoverage.value : counted.value))
+function loadCount() {
+  const f = follow.value
+  if (!f || (f.kind !== 'team' && f.kind !== 'event')) return
+  followCoverage(f, status.status?.summary?.only_finished ?? true)
+    .then((c) => (counted.value = c))
+    .catch(() => {})
+}
 /** The jobs of this follow and the downloads of every follow, newest first. */
 const ownJobs = computed(() => (jobs.value ?? []).filter((j) => (follow.value && syncIncludes(follow.value, j)) || targets(j)))
 const lastSync = computed(() => (follow.value ? lastSyncOf(follow.value, jobs.value ?? []) : null))
@@ -86,6 +97,8 @@ async function load() {
   try {
     follow.value = await v1.follow(followId.value)
     noteFollowNames([follow.value])
+    counted.value = null
+    loadCount()
     if (isTournament.value) {
       loadTournament()
       loadSeasons()
@@ -144,6 +157,7 @@ function afterJob() {
   if (Date.now() - lastAfterJob < 2000) return
   lastAfterJob = Date.now()
   loadJobs()
+  loadCount()
   if (isTournament.value) {
     loadTournament()
     loadSeasons()
@@ -213,7 +227,7 @@ const facts = computed(() => {
     { key: 'live', label: t('ui.followDetail.fact.live'), value: f.live ? t('ui.follows.liveYes') : t('ui.common.no') },
     { key: 'enabled', label: t('ui.followDetail.fact.enabled'), value: f.enabled ? t('ui.common.yes') : t('ui.common.no') },
     { key: 'lastSync', label: t('ui.followDetail.fact.lastSync') },
-    ...(f.kind === 'tournament' ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
+    ...(f.kind !== 'player' ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
     { key: 'origin', label: t('ui.followDetail.fact.origin') },
     { key: 'created', label: t('ui.followDetail.fact.created') },
     { key: 'number', label: t('ui.followDetail.fact.number'), value: String(f.entity_id), mono: true },

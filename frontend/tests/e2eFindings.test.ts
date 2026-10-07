@@ -695,3 +695,48 @@ describe('F20: the SofaScore address is not the first field of Requests', () => 
     expect(await axeViolations(w.element)).toEqual([])
   })
 })
+
+describe('F23: teams and single matches have their matches with details too', () => {
+  const listing = (id: number, cls = 'completed') => event({ id, status: { type: 'finished', code: 100, description: 'Ended', class: cls as never }, quality: { ...event().quality, source: 'listing' } })
+
+  it('a team’s from its stored matches, a match’s from its record; a player’s is explained', async () => {
+    const f = mockFetch({
+      ...SPORTS,
+      'GET /api/v1/follows': page([
+        follow({ id: 'team:3071', kind: 'team', entity_id: 3071, name: 'Göztepe' }),
+        follow({ id: 'event:9100003', kind: 'event', entity_id: 9100003, name: 'Chelsea – Liverpool' }),
+        follow({ id: 'player:7', kind: 'player', entity_id: 7, name: 'Bukayo Saka' }),
+      ]),
+      'GET /api/v1/jobs': page([]),
+      // two finished matches with details, one finished without, one fixture (not counted while only finished count)
+      'GET /api/v1/events': page([event({ id: 1 }), event({ id: 2 }), listing(3), listing(4, 'not_started')]),
+      'GET /api/v1/events/9100003': { data: event() },
+    })
+    const { w } = await mountScreen(FollowsScreen, '/follows')
+    wrappers.push(w)
+    useStatusStore().status = status()
+    await flush()
+    await flush()
+    const cell = (id: string) => w.find(`[data-row] a[href="/follows/${id.replace(':', '/')}"]`).element.closest('tr')!
+    const team = cell('team:3071').querySelector('[data-testid="follow-coverage"]')!
+    expect(team.textContent?.trim()).toBe('67%')
+    expect(team.getAttribute('title')).toBe(t('ui.followDetail.coverageText', { details: '2', matches: '3' }))
+    expect(cell('event:9100003').querySelector('[data-testid="follow-coverage"]')!.textContent?.trim()).toBe('100%')
+    expect(cell('player:7').querySelector('[data-testid="follow-coverage-player"]')!.getAttribute('title')).toBe(t('ui.follows.coveragePlayer'))
+    expect(new URL(String(callsTo(f, 'GET /api/v1/events')[0][0]), 'http://x').searchParams.get('participant')).toBe('3071')
+  })
+
+  it('a team’s page shows it in the facts', async () => {
+    mockFetch({
+      ...SPORTS,
+      'GET /api/v1/follows/team:3071': { data: follow({ id: 'team:3071', kind: 'team', entity_id: 3071, name: 'Göztepe' }) },
+      'GET /api/v1/jobs': page([]),
+      'GET /api/v1/events': page([event({ id: 1 }), listing(3)]),
+    })
+    const { w } = await mountScreen(FollowDetailScreen, '/follows/team/3071', '/follows/:kind/:id')
+    wrappers.push(w)
+    await flush()
+    await flush()
+    expect(w.find('[data-testid="follow-facts"]').text()).toContain(t('ui.followDetail.coverageText', { details: '1', matches: '2' }))
+  })
+})

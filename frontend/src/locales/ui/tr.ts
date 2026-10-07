@@ -686,6 +686,7 @@ const tr: typeof en = {
   follows: {
     description: 'İndirilenler: ligler, takımlar, oyuncular ve tek maçlar; sezonları ve verileriyle.',
     syncAll: 'Tümünü güncelle',
+    coveragePlayer: 'Oyuncu için sayılmaz: kayıtlı maçlar kimin oynadığını söylemez.',
     sameName: 'Başka bir takiple aynı ad: numaraları sofascore.com’da karşılaştırın',
     add: 'Lig ekle',
     search: 'Ad ara',
