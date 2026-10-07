@@ -11158,6 +11158,30 @@
             "type": "boolean",
             "title": "Followed",
             "description": "A follow of any origin names this tournament, team or player already."
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender",
+            "description": "Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when SofaScore does not say (tournaments, players, stored names). Tells same-named men's and women's teams apart."
+          },
+          "national": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National",
+            "description": "The team is a national team; null when SofaScore does not say."
           }
         },
         "type": "object",

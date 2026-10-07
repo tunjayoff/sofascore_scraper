@@ -44,7 +44,10 @@ logger = logging.getLogger(__name__)
 #    skor çizelgesi (scores_json) alır
 # 5: beş B sınıfı spor kayıt defterinde (SP-3): beyzbol, kriket, e-spor, dart ve MMA maçlarının satırı skor
 #    çizelgesi alır; kriketin `willcontinue` durumu (gün sonu) UNKNOWN değil LIVE sınıfındadır
-DERIVE_VERSION = 5
+# 6: futbolda kod 120 (AP) maçın uzatma skoru (`aet`) yalnızca SofaScore uzatma anahtarı (overtime / extra1 /
+#    extra2) yolladıysa dolar; uzatmasız doğrudan penaltıya giden maç uzatma oynanmış görünmez (FX-23, F10).
+#    Sürüm değiştiği için eski kataloglar ilk açılışta dosyalardan yeniden kurulur ve düzelir.
+DERIVE_VERSION = 6
 
 Row = Dict[str, Any]
 Timestamp = Union[datetime, int, float, None]

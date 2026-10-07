@@ -217,6 +217,7 @@ class Cancelled(_CodedError):
 # (live, watcher:<spor>, sinks) çalışan bir servistir.
 _LEASE_WRITER = "writer"
 _LEASE_MAINTENANCE = "maintenance"
+_LEASE_EXPORT = "export"  # web'in dışa aktarma işi (FX-23): bir veri işlemi gibi bildirilir
 # Veri işlemleri `writer` kilidini "op:<ad>" amacıyla tutar (sofascore_scraper/store/jobs.py)
 _OPERATION_PREFIX = "op:"
 
@@ -238,7 +239,7 @@ def _iso_utc(epoch: Optional[float]) -> Optional[str]:
 
 def lease_error_code(name: str, purpose: str = "") -> str:
     """Tutulan kilidin adından ve amacından hata kodu: `job_running`, `data_operation_running`, `instance_running`."""
-    if (purpose or "").startswith(_OPERATION_PREFIX) or name == _LEASE_MAINTENANCE:
+    if (purpose or "").startswith(_OPERATION_PREFIX) or name in (_LEASE_MAINTENANCE, _LEASE_EXPORT):
         return "data_operation_running"
     if name == _LEASE_WRITER:
         return "job_running"

@@ -15,8 +15,8 @@
  },
  "stderr": [
   "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17",
-  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+  "LOG INFO ConfigManager: 1 leagues loaded",
+  "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
   "LOG INFO Services: Created directory: <SANDBOX>/data",
   "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
   "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",

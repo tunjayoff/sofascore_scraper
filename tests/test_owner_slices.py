@@ -317,4 +317,26 @@ def test_a_sync_runs_the_selected_extras_after_the_details(fake: FakeSofaScore, 
     assert sorted(api_paths(fake)) == ["/unique-tournament/17/season/61627/standings/home",
                                       "/unique-tournament/17/season/61627/standings/total"]
     assert "Odds and non-match data: 1 stored, 0 failed." in handle.lines
+    # FX-23 (F18): hangi veri türlerinin kaydedildiği ve hangilerinin SofaScore'da olmadığı da yazılır
+    assert "Saved: standings; not available on SofaScore: none." in handle.lines
     assert result.state == "succeeded"
+
+
+def test_the_extras_kinds_name_what_was_saved_and_what_was_not_available() -> None:
+    """F18 (FX-23): tek maçlık kupanın puan durumu yok; "1 kaydedildi" bunu söylemiyordu."""
+    from types import SimpleNamespace
+
+    from sofascore_scraper.services.sync import extras_kinds
+    from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, Outcome
+
+    def result(**slices: Outcome) -> SimpleNamespace:
+        return SimpleNamespace(slices={key.replace("__", "/"): o for key, o in slices.items()})
+
+    summary = SimpleNamespace(results=[
+        result(standings__total=Outcome(SLICE_EMPTY, reason="404"), season_info=Outcome(SLICE_OK, {"info": {}})),
+        result(odds_all__1=Outcome(SLICE_OK, {"markets": []}), standings__home=Outcome(SLICE_EMPTY, reason="404")),
+        result(cuptrees=Outcome(SLICE_FAILED, reason="403")),
+        result(top_players=Outcome(SLICE_EMPTY, reason="404"), season_info=Outcome(SLICE_EMPTY, reason="404")),
+    ])
+    assert extras_kinds(summary) == (("season_info", "odds_all"), ("standings", "top_players"))
+    assert extras_kinds(SimpleNamespace(results=[])) == ((), ())

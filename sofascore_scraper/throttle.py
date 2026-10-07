@@ -22,6 +22,13 @@ sonraki isteğe verilir. Her sıra en çok bir isteğe verildiği için bütçen
 bir T saniyelik pencerede en çok hız × T + patlama payı kadar istek) iadelerle de aşılmaz.
 Yalnızca zamanı henüz gelmemiş sıralar iade edilir (bkz. RequestThrottle.give_back).
 
+Öncelik şeridi (FX-23, bulgu F16): kullanıcının beklediği etkileşimli istekler (web arayüzünde arama ve
+yazarken öneriler) `interactive()` bloğunda yapılır ve kuyruğun sonuna değil, bekleyen ilk arka plan sırasının
+yerine girer. O sıra ve arkasındakiler birer aralık geri kayar, kuyruk bir aralık uzar: bütçe aşılmaz, yalnızca
+sıra değişir. Kayma dosyaya "bumps" olarak yazılır (konum, sayaç); arka plan isteği uyanınca `settle` ile
+kendisinden sonra yazılmış kaymalara bakar ve gerekirse bir aralık daha bekler. İndirme sürerken bir arama
+böylece en çok bir aralık bekler (1 istek/sn'de ~1 sn; önceden kuyruktaki bütün istekler kadar, 4-12 sn).
+
 Dayanıklılık:
   - Kilit işletim sistemi kilididir (POSIX flock / Windows msvcrt.locking): süreç çökerse
     çekirdek kilidi kendiliğinden bırakır, "bayat kilit" kalmaz.
@@ -38,13 +45,14 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import contextvars
 import json
 import logging
 import math
 import os
 import threading
 import time
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, NamedTuple, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +85,37 @@ _MAX_WAIT_SECONDS = 300.0
 _POSITION_EPSILON = 1e-6
 # Dosyadaki "free" listesinin üst sınırı; dolunca yeni iadeler yok sayılır (sıra boşa gider, bütçe aşılmaz)
 _MAX_FREE_POSITIONS = 1024
+# Öncelik şeridinin kayma kaydı: en çok bu kadar kayma tutulur; konumu şimdiden bu kadar eski olan atılır
+# (bir sıra en çok _MAX_WAIT_SECONDS bekler; iki katı, kaymalarla uzayan beklemeye pay bırakır)
+_MAX_BUMPS = 256
+_BUMP_KEEP_SECONDS = 2 * _MAX_WAIT_SECONDS
 
-# {"tat": sıradaki boş an, "at": yazıldığı an, "free": iade edilmiş ara sıralar (yoksa anahtar da yok)}
+# {"tat": sıradaki boş an, "at": yazıldığı an, "free": iade edilmiş ara sıralar (yoksa anahtar da yok),
+#  "seq": öncelikli isteklerin sayacı, "bumps": [[konum, sayaç], ...] öncelikli isteklerin kaydırdığı yerler,
+#  "prio": son öncelikli isteğin konumu (öncelikliler kendi aralarında sırayla gider); hiç öncelikli istek
+#  olmadıysa üçü de yok}
 State = Dict[str, Any]
+
+# Etkileşimli istek: sıra öncelik şeridinden alınır (bkz. modül belgesi, `interactive`)
+_priority: "contextvars.ContextVar[bool]" = contextvars.ContextVar("throttle_priority", default=False)
+
+
+@contextlib.contextmanager
+def interactive() -> Iterator[None]:
+    """
+    Blok içindeki SofaScore istekleri kullanıcının beklediği isteklerdir (arama, öneri): ortak bütçede bekleyen
+    arka plan isteklerinin önüne geçerler. Bağlam değişkenidir: köprünün arka plan döngüsüne de taşınır.
+    """
+    token = _priority.set(True)
+    try:
+        yield
+    finally:
+        _priority.reset(token)
+
+
+def is_interactive() -> bool:
+    """Bu bağlamdaki istek öncelik şeridinde mi."""
+    return _priority.get()
 
 _warned_invalid_rate: Optional[str] = None
 
@@ -99,7 +135,7 @@ def configured_rate() -> float:
     if not math.isfinite(rate):
         if _warned_invalid_rate != raw:
             _warned_invalid_rate = raw
-            logger.warning(f"{ENV_RATE} geçersiz ({raw!r}), varsayılan {DEFAULT_RATE_LIMIT:g} kullanılacak.")
+            logger.warning(f"{ENV_RATE} is not valid ({raw!r}); the default {DEFAULT_RATE_LIMIT:g} is used.")
         return DEFAULT_RATE_LIMIT
     return max(0.0, rate)
 
@@ -184,11 +220,45 @@ def _free_positions(free: Any, now: float, tat: float) -> List[float]:
     return sorted({float(p) for p in free if _is_number(p) and now <= p < tat})
 
 
-def _state(tat: float, now: float, free: List[float]) -> State:
+class _Lane(NamedTuple):
+    """Öncelik şeridinin durumu: sayaç, kayma kaydı (sayaca göre sıralı) ve son öncelikli isteğin konumu."""
+
+    seq: int = 0
+    bumps: Tuple[Tuple[float, int], ...] = ()
+    prio: Optional[float] = None
+
+
+_NO_LANE = _Lane()
+
+
+def _state(tat: float, now: float, free: List[float], lane: Optional[_Lane] = None) -> State:
+    lane = lane or _NO_LANE
     state: State = {"tat": tat, "at": now}
     if free:
         state["free"] = free
+    if lane.seq:
+        state["seq"] = lane.seq
+    if lane.bumps:
+        state["bumps"] = [[p, s] for p, s in lane.bumps]
+    if lane.prio is not None and lane.prio >= now:
+        state["prio"] = lane.prio
     return state
+
+
+def _lane(state: State, now: float) -> _Lane:
+    """Öncelik şeridinin durumu; bozuk girdiler, çok eski kaymalar ve zamanı geçmiş `prio` atılır."""
+    seq = state.get("seq")
+    seq = seq if isinstance(seq, int) and not isinstance(seq, bool) and seq > 0 else 0
+    found: List[Tuple[float, int]] = []
+    raw = state.get("bumps")
+    for item in raw if isinstance(raw, list) else ():
+        if (isinstance(item, list) and len(item) == 2 and _is_number(item[0]) and isinstance(item[1], int)
+                and not isinstance(item[1], bool) and 0 < item[1] <= seq and item[0] >= now - _BUMP_KEEP_SECONDS):
+            found.append((float(item[0]), int(item[1])))
+    found.sort(key=lambda bump: bump[1])
+    prio = state.get("prio")
+    prio = float(prio) if _is_number(prio) and prio >= now else None
+    return _Lane(seq, tuple(found[-_MAX_BUMPS:]), prio)
 
 
 def take(state: State, now: float, interval: float, burst: int = 1) -> Tuple[float, float, float, State]:
@@ -202,6 +272,7 @@ def take(state: State, now: float, interval: float, burst: int = 1) -> Tuple[flo
     Zamanı geçmiş iadeler kullanılmaz: sırasından sonra gönderilen istek komşusuna yaklaşırdı.
     """
     tat, free = _load(state, now)
+    lane = _lane(state, now)
     tolerance = (max(1, burst) - 1) * interval
     if free:
         position, free, new_tat = free[0], free[1:], tat
@@ -210,8 +281,52 @@ def take(state: State, now: float, interval: float, burst: int = 1) -> Tuple[flo
     slot = max(now, position - tolerance)
     if slot - now > _MAX_WAIT_SECONDS + interval:  # + interval: çok düşük hızlarda tek aralık meşrudur
         position = slot = now
-        free, new_tat = [], now + interval
-    return slot - now, slot, position, _state(new_tat, now, free)
+        free, new_tat, lane = [], now + interval, _Lane(lane.seq)
+    return slot - now, slot, position, _state(new_tat, now, free, lane)
+
+
+def take_priority(state: State, now: float, interval: float, burst: int = 1) -> Tuple[float, float, float, State]:
+    """
+    Öncelik şeridi: `take` gibi, ama sıra kuyruğun sonundan değil, zamanı henüz gelmemiş ilk arka plan
+    sırasından alınır; öncelikli istekler kendi aralarında geliş sırasıyla gider (`prio`: sonuncunun konumu,
+    yenisi onun ardına girer). Alınan sıra ve arkasındaki her sıra (iade edilmiş boşluklar dahil) bir aralık
+    geri kayar, tat bir aralık uzar ve kayma (konum, yeni sayaç) kaydedilir; arka plan istekleri uyanınca bunu
+    görür (`apply_bumps`). Önüne geçilecek bekleyen sıra yoksa ya da önde iade edilmiş bir boşluk varsa sıra
+    `take` ile alınır.
+    """
+    tat, free = _load(state, now)
+    lane = _lane(state, now)
+    tolerance = (max(1, burst) - 1) * interval
+    epsilon = min(_POSITION_EPSILON, interval / 4)
+    # Kuyrukta zamanı gelmemiş (slot > şimdi) sıra sayısı; sıralar tat'tan geriye aralık aralık dizilir
+    waiting = math.ceil((tat - now - tolerance) / interval - epsilon) - 1 if interval > 0 else 0
+    head = tat - waiting * interval
+    if lane.prio is not None and lane.prio + interval > head - epsilon:
+        head = lane.prio + interval
+    if waiting < 1 or head >= tat - epsilon or (free and free[0] <= head + epsilon):
+        delay, slot, position, new_state = take(state, now, interval, burst)
+        prio = position if lane.prio is None else max(lane.prio, position)
+        return delay, slot, position, _state(new_state["tat"], now, list(new_state.get("free") or []),
+                                             _lane(new_state, now)._replace(prio=prio))
+    free = sorted(p + interval if p >= head - epsilon else p for p in free)
+    seq = lane.seq + 1
+    bumps = (*lane.bumps, (head, seq))[-_MAX_BUMPS:]
+    slot = max(now, head - tolerance)
+    return slot - now, slot, head, _state(tat + interval, now, free, _Lane(seq, bumps, head))
+
+
+def apply_bumps(state: State, position: float, seen: int, interval: float) -> Tuple[float, int]:
+    """
+    Bir sıranın, ayrıldığından (`seen`: o anki sayaç) bu yana öncelikli isteklerin kaydırdığı yeni konumu:
+    (konum, şimdiki sayaç). Kaymalar yazılış sırasıyla uygulanır: konumu kaymanın konumunda ya da ardında olan
+    sıra bir aralık geri kayar.
+    """
+    lane = _lane(state, -math.inf)
+    epsilon = min(_POSITION_EPSILON, interval / 4) if interval > 0 else _POSITION_EPSILON
+    for at, number in lane.bumps:
+        if number > seen and at <= position + epsilon:
+            position += interval
+    return position, max(lane.seq, seen)
 
 
 def advance(state: State, now: float, interval: float, burst: int = 1) -> Tuple[float, float, State]:
@@ -237,6 +352,7 @@ def put_back(state: State, now: float, position: float, interval: float) -> Tupl
         return False, state
     if interval <= 0 or written_at > now + _CLOCK_SKEW_TOLERANCE_SECONDS:
         return False, state
+    lane = _lane(state, now)
     free = _free_positions(state.get("free"), -math.inf, tat)
     epsilon = min(_POSITION_EPSILON, interval / 4)
     if abs(position + interval - tat) <= epsilon:
@@ -253,7 +369,7 @@ def put_back(state: State, now: float, position: float, interval: float) -> Tupl
         free = sorted([*free, float(position)])
     else:
         return False, state
-    return True, _state(tat, now, [p for p in free if now <= p < tat])
+    return True, _state(tat, now, [p for p in free if now <= p < tat], lane)
 
 
 def _is_number(v: Any) -> bool:
@@ -267,13 +383,15 @@ class Reservation(float):
     döndüren sahteler) değişmeden çalışır. İstek gönderilmeden vazgeçilirse `give_back()` sırayı
     bütçeye iade eder; bir sıra yalnızca bir kez iade edilir.
 
-    slot: isteğin gönderilebileceği an. position: kuyruktaki yeri (bkz. `take`).
+    slot: isteğin gönderilebileceği an. position: kuyruktaki yeri (bkz. `take`). seq: ayrıldığı andaki
+    öncelik sayacı; öncelikli istekler sırayı kaydırınca `settle` yeni konumu ve beklemeyi ondan bulur.
     """
 
-    __slots__ = ("slot", "position", "_interval", "_lane", "_in_file", "_returned")
+    __slots__ = ("slot", "position", "seq", "_interval", "_tolerance", "_lane", "_in_file", "_returned")
 
     slot: float
     position: float
+    seq: int
 
     def __new__(
         cls,
@@ -284,10 +402,14 @@ class Reservation(float):
         interval: float = 0.0,
         lane: "Optional[RequestThrottle]" = None,
         in_file: bool = False,
+        seq: int = 0,
+        tolerance: float = 0.0,
     ) -> "Reservation":
         self = super().__new__(cls, delay)
         self.slot = slot
         self.position = position
+        self.seq = seq
+        self._tolerance = tolerance
         self._interval = interval
         self._lane = lane  # None: bütçe kapalıyken alınmış, iade edilecek bir şey yok
         self._in_file = in_file  # ortak dosyadan mı, süreç içi sayaçtan mı ayrıldı
@@ -297,6 +419,10 @@ class Reservation(float):
     def give_back(self) -> bool:
         """Sırayı bütçeye geri verir; geri alındıysa True. Hata fırlatmaz."""
         return self._lane.give_back(self) if self._lane is not None else False
+
+    def recheck(self) -> float:
+        """Öncelikli istekler sırayı kaydırdıysa daha beklenecek saniye (yoksa 0). Hata fırlatmaz."""
+        return self._lane.recheck(self) if self._lane is not None else 0.0
 
 
 class RequestThrottle:
@@ -387,42 +513,72 @@ class RequestThrottle:
             result, state = step(self._read(state_path))
             self._write(state_path, state)
         if self._shared_failed_at is not None:
-            logger.info(f"Ortak istek bütçesi ({self.name}) yeniden kullanılıyor.")
+            logger.info(f"Shared request budget ({self.name}) is used again.")
         self._shared_failed_at, self.shared_error = None, None
         self._local = state  # dosya kaybolursa süreç içi sayaç kaldığı yerden sürsün
         return result
 
-    def reserve(self) -> Reservation:
+    def reserve(self, *, priority: Optional[bool] = None) -> Reservation:
         """
         Sıradaki anı ayırır. Dönen değer beklenmesi gereken saniyedir (çağıran bekler); istek
-        gönderilmeden vazgeçilirse `give_back` ile iade edilir.
+        gönderilmeden vazgeçilirse `give_back` ile iade edilir, bekleme bitince `settle` / `recheck`
+        öncelikli isteklerin kaydırdığı sırayı bekler.
+
+        priority  True: öncelik şeridi (`take_priority`); None: bağlamdan (`interactive()` bloğu)
         """
         rate = self.rate()
         if rate <= 0:
             now = self._clock()
             return Reservation(0.0, slot=now, position=now)
         interval, burst = 1.0 / rate, self.burst()
+        claim = take_priority if (is_interactive() if priority is None else priority) else take
 
-        def step(state: State) -> Tuple[Tuple[float, float, float], State]:
-            delay, slot, position, new_state = take(state, self._clock(), interval, burst)
-            return (delay, slot, position), new_state
+        def step(state: State) -> Tuple[Tuple[float, float, float, int], State]:
+            delay, slot, position, new_state = claim(state, self._clock(), interval, burst)
+            return (delay, slot, position, int(new_state.get("seq") or 0)), new_state
 
         with self._thread_lock:
             in_file = False
             if self._shared_usable():
                 try:
-                    delay, slot, position = self._update_shared(step)
+                    delay, slot, position, seq = self._update_shared(step)
                     in_file = True
                 except (OSError, TimeoutError) as e:
                     if self._shared_failed_at is None:
                         logger.warning(
-                            f"Ortak istek bütçesi ({self.name}) kullanılamıyor: {e}. Bu süreç kendi "
-                            f"sayacıyla devam ediyor; {int(_SHARED_RETRY_AFTER_SECONDS)} sn sonra yeniden denenecek."
+                            f"Shared request budget ({self.name}) is unavailable: {e}. This process goes on "
+                            f"with its own counter; retrying the file in {int(_SHARED_RETRY_AFTER_SECONDS)} s."
                         )
                     self._shared_failed_at, self.shared_error = time.monotonic(), str(e)
             if not in_file:
-                (delay, slot, position), self._local = step(self._local)
-            return Reservation(delay, slot=slot, position=position, interval=interval, lane=self, in_file=in_file)
+                (delay, slot, position, seq), self._local = step(self._local)
+            return Reservation(delay, slot=slot, position=position, interval=interval, lane=self, in_file=in_file,
+                               seq=seq, tolerance=(burst - 1) * interval)
+
+    def recheck(self, reservation: Reservation) -> float:
+        """
+        Ayrılmış sıranın, öncelikli isteklerin kaydırmasından sonraki yeri: konumu ve `slot`u günceller, daha
+        beklenecek saniyeyi döndürür (0: sıra geldi). Durum değişmez. Hata fırlatmaz: dosyaya ulaşılamazsa 0.
+        """
+        with self._thread_lock:
+            if reservation._lane is not self or reservation._returned or reservation._interval <= 0:
+                return 0.0
+
+            def step(state: State) -> Tuple[Tuple[float, int], State]:
+                return apply_bumps(state, reservation.position, reservation.seq, reservation._interval), state
+
+            if reservation._in_file:
+                if not self._shared_usable():
+                    return 0.0
+                try:
+                    position, seq = self._update_shared(step)
+                except (OSError, TimeoutError):
+                    return 0.0
+            else:
+                (position, seq), _ = step(self._local)
+            reservation.position, reservation.seq = position, seq
+            reservation.slot = max(reservation.slot, position - reservation._tolerance)
+            return max(0.0, reservation.slot - self._clock())
 
     def reserve_slot(self) -> Tuple[float, float]:
         """Sıradaki anı ayırır: (beklenmesi gereken sn, ayrılan an). Beklemez."""
@@ -448,7 +604,9 @@ class RequestThrottle:
                 return False
 
             def step(state: State) -> Tuple[bool, State]:
-                return put_back(state, self._clock(), reservation.position, reservation._interval)
+                # Sıra öncelikli isteklerce kaydırıldıysa iade edilen yer kaydırılmış yeridir
+                position, _ = apply_bumps(state, reservation.position, reservation.seq, reservation._interval)
+                return put_back(state, self._clock(), position, reservation._interval)
 
             if not reservation._in_file:
                 returned, self._local = step(self._local)
@@ -472,6 +630,7 @@ class RequestThrottle:
         if delay > 0:
             with give_back_if_interrupted(delay):
                 self._sleep(delay)
+                settle(delay, self._sleep)
         return delay
 
     async def wait_async(self) -> float:
@@ -480,6 +639,7 @@ class RequestThrottle:
         if delay > 0:
             with give_back_if_interrupted(delay):
                 await asyncio.sleep(delay)
+                await settle_async(delay, asyncio.sleep)
         return delay
 
 
@@ -515,6 +675,32 @@ def give_back(delay: float) -> bool:
     return delay.give_back() if isinstance(delay, Reservation) else False
 
 
+def settle(delay: float, sleep: Callable[[float], None]) -> float:
+    """
+    `reserve()`'ün sırasını bekledikten sonra çağrılır: öncelikli istekler sırayı bu arada kaydırdıysa yeni
+    sıraya kadar `sleep` ile bekler (ve yeniden bakar). Toplam ek beklemeyi döndürür. Düz bir sayı (testlerin
+    sahteleri) ve beklemesiz sıra için hiçbir şey yapmaz. `give_back_if_interrupted` bloğunun içinde çağrılır.
+    """
+    if not isinstance(delay, Reservation) or delay <= 0:
+        return 0.0
+    total = 0.0
+    while (extra := delay.recheck()) > 0:
+        sleep(extra)
+        total += extra
+    return total
+
+
+async def settle_async(delay: float, sleep: Callable[[float], Any]) -> float:
+    """`settle`in async karşılığı: `sleep` beklenebilir (awaitable) döndürür."""
+    if not isinstance(delay, Reservation) or delay <= 0:
+        return 0.0
+    total = 0.0
+    while (extra := delay.recheck()) > 0:
+        await sleep(extra)
+        total += extra
+    return total
+
+
 @contextlib.contextmanager
 def give_back_if_interrupted(delay: float) -> Iterator[None]:
     """
@@ -533,6 +719,7 @@ def wait() -> float:
     if delay > 0:
         with give_back_if_interrupted(delay):
             time.sleep(delay)
+            settle(delay, time.sleep)
     return delay
 
 
@@ -541,6 +728,7 @@ async def wait_async() -> float:
     if delay > 0:
         with give_back_if_interrupted(delay):
             await asyncio.sleep(delay)
+            await settle_async(delay, asyncio.sleep)
     return delay
 
 

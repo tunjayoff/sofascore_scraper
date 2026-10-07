@@ -102,8 +102,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh --include-legacy",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 1 provisional records...",
    "LOG INFO MatchDataFetcher: Refreshing 1 matches",
    {
@@ -129,8 +129,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh --include-legacy",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 0 provisional records..."
   ],
   "stdout": [
@@ -152,8 +152,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 0 provisional records..."
   ],
   "stdout": [

@@ -525,6 +525,53 @@ def test_a_new_live_follow_is_picked_up_while_running(store: Store) -> None:
     assert report.sports == ("football", "tennis") and "/sport/tennis/events/live" in api.calls
 
 
+FB_NOT_STARTED = "football/A_notstarted-0-not-started__17184998"
+
+
+def test_followed_events_far_from_kick_off_are_not_read_at_start(store: Store) -> None:
+    """
+    F35 (FX-23): takip edilen ve kaydı aylar sonra başlayacağını söyleyen maç izleme başında okunmaz; yakında
+    başlayan ve kaydı olmayan maç eskisi gibi bir kez okunur. Başladığında canlı listede görülür.
+    """
+    now = 1_790_000_000.0
+    far, soon, unknown = (fx(FB_NOT_STARTED, eid, tournament_id=17) for eid in (700, 701, 702))
+    far["startTimestamp"] = int(now + 200 * 86400)
+    soon["startTimestamp"] = int(now + 3600)
+    unknown["startTimestamp"] = int(now + 200 * 86400)
+    observed = dt.datetime.fromtimestamp(now - 60, dt.timezone.utc)
+    store.events.observe(700, far, observed_at=observed)
+    store.events.observe(701, soon, observed_at=observed)
+    for eid in (700, 701, 702):
+        store.follows.add(FollowSpec(kind="event", entity_id=eid, name=f"match {eid}", sport="football", live=True))
+    api = FakeApi({"football": []}, {700: far, 701: soon, 702: unknown})
+    clock = Clock(now)
+
+    service(store, api, clock).run(Stop(clock, rounds=1))
+
+    assert "/event/700" not in api.calls
+    assert "/event/701" in api.calls and "/event/702" in api.calls
+    assert set(store.watch.load("football")) == {"701", "702"}
+
+    # Maç başladı: başlangıcı artık pencerenin içinde, izlenir (canlı listede de görünür)
+    api.live["football"] = [fx(FB_LIVE, 700, tournament_id=17)]
+    clock.now = float(far["startTimestamp"]) + 600
+    service(store, api, clock).run(Stop(clock, rounds=1))
+    assert store.watch.load("football")["700"]["class"] == "live"
+
+
+def test_an_event_given_on_the_command_line_is_read_at_start_whatever_its_kick_off(store: Store) -> None:
+    now = 1_790_000_000.0
+    far = fx(FB_NOT_STARTED, 700, tournament_id=17)
+    far["startTimestamp"] = int(now + 200 * 86400)
+    store.events.observe(700, far, observed_at=dt.datetime.fromtimestamp(now - 60, dt.timezone.utc))
+    api = FakeApi({"football": []}, {700: far})
+    clock = Clock(now)
+
+    service(store, api, clock, explicit_scope(["football"], event_ids=[700])).run(Stop(clock, rounds=1))
+
+    assert "/event/700" in api.calls
+
+
 def test_a_team_follow_watches_the_team_in_the_live_list() -> None:
     scope = SportScope("football", team_ids=frozenset({42}))
     assert scope.listed({"id": 1, "homeTeam": {"id": 42}})

@@ -80,6 +80,7 @@ NEED_LISTING = "listing"
 LISTING_SEASONS = "seasons"
 LISTING_SCHEDULE = "schedule"
 _SLICE_OK = "ok"
+_SLICE_EMPTY = "empty"  # son yanıt "veri yok" (Store'un dilim durumu)
 
 # Kapanmış durumlar (docs/design/01-storage.md 8.3): yenileme politikası yalnızca bunlara bakar. Açık olanlar
 # (başlamamış, oynanıyor, bilinmiyor) listelerin ve canlı servisin işidir.
@@ -368,6 +369,21 @@ def missing_slice_keys(state: "EventState", selection: Selection = CONFIGURED, *
     row = state.event
     keys = expected_slice_keys(row.sport, selection, phase=phase_of(row.status_class), row=row)
     return tuple(key for key in keys if slice_missing(state.slice(key), threshold))
+
+
+def unresolved_slice_keys(state: "EventState", selection: Selection = CONFIGURED, *,
+                          threshold: int = DEFAULT_EMPTY_THRESHOLD) -> Tuple[str, ...]:
+    """
+    Tamlık (kapsam) hesabının eksik dilimleri: `missing_slice_keys`, ama bitmiş maçta SofaScore'un son yanıtı
+    "veri yok" olan dilim (durumu `empty`) çözülmüş sayılır (FX-23). Planlayıcı onu yine bir kez daha ister
+    (eşik `threshold`, iki kesin yanıt: geçici bir 404 kalıcı sayılmasın), ama ilk indirmeden sonra tamlık
+    "%0" görünmez: bitmiş tek maçlık bir kupada puan durumu ya da kadro gerçekten yoktur. Bitmemiş maçta kural
+    `missing_slice_keys` ile aynıdır.
+    """
+    keys = missing_slice_keys(state, selection, threshold=threshold)
+    if state.event.status_class not in _FINISHED_CLASSES:
+        return keys
+    return tuple(key for key in keys if state.slice(key).state != _SLICE_EMPTY)
 
 
 def wanted_slice_keys(state: "EventState", selection: Selection = CONFIGURED, *,
@@ -800,7 +816,7 @@ def plan_items(store: "Store", event_ids: Iterable[Any], policy: RefreshPolicy, 
 
 
 __all__ = ["CONFIGURED", "LISTING_SCHEDULE", "LISTING_SEASONS", "NEEDS", "NEED_LISTING", "Need", "SETTLED_CLASSES",
-           "Selection", "SelectionPolicy", "WorkItem", "configured_policy", "resolve_policy", "selection_for", "WorkNeed", "compute_need", "event_needs", "expected_slice_keys", "missing_slice_keys", "order_by_need",
+           "Selection", "SelectionPolicy", "WorkItem", "configured_policy", "resolve_policy", "selection_for", "WorkNeed", "compute_need", "event_needs", "expected_slice_keys", "missing_slice_keys", "order_by_need", "unresolved_slice_keys",
            "phase_of", "plan_items", "refresh_due", "refresh_due_events", "schedule_item", "season_list_item",
            "slice_missing", "wanted_slice_keys", "work_item",
            "NEED_OWNER", "PREMATCH_WINDOW_S", "SEASON_ACTIVE_S", "extras_selected", "is_timed", "owner_item",

@@ -55,7 +55,7 @@ def test_extract_scores_for_unregistered_sport_is_a_bare_sheet(sport, caplog):
     assert type(sheet) is ScoreSheet
     assert sheet.sport == (sport or None)
     assert sheet.winner_code == 1
-    assert "desteklenmeyen spor" in caplog.text
+    assert "unsupported sport" in caplog.text
 
 
 # --- izleyici ---------------------------------------------------------------------------

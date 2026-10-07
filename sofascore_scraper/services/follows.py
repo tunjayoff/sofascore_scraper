@@ -142,6 +142,9 @@ class SearchHit:
     country_*    ülke: turnuvada kategorinin `alpha2`'si, takımda ve oyuncuda varlığın `country`'si
     team_*       oyuncunun takımı
     followed     aynı türden bir takip bu varlığı zaten adlandırıyor
+    gender       takımın cinsiyeti, SofaScore'un yazdığı gibi ("M" erkek, "F" kadın); bilinmiyorsa None (FX-23, F26:
+                 aynı adlı erkek ve kadın takımları ayırt edilsin)
+    national     takım bir milli takım mı; bilinmiyorsa None
     """
 
     id: int
@@ -157,6 +160,8 @@ class SearchHit:
     country_name: Optional[str] = None
     team_id: Optional[int] = None
     team_name: Optional[str] = None
+    gender: Optional[str] = None
+    national: Optional[bool] = None
 
 
 # Eski ad (FX-13'e kadar yalnızca turnuva araması vardı)
@@ -457,15 +462,17 @@ class FollowsService:
 
     def _ask(self, path: str) -> Any:
         """Aramanın tek isteği; 404 None (bulunamadı), öteki hatalar tipli hata."""
-        from sofascore_scraper import bridge_health
+        from sofascore_scraper import bridge_health, throttle
         from sofascore_scraper.client import api_url
         from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError, SofaScoreScraperError
         from sofascore_scraper.utils import make_api_request
 
         before = bridge_health.snapshot()
         try:
-            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
-            return make_api_request(api_url(path), max_retries=1, timeout=10, raise_errors=True)
+            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma. Kullanıcı bekliyor:
+            # ortak bütçede indirmenin bekleyen isteklerinin önüne geçer (öncelik şeridi, FX-23, F16)
+            with throttle.interactive():
+                return make_api_request(api_url(path), max_retries=1, timeout=10, raise_errors=True)
         except SofaScoreScraperError as e:
             if isinstance(e, ResourceNotFoundError):
                 return None
@@ -605,11 +612,13 @@ def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Op
             country_name=_text(_mapping(category.get("country")).get("name")),
         )
     team = _mapping(entity.get("team")) if kind == "player" else {}
+    national = entity.get("national")
     return SearchHit(
         id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_sport_of(entity, team),
         category_id=None, category_name=None, category_slug=None, country_code=_text(country.get("alpha2")),
         followed=(kind, entity_id) in followed, kind=kind, country_name=_text(country.get("name")),
         team_id=_number(team.get("id")), team_name=_text(team.get("name")),
+        gender=_text(entity.get("gender")), national=national if isinstance(national, bool) else None,
     )
 
 

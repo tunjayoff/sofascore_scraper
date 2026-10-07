@@ -38,7 +38,9 @@ Kapsam (coverage) kuralları:
   * Beklenen dilimler maçın sporuna ve evresine göredir (sofascore_scraper/services/planning.py `expected_slice_keys`,
     tamlık hesabına girenler). Bir dilim eksiktir, planlayıcı onu yeniden isteyecekse
     (`planning.missing_slice_keys`): satırı yok ya da `ok` değil ve yeterince kesin "veri yok" yanıtı almamış.
-    Yeterince denenip hep boş gelen dilim (ör. tenis maçında kadro) eksik sayılmaz.
+    Yeterince denenip hep boş gelen dilim (ör. tenis maçında kadro) eksik sayılmaz; bitmiş maçta son yanıtı
+    "veri yok" olan dilim de (`planning.unresolved_slice_keys`, FX-23): planlayıcı onu doğrulamak için bir kez
+    daha ister, ama ilk indirmeden sonra tamlık "%0" görünmez.
   * Tam maç: eksik dilimi olmayan maç. Oran yüzdedir, iki ondalık (eski raporla aynı yuvarlama).
 
 Rapor hiçbir yere yazılmaz: istendiğinde hesaplanır (eskiden `match_details/processed/` altına JSON ve CSV
@@ -427,7 +429,7 @@ class StatusService:
                 row = state.event
                 if not row.has_event_payload:
                     continue
-                missing = planning.missing_slice_keys(state, threshold=threshold)
+                missing = planning.unresolved_slice_keys(state, threshold=threshold)
                 total.add(missing)
                 by_tournament.setdefault(row.tournament_id, _Tally()).add(missing)
                 by_season.setdefault(row.tournament_id, {}).setdefault(row.season_id, _Tally()).add(missing)
@@ -478,7 +480,8 @@ class StatusService:
             counts[1] += 1 if row.status_class in _FINISHED else 0
             if row.has_event_payload:
                 counts[2] += 1
-                tallies.setdefault(row.season_id, _Tally()).add(planning.missing_slice_keys(state, threshold=threshold))
+                tallies.setdefault(row.season_id, _Tally()).add(
+                    planning.unresolved_slice_keys(state, threshold=threshold))
         out: List[SeasonCounts] = []
         for season_id in sorted(seasons, key=_season_order):
             fetched: Optional[float] = None

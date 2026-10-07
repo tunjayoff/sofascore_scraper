@@ -187,12 +187,13 @@ def test_coverage_report_counts_the_slices_the_writer_marked_and_writes_nothing(
     report = StatusService(open_store(str(tmp_path))).coverage()
     assert capsys.readouterr().out == ""
     assert _files(tmp_path) == before
-    # 42: tek kesin "yok" yetmez, beş dilim eksik; 43: istatistik beklenmez, beş dilim eksik
-    missing = {key: 2 for key in ("team_streaks", "pregame_form", "h2h", "lineups", "incidents")}
-    assert (report.matches, report.complete, report.completion_rate) == (2, 0, 0.0)
+    # 42: bitmiş maçta tek kesin "yok" tamlık için yeter (FX-23; planlayıcı yine bir kez sorar); 43: istatistik
+    # beklenmez, beş dilim eksik
+    missing = {key: 1 for key in ("team_streaks", "pregame_form", "h2h", "lineups", "incidents")}
+    assert (report.matches, report.complete, report.completion_rate) == (2, 1, 50.0)
     assert dict(report.missing) == missing
     (tournament,) = report.tournaments
-    assert (tournament.tournament_id, tournament.matches, tournament.complete) == (2361, 2, 0)
+    assert (tournament.tournament_id, tournament.matches, tournament.complete) == (2361, 2, 1)
     assert [season.season_id for season in tournament.seasons] == [1]
     assert dict(tournament.seasons[0].missing) == dict(tournament.missing) == missing
 

@@ -119,6 +119,7 @@ def _throttle() -> None:
     if delay > 0:
         with throttle.give_back_if_interrupted(delay):
             _sleep(delay)
+            throttle.settle(delay, _sleep)  # etkileşimli bir istek önüne geçtiyse (FX-23, F16)
 
 
 async def _athrottle() -> None:
@@ -126,6 +127,7 @@ async def _athrottle() -> None:
     if delay > 0:
         with throttle.give_back_if_interrupted(delay):
             await _asleep(delay)
+            await throttle.settle_async(delay, _asleep)
 
 
 IMPERSONATE_PROFILES = [
@@ -258,14 +260,14 @@ def _browser_first() -> bool:
 def _mark_browser_first() -> None:
     global _browser_first_until
     if not _browser_first():
-        logger.info(f"curl engelleniyor; istekler {int(BROWSER_FIRST_SECONDS)} sn tarayıcıdan yapılacak")
+        logger.info(f"curl is blocked; requests go through the browser for {int(BROWSER_FIRST_SECONDS)} s")
     _browser_first_until = time.monotonic() + BROWSER_FIRST_SECONDS
 
 
 def _browser_result(data: Any, url: str) -> Optional[JsonResponse]:
     """Köprü sonucunu yorumla: veri ya da 404 (ResourceNotFoundError)."""
     if isinstance(data, dict) and data.get("__404__"):
-        raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+        raise ResourceNotFoundError(f"Not found: {url}")
     return cast(JsonResponse, data)
 
 
@@ -357,14 +359,14 @@ def _request_sync(
 
     # İsteği bitiren hata: döngüden `break` ile çıkılır ve sonda fırlatılır (try içinde fırlatılsa
     # aşağıdaki geniş except onu bağlantı hatası sanıp yeniden denerdi)
-    failure: Exception = NetworkError(f"İstek başarısız: {url}")
+    failure: Exception = NetworkError(f"Request failed: {url}")
     for attempt in range(max_retries):
         raise_if_cancelled()
         breaker.check(url)  # devre açıksa istek gönderilmez, ortak bütçeden sıra ayrılmaz
         trace.attempt()
         last_attempt = attempt == max_retries - 1
         try:
-            logger.debug(f"API İsteği ({attempt+1}/{max_retries}): {url}")
+            logger.debug(f"API request ({attempt+1}/{max_retries}): {url}")
 
             kwargs: Dict[str, Any] = {
                 # Her istekte yeniden: 30 dk'lık hash ve yeni çözülen captcha token güncel kalsın
@@ -381,39 +383,39 @@ def _request_sync(
 
             if response.status_code in (429, 503):
                 if last_attempt:
-                    logger.error(f"Rate limit/Sunucu meşgul, denemeler tükendi: {url}")
+                    logger.error(f"Rate limited or server busy, no attempts left: {url}")
                     failure = RateLimitError(status_code=response.status_code, url=url)
                     break
                 default_wait = min(60, 5 * (2 ** attempt))
                 wait_time = _parse_retry_after_seconds(response.headers.get("Retry-After"), default_wait)
-                logger.warning(f"Rate limit/Sunucu meşgul ({response.status_code}). {wait_time} saniye bekleniyor...")
+                logger.warning(f"Rate limited or server busy ({response.status_code}); waiting {wait_time} s")
                 _notify_wait("rate_limit", wait_time)
                 _sleep(wait_time)
                 continue
 
             if response.status_code == 403:
-                logger.warning(f"403 Forbidden (deneme {attempt+1}/{max_retries}): {url}")
-                logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'yok')}, cf-mitigated: {response.headers.get('cf-mitigated', 'yok')}")
+                logger.warning(f"403 Forbidden (attempt {attempt+1}/{max_retries}): {url}")
+                logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'none')}, cf-mitigated: {response.headers.get('cf-mitigated', 'none')}")
                 raise_if_cancelled()
                 if "challenge" in response.text:
-                    logger.info("Turnstile challenge tespit edildi. BrowserBridge üzerinden veri alınıyor...")
+                    logger.info("Turnstile challenge detected; fetching through the browser bridge")
                     try:
                         from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync
                         browser_data = fetch_api_via_browser_sync(full_url)
                         if browser_data is not None:
                             trace.bridge()
                             _mark_browser_first()
-                            logger.debug("Veri BrowserBridge üzerinden alındı")
+                            logger.debug("Fetched through the browser bridge")
                     except Exception as te:
-                        logger.debug(f"BrowserBridge hatası: {te}")
+                        logger.debug(f"Browser bridge error: {te}")
                         browser_data = None
                     if isinstance(browser_data, dict) and browser_data.get("__404__"):
-                        failure = ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+                        failure = ResourceNotFoundError(f"Not found: {url}")
                         break
                     if browser_data is not None:
                         return cast(JsonResponse, browser_data)
                 if last_attempt:
-                    logger.error(f"403 Forbidden, denemeler tükendi: {url}")
+                    logger.error(f"403 Forbidden, no attempts left: {url}")
                     failure = APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
                     break
                 _notify_wait("forbidden", min(120, 10 * (2 ** attempt)))
@@ -422,25 +424,25 @@ def _request_sync(
 
             # 404 = missing resource (e.g. pregame-form). Never retry — burns cancel latency.
             if response.status_code == 404:
-                logger.debug(f"Kaynak bulunamadı (404): {url}")
-                failure = ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+                logger.debug(f"Not found (404): {url}")
+                failure = ResourceNotFoundError(f"Not found: {url}")
                 break
 
             if response.status_code >= 400:
                 if last_attempt or not _is_transient_status(response.status_code):
-                    logger.error(f"HTTP hata: {response.status_code} {response.reason} — {url}")
+                    logger.error(f"HTTP error: {response.status_code} {response.reason}: {url}")
                     failure = APIError(
                         f"HTTP {response.status_code} {response.reason}: {url}", status_code=response.status_code
                     )
                     break
-                logger.warning(f"HTTP {response.status_code}, {_retry_wait(attempt)} sn sonra yeniden denenecek: {url}")
+                logger.warning(f"HTTP {response.status_code}, retrying in {_retry_wait(attempt)} s: {url}")
                 _sleep(_retry_wait(attempt))
                 continue
 
             try:
                 data = response.json()
             except ValueError as e:
-                raise DataParsingError(f"JSON ayrıştırma hatası: {str(e)}") from e
+                raise DataParsingError(f"JSON parse error: {str(e)}") from e
 
             # İnsan davranışını simüle etmek için kısa bekleme
             wait_time = wait_time_min + random.uniform(0, wait_time_max)
@@ -454,18 +456,18 @@ def _request_sync(
 
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
-                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - proxy: {'açık' if use_proxy else 'yok'}")
+                logger.error(f"Proxy or connection error: {str(e)} (proxy {'on' if use_proxy else 'off'})")
             else:
-                logger.error(f"İstek hatası: {str(e)}")
+                logger.error(f"Request error: {str(e)}")
             if last_attempt:
-                logger.error(f"Tüm denemeler başarısız oldu: {url}")
+                logger.error(f"All attempts failed: {url}")
                 if isinstance(e, DataParsingError):
                     failure = e
                 else:
-                    failure = NetworkError(f"İstek başarısız: {url}: {e}")
+                    failure = NetworkError(f"Request failed: {url}: {e}")
                     failure.__cause__ = e
                 break
-            logger.info(f"{_retry_wait(attempt)} saniye içinde yeniden deneniyor... ({attempt+1}/{max_retries})")
+            logger.info(f"Retrying in {_retry_wait(attempt)} s ({attempt+1}/{max_retries})")
             _sleep(_retry_wait(attempt))
 
     raise failure
@@ -545,11 +547,11 @@ async def _request_async(
                 raise_if_cancelled()
                 browser_data = await fetch_api_via_browser(full_url)
         except Exception as e:
-            logger.debug(f"BrowserBridge hatası: {e!r}")
+            logger.debug(f"Browser bridge error: {e!r}")
         if browser_data is not None:
             trace.bridge()
         if isinstance(browser_data, dict) and browser_data.get("__404__"):
-            raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+            raise ResourceNotFoundError(f"Not found: {url}")
         if browser_data is not None:
             try:
                 await _asleep(wait_time_min + random.uniform(0, wait_time_max))
@@ -565,7 +567,7 @@ async def _request_async(
         trace.attempt()
         last_attempt = attempt == max_retries - 1
         try:
-            logger.debug(f"Asenkron API İsteği ({attempt+1}/{max_retries}): {url}")
+            logger.debug(f"Async API request ({attempt+1}/{max_retries}): {url}")
 
             # Her istekte yeniden: 30 dk'lık hash ve yeni çözülen captcha token güncel kalsın
             kwargs: Dict[str, Any] = {"timeout": request_timeout, "headers": get_request_headers()}
@@ -585,11 +587,11 @@ async def _request_async(
             raise
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
-                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - proxy: {'açık' if use_proxy else 'yok'}")
+                logger.error(f"Proxy or connection error: {str(e)} (proxy {'on' if use_proxy else 'off'})")
             else:
-                logger.error(f"Asenkron istek hatası: {str(e)}")
+                logger.error(f"Async request error: {str(e)}")
             if last_attempt:
-                raise NetworkError(f"İstek başarısız: {url}: {e}") from e
+                raise NetworkError(f"Request failed: {url}: {e}") from e
             await _asleep(_retry_wait(attempt))
             continue
 
@@ -601,30 +603,30 @@ async def _request_async(
                 raise RateLimitError(status_code=status, url=url)
             default_wait = min(60, 5 * (2 ** attempt))
             wait_time = _parse_retry_after_seconds(response.headers.get("Retry-After"), default_wait)
-            logger.warning(f"Rate limit/Sunucu meşgul ({status}). {wait_time} saniye bekleniyor...")
+            logger.warning(f"Rate limited or server busy ({status}); waiting {wait_time} s")
             _notify_wait("rate_limit", wait_time)
             await _asleep(wait_time)
             continue
 
         if status == 403:
-            logger.warning(f"403 Forbidden (deneme {attempt+1}/{max_retries}): {url}")
-            logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'yok')}, cf-mitigated: {response.headers.get('cf-mitigated', 'yok')}")
+            logger.warning(f"403 Forbidden (attempt {attempt+1}/{max_retries}): {url}")
+            logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'none')}, cf-mitigated: {response.headers.get('cf-mitigated', 'none')}")
             raise_if_cancelled()
             if "challenge" in response.text:
-                logger.info("Turnstile challenge tespit edildi. BrowserBridge üzerinden veri alınıyor...")
+                logger.info("Turnstile challenge detected; fetching through the browser bridge")
                 browser_data = None
                 try:
                     from sofascore_scraper.challenge_solver import fetch_api_via_browser
                     browser_data = await fetch_api_via_browser(full_url)
                 except Exception as te:
-                    logger.debug(f"BrowserBridge hatası: {te!r}")
+                    logger.debug(f"Browser bridge error: {te!r}")
                 if browser_data is not None:
                     trace.bridge()
                 if isinstance(browser_data, dict) and browser_data.get("__404__"):
-                    raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+                    raise ResourceNotFoundError(f"Not found: {url}")
                 if browser_data is not None:
                     _mark_browser_first()
-                    logger.debug("Veri BrowserBridge üzerinden alındı")
+                    logger.debug("Fetched through the browser bridge")
                     return cast(JsonResponse, browser_data)
             if last_attempt:
                 raise APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
@@ -633,8 +635,8 @@ async def _request_async(
             continue
 
         if status == 404:
-            logger.debug(f"Kaynak bulunamadı (404): {url}")
-            raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+            logger.debug(f"Not found (404): {url}")
+            raise ResourceNotFoundError(f"Not found: {url}")
 
         if status >= 400:
             if last_attempt or not _is_transient_status(status):
@@ -651,7 +653,7 @@ async def _request_async(
             except Exception:
                 response_text = "<okunamadi>"
             raise DataParsingError(
-                f"JSON ayrıştırma hatası: {str(e)} | Status: {status} | Content: {response_text[:500]}"
+                f"JSON parse error: {str(e)} | Status: {status} | Content: {response_text[:500]}"
             ) from e
 
         wait_time = wait_time_min + random.uniform(0, wait_time_max)
@@ -673,7 +675,7 @@ async def _warmup_session(session: AsyncSession) -> None:
     """
     warmup_url = "https://www.sofascore.com/"
     try:
-        logger.debug("Session warm-up başlatılıyor...")
+        logger.debug("Session warm-up started")
         kwargs: Dict[str, Any] = {"timeout": 15}
         use_proxy, proxy_url = _get_proxy_config()
         if use_proxy and proxy_url:
@@ -681,13 +683,13 @@ async def _warmup_session(session: AsyncSession) -> None:
         await throttle.wait_async()  # warm-up da SofaScore'a giden bir istek: ortak bütçeden
         resp = await session.get(warmup_url, **kwargs)
         logger.debug(
-            f"Warm-up tamamlandı: status={resp.status_code}, "
+            f"Warm-up done: status={resp.status_code}, "
             f"cookies={len(session.cookies) if hasattr(session, 'cookies') else '?'}"
         )
         # Cloudflare challenge geçişi için kısa bekleme
         await asyncio.sleep(random.uniform(0.5, 1.5))
     except Exception as e:
-        logger.debug(f"Warm-up başarısız (devam ediliyor): {e}")
+        logger.debug(f"Warm-up failed (continuing): {e}")
 
 
 class WarmableAsyncSession:
@@ -699,7 +701,7 @@ class WarmableAsyncSession:
     def __init__(self) -> None:
         runtime_config = _get_runtime_request_config()
         profile = random.choice(IMPERSONATE_PROFILES)
-        logger.debug(f"Async session oluşturuldu, impersonate profili: {profile}")
+        logger.debug(f"Async session created, impersonate profile: {profile}")
         self._session = AsyncSession(
             headers=get_request_headers(),
             timeout=int(runtime_config["request_timeout"]),

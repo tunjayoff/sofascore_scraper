@@ -35,6 +35,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from sofascore_scraper import bridge_health, throttle
+from sofascore_scraper.client import profile_lock
 from sofascore_scraper.client.context import FetchCancelled, raise_if_cancelled
 from sofascore_scraper.private_files import make_private_dir
 from sofascore_scraper.logger import get_logger
@@ -209,10 +210,25 @@ async def _wait_for_slot() -> None:
         if wait is not None:
             wait.own += delay
         with throttle.give_back_if_interrupted(delay):
-            if shared:
-                await asyncio.sleep(delay)
-            else:
-                await _cancellable_sleep(delay)
+            sleep = asyncio.sleep if shared else _cancellable_sleep
+            await sleep(delay)
+            # Etkileşimli bir istek önüne geçtiyse (FX-23, F16) kaydırılan sırayı bekler
+            if (extra := await throttle.settle_async(delay, sleep)) and wait is not None:
+                wait.own += extra
+
+
+def _session_class() -> Any:
+    """
+    Scrapling'in tarayıcı oturumu sınıfı. Scrapling içe aktarılırken "scrapling" logger'ına kendi konsol handler'ını
+    kurar; satırlar hem onunla hem kök logger'la iki kez yazılıyordu. Logger uygulamanın handler'larına bağlanır:
+    her satır bir kez, uygulamanın biçiminde (FX-23, bulgu F3).
+    """
+    from scrapling.fetchers import AsyncStealthySession
+
+    from sofascore_scraper.logger import adopt_library_logger
+
+    adopt_library_logger("scrapling")
+    return AsyncStealthySession
 
 
 class BrowserBridge:
@@ -246,6 +262,8 @@ class BrowserBridge:
         self._solve_wait: Optional[_SlotWait] = None
         self._launch_failed_at: float = 0.0
         self._solve_failed_at: float = 0.0
+        # Profil başka bir süreçteyse (ör. `ssc serve`) bu sürecin geçici profili; köprü kapanınca silinir
+        self._launch_dir: Optional[str] = None
         # Profil SofaScore cookie'lerini (çözülmüş challenge) taşır: yalnızca sahibine açık (0700)
         make_private_dir(self.profile_dir)
 
@@ -269,16 +287,16 @@ class BrowserBridge:
             if self._launch_failed_at and time.time() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
                 if self.report_health:
                     bridge_health.record_failure(bridge_health.KIND_BROWSER,
-                                                 "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
+                                                 "the browser could not start (waiting before the next try)")
                 raise RuntimeError(
-                    "BrowserBridge başlatılamadı (yakın zamanda denendi). "
-                    "Nedenini görmek için: `python main.py --doctor` "
-                    "(tarayıcı kurulumu: `python -m patchright install chromium --no-shell`)"
+                    "The browser bridge could not start (tried recently). "
+                    "Run `ssc doctor` to see why "
+                    "(browser install: `python -m patchright install chromium --no-shell`)"
                 )
             # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
             await self.close()
             try:
-                await self._launch()
+                await self._launch_in_free_profile()
             except BaseException as e:
                 # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
                 self._launch_failed_at = time.time()
@@ -288,15 +306,42 @@ class BrowserBridge:
                 raise
             self._launch_failed_at = 0.0
 
-    async def _launch(self) -> None:
-        from scrapling.fetchers import AsyncStealthySession
+    def _use_secondary_profile(self, owner: profile_lock.ProfileOwner) -> None:
+        """Profil başka bir süreçte: bu süreç kardeş geçici profille açar (sofascore_scraper/client/profile_lock.py)."""
+        try:
+            self._launch_dir = profile_lock.secondary_profile(self.profile_dir)
+        except OSError as e:
+            raise RuntimeError(f"The browser profile {self.profile_dir} is in use by {owner.describe()} and no "
+                               f"temporary profile could be created ({e})") from e
+        logger.info("Browser profile %s is in use by %s; this process uses a temporary profile: %s",
+                    self.profile_dir, owner.describe(), self._launch_dir)
 
+    async def _launch_in_free_profile(self) -> None:
+        """
+        Tarayıcıyı boş bir profille açar. Profil başka bir canlı süreçteyse (`ssc serve` ile yan yana bir CLI
+        komutu) geçici kardeş profil kullanılır; kilit denetimiyle başlatma arasında başka süreç profili alırsa
+        Chromium'un kilit hatası görülür ve bir kez geçici profille yeniden denenir.
+        """
+        owner = profile_lock.profile_owner(self.profile_dir)
+        if owner is not None:
+            self._use_secondary_profile(owner)
+        try:
+            await self._launch()
+        except Exception as e:
+            if self._launch_dir is not None or not profile_lock.is_lock_error(e):
+                raise
+            await self.close()
+            self._use_secondary_profile(profile_lock.profile_owner(self.profile_dir) or profile_lock.ProfileOwner())
+            await self._launch()
+
+    async def _launch(self) -> None:
+        AsyncStealthySession = _session_class()
         headless = _headless()
-        logger.info(f"Tarayıcı oturumu başlatılıyor (Scrapling StealthySession, headless={headless})...")
+        logger.info(f"Starting the browser session (Scrapling StealthySession, headless={headless})")
         self.session = AsyncStealthySession(
             headless=headless,
             solve_cloudflare=True,
-            user_data_dir=self.profile_dir,
+            user_data_dir=self._launch_dir or self.profile_dir,
             proxy=_proxy_settings(),
             block_webrtc=True,
             timeout=60000,
@@ -306,7 +351,7 @@ class BrowserBridge:
         # Scrapling'in oturum bağlamı: kendi sayfamızı bunun içinde açıp tekrar tekrar kullanırız
         self.context = getattr(self.session, "context", None)
         if self.context is None:
-            raise RuntimeError("Scrapling oturumu tarayıcı bağlamı açmadı (sürüm uyumsuzluğu?)")
+            raise RuntimeError("The Scrapling session opened no browser context (version mismatch?)")
 
         # Profilde çözüm yoksa challenge'ı API isteklerinden önce çöz
         solved_now = None
@@ -317,7 +362,7 @@ class BrowserBridge:
         try:
             await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
         except Exception as e:
-            logger.warning(f"Sofascore anasayfa açılış uyarısı: {e}")
+            logger.warning(f"Opening the SofaScore home page: {e}")
         token = await self._token_from_context()
         if token:
             self._set_token(token)
@@ -346,7 +391,7 @@ class BrowserBridge:
                 SOLVE_TIMEOUT,
             )
         except Exception as e:
-            logger.warning(f"captcha.html çözümü hata verdi: {e.__class__.__name__}: {e}")
+            logger.warning(f"Solving on captcha.html failed: {e.__class__.__name__}: {e}")
         # Cookie, widget geçtikten kısa süre sonra yazılır
         for _ in range(20):
             token = await self._token_from_context()
@@ -408,7 +453,7 @@ class BrowserBridge:
                 msg = str(e)
                 if attempt == 2 or not any(k in msg for k in ("Execution context was destroyed", "navigation", "Target page, context or browser has been closed")):
                     raise
-                logger.info(f"Köprü sayfası yönlendi; yeniden deneniyor ({attempt + 1}/2)")
+                logger.info(f"The bridge page navigated away; retrying ({attempt + 1}/2)")
                 if self.page.is_closed():
                     self.page = None
                     await self.ensure_ready()
@@ -418,7 +463,7 @@ class BrowserBridge:
                     if not self.page.url.startswith("https://www.sofascore.com"):
                         await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
                 except Exception as le:
-                    logger.warning(f"Köprü sayfası toparlanamadı: {le}")
+                    logger.warning(f"The bridge page could not recover: {le}")
 
     async def _api_fetch(self, url: str, cache_mode: str) -> Dict[str, Any]:
         """
@@ -438,14 +483,14 @@ class BrowserBridge:
         return res.get("status") != 403
 
     async def _solve_challenge(self) -> Optional[str]:
-        logger.info("Cloudflare Turnstile challenge çözülüyor (captcha.html)...")
+        logger.info("Solving the Cloudflare Turnstile challenge (captcha.html)")
         token = await self._solve_on_captcha_page()
         if token:
             self._set_token(token)
         if token and not await self._api_unlocked():
             # Profildeki süresi geçmiş cookie: captcha.html challenge göstermeden yönlenir ve yeni
             # cookie üretilmez. Cookie silinip challenge baştan çözülür.
-            logger.info("sofa_captcha cookie'si hâlâ reddediliyor; silinip challenge yeniden çözülüyor")
+            logger.info("The sofa_captcha cookie is still refused; deleting it and solving the challenge again")
             await self.context.clear_cookies(name="sofa_captcha")
             token = await self._solve_on_captcha_page()
             if token:
@@ -455,11 +500,11 @@ class BrowserBridge:
         if token:
             self._set_token(token)
             self._solve_failed_at = 0.0
-            logger.info("Turnstile challenge çözüldü.")
+            logger.info("Turnstile challenge solved.")
             return token
         self._solve_failed_at = time.time()
         logger.warning(
-            f"Turnstile challenge çözülemedi; {int(_SOLVE_RETRY_AFTER)} sn yeniden denenmeyecek."
+            f"The Turnstile challenge could not be solved; not trying again for {int(_SOLVE_RETRY_AFTER)} s."
         )
         return None
 
@@ -476,7 +521,7 @@ class BrowserBridge:
 
         # 403 Challenge alındıysa otomatik çöz ve tekrar dene
         if res.get("status") == 403 and "challenge" in (res.get("text") or ""):
-            logger.info("API 403 challenge döndürdü, Turnstile otomatik çözülüyor...")
+            logger.info("The API answered 403 with a challenge; solving Turnstile")
             new_token = await self.solve_challenge()
             if new_token:
                 res = await self._api_fetch(url, cache_mode_for(url))
@@ -488,7 +533,7 @@ class BrowserBridge:
 
         if res.get("status") == 404:
             bridge_health.record_success()  # API yanıt verdi; kaynak yok
-            logger.debug(f"Kaynak bulunamadı (404): {url}")
+            logger.debug(f"Not found (404): {url}")
             return {"__404__": True}
 
         if res.get("status") == 403:
@@ -496,7 +541,7 @@ class BrowserBridge:
             kind = bridge_health.KIND_CHALLENGE if "challenge" in text else bridge_health.KIND_FORBIDDEN
             bridge_health.record_failure(kind, f"HTTP 403: {text[:100]}")
 
-        logger.warning(f"Tarayıcı fetch başarısız (status {res.get('status')}): {(res.get('text') or '')[:100]}")
+        logger.warning(f"Browser fetch failed (status {res.get('status')}): {(res.get('text') or '')[:100]}")
         return None
 
     async def close(self) -> None:
@@ -514,6 +559,9 @@ class BrowserBridge:
                 pass
         self.session = None
         self.context = None
+        if getattr(self, "_launch_dir", None) is not None:
+            profile_lock.remove_secondary(self._launch_dir)
+            self._launch_dir = None
 
 
 # Senkron / Genel Kullanım Fonksiyonları
@@ -670,7 +718,7 @@ def fetch_api_via_browser_sync(path_or_url: str, timeout: float = REQUEST_TIMEOU
         _run_sync(bridge.ensure_ready(), STARTUP_TIMEOUT)
         return _run_sync(bridge.fetch_json(path_or_url), timeout, cancellable=True)
     except Exception as e:
-        logger.error(f"fetch_api_via_browser_sync hatası: {e!r}")
+        logger.error(f"fetch_api_via_browser_sync failed: {e!r}")
         return None
 
 
@@ -699,7 +747,7 @@ def solve_turnstile_challenge_sync(timeout_ms: int = 30000) -> Optional[str]:
         _run_sync(bridge.ensure_ready(), STARTUP_TIMEOUT)
         return _run_sync(bridge.solve_challenge(), timeout_ms / 1000 + 10, cancellable=True)
     except Exception as e:
-        logger.error(f"solve_turnstile_challenge_sync hatası: {e}")
+        logger.error(f"solve_turnstile_challenge_sync failed: {e}")
         return None
 
 

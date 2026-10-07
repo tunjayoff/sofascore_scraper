@@ -499,7 +499,7 @@ def close_data_dir(data_dir: str) -> bool:
     """
     from sofascore_scraper.store import open_store
 
-    names = ("writer", "live", "sinks", "maintenance", *(f"watcher:{spec.slug}" for spec in sports.SPORTS))
+    names = ("writer", "live", "sinks", "export", "maintenance", *(f"watcher:{spec.slug}" for spec in sports.SPORTS))
     try:
         found = open_store(data_dir, create=False, sync_catalog=False)
         held = [name for name in names

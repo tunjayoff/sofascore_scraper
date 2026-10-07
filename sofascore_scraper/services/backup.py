@@ -52,7 +52,7 @@ class BackupService:
         self._store = store
 
     def create(self, scope: BackupScope = "all", *, config_files: Sequence[str] = (),
-               include_secrets: bool = False) -> BackupInfo:
+               include_secrets: bool = False, job_id: Optional[str] = None) -> BackupInfo:
         """
         Yedeği `backups/` altına yazar ve bilgisini döndürür.
 
@@ -60,12 +60,14 @@ class BackupService:
                          spor eşlemesi, yapılandırma dosyası); olmayan atlanır
         include_secrets  `.env` de pakete girer (aynı kapsamlarda ve dosya varsa); dosyanın adı bunu söyler
                          (`_with_env`) ve yalnızca sahibince okunur
+        job_id           yedeği alan iş; yedekteki iş geçmişinde bitmiş görünür (geri yüklemeden sonra
+                         "yarıda kaldı" uyarısı vermesin, FX-23)
 
         `overrides.json` (web arayüzünde kaydedilen ayarlar) aynı kapsamlarda, dosya varsa her zaman girer.
         """
         info = self._store.backup.create(
             scope, config_files=config_files, env_file=env_file_path() if include_secrets else None,
-            overrides_file=str(_overrides_path()))
+            overrides_file=str(_overrides_path()), job_id=job_id)
         logger.info("Backup created: %s (scope=%s, with_env=%s, %d bytes)", info.name, info.scope, info.with_env,
                     info.size)
         return info

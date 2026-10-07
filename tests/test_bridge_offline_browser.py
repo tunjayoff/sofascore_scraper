@@ -436,3 +436,24 @@ def test_closed_page_relaunches_with_the_solution_kept_in_the_profile(bridge, si
     assert bridge.token == token  # cookie kalıcı profilden geldi
     assert site.count("/captcha.html") == solves  # yeniden başlatma yeni çözüm gerektirmedi
     assert bridge._token_at == 0.0  # profilden gelen token "az önce çözüldü" sayılmaz
+
+
+def test_a_second_bridge_on_a_held_profile_opens_a_temporary_profile(bridge, site):
+    """
+    F34 / F36 (FX-23): `ssc serve`in tarayıcısı profili tutarken ikinci bir köprü (ör. yan yana bir `ssc sync`)
+    aynı profille başlayamıyordu (Chromium'un SingletonLock'u). Şimdi kardeş geçici profille açar, istek yapar
+    ve kapanınca geçici profili siler; ilk köprü çalışmayı sürdürür.
+    """
+    import os
+
+    second = LocalBridge(profile_dir=bridge.profile_dir)
+    try:
+        run(second.ensure_ready(), cs.STARTUP_TIMEOUT)
+        temporary = second._launch_dir
+        assert temporary == f"{bridge.profile_dir.rstrip(os.sep)}-{os.getpid()}"
+        assert run(second.fetch_json(site.url("/api/v1/echo")))["headers"]
+    finally:
+        run(second.close(), 30)
+    assert not os.path.exists(temporary)
+    assert not bridge.page.is_closed()
+    assert run(bridge.fetch_json(site.url("/api/v1/echo")))["headers"]

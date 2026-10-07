@@ -60,6 +60,31 @@ def test_missing_file_is_created_from_example_without_any_league(make_cm):
     assert not (path.parent / "league_sports.json").exists()
 
 
+def test_with_a_configuration_file_no_league_file_is_created_but_one_is_read(make_cm, tmp_path, monkeypatch, caplog):
+    """
+    F24 (FX-23): sofascore.toml kullanılırken takipler ondan ve takip tablosundan gelir; sunucu başlarken yalnızca
+    yorum taşıyan bir leagues.txt yaratılıp yedeklere giriyordu. Var olan liste yine okunur ve ona lig eklenebilir.
+    """
+    from sofascore_scraper.config import loader
+
+    toml = tmp_path / "sofascore.toml"
+    toml.write_text('[defaults]\nslices = ["core"]\n', encoding="utf-8")
+    monkeypatch.setenv(loader.CONFIG_ENV, str(toml))
+    loader.reset()
+    try:
+        with caplog.at_level("DEBUG", logger="ConfigManager"):
+            cm, path = make_cm(None)
+        assert not path.exists() and cm.get_leagues() == {}
+        assert not [r for r in caplog.records if r.name == "ConfigManager" and r.levelname == "WARNING"]
+        assert cm.add_league("Premier League", 17) is True  # gerekirse liste o an yaratılır
+        assert path.read_text(encoding="utf-8").rstrip().endswith("Premier League: 17")
+        cm, _ = make_cm("LaLiga: 8\n")
+        assert cm.get_leagues() == {8: "LaLiga"}
+    finally:
+        monkeypatch.delenv(loader.CONFIG_ENV)
+        loader.reset()
+
+
 def test_first_league_can_be_added_to_the_empty_file(make_cm):
     cm, path = make_cm(None)
     assert cm.add_league("Premier League", 17) is True

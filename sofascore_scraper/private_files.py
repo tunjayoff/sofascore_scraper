@@ -60,5 +60,5 @@ def harden_secret_paths() -> List[str]:
     for path, mode in ((env_file_path(), PRIVATE_FILE_MODE), (browser_profile_dir(), PRIVATE_DIR_MODE)):
         if restrict_permissions(path, mode):
             changed.append(path)
-            logging.getLogger(__name__).info(f"İzinler daraltıldı ({mode:o}, yalnızca sahibi): {path}")
+            logging.getLogger(__name__).info(f"Permissions narrowed ({mode:o}, owner only): {path}")
     return changed

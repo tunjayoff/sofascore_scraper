@@ -1115,7 +1115,7 @@ def test_startup_tightens_existing_env_and_browser_profile(tmp_path, monkeypatch
     with caplog.at_level(logging.INFO):
         assert private_files.harden_secret_paths() == [str(env), str(profile)]
     assert _mode(env) == 0o600 and _mode(profile) == 0o700
-    assert len([r for r in caplog.records if "İzinler daraltıldı" in r.getMessage()]) == 2
+    assert len([r for r in caplog.records if "Permissions narrowed" in r.getMessage()]) == 2
     # İkinci çağrı: değişecek bir şey yok, log da yok
     caplog.clear()
     assert private_files.harden_secret_paths() == []

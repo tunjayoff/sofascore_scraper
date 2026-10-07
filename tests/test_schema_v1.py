@@ -432,11 +432,14 @@ def _expected_score(event: Mapping[str, Any], sport: str) -> Dict[str, Any]:
     if family is None:
         return {"family": None, **common}
     if family == "football":
+        # Uzatma: kod 110, ya da kod 120 ve SofaScore uzatma anahtarı yolladı (uzatmasız penaltılar: FX-23, F10)
+        extra_time = code == 110 or (code == 120 and any(
+            _expected_pair(home, away, key) for key in ("overtime", "extra1", "extra2")))
         return {
             "family": "football", **common,
             "half_time": _expected_pair(home, away, "period1"),
             "regulation": _expected_pair(home, away, "normaltime"),
-            "after_extra_time": _expected_pair(home, away, "display") if code in (110, 120) else None,
+            "after_extra_time": _expected_pair(home, away, "display") if extra_time else None,
             "penalties": _expected_pair(home, away, "penalties"),
         }
     if family == "periods":

@@ -13,7 +13,12 @@ Kilit tablosu:
     watcher:<spor>   watcher-<spor>  maintenance.lock, live.lock   aynı ad; live; maintenance
     live             live.lock       maintenance.lock              başka live; her watcher; maintenance
     sinks            sinks.lock      -                             başka sinks
+    export           export.lock     maintenance.lock              başka export; maintenance
     maintenance      maintenance     -                             sinks dışında her şey
+
+`export`: web'in dışa aktarma işi (FX-23, bulgu F14). Dışa aktarma veriyi yalnızca okur ve `exports/` ile kendi
+hazırlık girdilerine yazar; `writer` ile aynı anda çalışabilir (indirme sürerken), ama silme, geri yükleme ve
+katalog yeniden kurma (`maintenance`) okuduğu veriyi değiştireceği için onları dışlar. `ssc export` kilit almaz.
 
 `maintenance` ile dışlama: writer, watcher ve live sahipleri maintenance.lock'u paylaşımlı da tutar;
 `maintenance` aynı dosyayı dışlayıcı ister ve paylaşımlı tutan biri varsa alamaz. live ile watcher'lar
@@ -70,6 +75,7 @@ WRITER = "writer"
 WATCHER = "watcher"  # tam ad: "watcher:<spor>"
 LIVE = "live"
 SINKS = "sinks"
+EXPORT = "export"
 MAINTENANCE = "maintenance"
 
 SHARED = "shared"
@@ -184,6 +190,8 @@ def lock_plan(name: str) -> Tuple[Tuple[str, str], ...]:
             return ((MAINTENANCE, SHARED), (WRITER, EXCLUSIVE))
         if base == LIVE:
             return ((MAINTENANCE, SHARED), (LIVE, EXCLUSIVE))
+        if base == EXPORT:
+            return ((MAINTENANCE, SHARED), (EXPORT, EXCLUSIVE))
         if base in (SINKS, MAINTENANCE):
             return ((base, EXCLUSIVE),)
     raise LayoutError(f"Bilinmeyen kilit adı: {name!r}")
@@ -524,6 +532,7 @@ class LeaseManager:
 
 __all__ = [
     "EXCLUSIVE",
+    "EXPORT",
     "LIVE",
     "MAINTENANCE",
     "SHARED",

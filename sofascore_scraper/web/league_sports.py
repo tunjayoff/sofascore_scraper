@@ -55,7 +55,7 @@ def load(league_config_path: str) -> Dict[int, str]:
     except FileNotFoundError:
         return {}
     except (OSError, ValueError) as e:
-        logger.warning(f"{p} okunamadı: {e}")
+        logger.warning(f"{p} could not be read: {e}")
         return {}
     out: Dict[int, str] = {}
     for k, v in (raw or {}).items():

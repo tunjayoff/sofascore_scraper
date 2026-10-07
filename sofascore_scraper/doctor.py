@@ -250,7 +250,27 @@ class Context:
 
     # Uygulamanın kullandığı yollar (göreli olanlar proje köküne göre: main.py oraya chdir eder)
     def data_dir(self) -> Path:
-        return self._resolve(self.get("DATA_DIR") or "data")
+        """
+        Veri dizini, uygulamanın ayar yükleyicisinin kuralıyla (FX-23, bulgu F1; `ssc status` de onu kullanır):
+        süreç ortamı > yapılandırma dosyasının `storage.data_dir`'i > overrides.json > `.env`'deki DATA_DIR >
+        "data". Yükleyici içe aktarılamıyorsa (paketler eksik) ya da ayarlar kurulamıyorsa (`config` denetimi
+        bunu bildirir) yalnızca ortama ve `.env`'e bakılır.
+        """
+        return self._resolve(self._loaded_data_dir() or self.get("DATA_DIR") or "data")
+
+    def _loaded_data_dir(self) -> Optional[str]:
+        try:
+            from sofascore_scraper.config import loader
+
+            path, _disabled = _config_file(self)
+            # Uygulama `.env`'i süreç ortamına yükler (var olanı ezmeden); yükleyici eski adları ortamdan okur
+            environ = {**self.file_env, **self.environ}
+            loaded = loader.load_settings(config_file=path, environ=environ, dotenv_values=self.file_env,
+                                          overrides_file=self.config_dir() / loader.OVERRIDES_FILE_NAME)
+        except Exception:  # paketler eksik ya da ayarlar geçersiz: yedek kural
+            return None
+        value = loaded.settings.storage.data_dir
+        return str(value) if value else None
 
     def config_dir(self) -> Path:
         return self._resolve(self.get("SOFASCORE_CONFIG_DIR") or "config")

@@ -314,7 +314,7 @@ def test_failed_launch_cleans_up_and_backs_off(tmp_path):
     async def run():
         with pytest.raises(RuntimeError, match="no chrome"):
             await bridge.ensure_ready()
-        with pytest.raises(RuntimeError, match="yakın zamanda"):
+        with pytest.raises(RuntimeError, match="tried recently"):
             await bridge.ensure_ready()
 
     _run(run())

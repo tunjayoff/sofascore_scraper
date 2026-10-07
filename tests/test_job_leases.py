@@ -76,3 +76,53 @@ def test_the_job_manager_passes_the_lease(data_dir: Path) -> None:
         assert open_store(data_dir).lease_holder("maintenance") is None
     finally:
         jobs.close()
+
+
+# --- dışa aktarma: `export` kilidi (FX-23, bulgu F14) -------------------------------------------------------
+
+
+def test_an_export_job_runs_next_to_a_download_and_neither_reaps_the_other(data_dir: Path) -> None:
+    """
+    Dışa aktarma veriyi yalnızca okur: kendi iş deposunda `export` kilidiyle, indirmenin `writer` kilidi
+    tutulurken başlar. İki depo da ötekinin çalışan satırını bayat saymaz; bakım işi ikisini de bekler.
+    """
+    downloads = JobStore(default_db_path(str(data_dir)))
+    exports = JobStore(default_db_path(str(data_dir)))
+    other = JobStore(default_db_path(str(data_dir)))
+    try:
+        sync_id = downloads.create_running({}, kind="sync", replace_running=False)
+        export_id = exports.create_running({}, kind="export", purpose="export", lease="export",
+                                           replace_running=False)
+        store = open_store(data_dir)
+        assert store.lease_holder("writer") is not None and store.lease_holder("export").purpose == "export"
+        assert downloads.reap_stale() == 0 and exports.reap_stale() == 0 and other.reap_stale() == 0
+        assert {r["id"]: r["status"] for r in downloads.list_records()} == {sync_id: "running", export_id: "running"}
+        # Bakım işi (silme, geri yükleme, katalog) dışa aktarma sürerken başlamaz; ikinci dışa aktarma da
+        downloads.update(status="Completed", finished=True)
+        with pytest.raises(DataOperationRunningError):
+            other.create_running({}, kind="clear", purpose="clear", lease="maintenance", replace_running=False)
+        with pytest.raises(DataOperationRunningError):
+            other.create_running({}, kind="export", purpose="export", lease="export", replace_running=False)
+        # İndirme bitti ve yazma kilidi boş: dışa aktarmanın satırı yine bayat sayılmaz (kilidi tutuluyor)
+        assert other.reap_stale() == 0
+        exports.update(status="Completed", finished=True)
+        assert store.lease_holder("export") is None
+        assert {r["status"] for r in other.list_records()} == {"completed"}
+    finally:
+        downloads.close()
+        exports.close()
+        other.close()
+
+
+def test_a_dead_export_is_reaped(data_dir: Path) -> None:
+    """Kilidi bırakılmış (süreci ölmüş) dışa aktarmanın satırı bayattır."""
+    exports = JobStore(default_db_path(str(data_dir)))
+    export_id = exports.create_running({}, kind="export", purpose="export", lease="export", replace_running=False)
+    exports._release_writer()  # süreç öldü: kilit gitti, satır "running" kaldı
+    other = JobStore(default_db_path(str(data_dir)))
+    try:
+        other.reap_stale()
+        assert {r["id"]: r["status"] for r in other.list_records()}[export_id] == "interrupted"
+    finally:
+        exports.close()
+        other.close()

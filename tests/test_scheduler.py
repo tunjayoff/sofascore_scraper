@@ -438,15 +438,16 @@ def test_the_backup_task_writes_a_backup(monkeypatch: pytest.MonkeyPatch) -> Non
         def __init__(self, store: Any) -> None:
             seen["store"] = store
 
-        def create(self, scope: str, *, config_files: Any, include_secrets: bool) -> Any:
-            seen.update(scope=scope, include_secrets=include_secrets, config_files=list(config_files))
+        def create(self, scope: str, *, config_files: Any, include_secrets: bool, job_id: Any = None) -> Any:
+            seen.update(scope=scope, include_secrets=include_secrets, config_files=list(config_files), job_id=job_id)
             return SimpleNamespace(name="b.tar.gz", scope=scope, with_env=False, size=10, format="v3")
 
     monkeypatch.setattr(backup_mod, "BackupService", FakeBackups)
     plan = scheduler_mod.TASK_RUNS["backup"].plan({"scope": "data"}, lambda: SimpleNamespace(store="store"))
     assert (plan.kind, plan.spec) == (JobKind.BACKUP, {"scope": "data", "include_env": False})
-    outcome = plan.body(None)
+    outcome = plan.body(SimpleNamespace(id="job-1"))
     assert (seen["store"], seen["scope"], seen["include_secrets"]) == ("store", "data", False)
+    assert seen["job_id"] == "job-1"  # yedekteki iş geçmişinde bu iş bitmiş görünür (FX-23, F30)
     assert any(path.endswith("league_sports.json") for path in seen["config_files"])
     assert outcome.result == {"backup": {"name": "b.tar.gz", "scope": "data", "with_env": False, "bytes": 10,
                                          "format": "v3"}}

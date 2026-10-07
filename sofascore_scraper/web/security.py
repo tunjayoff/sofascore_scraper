@@ -238,8 +238,8 @@ def spa_needs_eval(dist: Path) -> bool:
             _legacy_cache = (signature, legacy)
             if legacy:
                 logger.warning(
-                    "Web arayüzü eski bir derleme: Content-Security-Policy 'unsafe-eval' ile gevşetildi. "
-                    "Yeniden derleyin: cd frontend && npm install && npm run build"
+                    "The web UI is an old build: the Content-Security-Policy allows 'unsafe-eval'. "
+                    "Build it again: cd frontend && npm install && npm run build"
                 )
         return _legacy_cache[1]
     except OSError:

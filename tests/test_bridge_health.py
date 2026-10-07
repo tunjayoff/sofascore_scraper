@@ -149,8 +149,8 @@ def test_logs_one_warning_per_state_change_not_per_request(caplog):
         h.record_success()
     records = [(r.levelname, r.getMessage()) for r in caplog.records]
     assert [lvl for lvl, _ in records] == ["WARNING", "WARNING", "INFO"]
-    assert "ok → degraded" in records[0][1] and "art arda 3 istek" in records[0][1]
-    assert "degraded → blocked" in records[1][1] and "SofaScore bizi engelliyor" in records[1][1]
+    assert "ok → degraded" in records[0][1] and "3 requests failed in a row" in records[0][1]
+    assert "degraded → blocked" in records[1][1] and "SofaScore is blocking us" in records[1][1]
     assert "blocked → ok" in records[2][1]
 
 
@@ -159,7 +159,7 @@ def test_browser_failures_are_not_blamed_on_sofascore(caplog):
     with caplog.at_level(logging.WARNING, logger="sofascore_scraper.bridge_health"):
         _fail(h, 5, kind=bridge_health.KIND_BROWSER, detail="RuntimeError: no chromium")
     assert h.state == BLOCKED
-    assert "Tarayıcı köprüsü çalışmıyor" in caplog.text and "SofaScore bizi engelliyor" not in caplog.text
+    assert "The browser bridge does not work" in caplog.text and "SofaScore is blocking us" not in caplog.text
 
 
 def test_listeners_get_each_change_once_and_cannot_break_recording():

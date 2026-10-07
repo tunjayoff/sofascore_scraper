@@ -4,7 +4,7 @@ class BackupManager:
     def __init__(self, store: 'Store') -> None
     @property
     def directory(self) -> str
-    def create(self, scope: str = 'all', *, config_files: Sequence[str] = (), env_file: Optional[str] = None, overrides_file: Optional[str] = None, now: Optional[datetime] = None) -> BackupInfo
+    def create(self, scope: str = 'all', *, config_files: Sequence[str] = (), env_file: Optional[str] = None, overrides_file: Optional[str] = None, now: Optional[datetime] = None, job_id: Optional[str] = None) -> BackupInfo
     def list(self) -> List[BackupInfo]
     def path_of(self, name: str) -> str
     def verify(self, name: str) -> BackupCheck

@@ -99,9 +99,9 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
                 by_desc = _BY_DESCRIPTION.get(str(status.get("description") or "").strip().lower())
                 if by_desc in (StatusClass.COMPLETED, StatusClass.DECIDED_WITHOUT_PLAY):
                     return by_desc
-            logger.warning(f"Bilinmeyen finished kodu: {status} (event {(event or {}).get('id')})")
+            logger.warning(f"Unknown finished code: {status} (event {(event or {}).get('id')})")
             return StatusClass.UNKNOWN
-        logger.warning(f"Bilinmeyen status type: {status} (event {(event or {}).get('id')})")
+        logger.warning(f"Unknown status type: {status} (event {(event or {}).get('id')})")
         return StatusClass.UNKNOWN
 
     if code is not None:
@@ -109,7 +109,7 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
     else:
         result = _BY_DESCRIPTION.get(str(status.get("description") or "").strip().lower(), StatusClass.UNKNOWN)
     if result is StatusClass.UNKNOWN:
-        logger.warning(f"Sınıflandırılamayan status: {status} (event {(event or {}).get('id')})")
+        logger.warning(f"Status could not be classified: {status} (event {(event or {}).get('id')})")
     return result
 
 
@@ -150,7 +150,7 @@ class FootballScores(ScoreSheet):
     """`current` kullanılmaz: AP'de penaltıları içerir (10-9), `display` içermez (3-3)."""
     ht: Optional[Pair] = None  # period1
     ft90: Optional[Pair] = None  # normaltime
-    aet: Optional[Pair] = None  # display; yalnızca code 110/120
+    aet: Optional[Pair] = None  # display; code 110, ya da code 120 ve uzatma oynandıysa (bkz. _football_extra_time)
     penalties: Optional[Pair] = None
     aggregated: Optional[Pair] = None
     aggregated_winner_code: Optional[int] = None
@@ -318,6 +318,24 @@ def _is_match_tiebreak(games: List[Pair]) -> bool:
     return max(last.home or 0, last.away or 0) >= 10
 
 
+# Futbolda uzatmanın oynandığını gösteren anahtarlar: iki uzatma devresi ve toplamları (kod 110 ve uzatmadan
+# sonra penaltıya giden kod 120 yüklerinde görüldü; 0-0 biten uzatmada da gelir)
+_FOOTBALL_EXTRA_TIME_KEYS = ("overtime", "extra1", "extra2")
+
+
+def _football_extra_time(code: Any, home: Dict[str, Any], away: Dict[str, Any]) -> bool:
+    """
+    Uzatma oynandı mı. Kod 110 (AET) her zaman evet. Kod 120 (AP) tek başına yetmez: uzatmasız doğrudan
+    penaltıya giden maçlar var (UEFA Süper Kupası 2025, event 13960989: normaltime 2-2, penaltılar 4-3, uzatma
+    anahtarı yok). Kod 120'de yalnızca SofaScore uzatma anahtarlarından birini yolladıysa evet.
+    """
+    if code == 110:
+        return True
+    if code != 120:
+        return False
+    return any(_pair(home, away, key) is not None for key in _FOOTBALL_EXTRA_TIME_KEYS)
+
+
 def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreSheet:
     """
     Spor parametre ile verilirse o kullanılır; yoksa event.tournament.category.sport.slug.
@@ -342,12 +360,12 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
         ft90 = _pair(home, away, "normaltime")
         display = _pair(home, away, "display")
         if code == 100 and display is not None and ft90 is not None and display != ft90:
-            logger.warning(f"Futbol {event.get('id')}: code 100 ama display {display} != normaltime {ft90}")
+            logger.warning(f"Football {event.get('id')}: code 100 but display {display} != normaltime {ft90}")
         return FootballScores(
             **common,
             ht=_pair(home, away, "period1"),
             ft90=ft90,
-            aet=display if code in (110, 120) else None,
+            aet=display if _football_extra_time(code, home, away) else None,
             penalties=_pair(home, away, "penalties"),
             aggregated=_pair(home, away, "aggregated"),
             aggregated_winner_code=event.get("aggregatedWinnerCode"),
@@ -439,7 +457,7 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             final_round=final_round if isinstance(final_round, int) and not isinstance(final_round, bool) else None,
         )
 
-    logger.warning(f"extract_scores: desteklenmeyen spor {sport!r} (event {event.get('id')})")
+    logger.warning(f"extract_scores: unsupported sport {sport!r} (event {event.get('id')})")
     return ScoreSheet(**common)
 
 

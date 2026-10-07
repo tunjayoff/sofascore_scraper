@@ -402,6 +402,23 @@ def test_data_dir_comes_from_env_file_and_process_env_wins(make_ctx, tmp_path):
     assert ctx.data_dir() == tmp_path / "from-env"
 
 
+def test_data_dir_comes_from_the_configuration_file_like_ssc_status(make_ctx, tmp_path):
+    """F1 (FX-23): `ssc doctor` sofascore.toml'daki storage.data_dir'i görmüyor, ./data gösteriyordu."""
+    ctx = make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n")
+    (ctx.root / "sofascore.toml").write_text(f"[storage]\ndata_dir = {json.dumps(str(tmp_path / 'from-toml'))}\n",
+                                            encoding="utf-8")
+    ctx = make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n")
+    assert ctx.data_dir() == tmp_path / "from-toml"  # dosya .env'in önünde
+    res = doctor.check_data_dir(ctx)
+    assert res.detail["path"] == str(tmp_path / "from-toml")
+    # Süreç ortamı dosyanın da önünde (yükleyicinin katman sırası)
+    ctx = make_ctx(environ={"DATA_DIR": str(tmp_path / "from-env")})
+    assert ctx.data_dir() == tmp_path / "from-env"
+    # Geçersiz bir yapılandırma dosyası: config denetimi bildirir, veri dizini ortamdan ve .env'den
+    (ctx.root / "sofascore.toml").write_text("[storage\n", encoding="utf-8")
+    assert make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n").data_dir() == tmp_path / "from-file"
+
+
 @posix_only
 def test_data_and_config_dir_not_writable_fail(make_ctx):
     if os.geteuid() == 0:
@@ -908,7 +925,9 @@ def test_bridge_errors_point_at_the_doctor_not_at_playwright():
     solver = (REPO / "sofascore_scraper" / "client" / "bridge.py").read_text(encoding="utf-8")  # köprü P24 ile taşındı
     health = (REPO / "sofascore_scraper" / "bridge_health.py").read_text(encoding="utf-8")
     assert "playwright install" not in solver and "playwright install" not in health
-    assert "--doctor" in solver and "--doctor" in health
+    # FX-23 (F34): İngilizce ve bugünkü komut, `python main.py --doctor` değil
+    assert "ssc doctor" in solver and "ssc doctor" in health
+    assert "main.py --doctor" not in solver and "main.py --doctor" not in health
 
 
 def test_node_version_is_none_when_node_is_not_installed(monkeypatch):

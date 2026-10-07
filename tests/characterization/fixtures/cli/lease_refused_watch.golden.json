@@ -17,8 +17,8 @@
  "sleeps": {},
  "stderr": [
   "main.py flags are deprecated and will be removed; this run is: ssc watch --source poll --stdout --sport football --event 9300001",
-  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+  "LOG INFO ConfigManager: 1 leagues loaded",
+  "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
   "Another instance is running: Another instance is already running on this data directory.",
   "Held by process <pid> on <host> (watch) since <time>"
  ],

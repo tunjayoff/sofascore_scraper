@@ -97,7 +97,7 @@ _PACKAGES = (
 _BUNDLE_README = """SofaScore Scraper diagnostics bundle
 
 diagnostics.json  app version/commit, Python and OS, package versions, settings, bridge health,
-                  request budget, the setup check (python main.py --doctor, without starting the
+                  request budget, the setup check (ssc doctor, without starting the
                   browser), the most recent download jobs, log file list
 log_tail.txt      the last lines of the application log
 

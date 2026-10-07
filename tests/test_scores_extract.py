@@ -53,10 +53,47 @@ def test_football_penalties_never_use_current():
     assert (event["homeScore"]["current"], event["awayScore"]["current"]) == (10, 9)
     s = extract_scores(event, "football")
     assert s.ft90 == Pair(3, 3)
-    assert s.aet == Pair(3, 3)
+    # Uzatma anahtarı yok (overtime / extra1 / extra2): doğrudan penaltılara gidilmiş, uzatma skoru yok (FX-23)
+    assert s.aet is None
     assert s.penalties == Pair(7, 6)
     assert s.winner_code == 1
     assert 10 not in _values(s) and 9 not in _values(s)
+
+
+def test_football_penalties_without_extra_time_have_no_after_extra_time():
+    """F10 (FX-23): kod 120 "AP" tek başına uzatma demek değil; UEFA Süper Kupası 2025 doğrudan penaltıya gitti."""
+    event = json.loads((FIXTURES.parent / "fx23" / "football_ap_without_extra_time__13960989.json")
+                       .read_text(encoding="utf-8"))
+    s = extract_scores(event)
+    assert isinstance(s, FootballScores)
+    assert s.status_class is StatusClass.COMPLETED
+    assert s.ht == Pair(0, 1)
+    assert s.ft90 == Pair(2, 2)
+    assert s.aet is None
+    assert s.penalties == Pair(4, 3)
+    assert 6 not in _values(s) and 5 not in _values(s)  # current (penaltılar dahil) okunmaz
+
+
+def test_football_penalties_after_extra_time_keep_after_extra_time():
+    """Uzatma oynanıp 0-0 bitti, sonra penaltılar: extra1 / extra2 / overtime gelir, uzatma skoru dolu kalır."""
+    s = extract_scores(_load("football/F2_penalties__17090707"), "football")
+    assert s.ft90 == Pair(1, 1)
+    assert s.aet == Pair(1, 1)
+    assert s.penalties == Pair(5, 4)
+
+
+@pytest.mark.parametrize(("key", "code", "expected"), [
+    ("overtime", 120, True), ("extra1", 120, True), ("extra2", 120, True), (None, 120, False),
+    (None, 110, True), ("overtime", 100, False),
+])
+def test_football_extra_time_needs_an_extra_time_key_on_code_120(key, code, expected):
+    home = {"display": 1, "normaltime": 1, "penalties": 4}
+    away = {"display": 1, "normaltime": 1, "penalties": 3}
+    if key:
+        home[key], away[key] = 0, 0
+    event = {"status": {"code": code, "type": "finished"}, "homeScore": home, "awayScore": away}
+    s = extract_scores(event, "football")
+    assert s.aet == (Pair(1, 1) if expected else None)
 
 
 def test_football_cup_draw_with_aggregate():
@@ -237,7 +274,7 @@ def test_new_sports_are_no_longer_unsupported(caplog):
         extract_scores(_load("rugby/A_finished-100-ended__16237238"), "rugby")
         extract_scores(_load("volleyball/A_finished-100-ended__16506696"), "volleyball")
         extract_scores(_load("rugby/A_finished-100-ended__16237238"), "waterpolo")
-    assert caplog.text.count("desteklenmeyen spor") == 1 and "'waterpolo'" in caplog.text
+    assert caplog.text.count("unsupported sport") == 1 and "'waterpolo'" in caplog.text
 
 
 # --- set tabanlı sporlar (plan maddesi SP-2; research/all_sports örnekleri) ---------------------------------

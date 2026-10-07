@@ -184,8 +184,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync --only events --recheck-unavailable all",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=True matches=1 slices=2 scanned=1",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
@@ -287,8 +287,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=False matches=1 slices=1 scanned=2"
   ],
   "stdout": [
@@ -308,8 +308,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable --tournament 17",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=17 include_confirmed=False matches=0 slices=0 scanned=1"
   ],
   "stdout": [
@@ -426,8 +426,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync --only events",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
    "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
@@ -461,8 +461,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable --all --tournament 8",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=8 include_confirmed=True matches=0 slices=0 scanned=0"
   ],
   "stdout": [
