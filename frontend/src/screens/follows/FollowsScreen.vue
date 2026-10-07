@@ -84,6 +84,13 @@ async function load() {
 }
 
 const shown = computed(() => (f.value.sport ? rows.value.filter((x) => x.sport === f.value.sport) : rows.value))
+/** Follows with the same kind, sport and name (a men's and a women's team, FX-24 F26): their number is shown. */
+const twins = computed(() => {
+  const key = (x: FollowRecord) => `${x.kind}|${x.sport ?? ''}|${x.name.trim().toLowerCase()}`
+  const count = new Map<string, number>()
+  for (const x of rows.value) count.set(key(x), (count.get(key(x)) ?? 0) + 1)
+  return new Set(rows.value.filter((x) => (count.get(key(x)) ?? 0) > 1).map((x) => x.id))
+})
 const coverage = computed(() => new Map((status.status?.summary?.tournaments ?? []).filter((x) => x.tournament_id != null).map((x) => [x.tournament_id as number, x])))
 
 const columns = computed<Column<FollowRecord>[]>(() => [
@@ -187,7 +194,11 @@ onMounted(() => {
       @retry="load"
     >
       <template #cell-name="{ row }">
-        <span class="inline-flex items-center gap-2">{{ row.name }}<UiBadge v-if="!row.enabled" tone="neutral" icon="pause">{{ t('ui.follows.disabled') }}</UiBadge></span>
+        <span class="inline-flex items-center gap-2"
+          >{{ row.name
+          }}<span v-if="twins.has(row.id)" class="u-small u-muted u-mono" :title="t('ui.follows.sameName')" data-testid="follow-number">{{ t('ui.suggest.number', { id: row.entity_id }) }}</span
+          ><UiBadge v-if="!row.enabled" tone="neutral" icon="pause">{{ t('ui.follows.disabled') }}</UiBadge></span
+        >
       </template>
       <template #cell-sport="{ row }">{{ sportName(row.sport) }}</template>
       <template #cell-kind="{ row }">{{ t(`ui.follows.kind.${row.kind}`) }}</template>

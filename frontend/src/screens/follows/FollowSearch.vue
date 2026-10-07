@@ -175,6 +175,7 @@ const sourceText = (item: Suggestion) => (item.source === 'catalog' ? t('ui.sugg
               <span v-if="item.hit.sport" class="u-small u-muted">{{ sportName(item.hit.sport) }}</span>
               <span v-if="hitPlace(item.hit)" class="u-small u-muted">{{ hitPlace(item.hit) }}</span>
               <span v-if="playerTeam(item.hit.team)" class="u-small u-muted" data-testid="hit-team">{{ t('ui.followEditor.playsFor', { team: playerTeam(item.hit.team) }) }}</span>
+              <span v-if="item.twin" class="u-small u-muted u-mono" :title="t('ui.suggest.sameName')" data-testid="hit-number">{{ t('ui.suggest.number', { id: item.hit.id }) }}</span>
               <span v-if="sourceText(item)" class="u-small u-muted">· {{ sourceText(item) }}</span>
             </span>
             <UiBadge v-if="item.followed" tone="ok" icon="check">{{ t('ui.followEditor.alreadyFollowed') }}</UiBadge>

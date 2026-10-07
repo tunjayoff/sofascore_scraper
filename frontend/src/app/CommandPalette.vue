@@ -125,7 +125,7 @@ const remoteHits = computed<Hit[]>(() => {
   const text = normalize(query.value)
   const found: Hit[] = remote.flat.value.map((s) => {
     const h = s.hit
-    const hint = [t(`ui.follows.kind.${s.group}`), h.sport ? sportName(h.sport) : '', hitPlace(h), playerTeam(h.team) ?? ''].filter(Boolean).join(' · ')
+    const hint = [t(`ui.follows.kind.${s.group}`), h.sport ? sportName(h.sport) : '', hitPlace(h), playerTeam(h.team) ?? '', s.twin ? t('ui.suggest.number', { id: h.id }) : ''].filter(Boolean).join(' · ')
     const to: RouteLocationRaw = s.followed
       ? `/follows/${s.kind}/${h.id}`
       : { path: '/follows/new', query: { kind: s.kind, id: String(h.id), name: h.name, ...(h.sport ? { sport: h.sport } : {}) } }

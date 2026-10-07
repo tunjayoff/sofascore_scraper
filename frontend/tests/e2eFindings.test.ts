@@ -7,10 +7,11 @@ import { openModals, setTeleportDialogs } from '@/ui/modal'
 import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
+import FollowsScreen from '@/screens/follows/FollowsScreen.vue'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
 import { callsTo, flush, mockFetch } from './helpers'
-import { axeViolations, mountScreen, sport, status } from './v1'
+import { axeViolations, follow, mountScreen, page, sport, status } from './v1'
 
 /**
  * FX-24: the findings of the end-to-end test of the web UI against the real SofaScore (F5 to F37 of the
@@ -193,5 +194,42 @@ describe('F12, F31, F32: search hits in the reader’s words', () => {
     expect(picked.text()).toContain(t('ui.follows.kind.player'))
     expect(w.find('[data-testid="editor-individual"]').text()).toBe(t('ui.suggest.individual', { sport: 'tenis' }))
     expect((w.find('[data-kind="team"] input').element as HTMLInputElement).checked).toBe(true)
+  })
+})
+
+describe('F26: same-named teams can be told apart', () => {
+  const fener = (id: number, sportSlug: string, name = 'Fenerbahçe') => ({ kind: 'team', id, name, sport: sportSlug, category: { country_code: 'TR' }, country: { code: 'TR', name: 'Türkiye' }, team: null, followed: false })
+
+  it('two hits with the same name and sport show their numbers; the others do not', async () => {
+    mockFetch({ ...SPORTS, 'POST /api/v1/tournaments/search': list([fener(3052, 'football'), fener(36456, 'volleyball'), fener(36460, 'volleyball'), fener(253261, 'football', 'Fenerbahçe U19')]) })
+    const { w } = await mountScreen(FollowEditorScreen, '/follows/new')
+    wrappers.push(w)
+    await flush()
+    await w.find('[data-testid="editor-query"]').setValue('fener')
+    await w.find('[data-testid="editor-search"]').trigger('submit')
+    await flush()
+    const number = (id: number) => w.find(`[data-hit="team:${id}"] [data-testid="hit-number"]`)
+    expect(number(36456).text()).toBe(t('ui.suggest.number', { id: 36456 }))
+    expect(number(36456).attributes('title')).toBe(t('ui.suggest.sameName'))
+    expect(number(36460).text()).toBe(t('ui.suggest.number', { id: 36460 }))
+    expect(number(3052).exists()).toBe(false)
+    expect(number(253261).exists()).toBe(false)
+  })
+
+  it('the list of follows shows the numbers of two follows with the same name', async () => {
+    mockFetch({
+      ...SPORTS,
+      'GET /api/v1/follows': page([
+        follow({ id: 'team:36456', kind: 'team', entity_id: 36456, name: 'Fenerbahçe', sport: 'volleyball' }),
+        follow({ id: 'team:36460', kind: 'team', entity_id: 36460, name: 'Fenerbahçe', sport: 'volleyball' }),
+        follow({ id: 'team:3052', kind: 'team', entity_id: 3052, name: 'Fenerbahçe', sport: 'football' }),
+      ]),
+      'GET /api/v1/jobs': page([]),
+      'GET /api/v1/events': page([]),
+    })
+    const { w } = await mountScreen(FollowsScreen, '/follows')
+    wrappers.push(w)
+    await flush()
+    expect(w.findAll('[data-testid="follow-number"]').map((x) => x.text())).toEqual([t('ui.suggest.number', { id: 36456 }), t('ui.suggest.number', { id: 36460 })])
   })
 })

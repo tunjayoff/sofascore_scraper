@@ -264,6 +264,8 @@ const tr: typeof en = {
     note: 'Yazdıkça önce takipleriniz ve kayıtlı adlar, kısa bir duraklamadan sonra SofaScore’un sonuçları gelir. Aynı metin ikinci kez istek göndermez.',
     picked: 'Seçilen:',
     individual: 'SofaScore {sport} oyuncularını takım olarak listeler: bu oyuncu takım olarak eklenir ve maçları böyle indirilir.',
+    number: 'No. {id}',
+    sameName: 'Başka bir sonuçla aynı ad: numaraları sofascore.com’da karşılaştırın',
   },
   place: {
     england: 'İngiltere',
@@ -675,6 +677,7 @@ const tr: typeof en = {
   follows: {
     description: 'İndirilenler: ligler, takımlar, oyuncular ve tek maçlar; sezonları ve verileriyle.',
     syncAll: 'Tümünü güncelle',
+    sameName: 'Başka bir takiple aynı ad: numaraları sofascore.com’da karşılaştırın',
     add: 'Lig ekle',
     search: 'Ad ara',
     enabledOnly: 'Yalnızca açık olanlar',

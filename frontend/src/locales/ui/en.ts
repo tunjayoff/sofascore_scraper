@@ -262,6 +262,8 @@ const en = {
     note: 'As you type, your follows and stored names come first, SofaScore’s results after a short pause. The same text again sends no request.',
     picked: 'Chosen:',
     individual: 'SofaScore lists {sport} players as teams: this one is added as a team, which downloads its matches.',
+    number: 'No. {id}',
+    sameName: 'Another result has the same name: compare the numbers on sofascore.com',
   },
   place: {
     england: 'England',
@@ -673,6 +675,7 @@ const en = {
   follows: {
     description: 'What is downloaded: leagues, teams, players and single matches, with their seasons and data.',
     syncAll: 'Update all',
+    sameName: 'Another follow has the same name: compare the numbers on sofascore.com',
     add: 'Add league',
     search: 'Search name',
     enabledOnly: 'Enabled only',
