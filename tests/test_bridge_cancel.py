@@ -13,11 +13,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-import src.challenge_solver as cs
-from src import throttle
-from src.client import bridge as bridge_module
-from src.client import request_context, transport
-from src.client.context import FetchCancelled
+import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper import throttle
+from sofascore_scraper.client import bridge as bridge_module
+from sofascore_scraper.client import request_context, transport
+from sofascore_scraper.client.context import FetchCancelled
 
 
 
@@ -106,7 +106,7 @@ def test_the_sync_bridge_call_raises_the_cancel_instead_of_returning_none(monkey
 
 def test_relative_paths_use_the_configured_api_base(monkeypatch: pytest.MonkeyPatch) -> None:
     """Köprü kendi API kökünü tutmaz (plan bölüm 15, satır 57): göreli yol transport'un köküne eklenir."""
-    from src.client import transport
+    from sofascore_scraper.client import transport
 
     seen = []
 

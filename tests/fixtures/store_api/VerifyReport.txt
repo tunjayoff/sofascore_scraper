@@ -1,5 +1,5 @@
-# src.store.VerifyReport
-# kaynak: src/store/verify.py
+# sofascore_scraper.store.VerifyReport
+# kaynak: sofascore_scraper/store/verify.py
 @dataclass
 class VerifyReport:
     deep: bool

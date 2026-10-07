@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cross-platform click-to-run launcher for the web UI.
 
-Ensures venv + frontend build, runs the environment check (src/doctor.py) and installs what it
+Ensures venv + frontend build, runs the environment check (sofascore_scraper/doctor.py) and installs what it
 can (Python packages, the bridge browser), starts the server, opens the browser.
 """
 from __future__ import annotations
@@ -23,9 +23,9 @@ URL = f"http://127.0.0.1:{PORT}"
 DIST = ROOT / "frontend" / "dist" / "index.html"
 MIN_PYTHON = (3, 10)
 
-# src/doctor.py yalnızca standart kütüphaneyi kullanır: sanal ortam kurulmadan da içe aktarılabilir
+# sofascore_scraper/doctor.py yalnızca standart kütüphaneyi kullanır: sanal ortam kurulmadan da içe aktarılabilir
 sys.path.insert(0, str(ROOT))
-from src import doctor  # noqa: E402
+from sofascore_scraper import doctor  # noqa: E402
 
 # Bu denetimler başarısızsa sunucu hiç başlayamaz; diğer sorunlar yazdırılır ve devam edilir
 # (ör. tarayıcı kurulamadıysa indirilmiş veriler yine de görüntülenebilir).
@@ -35,7 +35,7 @@ _messages: Optional[doctor.Context] = None
 
 
 def _t(key: str, **kwargs: Any) -> str:
-    """Launcher text from locales/*.json, in the app's language (rule: src/language.py)."""
+    """Launcher text from locales/*.json, in the app's language (rule: sofascore_scraper/language.py)."""
     global _messages
     if _messages is None:
         _messages = doctor.Context()
@@ -96,7 +96,7 @@ def _run_doctor(py: Path) -> Optional[Dict[str, Any]]:
     try:
         proc = subprocess.run(
             # frontend: _ensure_frontend az önce baktı ve gerekeni söyledi
-            [str(py), "-m", "src.doctor", "--json", "--skip", "frontend"],
+            [str(py), "-m", "sofascore_scraper.doctor", "--json", "--skip", "frontend"],
             cwd=ROOT,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
@@ -176,12 +176,12 @@ def _preflight(
 
 def server_command(py: Path) -> List[str]:
     """
-    The server the launcher starts: the `serve` command of the CLI (src/cli/commands/serve.py), from the
+    The server the launcher starts: the `serve` command of the CLI (sofascore_scraper/cli/commands/serve.py), from the
     project folder and without an install. The address is always this computer only, whatever the config
     file says: a double-clicked launcher never opens the app to the network. No `--dev`: a double-click
     session stays one process.
     """
-    return [str(py), "-m", "src.cli.main", "serve", "--host", "127.0.0.1", "--port", str(PORT)]
+    return [str(py), "-m", "sofascore_scraper.cli.main", "serve", "--host", "127.0.0.1", "--port", str(PORT)]
 
 
 def _port_open() -> bool:

@@ -1,8 +1,8 @@
 """
-src/paths.py: veri dizini dışındaki yollar (.env, config dizini, tarayıcı profili).
+sofascore_scraper/paths.py: veri dizini dışındaki yollar (.env, config dizini, tarayıcı profili).
 
-Veri dizininin adları burada değildir: 3.0 düzeni src/store/layout.py'de, 2.x düzeninin ad kuralı
-src/store/legacy.py'dedir (tests/test_store_legacy_names.py).
+Veri dizininin adları burada değildir: 3.0 düzeni sofascore_scraper/store/layout.py'de, 2.x düzeninin ad kuralı
+sofascore_scraper/store/legacy.py'dedir (tests/test_store_legacy_names.py).
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import os
 
 import conftest
 
-from src import paths
+from sofascore_scraper import paths
 
 
 # --- .env ve config yolları -------------------------------------------------------------------

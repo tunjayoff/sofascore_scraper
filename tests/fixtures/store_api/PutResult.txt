@@ -1,5 +1,5 @@
-# src.store.PutResult
-# kaynak: src/store/events.py
+# sofascore_scraper.store.PutResult
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class PutResult:
     created: bool

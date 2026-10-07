@@ -1,4 +1,4 @@
-"""Süreçler arası ortak istek bütçesi (src/throttle.py, issue #16). Ağ yok; saat çoğunlukla sahte."""
+"""Süreçler arası ortak istek bütçesi (sofascore_scraper/throttle.py, issue #16). Ağ yok; saat çoğunlukla sahte."""
 from __future__ import annotations
 
 import asyncio
@@ -14,12 +14,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import src.challenge_solver as cs
-import src.utils as utils
-from src import throttle
-from src.client import request_context, transport
-from src.throttle import RequestThrottle, Reservation, advance, put_back, take
-from src.watcher import MatchWatcher
+import sofascore_scraper.challenge_solver as cs
+import sofascore_scraper.utils as utils
+from sofascore_scraper import throttle
+from sofascore_scraper.client import request_context, transport
+from sofascore_scraper.throttle import RequestThrottle, Reservation, advance, put_back, take
+from sofascore_scraper.watcher import MatchWatcher
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -310,7 +310,7 @@ def test_held_lock_does_not_deadlock(tmp_path, monkeypatch):
 _HOLD_LOCK = """
 import sys, time
 sys.path.insert(0, {root!r})
-from src import throttle
+from sofascore_scraper import throttle
 with throttle.file_lock({lock!r}):
     open({ready!r}, "w").close()
     time.sleep(120)
@@ -356,7 +356,7 @@ def test_crashed_lock_holder_leaves_no_stale_lock(tmp_path):
 _WORKER = """
 import json, os, sys, time
 sys.path.insert(0, {root!r})
-from src.throttle import RequestThrottle
+from sofascore_scraper.throttle import RequestThrottle
 t = RequestThrottle("api", {rate!r}, burst=1, directory={directory!r}, lock_timeout=60.0)
 open({ready!r}, "w").close()
 while not os.path.exists({go!r}):
@@ -628,7 +628,7 @@ def test_give_back_never_raises_when_the_file_is_unusable(tmp_path, caplog):
     t = RequestThrottle("api", 1.0, clock=clock, directory=str(tmp_path), lock_timeout=0.05)
     t.reserve()
     queued, last = t.reserve(), t.reserve()
-    with caplog.at_level("WARNING", logger="src.throttle"), throttle.file_lock(str(tmp_path / "api.lock")):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.throttle"), throttle.file_lock(str(tmp_path / "api.lock")):
         assert queued.give_back() is False  # kilit başkasında: sıra iade edilemez, hata da yok
         assert last.give_back() is False  # dosya bir süre yeniden denenmez: her iade zaman aşımı beklemez
     assert t.shared_error and caplog.text.count("was not returned") == 1
@@ -690,7 +690,7 @@ def test_interrupted_block_gives_the_slot_back_and_a_finished_one_keeps_it(share
 _CANCELLED_JOB = """
 import json, os, random, sys, time
 sys.path.insert(0, {root!r})
-from src.throttle import RequestThrottle
+from sofascore_scraper.throttle import RequestThrottle
 t = RequestThrottle("api", 5.0, clock=lambda: {now!r}, directory={directory!r}, lock_timeout=60.0)
 queued = [t.reserve() for _ in range(70)]
 open({ready!r}, "w").close()
@@ -1130,7 +1130,7 @@ def test_stop_reaches_browser_first_requests_waiting_for_a_request_slot(monkeypa
     durdurmadan sonra alan istek köprüye verilmez. Eskiden bekleyenlerin hepsi köprüden giderdi.
 
     Durdurma anında semaforu tutan istekler köprünün içindedir (ensure_ready). FX-18'den beri onlar da
-    gitmez: köprü bütçeden sıra ayırmadan önce iptale bakar (src/client/bridge.py, _wait_for_slot).
+    gitmez: köprü bütçeden sıra ayırmadan önce iptale bakar (sofascore_scraper/client/bridge.py, _wait_for_slot).
     Eskiden köprü iptale yalnızca sıra beklerken bakıyordu ve zamanı gelmiş sıradaki REQUEST_SLOTS istek
     durdurmadan sonra gidiyordu; şimdi hiçbiri gitmez ve hiçbiri sıra ayırmaz.
     """
@@ -1328,7 +1328,7 @@ def env_file_restored():
     (tests/test_config_loader.py, bu dosyadan sonra çalışınca; FX-15).
     """
     import conftest
-    from src.config import loader
+    from sofascore_scraper.config import loader
 
     try:
         with open(conftest.ENV_FILE, "rb") as f:
@@ -1350,7 +1350,7 @@ def env_file_restored():
 def test_settings_expose_and_update_rate_limit(monkeypatch, env_file_restored):
     from fastapi.testclient import TestClient
 
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     client = TestClient(app)
     before = os.environ.get("REQUEST_RATE_LIMIT")
@@ -1369,7 +1369,7 @@ def test_settings_expose_and_update_rate_limit(monkeypatch, env_file_restored):
 def test_settings_show_the_default_when_unset_and_accept_off(monkeypatch, env_file_restored):
     from fastapi.testclient import TestClient
 
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     client = TestClient(app)
     before = os.environ.get("REQUEST_RATE_LIMIT")

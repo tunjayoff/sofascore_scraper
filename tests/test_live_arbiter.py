@@ -1,5 +1,5 @@
 """
-Kaynak hakemi (src/services/live/arbiter.py; plan maddesi P24): sahte saatle durum makinesi.
+Kaynak hakemi (sofascore_scraper/services/live/arbiter.py; plan maddesi P24): sahte saatle durum makinesi.
 
   * push açılınca `page` önde; yoklama yavaş güvenlik aralığına iner
   * sessizlik (PING/PONG ve kare yok) ya da kopma → `poll` önde, `poll_interval`, hemen bir yoklama turu
@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.services.live import arbiter as arb
-from src.services.live.arbiter import SportArbiter
+from sofascore_scraper.services.live import arbiter as arb
+from sofascore_scraper.services.live.arbiter import SportArbiter
 
 T0 = 1_790_000_000.0
 

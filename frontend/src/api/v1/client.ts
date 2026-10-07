@@ -44,7 +44,7 @@ export class V1Error extends Error {
 
 let counter = 0
 
-/** A request id the server accepts (src/web/errors.py: [A-Za-z0-9._-]{1,64}). */
+/** A request id the server accepts (sofascore_scraper/web/errors.py: [A-Za-z0-9._-]{1,64}). */
 export function newRequestId(): string {
   counter = (counter + 1) % 1e6
   const random = Math.floor(Math.random() * 36 ** 6).toString(36).padStart(6, '0')

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 import test_cli_skeleton as skeleton
-from src.jobs.scheduler import TASK_RUNS
+from sofascore_scraper.jobs.scheduler import TASK_RUNS
 from test_cli_skeleton import CliRunner, write_config
 
 cli = skeleton.cli

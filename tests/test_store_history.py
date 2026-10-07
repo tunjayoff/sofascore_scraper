@@ -22,10 +22,10 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
-import src.store
+import sofascore_scraper.store
 import store_fixtures as sf
-from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, Outcome
-from src.store import (
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, Outcome
+from sofascore_scraper.store import (
     HistoryStore,
     LayoutError,
     Ref,
@@ -35,8 +35,8 @@ from src.store import (
     StoreError,
     open_store,
 )
-from src.store import codec, history, layout, manifest, verify
-from src.store import events as events_mod
+from sofascore_scraper.store import codec, history, layout, manifest, verify
+from sofascore_scraper.store import events as events_mod
 
 UTC = dt.timezone.utc
 T0 = dt.datetime.fromtimestamp(sf.FIXTURE_NOW, UTC)  # 2026-10-01T12:00:00Z
@@ -269,7 +269,7 @@ def test_a_file_cut_inside_the_last_member_reads_n_minus_one_and_the_next_append
     assert [s.payload for s in written.history.snapshots(Ref.event(ARS), ODDS, "1")] == [
         odds(p) for p in (1.0, 2.0, 3.0, 2.0)]
 
-    with caplog.at_level(logging.WARNING, logger="src.store.history"):
+    with caplog.at_level(logging.WARNING, logger="sofascore_scraper.store.history"):
         result = put_odds(written, 5.0, 10)
     assert result.history == (f"{ODDS}/1",)
     assert any("removed before the next append" in r.getMessage() for r in caplog.records)
@@ -425,7 +425,7 @@ def test_prune_of_one_event_and_without_the_writer_lease(written: Store) -> None
 def test_the_history_api_is_exported_and_attached_to_the_store(store: Store) -> None:
     assert isinstance(store.history, HistoryStore)
     for name in ("HistoryStore", "Snapshot", "SnapshotInfo"):
-        assert name in src.store.__all__ and getattr(src.store, name) is getattr(history, name)
+        assert name in sofascore_scraper.store.__all__ and getattr(sofascore_scraper.store, name) is getattr(history, name)
 
 
 def test_reads_validate_their_arguments_and_know_other_owners(store: Store) -> None:

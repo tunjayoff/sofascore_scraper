@@ -1,4 +1,4 @@
-# src.store.FollowExists
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.FollowExists
+# kaynak: sofascore_scraper/store/errors.py
 class FollowExists(StoreError):
     default_message = ...

@@ -19,7 +19,7 @@
    }
   ],
   "sleeps": {
-   "src.client.transport": 1
+   "sofascore_scraper.client.transport": 1
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",
@@ -67,7 +67,7 @@
   ],
   "sleeps": {
    "request-layer": 6,
-   "src.client.transport": 1
+   "sofascore_scraper.client.transport": 1
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc --ignore-breaker refresh",
@@ -151,7 +151,7 @@
   ],
   "sleeps": {
    "request-layer": 4,
-   "src.client.transport": 1
+   "sofascore_scraper.client.transport": 1
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",

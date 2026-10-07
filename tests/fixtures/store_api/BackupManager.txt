@@ -1,5 +1,5 @@
-# src.store.BackupManager
-# kaynak: src/store/backup.py
+# sofascore_scraper.store.BackupManager
+# kaynak: sofascore_scraper/store/backup.py
 class BackupManager:
     def __init__(self, store: 'Store') -> None
     @property

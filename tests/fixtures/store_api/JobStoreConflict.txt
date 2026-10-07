@@ -1,4 +1,4 @@
-# src.store.JobStoreConflict
-# kaynak: src/store/jobs.py
+# sofascore_scraper.store.JobStoreConflict
+# kaynak: sofascore_scraper/store/jobs.py
 class JobStoreConflict(RuntimeError):
     code = ...

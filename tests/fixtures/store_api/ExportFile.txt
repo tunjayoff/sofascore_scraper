@@ -1,5 +1,5 @@
-# src.store.ExportFile
-# kaynak: src/store/export.py
+# sofascore_scraper.store.ExportFile
+# kaynak: sofascore_scraper/store/export.py
 @dataclass(frozen=True)
 class ExportFile:
     name: str

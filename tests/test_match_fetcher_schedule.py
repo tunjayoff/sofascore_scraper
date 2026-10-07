@@ -1,4 +1,4 @@
-"""Sezon programı: sarmalayıcının durağan adları (src/match_fetcher.py) ve programın stratejisi (src/services/listing.py, sahte HTTP)."""
+"""Sezon programı: sarmalayıcının durağan adları (sofascore_scraper/match_fetcher.py) ve programın stratejisi (sofascore_scraper/services/listing.py, sahte HTTP)."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ import unittest
 from typing import Any, Dict, Iterator, List, Optional
 
 from schedule_runner import list_schedule_async
-from src.exceptions import APIError, ResourceNotFoundError
-from src.match_fetcher import MatchFetcher
-from src.services import listing
-from src.store import Ref, open_store
+from sofascore_scraper.exceptions import APIError, ResourceNotFoundError
+from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.services import listing
+from sofascore_scraper.store import Ref, open_store
 
 
 def _finished_event(eid: int) -> Dict[str, Any]:
@@ -74,7 +74,7 @@ def _data_dir() -> Iterator[str]:
         try:
             yield tmp
         finally:
-            from src.store import api as store_api
+            from sofascore_scraper.store import api as store_api
 
             root = os.path.abspath(tmp)
             for store in list(store_api._registry.values()):
@@ -83,7 +83,7 @@ def _data_dir() -> Iterator[str]:
 
 
 def _api(pages: Dict[str, Any], calls: List[str]) -> Any:
-    """Eski istek yolunun sahte hali (src.utils.make_api_request_async; göreli yol): bilinmeyen yol 404."""
+    """Eski istek yolunun sahte hali (sofascore_scraper.utils.make_api_request_async; göreli yol): bilinmeyen yol 404."""
 
     async def fake_api(session: Any, url: str, max_retries: Optional[int] = None) -> Any:
         calls.append(url)

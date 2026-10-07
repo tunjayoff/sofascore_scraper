@@ -458,7 +458,7 @@
  ],
  "sleeps": {
   "request-layer": 33,
-  "src.client.transport": 4
+  "sofascore_scraper.client.transport": 4
  },
  "stderr": [
   "main.py flags are deprecated and will be removed; this run is: ssc sync",

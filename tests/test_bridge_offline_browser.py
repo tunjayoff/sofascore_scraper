@@ -31,8 +31,8 @@ from urllib.parse import urlsplit
 
 import pytest
 
-import src.challenge_solver as cs
-from src import bridge_health
+import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper import bridge_health
 
 pytestmark = pytest.mark.browser
 

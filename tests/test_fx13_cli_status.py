@@ -12,7 +12,7 @@ from pathlib import Path
 
 import store_fixtures as sf
 import test_cli_skeleton as skeleton
-from src.store import StreamEvent, open_store
+from sofascore_scraper.store import StreamEvent, open_store
 from test_cli_skeleton import CliRunner
 
 cli = skeleton.cli

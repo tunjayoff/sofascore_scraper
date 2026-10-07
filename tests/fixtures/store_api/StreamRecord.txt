@@ -1,5 +1,5 @@
-# src.store.StreamRecord
-# kaynak: src/store/streams.py
+# sofascore_scraper.store.StreamRecord
+# kaynak: sofascore_scraper/store/streams.py
 @dataclass(frozen=True)
 class StreamRecord:
     seq: int

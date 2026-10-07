@@ -39,10 +39,10 @@ import pytest
 
 import store_dump
 import store_fixtures as sf
-from src.slices import SLICE_EMPTY, SLICE_OK, Outcome
-from src.store import Scope, Store, StoreError, open_store
-from src.store import layout
-from src.store.events import CHANGE_INTENT_DIR
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, Outcome
+from sofascore_scraper.store import Scope, Store, StoreError, open_store
+from sofascore_scraper.store import layout
+from sofascore_scraper.store.events import CHANGE_INTENT_DIR
 
 ROOT = Path(__file__).resolve().parent.parent
 UTC = dt.timezone.utc
@@ -456,7 +456,7 @@ def test_an_unreadable_intent_is_reported_and_removed(tmp_path: Path, caplog: py
     (directory / f"{ARS}.json").write_bytes(content)
     (directory / ".9.json.0a1b2c3d.tmp").write_bytes(b"{")  # ölen yazmanın yarım geçici dosyası
     (directory / "notes.txt").write_bytes(b"")  # adı kurala uymayan girdiye dokunulmaz
-    with caplog.at_level("WARNING", logger="src.store.events"):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.store.events"):
         store = open_store(data_dir)
         store.catalog.reconcile()
     assert any("change intent of an unfinished write cannot be read" in r.getMessage() for r in caplog.records)

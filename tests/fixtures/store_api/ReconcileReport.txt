@@ -1,5 +1,5 @@
-# src.store.ReconcileReport
-# kaynak: src/store/indexer.py
+# sofascore_scraper.store.ReconcileReport
+# kaynak: sofascore_scraper/store/indexer.py
 @dataclass
 class ReconcileReport:
     deep: bool

@@ -1,5 +1,5 @@
 """
-Listeler: sezon listeleri ve sezon programları tipli iş birimleri olarak (src/services/listing.py, plan maddesi P14).
+Listeler: sezon listeleri ve sezon programları tipli iş birimleri olarak (sofascore_scraper/services/listing.py, plan maddesi P14).
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı, getirme boru hattı ve Store
 gerçektir. Hatalar sahte taşıyıcıyla enjekte edilir. Akışların goldenları tests/characterization/test_fetch_flows.py'de.
@@ -15,14 +15,14 @@ import pytest
 
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src import breaker as request_breaker
-from src.client.context import request_context
-from src.exceptions import StorageError
-from src.services import listing, planning
-from src.services.listing import ListingResult, ListingService, ScheduleLister, ScheduleRun
-from src.services.pipeline import FetchPipeline
-from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
-from src.store import Ref, open_store
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper.client.context import request_context
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.services import listing, planning
+from sofascore_scraper.services.listing import ListingResult, ListingService, ScheduleLister, ScheduleRun
+from sofascore_scraper.services.pipeline import FetchPipeline
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
+from sofascore_scraper.store import Ref, open_store
 
 LEAGUE = 17
 WEEKS = 61627  # haftalık turlar: 1. tur 9100001 + 9100002 (bitti), 2. tur 9100003 (bitti) + 9100004 (başlamadı)
@@ -208,7 +208,7 @@ def test_an_open_breaker_skips_the_season_list(fake: FakeSofaScore, store: Any) 
     breaker = request_breaker.CircuitBreaker(consecutive=lambda: 1, ratio=lambda: 1.0)
     fake.fail("/event/1", 403)
     with request_context(breaker=breaker):
-        from src.client import Client
+        from sofascore_scraper.client import Client
 
         Client().get_sync("/event/1")
         assert breaker.tripped

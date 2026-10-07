@@ -1,5 +1,5 @@
-# src.store.EntityStore
-# kaynak: src/store/entities.py
+# sofascore_scraper.store.EntityStore
+# kaynak: sofascore_scraper/store/entities.py
 class EntityStore:
     def __init__(self, store: 'Store') -> None
     def payload(self, ref: Ref, key: str, sub: str = '', *, raw: bool = False) -> Any

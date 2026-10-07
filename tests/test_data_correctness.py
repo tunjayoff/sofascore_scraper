@@ -13,15 +13,15 @@ from fastapi.testclient import TestClient
 import conftest
 from catalog_index import LISTING_SCHEDULES, index_listings
 from schedule_runner import inline, legacy_get
-from src.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
+from sofascore_scraper.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
                                     SliceOutcome)
-from src.match_fetcher import MatchFetcher
-from src.services import listing
-from src.services.status import StatusService
-from src.slices import SLICE_OK, Outcome
-from src.store import Ref, league_dir_name, open_store
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.services import listing
+from sofascore_scraper.services.status import StatusService
+from sofascore_scraper.slices import SLICE_OK, Outcome
+from sofascore_scraper.store import Ref, league_dir_name, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 
@@ -31,7 +31,7 @@ def _event(mid, status_type="finished", desc="Ended", code=100):
 
 
 def _lister(tmp_path) -> listing.ScheduleLister:
-    """Sezon programının kuralları (src/services/listing.py); "yalnızca bitmiş maçlar" açık."""
+    """Sezon programının kuralları (sofascore_scraper/services/listing.py); "yalnızca bitmiş maçlar" açık."""
     return listing.ScheduleLister(open_store(str(tmp_path)), only_finished=True, concurrency=2)
 
 
@@ -198,7 +198,7 @@ def test_coverage_report_counts_the_slices_the_writer_marked_and_writes_nothing(
 
 
 def test_path_helpers_match_existing_layout():
-    """2.x düzeninin lig dizini adı (Store'un ad kuralı; eskiden src/paths.py)."""
+    """2.x düzeninin lig dizini adı (Store'un ad kuralı; eskiden sofascore_scraper/paths.py)."""
     assert league_dir_name(17, "Premier League") == "17_Premier_League"
     assert league_dir_name(2361, "Wimbledon, Men") == "2361_Wimbledon,_Men"
     # Config'de olmayan lig: kaydeden ve okuyan aynı adı kullanır

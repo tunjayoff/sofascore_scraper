@@ -1,5 +1,5 @@
-# src.store.ChangeRow
-# kaynak: src/store/changes.py
+# sofascore_scraper.store.ChangeRow
+# kaynak: sofascore_scraper/store/changes.py
 @dataclass(frozen=True)
 class ChangeRow:
     seq: int

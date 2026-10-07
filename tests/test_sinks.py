@@ -29,20 +29,20 @@ import pytest
 
 import conftest
 import test_cli_skeleton as skeleton
-from src import sinks
-from src.cli.commands import events as events_command
-from src.config import SinkSpec, loader
-from src.exceptions import ConfigError
-from src.jobs.manager import JobManager, local_origin
-from src.jobs.model import JobKind
-from src.sinks import base, dispatcher as dispatcher_mod
-from src.sinks.base import BaseSink, Envelope, EventFilter, FatalSinkError, RetryableSinkError, Sink
-from src.sinks.dispatcher import Dispatcher, DrainReport
-from src.sinks.file import FileSink
-from src.sinks.stdout import StdoutSink
-from src.sinks.webhook import WebhookSink
-from src.store import JobStore, Store, StoreBusy, StreamEvent, open_store
-from src.store import streams as store_streams
+from sofascore_scraper import sinks
+from sofascore_scraper.cli.commands import events as events_command
+from sofascore_scraper.config import SinkSpec, loader
+from sofascore_scraper.exceptions import ConfigError
+from sofascore_scraper.jobs.manager import JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind
+from sofascore_scraper.sinks import base, dispatcher as dispatcher_mod
+from sofascore_scraper.sinks.base import BaseSink, Envelope, EventFilter, FatalSinkError, RetryableSinkError, Sink
+from sofascore_scraper.sinks.dispatcher import Dispatcher, DrainReport
+from sofascore_scraper.sinks.file import FileSink
+from sofascore_scraper.sinks.stdout import StdoutSink
+from sofascore_scraper.sinks.webhook import WebhookSink
+from sofascore_scraper.store import JobStore, Store, StoreBusy, StreamEvent, open_store
+from sofascore_scraper.store import streams as store_streams
 from test_cli_skeleton import CliRunner
 
 # `main()`i bu süreçte çalıştıran ve süreçteki izlerini geri alan fixture (tests/test_cli_skeleton.py)
@@ -1123,7 +1123,7 @@ def test_drain_leaves_the_backlog_to_the_holder_of_the_lease(store: Store):
 # Başka bir süreç: depoyu açar, `sinks` kilidini alır, "ready" yazar ve stdin'den bir satır gelince bırakır.
 LEASE_HOLDER = """
 import os, sys
-from src.store import open_store
+from sofascore_scraper.store import open_store
 lease = open_store(sys.argv[1]).lease("sinks", purpose="dispatcher")
 print("ready", os.getpid(), flush=True)
 sys.stdin.readline()
@@ -1518,7 +1518,7 @@ def test_sinks_are_built_from_the_config_file(tmp_path: Path, data_dir: Path):
     assert (ops.batch_size, ops.linger_seconds, ops.max_age_seconds, ops.timeout_seconds) == (50, 0.5, 6 * 3600.0, 3.0)
     assert ops.filter.patterns == ("live.*", "job.finished")
     assert ops.filter.sports == {"football"} and ops.filter.tournament_ids == {17, 8}
-    # Göreli yol yapılandırma dosyasının dizinine göre çözülür (src/config/loader.py)
+    # Göreli yol yapılandırma dosyasının dizinine göre çözülür (sofascore_scraper/config/loader.py)
     assert isinstance(feed, FileSink) and skeleton.same_path(feed.path, tmp_path / "out" / "live.ndjson")
     assert (feed.rotate_daily, feed.rotate_bytes, feed.keep) == (True, 50 * 1024 ** 2, 14)
     assert isinstance(console, StdoutSink) and console.filter.patterns == ("*",)
@@ -1578,8 +1578,8 @@ def test_a_webhook_needs_its_secret_in_the_environment():
 
 
 def test_the_secret_variable_must_have_a_name_that_is_masked(monkeypatch: pytest.MonkeyPatch):
-    """Tanılama paketi ve log maskelemesi gizli değerleri değişkenin adından tanır (src/redact.py)."""
-    from src import redact
+    """Tanılama paketi ve log maskelemesi gizli değerleri değişkenin adından tanır (sofascore_scraper/redact.py)."""
+    from sofascore_scraper import redact
 
     with pytest.raises(ConfigError, match="secret_env: the variable name must look like a secret"):
         sinks.build_sink(spec(**{**HOOK, "secret_env": "SOFASCORE_HOOK"}), environ={"SOFASCORE_HOOK": SECRET})
@@ -1589,7 +1589,7 @@ def test_the_secret_variable_must_have_a_name_that_is_masked(monkeypatch: pytest
 
 
 def test_the_diagnostics_bundle_masks_the_secret_of_an_accepted_variable_name(monkeypatch: pytest.MonkeyPatch):
-    from src import diagnostics
+    from sofascore_scraper import diagnostics
 
     monkeypatch.setenv("SOFASCORE_HOOK_SECRET", SECRET)
     settings = json.dumps(diagnostics._settings())
@@ -1616,7 +1616,7 @@ def test_config_show_never_prints_a_webhook_address_beyond_its_host(cli: CliRunn
 
 def test_the_diagnostics_bundle_never_contains_a_webhook_address_beyond_its_host(monkeypatch: pytest.MonkeyPatch):
     """Sink'ler ortamdan da gelir (SOFASCORE_SINKS); paket bütün SOFASCORE_ değişkenlerini yazar."""
-    from src import diagnostics, redact
+    from sofascore_scraper import diagnostics, redact
 
     monkeypatch.setenv("SOFASCORE_HOOK_SECRET", SECRET)
     monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([
@@ -1645,7 +1645,7 @@ READ_ONLY_SINK_SCHEMAS = ("SinkListResponse", "SinkStatus", "SinksSummary")
 
 def test_no_http_route_and_no_web_module_knows_sinks():
     """Karar D11: sink'ler yalnızca yapılandırma dosyasından ve ortamdan gelir; HTTP API'si dışarıya adres kaydetmez."""
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     document = app.openapi()
     words = ("sink", "webhook")
@@ -1653,9 +1653,9 @@ def test_no_http_route_and_no_web_module_knows_sinks():
     assert list(document["paths"][READ_ONLY_SINK_ROUTE]) == ["get"]
     schemas = document.get("components", {}).get("schemas", {})
     assert sorted(name for name in schemas if any(word in name.lower() for word in words)) == list(READ_ONLY_SINK_SCHEMAS)
-    web = Path(ROOT) / "src" / "web"
+    web = Path(ROOT) / "sofascore_scraper" / "web"
     importing = [str(path.relative_to(ROOT)) for path in sorted(web.rglob("*.py"))
-                 if "src.sinks" in path.read_text(encoding="utf-8") or "from src import sinks" in path.read_text(encoding="utf-8")]
+                 if "sofascore_scraper.sinks" in path.read_text(encoding="utf-8") or "from sofascore_scraper import sinks" in path.read_text(encoding="utf-8")]
     assert importing == []
 
 
@@ -1687,10 +1687,10 @@ def test_sink_names_are_unique_and_types_known():
 
 def test_the_package_root_is_light_and_loads_sinks_on_first_use(box: skeleton.Sandbox):
     code = (
-        "import sys, src.sinks; "
-        "heavy = [m for m in ('src.sinks.dispatcher', 'src.sinks.webhook', 'src.sinks.file', 'src.store.api', "
-        "'src.redact', 'urllib.request') if m in sys.modules]; "
-        "from src.sinks import Dispatcher, WebhookSink; print(heavy, 'src.sinks.webhook' in sys.modules)"
+        "import sys, sofascore_scraper.sinks; "
+        "heavy = [m for m in ('sofascore_scraper.sinks.dispatcher', 'sofascore_scraper.sinks.webhook', 'sofascore_scraper.sinks.file', 'sofascore_scraper.store.api', "
+        "'sofascore_scraper.redact', 'urllib.request') if m in sys.modules]; "
+        "from sofascore_scraper.sinks import Dispatcher, WebhookSink; print(heavy, 'sofascore_scraper.sinks.webhook' in sys.modules)"
     )
     run = box.run(code=code)
     assert run.exit_code == 0, run.stderr
@@ -1847,7 +1847,7 @@ def test_events_is_described_with_the_options_of_the_design(cli: CliRunner):
 
 FOLLOWER = """
 import signal, sys
-from src.cli.main import main
+from sofascore_scraper.cli.main import main
 signal.signal(signal.SIGINT, signal.default_int_handler)  # testi çalıştıran kabuk SIGINT'i yok saydırmış olabilir
 sys.exit(main(["events", "--data-dir", sys.argv[1], "--follow", *sys.argv[2:]]))
 """

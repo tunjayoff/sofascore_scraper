@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from src.store import open_store
-from src.watcher import (EVENT_INTERVAL_SLOW_SECONDS, MatchWatcher, STUCK_INTERVAL_SECONDS, WATCH_EVENTS_FILE,
+from sofascore_scraper.store import open_store
+from sofascore_scraper.watcher import (EVENT_INTERVAL_SLOW_SECONDS, MatchWatcher, STUCK_INTERVAL_SECONDS, WATCH_EVENTS_FILE,
                          near_end, play_start)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
@@ -154,7 +154,7 @@ def test_rate_budget_slows_event_pages_and_warns(tmp_path, caplog):
     clock = Clock(_now_of("football/A_inprogress-7-2nd-half__17018572"))
     w = _watcher(tmp_path, api, clock, league_ids=[17])
     per_tick = []
-    with caplog.at_level("WARNING", logger="src.services.live.poll_source"):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.services.live.poll_source"):
         for _ in range(3):
             before = len(api.calls)
             w.tick()

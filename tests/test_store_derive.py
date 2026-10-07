@@ -1,5 +1,5 @@
 """
-src/store/derive.py: yük → katalog satırı (docs/design/01-storage.md, bölüm 3.3).
+sofascore_scraper/store/derive.py: yük → katalog satırı (docs/design/01-storage.md, bölüm 3.3).
 
 Altın dosya tests/golden/derive/event_rows.json, tests/fixtures/status altındaki her gerçek yanıt için
 `event_row` çıktısını tutar. Çıktı bilerek değiştirildiyse DERIVE_VERSION artırılır (katalog yeniden
@@ -7,8 +7,8 @@ kurulsun diye) ve dosya şöyle yeniden üretilir:
 
     REGEN_DERIVE_GOLDEN=1 python -m pytest tests/test_store_derive.py
 
-Ağ yok. Bugünkü kurallarla karşılaştırma: classify_status / extract_scores (src/status.py),
-`_tier_hint` (src/refresh.py), SeasonFetcher._get_sortable_year_value ve özet CSV satırı
+Ağ yok. Bugünkü kurallarla karşılaştırma: classify_status / extract_scores (sofascore_scraper/status.py),
+`_tier_hint` (sofascore_scraper/refresh.py), SeasonFetcher._get_sortable_year_value ve özet CSV satırı
 (tests/store_fixtures.summary_row = MatchFetcher._save_season_summary).
 """
 from __future__ import annotations
@@ -25,10 +25,10 @@ from pathlib import Path
 import pytest
 
 import store_fixtures as sf
-from src.refresh import _tier_hint
-from src.season_fetcher import SeasonFetcher
-from src.status import ScoreSheet, classify_status, extract_scores
-from src.store import PayloadCorrupt, derive
+from sofascore_scraper.refresh import _tier_hint
+from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.status import ScoreSheet, classify_status, extract_scores
+from sofascore_scraper.store import PayloadCorrupt, derive
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
@@ -332,7 +332,7 @@ def test_malformed_values_are_coerced_or_dropped():
 
 @pytest.mark.parametrize("name", sorted(EVENTS), ids=str)
 def test_legacy_summary_columns_can_be_rebuilt_from_the_row(name):
-    """Özet CSV'sinin sütunları (src/match_fetcher.py:547-575) satırdan geri kurulabilmeli (bölüm 3.3, 8.2)."""
+    """Özet CSV'sinin sütunları (sofascore_scraper/match_fetcher.py:547-575) satırdan geri kurulabilmeli (bölüm 3.3, 8.2)."""
     ev = EVENTS[name]
     event = sf.basic_payload(ev)
     row = derive.event_row(event, "event")
@@ -549,13 +549,13 @@ def test_event_participant_rows():
 # --- saflık ---------------------------------------------------------------------------------------------
 
 def test_module_is_pure_and_respects_the_store_layering():
-    """Taze yorumlayıcıda src.store.derive yalnızca Store'un izinli olduğu src modüllerini yükler (bölüm 2.1)."""
+    """Taze yorumlayıcıda sofascore_scraper.store.derive yalnızca Store'un izinli olduğu sofascore_scraper modüllerini yükler (bölüm 2.1)."""
     code = (
-        "import sys, json; import src.store.derive; "
-        "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.store.derive; "
+        "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
     loaded = set(json.loads(out.stdout))
 
-    assert loaded == {"src", "src.exceptions", "src.sports", "src.status", "src.store", "src.store.derive",
-                      "src.store.errors"}
+    assert loaded == {"sofascore_scraper", "sofascore_scraper.exceptions", "sofascore_scraper.sports", "sofascore_scraper.status", "sofascore_scraper.store", "sofascore_scraper.store.derive",
+                      "sofascore_scraper.store.errors"}

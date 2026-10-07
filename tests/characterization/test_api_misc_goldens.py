@@ -40,11 +40,11 @@ from fastapi.testclient import TestClient
 
 import conftest
 import store_fixtures as sf
-from src.jobs.progress import JobProgress
-from src.version import __version__
-from src.web.app import app
-from src.web.jobs import default_db_path
-from src.web import deps
+from sofascore_scraper.jobs.progress import JobProgress
+from sofascore_scraper.version import __version__
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.jobs import default_db_path
+from sofascore_scraper.web import deps
 
 SNAPSHOT_DIR = Path(__file__).resolve().parent.parent / "snapshots" / "api"
 REGENERATE = os.getenv("REGEN_API_GOLDENS") == "1"
@@ -261,7 +261,7 @@ SEASON_FILES: Tuple[Tuple[str, bytes, int], ...] = (
 
 def test_api_league_seasons_file_forms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Hangi dosya okunur, içeriğinden ne döner (RD-5'ten beri kural src/services/tournaments.py'dedir): ligin
+    Hangi dosya okunur, içeriğinden ne döner (RD-5'ten beri kural sofascore_scraper/services/tournaments.py'dedir): ligin
     dosyalarından, adı ne olursa olsun, mtime'ı en yeni olan seçilir (eskiden yalın `<id>_seasons.json` daha
     eski olsa da kazanırdı); `seasons` anahtarı liste değilse boş liste ve `fetched: true`; okunamayan dosya
     (yarım kalmış JSON, nesne yerine dizi ya da metin) sezon listesi sayılmaz: boş liste ve `fetched: false`;
@@ -282,7 +282,7 @@ def test_api_league_seasons_file_forms(tmp_path: Path, monkeypatch: pytest.Monke
 
 # --- GET /api/settings, /api/status -----------------------------------------------------------
 
-# GET /api/settings'in okuduğu her değişken. Dil kuralı (src/language.py) açık ayar yoksa sistem diline bakar:
+# GET /api/settings'in okuduğu her değişken. Dil kuralı (sofascore_scraper/language.py) açık ayar yoksa sistem diline bakar:
 # LC_ALL silinir ve LC_MESSAGES her senaryoda belirlenir ("C": desteklenmeyen dil), testi çalıştıran makinenin
 # dili sonucu değiştirmesin diye.
 SYSTEM_LANGUAGE_ENV = "LC_MESSAGES"
@@ -367,7 +367,7 @@ def test_api_status(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_api_sports() -> None:
-    """Kayıt defterinin (src/sports.py) görünümü: spor eklendiğinde (SP-1 … SP-3) bu dosya bilerek yenilenir."""
+    """Kayıt defterinin (sofascore_scraper/sports.py) görünümü: spor eklendiğinde (SP-1 … SP-3) bu dosya bilerek yenilenir."""
     check_golden("sports", _get("/api/sports"))
 
 
@@ -396,7 +396,7 @@ class _Clock:
 
 class _JobScript:
     """
-    Bir indirme işinin iş deposuna yaptığı çağrılar, `src/web/fetch_job.py`'deki sırayla ve aynı metinlerle;
+    Bir indirme işinin iş deposuna yaptığı çağrılar, `sofascore_scraper/web/fetch_job.py`'deki sırayla ve aynı metinlerle;
     ağ ve indirme yok. İşin sonu (`complete`, `cancel`, `fail`) ayrı çağrılır ki araya durum kaydı girebilsin.
     """
 
@@ -465,7 +465,7 @@ class _JobScript:
 
 
 def _payload(mode: str, league_id: Optional[int] = None, **selection: Any) -> Dict[str, Any]:
-    """`FetchRequest.model_dump()` biçimi (src/web/routes/scrape.py)."""
+    """`FetchRequest.model_dump()` biçimi (sofascore_scraper/web/routes/scrape.py)."""
     selections = [{"league_id": 17, "season_ids": None, "match_ids": None, **selection}] if selection else None
     return {"league_id": league_id, "mode": mode, "selections": selections}
 

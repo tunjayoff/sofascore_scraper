@@ -1,7 +1,7 @@
 """
 Karakterizasyon: tests/fixtures/status altındaki her gerçek yanıt için extract_scores ve izleyici kararları.
 
-Beklenen değerler tests/fixtures/status_golden.json'da durur; spor kayıt defterine (src/sports.py) geçmeden
+Beklenen değerler tests/fixtures/status_golden.json'da durur; spor kayıt defterine (sofascore_scraper/sports.py) geçmeden
 önceki kodla üretildi. Yeni spor eklemek ya da kayıt defterini değiştirmek mevcut üç sporun çıktısını
 değiştirmemeli. Davranış bilerek değiştirildiyse dosya şöyle yeniden üretilir:
 
@@ -20,9 +20,9 @@ from pathlib import Path
 
 import pytest
 
-from src.sports import sport_slugs
-from src.status import extract_scores
-from src.watcher import MatchWatcher
+from sofascore_scraper.sports import sport_slugs
+from sofascore_scraper.status import extract_scores
+from sofascore_scraper.watcher import MatchWatcher
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 GOLDEN = Path(__file__).parent / "fixtures" / "status_golden.json"

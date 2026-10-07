@@ -1,5 +1,5 @@
 """
-src/client: istek katmanının yeni yeri ve üzerindeki Client yüzü (plan maddesi P05).
+sofascore_scraper/client: istek katmanının yeni yeri ve üzerindeki Client yüzü (plan maddesi P05).
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanının kendisi gerçektir.
 """
@@ -17,14 +17,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import src.utils as utils
+import sofascore_scraper.utils as utils
 from characterization import pin_default_settings
 from fakes.sofascore import REQUEST_LAYER, REQUEST_LAYER_MODULES, SITE_ROOT, FakeResponse, FakeSofaScore
-from src import breaker as request_breaker
-from src import bridge_health
-from src.breaker import CircuitBreaker
-from src.bridge_health import BridgeHealth
-from src.client import (
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper import bridge_health
+from sofascore_scraper.breaker import CircuitBreaker
+from sofascore_scraper.bridge_health import BridgeHealth
+from sofascore_scraper.client import (
     Cancelled,
     Client,
     ClientSettings,
@@ -35,14 +35,14 @@ from src.client import (
     request_context,
     transport,
 )
-from src.client.transport import RequestTrace
-from src.config_manager import ConfigManager
-from src.match_data_fetcher import MatchDataFetcher
-from src.match_fetcher import MatchFetcher
-from src.season_fetcher import SeasonFetcher
-from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
-from src.sports import DETAIL_SLICES
-from src.watcher import MatchWatcher
+from sofascore_scraper.client.transport import RequestTrace
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
+from sofascore_scraper.sports import DETAIL_SLICES
+from sofascore_scraper.watcher import MatchWatcher
 
 EVENT = {"id": 1, "status": {"type": "finished"}}
 
@@ -55,7 +55,7 @@ def fake() -> Iterator[FakeSofaScore]:
         yield world
 
 
-# --- taşıma: src/utils.py ince bir yeniden dışa aktarım ----------------------------------------------
+# --- taşıma: sofascore_scraper/utils.py ince bir yeniden dışa aktarım ----------------------------------------------
 
 MOVED_TO_TRANSPORT = (
     "make_api_request", "make_api_request_async", "_request_sync", "_request_async", "_request_semaphore",
@@ -83,18 +83,18 @@ def test_utils_re_exports_the_context_objects(name: str) -> None:
 
 
 def test_utils_keeps_no_request_code_of_its_own() -> None:
-    """Gövde taşındı: src/utils.py'de tanımlanan işlevler yalnızca istek katmanı dışındakilerdir."""
+    """Gövde taşındı: sofascore_scraper/utils.py'de tanımlanan işlevler yalnızca istek katmanı dışındakilerdir."""
     import inspect
 
     defined_here = {
         name for name, value in vars(utils).items()
-        if inspect.isfunction(value) and value.__module__ == "src.utils" and not name.startswith("__")
+        if inspect.isfunction(value) and value.__module__ == "sofascore_scraper.utils" and not name.startswith("__")
     }
     assert defined_here == {"ensure_directory", "_forwarding_table"}
 
 
 def test_the_fake_transport_patches_the_module_that_holds_the_body() -> None:
-    assert "src.client.transport" in REQUEST_LAYER_MODULES
+    assert "sofascore_scraper.client.transport" in REQUEST_LAYER_MODULES
 
 
 def test_an_assignment_on_utils_reaches_the_moved_body(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -118,7 +118,7 @@ def test_mock_patch_on_utils_reaches_the_moved_body_and_is_undone() -> None:
         assert transport._get_proxy_config() == (True, "socks5://127.0.0.1:1")
     assert transport._get_proxy_config is original and utils._get_proxy_config is original
 
-    with patch("src.utils.raise_if_cancelled") as fake_check:
+    with patch("sofascore_scraper.utils.raise_if_cancelled") as fake_check:
         transport._sleep(0)
     assert fake_check.called
     assert transport.raise_if_cancelled is context.raise_if_cancelled is utils.raise_if_cancelled
@@ -603,10 +603,10 @@ def test_request_context_restores_after_an_error() -> None:
 def test_an_answer_fetched_by_the_bridge_says_so(fake: FakeSofaScore, client: Client) -> None:
     fake.fail("/event/1", 403, body=CHALLENGE_BODY)
 
-    with patch("src.challenge_solver.fetch_api_via_browser_sync", return_value={"event": EVENT}):
+    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", return_value={"event": EVENT}):
         through_bridge = client.get_sync("/event/1")
         browser_first = client.get_sync("/event/1")  # "önce tarayıcı" modu: curl denenmez
-    with patch("src.challenge_solver.fetch_api_via_browser", AsyncMock(return_value={"__404__": True})):
+    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", AsyncMock(return_value={"__404__": True})):
         missing = _get(client, "/event/1", "async")
 
     assert (through_bridge.status, through_bridge.via, through_bridge.http_status) == (SLICE_OK, "bridge", None)
@@ -620,7 +620,7 @@ def test_a_refused_request_that_the_bridge_cannot_rescue_is_failed_via_curl(
 ) -> None:
     fake.fail("/event/1", 403, body=CHALLENGE_BODY)
 
-    with patch("src.challenge_solver.fetch_api_via_browser_sync", return_value=None):
+    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", return_value=None):
         outcome = client.get_sync("/event/1", retries=1)
 
     assert (outcome.status, outcome.reason, outcome.http_status, outcome.via) == (SLICE_FAILED, "403", 403, "curl")
@@ -741,7 +741,7 @@ def test_every_endpoint_is_relative_to_the_api_root() -> None:
 
 DEFAULT_BASE = "https://www.sofascore.com/api/v1"
 OTHER_BASE = "https://api.sofascore.com/api/v1"
-SRC = Path(__file__).resolve().parent.parent / "src"
+SRC = Path(__file__).resolve().parent.parent / "sofascore_scraper"
 
 
 @pytest.fixture
@@ -855,8 +855,8 @@ def test_the_bridge_fallback_gets_the_full_address(
         async with utils.create_session_async() as session:
             return await utils.make_api_request_async(session, path)
 
-    with patch("src.challenge_solver.fetch_api_via_browser_sync", sync_bridge), \
-            patch("src.challenge_solver.fetch_api_via_browser", async_bridge):
+    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", sync_bridge), \
+            patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", async_bridge):
         assert utils.make_api_request("/event/1") == {"ok": 1}  # 403 challenge → köprü
         assert utils.make_api_request("/event/2") == {"ok": 1}  # "önce tarayıcı" modu
         monkeypatch.setattr(utils, "_browser_first_until", 0.0)
@@ -888,7 +888,7 @@ def test_the_api_base_setting_is_normalised(monkeypatch: pytest.MonkeyPatch, val
 
 
 def test_no_module_of_the_request_path_hard_codes_the_api_base() -> None:
-    """API kökü yalnızca src/client/endpoints.py'de yazılıdır; aşağıdakiler bu işin dışında kalan bilinen yerlerdir."""
+    """API kökü yalnızca sofascore_scraper/client/endpoints.py'de yazılıdır; aşağıdakiler bu işin dışında kalan bilinen yerlerdir."""
     known_elsewhere = {
         "config/settings.py",  # ayar modelindeki varsayılan (ConfigManager.get_api_base_url oradan okur)
     }
@@ -915,8 +915,8 @@ def _imports_of(path: Path) -> List[str]:
 
 
 def test_the_client_package_imports_neither_the_store_nor_a_face() -> None:
-    """docs/design/02-services.md 2.1: src/client ve src/store birbirini içe aktarmaz; istemci yüzleri de bilmez."""
-    forbidden = ("src.store", "src.web", "src.services", "src.jobs", "src.utils", "src.config_files")
+    """docs/design/02-services.md 2.1: sofascore_scraper/client ve sofascore_scraper/store birbirini içe aktarmaz; istemci yüzleri de bilmez."""
+    forbidden = ("sofascore_scraper.store", "sofascore_scraper.web", "sofascore_scraper.services", "sofascore_scraper.jobs", "sofascore_scraper.utils", "sofascore_scraper.config_files")
     problems = [
         f"{path.name}: {module}"
         for path in sorted((SRC / "client").glob("*.py"))
@@ -927,13 +927,13 @@ def test_the_client_package_imports_neither_the_store_nor_a_face() -> None:
     assert problems == []
 
 
-@pytest.mark.parametrize("module", ["src.client.transport", "src.client.context", "src.client.endpoints", "src.utils"])
+@pytest.mark.parametrize("module", ["sofascore_scraper.client.transport", "sofascore_scraper.client.context", "sofascore_scraper.client.endpoints", "sofascore_scraper.utils"])
 def test_any_of_the_modules_can_be_the_first_one_imported(module: str) -> None:
-    """src.utils ↔ src.client arasında içe aktarma döngüsü yok: hangisi önce yüklenirse yüklensin çalışır."""
+    """sofascore_scraper.utils ↔ sofascore_scraper.client arasında içe aktarma döngüsü yok: hangisi önce yüklenirse yüklensin çalışır."""
     code = (
         f"import {module}\n"
-        "import src.utils as utils\n"
-        "from src.client import transport\n"
+        "import sofascore_scraper.utils as utils\n"
+        "from sofascore_scraper.client import transport\n"
         "assert utils.make_api_request is transport.make_api_request\n"
         "assert type(utils).__name__ == '_UtilsModule'\n"
         "print('ok')\n"

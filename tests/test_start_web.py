@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src import doctor
+from sofascore_scraper import doctor
 
 REPO = Path(__file__).resolve().parents[1]
 PY = Path("/venv/bin/python")
@@ -139,7 +139,7 @@ def test_launcher_runs_the_doctor_with_the_venv_python_and_reads_its_json(launch
     monkeypatch.setattr(launcher.subprocess, "run", fake_run)
     report = launcher._run_doctor(PY)
     assert report["checks"][0]["id"] == "python"
-    assert seen["cmd"][:4] == [str(PY), "-m", "src.doctor", "--json"] and seen["cwd"] == launcher.ROOT
+    assert seen["cmd"][:4] == [str(PY), "-m", "sofascore_scraper.doctor", "--json"] and seen["cwd"] == launcher.ROOT
 
     Proc.stdout = b"Traceback (most recent call last): ..."
     assert launcher._run_doctor(PY) is None
@@ -181,7 +181,7 @@ def test_venv_is_not_created_with_an_old_python(launcher, monkeypatch, tmp_path,
 def test_the_launcher_starts_ssc_serve_on_this_computer_only(launcher):
     """P25: doğrudan uvicorn yerine `serve` komutu; adres yapılandırma dosyasından bağımsız olarak 127.0.0.1."""
     command = launcher.server_command(PY)
-    assert command == [str(PY), "-m", "src.cli.main", "serve", "--host", "127.0.0.1", "--port", str(launcher.PORT)]
+    assert command == [str(PY), "-m", "sofascore_scraper.cli.main", "serve", "--host", "127.0.0.1", "--port", str(launcher.PORT)]
     assert "--dev" not in command  # çift tıklama oturumu tek süreç kalır
     assert "uvicorn" not in (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
 
@@ -270,7 +270,7 @@ def test_every_install_uses_the_constraints_file(name):
 
 
 def test_nothing_else_tells_users_to_run_playwright_install():
-    for path in [REPO / "main.py", *sorted((REPO / "src").rglob("*.py")), REPO / "scripts" / "start_web.py"]:
+    for path in [REPO / "main.py", *sorted((REPO / "sofascore_scraper").rglob("*.py")), REPO / "scripts" / "start_web.py"]:
         assert "playwright install" not in path.read_text(encoding="utf-8"), path
 
 

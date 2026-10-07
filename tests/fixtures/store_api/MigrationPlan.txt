@@ -1,5 +1,5 @@
-# src.store.MigrationPlan
-# kaynak: src/store/migrate.py
+# sofascore_scraper.store.MigrationPlan
+# kaynak: sofascore_scraper/store/migrate.py
 @dataclass
 class MigrationPlan:
     tournaments: Tuple[int, ...] = ()

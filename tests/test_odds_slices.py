@@ -23,17 +23,17 @@ from fastapi.testclient import TestClient
 
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src import sports
-from src.client import endpoints
-from src.config import loader
-from src.schema import mappers, models
-from src.services import planning
-from src.services.export import DatasetSpec, ExportService
-from src.services.pipeline import FetchPipeline, body_state, run_extras
-from src.services.query import RefreshPolicy
-from src.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA
-from src.store import Ref, Store, open_store
-from src.web.app import app
+from sofascore_scraper import sports
+from sofascore_scraper.client import endpoints
+from sofascore_scraper.config import loader
+from sofascore_scraper.schema import mappers, models
+from sofascore_scraper.services import planning
+from sofascore_scraper.services.export import DatasetSpec, ExportService
+from sofascore_scraper.services.pipeline import FetchPipeline, body_state, run_extras
+from sofascore_scraper.services.query import RefreshPolicy
+from sofascore_scraper.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA
+from sofascore_scraper.store import Ref, Store, open_store
+from sofascore_scraper.web.app import app
 
 FIXTURES = Path(__file__).parent / "fixtures" / "p28"
 FINISHED = 9100001  # futbol, turnuva 17, sezon 61627, başlangıç 1724500000

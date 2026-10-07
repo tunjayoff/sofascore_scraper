@@ -1,5 +1,5 @@
-# src.store.Lease
-# kaynak: src/store/lease.py
+# sofascore_scraper.store.Lease
+# kaynak: sofascore_scraper/store/lease.py
 class Lease:
     def __init__(self, name: str, purpose: str, handles: List[Tuple[int, Region]], *, on_release: Optional[Callable[['Lease'], None]] = None) -> None
     self.name

@@ -1,5 +1,5 @@
-# CatalogState: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
-# kaynak: src/store/catalog.py
+# CatalogState: sofascore_scraper.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: sofascore_scraper/store/catalog.py
 @dataclass(frozen=True)
 class CatalogState:
     exists: bool

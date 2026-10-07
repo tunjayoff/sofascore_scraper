@@ -1,5 +1,5 @@
-# src.store.StoreInfo
-# kaynak: src/store/api.py
+# sofascore_scraper.store.StoreInfo
+# kaynak: sofascore_scraper/store/api.py
 @dataclass(frozen=True)
 class StoreInfo:
     data_dir: str

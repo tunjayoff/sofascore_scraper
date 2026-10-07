@@ -22,14 +22,14 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
-from src import breaker as request_breaker
-from src.client import context as request_ctx
-from src.config_manager import ConfigManager
-from src.exceptions import StorageError
-from src.jobs.progress import JobProgress
-from src.services.context import build_context
-from src.services.maintenance import MaintenanceService, ResetCounts
-from src.services.sync import (
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper.client import context as request_ctx
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.jobs.progress import JobProgress
+from sofascore_scraper.services.context import build_context
+from sofascore_scraper.services.maintenance import MaintenanceService, ResetCounts
+from sofascore_scraper.services.sync import (
     DETAILS_PHASES,
     FULL_PHASES,
     REFRESH_PHASES,

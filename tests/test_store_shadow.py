@@ -33,16 +33,16 @@ import pytest
 
 import conftest
 import legacy_writer
-import src.store
+import sofascore_scraper.store
 import store_fixtures as sf
 from schedule_runner import list_schedule, list_schedule_async
-from src.web import deps
-from src.exceptions import StorageError
-from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
-from src.season_fetcher import SeasonFetcher
-from src.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
-from src.utils import ensure_directory
-from src.store import (
+from sofascore_scraper.web import deps
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
+from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
+from sofascore_scraper.utils import ensure_directory
+from sofascore_scraper.store import (
     CatalogAdmin,
     EventQuery,
     FollowSpec,
@@ -56,10 +56,10 @@ from src.store import (
     StoreError,
     open_store,
 )
-from src.store import api as api_mod
-from src.store import indexer, layout
-from src.store.catalog import CATALOG_SCHEMA, Catalog
-from src.store.derive import DERIVE_VERSION
+from sofascore_scraper.store import api as api_mod
+from sofascore_scraper.store import indexer, layout
+from sofascore_scraper.store.catalog import CATALOG_SCHEMA, Catalog
+from sofascore_scraper.store.derive import DERIVE_VERSION
 from test_store_indexer_listings import bump
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -281,7 +281,7 @@ def test_a_catalog_that_needs_recreating_waits_while_the_directory_is_in_use(
 def test_first_open_under_a_writer_lease_builds_in_place_without_the_maintenance_lease(
         canonical: sf.LegacyFixture) -> None:
     """
-    Web işi yazar kilidini alır, depoyu sonra açar (src/web/fetch_job.py); web kurulumunun dizininde o ana
+    Web işi yazar kilidini alır, depoyu sonra açar (sofascore_scraper/web/fetch_job.py); web kurulumunun dizininde o ana
     kadar yalnızca state.db vardır. `maintenance` alınamaz, katalog yine kurulur: yerinde, tek yazma işleminde.
     """
     data = canonical.data_dir
@@ -500,7 +500,7 @@ def test_a_failed_save_leaves_the_catalog_equal_to_the_disk(canonical: sf.Legacy
     yayımlanmaz (kalıcı StorageError); var olan maçta yazma yarıda kalırsa işaret kalır ve sonraki yazma ya da
     açılış maçı dosyalardan toparlar.
     """
-    from src.store import files as store_files
+    from sofascore_scraper.store import files as store_files
 
     data = canonical.data_dir
     store = open_store(data)
@@ -703,7 +703,7 @@ def test_saving_a_season_list_indexes_it(canonical: sf.LegacyFixture) -> None:
 def test_clear_rebuilds_the_catalog(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, scope: str,
                                     left: Dict[str, int]) -> None:
     """Temizlemeden sonra katalog kalan dosyalardan yeniden kurulur: silinen turnuvaların satırları da gider."""
-    from src.web.api import legacy as data_routes
+    from sofascore_scraper.web.api import legacy as data_routes
 
     data = canonical.data_dir
     store = open_store(data)
@@ -813,7 +813,7 @@ def test_catalog_current_follows_the_sync(canonical: sf.LegacyFixture, monkeypat
     assert store.catalog_current
 
     def busy(self: CatalogAdmin, *args: Any, **kwargs: Any) -> Any:
-        raise src.store.StoreBusy("catalog.db kilitli", path=str(canonical.data_dir))
+        raise sofascore_scraper.store.StoreBusy("catalog.db kilitli", path=str(canonical.data_dir))
 
     monkeypatch.setattr(CatalogAdmin, "rebuild", busy)
     assert not store.clear("events").catalog_rebuilt
@@ -933,7 +933,7 @@ def test_the_window_can_be_set_through_the_environment(monkeypatch: pytest.Monke
 _WRITER_SCRIPT = """
 import os, sys
 from pathlib import Path
-from src.store import open_store
+from sofascore_scraper.store import open_store
 data, staged, target, event_id = sys.argv[1:5]
 store = open_store(data)
 lease = store.lease("writer", purpose="job")
@@ -1002,8 +1002,8 @@ def test_a_catalog_that_stays_busy_fails_the_save_of_the_downloader(
     artan beklemeyle yeniden denenir, sonra maç başarısız olur (kalıcı olmayan StorageError: iş sürer); diske
     yarım bir şey yazılmaz. Kilit açılınca sonraki yazma başarılır.
     """
-    import src.match_data_fetcher as fetcher_mod
-    from src.store import events as events_mod
+    import sofascore_scraper.match_data_fetcher as fetcher_mod
+    from sofascore_scraper.store import events as events_mod
 
     data = canonical.data_dir
     store = open_store(data)
@@ -1011,13 +1011,13 @@ def test_a_catalog_that_stays_busy_fails_the_save_of_the_downloader(
     waits: List[float] = []
 
     def busy(self: Any, event_id: int, body: Any) -> Any:
-        raise src.store.StoreBusy("catalog.db kilitli", path=str(data))
+        raise sofascore_scraper.store.StoreBusy("catalog.db kilitli", path=str(data))
 
     monkeypatch.setattr(events_mod.EventStore, "_entity_write", busy)
     monkeypatch.setattr(fetcher_mod.time, "sleep", waits.append)
     with caplog.at_level(logging.WARNING), pytest.raises(StorageError) as info:
         fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
-    assert isinstance(info.value, src.store.StoreBusy) and not info.value.fatal
+    assert isinstance(info.value, sofascore_scraper.store.StoreBusy) and not info.value.fatal
     assert waits == [0.5, 1.0, 2.0]  # STORE_BUSY_ATTEMPTS = 4 deneme
     assert len(messages(caplog, "MatchDataFetcher", level=logging.WARNING)) == 3
     assert store.events.get(NO_DETAIL).row_source == "listing" and differences(store) == []
@@ -1034,7 +1034,7 @@ def test_the_downloader_does_not_write_into_a_folder_of_a_newer_version(tmp_path
     schema = data / ".meta" / "schema.json"
     schema.write_text(json.dumps({**read_json(schema), "layout_version": 99, "min_reader_layout": 99}))
 
-    with pytest.raises(src.store.SchemaTooNew):
+    with pytest.raises(sofascore_scraper.store.SchemaTooNew):
         fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert not (data / "v3").exists()
 
@@ -1063,8 +1063,8 @@ def test_an_unexpected_indexer_error_fails_the_save_of_the_downloader(
 
 # Store'un dışında ağaç kopyalayan ürün kodu (terminal menüsünün geri yüklemesi böyleydi; plan maddesi P26 menüyü,
 # FX-15 kancaları kaldırdı: böyle bir yazmanın ardından katalog eşitlenmez). Kaynak, proje dışında (diskte olmayan) bir dosya adıyla derlenir ve paketin denetim kancası
-# (tests/conftest.py, ShadowEdits) o dosya adını ürün kodu sayacak biçimde kaydedilir. src/ altında bir ad
-# kullanılmaz: kapsam ölçümü (coverage, kaynak src/) olmayan dosyayı raporlayamaz. Veri dizinleri DATA_DIR'in
+# (tests/conftest.py, ShadowEdits) o dosya adını ürün kodu sayacak biçimde kaydedilir. sofascore_scraper/ altında bir ad
+# kullanılmaz: kapsam ölçümü (coverage, kaynak sofascore_scraper/) olmayan dosyayı raporlayamaz. Veri dizinleri DATA_DIR'in
 # dışındadır; sınır kaydedicisi proje dışı çerçeveyi atlar.
 _PRODUCT_WRITER = """
 import shutil
@@ -1144,7 +1144,7 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
     os.utime(basic_file, ns=(stamp, stamp))
     assert store.events.get(ARS).home_score_current != 9 and api_mod.shadow_unsynced()
 
-    # Ürün kodu dizine dokunur (Store'un dışında: bağlam kurulurken veri dizini var edilir, src/utils.py)
+    # Ürün kodu dizine dokunur (Store'un dışında: bağlam kurulurken veri dizini var edilir, sofascore_scraper/utils.py)
     ensure_directory(str(data))
 
     assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score_current == 9
@@ -1239,7 +1239,7 @@ def test_sync_listings_looks_only_at_the_kinds_it_is_given(canonical: sf.LegacyF
 
 def test_layout_names_used_by_the_check_are_the_legacy_roots() -> None:
     """Denetimin "dizinlenen kökler" listesi, okuyucunun köklerinin kendisidir (biri eklenirse burada görülür)."""
-    from src.store import legacy
+    from sofascore_scraper.store import legacy
 
     assert set(api_mod._SHADOW_ROOT_DIRS) == {legacy.DETAILS_DIR, legacy.MATCHES_DIR, legacy.SEASONS_DIR}
     assert set(api_mod._SHADOW_ROOT_FILES) == {legacy.CHANGES_FILE, legacy.SEASONS_CSV}

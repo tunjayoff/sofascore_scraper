@@ -16,10 +16,10 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from src import schema, sports
-from src.slices import SLICE_OK, Outcome
-from src.store import EventQuery, Store, open_store
-from src.store.derive import event_row
+from sofascore_scraper import schema, sports
+from sofascore_scraper.slices import SLICE_OK, Outcome
+from sofascore_scraper.store import EventQuery, Store, open_store
+from sofascore_scraper.store.derive import event_row
 
 INPUTS = Path(__file__).parent / "golden" / "schema" / "inputs"
 FIXTURES = Path(__file__).parent / "fixtures" / "status"

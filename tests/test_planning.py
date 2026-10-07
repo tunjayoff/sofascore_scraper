@@ -1,5 +1,5 @@
 """
-Planlama (plan maddesi P12; src/services/planning.py): bir maçın ihtiyacı `compute_need` ile, katalogdaki
+Planlama (plan maddesi P12; sofascore_scraper/services/planning.py): bir maçın ihtiyacı `compute_need` ile, katalogdaki
 durumundan (`EventState`).
 
 İki küme:
@@ -24,11 +24,11 @@ from typing import Any, Dict, Iterator, Optional, Tuple
 import pytest
 
 import store_fixtures as sf
-from src.services import planning
-from src.services.planning import WorkItem, compute_need, order_by_need, phase_of, refresh_due, work_item
-from src.services.query import NEED_FULL, NEED_NONE, NEED_REFILL, NEED_REFRESH, RefreshPolicy
-from src.sports import SliceSelection, slices_for
-from src.store import EventRow, EventState, Ref, SliceInfo, open_store
+from sofascore_scraper.services import planning
+from sofascore_scraper.services.planning import WorkItem, compute_need, order_by_need, phase_of, refresh_due, work_item
+from sofascore_scraper.services.query import NEED_FULL, NEED_NONE, NEED_REFILL, NEED_REFRESH, RefreshPolicy
+from sofascore_scraper.sports import SliceSelection, slices_for
+from sofascore_scraper.store import EventRow, EventState, Ref, SliceInfo, open_store
 from test_store_read_api import HOUR
 
 COMMON = tuple(detail.key for detail in slices_for(None, required_only=True))
@@ -230,7 +230,7 @@ def test_a_live_record_needs_nothing_it_belongs_to_the_live_service() -> None:
 
 def test_a_not_started_record_without_a_pre_match_slice_needs_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Tasarım tablosunun "başlamamış" satırı (P13): seçimde ön maç evresinde var olabilen dilim yoksa liste yeter."""
-    import src.sports as sports
+    import sofascore_scraper.sports as sports
 
     post_only = tuple(dataclasses.replace(spec, phases=frozenset({"post"})) for spec in sports.DETAIL_SLICES)
     monkeypatch.setattr(sports, "DETAIL_SLICES", post_only)
@@ -303,10 +303,10 @@ def _world_needs(data_dir: Path, policy: RefreshPolicy) -> Dict[int, str]:
 
 def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
     import detail_records
-    from src.web.deps import config_manager as _web_config
+    from sofascore_scraper.web.deps import config_manager as _web_config
     config_manager = _web_config()
 
-    from src.match_data_fetcher import MatchDataFetcher
+    from sofascore_scraper.match_data_fetcher import MatchDataFetcher
 
     fake, data_dir = world
     policy = RefreshPolicy.current()

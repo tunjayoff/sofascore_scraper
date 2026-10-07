@@ -55,7 +55,7 @@ import _research_common as rc  # noqa: E402
 from _all_sports_patterns import SOFA_HOST, api_pattern  # noqa: E402
 
 ROOT = rc.ROOT
-import src.challenge_solver as cs  # noqa: E402
+import sofascore_scraper.challenge_solver as cs  # noqa: E402
 
 OUT = os.path.join(ROOT, "research", "all_sports")
 MAX_API_REQUESTS = 5000
@@ -432,7 +432,7 @@ class Explorer:
     async def start(self) -> None:
         # Köprü açılışta ana sayfayı (ve captcha çözümünden sonra yönlendirmeyi) yükler; bu, route kurulmadan
         # olur ve sitenin onlarca isteği kilitsiz ve sayılmadan gider. Bu süreçte iki adres de API çağırmayan
-        # bir sayfaya çevrilir (src/ değişmez; yalnızca bu sürecin modül değişkenleri).
+        # bir sayfaya çevrilir (sofascore_scraper/ değişmez; yalnızca bu sürecin modül değişkenleri).
         cs.HOME_URL = QUIET_URL
         cs.CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=" + quote(QUIET_URL, safe="")
         await self.bridge.ensure_ready()

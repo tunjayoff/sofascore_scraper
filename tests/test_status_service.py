@@ -5,10 +5,10 @@ Durum servisi ve istatistik aktarıcısı (plan maddesi RD-4): sayımlar katalog
 
   * `StatusService.summary()`'nin sayım kuralları, `tests/store_fixtures.py`'nin veri dizinlerinde elle
     denetlenmiş beklentilerle;
-  * eski sayımlardan (dosya ağacını gezen `src/services/stats.py`) farklar: aşağıdaki `old_stats` o kodun
+  * eski sayımlardan (dosya ağacını gezen `sofascore_scraper/services/stats.py`) farklar: aşağıdaki `old_stats` o kodun
     sayımlarını yeniden üretir ve `CORRECTIONS` tablosu her farkı nedeniyle birlikte tutar. Tabloda olmayan
     hiçbir sayı değişmemiştir;
-  * disk kullanımının saklanması ve aktarıcının (`src/services/stats.py`) bugünkü yanıt anahtarları.
+  * disk kullanımının saklanması ve aktarıcının (`sofascore_scraper/services/stats.py`) bugünkü yanıt anahtarları.
 
 GET /api/dashboard ve /api/stats/system yanıtlarının tamamı `tests/golden/readers/` altında sabittir
 (tests/characterization/test_reader_goldens.py).
@@ -26,12 +26,12 @@ import pytest
 
 import conftest
 import store_fixtures as sf
-from src.services import stats as stats_service
-from src.services import status as status_module
-from src.services.status import DataSummary, DiskUsage, StatusService, TournamentCounts
-from src.store import Store, open_store
-from src.web import deps
-from src.web.api import legacy as data_routes
+from sofascore_scraper.services import stats as stats_service
+from sofascore_scraper.services import status as status_module
+from sofascore_scraper.services.status import DataSummary, DiskUsage, StatusService, TournamentCounts
+from sofascore_scraper.store import Store, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.api import legacy as data_routes
 
 NOT_STARTED_CASE = "football/A_notstarted-0-not-started__17184998"
 
@@ -85,7 +85,7 @@ def write_orphan_detail(data_dir: Path, event_id: int, case: str = NOT_STARTED_C
     (target / "basic.json").write_bytes(sf.dump_json(sf.basic_payload(ev)))
 
 
-# --- eski sayımlar: dosya ağacını gezen src/services/stats.py (RD-4'ten önce) --------------------------
+# --- eski sayımlar: dosya ağacını gezen sofascore_scraper/services/stats.py (RD-4'ten önce) --------------------------
 
 
 def _csv_rows(path: str) -> int:
@@ -265,7 +265,7 @@ def test_only_finished_rule(canonical: sf.LegacyFixture) -> None:
                                              ("False", False), ("0", False)])
 def test_the_setting_is_read_at_call_time(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch,
                                           value: Optional[str], expected: bool) -> None:
-    """Varsayılan kural FETCH_ONLY_FINISHED'dan gelir; yazıcılarla aynı okuma (src/utils.py)."""
+    """Varsayılan kural FETCH_ONLY_FINISHED'dan gelir; yazıcılarla aynı okuma (sofascore_scraper/utils.py)."""
     if value is not None:
         monkeypatch.setenv("FETCH_ONLY_FINISHED", value)
     assert status_module.only_finished_setting() is expected

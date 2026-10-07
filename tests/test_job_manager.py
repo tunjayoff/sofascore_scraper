@@ -27,12 +27,12 @@ from typing import Any, Dict, Iterator, List, Optional
 import conftest
 import pytest
 
-from src.web import deps
-from src import bridge_health
-from src.exceptions import StorageError
-from src.jobs import manager as manager_mod
-from src.jobs.manager import JobHandle, JobManager, JobNotActive, JobOutcome, local_origin
-from src.jobs.model import (
+from sofascore_scraper.web import deps
+from sofascore_scraper import bridge_health
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.jobs import manager as manager_mod
+from sofascore_scraper.jobs.manager import JobHandle, JobManager, JobNotActive, JobOutcome, local_origin
+from sofascore_scraper.jobs.model import (
     ErrorInfo,
     Job,
     JobEvent,
@@ -45,7 +45,7 @@ from src.jobs.model import (
     new_job_id,
     terminal_state,
 )
-from src.store import (
+from sofascore_scraper.store import (
     DataOperationRunningError,
     JobRunningError,
     JobStore,
@@ -54,10 +54,10 @@ from src.store import (
     StoreError,
     open_store,
 )
-from src.store import jobs as store_jobs
-from src.store import state as state_mod
-from src.store.jobs import default_db_path
-from src.store.state import StateDb
+from sofascore_scraper.store import jobs as store_jobs
+from sofascore_scraper.store import state as state_mod
+from sofascore_scraper.store.jobs import default_db_path
+from sofascore_scraper.store.state import StateDb
 
 
 def raw(db_path: Any, sql: str, *args: Any) -> list:
@@ -449,7 +449,7 @@ def test_announce_appends_to_the_job_stream_of_a_path_store(store: JobStore, dat
 
 
 def test_job_ids_sort_by_creation_time(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.jobs import model as model_mod
+    from sofascore_scraper.jobs import model as model_mod
 
     monkeypatch.setattr(model_mod, "_last_id", (0, 0))  # süreçte daha önce üretilen kimliklerden bağımsız
     first, second = new_job_id(now_ms=1_790_000_000_000), new_job_id(now_ms=1_790_000_000_001)
@@ -484,7 +484,7 @@ def test_terminal_state_rule() -> None:
 @pytest.mark.parametrize("reason, code", [("403", "blocked"), ("429", "rate_limited"), ("5xx", "upstream_error"),
                                           ("other", "upstream_error")])
 def test_breaker_reason_maps_to_an_error_code_of_the_table(reason: str, code: str) -> None:
-    from src.errors import ERRORS
+    from sofascore_scraper.errors import ERRORS
 
     error = breaker_error(reason)
     assert error.code == code and code in ERRORS and error.details == {"reason": reason}
@@ -662,7 +662,7 @@ def test_an_exception_fails_the_job_releases_the_lease_and_is_raised(manager: Jo
 def test_an_unexpected_error_is_internal_and_its_secrets_are_masked(
     manager: JobManager, store: JobStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from src import redact
+    from sofascore_scraper import redact
 
     monkeypatch.setenv("USE_PROXY", "true")
     monkeypatch.setenv("PROXY_URL", "http://user:hunter2secret@proxy.example:8080")
@@ -997,15 +997,15 @@ def test_a_job_whose_end_cannot_be_written_is_reaped_later(
 
 @pytest.fixture
 def context(data_dir: Path) -> Any:
-    from src.config_manager import ConfigManager
-    from src.services.context import build_context
+    from sofascore_scraper.config_manager import ConfigManager
+    from sofascore_scraper.services.context import build_context
 
     return build_context(ConfigManager(), data_dir=str(data_dir))
 
 
 def test_the_context_opens_the_store_only_when_it_is_asked_for(context: Any, data_dir: Path) -> None:
-    from src.client import Client
-    from src.store import api
+    from sofascore_scraper.client import Client
+    from sofascore_scraper.store import api
 
     assert not (data_dir / ".meta").exists() and api._registry == {}
     assert isinstance(context.client, Client)
@@ -1021,9 +1021,9 @@ def test_the_context_opens_the_store_only_when_it_is_asked_for(context: Any, dat
 
 
 def test_bridge_health_changes_reach_the_runtime_facts_of_the_store(context: Any, data_dir: Path) -> None:
-    from src.config_manager import ConfigManager
-    from src.services import context as context_mod
-    from src.services.context import build_context
+    from sofascore_scraper.config_manager import ConfigManager
+    from sofascore_scraper.services import context as context_mod
+    from sofascore_scraper.services.context import build_context
 
     for _ in range(3):  # bağlam her işte kurulur: geri çağrı yine tek kez eklenir
         build_context(ConfigManager(), data_dir=str(data_dir))
@@ -1042,7 +1042,7 @@ def test_bridge_health_changes_reach_the_runtime_facts_of_the_store(context: Any
 def test_a_health_change_that_cannot_be_stored_does_not_break_the_request(
     context: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from src.services import context as context_mod
+    from sofascore_scraper.services import context as context_mod
 
     def refuse(data_dir: Any) -> Any:
         raise StoreError("state.db is newer than this code")
@@ -1059,8 +1059,8 @@ def test_a_health_change_that_cannot_be_stored_does_not_break_the_request(
 @pytest.fixture
 def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
-    import src.web.api.legacy as fj
-    from src.web.api.legacy import FetchRequest
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     jobs = JobStore(str(tmp_path / "web" / ".meta" / "state.db"))
     monkeypatch.setattr(deps, "job_store", lambda: jobs)
@@ -1164,8 +1164,8 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Gerçek bağlamla: iş, deposunu açar; `.meta/` altında schema.json ve catalog.db de oluşur."""
-    import src.web.api.legacy as fj
-    from src.web.api.legacy import FetchRequest
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     data_dir = tmp_path / "data"
     monkeypatch.setenv("DATA_DIR", str(data_dir))
@@ -1201,7 +1201,7 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
 
 
 def test_a_job_finished_before_its_thread_started_is_left_alone(web: Any, caplog: pytest.LogCaptureFixture) -> None:
-    from src.web.api.legacy import FetchRequest
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     job_id = web.jobs.create_running({})
     web.jobs.update(status="Cancelled", finished=True)
@@ -1215,8 +1215,8 @@ def test_api_fetch_starts_a_job_through_the_manager_and_cancel_reaches_another_s
 ) -> None:
     from fastapi.testclient import TestClient
 
-    from src.web.api import legacy as fetch_job
-    from src.web.app import app
+    from sofascore_scraper.web.api import legacy as fetch_job
+    from sofascore_scraper.web.app import app
 
     jobs = deps.job_store()
     monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
@@ -1259,7 +1259,7 @@ def test_api_fetch_starts_a_job_through_the_manager_and_cancel_reaches_another_s
 def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     """`main.py <argv> --data-dir <geçici dizin>`i bu süreçte çalıştırır; SyncService.run sahtedir."""
     import main as cli_main
-    from src.services.sync import RefreshCounts, SyncResult, SyncService
+    from sofascore_scraper.services.sync import RefreshCounts, SyncResult, SyncService
 
     monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     state: Dict[str, Any] = {"breaker": None, "error": None, "failed": 0, "cancel": False, "seen": []}

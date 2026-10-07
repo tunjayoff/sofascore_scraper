@@ -6,7 +6,7 @@ Yayın yardımcıları (.github/workflows/release.yml kullanır; elle de çalı�
     python scripts/release.py check-tag v2.1.0     # etiket sürümle eşleşmiyorsa 1 ile çıkar
     python scripts/release.py notes 2.1.0          # CHANGELOG.md'deki o sürümün bölümü
 
-Yalnızca standart kütüphane ve src/version.py kullanılır: iş akışı bunu bağımlılık
+Yalnızca standart kütüphane ve sofascore_scraper/version.py kullanılır: iş akışı bunu bağımlılık
 kurmadan çalıştırır. Hiçbir komut ağa çıkmaz, etiket ya da yayın oluşturmaz.
 """
 
@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.version import PYPROJECT_PATH, UNKNOWN_VERSION, read_version  # noqa: E402
+from sofascore_scraper.version import PYPROJECT_PATH, UNKNOWN_VERSION, read_version  # noqa: E402
 
 CHANGELOG_PATH = ROOT / "CHANGELOG.md"
 

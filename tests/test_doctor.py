@@ -1,5 +1,5 @@
 """
-Ortam ön denetimi (src/doctor.py): her denetim sahte bir kök dizin ve ortamla, tarayıcı denetimi
+Ortam ön denetimi (sofascore_scraper/doctor.py): her denetim sahte bir kök dizin ve ortamla, tarayıcı denetimi
 sahte bir yoklamayla (probe) sınanır. Hiçbir test SofaScore'a bağlanmaz; gerçek tarayıcı yalnızca
 `browser` işaretli testte (varsayılan olarak seçilmez) ve yalnızca about:blank ile açılır.
 """
@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from src import doctor
-from src.doctor import FAIL, OK, WARN, Context
+from sofascore_scraper import doctor
+from sofascore_scraper.doctor import FAIL, OK, WARN, Context
 
 REPO = Path(__file__).resolve().parents[1]
 posix_only = pytest.mark.skipif(os.name == "nt", reason="POSIX izinleri / sembolik bağ")
@@ -498,7 +498,7 @@ def test_a_data_folder_from_the_config_file_that_cannot_be_written_fails(make_ct
 
 
 def test_config_is_not_checked_without_the_packages_of_the_loader(make_ctx, monkeypatch):
-    monkeypatch.setitem(sys.modules, "src.config", None)  # içe aktarma ImportError verir
+    monkeypatch.setitem(sys.modules, "sofascore_scraper.config", None)  # içe aktarma ImportError verir
     res = doctor.check_config(make_ctx())
     assert (res.status, res.code) == (WARN, "config_unchecked") and "Error" in res.detail["error"]
 
@@ -689,7 +689,7 @@ def _ok_probe(python):
 
 
 def test_run_checks_returns_every_check_once_and_never_the_live_one(make_ctx, monkeypatch):
-    import src.challenge_solver as cs
+    import sofascore_scraper.challenge_solver as cs
 
     monkeypatch.setattr(cs, "fetch_api_via_browser_sync", lambda *a, **k: pytest.fail("canlı istek atılmamalı"))
     results = doctor.run_checks(make_ctx(), browser_probe=_ok_probe)
@@ -749,7 +749,7 @@ def test_text_output_in_both_languages(make_ctx):
 
 
 def test_language_follows_app_language_like_the_app(make_ctx):
-    assert make_ctx(lang=None).lang == "en"  # src/language.py ile aynı varsayılan
+    assert make_ctx(lang=None).lang == "en"  # sofascore_scraper/language.py ile aynı varsayılan
     assert make_ctx(lang=None, environ={"APP_LANGUAGE": "tr"}).lang == "tr"
     assert make_ctx(lang=None, environ={"LANGUAGE": "tr_TR:tr"}).lang == "en"  # gettext değişkeni: yok sayılır
     # Açık ayar yoksa sistem dili; .env'deki açık ayar sistem dilinin önündedir
@@ -766,7 +766,7 @@ def test_locale_keys_exist_in_both_languages_and_cover_the_code():
         with open(REPO / "locales" / f"{lang}.json", encoding="utf-8") as f:
             keys[lang] = {k for k in json.load(f) if k.startswith("doctor_")}
     assert keys["tr"] == keys["en"]
-    source = (REPO / "src" / "doctor.py").read_text(encoding="utf-8")
+    source = (REPO / "sofascore_scraper" / "doctor.py").read_text(encoding="utf-8")
     used = set(re.findall(r'"(doctor_[a-z_]+)"', source))
     used.discard("doctor_label_")
     used |= {"doctor_label_" + check_id for check_id in doctor.CHECK_IDS + doctor.EXTRA_CHECK_IDS + ("live",)}
@@ -789,7 +789,7 @@ def test_budget_at_or_below_the_default_is_ok(make_ctx):
 
 
 def test_budget_default_is_the_default_of_the_throttle():
-    from src import throttle
+    from sofascore_scraper import throttle
 
     assert doctor.DEFAULT_REQUEST_RATE == throttle.DEFAULT_RATE_LIMIT
     assert doctor._RATE_OFF_WORDS == throttle._OFF_WORDS
@@ -807,7 +807,7 @@ def test_budget_above_the_default_is_a_warning(make_ctx):
 
 @pytest.mark.parametrize("value", ["0", "off", "OFF", "false", "none", "disabled", "-3"])
 def test_budget_off_is_a_warning(make_ctx, value):
-    """0, kapatma sözcükleri ve negatif sayı sınırlayıcıyı kapatır (src/throttle.configured_rate ile aynı kural)."""
+    """0, kapatma sözcükleri ve negatif sayı sınırlayıcıyı kapatır (sofascore_scraper/throttle.configured_rate ile aynı kural)."""
     res = doctor.check_budget(make_ctx(environ={"REQUEST_RATE_LIMIT": value}))
     assert (res.status, res.code, res.detail["rate"]) == (WARN, "budget_off", 0.0)
     assert res.summary.startswith("the limit is off") and res.fix
@@ -822,7 +822,7 @@ def test_budget_invalid_value_means_the_default(make_ctx, value):
 
 
 def test_budget_matches_what_the_throttle_would_use(make_ctx, monkeypatch):
-    from src import throttle
+    from sofascore_scraper import throttle
 
     for value in ("", "0", "off", "no", "3", "5", "7.5", "-1", "fast", "inf", " 12 "):
         monkeypatch.setenv("REQUEST_RATE_LIMIT", value)
@@ -862,7 +862,7 @@ def test_budget_is_a_regular_check(make_ctx, capsys):
     assert plain[-1].code == "budget_off"
     assert [r.id for r in doctor.run_checks(ctx, skip=["browser"], extra=True)] == [r.id for r in plain]
     assert [r.id for r in doctor.run_checks(ctx, only=["budget"])] == ["budget"]
-    assert doctor.main(["--only", "budget", "--json"]) == 0  # `python -m src.doctor` da tanır
+    assert doctor.main(["--only", "budget", "--json"]) == 0  # `python -m sofascore_scraper.doctor` da tanır
     assert json.loads(capsys.readouterr().out)["checks"][0]["code"] == "budget_off"
 
 
@@ -905,8 +905,8 @@ def test_main_py_lists_doctor_in_help():
 
 
 def test_bridge_errors_point_at_the_doctor_not_at_playwright():
-    solver = (REPO / "src" / "client" / "bridge.py").read_text(encoding="utf-8")  # köprü P24 ile taşındı
-    health = (REPO / "src" / "bridge_health.py").read_text(encoding="utf-8")
+    solver = (REPO / "sofascore_scraper" / "client" / "bridge.py").read_text(encoding="utf-8")  # köprü P24 ile taşındı
+    health = (REPO / "sofascore_scraper" / "bridge_health.py").read_text(encoding="utf-8")
     assert "playwright install" not in solver and "playwright install" not in health
     assert "--doctor" in solver and "--doctor" in health
 

@@ -91,7 +91,7 @@ Shortcuts for a desktop: `./scripts/install.sh` (Linux, macOS, Git Bash) or `scr
 
 ## Command line (`ssc`)
 
-For servers, scripts and agents. It never asks questions: results go to stdout, logs and errors to stderr, and the exit code says what happened. Without `pip install -e .`, use `python -m src.cli.main <command>` in the project folder.
+For servers, scripts and agents. It never asks questions: results go to stdout, logs and errors to stderr, and the exit code says what happened. Without `pip install -e .`, use `python -m sofascore_scraper.cli.main <command>` in the project folder.
 
 | Command | What it does |
 |---|---|
@@ -123,12 +123,11 @@ curl "http://127.0.0.1:8000/api/v1/events?tournament=17&limit=5"
 
 ## Python library
 
-The CLI and the API are thin layers over the same services, which a Python program can use directly. There is no dedicated library entry point yet, and the import package is still `src` (it is to be renamed `sofascore_scraper`). Reading the stored matches looks like this:
+The CLI and the API are thin layers over the same services, which a Python program can use directly. There is no dedicated library entry point yet; the import package is `sofascore_scraper` (it was `src` before 3.0.0). Reading the stored matches looks like this:
 
-<!-- REN-1: update import path -->
 ```python
-from src.services.query import EventFilter, QueryService
-from src.store import open_store
+from sofascore_scraper.services.query import EventFilter, QueryService
+from sofascore_scraper.store import open_store
 
 store = open_store("data")               # the data folder
 query = QueryService(store)

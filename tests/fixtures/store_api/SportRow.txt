@@ -1,5 +1,5 @@
-# src.store.SportRow
-# kaynak: src/store/entities.py
+# sofascore_scraper.store.SportRow
+# kaynak: sofascore_scraper/store/entities.py
 @dataclass(frozen=True)
 class SportRow:
     slug: str

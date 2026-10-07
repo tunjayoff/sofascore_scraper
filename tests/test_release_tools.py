@@ -10,7 +10,7 @@ import sys
 
 import pytest
 
-from src.version import __version__
+from sofascore_scraper.version import __version__
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT = os.path.join(ROOT, "scripts", "release.py")

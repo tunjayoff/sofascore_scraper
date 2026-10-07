@@ -26,21 +26,21 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 import pytest
 
 import conftest
-from src import sinks
-from src.config import SinkSpec
-from src.jobs.manager import JobManager, local_origin
-from src.jobs.model import JobKind
-from src.sinks.base import Envelope, EventFilter, FatalSinkError, RetryableSinkError
-from src.sinks.dispatcher import Dispatcher
-from src.sinks.webhook import (
+from sofascore_scraper import sinks
+from sofascore_scraper.config import SinkSpec
+from sofascore_scraper.jobs.manager import JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind
+from sofascore_scraper.sinks.base import Envelope, EventFilter, FatalSinkError, RetryableSinkError
+from sofascore_scraper.sinks.dispatcher import Dispatcher
+from sofascore_scraper.sinks.webhook import (
     WEBHOOK_SCHEMA,
     WebhookSink,
     sign,
     signature_header,
     verify_signature,
 )
-from src.store import JobStore, Store, StoreBusy, StreamEvent, open_store
-from src.version import __version__
+from sofascore_scraper.store import JobStore, Store, StoreBusy, StreamEvent, open_store
+from sofascore_scraper.version import __version__
 
 # Gizli değerlerin yerini tutan sınama değerleri: bilerek sahte, çalışırken parçalardan kurulur (depoda gizli
 # değere benzeyen bir sabit durmaz). Testler bu metinleri hata metinlerinde, loglarda ve olaylarda arar.

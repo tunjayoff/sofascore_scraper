@@ -42,7 +42,7 @@ afterEach(() => {
   setLocale('en')
 })
 
-/** Every code the download path writes (src/services/sync.py, FX-13 and FX-19). */
+/** Every code the download path writes (sofascore_scraper/services/sync.py, FX-13 and FX-19). */
 const CODES: Record<string, Record<string, unknown>> = {
   sync_season_list: { league_id: 17 },
   sync_season_list_failed: { league_id: 17, reason: '404' },

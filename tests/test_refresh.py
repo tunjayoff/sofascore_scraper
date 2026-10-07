@@ -1,5 +1,5 @@
 """
-Yenileme politikası (src/refresh.py): geçici kayıtlar /event ile yeniden okunur, değişim loglanır.
+Yenileme politikası (sofascore_scraper/refresh.py): geçici kayıtlar /event ile yeniden okunur, değişim loglanır.
 
 Kayıtlar Store'dadır (plan maddesi ST-21): yenileme `Store.events.observe` ile yazar, değişiklik satırı
 `changes/<yyyy>-<mm>.jsonl` parçasına gider. Gözlemi olmayan kayıt yalnızca eski düzende olabilir (önceki
@@ -18,13 +18,13 @@ import pytest
 
 import legacy_writer
 import store_dump
-from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE,
+from sofascore_scraper.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE,
                                     MatchDataFetcher, SliceOutcome)
-from src.refresh import SCORE_CHANGES_FILE, diff_basic
-from src.sports import event_sport_slug, slices_for
-from src.status import OBSERVATION_KEY
-from src.store import open_store
-from src.web.progress import JobProgress
+from sofascore_scraper.refresh import SCORE_CHANGES_FILE, diff_basic
+from sofascore_scraper.sports import event_sport_slug, slices_for
+from sofascore_scraper.status import OBSERVATION_KEY
+from sofascore_scraper.store import open_store
+from sofascore_scraper.web.progress import JobProgress
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 MID = "16950622"
@@ -324,7 +324,7 @@ def test_batch_refreshes_after_new_matches_and_counts_separately(tmp_path):
 def test_no_fixed_pauses_between_matches(tmp_path):
     """
     Maçlar arasındaki sabit beklemeler kalktı (tek tek indirmede 0,2 sn, --refresh-only'de 1 sn,
-    100'lük gruplar arasında 1 sn; gruplar da P13'te kalktı): hızı ortak istek bütçesi (src/throttle.py) belirler.
+    100'lük gruplar arasında 1 sn; gruplar da P13'te kalktı): hızı ortak istek bütçesi (sofascore_scraper/throttle.py) belirler.
     """
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
@@ -335,7 +335,7 @@ def test_no_fixed_pauses_between_matches(tmp_path):
         assert f.refresh_matches([MID, MID, MID])["refreshed"] == 3
         assert f.fetch_detail_ids([str(n) for n in range(1, 251)]) == 0  # 250 maç, hepsi 404: tek oturum
         assert len(fake.sessions) == 3
-    assert fake.slept("src.match_data_fetcher") == [] and fake.slept("src.services.pipeline") == []
+    assert fake.slept("sofascore_scraper.match_data_fetcher") == [] and fake.slept("sofascore_scraper.services.pipeline") == []
 
 
 def test_job_progress_counts_refreshes():
@@ -362,7 +362,7 @@ def test_refresh_listener_is_called(tmp_path):
 def test_settings_expose_refresh_window(monkeypatch):
     from fastapi.testclient import TestClient
 
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     client = TestClient(app)
     assert client.get("/api/settings").json()["refresh_window_hours"] == 72

@@ -21,11 +21,11 @@ from typing import Any, Callable, Dict, Iterator, List, Tuple
 import pytest
 
 import store_fixtures as sf
-from src.store import codec, entities, files, indexer, layout, manifest, open_store
-from src.store.catalog import Catalog
-from src.store.errors import StoreBusy, StoreError
-from src.store.indexer import CatalogAdmin
-from src.store.legacy import LegacyReader
+from sofascore_scraper.store import codec, entities, files, indexer, layout, manifest, open_store
+from sofascore_scraper.store.catalog import Catalog
+from sofascore_scraper.store.errors import StoreBusy, StoreError
+from sofascore_scraper.store.indexer import CatalogAdmin
+from sofascore_scraper.store.legacy import LegacyReader
 from test_store_indexer_listings import (
     ARS,
     BASE,

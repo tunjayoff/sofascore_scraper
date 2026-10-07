@@ -5,12 +5,12 @@ curl_cffi>=0.11.4,<1
 # (patchright + playwright ile gelir). Sürüm sabit: challenge çözümü bu sürümle doğrulandı.
 scrapling[fetchers]==0.4.15
 
-# Log satırları (src/logger.py: renkli konsol çıktısı ve okunur iz dökümleri)
+# Log satırları (sofascore_scraper/logger.py: renkli konsol çıktısı ve okunur iz dökümleri)
 rich>=13.0.0,<16
 
 # Konfigürasyon
 python-dotenv>=1.0.0,<2
-# sofascore.toml okuyucusu: Python 3.11+ standart kütüphanedeki tomllib'i kullanır (src/config/loader.py)
+# sofascore.toml okuyucusu: Python 3.11+ standart kütüphanedeki tomllib'i kullanır (sofascore_scraper/config/loader.py)
 tomli>=2.0.1,<3 ; python_version < "3.11"
 
 # Web arayüzü

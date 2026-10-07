@@ -23,11 +23,11 @@ from typing import Any, Dict, Iterator
 
 import pytest
 
-from src.jobs.manager import STREAM_JOB_FINISHED, JobManager, local_origin
-from src.jobs.model import JobKind, JobState
-from src.store import JobStore
-from src.store.jobs import default_db_path
-from src.store.streams import StreamLog
+from sofascore_scraper.jobs.manager import STREAM_JOB_FINISHED, JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind, JobState
+from sofascore_scraper.store import JobStore
+from sofascore_scraper.store.jobs import default_db_path
+from sofascore_scraper.store.streams import StreamLog
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -36,10 +36,10 @@ ROOT = Path(__file__).resolve().parents[1]
 _PRELUDE = r'''
 import json, logging, os, sqlite3, sys, threading
 sys.path.insert(0, sys.argv[2]); sys.path.insert(0, os.path.join(sys.argv[2], "tests"))
-import conftest  # geçici DATA_DIR, .env ve config; src.* bundan sonra yüklenir
-from src.jobs.manager import STREAM_JOB_FINISHED, JobManager, local_origin
-from src.jobs.model import JobKind
-from src.store.streams import StreamLog
+import conftest  # geçici DATA_DIR, .env ve config; sofascore_scraper.* bundan sonra yüklenir
+from sofascore_scraper.jobs.manager import STREAM_JOB_FINISHED, JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind
+from sofascore_scraper.store.streams import StreamLog
 
 tmp = sys.argv[1]
 entered, release = threading.Event(), threading.Event()
@@ -79,10 +79,10 @@ def join_jobs():
 _SETTINGS_ROUTE = r'''
 from pathlib import Path
 from fastapi.testclient import TestClient
-from src.web import deps
-from src.web.app import app
-from src.web.api import legacy as api_mod
-from src.web.api import legacy as settings_mod
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.api import legacy as api_mod
+from sofascore_scraper.web.api import legacy as settings_mod
 
 settings_mod._REPO_ROOT = Path(tmp)  # doğrulayıcı tmp altındaki klasörü kabul eder
 store = deps.job_store()
@@ -107,8 +107,8 @@ print(json.dumps({
 '''
 
 _JOB_STORE_CLOSE = r'''
-from src.store import JobStore
-from src.store.jobs import default_db_path
+from sofascore_scraper.store import JobStore
+from sofascore_scraper.store.jobs import default_db_path
 
 db = default_db_path(os.path.join(tmp, "data"))
 store = JobStore(db)

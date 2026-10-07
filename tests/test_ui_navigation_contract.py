@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from src.web.app import FRONTEND_DIST, app
+from sofascore_scraper.web.app import FRONTEND_DIST, app
 
 
 def test_matches_items_have_match_id_for_navigation():

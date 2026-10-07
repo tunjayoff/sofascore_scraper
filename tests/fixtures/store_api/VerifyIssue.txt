@@ -1,5 +1,5 @@
-# src.store.VerifyIssue
-# kaynak: src/store/verify.py
+# sofascore_scraper.store.VerifyIssue
+# kaynak: sofascore_scraper/store/verify.py
 @dataclass(frozen=True)
 class VerifyIssue:
     invariant: str

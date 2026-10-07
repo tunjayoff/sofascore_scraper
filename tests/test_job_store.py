@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-from src.web.jobs import JobStore
+from sofascore_scraper.web.jobs import JobStore
 
 
 def test_job_lifecycle_and_interrupt(tmp_path=None):

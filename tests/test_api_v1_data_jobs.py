@@ -25,11 +25,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src.services.backup import BackupService
-from src.services.export import ExportService
-from src.store import EventQuery, JobStore, Store, default_db_path, open_store
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.services.backup import BackupService
+from sofascore_scraper.services.export import ExportService
+from sofascore_scraper.store import EventQuery, JobStore, Store, default_db_path, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 
@@ -166,7 +166,7 @@ def test_a_failed_export_has_no_download(jobs: JobStore, monkeypatch: pytest.Mon
     def broken(*args: Any, **kwargs: Any) -> Any:
         raise RuntimeError("broken")
 
-    monkeypatch.setattr("src.services.data_jobs.run_export", broken)
+    monkeypatch.setattr("sofascore_scraper.services.data_jobs.run_export", broken)
     job = start({"kind": "export", "spec": {"profile": "legacy-wide-csv"}})
     assert ended(job["id"])["state"] == "failed"
     record = data(client.get("/api/v1/exports"))[0]
@@ -307,7 +307,7 @@ def test_a_clear_is_refused_while_another_process_writes(jobs: JobStore, store: 
 
 
 def test_the_log_tail(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src import diagnostics
+    from sofascore_scraper import diagnostics
 
     entries = [{"time": "2026-10-01 12:00:00,000", "level": "INFO", "pid": 1, "logger": "X", "message": "hello"}]
     seen: List[Any] = []
@@ -342,7 +342,7 @@ def test_diagnostics_and_the_bundle() -> None:
 
 
 def test_no_secret_value_reaches_the_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src import redact
+    from sofascore_scraper import redact
 
     proxy = "http://" + "user:" + "-".join(("fake", "proxy", "word")) + "@proxy.example:8080"
     monkeypatch.setenv("PROXY_URL", proxy)

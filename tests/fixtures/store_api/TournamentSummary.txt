@@ -1,5 +1,5 @@
-# src.store.TournamentSummary
-# kaynak: src/store/events.py
+# sofascore_scraper.store.TournamentSummary
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class TournamentSummary:
     tournament_id: Optional[int]

@@ -24,15 +24,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
-from src import redact
-from src.config import loader, overrides
-from src.config import settings as model
-from src.exceptions import ConfigError
-from src.store import LeaseHeld, SchemaTooNew, open_store
-from src.web import deps
-from src.web.api.v1 import settings as settings_v1
-from src.web.app import app
-from src.web.jobs import default_db_path
+from sofascore_scraper import redact
+from sofascore_scraper.config import loader, overrides
+from sofascore_scraper.config import settings as model
+from sofascore_scraper.exceptions import ConfigError
+from sofascore_scraper.store import LeaseHeld, SchemaTooNew, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.api.v1 import settings as settings_v1
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.jobs import default_db_path
 
 client = TestClient(app)
 store = deps.job_store()
@@ -442,7 +442,7 @@ def test_a_data_dir_change_moves_the_job_store(data_dir_sandbox: Path) -> None:
 
 
 def _open_stores_of(data_dir: str) -> list:
-    from src.store import api
+    from sofascore_scraper.store import api
 
     key = os.path.normcase(os.path.realpath(data_dir))
     return [found for (path, _readonly), found in api._registry.items() if path == key and not found.closed]

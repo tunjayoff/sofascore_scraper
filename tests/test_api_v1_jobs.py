@@ -28,15 +28,15 @@ import conftest
 import pytest
 from fastapi.testclient import TestClient
 
-from src import sports
-from src.exceptions import StorageError
-from src.jobs.manager import JobManager, JobOutcome, local_origin
-from src.jobs.model import ErrorInfo, JobKind, JobState, Origin
-from src.store import JobStore
-from src.version import __version__
-from src.web import deps, sse
-from src.web.api.v1 import jobs as jobs_v1
-from src.web.app import app
+from sofascore_scraper import sports
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.jobs.manager import JobManager, JobOutcome, local_origin
+from sofascore_scraper.jobs.model import ErrorInfo, JobKind, JobState, Origin
+from sofascore_scraper.store import JobStore
+from sofascore_scraper.version import __version__
+from sofascore_scraper.web import deps, sse
+from sofascore_scraper.web.api.v1 import jobs as jobs_v1
+from sofascore_scraper.web.app import app
 client = TestClient(app)
 
 
@@ -349,7 +349,7 @@ def test_a_data_operation_refuses_the_start(store: JobStore, body: Any) -> None:
 ])
 def test_kinds_without_a_service_are_not_supported_yet(store: JobStore, request_body: Dict[str, Any],
                                                        details: Dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("src.services.export.parquet_available", lambda: False)
+    monkeypatch.setattr("sofascore_scraper.services.export.parquet_available", lambda: False)
     refused = error(client.post("/api/v1/jobs", json=request_body), 501, "not_supported")
     assert refused["details"] == details
     assert client.get("/api/v1/jobs").json()["data"] == []
@@ -441,7 +441,7 @@ def service(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> _Details:
     """Gerçek iş gövdesi (`_run_sync`), sahte bir servis bağlamıyla: istek atılmaz, dosya yazılmaz."""
     details = _Details()
     ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
-    monkeypatch.setattr("src.services.context.build_context", lambda config_manager: ctx)
+    monkeypatch.setattr("sofascore_scraper.services.context.build_context", lambda config_manager: ctx)
     return details
 
 
@@ -579,7 +579,7 @@ def test_the_stream_of_an_unknown_job_is_404(store: JobStore) -> None:
 def test_a_position_older_than_the_retained_events_gets_one_gap_event(
     manager: JobManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from src.store import jobs as store_jobs
+    from sofascore_scraper.store import jobs as store_jobs
 
     monkeypatch.setattr(store_jobs, "JOB_EVENTS_LIMIT", 5)
     monkeypatch.setattr(store_jobs, "_EVENT_PRUNE_EVERY", 1)
@@ -752,7 +752,7 @@ def test_sse_framing() -> None:
 
 
 def test_health_reports_the_version_the_bridge_and_the_request_budget(store: JobStore) -> None:
-    from src import bridge_health, throttle
+    from sofascore_scraper import bridge_health, throttle
 
     health = data(client.get("/api/v1/health"))
 

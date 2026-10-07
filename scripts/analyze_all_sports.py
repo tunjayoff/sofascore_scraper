@@ -4,7 +4,7 @@ Talimat 05: research/all_sports/ kayıtlarının analizi (ağ isteği yok).
     python scripts/analyze_all_sports.py patterns     # pattern özeti, repoda olmayanlar
     python scripts/analyze_all_sports.py all          # docs/all-sports/ CSV'leri + statü/skor kontrolleri
 
-Repo karşılaştırması: src/ ve araştırma script'lerindeki API yolu dizgileri (f-string yer tutucuları
+Repo karşılaştırması: sofascore_scraper/ ve araştırma script'lerindeki API yolu dizgileri (f-string yer tutucuları
 herhangi bir yol parçasıyla eşleşir) gözlenen pattern'lerle eşleştirilir.
 """
 from __future__ import annotations
@@ -35,9 +35,9 @@ _PATH_LITERAL = re.compile(
 
 
 def repo_patterns() -> Dict[str, List[Tuple[str, re.Pattern]]]:
-    """{'src': [(literal, regex)], 'research': [...]}: repodaki API yolları."""
+    """{'sofascore_scraper': [(literal, regex)], 'research': [...]}: repodaki API yolları."""
     groups = {
-        "src": glob.glob(os.path.join(ROOT, "src", "**", "*.py"), recursive=True),
+        "sofascore_scraper": glob.glob(os.path.join(ROOT, "sofascore_scraper", "**", "*.py"), recursive=True),
         "research": [
             os.path.join(ROOT, "scripts", n)
             for n in ("discover_status_taxonomy.py", "measure_finish_lag.py", "_research_common.py")
@@ -67,7 +67,7 @@ def repo_use(pattern: str, repo: Dict[str, List[Tuple[str, re.Pattern]]]) -> str
     if not pattern.startswith("/"):
         return "no"
     probe = re.sub(r"\{(id|date|sport|cc)\}", "X", pattern)
-    for group in ("src", "research"):
+    for group in ("sofascore_scraper", "research"):
         for lit, rx in repo[group]:
             if rx.match(probe):
                 return f"{group}: {lit}"
@@ -176,11 +176,11 @@ def run_checks(events, stages):
     """classify_status + extract_scores her olaya (ve classify_status her stage'e) gerçekten çalıştırılır."""
     import logging
 
-    from src import status as st
+    from sofascore_scraper import status as st
 
     cap = _Capture()
-    logging.getLogger("src.status").addHandler(cap)
-    logging.getLogger("src.status").setLevel(logging.WARNING)
+    logging.getLogger("sofascore_scraper.status").addHandler(cap)
+    logging.getLogger("sofascore_scraper.status").setLevel(logging.WARNING)
     known_codes = {0} | set(st._COMPLETED_CODES) | set(st._WITHOUT_PLAY_CODES) | set(st._LIVE_CODES) | set(st._VOID_CODES)
     result = {}
     for sport in sorted(set(events) | set(stages)):
@@ -222,12 +222,12 @@ def run_checks(events, stages):
             "extract_supported": supported, "extract_errors": extract_errors[:10], "extract_error_count": len(extract_errors),
             "extract_warnings": dict(extract_warnings.most_common(8)),
         }
-    logging.getLogger("src.status").removeHandler(cap)
+    logging.getLogger("sofascore_scraper.status").removeHandler(cap)
     return result
 
 
 def write_triples(events, stages, checks) -> None:
-    from src import status as st
+    from sofascore_scraper import status as st
 
     os.makedirs(os.path.join(DOCS, "status"), exist_ok=True)
     shutil.rmtree(os.path.join(OUT, "status_examples"), ignore_errors=True)  # her çalıştırmada yeniden üretilir

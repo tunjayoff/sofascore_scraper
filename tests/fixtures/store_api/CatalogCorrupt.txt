@@ -1,4 +1,4 @@
-# src.store.CatalogCorrupt
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.CatalogCorrupt
+# kaynak: sofascore_scraper/store/errors.py
 class CatalogCorrupt(StoreError):
     default_message = ...

@@ -13,7 +13,7 @@ Sayaçlar ve hata kayıtları Store'dadır (plan maddesi ST-21; eski düzende `_
 kayıtlar tests/legacy_writer.py ile eski düzende kurulur.
 
 Gerçek ağ yok: istek katmanının taşıyıcısı (oturumun `get`'i) ya da kendisi sahte. P13'ten beri her yol aynı
-boru hattıdır (src/services/pipeline.py): eski "async yol" ve "sync yol" testleri aynı kodu iki giriş noktasından
+boru hattıdır (sofascore_scraper/services/pipeline.py): eski "async yol" ve "sync yol" testleri aynı kodu iki giriş noktasından
 (tam çekim ve refill) sınar; oturumun ısınma isteği sahte oturumda yoktur.
 """
 from __future__ import annotations
@@ -30,12 +30,12 @@ import pytest
 
 import legacy_writer
 from catalog_index import index_event
-import src.utils as utils
-from src.exceptions import APIError, DataParsingError, NetworkError, RateLimitError, ResourceNotFoundError
-from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, SLICE_FAILED, SLICE_OK,
+import sofascore_scraper.utils as utils
+from sofascore_scraper.exceptions import APIError, DataParsingError, NetworkError, RateLimitError, ResourceNotFoundError
+from sofascore_scraper.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, SLICE_FAILED, SLICE_OK,
                                     UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher, SliceOutcome)
-from src.services import pipeline
-from src.store import SliceInfo, open_store
+from sofascore_scraper.services import pipeline
+from sofascore_scraper.store import SliceInfo, open_store
 
 MID = "4242"
 BASE = "https://www.sofascore.com/api/v1"
@@ -191,15 +191,15 @@ def _session_of(fake_get: Any):
 @contextlib.contextmanager
 def _curl_layer(basic: dict, slices: Dict[str, Any], calls: List[str]):
     """Gerçek istek katmanı, sahte oturumla (`_curl`'ün yanıtları)."""
-    with _request_layer(), patch("src.utils.create_session_async", _session_of(_curl(basic, slices, calls))):
+    with _request_layer(), patch("sofascore_scraper.utils.create_session_async", _session_of(_curl(basic, slices, calls))):
         yield
 
 
 def _fetch_async(f: MatchDataFetcher, slices: Dict[str, Any], basic: dict | None = None) -> List[str]:
     """Maçın tam çekimi; dilim yanıtları istek katmanının yerine geçen sahteden (tipli hatalar olduğu gibi)."""
     calls: List[str] = []
-    with patch("src.utils.make_api_request_async", new=_async_api(basic or _basic(), slices, calls)), \
-            patch("src.utils.create_session_async", _session_of(lambda url, **kw: None)):
+    with patch("sofascore_scraper.utils.make_api_request_async", new=_async_api(basic or _basic(), slices, calls)), \
+            patch("sofascore_scraper.utils.create_session_async", _session_of(lambda url, **kw: None)):
         f.fetch_match_data(MID)
     return calls
 
@@ -307,7 +307,7 @@ def test_async_slice_failure_through_the_real_request_layer(tmp_path):
             return Resp(200, {"event": basic})
         return Resp(429) if key == "statistics" else Resp(200, PRESENT[key])
 
-    with _request_layer(), patch("src.utils.create_session_async", _session_of(fake_get)):
+    with _request_layer(), patch("sofascore_scraper.utils.create_session_async", _session_of(fake_get)):
         data = f.fetch_match_data(MID)
     assert data["statistics"] is None
     assert _counts(f) == {}
@@ -324,7 +324,7 @@ def test_breaker_trips_on_blocked_slices_and_does_not_mark_them_unavailable(tmp_
         return Resp(200, {"event": _basic(mid)}) if url.endswith(f"/event/{mid}") else Resp(429)
 
     failed: List[str] = []
-    with _request_layer(), patch("src.utils.create_session_async", _session_of(fake_get)):
+    with _request_layer(), patch("sofascore_scraper.utils.create_session_async", _session_of(fake_get)):
         results = asyncio.run(f.fetch_matches_batch_async(ids, max_concurrent=1, failed_callback=failed.append))
 
     assert f.rate_limit_breaker_triggered is True
@@ -416,7 +416,7 @@ def test_sync_full_fetch_separates_failure_from_empty(tmp_path):
 
 def test_a_slice_request_separates_a_failure_from_a_missing_resource(tmp_path):
     """Dilim isteğinin hatası yutulmaz: 429 başarısız istektir, 404 kesin "yok"tur (nedeni "404")."""
-    from src.match_data_fetcher import SingleFetchReport
+    from sofascore_scraper.match_data_fetcher import SingleFetchReport
 
     f = _fetcher(tmp_path)
     failed, missing = SingleFetchReport(), SingleFetchReport()

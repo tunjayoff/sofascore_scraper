@@ -1,7 +1,7 @@
 """
 Test yalıtımı: testler gerçek .env, config/, data/ ve state.db'ye dokunmamalı.
 
-Ortam değişkenleri modül yüklenirken ayarlanır — src.* modülleri import anında
+Ortam değişkenleri modül yüklenirken ayarlanır — sofascore_scraper.* modülleri import anında
 .env'i ve DATA_DIR'i okuduğu için bunun herhangi bir test modülü import edilmeden
 önce olması gerekir. Geçici dizine küçük, sentetik bir veri seti yazılır.
 
@@ -45,12 +45,12 @@ MATCH_IDS = (9000001, 9000002)
 for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETCH_ONLY_FINISHED", "SOFASCORE_API_TOKEN"):
     os.environ.pop(_k, None)
 # Dil, testleri çalıştıranın kabuğuna bağlı olmasın (kural: açık ayar > sistem dili > İngilizce,
-# src/language.py): açık ayar yok, ileti dili "C" → her makinede varsayılan dil (İngilizce).
+# sofascore_scraper/language.py): açık ayar yok, ileti dili "C" → her makinede varsayılan dil (İngilizce).
 # LC_MESSAGES yalnızca ileti dilidir; LANG'e dokunulmaz (karakter kodlaması ondan gelir).
 for _k in ("APP_LANGUAGE", "LANGUAGE", "LC_ALL"):
     os.environ.pop(_k, None)
 os.environ["LC_MESSAGES"] = "C"
-# Log dosyası da geçici dizine: testler projedeki logs/ dizinine yazmaz (src/logger.py)
+# Log dosyası da geçici dizine: testler projedeki logs/ dizinine yazmaz (sofascore_scraper/logger.py)
 for _k in ("LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT"):
     os.environ.pop(_k, None)
 os.environ["LOG_DIR"] = os.path.join(_TMP, "logs")
@@ -60,16 +60,16 @@ os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
 # Yapılandırma dosyası (sofascore.toml) aranmaz: proje kökündeki gerçek bir dosya testleri etkilemesin.
 # Dosyayı sınayan testler SOFASCORE_CONFIG'i kendi geçici dosyalarına çevirir (tests/test_config_loader.py).
 os.environ["SOFASCORE_CONFIG"] = "none"
-# Ortak istek bütçesi (src/throttle.py) testlerde kapalı ve yalıtılmış: testler makinedeki gerçek
+# Ortak istek bütçesi (sofascore_scraper/throttle.py) testlerde kapalı ve yalıtılmış: testler makinedeki gerçek
 # süreçlerin bütçe dosyasına dokunmaz, sahte uyku sayaçlarına fazladan bekleme girmez.
 os.environ["REQUEST_RATE_LIMIT"] = "0"
 os.environ["SOFASCORE_THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
 # Tarayıcı profili de geçici dizinde: uygulama başlangıçta profil dizininin izinlerini daraltır
-# (src/private_files.harden_secret_paths); testler kullanıcının gerçek profiline dokunmaz.
+# (sofascore_scraper/private_files.harden_secret_paths); testler kullanıcının gerçek profiline dokunmaz.
 os.environ["SOFASCORE_BROWSER_PROFILE"] = os.path.join(_TMP, "browser-profile")
 # TestClient "testserver" Host başlığını kullanır
 os.environ["SOFASCORE_ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
-# Gölge denetimi (src/store/api.py): ürün kodunun dokunduğu veri dizinleri not edilir, test sonunda karşılaştırılır
+# Gölge denetimi (sofascore_scraper/store/api.py): ürün kodunun dokunduğu veri dizinleri not edilir, test sonunda karşılaştırılır
 os.environ["STORE_SHADOW_CHECK"] = "1"
 
 
@@ -136,15 +136,15 @@ _seed()
 
 # --- Store sınırı: çalışma zamanı denetimi (docs/design/01-storage.md, bölüm 2.4) ------------------
 #
-# Kural: DATA_DIR altındaki her şeye yalnızca src/store/ dokunur. Statik denetim
+# Kural: DATA_DIR altındaki her şeye yalnızca sofascore_scraper/store/ dokunur. Statik denetim
 # (tests/test_store_boundary.py) çağrıları kaynak koddan bulur; burası onun göremediğini, yani yolu
 # çalışırken kurulan erişimleri yakalar. CPython `open`, `os.listdir`, `sqlite3.connect` gibi çağrılar
 # için denetim olayı (audit event) üretir. Kanca, yolu test veri dizininin altında olan olaylarda
 # çağrı yığınını içten dışa yürür:
 #
 #   * önce tests/ altında bir çerçeveye rastlarsa erişim testin kendisine aittir (fixture kurulumu): sayılmaz;
-#   * önce src/store/ altında bir çerçeveye rastlarsa erişim Store'undur: sayılmaz;
-#   * önce src/ altında başka bir çerçeveye rastlarsa ihlaldir: (dosya, satır, çağrı) olarak kaydedilir.
+#   * önce sofascore_scraper/store/ altında bir çerçeveye rastlarsa erişim Store'undur: sayılmaz;
+#   * önce sofascore_scraper/ altında başka bir çerçeveye rastlarsa ihlaldir: (dosya, satır, çağrı) olarak kaydedilir.
 #
 # Kayıtları değerlendiren (işlev adına çevirip `FS_ALLOWLIST` ve `NAMED_EXCEPTIONS` ile karşılaştıran)
 # testler tests/test_store_boundary.py içindedir ve oturumun sonunda çalışır. Kanca yalnızca kaydeder,
@@ -177,7 +177,7 @@ _GENERATOR_FLAGS = 0x20 | 0x200  # CO_GENERATOR | CO_ASYNC_GENERATOR
 _STDLIB_MODULES = frozenset(sys.stdlib_module_names)
 _OS_PATH_MODULES = frozenset({"posixpath", "ntpath", "genericpath"})
 
-# (src/ altındaki dosyanın depo köküne göre yolu, satır, çağrı) -> (ilk görüldüğü test, yol)
+# (sofascore_scraper/ altındaki dosyanın depo köküne göre yolu, satır, çağrı) -> (ilk görüldüğü test, yol)
 BoundaryKey = Tuple[str, int, str]
 
 
@@ -206,14 +206,14 @@ def _audit_path(arg: Any) -> Optional[str]:
 
 def _callee_name(frame: Any, event: str) -> Optional[str]:
     """
-    src/ çerçevesinin doğrudan çağırdığı Python işlevinin adı; kayıt gereksizse None.
+    sofascore_scraper/ çerçevesinin doğrudan çağırdığı Python işlevinin adı; kayıt gereksizse None.
 
     Standart kitaplık için `modül.işlev` (ör. `shutil.rmtree`, `os.makedirs`): tek bir çağrı her platformda
     aynı ada düşer, içeride hangi sistem çağrılarının yapıldığı (sürüme ve işletim sistemine göre değişir)
     ada karışmaz. Üçüncü taraf paketlerde yalnızca paket adı (ör. `pandas`): iç işlev adları sürümle değişir.
 
     Tembel yineleyiciler (os.walk, glob.iglob, Path.glob): çağrı anında kitaplığın kendi olayı zaten
-    kaydedilir; yineleme sürerken src/ çerçevesinin altında kitaplığın iç üreteçleri durur ve adları
+    kaydedilir; yineleme sürerken sofascore_scraper/ çerçevesinin altında kitaplığın iç üreteçleri durur ve adları
     Python sürümüne göre değişir (`os._walk` yalnızca 3.11'e kadar var). O sistem çağrıları kaydedilmez.
     """
     module = str(frame.f_globals.get("__name__") or "<dynamic>")
@@ -241,7 +241,7 @@ class BoundaryRecorder:
     """
 
     def __init__(self, src_dir: str, tests_dir: str, data_dirs: Sequence[str], *, follow_env: bool = False) -> None:
-        # Kayıtlardaki modül yolu diskteki harf büyüklüğünü korur (src/SofaScoreUi.py); karşılaştırmalar
+        # Kayıtlardaki modül yolu diskteki harf büyüklüğünü korur (sofascore_scraper/SofaScoreUi.py); karşılaştırmalar
         # ise normcase ile yapılır (Windows). normcase uzunluğu değiştirmez, bu yüzden önek uzunluğu ortaktır.
         self._root_length = len(os.path.join(os.path.dirname(os.path.realpath(src_dir)), ""))
         self._src = _canonical(src_dir) + os.sep
@@ -328,7 +328,7 @@ class BoundaryRecorder:
             frame = frame.f_back
 
 
-STORE_BOUNDARY = BoundaryRecorder(os.path.join(ROOT, "src"), os.path.join(ROOT, "tests"), [DATA_DIR], follow_env=True)
+STORE_BOUNDARY = BoundaryRecorder(os.path.join(ROOT, "sofascore_scraper"), os.path.join(ROOT, "tests"), [DATA_DIR], follow_env=True)
 # Kanca bir kez kurulur ve kaldırılamaz; denetleyicinin kendi testleri buraya geçici kaydedici ekler.
 BOUNDARY_RECORDERS: List[BoundaryRecorder] = [STORE_BOUNDARY]
 
@@ -357,8 +357,8 @@ def _boundary_audit_hook(event: str, args: Tuple[Any, ...]) -> None:
 #     test sonunda fark olarak bildirilir (deposu hiç açılmamış dizinde bile).
 #
 # Testin son ürün çağrısından sonra yazdıkları eşitlenmeden kalır; o dizinin karşılaştırması atlanır. Erişimi
-# kimin yaptığına çağrı yığını karar verir: içten dışa ilk proje çerçevesi tests/ altındaysa test, src/
-# altındaysa ürün kodudur (src/store/files.py çerçevesi atlanır: yardımcıyı çağırana bakılır; testler de onunla
+# kimin yaptığına çağrı yığını karar verir: içten dışa ilk proje çerçevesi tests/ altındaysa test, sofascore_scraper/
+# altındaysa ürün kodudur (sofascore_scraper/store/files.py çerçevesi atlanır: yardımcıyı çağırana bakılır; testler de onunla
 # veri dizinini değiştirir, ör. tests/test_cli_migrate.py `files.remove_tree`). Store'un kendi
 # erişimleri uzlaştırmayı tetiklemez: bir yazma işleminin ortasında olabilir ve okuma API'sinin testleri
 # kataloğun arkasından bozulan dosyaları bilerek kurar.
@@ -373,7 +373,7 @@ _BY_TEST, _BY_PRODUCT, _BY_STORE = "test", "product", "store"
 
 
 class ShadowEdits:
-    """Denetim kancasının kaydedicisi: testin yazdıklarını ve ürün kodunun erişimlerini `src.store.api`'ye bildirir."""
+    """Denetim kancasının kaydedicisi: testin yazdıklarını ve ürün kodunun erişimlerini `sofascore_scraper.store.api`'ye bildirir."""
 
     def __init__(self, src_dir: str, tests_dir: str) -> None:
         self._src = _canonical(src_dir) + os.sep
@@ -409,7 +409,7 @@ class ShadowEdits:
 
     def audit(self, event: str, args: Tuple[Any, ...]) -> None:
         # getattr: modül o an yükleniyor olabilir (kısmen kurulmuş modülde işlevler henüz yoktur)
-        api = sys.modules.get("src.store.api")
+        api = sys.modules.get("sofascore_scraper.store.api")
         watching = getattr(api, "shadow_watching", None)
         unsynced = getattr(api, "shadow_unsynced", None)
         if watching is None or unsynced is None or not watching():
@@ -438,7 +438,7 @@ class ShadowEdits:
                     report(path)
 
 
-BOUNDARY_RECORDERS.append(ShadowEdits(os.path.join(ROOT, "src"), os.path.join(ROOT, "tests")))  # type: ignore[arg-type]
+BOUNDARY_RECORDERS.append(ShadowEdits(os.path.join(ROOT, "sofascore_scraper"), os.path.join(ROOT, "tests")))  # type: ignore[arg-type]
 
 
 def _resync_before_planning() -> None:
@@ -450,8 +450,8 @@ def _resync_before_planning() -> None:
     uzlaştırılır. Okuma API'sinin öteki çağrıları tetiklemez (kataloğun arkasından bozulan dosyaları bilerek
     kuran testler vardır).
     """
-    from src.services.query import QueryService
-    from src.store import api as store_api
+    from sofascore_scraper.services.query import QueryService
+    from sofascore_scraper.store import api as store_api
 
     original = QueryService.require_current
 
@@ -560,13 +560,13 @@ def _isolate_request_layer(request, monkeypatch):
     Her test temiz bir istek katmanıyla başlar: "önce tarayıcı" modu bir testten diğerine
     taşınmaz. `browser` işaretli olmayan testler gerçek bir tarayıcı başlatamaz.
     """
-    import src.utils as utils
-    import src.challenge_solver as cs
-    from src import bridge_health
+    import sofascore_scraper.utils as utils
+    import sofascore_scraper.challenge_solver as cs
+    from sofascore_scraper import bridge_health
 
     monkeypatch.setattr(utils, "_browser_first_until", 0.0)
     bridge_health.reset()  # köprü sağlık durumu da testten teste taşınmaz
-    follows = sys.modules.get("src.services.follows")
+    follows = sys.modules.get("sofascore_scraper.services.follows")
     if follows is not None:
         follows.clear_search_cache()  # saklanan SofaScore araması da (FX-20)
     if request.node.get_closest_marker("browser") is None:
@@ -595,11 +595,11 @@ def _close_stores_opened_by_the_test():
 
     Kapatmadan önce gölge denetimi çalışır: testte ürün kodunun eski düzen köklerine yazdığı ya da Store'un
     temizlediği her veri dizininin kataloğu, aynı ağacın sıfırdan kurulmuş haline eşit olmalıdır
-    (`src.store.api.shadow_check`). Fark, Store'un dışından yazan bir ürün kodunu ya da dizinleyicinin tek kaynağı
+    (`sofascore_scraper.store.api.shadow_check`). Fark, Store'un dışından yazan bir ürün kodunu ya da dizinleyicinin tek kaynağı
     yeniden dizinlerken yeniden kurmadan farklı davrandığını gösterir.
     """
     yield
-    api = sys.modules.get("src.store.api")  # cephe hiç yüklenmediyse açılmış depo da yoktur
+    api = sys.modules.get("sofascore_scraper.store.api")  # cephe hiç yüklenmediyse açılmış depo da yoktur
     if api is None:
         return
     # Veri dizini silinmiş ama deposu hâlâ açık: Windows açık dosyayı silemez (WinError 32, catalog.db), testin

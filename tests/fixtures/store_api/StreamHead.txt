@@ -1,5 +1,5 @@
-# src.store.StreamHead
-# kaynak: src/store/streams.py
+# sofascore_scraper.store.StreamHead
+# kaynak: sofascore_scraper/store/streams.py
 @dataclass(frozen=True)
 class StreamHead:
     stream_id: str

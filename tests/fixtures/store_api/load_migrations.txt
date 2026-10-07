@@ -1,3 +1,3 @@
-# src.store.load_migrations
-# kaynak: src/store/state.py
+# sofascore_scraper.store.load_migrations
+# kaynak: sofascore_scraper/store/state.py
 def load_migrations(directory: Optional[PathLike] = None) -> List[Migration]

@@ -19,14 +19,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
-from src.store import LeaseHeld, SchemaTooNew, StoreBusy, StoreError
-from src.version import __version__, read_version
-from src.web import deps
-from src.web.api import legacy as fetch_job
-from src.web.app import app
-from src.web.jobs import JobStore, default_db_path
-from src.web.api import legacy as scrape_mod
-from src.web.api import legacy as settings_mod
+from sofascore_scraper.store import LeaseHeld, SchemaTooNew, StoreBusy, StoreError
+from sofascore_scraper.version import __version__, read_version
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.api import legacy as fetch_job
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.jobs import JobStore, default_db_path
+from sofascore_scraper.web.api import legacy as scrape_mod
+from sofascore_scraper.web.api import legacy as settings_mod
 
 client = TestClient(app)
 store = deps.job_store()

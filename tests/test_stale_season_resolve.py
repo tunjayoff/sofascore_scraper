@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from src.season_fetcher import SeasonFetcher
+from sofascore_scraper.season_fetcher import SeasonFetcher
 
 
 def _fetcher_with_seasons(seasons):

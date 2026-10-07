@@ -1,5 +1,5 @@
 """
-src/store/codec.py: yük dosyalarının biçimi (docs/design/01-storage.md, bölüm 4.1).
+sofascore_scraper/store/codec.py: yük dosyalarının biçimi (docs/design/01-storage.md, bölüm 4.1).
 
 Kurallı JSON baytları, belirlenimci gzip, sıkıştırılmamış baytların sha256'sı ve sonekten kodlama
 seçen okuyucu. Ağ yok; yükler tests/fixtures/status altındaki gerçek /event yanıtlarıdır.
@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from src.exceptions import StorageError
-from src.store import LayoutError, PayloadCorrupt, PayloadMissing, StoreError, codec
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.store import LayoutError, PayloadCorrupt, PayloadMissing, StoreError, codec
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 STATUS_FIXTURES = sorted(FIXTURES.rglob("*.json"))
@@ -245,7 +245,7 @@ def test_unknown_suffix_is_a_layout_error(name, tmp_path):
 
 
 def test_reader_accepts_legacy_plain_json(tmp_path):
-    """Eski düzen: girintili, sıkıştırılmamış `basic.json` (src/fsutil.py'nin yazdığı biçim)."""
+    """Eski düzen: girintili, sıkıştırılmamış `basic.json` (sofascore_scraper/fsutil.py'nin yazdığı biçim)."""
     target = tmp_path / "basic.json"
     text = json.dumps(PAYLOAD, ensure_ascii=False, indent=2)
     target.write_bytes(text.encode("utf-8"))  # write_text Windows'ta satır sonlarını çevirirdi

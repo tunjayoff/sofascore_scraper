@@ -25,10 +25,10 @@ import pytest
 
 import conftest
 import test_cli_skeleton as skeleton
-from src.jobs.progress import JobProgress
-from src.services.follows import ConfigLeagues, FollowsService
-from src.services.listing import ListingResult
-from src.services.sync import (
+from sofascore_scraper.jobs.progress import JobProgress
+from sofascore_scraper.services.follows import ConfigLeagues, FollowsService
+from sofascore_scraper.services.listing import ListingResult
+from sofascore_scraper.services.sync import (
     SEASONS_PHASES,
     FollowsSyncSpec,
     SyncSelection,
@@ -37,7 +37,7 @@ from src.services.sync import (
     pick_seasons,
     sync_targets,
 )
-from src.store import FollowSpec, Store, open_store
+from sofascore_scraper.store import FollowSpec, Store, open_store
 from test_cli_skeleton import CliRunner
 
 cli = skeleton.cli

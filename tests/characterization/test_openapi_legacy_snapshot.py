@@ -36,8 +36,8 @@ import pydantic
 import pytest
 from fastapi.testclient import TestClient
 
-from src.version import __version__
-from src.web.app import app
+from sofascore_scraper.version import __version__
+from sofascore_scraper.web.app import app
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 SNAPSHOT = ROOT / "tests" / "snapshots" / "openapi-legacy.json"

@@ -64,7 +64,7 @@ export type LineupPlayer = {
 export type TeamForm = { form?: unknown[] }
 
 /**
- * GET /api/matches/{id}: one key per saved file (src/web/routes/matches.py). Shapes vary a
+ * GET /api/matches/{id}: one key per saved file (sofascore_scraper/web/routes/matches.py). Shapes vary a
  * little between SofaScore versions, so statistics and incidents go through the parsers below.
  */
 export type MatchDetail = {

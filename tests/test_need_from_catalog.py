@@ -6,7 +6,7 @@
 Dört küme:
   * özellik testi: rastgele dilim, işaret ve gözlem durumlarında katalogdan çıkan ihtiyaç, dosyalardan elle
     hesaplanan ihtiyaca (RD-3 öncesinin kuralı: dilim dosyaları, `_unavailable.json`, `observation.json`,
-    `src.refresh.refresh_due`) eşittir; yenilenecekler ve iş önbelleği de;
+    `sofascore_scraper.refresh.refresh_due`) eşittir; yenilenecekler ve iş önbelleği de;
   * eski biçimler: düz, `_no_tournament/` ve kimliksiz lig dizinlerindeki kayıtlar yenilenir, lig süzgeci
     maçın turnuvasına bakar;
   * listeler: sezon sırası, "yalnızca bitmiş maçlar" ayarı, durumu bilinmeyen özet satırları, eksik detay
@@ -26,10 +26,10 @@ from unittest.mock import MagicMock
 import pytest
 
 import store_fixtures as sf
-from src import refresh
-from src.exceptions import StorageError
-from src.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher
-from src.services.query import (
+from sofascore_scraper import refresh
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher
+from sofascore_scraper.services.query import (
     NEED_FULL,
     NEED_NONE,
     NEED_REFILL,
@@ -39,11 +39,11 @@ from src.services.query import (
     RefreshPolicy,
     required_detail_keys,
 )
-from src.slices import match_detail_slice_present
-from src.sports import event_sport_slug, slices_for
-from src.services import planning
-from src.store import open_store
-from src.web.api import legacy as matches_routes
+from sofascore_scraper.slices import match_detail_slice_present
+from sofascore_scraper.sports import event_sport_slug, slices_for
+from sofascore_scraper.services import planning
+from sofascore_scraper.store import open_store
+from sofascore_scraper.web.api import legacy as matches_routes
 from test_store_read_api import HOUR, NOW, _random_details
 
 UNKNOWN_ID = 1
@@ -105,11 +105,11 @@ def test_needs_from_the_catalog_equal_the_file_based_ones(tmp_path: Path, monkey
     ids = sorted(expected, key=int)
     # P13: tasarım tablosunun canlı ve bayat satırları dosya kuralının önüne geçer (canlı kayıt `none`: canlı
     # servisin işi; daha yeni bir listenin bayatlamış saydığı kayıt `refresh`)
-    from src.store import open_store
+    from sofascore_scraper.store import open_store
 
     # ST-27: açık kayıt (başlamamış, oynanıyor, bilinmiyor) `none`; void kayıt dilim beklemez, yalnızca yenilenir
-    from src.services.planning import SETTLED_CLASSES, refresh_due
-    from src.services.query import RefreshPolicy
+    from sofascore_scraper.services.planning import SETTLED_CLASSES, refresh_due
+    from sofascore_scraper.services.query import RefreshPolicy
 
     store = open_store(fx.data_dir)
     for mid in ids:

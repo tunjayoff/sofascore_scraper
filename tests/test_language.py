@@ -1,7 +1,7 @@
 """
 Dil kuralı: açık ayar (APP_LANGUAGE) > sistem dili > İngilizce.
 
-Kural src/language.py'de durur; kurulum ve başlatma betikleri (bash, PowerShell) Python daha
+Kural sofascore_scraper/language.py'de durur; kurulum ve başlatma betikleri (bash, PowerShell) Python daha
 yokken çalıştıkları için aynı kuralı kendileri uygular. Aynı örnek tablosu hepsine sorulur.
 Ayrıca: iki dil dosyasında aynı anahtarlar var mı, yeni kurulum İngilizce mi başlıyor.
 """
@@ -17,8 +17,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from src import doctor, language
-from src.i18n import I18nManager, app_language
+from sofascore_scraper import doctor, language
+from sofascore_scraper.i18n import I18nManager, app_language
 
 REPO = Path(__file__).resolve().parents[1]
 BASH_SCRIPTS = ("scripts/install.sh", "start-sofascore.sh", "Start SofaScore.command")
@@ -252,7 +252,7 @@ def test_cli_locale_files_have_the_same_keys_and_placeholders():
 def test_keys_used_by_the_cli_and_the_launcher_exist():
     en = _locale("en")
     used = set()
-    for name in ("main.py", "src/match_data_fetcher.py", "src/bridge_health.py", "src/match_fetcher.py", "src/web/api/legacy.py"):
+    for name in ("main.py", "sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/bridge_health.py", "sofascore_scraper/match_fetcher.py", "sofascore_scraper/web/api/legacy.py"):
         used |= set(re.findall(r"""\bt\(\s*['"]([a-z0-9_]+)['"]""", (REPO / name).read_text(encoding="utf-8")))
     launcher = (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
     used |= {"launcher_" + key for key in re.findall(r'_t\(\s*"([a-z_]+)"', launcher)}
@@ -260,7 +260,7 @@ def test_keys_used_by_the_cli_and_the_launcher_exist():
     assert used <= set(en), sorted(used - set(en))
     # Kullanılmayan çeviri kalmasın (bu değişiklikle eklenen ön ekler için)
     main_text = (REPO / "main.py").read_text(encoding="utf-8")
-    doctor_text = (REPO / "src" / "doctor.py").read_text(encoding="utf-8")
+    doctor_text = (REPO / "sofascore_scraper" / "doctor.py").read_text(encoding="utf-8")
     # `details_*` anahtarlarını P15'e kadar MatchDataFetcher yazdırıyordu; artık günlük satırıdırlar ve anahtarlar
     # terminal menüsüyle (P26) kullanım taramasından sonra silinir
     for key in en:
@@ -361,7 +361,7 @@ def test_shipped_defaults_do_not_pin_turkish():
 
 def test_settings_api_says_whether_the_language_is_pinned(monkeypatch):
     """Web arayüzü ilk ziyarette yalnızca açıkça ayarlanmış dili izler; yoksa tarayıcının diline bakar."""
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     client = TestClient(app)
     for key in language.ENV_KEYS:
@@ -418,7 +418,7 @@ def test_the_launcher_language_follows_the_config_layers(tmp_path, environ, env_
     assert ctx.lang == expected
 
     # Yükleyici aynı dili verir (python-dotenv `.env`'i süreç ortamına yükler; süreç ortamı önce gelir)
-    from src.config import loader
+    from sofascore_scraper.config import loader
 
     dotenv = dict(ctx.file_env)
     use_file = toml_language is not None and environ.get("SOFASCORE_CONFIG") != "none"
@@ -463,7 +463,7 @@ def test_the_shell_launchers_ask_the_app_for_the_language(tmp_path):
     script = "set -uo pipefail\n" + _app_lang_function(scripts[0]) + "app_lang\n"
     run = subprocess.run([bash, "-c", script], cwd=str(REPO), env=env, capture_output=True, text=True, timeout=60)
     assert run.returncode == 0 and run.stdout.strip() == "tr", run.stderr
-    # Python cevap veremezse (src yok) çıktı boştur ve betik kendi tahminini kullanır
+    # Python cevap veremezse (sofascore_scraper yok) çıktı boştur ve betik kendi tahminini kullanır
     run = subprocess.run([bash, "-c", script], cwd=str(tmp_path), env=env, capture_output=True, text=True,
                          timeout=60)
     assert run.returncode == 0 and run.stdout.strip() == ""

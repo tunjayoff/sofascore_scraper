@@ -1,5 +1,5 @@
 """
-Web yüzünün paylaşılan nesneleri (src/web/deps.py; plan maddesi P21): eski `src/web/routes/common.py`nin modül
+Web yüzünün paylaşılan nesneleri (sofascore_scraper/web/deps.py; plan maddesi P21): eski `sofascore_scraper/web/routes/common.py`nin modül
 durumu buraya taşındı ve ilk kullanımda kurulur.
 
   * uygulamayı içe aktarmak lig dosyasını ve iş deposunu oluşturmaz (plan bölüm 15, satır 6 ve 27'nin web tarafı);
@@ -14,15 +14,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.config_manager import ConfigManager
-from src.web import deps
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.web import deps
 
 ROOT = Path(__file__).resolve().parent.parent
 
 _IMPORT_APP = """
 import json, os, sys
-from src.web.app import app
-from src.web import deps
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web import deps
 before = {"leagues": os.path.exists(os.path.join(os.environ["SOFASCORE_CONFIG_DIR"], "leagues.txt")),
           "state": os.path.exists(os.path.join(os.environ["DATA_DIR"], ".meta", "state.db")),
           "manager": deps._config_manager is not None, "jobs": deps._job_store is not None}

@@ -1,5 +1,5 @@
-# src.store.MigrationProgress
-# kaynak: src/store/migrate.py
+# sofascore_scraper.store.MigrationProgress
+# kaynak: sofascore_scraper/store/migrate.py
 @dataclass(frozen=True)
 class MigrationProgress:
     stage: str

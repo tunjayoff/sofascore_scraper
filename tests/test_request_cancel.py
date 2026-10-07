@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 
-import src.utils as utils
-from src.utils import FetchCancelled, _asleep, _sleep, raise_if_cancelled, set_cancel_check
+import sofascore_scraper.utils as utils
+from sofascore_scraper.utils import FetchCancelled, _asleep, _sleep, raise_if_cancelled, set_cancel_check
 
 
 def _in_fresh_context(fn):

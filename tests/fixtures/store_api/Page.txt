@@ -1,5 +1,5 @@
-# src.store.Page
-# kaynak: src/store/events.py
+# sofascore_scraper.store.Page
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class Page(Generic[T]):
     items: Tuple[T, ...]

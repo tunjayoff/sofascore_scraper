@@ -25,15 +25,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src.errors import NotFoundError, NotSupportedError, UsageError
-from src.schema import SCHEMA_VERSION
-from src.services import export as export_service
-from src.services.export import (DatasetFilter, DatasetSpec, ExportService, check_dataset, column_types,
+from sofascore_scraper.errors import NotFoundError, NotSupportedError, UsageError
+from sofascore_scraper.schema import SCHEMA_VERSION
+from sofascore_scraper.services import export as export_service
+from sofascore_scraper.services.export import (DatasetFilter, DatasetSpec, ExportService, check_dataset, column_types,
                                  dataset_columns, flatten_record, leaf_paths, parse_moment, record_model)
-from src.store import JobStore, Store, StoreError, default_db_path, open_store
-from src.store import export as store_export
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.store import JobStore, Store, StoreError, default_db_path, open_store
+from sofascore_scraper.store import export as store_export
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 import test_cli_skeleton as skeleton
 from test_cli_skeleton import CliRunner
 
@@ -87,7 +87,7 @@ def read_back(path: Path, fmt: str, dataset: str) -> List[Dict[str, Any]]:
 
 
 def expected_cells(rows: Sequence[Mapping[str, Any]], fmt: str) -> List[Dict[str, Any]]:
-    """Kayıtların düz satırları, biçimin hücre kuralıyla (src/store/export.py)."""
+    """Kayıtların düz satırları, biçimin hücre kuralıyla (sofascore_scraper/store/export.py)."""
     if fmt == "csv":
         return [{k: store_export._text(v) for k, v in row.items()} for row in rows]
     if fmt == "sqlite":
@@ -139,7 +139,7 @@ def test_jsonl_columns_are_the_fields_of_the_record(canonical: Store) -> None:
 
 
 def test_every_score_family_is_covered_by_the_columns() -> None:
-    from src.schema import models
+    from sofascore_scraper.schema import models
 
     events = set(dataset_columns("events", "csv"))
     for family in (models.FootballScore, models.PeriodsScore, models.SetsScore, models.InningsScore,

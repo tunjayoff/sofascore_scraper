@@ -1,5 +1,5 @@
 """
-src/store/follows.py: `follows` tablosu ve onu dolduran üç yol (docs/design/01-storage.md bölüm 2.3;
+sofascore_scraper/store/follows.py: `follows` tablosu ve onu dolduran üç yol (docs/design/01-storage.md bölüm 2.3;
 plan maddesi ST-17).
 
   * FollowStore: ekleme, değiştirme, silme, `apply` (yinelenebilir; yalnızca kendi kaynağını budar),
@@ -26,11 +26,11 @@ from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
-from src.config import FollowSpec as ConfigFollowSpec
-from src.config import loader
-from src.config_manager import ConfigManager, mirror_league_follows
-from src.services.context import build_context
-from src.store import (
+from sofascore_scraper.config import FollowSpec as ConfigFollowSpec
+from sofascore_scraper.config import loader
+from sofascore_scraper.config_manager import ConfigManager, mirror_league_follows
+from sofascore_scraper.services.context import build_context
+from sofascore_scraper.store import (
     ApplyResult,
     Follow,
     FollowConflict,
@@ -44,9 +44,9 @@ from src.store import (
     apply_follows,
     open_store,
 )
-from src.store import api as api_mod
-from src.store import follows as follows_mod
-from src.web import league_sports
+from sofascore_scraper.store import api as api_mod
+from sofascore_scraper.store import follows as follows_mod
+from sofascore_scraper.web import league_sports
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -513,7 +513,7 @@ def test_two_stores_of_one_directory_see_the_same_table(data_dir: Path, follows:
     follows.apply([PL], origin="legacy")
     code = (
         "import sys\n"
-        "from src.store import FollowSpec, open_store\n"
+        "from sofascore_scraper.store import FollowSpec, open_store\n"
         "store = open_store(sys.argv[1])\n"
         "assert store.follows.leagues() == {17: 'Premier League'}, store.follows.leagues()\n"
         "store.follows.apply([FollowSpec('tournament', 17, 'Premier League', 'football'),\n"
@@ -1102,7 +1102,7 @@ def test_build_context_mirrors_the_league_files_into_an_existing_store(setup: Se
 def test_build_context_reports_a_follow_it_cannot_apply_once(setup: Setup, config_file,
                                                              caplog: pytest.LogCaptureFixture,
                                                              monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr("src.services.context._reported_conflicts", set())
+    monkeypatch.setattr("sofascore_scraper.services.context._reported_conflicts", set())
     setup.write_leagues("Premier League: 17\n")
     setup.make_store()
     cm = setup.manager()

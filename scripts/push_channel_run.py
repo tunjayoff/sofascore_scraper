@@ -47,7 +47,7 @@ import _research_common as rc  # noqa: E402
 from _all_sports_patterns import SOFA_HOST, api_pattern  # noqa: E402
 from explore_all_sports import nats_messages  # noqa: E402
 
-import src.challenge_solver as cs  # noqa: E402
+import sofascore_scraper.challenge_solver as cs  # noqa: E402
 
 QUIET_URL = "https://www.sofascore.com/robots.txt"
 API = "https://www.sofascore.com/api/v1"

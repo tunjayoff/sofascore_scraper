@@ -20,12 +20,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import src.utils as utils
-from src.web import deps
-from src import breaker as request_breaker
-from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
+import sofascore_scraper.utils as utils
+from sofascore_scraper.web import deps
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
                                     SliceOutcome)
-from src.status import OBSERVATION_KEY
+from sofascore_scraper.status import OBSERVATION_KEY
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
 START = 1790000000
@@ -232,8 +232,8 @@ class FakeDetails:
 
 @pytest.fixture
 def job_env(tmp_path, monkeypatch):
-    import src.web.api.legacy as fj
-    from src.web.jobs import JobStore
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.jobs import JobStore
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
@@ -248,7 +248,7 @@ def _listing_faces(ui: Any) -> None:
     Sahte sezon / program indiricilerine servisin tipli yüzünü (P14: `list_seasons`, `list_schedule`) ekler: eski adlı
     sahte yöntemlerin sonucu liste sonucu olur (program True → maç listelendi, False → boş).
     """
-    from src.services.listing import ListingResult
+    from sofascore_scraper.services.listing import ListingResult
 
     seasons, schedule = getattr(ui, "season_fetcher", None), getattr(ui, "match_fetcher", None)
     if seasons is not None and not hasattr(seasons, "list_seasons"):
@@ -260,7 +260,7 @@ def _listing_faces(ui: Any) -> None:
 
 
 def _run_job(fj, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, Any]:
-    from src.web.api.legacy import FetchRequest
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = deps.config_manager()

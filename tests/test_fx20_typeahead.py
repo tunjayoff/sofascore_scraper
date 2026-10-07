@@ -5,7 +5,7 @@ Yazarken öneri (plan maddesi FX-20): katalogdan ad önerisi ve SofaScore aramas
     SofaScore'a istek gitmez; adı metinle başlayanlar önce, sonra bir sözcüğü metinle başlayanlar, sonra öteki;
     her birinde takip edilenler önce;
   * `POST /api/v1/tournaments/search`: yanıt sunucuda 10 dakika saklanır (aynı metin, büyük-küçük harf ve boşluk
-    farkı önemsiz, istek atmaz); hatalı yanıt saklanmaz; istek ortak bütçeden sıra alır (src/throttle.py);
+    farkı önemsiz, istek atmaz); hatalı yanıt saklanmaz; istek ortak bütçeden sıra alır (sofascore_scraper/throttle.py);
   * istemci bağlantıyı keserse henüz gönderilmemiş istek gönderilmez (bütçede sıra beklerken kesilen istek sırasını
     geri verir).
 
@@ -27,15 +27,15 @@ from fastapi.testclient import TestClient
 import store_fixtures as sf
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src import throttle
-from src.client import endpoints
-from src.client import transport
-from src.client.context import FetchCancelled
-from src.config import loader
-from src.services import follows as follows_module
-from src.store import FollowSpec, Store, open_store
-from src.web.api.v1 import tournaments as tournaments_routes
-from src.web.app import app
+from sofascore_scraper import throttle
+from sofascore_scraper.client import endpoints
+from sofascore_scraper.client import transport
+from sofascore_scraper.client.context import FetchCancelled
+from sofascore_scraper.config import loader
+from sofascore_scraper.services import follows as follows_module
+from sofascore_scraper.store import FollowSpec, Store, open_store
+from sofascore_scraper.web.api.v1 import tournaments as tournaments_routes
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 FIXTURES = Path(__file__).parent / "fixtures" / "fx19"

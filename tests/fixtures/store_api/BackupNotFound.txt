@@ -1,4 +1,4 @@
-# src.store.BackupNotFound
-# kaynak: src/store/backup.py
+# sofascore_scraper.store.BackupNotFound
+# kaynak: sofascore_scraper/store/backup.py
 class BackupNotFound(StoreError):
     default_message = ...

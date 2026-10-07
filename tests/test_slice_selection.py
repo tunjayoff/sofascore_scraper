@@ -28,20 +28,20 @@ from fastapi.testclient import TestClient
 import conftest
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src import redact, sports
-from src.config import loader, overrides
-from src.config_manager import ConfigManager
-from src.exceptions import ConfigError
-from src.services import planning
-from src.services.listing import ListingService
-from src.services.pipeline import FetchPipeline
-from src.services.query import QueryService, RefreshPolicy
-from src.services.status import only_finished_setting
-from src.sports import SliceSelection, SliceSpec, UnknownSliceName, resolve_selection, select_slices
-from src.store import FollowSpec, Scope, Store, open_store
-from src.web import deps
-from src.web.app import app
-from src.web.jobs import default_db_path
+from sofascore_scraper import redact, sports
+from sofascore_scraper.config import loader, overrides
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.exceptions import ConfigError
+from sofascore_scraper.services import planning
+from sofascore_scraper.services.listing import ListingService
+from sofascore_scraper.services.pipeline import FetchPipeline
+from sofascore_scraper.services.query import QueryService, RefreshPolicy
+from sofascore_scraper.services.status import only_finished_setting
+from sofascore_scraper.sports import SliceSelection, SliceSpec, UnknownSliceName, resolve_selection, select_slices
+from sofascore_scraper.store import FollowSpec, Scope, Store, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.jobs import default_db_path
 
 client = TestClient(app)
 

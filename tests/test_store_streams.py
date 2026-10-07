@@ -1,9 +1,9 @@
 """
-src/store/streams.py ve src/store/watch.py: sıra numaralı olay akışları, sink konumları ve izleyici durumu
+sofascore_scraper/store/streams.py ve sofascore_scraper/store/watch.py: sıra numaralı olay akışları, sink konumları ve izleyici durumu
 (docs/design/01-storage.md bölüm 2.3 ve 9.3; plan maddesi ST-18).
 
 Süreçler arası testler gerçek ikinci süreçler başlatır (aynı state.db'ye ekleyen iki süreç, başka sürecin
-eklemesiyle uyanan `wait`). Son bölüm izleyicinin (src/watcher.py) durumunu ve olaylarını Store üzerinden
+eklemesiyle uyanan `wait`). Son bölüm izleyicinin (sofascore_scraper/watcher.py) durumunu ve olaylarını Store üzerinden
 tuttuğunu denetler; izleyicinin davranışı tests/test_watcher.py'dedir. Tümü çevrimdışı.
 """
 from __future__ import annotations
@@ -22,9 +22,9 @@ from typing import Any, Dict, List
 import pytest
 
 import conftest
-import src.store
-from src import watcher as watcher_mod
-from src.store import (
+import sofascore_scraper.store
+from sofascore_scraper import watcher as watcher_mod
+from sofascore_scraper.store import (
     LayoutError,
     Store,
     StoreError,
@@ -36,8 +36,8 @@ from src.store import (
     WatchStateStore,
     open_store,
 )
-from src.store import legacy, streams, watch
-from src.watcher import MatchWatcher
+from sofascore_scraper.store import legacy, streams, watch
+from sofascore_scraper.watcher import MatchWatcher
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DAY = 86400
@@ -49,7 +49,7 @@ DAY = 86400
 # yardımcı süreç eklemeler arasında kısa bir boşluk bırakır ve StoreBusy alırsa aynı olayı yeniden dener.
 APPENDER = """
 import json, sys, time
-from src.store import StoreBusy, StreamEvent, open_store
+from sofascore_scraper.store import StoreBusy, StreamEvent, open_store
 store = open_store(sys.argv[1])
 print("ready", flush=True)
 sys.stdin.readline()
@@ -125,7 +125,7 @@ def rows(store: Store, sql: str, *params: Any) -> List[tuple]:
 def test_store_exposes_streams_and_watch(store: Store) -> None:
     assert isinstance(store.streams, StreamLog) and isinstance(store.watch, WatchStateStore)
     for name in ("StreamLog", "StreamEvent", "StreamRecord", "StreamBatch", "StreamHead", "WatchStateStore"):
-        assert name in src.store.__all__
+        assert name in sofascore_scraper.store.__all__
     assert streams.STREAMS == ("live", "change", "job", "system")
 
 
@@ -1011,4 +1011,4 @@ def test_watcher_reaches_the_data_dir_only_through_the_store(watched_dir: Path) 
     assert sorted(p.name for p in watched_dir.iterdir()) == [".meta", "watch_events.jsonl"]
     assert (watcher.events_path, watcher.state_path) == \
         (os.path.join(str(watched_dir), "watch_events.jsonl"), os.path.join(str(watched_dir), "watch_state_football.json"))
-    assert [key for key in conftest.STORE_BOUNDARY.records if key[0] == "src/watcher.py"] == []
+    assert [key for key in conftest.STORE_BOUNDARY.records if key[0] == "sofascore_scraper/watcher.py"] == []

@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from src.sports import sport_slugs
-from src.web.missing_ui import MISSING_UI_HTML
+from sofascore_scraper.sports import sport_slugs
+from sofascore_scraper.web.missing_ui import MISSING_UI_HTML
 
 REPO = Path(__file__).resolve().parents[1]
 STALE = re.compile(r"terminal mode|terminal modlar|football match data|futbol maçı verilerini|"
@@ -52,5 +52,5 @@ def test_the_image_label_does_not_list_three_sports() -> None:
 @pytest.mark.parametrize("lang", ["en", "tr"])
 @pytest.mark.parametrize("key", ["doctor_config_none", "ssc_config_no_file", "ssc_config_valid_no_file"])
 def test_the_settings_sources_name_the_settings_page_file(lang: str, key: str) -> None:
-    # Yapılandırma dosyası olmadan da Ayarlar sayfasının overrides.json'ı okunur (src/config/loader.py)
+    # Yapılandırma dosyası olmadan da Ayarlar sayfasının overrides.json'ı okunur (sofascore_scraper/config/loader.py)
     assert "overrides.json" in _locale(lang)[key]

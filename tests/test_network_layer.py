@@ -9,11 +9,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import src.challenge_solver as cs
-import src.utils as utils
-from src.exceptions import APIError, NetworkError, RateLimitError
-from src.match_data_fetcher import MatchDataFetcher
-from src.utils import FetchCancelled
+import sofascore_scraper.challenge_solver as cs
+import sofascore_scraper.utils as utils
+from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.utils import FetchCancelled
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
 
@@ -166,7 +166,7 @@ def _api(answer):
     İstek katmanının (make_api_request_async) sahtesi; boru hattının istemcisi onu çağırır. `answer(mid, url)` bir
     gövde döndürür ya da fırlatır. Gerçek katman gibi isteğin sonucunu işin devre kesicisine bildirir.
     """
-    from src import breaker
+    from sofascore_scraper import breaker
 
     async def fake(session, url, max_retries=None, **_kw):
         mid = url.split("/event/", 1)[1].split("/", 1)[0]
@@ -178,7 +178,7 @@ def _api(answer):
         breaker.report_ok()
         return data
 
-    return patch("src.utils.make_api_request_async", new=fake)
+    return patch("sofascore_scraper.utils.make_api_request_async", new=fake)
 
 
 def test_breaker_trips_on_repeated_403(tmp_path, monkeypatch):
@@ -190,7 +190,7 @@ def test_breaker_trips_on_repeated_403(tmp_path, monkeypatch):
         calls.append(mid)
         raise APIError("blocked", status_code=403)
 
-    with _api(always_403), patch("src.utils.create_session_async", _fake_session):
+    with _api(always_403), patch("sofascore_scraper.utils.create_session_async", _fake_session):
         _run(f.fetch_matches_batch_async(list(range(1, 40)), max_concurrent=1))
     assert f.rate_limit_breaker_triggered is True
     assert f.last_status_counts.get("403", 0) >= 3
@@ -204,8 +204,8 @@ def test_no_fixed_pause_in_a_bulk_download(tmp_path):
     async def answer(mid, url):
         return {"event": _event(mid)} if url.endswith(f"/event/{mid}") else {}
 
-    with _api(answer), patch("src.utils.create_session_async", _fake_session), \
-            patch("src.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
+    with _api(answer), patch("sofascore_scraper.utils.create_session_async", _fake_session), \
+            patch("sofascore_scraper.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
         results = _run(f.fetch_matches_batch_async(list(range(1, 251)), max_concurrent=10))
     assert len(results) == 250
     sleep.assert_not_awaited()
@@ -224,8 +224,8 @@ def test_a_failed_event_request_is_not_retried_per_match(tmp_path, monkeypatch):
         calls.append(url)
         raise APIError("boom", status_code=500)
 
-    with _api(always_500), patch("src.utils.create_session_async", _fake_session), \
-            patch("src.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
+    with _api(always_500), patch("sofascore_scraper.utils.create_session_async", _fake_session), \
+            patch("sofascore_scraper.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
         assert _run(f.fetch_matches_batch_async([1], max_concurrent=1)) == {}
     assert len(calls) == 1
     sleep.assert_not_awaited()
@@ -247,7 +247,7 @@ def test_cancel_propagates_and_leaves_no_pending_tasks(tmp_path):
         others = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         assert not [t for t in others if not t.done()]
 
-    with _api(answer), patch("src.utils.create_session_async", _fake_session):
+    with _api(answer), patch("sofascore_scraper.utils.create_session_async", _fake_session):
         _run(run())
 
 
@@ -344,7 +344,7 @@ def test_browser_first_mode_skips_curl(monkeypatch):
     session = _session(Resp(403, text="challenge"))
     browser = AsyncMock(return_value={"ok": 1})
     monkeypatch.setattr(utils, "_browser_first_until", 0.0)
-    with _patched(), patch("src.challenge_solver.fetch_api_via_browser", browser):
+    with _patched(), patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", browser):
         assert _run(utils.make_api_request_async(session, "/a")) == {"ok": 1}
         assert utils._browser_first()
         assert _run(utils.make_api_request_async(session, "/b")) == {"ok": 1}

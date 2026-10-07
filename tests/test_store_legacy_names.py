@@ -1,8 +1,8 @@
 """
-2.x düzeninin ad kuralı (src/store/legacy.py `safe_name`, `league_dir_name`; kökten `src.store.league_dir_name`).
+2.x düzeninin ad kuralı (sofascore_scraper/store/legacy.py `safe_name`, `league_dir_name`; kökten `sofascore_scraper.store.league_dir_name`).
 
 Okuyucu eski dizinleri bu kuralla tanır, eski yanıtlar (dosya raporu, maç listelerinin lig sütunu) ligleri
-bu adla anar. Kural 2.x yazıcılarının kuralıdır (eskiden src/paths.py'deydi; ST-28 Store'a taşıdı):
+bu adla anar. Kural 2.x yazıcılarının kuralıdır (eskiden sofascore_scraper/paths.py'deydi; ST-28 Store'a taşıdı):
 değişirse eski veri dizinleri bulunamaz.
 """
 from __future__ import annotations
@@ -12,8 +12,8 @@ import os
 import pytest
 
 import conftest
-import src.store
-from src.store import legacy
+import sofascore_scraper.store
+from sofascore_scraper.store import legacy
 
 
 @pytest.mark.parametrize(
@@ -42,7 +42,7 @@ def test_safe_name_never_yields_a_path_separator(name):
 
 
 def test_league_dir_name_carries_the_id_and_a_placeholder_without_a_name():
-    assert src.store.league_dir_name is legacy.league_dir_name
+    assert sofascore_scraper.store.league_dir_name is legacy.league_dir_name
     assert legacy.league_dir_name(17, "Premier League") == "17_Premier_League"
     assert legacy.league_dir_name(17, None) == "17_League_17"
     assert legacy.league_dir_name(17, "") == "17_League_17"

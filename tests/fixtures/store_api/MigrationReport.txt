@@ -1,5 +1,5 @@
-# src.store.MigrationReport
-# kaynak: src/store/migrate.py
+# sofascore_scraper.store.MigrationReport
+# kaynak: sofascore_scraper/store/migrate.py
 @dataclass
 class MigrationReport:
     run_id: Optional[int] = None

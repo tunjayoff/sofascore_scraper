@@ -25,7 +25,7 @@
   ],
   "sleeps": {
    "request-layer": 2,
-   "src.client.transport": 1
+   "sofascore_scraper.client.transport": 1
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync",
@@ -87,7 +87,7 @@
   ],
   "sleeps": {
    "request-layer": 2,
-   "src.client.transport": 1
+   "sofascore_scraper.client.transport": 1
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17",

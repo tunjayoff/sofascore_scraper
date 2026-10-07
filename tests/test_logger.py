@@ -12,10 +12,10 @@ import pytest
 from fastapi.testclient import TestClient
 from rich.console import Console
 
-from src.web import deps
-from src import logger as app_logger
-from src import redact
-from src.paths import env_file_path
+from sofascore_scraper.web import deps
+from sofascore_scraper import logger as app_logger
+from sofascore_scraper import redact
+from sofascore_scraper.paths import env_file_path
 
 JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTAwMDAwMDAsInN1YiI6InNvZmEifQ.c2lnbmF0dXJlLXZhbHVlLTEyMw"
 PROXY = "http://scraper:Pr0xy-P4ss!word@proxy.example.com:8080"
@@ -26,19 +26,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ENV_KEYS = ("LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "LOG_LEVEL", "DEBUG")
 
 # Windows'ta bilinen sınırlar (CI'da görüldü; Windows "elden geldiğince" desteklenen platformdur).
-# Açık bir dosya Windows'ta yeniden adlandırılamaz ve silinemez; src/config_files.file_lock da orada
+# Açık bir dosya Windows'ta yeniden adlandırılamaz ve silinemez; sofascore_scraper/config_files.file_lock da orada
 # hiçbir şey kilitlemez. Sonuç: dosyayı birden çok yazıcı açık tutarken çevirme yapılamaz (dosya
 # LOG_MAX_MB'ı aşar, yalnız tek yazıcı kaldığında çevrilir) ve başka bir süreç çevirmeyi denerken
 # yazılan kayıt düşebilir. Düzeltilince işaretler kaldırılır (strict olan kendini belli eder).
 no_shared_rotation_on_windows = pytest.mark.xfail(
     sys.platform == "win32",
     reason="Bilinen sınır (Windows): log dosyası başka bir yazıcıda açıkken yeniden adlandırılamaz; "
-    "birden çok yazıcı varken dosya çevrilmez (src/logger.py: SharedRotatingFileHandler.doRollover)",
+    "birden çok yazıcı varken dosya çevrilmez (sofascore_scraper/logger.py: SharedRotatingFileHandler.doRollover)",
     strict=True,
 )
 shared_rotation_races_on_windows = pytest.mark.xfail(
     sys.platform == "win32",
-    reason="Bilinen sınır (Windows): süreçler arası kilit yok (src/config_files.file_lock) ve açık dosya yeniden "
+    reason="Bilinen sınır (Windows): süreçler arası kilit yok (sofascore_scraper/config_files.file_lock) ve açık dosya yeniden "
     "adlandırılamaz; birden çok süreç yazarken dosya çevrilmez, çevirme denemesi sırasında kayıt düşebilir",
     strict=False,
 )
@@ -167,7 +167,7 @@ def test_two_writers_share_one_file_across_rotation(make_logger, tmp_path):
 _WRITER = """
 import logging, sys
 sys.path.insert(0, sys.argv[1])
-from src import logger as app_logger
+from sofascore_scraper import logger as app_logger
 handler = app_logger.build_file_handler(sys.argv[2], max_bytes=20000, backup_count=500)
 log = logging.getLogger("writer" + sys.argv[3])
 log.propagate = False
@@ -580,7 +580,7 @@ def test_config_manager_applies_log_level_without_restart(reconfigure, tmp_path)
 
 
 def test_settings_endpoint_applies_log_level_at_runtime(reconfigure, tmp_path):
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     reconfigure(LOG_DIR=str(tmp_path / "web"), LOG_LEVEL="INFO", DEBUG="false")
     client = TestClient(app)

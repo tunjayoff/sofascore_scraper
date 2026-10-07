@@ -13,9 +13,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-import src.challenge_solver as cs
-import src.utils as utils
-from src import bridge_health
+import sofascore_scraper.challenge_solver as cs
+import sofascore_scraper.utils as utils
+from sofascore_scraper import bridge_health
 
 HEALTH_KEYS = {
     "state", "consecutive_failures", "last_success_at", "last_failure_at", "failing_since", "changed_at",
@@ -25,7 +25,7 @@ HEALTH_KEYS = {
 
 @pytest.fixture
 def client():
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     return TestClient(app)
 

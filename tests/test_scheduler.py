@@ -1,5 +1,5 @@
 """
-Uygulama içi zamanlayıcı (src/jobs/scheduler.py; plan maddesi P29). Tümü çevrimdışı ve sahte saatle.
+Uygulama içi zamanlayıcı (sofascore_scraper/jobs/scheduler.py; plan maddesi P29). Tümü çevrimdışı ve sahte saatle.
 
   * tetikleyiciler: aralık (`every`) ve cron; kaçan anların birleştirilmesi;
   * görevlerin denetimi: bilinmeyen `run` adı ve seçenek reddedilir;
@@ -23,12 +23,12 @@ import conftest
 import pytest
 
 import test_cli_skeleton as skeleton
-from src.config import ScheduleTask
-from src.exceptions import ConfigError
-from src.jobs import scheduler as scheduler_mod
-from src.jobs.manager import JobManager, JobOutcome, local_origin
-from src.jobs.model import JobKind, JobState
-from src.jobs.scheduler import (
+from sofascore_scraper.config import ScheduleTask
+from sofascore_scraper.exceptions import ConfigError
+from sofascore_scraper.jobs import scheduler as scheduler_mod
+from sofascore_scraper.jobs.manager import JobManager, JobOutcome, local_origin
+from sofascore_scraper.jobs.model import JobKind, JobState
+from sofascore_scraper.jobs.scheduler import (
     FAILED_TO_START,
     SKIPPED_BUSY,
     SKIPPED_RUNNING,
@@ -41,8 +41,8 @@ from src.jobs.scheduler import (
     check_tasks,
     current,
 )
-from src.store import JobRunningError, JobStore, StoreError
-from src.store.jobs import default_db_path
+from sofascore_scraper.store import JobRunningError, JobStore, StoreError
+from sofascore_scraper.store.jobs import default_db_path
 from test_cli_serve import FakeServer, server  # noqa: F401  (fixture)
 from test_cli_skeleton import CliRunner
 
@@ -401,7 +401,7 @@ def test_the_scheduler_rejects_unknown_tasks_when_it_is_built() -> None:
 ])
 def test_the_download_tasks_run_the_sync_service(monkeypatch: pytest.MonkeyPatch, run: str, mode: str,
                                                  kind: JobKind) -> None:
-    from src.services import sync as sync_mod
+    from sofascore_scraper.services import sync as sync_mod
 
     seen: Dict[str, Any] = {}
 
@@ -430,7 +430,7 @@ def test_a_cancelled_sync_ends_as_cancelled() -> None:
 
 
 def test_the_backup_task_writes_a_backup(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.services import backup as backup_mod
+    from sofascore_scraper.services import backup as backup_mod
 
     seen: Dict[str, Any] = {}
 
@@ -539,7 +539,7 @@ def test_stopping_the_scheduler_cancels_its_running_job(job_store: JobStore, blo
 
 
 def test_the_status_service_reports_the_scheduler_of_this_process() -> None:
-    from src.services.status import ScheduleStatus, schedule_status
+    from sofascore_scraper.services.status import ScheduleStatus, schedule_status
 
     assert schedule_status() == ScheduleStatus(enabled=False, next_runs=())
     sched = Scheduler([task(cron="0 3 * * *")], jobs=FakeJobs)
@@ -555,7 +555,7 @@ def test_the_status_service_reports_the_scheduler_of_this_process() -> None:
 def test_status_route_shows_the_scheduler_and_its_next_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
     client = TestClient(app)
@@ -607,7 +607,7 @@ class FakeScheduler:
 
 @pytest.fixture
 def built(monkeypatch: pytest.MonkeyPatch) -> List[FakeScheduler]:
-    from src.cli.commands import serve as serve_command
+    from sofascore_scraper.cli.commands import serve as serve_command
 
     made: List[FakeScheduler] = []
 
@@ -689,8 +689,8 @@ def test_the_scheduler_does_not_run_with_dev(cli: CliRunner, server: FakeServer,
 
 
 def test_the_real_scheduler_is_built_on_the_web_job_manager(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.cli.commands import serve as serve_command
-    from src.web import deps
+    from sofascore_scraper.cli.commands import serve as serve_command
+    from sofascore_scraper.web import deps
 
     sched = serve_command.build_scheduler((task(),))
     assert isinstance(sched, Scheduler) and sched._jobs is deps.job_manager
@@ -788,8 +788,8 @@ def test_the_prune_task_is_a_clear_job_of_the_history() -> None:
 
 
 def test_a_scheduled_prune_runs_under_the_writer_lease_and_removes_old_snapshots(tmp_path: Path) -> None:
-    from src.slices import SLICE_OK, Outcome
-    from src.store import Ref, open_store
+    from sofascore_scraper.slices import SLICE_OK, Outcome
+    from sofascore_scraper.store import Ref, open_store
 
     import store_fixtures as sf
 

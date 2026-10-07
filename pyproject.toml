@@ -11,26 +11,26 @@ dev = [
     "httpx>=0.27",  # fastapi.testclient
     "ruff>=0.6",
 ]
-# Parquet dışa aktarması (src/store/export.py, Exporter.rows). İsteğe bağlı: yoksa yalnızca Parquet biçimi
+# Parquet dışa aktarması (sofascore_scraper/store/export.py, Exporter.rows). İsteğe bağlı: yoksa yalnızca Parquet biçimi
 # kullanılamaz ve paketi adıyla anan bir hata verir. Kurulum: pip install -e ".[parquet]"
 parquet = [
     # 16: numpy 2 ile çalışan en eski sürüm (15 numpy<2 ister, 14 numpy 2 ile içe aktarılamaz; CI'ın Parquet işi)
     "pyarrow>=16",
 ]
 
-# Yeni CLI (src/cli; docs/design/02-services.md bölüm 4). Kurulum gerektirmeden: python -m src.cli.main
+# Yeni CLI (sofascore_scraper/cli; docs/design/02-services.md bölüm 4). Kurulum gerektirmeden: python -m sofascore_scraper.cli.main
 # `ssc` komutu için proje düzenlenebilir kipte kurulur: pip install -e .  (bağımlılıklar yine
 # requirements.txt + constraints.txt ile kurulur). Düzenlenebilir olmayan kurulum desteklenmez: sürüm
 # (pyproject.toml), çeviriler (locales/) ve web arayüzü (frontend/dist) proje klasöründen okunur.
 [project.scripts]
-ssc = "src.cli.main:main"
+ssc = "sofascore_scraper.cli.main:main"
 
 [build-system]
 requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["src", "src.*"]
+include = ["sofascore_scraper", "sofascore_scraper.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -52,7 +52,7 @@ filterwarnings = [
 # Kapsam `pytest --cov` ile ölçülür (CI: Linux / Python 3.14 işi); satır + dal kapsamı birlikte.
 # main.py ve scripts/ ölçüme dahil değildir.
 [tool.coverage.run]
-source = ["src"]
+source = ["sofascore_scraper"]
 branch = true
 
 [tool.coverage.report]

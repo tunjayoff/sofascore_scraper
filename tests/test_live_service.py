@@ -1,5 +1,5 @@
 """
-Canlı servis (src/services/live/supervisor.py) ve `ssc watch` (src/cli/commands/watch.py): sahte API, sahte saat;
+Canlı servis (sofascore_scraper/services/live/supervisor.py) ve `ssc watch` (sofascore_scraper/cli/commands/watch.py): sahte API, sahte saat;
 gerçek ağ ve gerçek bekleme yok.
 
   * olaylar `live` akışına yinelenme anahtarıyla gider; bitiş tek bir /event isteğiyle onaylanır ve saklanır
@@ -23,9 +23,9 @@ import pytest
 
 import conftest
 import test_cli_skeleton as skeleton
-from src.cli.commands import watch as watch_command
-from src.services.live import supervisor
-from src.services.live.supervisor import (
+from sofascore_scraper.cli.commands import watch as watch_command
+from sofascore_scraper.services.live import supervisor
+from sofascore_scraper.services.live.supervisor import (
     Blocked,
     LiveScope,
     LiveService,
@@ -35,8 +35,8 @@ from src.services.live.supervisor import (
     live_status,
     scope_from_follows,
 )
-from src.store import LeaseHeld, Store, StoreBusy, StreamEvent, open_store
-from src.store.follows import FollowSpec
+from sofascore_scraper.store import LeaseHeld, Store, StoreBusy, StreamEvent, open_store
+from sofascore_scraper.store.follows import FollowSpec
 from test_cli_skeleton import CliRunner
 
 cli = skeleton.cli
@@ -273,7 +273,7 @@ def test_a_crash_before_the_state_was_saved_does_not_store_the_transition_twice(
 
 
 def test_the_service_continues_where_the_legacy_watcher_stopped(store: Store, data_dir: Path) -> None:
-    from src.watcher import MatchWatcher
+    from sofascore_scraper.watcher import MatchWatcher
 
     live, done = finish_scenario()
     api = FakeApi({"football": [live]}, {500: live})
@@ -328,8 +328,8 @@ def test_the_legacy_watcher_and_the_service_exclude_each_other(store: Store) -> 
 
 @pytest.mark.parametrize("holder", ["live", "watcher:football"])
 def test_a_data_operation_blocked_by_a_live_watcher_is_instance_running(store: Store, holder: str) -> None:
-    from src.errors import to_platform_error
-    from src.store.jobs import DataOperationRunningError, InstanceRunningConflict
+    from sofascore_scraper.errors import to_platform_error
+    from sofascore_scraper.store.jobs import DataOperationRunningError, InstanceRunningConflict
 
     with store.lease(holder, purpose="watch"):
         with pytest.raises(InstanceRunningConflict) as refused:
@@ -361,7 +361,7 @@ def test_the_legacy_alias_still_takes_league_ids(data_dir: Path, monkeypatch: py
         def run(self, stop: Any, until_seconds: Optional[float] = None) -> None:
             seen[-1]["until"] = until_seconds
 
-    monkeypatch.setattr("src.services.live.supervisor.LiveService", Recorder)
+    monkeypatch.setattr("sofascore_scraper.services.live.supervisor.LiveService", Recorder)
     assert main.main(["--watch", "--sport", "football", "--league-ids", "17,8", "--watch-hours", "2",
                       "--data-dir", str(data_dir)]) == 0
     assert seen == [{"sports": [("football", [8, 17], [])], "source": "poll", "data_dir": str(data_dir),
@@ -469,7 +469,7 @@ def test_the_service_does_not_end_on_a_busy_store(store: Store, monkeypatch: pyt
 
 
 def test_the_legacy_watcher_does_not_end_on_a_busy_store(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.watcher import MatchWatcher
+    from sofascore_scraper.watcher import MatchWatcher
 
     not_started = fx("football/A_notstarted-0-not-started__17184998", 700)
     clock = Clock(not_started["startTimestamp"] + 5 * 3600)
@@ -587,8 +587,8 @@ def test_events_after_a_sequence_resume_and_report_a_pruned_gap(cli: CliRunner, 
 
 
 def test_the_sink_envelope_is_the_schema_envelope(store: Store) -> None:
-    from src.schema import live_event_from_record
-    from src.sinks.base import Envelope
+    from sofascore_scraper.schema import live_event_from_record
+    from sofascore_scraper.sinks.base import Envelope
 
     live, done = finish_scenario()
     store_finished_before(store, done)
@@ -633,7 +633,7 @@ def fake_service(monkeypatch: pytest.MonkeyPatch) -> FakeApi:
     live, done = finish_scenario()
     api = FakeApi({"football": []}, {500: live})
     clock = Clock(fetched(FB_LIVE))
-    from src.services.live.direct_source import DirectConnection
+    from sofascore_scraper.services.live.direct_source import DirectConnection
 
     idle_direct = DirectConnection(IdleOpener(), blocked=lambda: "no network in tests")  # `direct`: bağlanmaz
     monkeypatch.setattr(watch_command, "SERVICE_OPTIONS", {"fetch": api, "clock": clock, "sleep": clock.sleep,
@@ -730,8 +730,8 @@ def test_the_watch_module_loads_nothing_heavy() -> None:
     import subprocess
     import sys
 
-    code = ("import sys; import src.cli.commands.watch; "
-            "print(any(m.startswith(('src.store', 'src.services', 'src.client', 'src.sinks')) for m in sys.modules))")
+    code = ("import sys; import sofascore_scraper.cli.commands.watch; "
+            "print(any(m.startswith(('sofascore_scraper.store', 'sofascore_scraper.services', 'sofascore_scraper.client', 'sofascore_scraper.sinks')) for m in sys.modules))")
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True,
                             cwd=Path(__file__).resolve().parent.parent)
     assert result.stdout.strip() == "False"
@@ -742,8 +742,8 @@ assert conftest  # sınır denetimi ve kancalar conftest'te kurulur
 
 def test_the_package_exports_the_live_sources_lazily() -> None:
     """P24 ve P31'in adları da paket kökünden alınır (FX-15); kök onları ilk erişimde yükler."""
-    import src.services.live as live
-    from src.services.live import arbiter, direct_source, push_source
+    import sofascore_scraper.services.live as live
+    from sofascore_scraper.services.live import arbiter, direct_source, push_source
 
     assert live.PageSource is push_source.PageSource and live.SportArbiter is arbiter.SportArbiter
     assert live.DirectSource is direct_source.DirectSource

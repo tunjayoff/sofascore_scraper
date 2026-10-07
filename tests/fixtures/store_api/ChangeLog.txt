@@ -1,5 +1,5 @@
-# src.store.ChangeLog
-# kaynak: src/store/changes.py
+# sofascore_scraper.store.ChangeLog
+# kaynak: sofascore_scraper/store/changes.py
 class ChangeLog:
     def __init__(self, store: 'Store') -> None
     def append(self, row: Mapping[str, Any]) -> int

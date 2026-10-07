@@ -6,7 +6,7 @@ Eski iki detay hattının ayrıştığı yerler: docs/design/02-services.md, bö
                   (kimliğiyle seçilen maçlar, tek maç uç noktası, async hattın içinden refill/refresh)
 
 G-01 bu testlerde iki hattın farklı davranışını sabitlemişti. P13'ten beri iki giriş noktası da aynı boru hattına
-(src/services/pipeline.py) gider; her test, eski farkın yerine iki yolun artık AYNI davrandığını ve bu davranışın
+(sofascore_scraper/services/pipeline.py) gider; her test, eski farkın yerine iki yolun artık AYNI davrandığını ve bu davranışın
 ne olduğunu sabitler (değişiklikler P13'ün PR metninde satır satır anılır). Satır 13 ve 14, FX-5'in bulduğu iki
 farktır (boş sayılan "falsy" gövde, 404'ün iki nedeni).
 
@@ -22,12 +22,12 @@ from typing import Any, Callable, Dict, Iterator, List, Sequence
 import pytest
 
 import detail_records
-import src.utils as utils
+import sofascore_scraper.utils as utils
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
-from src import breaker as request_breaker
-from src import throttle
-from src.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper import throttle
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
 
 FINISHED = 9100001  # futbol, bitti, altı dilimi de var
 FINISHED_2 = 9100003
@@ -35,9 +35,9 @@ NOT_STARTED = 9100004
 LIVE = 9300001  # futbol, oynanıyor; statistics, lineups, incidents var
 TENNIS = 9200001  # bitti; statistics, h2h, point-by-point var
 SLICES = ["statistics", "team-streaks", "pregame-form", "h2h", "lineups", "incidents"]  # futbolun dilimleri, tablo sırasıyla
-FETCHER_PAUSES = "src.match_data_fetcher"  # bu modülün time.sleep / asyncio.sleep beklemeleri
-PIPELINE_PAUSES = "src.services.pipeline"  # boru hattının beklemeleri (yalnızca meşgul depoda)
-BUDGET_WARM_UP = "src.throttle"  # oturum ısınmasının bütçe sırası (diğer isteklerinki istek katmanındadır)
+FETCHER_PAUSES = "sofascore_scraper.match_data_fetcher"  # bu modülün time.sleep / asyncio.sleep beklemeleri
+PIPELINE_PAUSES = "sofascore_scraper.services.pipeline"  # boru hattının beklemeleri (yalnızca meşgul depoda)
+BUDGET_WARM_UP = "sofascore_scraper.throttle"  # oturum ısınmasının bütçe sırası (diğer isteklerinki istek katmanındadır)
 
 
 @pytest.fixture(autouse=True)
@@ -61,7 +61,7 @@ def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 @pytest.fixture
 def request_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Callable[[str], List[float]]]:
     """
-    Ortak istek bütçesini (src/throttle.py) açan fonksiyon: `rate` istek/sn, durum dosyası bu teste özel.
+    Ortak istek bütçesini (sofascore_scraper/throttle.py) açan fonksiyon: `rate` istek/sn, durum dosyası bu teste özel.
     Döndürdüğü liste, bundan sonra bütçeden alınan her sıranın bekleme süresiyle (sn; 0 = hemen) dolar.
     """
     waits: List[float] = []
@@ -83,7 +83,7 @@ def request_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.deps import config_manager as _web_config
+    from sofascore_scraper.web.deps import config_manager as _web_config
     config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
@@ -133,7 +133,7 @@ def _store_then_make_partial(fake: FakeSofaScore, md: MatchDataFetcher) -> None:
 
 def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     """Her giriş noktası aynı boru hattına gider: ısıtılmış bir oturumla, eşzamanlı istekler (`async`)."""
-    import src.web.api.legacy as matches_routes
+    import sofascore_scraper.web.api.legacy as matches_routes
 
     md = _fetcher(data_dir)
 
@@ -253,7 +253,7 @@ def test_row06_concurrency(fake: FakeSofaScore, tmp_path: Path) -> None:
 def test_row07_pacing(fake: FakeSofaScore, tmp_path: Path, request_budget: Callable[[str], List[float]]) -> None:
     """
     Kendi sabit beklemesi olan yol yoktur (PR #33'te kalktı; 100'lük batch'ler de P13'te kalktı: bir çalıştırma
-    tek oturumdur). İstekleri aralayan tek şey ortak istek bütçesidir (src/throttle.py): her istek, oturum
+    tek oturumdur). İstekleri aralayan tek şey ortak istek bütçesidir (sofascore_scraper/throttle.py): her istek, oturum
     ısınması dahil, bütçeden bir sıra alır ve orada bekler. Testlerde bütçe kapalıdır (tests/conftest.py); burada
     ikinci yarıda açılır. (--refresh-only'nin maç başına 1 sn'si de kalktı: test_fetch_flows.py::test_refresh_only.)
     """
@@ -327,7 +327,7 @@ def test_row09_refill_of_a_match_that_is_no_longer_finished(fake: FakeSofaScore,
 
 def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
     """Her yolun istekleri bir devre kesicinin altındadır, tek maç uç noktası dahil (kendi kesicisi)."""
-    import src.web.api.legacy as matches_routes
+    import sofascore_scraper.web.api.legacy as matches_routes
 
     md = _fetcher(data_dir)
     fake.probe = lambda: request_breaker.current() is not None

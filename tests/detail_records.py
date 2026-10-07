@@ -16,8 +16,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from catalog_index import index_event
-from src.store import layout, open_store
-from src.store import manifest as manifest_mod
+from sofascore_scraper.store import layout, open_store
+from sofascore_scraper.store import manifest as manifest_mod
 
 PathLike = Union[str, "os.PathLike[str]"]
 _V3 = "v3"

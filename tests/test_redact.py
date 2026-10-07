@@ -1,9 +1,9 @@
-"""Gizli değer maskeleme (src/redact.py): token, cookie, proxy kimlik bilgisi, .env'deki gizli değerler."""
+"""Gizli değer maskeleme (sofascore_scraper/redact.py): token, cookie, proxy kimlik bilgisi, .env'deki gizli değerler."""
 from __future__ import annotations
 
 import pytest
 
-from src import redact
+from sofascore_scraper import redact
 
 JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTAwMDAwMDAsInN1YiI6InNvZmEifQ.c2lnbmF0dXJlLXZhbHVlLTEyMw"
 PROXY = "http://scraper:Pr0xy-P4ss!word@proxy.example.com:8080"

@@ -1,5 +1,5 @@
 """
-src/store/lease.py ve iş deposunun kilitlerle çalışması (docs/design/01-storage.md bölüm 6.1; plan maddesi ST-10).
+sofascore_scraper/store/lease.py ve iş deposunun kilitlerle çalışması (docs/design/01-storage.md bölüm 6.1; plan maddesi ST-10).
 
 Kilit tablosu (kim kimi dışlar), sahip bilgisi, temiz kapanmama işareti, bekleme ve iki süreçli durumlar:
 ikinci yazar sahibin bilgisiyle reddedilir, süreç öldürülünce kilit boşalır, `maintenance` yazarı ve
@@ -26,16 +26,16 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
-from src.web import deps
-from src.store import LayoutError, LeaseHeld, StoreError, files, layout, open_store
-from src.store import jobs as jobs_mod
-from src.store import lease as lease_mod
-from src.store import sqlite as sqlite_mod
-from src.store import state as state_mod
-from src.store.catalog import catalog_path
-from src.store.jobs import DataOperationRunningError, JobRunningError, JobStore, default_db_path
-from src.store.lease import EXCLUSIVE, SHARED, Lease, LeaseInfo, LeaseManager, lock_plan
-from src.store.state import MIGRATIONS_DIR, StateDb, load_migrations
+from sofascore_scraper.web import deps
+from sofascore_scraper.store import LayoutError, LeaseHeld, StoreError, files, layout, open_store
+from sofascore_scraper.store import jobs as jobs_mod
+from sofascore_scraper.store import lease as lease_mod
+from sofascore_scraper.store import sqlite as sqlite_mod
+from sofascore_scraper.store import state as state_mod
+from sofascore_scraper.store.catalog import catalog_path
+from sofascore_scraper.store.jobs import DataOperationRunningError, JobRunningError, JobStore, default_db_path
+from sofascore_scraper.store.lease import EXCLUSIVE, SHARED, Lease, LeaseInfo, LeaseManager, lock_plan
+from sofascore_scraper.store.state import MIGRATIONS_DIR, StateDb, load_migrations
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -57,9 +57,9 @@ CONFLICTS = {
 # Başka bir süreç: veri dizininin kilidini alır, "ready" yazar ve stdin'den bir satır gelene kadar tutar
 HOLDER = """
 import sys
-from src.store.jobs import default_db_path
-from src.store.lease import LeaseManager
-from src.store.state import StateDb
+from sofascore_scraper.store.jobs import default_db_path
+from sofascore_scraper.store.lease import LeaseManager
+from sofascore_scraper.store.state import StateDb
 state = StateDb(default_db_path(sys.argv[1]))
 lease = LeaseManager.for_data_dir(sys.argv[1], state).acquire(sys.argv[2], purpose=sys.argv[3])
 print("ready", flush=True)
@@ -71,7 +71,7 @@ state.close()
 # İş deposunu kullanan başka bir süreç: iş başlatır ya da bir veri işlemi yuvasını tutar
 JOB_HOLDER = """
 import sys
-from src.store.jobs import JobStore, default_db_path
+from sofascore_scraper.store.jobs import JobStore, default_db_path
 store = JobStore(default_db_path(sys.argv[1]))
 if sys.argv[2] == "job":
     store.create_running({"mode": "full"})
@@ -554,7 +554,7 @@ def test_a_recreated_catalog_is_a_new_file_and_follows_the_umask(tmp_path, umask
 SECOND_ACCOUNT = """
 import json, logging, os, sys
 logging.basicConfig(level=logging.WARNING, stream=sys.stderr, format="%(name)s: %(message)s")
-from src.store import open_store
+from sofascore_scraper.store import open_store
 seen = {}
 store = open_store(sys.argv[1])
 try:
@@ -1066,7 +1066,7 @@ def _log_message_literals(module_file: str) -> List[str]:
 
 
 def _store_modules() -> List[str]:
-    """src/store paketinin bütün modül dosyaları (alt paketler dahil), pakete göre göreli ve sıralı."""
+    """sofascore_scraper/store paketinin bütün modül dosyaları (alt paketler dahil), pakete göre göreli ve sıralı."""
     root = Path(lease_mod.__file__).parent
     return sorted(path.relative_to(root).as_posix() for path in root.rglob("*.py"))
 
@@ -1074,7 +1074,7 @@ def _store_modules() -> List[str]:
 @pytest.mark.parametrize("module", _store_modules())
 def test_log_messages_of_the_store_modules_are_english(module):
     """
-    Plan kural 8: log iletileri İngilizcedir. src/store'un hiçbir modülünde Türkçe satır kalmadı; ileti
+    Plan kural 8: log iletileri İngilizcedir. sofascore_scraper/store'un hiçbir modülünde Türkçe satır kalmadı; ileti
     metninde ASCII dışı harf (ı, ş, ğ, ç, ö, ü) olması Türkçe bir satırın geri geldiğini gösterir. StoreError
     ve LeaseHeld metinleri log satırı değildir, burada denetlenmez.
     """
@@ -1129,8 +1129,8 @@ def test_concurrent_first_opens_wait_for_the_migrating_process(tmp_path):
 def test_web_api_answers_409_job_running_while_another_process_holds_the_writer_lease(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from src.web.api import legacy as fetch_job
-    from src.web.app import app
+    from sofascore_scraper.web.api import legacy as fetch_job
+    from sofascore_scraper.web.app import app
 
     jobs = deps.job_store()
     monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)

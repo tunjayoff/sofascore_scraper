@@ -1,5 +1,5 @@
 """
-src/store/catalog.py ve src/store/schema/catalog.sql: katalog şeması, bağlantılar, sürüm denetimi,
+sofascore_scraper/store/catalog.py ve sofascore_scraper/store/schema/catalog.sql: katalog şeması, bağlantılar, sürüm denetimi,
 BEGIN IMMEDIATE yardımcısı (docs/design/01-storage.md, bölüm 3.2, 3.3, 6.2, 6.3, 7.2).
 
 Ağ yok. İki süreçli testler çocuğu `subprocess` ile başlatır ve boru üzerinden satır satır konuşur;
@@ -22,9 +22,9 @@ from pathlib import Path
 import pytest
 
 import store_fixtures as sf
-from src.exceptions import StorageError
-from src.store import CatalogCorrupt, StoreBusy, StoreError, catalog, derive, layout
-from src.store.catalog import Catalog
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.store import CatalogCorrupt, StoreBusy, StoreError, catalog, derive, layout
+from sofascore_scraper.store.catalog import Catalog
 
 ROOT = Path(__file__).resolve().parent.parent
 DESIGN = ROOT / "docs" / "design" / "01-storage.md"
@@ -77,7 +77,7 @@ def _normalise_ddl(sql: str) -> list[str]:
 
 
 def test_schema_file_is_the_ddl_printed_in_the_design():
-    """Bölüm 3.3'teki katalog DDL'i ile src/store/schema/catalog.sql aynı deyimlerden oluşur."""
+    """Bölüm 3.3'teki katalog DDL'i ile sofascore_scraper/store/schema/catalog.sql aynı deyimlerden oluşur."""
     if not DESIGN.is_file():
         pytest.skip("tasarım belgesi bu dağıtımda yok")
     text = DESIGN.read_text(encoding="utf-8")
@@ -183,7 +183,7 @@ def test_catalog_reports_the_fallback_and_warns_once(tmp_path, monkeypatch, capl
         return "delete"
 
     monkeypatch.setattr(catalog, "configure", no_wal)
-    with caplog.at_level(logging.WARNING, logger="src.store.catalog"), Catalog(catalog.catalog_path(tmp_path)) as c:
+    with caplog.at_level(logging.WARNING, logger="sofascore_scraper.store.catalog"), Catalog(catalog.catalog_path(tmp_path)) as c:
         c.prepare()
         assert c.journal_mode == "delete"
         thread = threading.Thread(target=c.connection)  # ikinci bağlantı: uyarı yinelenmez
@@ -600,8 +600,8 @@ def test_read_transaction_is_one_snapshot(cat):
 
 CHILD = r'''
 import sys
-from src.store import StoreBusy
-from src.store.catalog import Catalog
+from sofascore_scraper.store import StoreBusy
+from sofascore_scraper.store.catalog import Catalog
 
 cat = Catalog(sys.argv[1], busy_timeout_ms=200)
 snapshot = None
@@ -975,13 +975,13 @@ def test_paths():
 # --- katmanlama ---------------------------------------------------------------------------------------
 
 def test_module_imports_only_what_the_store_may_import():
-    """Bölüm 2.1: Store yalnızca src.sports, src.status, src.slices, src.exceptions ve src.version'ı içe aktarabilir."""
+    """Bölüm 2.1: Store yalnızca sofascore_scraper.sports, sofascore_scraper.status, sofascore_scraper.slices, sofascore_scraper.exceptions ve sofascore_scraper.version'ı içe aktarabilir."""
     code = (
-        "import sys, json; import src.store.catalog; "
-        "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.store.catalog; "
+        "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
 
     assert set(json.loads(out.stdout)) == {
-        "src", "src.exceptions", "src.sports", "src.status", "src.store", "src.store.catalog", "src.store.derive",
-        "src.store.errors", "src.store.layout", "src.store.sqlite"}
+        "sofascore_scraper", "sofascore_scraper.exceptions", "sofascore_scraper.sports", "sofascore_scraper.status", "sofascore_scraper.store", "sofascore_scraper.store.catalog", "sofascore_scraper.store.derive",
+        "sofascore_scraper.store.errors", "sofascore_scraper.store.layout", "sofascore_scraper.store.sqlite"}

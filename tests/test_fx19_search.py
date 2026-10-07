@@ -22,11 +22,11 @@ from fastapi.testclient import TestClient
 
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src.client import endpoints
-from src.config import loader
-from src.services.follows import ConfigLeagues, FollowsService
-from src.store import FollowSpec, Store, open_store
-from src.web.app import app
+from sofascore_scraper.client import endpoints
+from sofascore_scraper.config import loader
+from sofascore_scraper.services.follows import ConfigLeagues, FollowsService
+from sofascore_scraper.store import FollowSpec, Store, open_store
+from sofascore_scraper.web.app import app
 
 FIXTURES = Path(__file__).parent / "fixtures" / "fx19"
 client = TestClient(app)
@@ -146,7 +146,7 @@ def test_invalid_kinds_are_refused(store: Store, fake: FakeSofaScore, body: Dict
 
 
 def test_the_service_names_unknown_kinds(store: Store) -> None:
-    from src.errors import UsageError
+    from sofascore_scraper.errors import UsageError
 
     service = FollowsService(store, ConfigLeagues())
     with pytest.raises(UsageError) as found:

@@ -1,5 +1,5 @@
 """
-src/store/legacy.py: eski düzenin salt okunur okuyucusu (plan maddesi ST-05).
+sofascore_scraper/store/legacy.py: eski düzenin salt okunur okuyucusu (plan maddesi ST-05).
 
 Üç şey denetlenir:
   1. Okuyucu, `tests/store_fixtures.py`'nin kurduğu her biçimi (L1-L5, program, özetler, sezon listeleri,
@@ -31,17 +31,17 @@ import pytest
 import legacy_writer
 import store_dump
 import store_fixtures as sf
-from src import match_data_fetcher as mdf
-from src import refresh, slices, sports, status, watcher
-from src.config_manager import ConfigManager
-from src.match_data_fetcher import MatchDataFetcher
-from src.services import stats as stats_service
-from src.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
-from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
-from src.store.legacy import LegacyEvent, LegacyProblem, LegacyReader, LegacyReport, LegacySliceError
+from sofascore_scraper import match_data_fetcher as mdf
+from sofascore_scraper import refresh, slices, sports, status, watcher
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.services import stats as stats_service
+from sofascore_scraper.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
+from sofascore_scraper.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
+from sofascore_scraper.store.legacy import LegacyEvent, LegacyProblem, LegacyReader, LegacyReport, LegacySliceError
 
 ROOT = Path(__file__).resolve().parent.parent
-LEGACY_SOURCE = ROOT / "src" / "store" / "legacy.py"
+LEGACY_SOURCE = ROOT / "sofascore_scraper" / "store" / "legacy.py"
 PL_DIR = "match_details/17_Premier_League/season_Premier_League_26_27"
 UTC = dt.timezone.utc
 
@@ -547,7 +547,7 @@ CORRUPT = ("error", True, 0, 0, ("corrupt", None, 1))
 EMPTY = ("empty", True, 0, 0, None)
 
 # (dilim, dosyanın gövdesi, okuyucunun verdiği durum). Üç yanıt: kural "veri var" derse `ok`, "veri yok" derse
-# yüküyle `empty`, okuyamazsa `error` / `corrupt` ve `malformed` sorunu (src.slices.slice_body_state).
+# yüküyle `empty`, okuyamazsa `error` / `corrupt` ve `malformed` sorunu (sofascore_scraper.slices.slice_body_state).
 BODY_STATE_CASES: List[Tuple[str, Any, Tuple[Any, ...]]] = [
     # okunamayan gövdeler: eskiden yüklem hata fırlatıyordu ve okuyucu yakalıyordu; durum aynı
     ("statistics", "abc", CORRUPT),
@@ -646,7 +646,7 @@ def test_missing_slices_equal_today_s_refill_need(fx: sf.LegacyFixture, monkeypa
     canlı kayıt (`none`: canlı servisin işi) ve daha yeni bir listenin bayatlamış saydığı kayıt (`refresh`) bu kuralın
     dışındadır; onların kararı ayrıca sabitlenir.
     """
-    from src.store import open_store
+    from sofascore_scraper.store import open_store
 
     for key in ("REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS", "REFRESH_LEGACY"):
         monkeypatch.delenv(key, raising=False)
@@ -1091,8 +1091,8 @@ def test_season_list_rule_newest_file_of_any_name(old_forms: sf.LegacyFixture) -
         ("season_list", "17", "seasons/17_seasons.json", newest),
     ]
     assert report.problems == []
-    from src.services import tournaments
-    from src.store import open_store
+    from sofascore_scraper.services import tournaments
+    from sofascore_scraper.store import open_store
     today = tournaments.seasons_of(open_store(old_forms.data_dir), 17)
     assert [x["id"] for x in today] == [96668, 76986, 61627]
 
@@ -1201,7 +1201,7 @@ def test_watch_state_files(tmp_path: Path) -> None:
 
 def _csv_export_ids(fetcher: MatchDataFetcher) -> List[str]:
     """CSV dışa aktarmasının (`legacy-wide-csv`, ExportService) satırlarındaki maç kimlikleri."""
-    from src.services.export import ExportService
+    from sofascore_scraper.services.export import ExportService
 
     result = ExportService(open_store(fetcher.data_dir)).write_legacy_csv(fetcher.processed_dir)
     if result is None or not result.path:
@@ -1275,7 +1275,7 @@ def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[st
     events, _ = scan(fx.data_dir)
     system = stats_service.system_counts(stats_service.data_summary(str(fx.data_dir), fx.leagues), fx.leagues)
     assert system["details"] == len(events)
-    from src.services.status import StatusService
+    from sofascore_scraper.services.status import StatusService
 
     report = StatusService(open_store(fx.data_dir)).coverage()
     assert capsys.readouterr().out == ""
@@ -1389,7 +1389,7 @@ def test_module_has_no_writing_call() -> None:
 
 def test_module_imports_only_what_the_store_may_import() -> None:
     """Katman kuralı (01-storage.md 2.1): Store yalnızca sports, status, slices, exceptions, version'ı içe aktarır."""
-    allowed = {"src.sports", "src.status", "src.slices", "src.exceptions", "src.version"}
+    allowed = {"sofascore_scraper.sports", "sofascore_scraper.status", "sofascore_scraper.slices", "sofascore_scraper.exceptions", "sofascore_scraper.version"}
     tree = ast.parse(LEGACY_SOURCE.read_text(encoding="utf-8"))
     imported = set()
     for node in ast.walk(tree):
@@ -1399,19 +1399,19 @@ def test_module_imports_only_what_the_store_may_import() -> None:
             assert node.level == 0
             imported.add(node.module or "")
     assert not imported & {"shutil", "tempfile", "sqlite3", "pathlib", "glob"}
-    from_src = {name for name in imported if name == "src" or name.startswith("src.")}
-    assert {name for name in from_src if not name.startswith("src.store")} <= allowed
-    assert from_src >= {"src.slices", "src.sports", "src.store", "src.store.errors"}
+    from_src = {name for name in imported if name == "sofascore_scraper" or name.startswith("sofascore_scraper.")}
+    assert {name for name in from_src if not name.startswith("sofascore_scraper.store")} <= allowed
+    assert from_src >= {"sofascore_scraper.slices", "sofascore_scraper.sports", "sofascore_scraper.store", "sofascore_scraper.store.errors"}
 
 
 def test_import_is_light() -> None:
-    """Modül pandas, günlükçü ya da istek katmanını yüklemez; `src.store` kökü de onu dışa açmaz."""
+    """Modül pandas, günlükçü ya da istek katmanını yüklemez; `sofascore_scraper.store` kökü de onu dışa açmaz."""
     code = (
-        "import sys, src.store, src.store.legacy\n"
-        "heavy = [m for m in ('pandas', 'tqdm', 'rich', 'dotenv', 'curl_cffi', 'src.logger', 'src.utils',"
-        " 'src.match_data_fetcher', 'src.config_manager') if m in sys.modules]\n"
+        "import sys, sofascore_scraper.store, sofascore_scraper.store.legacy\n"
+        "heavy = [m for m in ('pandas', 'tqdm', 'rich', 'dotenv', 'curl_cffi', 'sofascore_scraper.logger', 'sofascore_scraper.utils',"
+        " 'sofascore_scraper.match_data_fetcher', 'sofascore_scraper.config_manager') if m in sys.modules]\n"
         "assert not heavy, heavy\n"
-        "assert not any(name.startswith('Legacy') for name in src.store.__all__)\n"
+        "assert not any(name.startswith('Legacy') for name in sofascore_scraper.store.__all__)\n"
     )
     result = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr

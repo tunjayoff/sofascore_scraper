@@ -1,6 +1,6 @@
 """
-Takım, oyuncu ve maç takipleri maçlarını indirir (plan maddesi FX-19; src/services/follow_sync.py ve
-src/services/sync.py):
+Takım, oyuncu ve maç takipleri maçlarını indirir (plan maddesi FX-19; sofascore_scraper/services/follow_sync.py ve
+sofascore_scraper/services/sync.py):
 
   * takımın listesi `next/0` ve `last/n` sayfaları, oyuncunun yalnızca `last/n`; pencere takibin `seasons`'ından
     (current = 365 gün, last:N, all = sayfa sınırı, sezon kimlikleri); okuma `hasNextPage`, sınır ya da pencereyle
@@ -31,16 +31,16 @@ from fastapi.testclient import TestClient
 import conftest
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src.client import Client, endpoints
-from src.config import loader
-from src.jobs.progress import JobProgress
-from src.services import follow_sync, planning
-from src.services.query import RefreshPolicy
-from src.services.sync import FollowsSyncSpec, SyncService, SyncSpec
-from src.slices import Outcome
-from src.store import EventQuery, Follow, FollowSpec, JobStore, Ref, Scope, Store, default_db_path, open_store
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.client import Client, endpoints
+from sofascore_scraper.config import loader
+from sofascore_scraper.jobs.progress import JobProgress
+from sofascore_scraper.services import follow_sync, planning
+from sofascore_scraper.services.query import RefreshPolicy
+from sofascore_scraper.services.sync import FollowsSyncSpec, SyncService, SyncSpec
+from sofascore_scraper.slices import Outcome
+from sofascore_scraper.store import EventQuery, Follow, FollowSpec, JobStore, Ref, Scope, Store, default_db_path, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 import test_cli_skeleton as skeleton
 from test_fx13_sync_follows import FakeConfig, FakeDetails, FakeSchedule, FakeSeasons
 
@@ -234,7 +234,7 @@ def test_no_upcoming_page_and_a_failed_page(fake: FakeSofaScore) -> None:
 
 
 def test_what_each_match_of_a_follow_needs(store: Store, fake: FakeSofaScore) -> None:
-    from src.services.pipeline import FetchPipeline
+    from sofascore_scraper.services.pipeline import FetchPipeline
 
     policy = RefreshPolicy(now=NOW, window_s=0, min_interval_s=0)
     finished = follow_sync.ListedEvent(9100001, "completed")

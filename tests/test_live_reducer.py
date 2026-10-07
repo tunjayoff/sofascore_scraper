@@ -141,7 +141,7 @@ def _stuck_cleared_by_a_new_start() -> Tuple[str, List[Step]]:
 
 
 def _tennis_stuck_from_play_start() -> Tuple[str, List[Step]]:
-    from src.watcher import play_start
+    from sofascore_scraper.watcher import play_start
 
     ev = fx(TN_LATE, 810)
     begin = play_start(ev)
@@ -197,7 +197,7 @@ def plain(value: Any) -> Any:
 
 def run_watcher(tmp_path: Path, sport: str, steps: List[Step]) -> List[Dict[str, Any]]:
     """Bugünkü izleyiciyle: her adımda `_observe`, üretilen olaylar geri çağrıdan."""
-    from src.watcher import MatchWatcher
+    from sofascore_scraper.watcher import MatchWatcher
 
     now = [steps[0][2]]
     emitted: List[Dict[str, Any]] = []
@@ -271,7 +271,7 @@ def test_every_scenario_emits_what_its_name_says(tmp_path: Path, fixed_window: N
 
 def run_reducer(tmp_path: Path, sport: str, steps: List[Step]) -> List[Dict[str, Any]]:
     """İndirgeyiciyle: durum adımdan adıma elle taşınır; depo, saat ve ağ yok."""
-    from src.services.live.reducer import Observation, reduce
+    from sofascore_scraper.services.live.reducer import Observation, reduce
 
     state = None
     out = []
@@ -292,7 +292,7 @@ def test_the_reducer_matches_the_golden(tmp_path: Path, fixed_window: None) -> N
 
 
 def test_the_window_is_read_only_for_the_first_completion() -> None:
-    from src.services.live.reducer import Observation, reduce
+    from sofascore_scraper.services.live.reducer import Observation, reduce
 
     calls: List[int] = []
 
@@ -312,7 +312,7 @@ def test_the_window_is_read_only_for_the_first_completion() -> None:
 
 def _emitted(name: str) -> List[Tuple[Dict[str, Any], Dict[str, Any]]]:
     """Senaryonun olayları, her biri kendisini üreten gözlemin maç nesnesiyle."""
-    from src.services.live.reducer import Observation, reduce
+    from sofascore_scraper.services.live.reducer import Observation, reduce
 
     sport, steps = SCENARIOS[name]()
     state = None
@@ -324,7 +324,7 @@ def _emitted(name: str) -> List[Tuple[Dict[str, Any], Dict[str, Any]]]:
 
 
 def test_status_changed_data_is_the_shape_of_the_schema(fixed_window: None) -> None:
-    from src.services.live.reducer import stream_event
+    from sofascore_scraper.services.live.reducer import stream_event
 
     (item, event), = _emitted("finish_after_drop")
     ev = stream_event(item, event, "football", tournament_id=17)
@@ -339,7 +339,7 @@ def test_status_changed_data_is_the_shape_of_the_schema(fixed_window: None) -> N
 
 
 def test_a_transition_that_is_not_a_completion_has_no_provisional_flag(fixed_window: None) -> None:
-    from src.services.live.reducer import stream_event
+    from sofascore_scraper.services.live.reducer import stream_event
 
     (item, event), = _emitted("void_without_a_new_start")
     data = stream_event(item, event, "tennis").data
@@ -348,7 +348,7 @@ def test_a_transition_that_is_not_a_completion_has_no_provisional_flag(fixed_win
 
 
 def test_score_changed_data_carries_score_pairs(fixed_window: None) -> None:
-    from src.services.live.reducer import stream_event
+    from sofascore_scraper.services.live.reducer import stream_event
 
     (item, event), = _emitted("basketball_score_jump")
     data = stream_event(item, event, "basketball").data
@@ -358,7 +358,7 @@ def test_score_changed_data_carries_score_pairs(fixed_window: None) -> None:
 
 
 def test_stuck_data_carries_the_start_as_utc(fixed_window: None) -> None:
-    from src.services.live.reducer import stream_event
+    from sofascore_scraper.services.live.reducer import stream_event
 
     (item, event), = _emitted("stuck_not_started")
     data = stream_event(item, event, "football").data
@@ -367,7 +367,7 @@ def test_stuck_data_carries_the_start_as_utc(fixed_window: None) -> None:
 
 
 def test_an_event_without_a_readable_score_still_gets_its_data() -> None:
-    from src.services.live.reducer import stream_event
+    from sofascore_scraper.services.live.reducer import stream_event
 
     item = {"type": "status_changed", "event_id": 5, "from": "live", "to": "completed", "change_ts": None,
             "provisional": True}
@@ -376,7 +376,7 @@ def test_an_event_without_a_readable_score_still_gets_its_data() -> None:
 
 
 def test_dedup_keys_name_the_transition_and_are_stable(fixed_window: None) -> None:
-    from src.services.live.reducer import dedup_key
+    from sofascore_scraper.services.live.reducer import dedup_key
 
     keys = {name: [dedup_key(item) for item, _ in _emitted(name)] for name in SCENARIOS}
     assert keys == {name: [dedup_key(item) for item, _ in _emitted(name)] for name in SCENARIOS}  # aynı girdi

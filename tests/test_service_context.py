@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from src.config_manager import ConfigManager
-from src.services.context import ServiceContext, build_context
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.services.context import ServiceContext, build_context
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -57,8 +57,8 @@ def test_the_context_stays_frozen(ctx: ServiceContext) -> None:
 
 def test_importing_the_context_does_not_load_the_fetchers() -> None:
     code = (
-        "import sys, src.services.context\n"
-        "loaded = sorted(m for m in ('src.match_data_fetcher', 'src.match_fetcher', 'src.season_fetcher')"
+        "import sys, sofascore_scraper.services.context\n"
+        "loaded = sorted(m for m in ('sofascore_scraper.match_data_fetcher', 'sofascore_scraper.match_fetcher', 'sofascore_scraper.season_fetcher')"
         " if m in sys.modules)\n"
         "print('LOADED=' + ','.join(loaded))\n"
     )

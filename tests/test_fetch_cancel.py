@@ -1,5 +1,5 @@
 """
-Durdurma, maç detayı indirmesini maçların arasında keser (P13'ten beri tek yol: src/services/pipeline.py).
+Durdurma, maç detayı indirmesini maçların arasında keser (P13'ten beri tek yol: sofascore_scraper/services/pipeline.py).
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı ve Store gerçektir.
 """
@@ -13,7 +13,7 @@ import pytest
 
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
 
 IDS = [9100001, 9100002, 9100003, 9100010, 9200001]
 

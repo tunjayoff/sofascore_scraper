@@ -25,12 +25,12 @@ import pytest
 
 import store_dump
 import store_fixtures as sf
-from src.store import EventQuery, Store, StoreError, open_store
-from src.store import codec, derive, files, layout, manifest
-from src.store import events as events_mod
-from src.store import lease as lease_mod
-from src.store.legacy import LegacyReader
-from src.store.lease import LeaseManager
+from sofascore_scraper.store import EventQuery, Store, StoreError, open_store
+from sofascore_scraper.store import codec, derive, files, layout, manifest
+from sofascore_scraper.store import events as events_mod
+from sofascore_scraper.store import lease as lease_mod
+from sofascore_scraper.store.legacy import LegacyReader
+from sofascore_scraper.store.lease import LeaseManager
 from test_store_put import (
     ARS,
     LIV,

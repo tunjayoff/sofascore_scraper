@@ -91,7 +91,7 @@ Masaüstü için kısayollar: `./scripts/install.sh` (Linux, macOS, Git Bash) ya
 
 ## Komut satırı (`ssc`)
 
-Sunucular, betikler ve ajanlar için. Hiç soru sormaz: sonuç stdout'a, günlük ve hatalar stderr'e gider, çıkış kodu ne olduğunu söyler. `pip install -e .` yapılmadıysa proje klasöründe `python -m src.cli.main <komut>` kullanın.
+Sunucular, betikler ve ajanlar için. Hiç soru sormaz: sonuç stdout'a, günlük ve hatalar stderr'e gider, çıkış kodu ne olduğunu söyler. `pip install -e .` yapılmadıysa proje klasöründe `python -m sofascore_scraper.cli.main <komut>` kullanın.
 
 | Komut | Ne yapar |
 |---|---|
@@ -123,12 +123,11 @@ curl "http://127.0.0.1:8000/api/v1/events?tournament=17&limit=5"
 
 ## Python kütüphanesi
 
-CLI ve API, bir Python programının doğrudan kullanabileceği aynı servislerin üzerindeki ince katmanlardır. Henüz ayrı bir kütüphane giriş noktası yoktur ve içe aktarılan paketin adı hâlâ `src`'dir (adı `sofascore_scraper` olacak). Saklanan maçları okumak şöyle görünür:
+CLI ve API, bir Python programının doğrudan kullanabileceği aynı servislerin üzerindeki ince katmanlardır. Henüz ayrı bir kütüphane giriş noktası yoktur; içe aktarılan paketin adı `sofascore_scraper`'dır (3.0.0'dan önce `src`'ydi). Saklanan maçları okumak şöyle görünür:
 
-<!-- REN-1: update import path -->
 ```python
-from src.services.query import EventFilter, QueryService
-from src.store import open_store
+from sofascore_scraper.services.query import EventFilter, QueryService
+from sofascore_scraper.store import open_store
 
 store = open_store("data")               # veri klasörü
 query = QueryService(store)

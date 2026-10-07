@@ -1,5 +1,5 @@
 """
-src/store/layout.py: v3 düzeninin yol kuralları (docs/design/01-storage.md, bölüm 4.2).
+sofascore_scraper/store/layout.py: v3 düzeninin yol kuralları (docs/design/01-storage.md, bölüm 4.2).
 
 İşlevler saftır: diske dokunmaz, yalnızca DATA_DIR'e göre göreli ("/" ayırıcılı) yol üretir.
 """
@@ -9,7 +9,7 @@ import os
 
 import pytest
 
-from src.store import LayoutError, layout
+from sofascore_scraper.store import LayoutError, layout
 
 # --- maç dizinleri --------------------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
-# src.store.Scope
-# kaynak: src/store/events.py
+# sofascore_scraper.store.Scope
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class Scope:
     sport: Optional[str] = None

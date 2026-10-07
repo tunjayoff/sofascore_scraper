@@ -1,4 +1,4 @@
-# src.store.PayloadCorrupt
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.PayloadCorrupt
+# kaynak: sofascore_scraper/store/errors.py
 class PayloadCorrupt(StoreError):
     default_message = ...

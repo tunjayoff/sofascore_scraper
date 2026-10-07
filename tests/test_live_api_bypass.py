@@ -9,7 +9,7 @@ import os
 # Proje kök dizinini path'e ekle
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.utils import (
+from sofascore_scraper.utils import (
     make_api_request,
     create_session_async,
     make_api_request_async,

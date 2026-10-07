@@ -1,5 +1,5 @@
-# src.store.Migrator
-# kaynak: src/store/migrate.py
+# sofascore_scraper.store.Migrator
+# kaynak: sofascore_scraper/store/migrate.py
 class Migrator:
     def __init__(self, store: 'Store') -> None
     def last_run(self) -> Optional[Dict[str, Any]]

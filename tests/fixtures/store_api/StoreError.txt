@@ -1,5 +1,5 @@
-# src.store.StoreError
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.StoreError
+# kaynak: sofascore_scraper/store/errors.py
 class StoreError(StorageError):
     default_message = ...
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None, errno_code: Optional[int] = None, detail: str = '')

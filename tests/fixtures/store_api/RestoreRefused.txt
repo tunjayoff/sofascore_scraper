@@ -1,5 +1,5 @@
-# src.store.RestoreRefused
-# kaynak: src/store/backup.py
+# sofascore_scraper.store.RestoreRefused
+# kaynak: sofascore_scraper/store/backup.py
 class RestoreRefused(StoreError):
     default_message = ...
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None, errno_code: Optional[int] = None, detail: str = '', *, reasons: Sequence[str] = ()) -> None

@@ -26,11 +26,11 @@ import pytest
 import store_dump
 import store_fixtures as sf
 from schedule_runner import list_schedule
-from src.match_fetcher import MatchFetcher
-from src.season_fetcher import SeasonFetcher
-from src.services.query import QueryService
-from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
-from src.store import (
+from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.services.query import QueryService
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
+from sofascore_scraper.store import (
     CategoryRow,
     EventQuery,
     PutResult,
@@ -41,7 +41,7 @@ from src.store import (
     StoreError,
     open_store,
 )
-from src.store.legacy import schedule_sub as legacy_schedule_sub
+from sofascore_scraper.store.legacy import schedule_sub as legacy_schedule_sub
 
 PL = sf.PL.id
 PL_SEASON = sf.PL_2627.id
@@ -365,7 +365,7 @@ def _api(league: sf.League, season: sf.Season, listings: Sequence[sf.Listing]) -
                 return {"events": [sf.event_payload(ev) for ev in listing.events], "hasNextPage": listing.has_next}
         found = pages.get(url)
         if found is None:
-            from src.exceptions import ResourceNotFoundError
+            from sofascore_scraper.exceptions import ResourceNotFoundError
             raise ResourceNotFoundError(url)
         return {"events": [sf.event_payload(ev) for ev in found.events], "hasNextPage": found.has_next}
 
@@ -391,7 +391,7 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
     eşittir; sezonun liste satırları eski sezon özeti CSV'sinin satırlarına eşittir. Özet dosyası yazılmaz.
     """
     filtered = all(listing.filtered for listing in listings)
-    monkeypatch.setattr("src.utils.FETCH_ONLY_FINISHED", filtered)
+    monkeypatch.setattr("sofascore_scraper.utils.FETCH_ONLY_FINISHED", filtered)
     built = sf.build_fixture("canonical", tmp_path / "built")
     key = f"{league.id}/{season.id}"
     expected = store_dump.dump_legacy(built.data_dir)["schedules"][key]
@@ -413,7 +413,7 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
 
 
 def test_a_complete_round_is_not_fetched_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("src.utils.FETCH_ONLY_FINISHED", True)
+    monkeypatch.setattr("sofascore_scraper.utils.FETCH_ONLY_FINISHED", True)
     data = tmp_path / "data"
     calls: List[str] = []
     api = _api(sf.PL, sf.PL_2627, sf.PL_ROUNDS)

@@ -97,7 +97,7 @@ def test_every_direct_requirement_is_pinned_inside_its_allowed_range(python, pla
 def test_toml_reader_is_required_only_where_the_standard_library_lacks_it():
     """
     sofascore.toml'u Python 3.11+ standart kütüphanedeki tomllib okur; tomli yalnızca 3.10 için gerekir
-    (src/config/loader.py) ve orada sabitlidir.
+    (sofascore_scraper/config/loader.py) ve orada sabitlidir.
     """
     tomli = [req for req in RUNTIME if canonicalize_name(req.name) == "tomli"]
     assert len(tomli) == 1

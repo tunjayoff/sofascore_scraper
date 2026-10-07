@@ -23,11 +23,11 @@ from typing import Any, Iterator, List, Optional, Tuple
 
 import pytest
 
-from src.web import deps
-from src.jobs.manager import JobManager, local_origin
-from src.jobs.model import JobKind, JobState
-from src.store import JobRunningError, JobStore, LeaseHeld
-from src.store.jobs import default_db_path
+from sofascore_scraper.web import deps
+from sofascore_scraper.jobs.manager import JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind, JobState
+from sofascore_scraper.store import JobRunningError, JobStore, LeaseHeld
+from sofascore_scraper.store.jobs import default_db_path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -38,9 +38,9 @@ import sys
 import threading
 import time
 
-from src.jobs.manager import JobManager, local_origin
-from src.jobs.model import JobKind
-from src.store import JobStore, default_db_path
+from sofascore_scraper.jobs.manager import JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind
+from sofascore_scraper.store import JobStore, default_db_path
 
 store = JobStore(default_db_path(sys.argv[1]))
 manager = JobManager(store, cancel_poll=float(sys.argv[2]), heartbeat=float(sys.argv[3]))
@@ -287,8 +287,8 @@ def test_the_running_process_moves_the_heartbeat(manager: JobManager, data_dir: 
 def test_the_web_api_sees_and_cancels_a_job_of_another_process(monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
-    from src.web.api import legacy as fetch_job
-    from src.web.app import app
+    from sofascore_scraper.web.api import legacy as fetch_job
+    from sofascore_scraper.web.app import app
 
     jobs = deps.job_store()
     monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)

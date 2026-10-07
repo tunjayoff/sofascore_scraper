@@ -1,5 +1,5 @@
 """
-İndirme işlerinin kaydedilen belirtimi (plan maddesi FX-20; src/services/job_spec.py).
+İndirme işlerinin kaydedilen belirtimi (plan maddesi FX-20; sofascore_scraper/services/job_spec.py).
 
   * kayıt istek gövdesinin alanlarıyla yazılır (`only`, `event_ids`; servisin `mode`u değil), kimlikle seçilen maçlar
     `event_ids` olarak, yanında turnuvalarına ayrılmış `selections` (`target=tournament:` süzgeci, G12);
@@ -20,14 +20,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src.jobs.manager import JobManager, JobOutcome
-from src.jobs.model import JobKind, Origin
-from src.services import job_spec
-from src.services.sync import FollowsSyncSpec, SyncSelection, SyncSpec
-from src.store import FollowSpec, JobStore, Store, default_db_path, open_store
-from src.web import deps
-from src.web.api.v1 import jobs as jobs_v1
-from src.web.app import app
+from sofascore_scraper.jobs.manager import JobManager, JobOutcome
+from sofascore_scraper.jobs.model import JobKind, Origin
+from sofascore_scraper.services import job_spec
+from sofascore_scraper.services.sync import FollowsSyncSpec, SyncSelection, SyncSpec
+from sofascore_scraper.store import FollowSpec, JobStore, Store, default_db_path, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.api.v1 import jobs as jobs_v1
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 PL = sf.PL.id

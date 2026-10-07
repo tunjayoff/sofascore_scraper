@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-import src.web.app as app_module
-from src.web.missing_ui import MISSING_UI_HTML, RELEASES_URL
+import sofascore_scraper.web.app as app_module
+from sofascore_scraper.web.missing_ui import MISSING_UI_HTML, RELEASES_URL
 
 client = TestClient(app_module.app)
 

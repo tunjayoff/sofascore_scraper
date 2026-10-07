@@ -11,7 +11,7 @@ import tempfile
 
 import pytest
 
-import src.challenge_solver as cs
+import sofascore_scraper.challenge_solver as cs
 
 pytestmark = [pytest.mark.live, pytest.mark.browser]
 

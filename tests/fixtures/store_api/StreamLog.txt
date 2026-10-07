@@ -1,5 +1,5 @@
-# src.store.StreamLog
-# kaynak: src/store/streams.py
+# sofascore_scraper.store.StreamLog
+# kaynak: sofascore_scraper/store/streams.py
 class StreamLog:
     def __init__(self, store: 'Store') -> None
     def append(self, stream: str, events: Sequence[StreamEvent]) -> List[Optional[int]]

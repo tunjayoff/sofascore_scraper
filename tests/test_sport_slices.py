@@ -1,9 +1,9 @@
 """
-Her spor SofaScore'un o sporda sunduğu detay dilimlerini ister (src/sports.py, DETAIL_SLICES).
+Her spor SofaScore'un o sporda sunduğu detay dilimlerini ister (sofascore_scraper/sports.py, DETAIL_SLICES).
 
 Kanıt: sitenin maç sayfalarının istekleri ve aldığı yanıtlar (research/all_sports, PR #17), spor ve uç nokta
 başına tests/fixtures/sport_slices/evidence.json'da (tests/sport_evidence.py türetir). Kurallar
-(tests/sport_evidence.py `verdict`, src/sports.py DETAIL_SLICES'ın üstündeki not):
+(tests/sport_evidence.py `verdict`, sofascore_scraper/sports.py DETAIL_SLICES'ın üstündeki not):
 
   required   bitmiş maçta veriyle yanıtlandı, bitmiş maçta 404 almadı     → istenir, tamlık hesabına girer
   optional   başlamış maçta 404 aldı, bitmiş maçta hep veriyle gelmedi    → istenir, tamlık hesabına girmez
@@ -29,12 +29,12 @@ import sport_evidence as evidence_mod
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
 from sport_evidence import ABSENT, OPEN_DATA, OPTIONAL, REQUIRED, UNKNOWN
-from src import slices, sports
-from src.services import planning
-from src.services.pipeline import FetchPipeline
-from src.services.query import RefreshPolicy, required_detail_keys
-from src.slices import BODY_DATA, BODY_NO_DATA, SLICE_OK, Outcome
-from src.store import Ref, open_store
+from sofascore_scraper import slices, sports
+from sofascore_scraper.services import planning
+from sofascore_scraper.services.pipeline import FetchPipeline
+from sofascore_scraper.services.query import RefreshPolicy, required_detail_keys
+from sofascore_scraper.slices import BODY_DATA, BODY_NO_DATA, SLICE_OK, Outcome
+from sofascore_scraper.store import Ref, open_store
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sport_slices"
 EVIDENCE = evidence_mod.load()

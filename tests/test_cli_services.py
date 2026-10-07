@@ -2,12 +2,12 @@
 `main.py`nin eski bayraklarının servisleri nasıl çağırdığı (plan maddeleri P10 ve P19).
 
 P19'dan beri `main.py` bir geçiş kabuğudur: eski bayraklar yeni CLI'nin komutlarına çevrilir
-(src/cli/legacy_flags.py) ve o komutlar servisleri çağırır:
+(sofascore_scraper/cli/legacy_flags.py) ve o komutlar servisleri çağırır:
 
   * --headless --update-all, --refresh-only ve --recheck-unavailable terminal arayüzünü kurmaz; `sync`,
     `refresh` ve `data recheck-unavailable` komutları SyncService / MaintenanceService'i çağırır;
   * çıkış kodu ortam değişkeninden (APP_EXIT_CODE) değil, servisin türü belli sonucundan okunur ve yeni
-    tablonundur (src/cli/exit_codes.py): 3 kısmi, 4 devre kesici, 5 depolama, 6 kilit;
+    tablonundur (sofascore_scraper/cli/exit_codes.py): 3 kısmi, 4 devre kesici, 5 depolama, 6 kilit;
   * veri dizinine yazan komutlar çalışma boyunca dizinin yazar kilidini tutar; kilit başka bir sahipteyse
     sahibi söylenir ve çıkış kodu 6'dır;
   * stderr'e tek bir kullanımdan kalkma satırı yazılır.
@@ -28,12 +28,12 @@ from typing import Any, Callable, Dict, List, Optional
 import pytest
 
 import main as cli
-from src.cli import legacy_flags
-from src.exceptions import StorageError
-from src.services.maintenance import MaintenanceService, ResetCounts
-from src.services.sync import RefreshCounts, SyncResult, SyncService, SyncSpec
-from src.store import open_store
-from src.store.lease import LeaseManager
+from sofascore_scraper.cli import legacy_flags
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.services.maintenance import MaintenanceService, ResetCounts
+from sofascore_scraper.services.sync import RefreshCounts, SyncResult, SyncService, SyncSpec
+from sofascore_scraper.store import open_store
+from sofascore_scraper.store.lease import LeaseManager
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -119,12 +119,12 @@ def test_main_imports_only_the_standard_library_and_its_version_at_module_level(
         elif isinstance(node, ast.ImportFrom) and node.module:
             top_level.append(node.module)
 
-    assert [name for name in top_level if name.startswith("src")] == ["src.version"]
+    assert [name for name in top_level if name.startswith("sofascore_scraper")] == ["sofascore_scraper.version"]
     # Terminal arayüzü 3.0'da kaldırıldı (P26): main.py onu hiçbir dalda içe aktarmaz
     importers = [
         fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
         for node in ast.walk(fn) if isinstance(node, ast.ImportFrom)
-        and (node.module or "").split(".")[:2] in (["src", "SofaScoreUi"], ["src", "ui"])
+        and (node.module or "").split(".")[:2] in (["sofascore_scraper", "SofaScoreUi"], ["sofascore_scraper", "ui"])
     ]
     assert importers == []
 
@@ -245,7 +245,7 @@ def test_a_breaker_stop_exits_with_4_from_the_typed_result(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Çıkış kodu SyncResult.breaker'dan gelir; yarıda kalan çalışmanın sayıları yazılmaz, CSV adımı yine çalışır."""
-    from src.services.export import ExportResult, ExportService
+    from sofascore_scraper.services.export import ExportResult, ExportService
 
     Recorder(data_dir, sync_result(breaker="403", details_done=4, details_total=4)).install(monkeypatch)
     exported: List[Any] = []
@@ -292,7 +292,7 @@ def test_a_storage_error_from_the_service_exits_with_5_and_releases_the_lease(
 def test_csv_export_alone_takes_no_lease(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
 ) -> None:
-    from src.services.export import ExportResult, ExportService
+    from sofascore_scraper.services.export import ExportResult, ExportService
 
     Recorder(data_dir, sync_result()).install(monkeypatch).error = AssertionError("no download was asked for")
     holders: List[Any] = []
@@ -463,7 +463,7 @@ def test_the_refusal_names_the_holder_in_the_app_language(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
     lang: str, label: str, holder: str,
 ) -> None:
-    from src.store import JobStoreConflict, LeaseHeld
+    from sofascore_scraper.store import JobStoreConflict, LeaseHeld
 
     held = LeaseHeld("held", name="writer", pid=4242, host="box-1", purpose="job", started_at=1790942400.0)
 
@@ -471,7 +471,7 @@ def test_the_refusal_names_the_holder_in_the_app_language(
         raise JobStoreConflict("busy") from held
 
     monkeypatch.setenv("APP_LANGUAGE", lang)
-    monkeypatch.setattr("src.jobs.manager.JobManager.start", refuse)
+    monkeypatch.setattr("sofascore_scraper.jobs.manager.JobManager.start", refuse)
 
     assert run_cli("--refresh-only") == 6
 
@@ -505,7 +505,7 @@ def test_the_watch_alias_runs_the_live_service_with_polling(
 ) -> None:
     """Karar D18: eski `--watch` `ssc watch --source poll --stdout`tur; tarayıcı başlatmaz."""
     FakeLiveService.seen = []
-    monkeypatch.setattr("src.services.live.supervisor.LiveService", FakeLiveService)
+    monkeypatch.setattr("sofascore_scraper.services.live.supervisor.LiveService", FakeLiveService)
 
     assert run_cli("--watch", "--sport", "tennis", "--event-ids", "1", "--watch-hours", "2") == 0
 

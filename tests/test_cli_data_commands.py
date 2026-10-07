@@ -10,7 +10,7 @@ Yeni CLI'nin veri komutları (plan maddesi P19; docs/design/02-services.md böl�
   jobs                     list, show, cancel, tail (akış satırları)
   genel                    --log-format json, akış komutlarının hata satırı ve kapanan boru
 
-Komutlar aynı süreçte, `src.cli.main.main()` çağrılarak çalışır (`cli` fixture'ı tests/test_cli_skeleton.py'de:
+Komutlar aynı süreçte, `sofascore_scraper.cli.main.main()` çağrılarak çalışır (`cli` fixture'ı tests/test_cli_skeleton.py'de:
 süreç durumunu geri alır). Servisler sahtedir: hiçbir test SofaScore'a bağlanmaz. Ayrı süreçte gerçek bir indirme
 tests/characterization/test_cli_goldens.py'dedir.
 """
@@ -29,14 +29,14 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 import test_cli_skeleton as skeleton
-from src.cli import legacy_flags, output
-from src.cli import main as cli_main
-from src.cli.commands import sync as sync_command
-from src.jobs.manager import JobManager
-from src.jobs.model import JobKind, JobState
-from src.services.sync import RefreshCounts, SyncResult, SyncService, SyncSpec
-from src.store import JobStore, open_store
-from src.store.lease import LeaseManager
+from sofascore_scraper.cli import legacy_flags, output
+from sofascore_scraper.cli import main as cli_main
+from sofascore_scraper.cli.commands import sync as sync_command
+from sofascore_scraper.jobs.manager import JobManager
+from sofascore_scraper.jobs.model import JobKind, JobState
+from sofascore_scraper.services.sync import RefreshCounts, SyncResult, SyncService, SyncSpec
+from sofascore_scraper.store import JobStore, open_store
+from sofascore_scraper.store.lease import LeaseManager
 from test_cli_skeleton import CliRunner, Run, Sandbox
 
 cli = skeleton.cli
@@ -73,7 +73,7 @@ class FakeSync:
         fake = self
 
         def run(self: SyncService, spec: SyncSpec, *, handle: Any = None) -> SyncResult:
-            from src.services.sync import FailedListing
+            from sofascore_scraper.services.sync import FailedListing
 
             fake.specs.append(spec)
             fake.handles.append(handle)
@@ -171,7 +171,7 @@ def test_sync_options_become_the_spec(cli: CliRunner, data_dir: Path, fake_sync:
     assert run_in(cli, data_dir, "fetch", "tournament", "8", "--only", "events").exit_code == 0
     assert run_in(cli, data_dir, "fetch", "event", "9100001", "9100002", "9100001").exit_code == 0
 
-    from src.services.sync import SyncSelection
+    from sofascore_scraper.services.sync import SyncSelection
 
     assert fake_sync.specs == [
         SyncSpec(mode="details", league_id=None),
@@ -208,7 +208,7 @@ def test_refresh_and_its_include_legacy_switch(cli: CliRunner, data_dir: Path, f
 def test_recheck_inside_sync_runs_before_the_service_under_the_same_job(
     cli: CliRunner, data_dir: Path, fake_sync: FakeSync, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from src.services.maintenance import MaintenanceService, ResetCounts
+    from sofascore_scraper.services.maintenance import MaintenanceService, ResetCounts
 
     order: List[str] = []
     monkeypatch.setattr(MaintenanceService, "recheck_unavailable",
@@ -316,7 +316,7 @@ def test_a_broken_sink_stops_the_command_before_the_job(cli: CliRunner, data_dir
 @pytest.fixture
 def no_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """Kuru çalıştırma hiçbir istek atmaz ve iş başlatmaz."""
-    from src import utils
+    from sofascore_scraper import utils
 
     def refuse(*args: Any, **kwargs: Any) -> Any:
         raise AssertionError("a dry run must not send a request")
@@ -393,7 +393,7 @@ def test_raw_export_and_its_usage_rules(cli: CliRunner, seeded: Path, tmp_path: 
 
     # SC-2: normalleştirilmiş veri kümeleri yazılır (tests/test_export_datasets.py); `pyarrow` olmadan Parquet
     # yazılamaz
-    monkeypatch.setattr("src.services.export.parquet_available", lambda: False)
+    monkeypatch.setattr("sofascore_scraper.services.export.parquet_available", lambda: False)
     for argv, code in ((["--schema", "raw"], "invalid_request"), (["--schema", "raw", "--out", "-"], "invalid_request"),
                        (["--schema", "normalized", "--format", "parquet"], "not_supported"),
                        (["--format", "jsonl"], "invalid_request"),
@@ -426,7 +426,7 @@ def test_data_clear_is_refused_while_a_job_runs(cli: CliRunner, seeded: Path) ->
 
 def test_data_recheck_unavailable_holds_the_writer_lease(cli: CliRunner, data_dir: Path,
                                                         monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.services.maintenance import MaintenanceService, ResetCounts
+    from sofascore_scraper.services.maintenance import MaintenanceService, ResetCounts
 
     seen: List[Any] = []
 
@@ -466,7 +466,7 @@ def test_follows_add_list_export_and_remove(cli: CliRunner, data_dir: Path) -> N
 
     exported = run_in(cli, data_dir, "follows", "export")
     assert exported.exit_code == 0
-    from src.config import loader
+    from sofascore_scraper.config import loader
 
     assert exported.stdout.startswith("[[follow]]\ntournament = 8\nname = \"LaLiga\"\n")
     import tomllib  # noqa: PLC0415 (Python 3.11+)
@@ -512,7 +512,7 @@ def test_status_check_fails_when_the_catalog_must_be_rebuilt(cli: CliRunner, dat
                                                              monkeypatch: pytest.MonkeyPatch) -> None:
     import dataclasses
 
-    from src.store.api import Store
+    from sofascore_scraper.store.api import Store
 
     store = open_store(data_dir)
     real = Store.info
@@ -594,7 +594,7 @@ def test_log_format_json_writes_one_object_per_line(box: Sandbox) -> None:
 def test_a_stream_error_is_a_typed_line_and_the_result_envelope_is_not_printed() -> None:
     import io
 
-    from src.errors import PlatformError
+    from sofascore_scraper.errors import PlatformError
 
     stdout, stderr = io.StringIO(), io.StringIO()
     out = output.Output(stdout=stdout, stderr=stderr)
@@ -615,7 +615,7 @@ def test_a_reader_that_closes_a_stream_early_is_not_an_error(box: Sandbox) -> No
     data = box.root / "data"
     open_store(data).streams.append("system", [_system_event(n) for n in range(2000)])
     proc = subprocess.Popen(
-        [sys.executable, "-m", "src.cli.main", "--data-dir", str(data), "events"], cwd=box.cwd,
+        [sys.executable, "-m", "sofascore_scraper.cli.main", "--data-dir", str(data), "events"], cwd=box.cwd,
         env=box.environ(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     assert proc.stdout is not None and proc.stderr is not None
@@ -629,13 +629,13 @@ def test_a_reader_that_closes_a_stream_early_is_not_an_error(box: Sandbox) -> No
 
 
 def _system_event(number: int) -> Any:
-    from src.store import StreamEvent
+    from sofascore_scraper.store import StreamEvent
 
     return StreamEvent(type="system.test", source="test", data={"n": number, "pad": "x" * 200})
 
 
 def test_the_new_commands_are_registered_and_described(cli: CliRunner) -> None:
-    from src.cli import commands as registry
+    from sofascore_scraper.cli import commands as registry
 
     names = {command.name for command in registry.commands()}
     assert {"sync", "fetch event", "fetch tournament", "refresh", "export", "data clear", "data recheck-unavailable",

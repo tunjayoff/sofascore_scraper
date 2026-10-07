@@ -29,11 +29,11 @@ from fastapi.testclient import TestClient
 
 import conftest
 import store_fixtures as sf
-from src.season_fetcher import SeasonFetcher
-from src.services import tournaments
-from src.store import FollowSpec, Store, StoreError, open_store
-from src.web import league_sports
-from src.web.app import app
+from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.services import tournaments
+from sofascore_scraper.store import FollowSpec, Store, StoreError, open_store
+from sofascore_scraper.web import league_sports
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 
@@ -384,7 +384,7 @@ def test_a_fetched_list_is_what_the_readers_see_next(data_dir: Path, monkeypatch
     fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
     assert ids(fetcher.get_seasons_for_league(17)) == [1]
     fresh = {"seasons": [{"id": 96668, "name": "Premier League 26/27", "year": "26/27", "editor": False}]}
-    monkeypatch.setattr("src.season_fetcher.make_api_request", lambda url, **kwargs: fresh)
+    monkeypatch.setattr("sofascore_scraper.season_fetcher.make_api_request", lambda url, **kwargs: fresh)
 
     assert fetcher.fetch_seasons_checked(17) == fresh["seasons"]
 
@@ -510,7 +510,7 @@ def test_sport_of_a_tournament_comes_from_the_payloads_not_from_directory_names(
 
     assert tournaments.sport_of(store, 132) == "basketball"
     assert tournaments.sport_of(store, 17) == "football"
-    assert tournaments.sport_of(store, 777) is None  # kayıtlı bir spor değil (src/sports.py)
+    assert tournaments.sport_of(store, 777) is None  # kayıtlı bir spor değil (sofascore_scraper/sports.py)
     assert tournaments.sport_of(store, 8) is None
     assert league_sports.infer_from_data(str(data_dir), 132) == "basketball"
     assert league_sports.infer_from_data(str(data_dir), 2 ** 70) is None  # kataloğun tutamayacağı bir kimlik
@@ -540,7 +540,7 @@ def test_a_store_that_cannot_be_opened_leaves_the_sport_unknown(
     def refuse(*args: Any, **kwargs: Any) -> Store:
         raise StoreError("state.db is newer than this build")
 
-    monkeypatch.setattr("src.store.open_store", refuse)
+    monkeypatch.setattr("sofascore_scraper.store.open_store", refuse)
 
     assert league_sports.infer_from_data(str(data_dir), 17) is None
     assert "Sport of league 17 could not be read from the catalog" in caplog.text

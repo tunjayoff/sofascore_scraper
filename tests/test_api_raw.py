@@ -19,8 +19,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src.store import EventQuery, Store, open_store
-from src.web.app import app
+from sofascore_scraper.store import EventQuery, Store, open_store
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 

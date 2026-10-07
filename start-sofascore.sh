@@ -6,7 +6,7 @@ cd "$ROOT" || exit 1
 chmod +x scripts/start_web.py 2>/dev/null || true
 
 # Language: explicit setting (APP_LANGUAGE in the environment or in .env) > system language
-# (LC_ALL, LC_MESSAGES, LANG) > English. Same rule as the app (src/language.py) and
+# (LC_ALL, LC_MESSAGES, LANG) > English. Same rule as the app (sofascore_scraper/language.py) and
 # scripts/install.sh; repeated here because this runs before Python is known to exist.
 # The legacy LANGUAGE variable counts only when it is exactly tr / en: GNU gettext uses the same name.
 # The app also reads the language from sofascore.toml and from the Settings page (config/overrides.json);
@@ -32,9 +32,9 @@ detect_lang() {
 UI_LANG="$(detect_lang)"
 
 # The app's answer: the rule above plus sofascore.toml and the Settings page's overrides.json
-# (src/doctor.py, standard library only). Prints nothing when Python cannot answer.
+# (sofascore_scraper/doctor.py, standard library only). Prints nothing when Python cannot answer.
 app_lang() {
-  python3 -c 'from src import doctor; print(doctor.Context().lang)' 2>/dev/null || true
+  python3 -c 'from sofascore_scraper import doctor; print(doctor.Context().lang)' 2>/dev/null || true
 }
 
 # msg "English text" "Türkçe metin"

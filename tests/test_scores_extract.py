@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.status import (BasketballScores, CricketScores, FightScores, FootballScores, InningsScores, Pair,
+from sofascore_scraper.status import (BasketballScores, CricketScores, FightScores, FootballScores, InningsScores, Pair,
                         PeriodsScores, SetsScores, StatusClass, TennisScores, classify_status, extract_scores)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
@@ -69,7 +69,7 @@ def test_football_cup_draw_with_aggregate():
 
 
 def test_football_regular(caplog):
-    with caplog.at_level("WARNING", logger="src.status"):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.status"):
         s = extract_scores(_load("football/B6_finished_regular__16837335"), "football")
     assert s.ht == Pair(0, 1)
     assert s.ft90 == Pair(3, 1)
@@ -233,7 +233,7 @@ def test_period_sport_without_a_score(rel):
 
 
 def test_new_sports_are_no_longer_unsupported(caplog):
-    with caplog.at_level("WARNING", logger="src.status"):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.status"):
         extract_scores(_load("rugby/A_finished-100-ended__16237238"), "rugby")
         extract_scores(_load("volleyball/A_finished-100-ended__16506696"), "volleyball")
         extract_scores(_load("rugby/A_finished-100-ended__16237238"), "waterpolo")
@@ -450,7 +450,7 @@ def test_fight_ignores_values_of_the_wrong_type():
 
 
 def test_class_b_sports_are_no_longer_unsupported(caplog):
-    with caplog.at_level("WARNING", logger="src.status"):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.status"):
         for path in sorted(FIXTURES.glob("*/*.json")):
             if path.parent.name in ("baseball", "cricket", "esports", "darts", "mma"):
                 extract_scores(json.loads(path.read_text(encoding="utf-8")), path.parent.name)

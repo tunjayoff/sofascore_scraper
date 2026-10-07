@@ -106,7 +106,7 @@ def snapshot_tree(root: Any) -> Dict[str, Any]:
 
 def pin_default_settings(monkeypatch: Any) -> None:
     """Goldenların dayandığı ayarları varsayılanlarına sabitler: kabuktan ya da başka testten sızan değer sonucu değiştirmesin."""
-    import src.utils as utils
+    import sofascore_scraper.utils as utils
 
     for key in (
         "MAX_RETRIES", "REQUEST_TIMEOUT", "WAIT_TIME_MIN", "WAIT_TIME_MAX",

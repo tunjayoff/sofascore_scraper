@@ -9,9 +9,9 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import legacy_writer
-from src.match_data_fetcher import MatchDataFetcher
-from src.status import OBSERVATION_KEY, observation_record, read_observation
-from src.store import open_store
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.status import OBSERVATION_KEY, observation_record, read_observation
+from sofascore_scraper.store import open_store
 
 FIXTURE = Path(__file__).parent / "fixtures" / "status" / "basketball" / "K6_score_changed_after_finished__17006262.json"
 
@@ -66,7 +66,7 @@ def test_the_returned_observation_is_the_moment_the_store_keeps(tmp_path, monkey
     FX-15: dönen sözlüğün gözlem anı /event yanıtının alındığı andır, sonradan okunan saat değil. Eskiden şimdiki an
     okunuyordu ve yazmayla arasında saniye dönünce katalogdaki tam saniyeden bir fazla çıkıyordu (Windows CI).
     """
-    import src.match_data_fetcher as mdf
+    import sofascore_scraper.match_data_fetcher as mdf
 
     seen = []
     real = mdf.observation_record

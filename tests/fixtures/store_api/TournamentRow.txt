@@ -1,5 +1,5 @@
-# src.store.TournamentRow
-# kaynak: src/store/entities.py
+# sofascore_scraper.store.TournamentRow
+# kaynak: sofascore_scraper/store/entities.py
 @dataclass(frozen=True)
 class TournamentRow:
     id: int

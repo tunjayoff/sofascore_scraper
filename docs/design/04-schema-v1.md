@@ -170,7 +170,7 @@ and tennis.
 | `slug` | string | no |  | `tournament.category.sport.slug` | SofaScore's slug of the sport, lower case. The key of a sport everywhere in the schema. |
 | `name` | string | yes |  | `tournament.category.sport.name` | English name of the sport. |
 | `id` | integer | yes |  | `tournament.category.sport.id` | SofaScore's numeric id of the sport; null when no stored payload has shown it. |
-| `score_family` | string, open set: `football`, `periods`, `sets`, `innings`, `cricket`, `fight` | yes |  | sport registry (`src/sports.py`) | Which score structure events of this sport carry (see Score). Null for a sport the platform has no score mapping for. |
+| `score_family` | string, open set: `football`, `periods`, `sets`, `innings`, `cricket`, `fight` | yes |  | sport registry (`sofascore_scraper/sports.py`) | Which score structure events of this sport carry (see Score). Null for a sport the platform has no score mapping for. |
 <!-- /fields:Sport -->
 
 ```json example:Sport
@@ -320,7 +320,7 @@ The parts of an Event follow.
 | `type` | string, open set: `notstarted`, `inprogress`, `finished`, `postponed`, `canceled`, `interrupted`, `suspended`, `willcontinue` | yes |  | `status.type` | SofaScore's status type. |
 | `code` | integer | yes |  | `status.code` | SofaScore's status code, for example 100 (ended), 110 (after extra time), 120 (after penalties), 91 (walkover), 92 (retired). |
 | `description` | string | yes |  | `status.description` | SofaScore's status text, in English, for example `Ended`, `2nd half`. |
-| `class` | string, one of `not_started`, `live`, `completed`, `decided_without_play`, `void`, `unknown` | no |  | derived from `status.type`, then `status.code`, then `status.description` (`src/status.py`) | The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half time, the night between two days of a cricket match: type `willcontinue`). `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed. |
+| `class` | string, one of `not_started`, `live`, `completed`, `decided_without_play`, `void`, `unknown` | no |  | derived from `status.type`, then `status.code`, then `status.description` (`sofascore_scraper/status.py`) | The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half time, the night between two days of a cricket match: type `willcontinue`). `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed. |
 <!-- /fields:Status -->
 
 `class` is decided in this order: by `type`; for `type` `finished` by `code`; without a `type` by `code`;
@@ -519,7 +519,7 @@ Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2
 | `family` | constant `periods` | no |  | sport registry | Always `periods`. |
 | `home` | integer | yes | points | `homeScore.display`, else `homeScore.current` | Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). |
 | `away` | integer | yes | points | `awayScore.display`, else `awayScore.current` | Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). |
-| `format` | string, open set: `quarters`, `halves`, `thirds` | yes |  | sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists. |
+| `format` | string, open set: `quarters`, `halves`, `thirds` | yes |  | sport registry (`sofascore_scraper/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists. |
 | `periods` | array of [PeriodScore](#periodscore) | no |  | `period1` to `period4` | Points (goals in the goal sports) of each period of regulation time that has a score, in order. |
 | `regulation` | [ScorePair](#scorepair) | yes | points | `normaltime` | Points (goals in the goal sports) at the end of regulation time. |
 | `overtime` | [ScorePair](#scorepair) | yes | points | `overtime` | Points (goals in the goal sports) scored in overtime alone. Null without overtime. |
@@ -571,10 +571,10 @@ these eight sports was recorded, so `format` and the periods during a live game 
 | `family` | constant `sets` | no |  | sport registry | Always `sets`. |
 | `home` | integer | yes | sets | `homeScore.display`, else `homeScore.current` | Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
 | `away` | integer | yes | sets | `awayScore.display`, else `awayScore.current` | Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
-| `format` | string, open set: `games`, `points`, `frames`, `legs`, `legs_won`, `games_won` | yes |  | sport registry (`src/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won` | What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. |
+| `format` | string, open set: `games`, `points`, `frames`, `legs`, `legs_won`, `games_won` | yes |  | sport registry (`sofascore_scraper/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won` | What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. |
 | `sets_won` | [ScorePair](#scorepair) | yes | sets | `current` | Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
 | `sets` | array of [SetScore](#setscore) | no |  | `period1` to `period7` (tennis: to `period5`); tie-breaks from `period1TieBreak` to `period7TieBreak` (tennis: to `period5TieBreak`), in tennis and padel only | The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`. |
-| `match_tiebreak` | boolean | no |  | derived from the set scores (`src/status.py`) | True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel. |
+| `match_tiebreak` | boolean | no |  | derived from the set scores (`sofascore_scraper/status.py`) | True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel. |
 <!-- /fields:SetsScore -->
 
 ```json example:SetsScore
@@ -714,7 +714,7 @@ event the slices are the event payload itself (key `event`) and its detail endpo
 |---|---|---|---|---|---|
 | `owner_kind` | string, open set: `event`, `tournament`, `season`, `team`, `player`, `sport` | no |  | the request that fetched it | What the slice belongs to. |
 | `owner_id` | integer | no |  | the request that fetched it | Id of the owner; for `event` the event id. |
-| `key` | string, open set: `event`, `statistics`, `team_streaks`, `pregame_form`, `h2h`, `lineups`, `incidents`, `point_by_point`, `esports_games`, `innings`, `odds_featured`, `odds_all`, `odds_changes`, `winning_odds`, `seasons`, `schedule`, `standings`, `season_info`, `cuptrees`, `top_players`, `top_teams`, `season_odds`, `team_rankings`, `player_statistics`, `rankings` | no |  | slice registry (`src/sports.py`) | Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`. |
+| `key` | string, open set: `event`, `statistics`, `team_streaks`, `pregame_form`, `h2h`, `lineups`, `incidents`, `point_by_point`, `esports_games`, `innings`, `odds_featured`, `odds_all`, `odds_changes`, `winning_odds`, `seasons`, `schedule`, `standings`, `season_info`, `cuptrees`, `top_players`, `top_teams`, `season_odds`, `team_rankings`, `player_statistics`, `rankings` | no |  | slice registry (`sofascore_scraper/sports.py`) | Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`. |
 | `sub` | string | yes |  | slice registry | Sub-key for a slice that has several payloads per owner, for example the round of a schedule page. Null when the slice has one payload. |
 | `state` | string, one of `ok`, `empty`, `error`, `not_requested` | no |  | the platform's bookkeeping | `ok`: a payload with data is stored. `empty`: SofaScore answered that it has no such data (404, or a response without content). `error`: the last attempt failed and it is unknown whether data exists. `not_requested`: the platform has not asked for it. |
 | `has_payload` | boolean | no |  | the platform's bookkeeping | True when a payload is stored. A slice in state `error` can still hold the payload of an earlier successful read. |
@@ -952,7 +952,7 @@ One read of an odds slice of an event: a snapshot.
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
-| `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`src/sports.py`) | Odds slice the record comes from: `odds_all` or `odds_featured`. |
+| `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`sofascore_scraper/sports.py`) | Odds slice the record comes from: `odds_all` or `odds_featured`. |
 | `provider_id` | integer | yes |  | the request that fetched it | SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine. |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price. |
 | `markets` | array of [OddsMarket](#oddsmarket) | no |  | `markets`, or the values of `featured` | The markets, in SofaScore's order. |
@@ -1012,7 +1012,7 @@ The flat row of the `odds` export dataset: one outcome of one market of one snap
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
-| `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`src/sports.py`) | Odds slice the row comes from. |
+| `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`sofascore_scraper/sports.py`) | Odds slice the row comes from. |
 | `provider_id` | integer | yes |  | the request that fetched it | As `Odds.provider_id`. |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the snapshot was read. |
 | `market_id` | integer | yes |  | `marketId` | As `OddsMarket.market_id`. |

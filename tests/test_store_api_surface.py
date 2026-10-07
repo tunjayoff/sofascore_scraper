@@ -1,7 +1,7 @@
 """
 Store'un açık API'sinin anlık görüntüsü (plan maddesi ST-04; docs/design/01-storage.md bölüm 2.4, dördüncü test).
 
-`src.store.__all__` içindeki her ad için `tests/fixtures/store_api/<Ad>.txt` dosyası durur: sınıfın tabanları,
+`sofascore_scraper.store.__all__` içindeki her ad için `tests/fixtures/store_api/<Ad>.txt` dosyası durur: sınıfın tabanları,
 açık yöntemlerinin imzaları, alanları ve `__init__` içinde atanan açık öznitelikleri (işlevler için imza,
 sabitler ve tür takma adları için atamanın kendisi). Dizindeki dosyaların kümesi `__all__`'un kendisidir;
 ortak bir liste dosyası yoktur, böylece farklı sınıfları genişleten iki PR aynı dosyaya dokunmaz.
@@ -10,7 +10,7 @@ Açık bir imzada geçen ama `__all__`'da olmayan Store sınıfları da (ör. bi
 taban sınıf) kendi dosyalarıyla izlenir: imzada görünen her şey API'nin parçasıdır.
 
 Görüntü kaynaktan (`ast`) üretilir, çalışan nesnelerden değil: çıktı Python sürümüne ve tür açıklamalarının
-değerlendirilme biçimine bağlı kalmaz. Ayrı bir test, kaynakta bulunan tanımın gerçekten `src.store`'dan
+değerlendirilme biçimine bağlı kalmaz. Ayrı bir test, kaynakta bulunan tanımın gerçekten `sofascore_scraper.store`'dan
 içe aktarılan nesne olduğunu doğrular.
 
 API bilerek değiştiyse:
@@ -32,10 +32,10 @@ from typing import Dict, Iterator, List, Optional, Sequence
 
 import pytest
 
-import src.store
+import sofascore_scraper.store
 
 ROOT = Path(__file__).resolve().parent.parent
-PACKAGE = "src.store"
+PACKAGE = "sofascore_scraper.store"
 SNAPSHOT_DIR = Path(__file__).resolve().parent / "fixtures" / "store_api"
 UPDATE = os.getenv("STORE_API_UPDATE") == "1"
 INDENT = "    "
@@ -285,7 +285,7 @@ def build_snapshots(sources: Sources, names: Sequence[str], package: str = PACKA
 
 
 def _current() -> Dict[str, str]:
-    return build_snapshots(Sources(ROOT), list(src.store.__all__))
+    return build_snapshots(Sources(ROOT), list(sofascore_scraper.store.__all__))
 
 
 def _stored() -> Dict[str, str]:
@@ -295,9 +295,9 @@ def _stored() -> Dict[str, str]:
 
 
 def test_all_lists_unique_public_names():
-    names = list(src.store.__all__)
+    names = list(sofascore_scraper.store.__all__)
     assert all(isinstance(name, str) and name.isidentifier() and _is_public(name) for name in names), names
-    assert len(names) == len(set(names)), "src.store.__all__ içinde yinelenen ad var"
+    assert len(names) == len(set(names)), "sofascore_scraper.store.__all__ içinde yinelenen ad var"
     folded = [name.casefold() for name in build_snapshots(Sources(ROOT), names)]
     assert len(folded) == len(set(folded)), \
         "yalnızca büyük/küçük harfle ayrışan iki ad var: Windows ve macOS'ta dosyaları çakışır"
@@ -306,10 +306,10 @@ def test_all_lists_unique_public_names():
 def test_every_name_in_all_is_the_object_the_snapshot_describes():
     """Görüntü kaynaktan üretilir; kaynakta bulunan tanım, gerçekten içe aktarılan nesne olmalı."""
     sources = Sources(ROOT)
-    for name in src.store.__all__:
-        obj = getattr(src.store, name)
+    for name in sofascore_scraper.store.__all__:
+        obj = getattr(sofascore_scraper.store, name)
         located = sources.locate(PACKAGE, name)
-        assert located is not None, f"{name}: src/store içinde tanımı bulunamadı"
+        assert located is not None, f"{name}: sofascore_scraper/store içinde tanımı bulunamadı"
         if located.kind == "class":
             assert inspect.isclass(obj) and (obj.__module__, obj.__name__) == (located.module, located.name), name
         elif located.kind == "function":
@@ -319,7 +319,7 @@ def test_every_name_in_all_is_the_object_the_snapshot_describes():
 
 
 def test_package_root_binds_no_public_name_outside_all():
-    """`from src.store import X` ile alınabilen her açık ad `__all__`'da (ve dolayısıyla görüntüde) olmalı."""
+    """`from sofascore_scraper.store import X` ile alınabilen her açık ad `__all__`'da (ve dolayısıyla görüntüde) olmalı."""
     tree = Sources(ROOT).tree(PACKAGE)
     assert tree is not None
     bound = set()
@@ -333,8 +333,8 @@ def test_package_root_binds_no_public_name_outside_all():
         elif isinstance(stmt, (ast.Assign, ast.AnnAssign)):
             targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
             bound.update(t.id for t in targets if isinstance(t, ast.Name))
-    leaked = sorted(name for name in bound if _is_public(name) and name not in src.store.__all__ and name != "src")
-    assert leaked == [], f"src/store/__init__.py şu adları bağlıyor ama __all__'a koymuyor: {leaked}"
+    leaked = sorted(name for name in bound if _is_public(name) and name not in sofascore_scraper.store.__all__ and name != "sofascore_scraper")
+    assert leaked == [], f"sofascore_scraper/store/__init__.py şu adları bağlıyor ama __all__'a koymuyor: {leaked}"
 
 
 def test_public_api_matches_the_snapshot_files():
@@ -391,8 +391,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import ClassVar, Iterator, Literal, Optional
 
-from src.exceptions import StorageError
-from src.store.lease import Lease
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.store.lease import Lease
 
 Need = Literal["none", "partial", "full"]
 FORMAT: int = 1
@@ -471,17 +471,17 @@ class Unrelated:
 @pytest.fixture
 def package(tmp_path: Path) -> Sources:
     return _package(tmp_path, {
-        "src/exceptions.py": "class StorageError(Exception):\n    pass\n",
-        "src/store/__init__.py": (
-            "from src.store.api import FORMAT, Kind, Need, Ref, Store, open_store\n"
-            "from src.store import lease as leases\n"
+        "sofascore_scraper/exceptions.py": "class StorageError(Exception):\n    pass\n",
+        "sofascore_scraper/store/__init__.py": (
+            "from sofascore_scraper.store.api import FORMAT, Kind, Need, Ref, Store, open_store\n"
+            "from sofascore_scraper.store import lease as leases\n"
             "from .errors import StoreError as Error\n"
             "import json\n"
             "from os import PathLike\n"
         ),
-        "src/store/api.py": API_MODULE,
-        "src/store/lease.py": LEASE_MODULE,
-        "src/store/errors.py": "from src.exceptions import StorageError\n\n\nclass StoreError(StorageError):\n    code = 1\n",
+        "sofascore_scraper/store/api.py": API_MODULE,
+        "sofascore_scraper/store/lease.py": LEASE_MODULE,
+        "sofascore_scraper/store/errors.py": "from sofascore_scraper.exceptions import StorageError\n\n\nclass StoreError(StorageError):\n    code = 1\n",
     })
 
 
@@ -491,7 +491,7 @@ def _body(text: str) -> List[str]:
 
 def test_snapshot_of_a_dataclass(package: Sources):
     text = build_snapshots(package, ["Ref"])["Ref"]
-    assert text.splitlines()[:2] == ["# src.store.Ref", "# kaynak: src/store/api.py"]
+    assert text.splitlines()[:2] == ["# sofascore_scraper.store.Ref", "# kaynak: sofascore_scraper/store/api.py"]
     assert _body(text) == [
         "@dataclass(frozen=True)",
         "class Ref:",
@@ -537,11 +537,11 @@ def test_snapshot_of_enum_function_and_values(package: Sources):
 def test_snapshot_follows_reexports_to_the_defining_module(package: Sources):
     snapshots = build_snapshots(package, ["Error", "leases", "json", "PathLike", "Missing"])
     assert snapshots["Error"].splitlines() == [
-        "# src.store.Error", "# kaynak: src/store/errors.py", "class StoreError(StorageError):", "    code = ..."]
-    assert snapshots["leases"].splitlines() == ["# src.store.leases", "# kaynak: src/store/lease.py", "module src.store.lease"]
+        "# sofascore_scraper.store.Error", "# kaynak: sofascore_scraper/store/errors.py", "class StoreError(StorageError):", "    code = ..."]
+    assert snapshots["leases"].splitlines() == ["# sofascore_scraper.store.leases", "# kaynak: sofascore_scraper/store/lease.py", "module sofascore_scraper.store.lease"]
     assert _body(snapshots["json"]) == ["import json"]
     assert _body(snapshots["PathLike"]) == ["from os import PathLike"]
-    assert snapshots["Missing"] == "# src.store.Missing\n# kaynakta tanımı bulunamadı\n"
+    assert snapshots["Missing"] == "# sofascore_scraper.store.Missing\n# kaynakta tanımı bulunamadı\n"
 
 
 def test_classes_reached_through_public_signatures_are_tracked_too(package: Sources):
@@ -549,18 +549,18 @@ def test_classes_reached_through_public_signatures_are_tracked_too(package: Sour
     snapshots = build_snapshots(package, ["Store", "open_store"])
     assert sorted(snapshots) == ["Kind", "Lease", "LeaseOwner", "Ref", "Store", "_Base", "open_store"]
     assert snapshots["Lease"].splitlines()[:2] == [
-        "# Lease: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor",
-        "# kaynak: src/store/lease.py",
+        "# Lease: sofascore_scraper.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor",
+        "# kaynak: sofascore_scraper/store/lease.py",
     ]
     assert _body(snapshots["_Base"]) == ["class _Base:", "    def info(self) -> dict"]
     assert _body(snapshots["LeaseOwner"]) == ["class LeaseOwner:", "    pid: int"]
-    # src/exceptions.py Store paketinin dışında: StorageError tabanı izlenmez
+    # sofascore_scraper/exceptions.py Store paketinin dışında: StorageError tabanı izlenmez
     assert "StorageError" not in build_snapshots(package, ["Error"])
 
 
 def test_an_exported_class_keeps_the_exported_header_when_also_reached_through_a_signature(package: Sources):
     snapshots = build_snapshots(package, ["open_store", "Store", "Ref"])
-    assert snapshots["Store"].startswith("# src.store.Store\n") and snapshots["Ref"].startswith("# src.store.Ref\n")
+    assert snapshots["Store"].startswith("# sofascore_scraper.store.Store\n") and snapshots["Ref"].startswith("# sofascore_scraper.store.Ref\n")
 
 
 def test_signature_text_covers_every_kind_of_parameter():
@@ -579,6 +579,6 @@ def test_signature_text_covers_every_kind_of_parameter():
 
 
 def test_empty_class_renders_pass(package: Sources):
-    sources = _package(package.root, {"src/store/empty.py": "class Marker(Exception):\n    '''yalnızca belge'''\n"})
-    located = sources.locate("src.store.empty", "Marker")
+    sources = _package(package.root, {"sofascore_scraper/store/empty.py": "class Marker(Exception):\n    '''yalnızca belge'''\n"})
+    located = sources.locate("sofascore_scraper.store.empty", "Marker")
     assert located is not None and render(located) == ["class Marker(Exception):", "    pass"]
