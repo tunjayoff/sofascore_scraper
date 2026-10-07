@@ -45,8 +45,10 @@ afterEach(() => {
 /** Every code the download path writes (sofascore_scraper/services/sync.py, FX-13 and FX-19). */
 const CODES: Record<string, Record<string, unknown>> = {
   sync_season_list: { league_id: 17 },
+  sync_season_list_fresh: { league_id: 17 },
   sync_season_list_failed: { league_id: 17, reason: '404' },
   sync_schedule: { league_id: 17, season_id: 61627 },
+  sync_schedule_fresh: { league_id: 17, season_id: 61627 },
   sync_schedule_failed: { league_id: 17, season_id: 61627, reason: 'timeout' },
   sync_season_outdated: { season_id: 52186, resolved: 61627, league_id: 17 },
   sync_follow_skipped: { follow: 'team:42' },
@@ -56,6 +58,7 @@ const CODES: Record<string, Record<string, unknown>> = {
   sync_details_selected: { count: 3 },
   sync_breaker_stopped: { reason: '429', what: 'match details' },
   sync_extras: { stored: 5, failed: 1 },
+  sync_extras_kinds: { saved: ['standings', 'season_info'], unavailable: ['season_odds'] },
   sync_follow_listing: { follow: 'team:42', name: 'Arsenal' },
   sync_follow_listing_failed: { follow: 'player:7', name: 'Bukayo Saka', reason: 'parse' },
   sync_follow_details: { count: 4 },
@@ -90,6 +93,32 @@ describe('coded job log lines', () => {
     expect(codeText('sync_follow_skipped', { follow: 'team:42' })).toBe('Arsenal etkin bir takip değil; atlandı.')
     setLocale('en')
     expect(codeText('sync_schedule', { league_id: 18, season_id: 9 })).toBe('Reading the matches of League #18, season #9…')
+  })
+
+  it('a fresh season list or match list says it is not read again (FX-23 F9)', () => {
+    tournamentNames.value = new Map([[17, { id: 17, name: 'Premier League', sport: 'football', category_id: 1, slug: 'pl' }]])
+    setLocale('tr')
+    expect(codeText('sync_season_list_fresh', { league_id: 17 })).toBe('Premier League için sezon listesi güncel; yeniden okunmuyor.')
+    expect(codeText('sync_schedule_fresh', { league_id: 17, season_id: 61627 })).toBe('Premier League için #61627 sezonunun maçları güncel; yeniden okunmuyor.')
+    setLocale('en')
+    expect(codeText('sync_season_list_fresh', { league_id: 17 })).toBe('The season list of Premier League is up to date; it is not read again.')
+  })
+
+  it('the kinds of non-match data are named by their data type, not by their keys (FX-23 F18)', () => {
+    setLocale('tr')
+    expect(codeText('sync_extras_kinds', { saved: ['standings'], unavailable: ['season_odds'] })).toBe('Puan durumu kaydedildi; Sezon oranları (şampiyonluk, düşme) SofaScore’da yok.')
+    expect(codeText('sync_extras_kinds', { saved: ['standings', 'season_info'], unavailable: [] })).toBe('Puan durumu, Sezon bilgisi kaydedildi.')
+    expect(codeText('sync_extras_kinds', { saved: [], unavailable: ['cuptrees'] })).toBe('Kupa ağacı SofaScore’da yok.')
+    setLocale('en')
+    expect(codeText('sync_extras_kinds', { saved: ['standings'], unavailable: ['season_odds', 'top_players'] })).toBe(
+      'Standings saved; Season odds (champion, relegation), Best players of the season not available on SofaScore.',
+    )
+    // bir anahtarı UI bilmiyorsa anahtarın kendisi; liste yoksa "hiçbiri"
+    expect(codeText('sync_extras_kinds', { saved: ['brand_new'], unavailable: [] })).toBe('brand_new saved.')
+    expect(codeText('sync_extras_kinds', {})).toBe('No kind of data was saved.')
+    const line = logLine({ seq: 9, ts_ms: 0, type: 'log', data: { message: 'Saved: standings; not available on SofaScore: none.', code: 'sync_extras_kinds', params: { saved: ['standings'], unavailable: [] } } } as never)
+    expect(line.text).toBe('Standings saved.')
+    expect(line.text).not.toContain('standings')
   })
 
   it('a line with an unknown code (or none) shows the server text as it is', () => {
