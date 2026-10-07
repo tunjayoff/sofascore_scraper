@@ -570,9 +570,29 @@ class _SyncRun:
             if job.cancelled() or self.blocked("season lists"):
                 break
             tracker.set_context(league_id=lid, league_name=self.lname(lid))
-            self.log(f"Refreshing season list for league {lid}...", "sync_season_list", league_id=int(lid))
+            if max_age is not None and self._fresh(listing.season_list_is_fresh, lid, max_age=max_age):
+                # Liste tazeyse istek gitmez (listing.season_list_is_fresh); günlük "okunuyor" demesin (FX-23, F9)
+                self.log(f"The season list of league {lid} is up to date; it is not read again.",
+                         "sync_season_list_fresh", league_id=int(lid))
+            else:
+                self.log(f"Refreshing season list for league {lid}...", "sync_season_list", league_id=int(lid))
             self._listing(lambda _l=lid: ctx.season_fetcher.list_seasons(_l, max_age=max_age), "seasons", lid)
             tracker.advance(i + 1)
+
+    def _fresh(self, rule: Callable[..., bool], *ids: int, max_age: float) -> bool:
+        """
+        Saklanan liste (sezon listesi ya da program; `rule`: listing.season_list_is_fresh / schedule_is_fresh)
+        `max_age`'den genç mi. Yalnızca iş günlüğünün satırını seçer: isteği atlayan karar liste servisinindir,
+        aynı kuralla (FX-23, F9: liste tazeyken de "okunuyor" yazıyordu). Depo yoksa ya da okunamazsa False.
+        """
+        from sofascore_scraper.store import Store, StoreError
+
+        try:
+            store = getattr(self.ctx, "store", None)
+            return isinstance(store, Store) and rule(store, *(int(i) for i in ids), max_age)
+        except (StoreError, StorageError) as e:
+            logger.debug("Freshness of a stored list (%s) could not be read: %s", ids, e)
+            return False
 
     def _followed_seasons(self, lid: int, names: Mapping[int, Optional[str]]) -> List[int]:
         """Bir takibin indirilecek sezonları (sezon listesine takibin seçimi uygulanır; `pick_seasons`)."""
@@ -649,8 +669,12 @@ class _SyncRun:
             if cancelled() or self.blocked("match lists"):
                 break
             tracker.set_context(league_id=lid, league_name=self.lname(lid), season_name=sname)
-            self.log(f"Fetching matches: league {lid}, season {sid}", "sync_schedule", league_id=int(lid),
-                     season_id=int(sid))
+            if self._fresh(listing.schedule_is_fresh, lid, sid, max_age=listing.SCHEDULE_TTL_SECONDS):
+                self.log(f"The matches of league {lid}, season {sid} are up to date; they are not read again.",
+                         "sync_schedule_fresh", league_id=int(lid), season_id=int(sid))
+            else:
+                self.log(f"Fetching matches: league {lid}, season {sid}", "sync_schedule", league_id=int(lid),
+                         season_id=int(sid))
             result = self._listing(lambda _l=lid, _s=sid: ctx.match_fetcher.list_schedule(
                 _l, _s, max_age=listing.SCHEDULE_TTL_SECONDS), "schedule", lid, sid)
             # Boş program: listelendi ama maç yok. Başarısız ya da devre kesici yüzünden yarım kalan program
