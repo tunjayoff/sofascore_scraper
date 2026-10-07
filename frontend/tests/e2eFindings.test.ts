@@ -18,11 +18,12 @@ import HealthScreen from '@/screens/HealthScreen.vue'
 import { countsText, everyText } from '@/screens/jobs/jobText'
 import OverviewScreen from '@/screens/OverviewScreen.vue'
 import { etaSeconds, measuredEta, noteProgress, resetEta } from '@/app/eta'
+import SettingsScreen from '@/screens/settings/SettingsScreen.vue'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
 import { callsTo, flush, mockFetch } from './helpers'
-import { axeViolations, event, FakeES, follow, job, mountScreen, page, slice, sport, status, useFakeES } from './v1'
+import { axeViolations, event, FakeES, follow, job, mountScreen, page, setting, settingsDoc, slice, sport, status, useFakeES } from './v1'
 
 /**
  * FX-24: the findings of the end-to-end test of the web UI against the real SofaScore (F5 to F37 of the
@@ -667,5 +668,30 @@ describe('F17: the time left follows the pace of the last minutes', () => {
     }
     // 37 left at 7.5 s a match: 4 min 38 s
     expect(w.find('[data-testid="running-eta"]').text()).toBe(t('ui.job.eta', { time: '4 min 38 s' }))
+  })
+})
+
+describe('F20: the SofaScore address is not the first field of Requests', () => {
+  const doc = settingsDoc([
+    setting('client.base_url', 'https://www.sofascore.com/api/v1'),
+    setting('client.rate', 1, { source: 'config', source_name: 'sofascore.toml', locked: true, writable: false }),
+    setting('client.max_concurrent', 4),
+    setting('client.throttle_dir', ''),
+  ])
+
+  it('the common settings come first; the address and the other rare ones are last, under a closed “Advanced”', async () => {
+    mockFetch({ 'GET /api/v1/settings': { data: doc }, 'GET /api/v1/status': { data: status() } })
+    const { w } = await mountScreen(SettingsScreen, '/settings')
+    wrappers.push(w)
+    await flush()
+    const keys = w.findAll('[data-setting]').map((x) => x.attributes('data-setting'))
+    expect(keys[0]).toBe('client.rate')
+    expect(keys.indexOf('client.base_url')).toBeGreaterThan(keys.indexOf('client.max_concurrent'))
+    const fold = w.find('[data-testid="settings-advanced"]')
+    expect(fold.element.tagName).toBe('DETAILS')
+    expect(fold.attributes('open')).toBeUndefined()
+    expect(fold.find('summary').text()).toBe(t('ui.settings.advanced'))
+    expect(fold.findAll('[data-setting]').map((x) => x.attributes('data-setting'))).toEqual(['client.base_url', 'client.throttle_dir'])
+    expect(await axeViolations(w.element)).toEqual([])
   })
 })

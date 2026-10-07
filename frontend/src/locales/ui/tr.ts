@@ -1598,6 +1598,8 @@ const tr: typeof en = {
   settings: {
     description: 'Sunucunun ayarları ve her değerin nereden geldiği.',
     sections: 'Bölümler',
+    advanced: 'Gelişmiş',
+    advancedNote: 'Nadiren gerekir. Buradaki yanlış bir değer bütün indirmeleri durdurabilir.',
     section: {
       requests: 'İstekler',
       data: 'Veri',

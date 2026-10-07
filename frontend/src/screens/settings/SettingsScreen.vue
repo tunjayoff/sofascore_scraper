@@ -17,7 +17,7 @@ import { toast } from '@/ui/toast'
 import SettingRow from './SettingRow.vue'
 import BrowserSettings from './BrowserSettings.vue'
 import SliceDefaults from './SliceDefaults.vue'
-import { DATA_DIR, metaOf, RETIRED, SECTIONS, type Section } from './settingsMeta'
+import { DATA_DIR, isAdvanced, metaOf, RETIRED, SECTIONS, type Section } from './settingsMeta'
 
 /**
  * Settings (6.16): the server's settings by section, each with where its value comes from; locked and
@@ -65,7 +65,12 @@ const tab = computed<Tab>({
   set: (v) => void router.replace({ query: { ...route.query, tab: v === 'requests' ? undefined : v } }),
 })
 // the data types are a checklist of their own (SliceDefaults), not a row of text
-const rows = computed(() => (tab.value === 'browser' ? [] : (bySection.value[tab.value] ?? []).filter((s) => s.key !== 'defaults.slices')))
+const shownRows = computed(() => (tab.value === 'browser' ? [] : (bySection.value[tab.value] ?? []).filter((s) => s.key !== 'defaults.slices')))
+const rows = computed(() => shownRows.value.filter((s) => !isAdvanced(s.key)))
+/** The section's rarely changed and risky settings (the SofaScore address …), last and folded (FX-24 F20). */
+const advancedRows = computed(() => shownRows.value.filter((s) => isAdvanced(s.key)))
+/** The fold is open while one of its settings is changed or refused. */
+const advancedOpen = computed(() => advancedRows.value.some((s) => s.key in staged.value || s.key in problems.value))
 
 async function load() {
   loading.value = true
@@ -194,8 +199,23 @@ onMounted(load)
               @reset="stage(s.key, null)"
               @discard="unstage(s.key)"
             />
-            <EmptyState v-if="!rows.length" icon="settings" :title="t('ui.settings.emptySection')" />
+            <EmptyState v-if="!rows.length && !advancedRows.length" icon="settings" :title="t('ui.settings.emptySection')" />
           </section>
+          <details v-if="advancedRows.length" class="u-card px-6 mt-4" :open="advancedOpen || undefined" data-testid="settings-advanced">
+            <summary class="py-4 font-semibold cursor-pointer">{{ t('ui.settings.advanced') }}</summary>
+            <p class="m-0 mb-2 u-small u-muted">{{ t('ui.settings.advancedNote') }}</p>
+            <SettingRow
+              v-for="s in advancedRows"
+              :key="s.key"
+              :setting="s"
+              :staged="staged[s.key]"
+              :config-file="doc.config_file"
+              :problem="problems[s.key]"
+              @change="(v) => stage(s.key, v)"
+              @reset="stage(s.key, null)"
+              @discard="unstage(s.key)"
+            />
+          </details>
         </template>
       </UiTabs>
 

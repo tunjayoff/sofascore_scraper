@@ -1596,6 +1596,8 @@ const en = {
   settings: {
     description: 'The server’s settings, and where each value comes from.',
     sections: 'Sections',
+    advanced: 'Advanced',
+    advancedNote: 'Rarely needed. A wrong value here can stop every download.',
     section: {
       requests: 'Requests',
       data: 'Data',
