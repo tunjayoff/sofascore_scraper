@@ -7,7 +7,7 @@ canlı izlemeyi üretimde bu push kanalıyla yapmanın (yoklama yedekte) uygulan
 > **Bugünkü davranış.** Bu belge 2026-10-01'deki bir ölçümün kaydıdır. Uygulama bu ölçümden sonra `ssc watch`'a
 > üç canlı kaynak ekledi: `page` (varsayılan; sayfanın kendi push bağlantısını dinler), `poll` (yalnız yoklama)
 > ve `direct` (yalnızca açıkça seçilince; riskleri `ssc watch --help`'te yazar). Yoklama her kaynağın yedeğidir.
-> Kullanım: [README](../../README.md), "Live sources of `ssc watch`"; servis olarak çalıştırma:
+> Kullanım: [README](../../README.md#live-watching), "Live watching"; servis olarak çalıştırma:
 > [docs/deploy/watch.md](../deploy/watch.md). Web arayüzünde canlı görünüm yoktur.
 
 - **Tarih:** 2026-10-01 akşamı, Avrupa kupa maçları penceresi (~19:25–22:00 +03).
