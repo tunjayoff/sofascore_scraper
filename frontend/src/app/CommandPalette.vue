@@ -9,13 +9,18 @@ import type { FollowRecord, Job, TournamentRecord } from '@/api/v1/schema'
 import { NAV } from '@/app/nav'
 import { jobKindText, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
 import { loadTournaments } from '@/screens/events/eventText'
+import { MIN_CHARS, noteFollows, normalize, useSuggest } from '@/app/suggest'
+import { sportName } from '@/app/sports'
+import { hitPlace, kindIcon } from '@/screens/follows/followText'
 
 /**
  * Quick search, `Ctrl K` / `⌘ K` (3.3, decision 20). It searches stored data: the actions (Add league,
  * Back up, Export, Settings, Help; FX-14a), the screens, the follows and the stored tournaments by name, an
- * event or job id, and the recent jobs. It sends nothing to SofaScore by itself: when nothing stored
- * matches, it offers "Search SofaScore: '<text>'", which opens the follow editor with the text and runs
- * that one search, only when the user picks it.
+ * event or job id, and the recent jobs. From 2 characters on a "On SofaScore" section suggests SofaScore's
+ * leagues, teams and players while typing (FX-20, `useSuggest`: one search after a 350 ms pause, a newer
+ * keystroke cancels the older one, answers kept for the page and 10 minutes on the server). Enter on one
+ * opens the follow editor with it filled in (its follow page when it is added already); the last entry,
+ * "Search SofaScore: '<text>'", opens the editor with the text.
  */
 const emit = defineEmits<{ close: []; help: [] }>()
 const { t, locale } = useI18n()
@@ -50,7 +55,7 @@ watch(query, (value) => {
   }, 200)
 })
 
-type Hit = { id: string; label: string; hint?: string; icon: UiIconName; to?: RouteLocationRaw; run?: () => void }
+type Hit = { id: string; label: string; hint?: string; icon: UiIconName; to?: RouteLocationRaw; run?: () => void; added?: boolean }
 type Action = Hit & { words: string[] }
 
 const lower = (s: string) => s.toLocaleLowerCase(locale.value)
@@ -106,20 +111,51 @@ const hits = computed<Hit[]>(() => {
     const label = `${jobKindText(j.kind, j.spec)} · ${jobTarget(j)}`
     if (q && (lower(label).includes(q) || j.id.toLowerCase().startsWith(q))) out.push({ id: `recent-${j.id}`, label, hint: j.id, icon: 'jobs', to: `/jobs/${j.id}` })
   }
-  // Nothing matches: offer the search at SofaScore, sent only when the user picks it (FX-14a)
-  const text = query.value.trim()
-  if (!out.length && text.length >= 2 && !/^\d+$/.test(text)) {
-    const sofascore: Hit = {
-      id: 'sofascore',
-      label: t('ui.palette.searchSofascore', { q: text }),
-      hint: t('ui.palette.searchSofascoreHint'),
-      icon: 'external',
-      to: { path: '/follows/new', query: { q: text } },
-    }
-    return [...out.slice(0, 11), sofascore]
-  }
   return out.slice(0, 12)
 })
+
+// ---- SofaScore, while typing (FX-20) ----
+const remote = useSuggest(query, { local: false, follows })
+const asksSofascore = computed(() => {
+  const text = normalize(query.value)
+  return text.length >= MIN_CHARS && !/^\d+$/.test(text)
+})
+const remoteHits = computed<Hit[]>(() => {
+  if (!asksSofascore.value) return []
+  const text = normalize(query.value)
+  const found: Hit[] = remote.flat.value.map((s) => {
+    const h = s.hit
+    const hint = [t(`ui.follows.kind.${s.kind}`), h.sport ? sportName(h.sport) : '', hitPlace(h), h.team?.name ?? ''].filter(Boolean).join(' · ')
+    const to: RouteLocationRaw = s.followed
+      ? `/follows/${s.kind}/${h.id}`
+      : { path: '/follows/new', query: { kind: s.kind, id: String(h.id), name: h.name, ...(h.sport ? { sport: h.sport } : {}) } }
+    return { id: `ss-${s.kind}-${h.id}`, label: h.name, hint, icon: kindIcon(s.kind), to, added: s.followed }
+  })
+  // every result of the text in the follow editor (where the kept answer costs nothing)
+  found.push({ id: 'sofascore', label: t('ui.palette.searchSofascore', { q: text }), hint: t('ui.palette.searchSofascoreHint'), icon: 'external', to: { path: '/follows/new', query: { q: text } } })
+  return found
+})
+const remoteStatus = computed(() => {
+  if (!asksSofascore.value) return ''
+  if (remote.pending.value) return t('ui.suggest.searching')
+  if (remote.error.value) return t('ui.palette.sofascoreFailed')
+  if (remote.current.value && !remote.flat.value.length) return t('ui.palette.sofascoreNone')
+  return ''
+})
+/** Every option in the order shown: the stored results, then SofaScore's (the arrow keys walk both). */
+const allHits = computed(() => [...hits.value, ...remoteHits.value])
+
+function scrollToActive() {
+  const hit = allHits.value[active.value]
+  if (hit) void nextTick(() => document.getElementById(`${listId}-${hit.id}`)?.scrollIntoView?.({ block: 'nearest' }))
+}
+// the list grows when SofaScore answers; a cursor past its end comes back
+watch(
+  () => allHits.value.length,
+  (n) => {
+    if (active.value >= n) active.value = Math.max(0, n - 1)
+  },
+)
 
 function go(hit: Hit | undefined) {
   if (!hit) return
@@ -134,13 +170,15 @@ function onKeydown(e: KeyboardEvent) {
     emit('close')
   } else if (e.key === 'ArrowDown') {
     e.preventDefault()
-    active.value = Math.min(hits.value.length - 1, active.value + 1)
+    active.value = Math.min(allHits.value.length - 1, active.value + 1)
+    scrollToActive()
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     active.value = Math.max(0, active.value - 1)
+    scrollToActive()
   } else if (e.key === 'Enter') {
     e.preventDefault()
-    go(hits.value[active.value])
+    go(allHits.value[active.value])
   } else trapTab(e, root.value)
 }
 
@@ -155,6 +193,7 @@ onMounted(() => {
     .then((r) => {
       follows.value = r.data
       noteFollowNames(r.data)
+      noteFollows(r.data)
     })
     .catch(() => {})
   // names for the leagues of the recent jobs
@@ -178,9 +217,9 @@ onUnmounted(() => {
           class="flex-1"
           role="combobox"
           aria-autocomplete="list"
-          :aria-expanded="hits.length > 0"
+          :aria-expanded="allHits.length > 0"
           :aria-controls="listId"
-          :aria-activedescendant="hits[active] ? `${listId}-${hits[active].id}` : undefined"
+          :aria-activedescendant="allHits[active] ? `${listId}-${allHits[active].id}` : undefined"
           :aria-label="t('ui.palette.label')"
           :placeholder="t('ui.palette.placeholder')"
           autocomplete="off"
@@ -204,8 +243,34 @@ onUnmounted(() => {
           <span class="flex-1 truncate">{{ hit.label }}</span>
           <span v-if="hit.hint" class="u-small u-muted truncate max-w-[40%]">{{ hit.hint }}</span>
         </li>
-        <li v-if="!hits.length" class="u-palette-empty u-muted">{{ t('ui.palette.none') }}</li>
+        <li v-if="asksSofascore" role="none">
+          <div role="group" :aria-labelledby="`${listId}-ss`" data-testid="palette-sofascore" :aria-busy="remote.pending.value">
+          <div :id="`${listId}-ss`" role="presentation" class="u-palette-group">
+            {{ t('ui.palette.sofascore') }}<span v-if="remoteStatus" class="u-palette-group-status"> · {{ remoteStatus }}</span>
+          </div>
+          <ul role="none" class="m-0 p-0 list-none">
+            <li
+              v-for="(hit, j) in remoteHits"
+              :id="`${listId}-${hit.id}`"
+              :key="hit.id"
+              role="option"
+              :aria-selected="hits.length + j === active"
+              class="u-palette-hit"
+              :data-hit="hit.id"
+              @mousemove="active = hits.length + j"
+              @click="go(hit)"
+            >
+              <UiIcon :name="hit.icon" :size="16" />
+              <span class="flex-1 truncate">{{ hit.label }}</span>
+              <span v-if="hit.added" class="u-small u-palette-added">{{ t('ui.followEditor.alreadyFollowed') }}</span>
+              <span v-if="hit.hint" class="u-small u-muted truncate max-w-[40%]">{{ hit.hint }}</span>
+            </li>
+          </ul>
+          </div>
+        </li>
+        <li v-if="!allHits.length" class="u-palette-empty u-muted">{{ t('ui.palette.none') }}</li>
       </ul>
+      <p class="u-sr" aria-live="polite">{{ remoteStatus }}</p>
       <p class="m-0 u-small u-muted u-palette-note">{{ t('ui.palette.note') }}</p>
     </div>
   </div>
@@ -257,6 +322,23 @@ onUnmounted(() => {
 }
 .u-palette-hit[aria-selected='true'] {
   background: var(--accent-soft);
+}
+.u-palette-group {
+  padding: var(--sp-4) var(--sp-3) var(--sp-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.u-palette-group-status {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.u-palette-added {
+  color: var(--ok-fg);
+  white-space: nowrap;
 }
 .u-palette-empty {
   padding: var(--sp-4);

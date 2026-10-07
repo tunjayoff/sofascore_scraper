@@ -1265,7 +1265,7 @@
           "tournaments"
         ],
         "summary": "Search tournaments, teams and players on SofaScore",
-        "description": "Look the text up on SofaScore (one request, the shared request budget), at most 20 hits of the kinds asked\nfor (`kinds`; tournaments by default), each typed by `kind`. An empty list: SofaScore answered and found\nnothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it did not answer; `details.reason` is\nblocked, browser, rate_limited, network or upstream. POST, because every call sends a request to SofaScore (a\nGET could be triggered by another site).",
+        "description": "Look the text up on SofaScore (one request, the shared request budget), at most 20 hits of the kinds asked\nfor (`kinds`; tournaments by default), each typed by `kind`. An empty list: SofaScore answered and found\nnothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it did not answer; `details.reason` is\nblocked, browser, rate_limited, network or upstream. POST, because every call sends a request to SofaScore (a\nGET could be triggered by another site).\n\nMade for typing: the server keeps each answer for 10 minutes, so the same text again (case and spaces\nignored) sends nothing to SofaScore. When the client closes the connection before the request was sent\n(for example while it waits for its turn in the request budget), it is not sent at all.",
         "operationId": "searchTournaments",
         "requestBody": {
           "content": {
@@ -1350,6 +1350,114 @@
           },
           "503": {
             "description": "blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalog/suggest": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Suggest stored tournaments and teams by name",
+        "description": "Names to suggest while the user types: the tournaments and the teams (competitors) the data directory knows,\nin the shape of a search hit (`kind` `tournament` or `team`). Names that start with the text come first,\nthen names with a word that starts with it, then the others; followed ones first within each. Nothing is\nsent to SofaScore; `POST /tournaments/search` does that.",
+        "operationId": "suggestCatalog",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Text in the name; case and accents ignored.",
+              "title": "Q"
+            },
+            "description": "Text in the name; case and accents ignored."
+          },
+          {
+            "name": "sport",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only names of this sport (slug).",
+              "title": "Sport"
+            },
+            "description": "Only names of this sport (slug)."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 8,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentHitListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
             "content": {
               "application/json": {
                 "schema": {
@@ -7348,7 +7456,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Spec",
-            "description": "The service spec the job was started with."
+            "description": "What the job was started with. A download (`sync`, `fetch`, `refresh`) has the fields of its request body (`only: \"events\"`: a `sync` of event details only, from `ssc sync --only events`); one by `event_ids` also has `selections`, the leagues of those events (league 0: an event not stored); `names` maps the follows and leagues it names to their names when it started (`{\"team:42\": \"Arsenal\"}`)."
           },
           "progress": {
             "anyOf": [

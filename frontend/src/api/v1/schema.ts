@@ -624,7 +624,7 @@ export interface Job {
   kind: JobKind
   state: JobState
   origin: JobOrigin
-  /** The service spec the job was started with. */
+  /** What the job was started with. A download (`sync`, `fetch`, `refresh`) has the fields of its request body (`only: "events"`: a `sync` of event details only, from `ssc sync --only events`); one by `event_ids` also has `selections`, the leagues of those events (league 0: an event not stored); `names` maps the follows and leagues it names to their names when it started (`{"team:42": "Arsenal"}`). */
   spec: Record<string, unknown>
   /** Phase, counters and failed items; the last progress event for a job of another process. */
   progress?: Record<string, unknown> | null
@@ -1716,6 +1716,15 @@ export interface Operations {
     params: {}
     query: {}
     body: TournamentSearch
+    response: TournamentHitListResponse
+  }
+  /** Suggest stored tournaments and teams by name */
+  "suggestCatalog": {
+    method: "GET"
+    path: "/api/v1/catalog/suggest"
+    params: {}
+    query: { q: string; sport?: string | null; limit?: number }
+    body: never
     response: TournamentHitListResponse
   }
   /** Get a tournament */

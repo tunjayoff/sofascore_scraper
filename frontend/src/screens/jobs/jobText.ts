@@ -36,8 +36,8 @@ export function jobKindText(kind: string, spec?: unknown): string {
 }
 
 /**
- * A download of the season lists only: `only: "seasons"` in the body that starts it, `mode: "seasons"` in
- * the spec the job records (the service's `SyncSpec`, what `GET /jobs` returns).
+ * A download of the season lists only: `only: "seasons"`, in the body that starts it and, since FX-20, in the
+ * spec the job records; `mode: "seasons"` in the records of a server before FX-20.
  */
 export function isSeasonList(spec: unknown): boolean {
   const s = asSpec(spec)
@@ -66,6 +66,8 @@ type Spec = {
   season_id?: number | null
   older_than?: string | null
   dry_run?: boolean
+  /** The names of the follows and leagues the job names, when it started (FX-20): `{"team:42": "Arsenal"}`. */
+  names?: Record<string, string> | null
   // the data jobs
   dataset?: string
   format?: string
@@ -79,12 +81,19 @@ function asSpec(spec: unknown): Spec {
   return spec && typeof spec === 'object' ? (spec as Spec) : {}
 }
 
+/** The names a job recorded when it started (FX-20), by follow id. */
+export function jobNames(spec: unknown): Record<string, string> {
+  const names = asSpec(spec).names
+  return names && typeof names === 'object' ? names : {}
+}
+
 /**
  * A league by its name (FX-14a): the stored catalog's name (`loadTournaments` in events/eventText.ts, read
- * once by the screens that show jobs), else the name the job's progress reported, else "League #17".
+ * once by the screens that show jobs), else the name the job recorded (FX-20; a league whose data was
+ * deleted is no longer in the catalog), else the name the job's progress reported, else "League #17".
  */
-export function leagueName(id: number, progress?: unknown): string {
-  const known = tournamentNames.value.get(id)?.name
+export function leagueName(id: number, progress?: unknown, names: Record<string, string> = {}): string {
+  const known = tournamentNames.value.get(id)?.name ?? names[`tournament:${id}`]
   if (known) return known
   const p = readProgress(progress)
   return p.leagueName ?? t('ui.job.target.tournament', { id })
@@ -103,13 +112,16 @@ export function noteFollowNames(list: Pick<FollowRecord, 'id' | 'name'>[]) {
   followNames.value = next
 }
 
-/** "Arsenal", "Premier League", else "Team #42": a follow id (`<kind>:<id>`) in words. */
-export function followName(id: string, progress?: unknown): string {
-  const known = followNames.value.get(id)
+/**
+ * "Arsenal", "Premier League", else "Team #42": a follow id (`<kind>:<id>`) in words; the follows read in
+ * this tab first, then the name the job recorded (FX-20).
+ */
+export function followName(id: string, progress?: unknown, names: Record<string, string> = {}): string {
+  const known = followNames.value.get(id) ?? names[id]
   if (known) return known
   const [kind, raw] = id.split(':')
   const n = Number(raw)
-  if (kind === 'tournament' && n > 0) return leagueName(n, progress)
+  if (kind === 'tournament' && n > 0) return leagueName(n, progress, names)
   const key = `ui.job.target.${kind}`
   return kind !== 'tournament' && i18n.global.te(key, 'en') ? t(key, { id: raw }) : id
 }
@@ -138,22 +150,23 @@ export function jobLeague(job: Pick<Job, 'spec'>): number | null {
 /** "All leagues", "Premier League", "2 leagues", "3 matches". */
 export function jobTarget(job: Pick<Job, 'kind' | 'spec'> & { progress?: unknown }): string {
   const spec = asSpec(job.spec)
+  const names = jobNames(spec)
   const selections = Array.isArray(spec.selections) ? spec.selections : []
   if (selections.length) {
     const events = selections.reduce((n, s) => n + (Array.isArray(s.match_ids) ? s.match_ids.length : 0), 0)
     if (events) return t('ui.job.target.events', { n: events })
-    if (selections.length === 1 && selections[0].league_id) return leagueName(selections[0].league_id, job.progress)
+    if (selections.length === 1 && selections[0].league_id) return leagueName(selections[0].league_id, job.progress, names)
     return t('ui.job.target.tournaments', { n: selections.length })
   }
-  if (spec.league_id) return leagueName(spec.league_id, job.progress)
+  if (spec.league_id) return leagueName(spec.league_id, job.progress, names)
   const follows = jobFollows(job)
-  if (follows.length === 1) return followName(follows[0], job.progress)
+  if (follows.length === 1) return followName(follows[0], job.progress, names)
   if (follows.length > 1) return t('ui.job.target.follows', { n: follows.length })
   if (Array.isArray(spec.event_ids) && spec.event_ids.length) return t('ui.job.target.events', { n: spec.event_ids.length })
   if (CALLS_SOFASCORE.includes(job.kind)) return t('ui.job.target.all')
   if (job.kind === 'export') return exportText(spec)
   if (job.kind === 'clear' && typeof spec.tournament_id === 'number') {
-    const name = leagueName(spec.tournament_id, job.progress)
+    const name = leagueName(spec.tournament_id, job.progress, names)
     return typeof spec.season_id === 'number' ? t('ui.job.target.leagueSeason', { name, season: seasonName(spec.season_id) }) : name
   }
   if (job.kind === 'clear' && spec.scope === 'history' && spec.older_than) return t('ui.job.target.olderThan', { age: ageText(spec.older_than) })
@@ -270,6 +283,8 @@ export function rerunBody(job: Pick<Job, 'kind' | 'spec'>): StartJobBody | null 
   if (job.kind === 'refresh') return { kind: 'refresh', spec: eventIds.length ? { event_ids: eventIds } : { league_id: leagueId } }
   if (job.kind === 'fetch' && eventIds.length) return { kind: 'fetch', spec: { event_ids: eventIds } }
   const follows = jobFollows(job)
+  // `ssc sync --only events`: event details only, which the API starts as a fetch (FX-20)
+  if (job.kind === 'sync' && spec.only === 'events') return { kind: 'fetch', spec: { league_id: leagueId } }
   if (job.kind === 'sync' && (follows.length || isSeasonList(spec)))
     return { kind: 'sync', spec: { ...(follows.length ? { follows } : leagueId ? { league_id: leagueId } : {}), only: isSeasonList(spec) ? 'seasons' : null } }
   if (job.kind === 'rebuild') return { kind: 'rebuild', spec: { mode: 'auto' } }

@@ -37,9 +37,28 @@ export function seasonsText(seasons: FollowRecord['seasons'] | null | undefined,
   return seasons ? String(seasons) : '—'
 }
 
-/** Where a search hit is from: the country of a team or a player, the category of a league. */
+/**
+ * Where a search hit is from: the country of a team or a player, the category of a league. A country code
+ * the browser knows is named in the user's language (FX-20: SofaScore gives English names, a stored team only
+ * its code); SofaScore's own codes such as "EN" (England) keep SofaScore's name.
+ */
 export function hitPlace(h: Pick<TournamentHit, 'country' | 'category'>): string {
-  return h.country?.name ?? h.category?.name ?? h.country?.code ?? ''
+  const code = h.country?.code ?? h.category?.country_code ?? null
+  return (code ? regionName(code) : null) ?? h.country?.name ?? h.category?.name ?? code ?? ''
+}
+
+function regionName(code: string): string | null {
+  try {
+    const name = new Intl.DisplayNames([String(i18n.global.locale.value)], { type: 'region', fallback: 'none' }).of(code.toUpperCase())
+    return name && name !== code.toUpperCase() ? name : null
+  } catch {
+    return null
+  }
+}
+
+/** The icon of a search hit's kind (FX-20): a league, a team, a player. */
+export function kindIcon(kind: string | null | undefined): 'trophy' | 'shield' | 'user' {
+  return kind === 'team' ? 'shield' : kind === 'player' ? 'user' : 'trophy'
 }
 
 const isOdds = (k: unknown) => {

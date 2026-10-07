@@ -218,9 +218,15 @@ export const v1 = {
     request<Op<'listTournaments'>['response']>('GET', '/api/v1/tournaments', { query, signal }),
   tournament: (id: number, signal?: AbortSignal): Promise<Data<'getTournament'>> =>
     request<Op<'getTournament'>['response']>('GET', `/api/v1/tournaments/${id}`, { signal }).then((r) => r.data),
-  /** Sends one request to SofaScore; the button that starts it says so (5.1). */
-  searchTournaments: (body: Op<'searchTournaments'>['body']): Promise<Data<'searchTournaments'>> =>
-    request<Op<'searchTournaments'>['response']>('POST', '/api/v1/tournaments/search', { body }).then((r) => r.data),
+  /**
+   * One request to SofaScore (5.1), unless the server still keeps the answer of the same text (10 minutes,
+   * FX-20). Aborting it before the server sent it means it is never sent.
+   */
+  searchTournaments: (body: Op<'searchTournaments'>['body'], signal?: AbortSignal): Promise<Data<'searchTournaments'>> =>
+    request<Op<'searchTournaments'>['response']>('POST', '/api/v1/tournaments/search', { body, signal }).then((r) => r.data),
+  /** Stored tournaments and teams by name, for suggestions while typing; never SofaScore (FX-20). */
+  suggestCatalog: (query: Op<'suggestCatalog'>['query'], signal?: AbortSignal): Promise<Data<'suggestCatalog'>> =>
+    request<Op<'suggestCatalog'>['response']>('GET', '/api/v1/catalog/suggest', { query, signal }).then((r) => r.data),
   /** `counts`: each season with its stored counts (FX-13 `include=counts`). */
   tournamentSeasons: (id: number, signal?: AbortSignal, counts = false): Promise<Data<'listTournamentSeasons'>> =>
     request<Op<'listTournamentSeasons'>['response']>('GET', `/api/v1/tournaments/${id}/seasons`, { query: { include: counts ? ['counts'] : null }, signal }).then((r) => r.data),

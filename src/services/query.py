@@ -275,6 +275,31 @@ class TournamentEntry:
 
 
 @dataclass(frozen=True)
+class Suggestion:
+    """
+    Katalogda adıyla bulunan bir turnuva ya da yarışmacı (plan maddesi FX-20, yazarken öneri). kind: takip türü
+    ("tournament" ya da "team"; tek oyunculu sporların oyuncuları da yarışmacıdır, SofaScore'da takım kimliği
+    taşırlar). country_code: turnuvada kategorinin, yarışmacıda kendi ülke kodu; category_*: turnuvanın
+    kategorisi. followed: aynı türden bir takip bu kimliği adlandırıyor.
+    """
+
+    kind: str
+    id: int
+    name: str
+    slug: Optional[str]
+    sport: Optional[str]
+    country_code: Optional[str]
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
+    category_slug: Optional[str] = None
+    followed: bool = False
+
+
+# Önerilerde sıralama için katalogdan okunan en çok aday (tür başına): ad başında eşleşenler sonda kalmasın
+_SUGGEST_POOL = 200
+
+
+@dataclass(frozen=True)
 class ChangePage:
     """Değişiklik günlüğünün bir sayfası; next_cursor: devam için verilecek sıra numarası (metin), yoksa None."""
 
@@ -615,6 +640,50 @@ class QueryService:
         page = rows[offset:offset + limit]
         return [self._entry(r, following) for r in page], len(rows) > offset + limit
 
+    def suggest(self, text: str, *, sport: Optional[str] = None, limit: int = 8) -> List[Suggestion]:
+        """
+        Yazarken öneri (plan maddesi FX-20): adında `text` geçen turnuvalar ve yarışmacılar (takımlar), yalnızca
+        katalogdan; SofaScore'a istek atılmaz. Sıra: adı metinle başlayanlar, sonra bir sözcüğü metinle başlayanlar,
+        sonra adında geçenler; her birinin içinde takip edilenler önce, sonra ad (eşitlikte tür ve kimlik). Büyük-
+        küçük harf ve aksan ayrımı yoktur. En çok `limit` öneri.
+        """
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+            raise ValueError("limit must be positive")
+        wanted = _suggest_key(text or "")
+        if not wanted:
+            return []
+        follows = self._store.follows.list()
+        followed = {(f.kind, f.entity_id) for f in follows}
+        found: List[Suggestion] = []
+        categories: Dict[int, Any] = {}
+        for row in self._store.entities.tournaments(sport=sport, text=wanted, limit=_SUGGEST_POOL):
+            if not row.name:
+                continue
+            category = None
+            if row.category_id is not None:
+                if row.category_id not in categories:
+                    categories[row.category_id] = self._store.entities.category(row.category_id)
+                category = categories[row.category_id]
+            found.append(Suggestion(
+                kind="tournament", id=row.id, name=row.name, slug=row.slug, sport=row.sport,
+                country_code=category.alpha2 if category is not None else None,
+                category_id=row.category_id, category_name=category.name if category is not None else None,
+                category_slug=category.slug if category is not None else None,
+                followed=("tournament", row.id) in followed,
+            ))
+        for row in self._store.entities.participants(text=wanted, sport=sport, limit=_SUGGEST_POOL):
+            if not row.name:
+                continue
+            found.append(Suggestion(kind="team", id=row.id, name=row.name, slug=row.slug, sport=row.sport,
+                                    country_code=row.country, followed=("team", row.id) in followed))
+
+        def rank(item: Suggestion) -> Tuple[int, int, str, str, int]:
+            name = _suggest_key(item.name)
+            place = 0 if name.startswith(wanted) else 1 if f" {wanted}" in f" {name}" else 2
+            return place, 0 if item.followed else 1, name, item.kind, item.id
+
+        return sorted(found, key=rank)[:limit]
+
     def tournament(self, tournament_id: int) -> Optional[TournamentEntry]:
         """Turnuvanın kaydı ve kategorisi; katalogda yoksa None."""
         if not _valid_id(tournament_id):
@@ -759,6 +828,16 @@ def _fold(text: str) -> str:
 
     decomposed = unicodedata.normalize("NFKD", text)
     return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
+
+
+# Kataloğun `name_folded` kuralındaki gibi NFKD ile ayrışmayan harfler (src/store/derive.py `fold_name`)
+_SUGGEST_FOLD = str.maketrans({"ı": "i", "ø": "o", "ł": "l", "đ": "d", "ð": "d", "þ": "th", "æ": "ae", "œ": "oe",
+                               "ħ": "h"})
+
+
+def _suggest_key(text: str) -> str:
+    """Önerilerin sıralamasında ad: katlanmış, boşluklar teke inmiş (katalogdaki aramayla aynı karşılaştırma)."""
+    return " ".join(_fold(text).translate(_SUGGEST_FOLD).split())
 
 
 def _slice_info(read: Callable[[], Any]) -> Any:
@@ -929,4 +1008,5 @@ def _legacy_row(row: "EventRow", names: _Names) -> Dict[str, Any]:
 __all__ = ["CHANGE_ORDERS", "CatalogNotCurrent", "ChangePage", "DEFAULT_EMPTY_THRESHOLD", "EVENT_KEY", "EventFilter",
            "EventPage", "LEGACY_EVENT_KEY", "LEGACY_LIST_COLUMNS", "LegacyMatchPage", "NEED_FULL", "NEED_NONE",
            "NEED_REFILL", "NEED_REFRESH", "QueryService", "RawPayload", "RefreshPolicy", "SliceSummary",
-           "TournamentEntry", "V1_SORTS", "legacy_detail_keys", "refresh_window_seconds", "required_detail_keys"]
+           "Suggestion", "TournamentEntry", "V1_SORTS", "legacy_detail_keys", "refresh_window_seconds",
+           "required_detail_keys"]

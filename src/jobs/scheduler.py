@@ -274,8 +274,7 @@ def _league_id(options: Mapping[str, Any], where: str) -> Optional[int]:
 
 def _sync_plan(mode: str) -> Callable[[Mapping[str, Any], ContextFactory], TaskPlan]:
     def plan(options: Mapping[str, Any], context: ContextFactory) -> TaskPlan:
-        import dataclasses
-
+        from src.services import job_spec
         from src.services.sync import SyncService, SyncSpec
 
         spec = SyncSpec(mode=mode, league_id=_league_id(options, "schedule task"))  # type: ignore[arg-type]
@@ -285,7 +284,8 @@ def _sync_plan(mode: str) -> Callable[[Mapping[str, Any], ContextFactory], TaskP
             return sync_outcome(SyncService(ctx).run(spec, handle=handle))
 
         kind = {"full": JobKind.SYNC, "details": JobKind.FETCH, "refresh": JobKind.REFRESH}[mode]
-        return TaskPlan(kind=kind, spec=dataclasses.asdict(spec), body=body, phases=spec.job_phases,
+        # API'nin gövdesiyle aynı alanlar (FX-20); lig adı kaydedilmez (arayüz onu katalogdan okur)
+        return TaskPlan(kind=kind, spec=job_spec.record(kind.value, spec), body=body, phases=spec.job_phases,
                         payload={"league_id": spec.league_id, "mode": spec.mode, "selections": None})
 
     return plan
@@ -485,6 +485,8 @@ class Scheduler:
         `every` görevlerinin iş geçmişindeki son çalışması (görevin sırası → iş): zamanlayıcının başlattığı, aynı
         türde ve aynı belirtimle en yeni iş. Geçmiş okunamazsa (depo yok, iş yöneticisi listeyi bilmiyor) boş.
         """
+        from src.services import job_spec
+
         positions = [i for i, trigger in enumerate(self._triggers) if isinstance(trigger, EveryTrigger)]
         if not positions:
             return {}
@@ -506,8 +508,8 @@ class Scheduler:
             except Exception:  # pragma: no cover - check_tasks görevleri kurucuda denetledi
                 continue
             spec = json.loads(json.dumps(dict(plan.spec)))
-            for job in history:  # en yeni önce
-                if job.kind == plan.kind and dict(job.spec) == spec:
+            for job in history:  # en yeni önce; FX-20'den önceki kayıtlar (`mode`) de eşleşir
+                if job.kind == plan.kind and job_spec.same(plan.kind.value, job.spec, spec):
                     found[position] = job
                     break
         return found

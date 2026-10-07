@@ -46,7 +46,7 @@ describe('teams and players by name', () => {
   const arsenal = { kind: 'team', id: 42, name: 'Arsenal', slug: 'arsenal', sport: 'football', category: { country_code: 'EN' }, country: { code: 'EN', name: 'England' }, team: null, followed: false }
   const saka = { kind: 'player', id: 7, name: 'Bukayo Saka', slug: 'saka', sport: 'football', category: { country_code: 'EN' }, country: { code: 'EN', name: 'England' }, team: { id: 42, name: 'Arsenal' }, followed: true }
 
-  it('a team: one search with its kind; the hit shows its kind, sport and country and brings the sport; Add downloads it', async () => {
+  it('a team: one search of every kind; the hit shows its kind, sport and country and brings kind and sport; Add downloads it', async () => {
     const f = mockFetch({
       ...SPORTS,
       'POST /api/v1/tournaments/search': list([arsenal]),
@@ -56,19 +56,21 @@ describe('teams and players by name', () => {
     let router
     ;({ w, router } = await mountScreen(FollowEditorScreen, '/follows/new'))
     await flush()
-    await w.find('[data-kind="team"] input').setValue(true)
-    expect(w.find('[data-testid="editor-query"]').attributes('placeholder')).toBe(t('ui.followEditor.searchPlaceholder.team'))
+    expect(w.find('[data-testid="editor-query"]').attributes('placeholder')).toBe(t('ui.suggest.placeholder'))
     await w.find('[data-testid="editor-query"]').setValue('arsenal')
     await w.find('[data-testid="editor-search"]').trigger('submit')
     await flush()
     expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
-    expect(body(f, 'POST /api/v1/tournaments/search')).toEqual({ q: 'arsenal', sport: null, kinds: ['team'] })
-    const hit = w.find('[data-hit="team:42"]')
-    expect(hit.text()).toContain(t('ui.follows.kind.team'))
-    expect(hit.text()).toContain('England')
-    expect(hit.text()).toContain(t('sport.football'))
-    // the one hit is chosen, and its sport comes along
-    expect((hit.find('input').element as HTMLInputElement).checked).toBe(true)
+    expect(body(f, 'POST /api/v1/tournaments/search')).toEqual({ q: 'arsenal', sport: null, kinds: ['tournament', 'team', 'player'] })
+    expect(w.find('[data-group="team"] [data-hit="team:42"]').exists()).toBe(true)
+    // the one hit is chosen: its kind, number, name and sport come along
+    const picked = w.find('[data-testid="editor-picked"]')
+    expect(picked.attributes('data-hit')).toBe('team:42')
+    expect(picked.text()).toContain(t('ui.follows.kind.team'))
+    expect(picked.text()).toContain('England')
+    expect(picked.text()).toContain(t('sport.football'))
+    expect((w.find('[data-kind="team"] input').element as HTMLInputElement).checked).toBe(true)
+    expect((w.find('[data-testid="editor-id"]').element as HTMLInputElement).value).toBe('42')
     expect((w.find('[data-testid="editor-sport"]').element as HTMLSelectElement).value).toBe('football')
     expect(await axeViolations(w.element)).toEqual([])
     await w.find('[data-testid="editor-next"]').trigger('click')
@@ -93,15 +95,14 @@ describe('teams and players by name', () => {
     const f = mockFetch({ ...SPORTS, 'POST /api/v1/tournaments/search': list([saka]) })
     ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new'))
     await flush()
-    await w.find('[data-kind="player"] input').setValue(true)
     await w.find('[data-testid="editor-query"]').setValue('saka')
     await w.find('[data-testid="editor-search"]').trigger('submit')
     await flush()
-    expect(body(f, 'POST /api/v1/tournaments/search').kinds).toEqual(['player'])
-    const hit = w.find('[data-hit="player:7"]')
+    expect(body(f, 'POST /api/v1/tournaments/search').kinds).toEqual(['tournament', 'team', 'player'])
+    const hit = w.find('[data-group="player"] [data-hit="player:7"]')
     expect(hit.find('[data-testid="hit-team"]').text()).toBe(t('ui.followEditor.playsFor', { team: 'Arsenal' }))
     expect(hit.text()).toContain(t('ui.followEditor.alreadyFollowed'))
-    expect(w.findAll('[data-testid="editor-hits"] input:checked')).toHaveLength(0)
+    expect(w.find('[data-testid="editor-picked"]').exists()).toBe(false)
   })
 
   it('a single match has no search and no seasons; it is added by its number', async () => {

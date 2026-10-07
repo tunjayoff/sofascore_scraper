@@ -109,7 +109,8 @@ def test_every_kind_together_and_by_sport(store: Store, fake: FakeSofaScore) -> 
         52, "football", "Türkiye", {"code": "TR", "name": None})
     assert data(client.post("/api/v1/tournaments/search", json={**body, "sport": "basketball"})) == []
     assert data(client.post("/api/v1/tournaments/search", json={**body, "kinds": ["team"]}))[0]["id"] == 3061
-    assert len(api_paths(fake)) == 3  # her arama tek istek
+    # tek istek: aynı metnin genel araması sunucuda saklanır (FX-20); süzgeç ve türler yanıttan seçilir
+    assert api_paths(fake) == ["/search/all?q=galatasaray&page=0"]
 
 
 def test_tournaments_alone_keep_the_tournament_search(store: Store, fake: FakeSofaScore) -> None:

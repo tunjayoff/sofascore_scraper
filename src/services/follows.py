@@ -19,13 +19,18 @@ kaynağın etkin takibi indirilir. `live = true` takipler ayrıca canlı servisi
 Yapılandırma dosyasının devraldığı bir `api` satırı, dosyadan sonra çıkarıldığında geri gelmez (ST-17'nin
 kuralı, karar P21): dosya kazanır; takip istenirse API'den yeniden eklenir.
 
-SofaScore'da arama (`search`) tek istek atar (istemci, ortak bütçe); engelleme ve ağ hatası tipli hatadır.
+SofaScore'da arama (`search`) tek istek atar (istemci, ortak bütçe); engelleme ve ağ hatası tipli hatadır. Yanıt
+süreç içinde 10 dakika saklanır (plan maddesi FX-20, yazarken öneri): aynı metin (büyük-küçük harf ve boşluklar
+önemsiz) bu sürede yeniden sorulursa SofaScore'a istek gitmez.
 
 Bu modül web katmanını içe aktarmaz: leagues.txt ve spor dosyasının yazıcısı (`LegacyLeagues`) çağırandan gelir.
 """
 from __future__ import annotations
 
 import re
+import threading
+import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, Union
 
@@ -51,6 +56,9 @@ ORIGIN_FIELD = "origin"
 WRITABLE: Mapping[str, Tuple[str, ...]] = {ORIGIN_LEGACY: ("sport", ORIGIN_FIELD), ORIGIN_CONFIG: (),
                                            ORIGIN_API: FIELDS}
 SEARCH_LIMIT = 20
+# SofaScore aramasının yanıtı bu kadar saniye saklanır (yazarken öneri, FX-20); en çok bu kadar metin
+SEARCH_CACHE_SECONDS = 600.0
+SEARCH_CACHE_SIZE = 256
 # Aranabilen takip türleri (maç adla aranmaz; maç sayfasından ya da kimliğiyle takip edilir)
 SEARCH_KINDS: Tuple[str, ...] = (TOURNAMENT, "team", "player")
 _FOLLOW_ID = re.compile(r"^(tournament|team|player|event):([1-9][0-9]{0,18})$")
@@ -411,6 +419,10 @@ class FollowsService:
         Boş liste: SofaScore yanıt verdi, bir şey bulamadı (404 de "bulunamadı" sayılır). Engelleme `blocked` /
         `rate_limited` (503), ağ hatası ve beklenmeyen yanıt `upstream_error` (502); `details.reason`
         src/web/upstream.py'deki nedendir.
+
+        Yanıt (404 dahil) `SEARCH_CACHE_SECONDS` boyunca saklanır (FX-20): aynı uç noktaya aynı metin (büyük-küçük
+        harf ve boşluk farkı önemsiz) yeniden sorulursa istek gitmez; "zaten takipte" yine takip tablosundan
+        okunur. Hatalı yanıt saklanmaz. Metnin içindeki boşluklar teke indirilerek gönderilir.
         """
         from src.client import endpoints
 
@@ -423,18 +435,18 @@ class FollowsService:
         if not wanted or unknown:
             raise UsageError("Unknown search kind.", {"field": "kinds", "kinds": unknown})
         only_tournaments = wanted == (TOURNAMENT,)
-        path = endpoints.search_unique_tournaments(text) if only_tournaments else endpoints.search_all(text)
-        data = self._ask(path)
-        if data is None:
-            return []
-        key = "uniqueTournaments" if only_tournaments else "results"
-        results = data.get(key, data.get("results")) if isinstance(data, dict) else None
-        if not isinstance(results, list):
-            logger.error("Search: the answer has no result list")
-            raise UpstreamError("SofaScore answered in an unexpected form.", {"reason": "upstream"})
+        text = " ".join(text.split())
+        cache_key = (only_tournaments, text.casefold())
+        found, results = _search_cache.get(cache_key)
+        if found:
+            logger.debug("Search answered from the cache")
+        else:
+            path = endpoints.search_unique_tournaments(text) if only_tournaments else endpoints.search_all(text)
+            results = _results(self._ask(path), only_tournaments)
+            _search_cache.put(cache_key, results)
         followed = {(row.kind, row.entity_id) for row in self._store.follows.list()}
         hits: List[SearchHit] = []
-        for item in results:
+        for item in results or ():
             hit = _search_hit(item, followed, typed=not only_tournaments)
             if hit is None or hit.kind not in wanted or (wanted_sport is not None and hit.sport != wanted_sport):
                 continue
@@ -467,6 +479,61 @@ class FollowsService:
             reason = "network" if isinstance(e, NetworkError) else "upstream"
             logger.error("Search failed (%s): %s", reason, type(e).__name__)
             raise UpstreamError("SofaScore could not be searched.", {"reason": reason}) from None
+
+
+def _results(data: Any, only_tournaments: bool) -> Optional[List[Any]]:
+    """Aramanın yanıtındaki sonuç listesi; 404 (None) için None. Beklenmeyen biçim `upstream_error`."""
+    if data is None:
+        return None
+    key = "uniqueTournaments" if only_tournaments else "results"
+    results = data.get(key, data.get("results")) if isinstance(data, dict) else None
+    if not isinstance(results, list):
+        logger.error("Search: the answer has no result list")
+        raise UpstreamError("SofaScore answered in an unexpected form.", {"reason": "upstream"})
+    return results
+
+
+class _SearchCache:
+    """
+    SofaScore aramasının yanıtları, süreç içinde (plan maddesi FX-20): anahtar (yalnızca turnuva mı, katlanmış metin)
+    → sonuç listesi (404: None). Süresi dolan girdi okunmaz; dolunca en eski kullanılan çıkar. Thread güvenlidir.
+    """
+
+    def __init__(self, seconds: float, size: int, clock: Any = time.monotonic) -> None:
+        self._seconds, self._size, self._clock = seconds, size, clock
+        self._items: "OrderedDict[Tuple[bool, str], Tuple[float, Optional[List[Any]]]]" = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key: Tuple[bool, str]) -> Tuple[bool, Optional[List[Any]]]:
+        """(bulundu mu, sonuçlar)."""
+        with self._lock:
+            entry = self._items.get(key)
+            if entry is None:
+                return False, None
+            if self._clock() - entry[0] >= self._seconds:
+                del self._items[key]
+                return False, None
+            self._items.move_to_end(key)
+            return True, entry[1]
+
+    def put(self, key: Tuple[bool, str], results: Optional[List[Any]]) -> None:
+        with self._lock:
+            self._items[key] = (self._clock(), results)
+            self._items.move_to_end(key)
+            while len(self._items) > self._size:
+                self._items.popitem(last=False)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._items.clear()
+
+
+_search_cache = _SearchCache(SEARCH_CACHE_SECONDS, SEARCH_CACHE_SIZE)
+
+
+def clear_search_cache() -> None:
+    """Saklanan arama yanıtlarını unutur (testler ve gerekirse çağıranlar)."""
+    _search_cache.clear()
 
 
 def _value_of(row: "Follow", field: str) -> Any:
@@ -553,12 +620,14 @@ __all__ = [
     "KINDS",
     "LegacyLeagues",
     "NewFollow",
+    "SEARCH_CACHE_SECONDS",
     "SEARCH_KINDS",
     "SEARCH_LIMIT",
     "SearchHit",
     "TournamentHit",
     "check_name",
     "check_seasons",
+    "clear_search_cache",
     "check_sport",
     "follow_id",
     "parse_follow_id",

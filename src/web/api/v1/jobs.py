@@ -10,7 +10,9 @@ API v1: işler (docs/design/02-services.md bölüm 6 ve 2.8).
     GET  /api/v1/jobs/{id}/events      işin olayları, SSE (src/web/sse.py)
 
 İşler iş yöneticisinden (src/jobs/manager.py) okunur: komut satırından başlatılan işler de burada görünür ve
-buradan iptal edilebilir. Yanıttaki iş, iş modelinin (src/jobs/model.py: Job) alanlarını taşır; durum adları
+buradan iptal edilebilir. İndirme işlerinin belirtimi istek gövdesinin alanlarıyla kaydedilir ve öyle verilir
+(plan maddesi FX-20, src/services/job_spec.py; eski kayıtlar okunurken çevrilir); `names` işin adını verdiği
+takiplerin ve liglerin adlarını taşır. Yanıttaki iş, iş modelinin (src/jobs/model.py: Job) alanlarını taşır; durum adları
 yeni modelinkilerdir (`succeeded`, `partial`, ...).
 
 Başlatma: iş, web sürecinin iş deposu üzerinde (eski `/api/fetch` ile aynı depo, aynı `writer` kilidi) ayrı bir
@@ -103,7 +105,13 @@ class Job(BaseModel):
     kind: JobKind
     state: JobState
     origin: JobOrigin
-    spec: Dict[str, Any] = Field(description="The service spec the job was started with.")
+    spec: Dict[str, Any] = Field(
+        description="What the job was started with. A download (`sync`, `fetch`, `refresh`) has the fields of its "
+                    "request body (`only: \"events\"`: a `sync` of event details only, from `ssc sync --only "
+                    "events`); one by `event_ids` also has `selections`, the leagues of those events (league 0: "
+                    "an event not stored); `names` maps the follows and leagues it names to their names when it "
+                    "started (`{\"team:42\": \"Arsenal\"}`).",
+    )
     progress: Optional[Dict[str, Any]] = Field(
         default=None, description="Phase, counters and failed items; the last progress event for a job of another process.",
     )
@@ -353,14 +361,16 @@ MAINTENANCE_LEASE = "maintenance"
 
 
 def job_model(job: JobSnapshot) -> Job:
-    """İş modelinin görüntüsü → yanıt modeli."""
+    """İş modelinin görüntüsü → yanıt modeli. İndirme işinin eski biçimli belirtimi gövde biçimine çevrilir (FX-20)."""
+    from src.services import job_spec
+
     error = job.error
     return Job(
         id=job.id,
         kind=job.kind,
         state=job.state,
         origin=JobOrigin(face=job.origin.face, pid=job.origin.pid, host=job.origin.host),
-        spec=dict(job.spec),
+        spec=job_spec.body(job.kind.value, job.spec),
         progress=dict(job.progress) if job.progress is not None else None,
         result=dict(job.result) if job.result is not None else None,
         error=None if error is None else JobError(
@@ -644,10 +654,14 @@ def start_job(response: Response, body: Annotated[StartJob, Body(discriminator="
         deps.refresh_job_mirror()
         response.headers["Location"] = f"{V1_PREFIX}/jobs/{job.id}"
         return JobResponse(data=job_model(job))
+    from src.services import job_spec
+
     spec = _sync_spec(body)
-    recorded = dataclasses.asdict(spec)
-    if isinstance(body, (StartFetchJob, StartRefreshJob)) and body.spec.event_ids:
-        recorded["event_ids"] = list(dict.fromkeys(body.spec.event_ids))  # `target` süzgeci için (G12)
+    event_ids = list(body.spec.event_ids) if isinstance(body, (StartFetchJob, StartRefreshJob)) else []
+    recorded = job_spec.record(body.kind, spec, event_ids=event_ids)
+    names = job_spec.names(deps.store(), job_spec.targets(recorded))
+    if names:
+        recorded[job_spec.NAMES] = names  # "Takım #42" yerine adı (FX-20)
     job = deps.job_manager().submit(
         JobKind(body.kind),
         recorded,
@@ -783,6 +797,20 @@ def _check_clear(spec: ClearJobSpec) -> None:
                          {"fields": ["scope", "tournament_id"]})
 
 
+def _with_names(spec: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Bir ligin verisini silen `clear`: ligin adı kayda yazılır (FX-20); silmeden sonra katalog onu bilmez, takibi de
+    çoğu kez kaldırılmıştır.
+    """
+    from src.services import job_spec
+
+    if spec.get("tournament_id"):
+        names = job_spec.names(deps.store(), [f"tournament:{spec['tournament_id']}"])
+        if names:
+            spec[job_spec.NAMES] = names
+    return spec
+
+
 def _raising(error: BaseException) -> Callable[["JobHandle"], "JobOutcome"]:
     """Verilen hatayı fırlatan iş gövdesi: başlamadan düşen işin kaydı başarısız biter, kilidi bırakılır."""
     def body(handle: "JobHandle") -> "JobOutcome":
@@ -800,7 +828,8 @@ def start_tournament_clear(tournament_id: int, *, season_id: Optional[int] = Non
     """
     from src.jobs.manager import local_origin
 
-    spec: Dict[str, Any] = ClearJobSpec(confirm=True, tournament_id=tournament_id, season_id=season_id).model_dump()
+    spec: Dict[str, Any] = _with_names(
+        ClearJobSpec(confirm=True, tournament_id=tournament_id, season_id=season_id).model_dump())
     manager = deps.job_manager()
     job = manager.start(JobKind.CLEAR, spec, origin=local_origin("api"), lease=MAINTENANCE_LEASE,
                         lease_purpose=JobKind.CLEAR.value)
@@ -841,7 +870,7 @@ def _start_data_job(body: Any) -> JobSnapshot:
         spec = body.spec.model_dump()
         run = _backup_body(spec)
     elif isinstance(body, StartClearJob):
-        spec = body.spec.model_dump()
+        spec = _with_names(body.spec.model_dump())
         _check_clear(body.spec)
         if not body.spec.confirm:
             raise UsageError("Clearing deletes stored data; send confirm: true.", {"scope": body.spec.scope},

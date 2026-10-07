@@ -199,6 +199,7 @@ READ_ONLY_GETS = {
     "/api/v1/auth",
     "/api/v1/backups",
     "/api/v1/backups/backup_all_20260101_000000.zip",
+    "/api/v1/catalog/suggest",
     "/api/v1/changes",
     "/api/v1/diagnostics",
     "/api/v1/diagnostics/bundle",
@@ -267,6 +268,7 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
             "/api/v1/events/1/slices/statistics/raw", "/api/v1/seasons/1", "/api/v1/seasons/1/slices/statistics",
             "/api/v1/events/1/odds/statistics", "/api/v1/seasons/1/slices", "/api/v1/seasons/1/standings",  # P28
             "/api/v1/tournaments", "/api/v1/tournaments/1", "/api/v1/tournaments/1/seasons", "/api/v1/follows",
+            "/api/v1/catalog/suggest",  # FX-20: kayıtlı adlardan öneri
             "/api/v1/follows/tournament:1", "/api/v1/backups", "/api/v1/backups/backup_all_20260101_000000.zip",
             # Eski yedek indirmesi dosyanın yolunu Store'dan alır (P21: web katmanı dosya sistemine dokunmaz)
             "/api/data/backups/backup_all_20260101_000000.zip",
@@ -328,7 +330,8 @@ def test_no_get_route_writes_files_or_sends_requests(monkeypatch):
     open_store(conftest.DATA_DIR)
     before = _tree_digest()
     for path in GET_ROUTES:
-        query = {"/api/leagues/search": "?q=prem", "/api/seasons/1/matches": "?league_id=17"}.get(path, "")
+        query = {"/api/leagues/search": "?q=prem", "/api/seasons/1/matches": "?league_id=17",
+                 "/api/v1/catalog/suggest": "?q=la"}.get(path, "")
         r = client.get(path + query)
         assert r.status_code in (200, 404), (path, r.status_code)
     assert _tree_digest() == before

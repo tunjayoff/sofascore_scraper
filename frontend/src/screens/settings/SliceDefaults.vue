@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, useId } from 'vue'
+import { computed, onMounted, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UiBadge from '@/ui/UiBadge.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
+import { v1 } from '@/api/v1/client'
 import type { Setting, SettingsDocument, SportSliceSelection } from '@/api/v1/schema'
 import { loadSports, sportName, sports } from '@/app/sports'
 import SliceChecklist from '@/screens/follows/SliceChecklist.vue'
@@ -15,7 +16,8 @@ import { compress, costPerMatch, layerFor, resolveDefaults, union } from '@/scre
  * and per sport its changes over them (`slices.<sport>` = {enable, disable}). Unset defaults are the
  * registry's own (`default_enabled`: betting odds and the season, team and player data are off). Locked
  * values (config file, environment) are shown with the reason and cannot be ticked. Changes are staged
- * with the other settings and saved by the same "Save changes".
+ * with the other settings and saved by the same "Save changes". The sports of the follows come first, and
+ * those with a saved change of their own; every other sport is under "Other sports", closed (FX-20).
  */
 const props = defineProps<{ doc: SettingsDocument; staged: Record<string, unknown>; configFile?: string | null; problems: Record<string, string> }>()
 const emit = defineEmits<{ stage: [key: string, value: unknown]; unstage: [key: string] }>()
@@ -60,6 +62,8 @@ function resetGlobal() {
 
 // ---- per sport ----
 type SportRow = { slug: string; row: SportSliceSelection | null; lock: string | null }
+/** The sports of the follows (read once; a failure leaves every sport under "Other sports"). */
+const followed = ref<Set<string>>(new Set())
 const rows = computed<SportRow[]>(() =>
   sports.value.map((sp) => {
     const row = props.doc.slices?.find((r) => r.sport === sp.slug) ?? null
@@ -97,8 +101,21 @@ function toggleSport(r: SportRow, key: string, on: boolean) {
 function resetSport(r: SportRow) {
   emit('stage', `slices.${r.slug}`, null)
 }
+/** A sport shown first: followed, or with a saved change of its own (a change being made does not move it). */
+const first = (r: SportRow) => followed.value.has(r.slug) || !!(r.row?.enable?.length || r.row?.disable?.length)
+const mine = computed(() => rows.value.filter(first))
+const others = computed(() => rows.value.filter((r) => !first(r)))
+const groups = computed(() => [
+  { key: 'mine', rows: mine.value },
+  { key: 'others', rows: others.value },
+])
 
-onMounted(() => void loadSports().catch(() => {}))
+onMounted(() => {
+  void loadSports().catch(() => {})
+  v1.follows()
+    .then((r) => (followed.value = new Set(r.data.map((f) => f.sport).filter((s): s is string => !!s))))
+    .catch(() => {})
+})
 </script>
 
 <template>
@@ -127,7 +144,13 @@ onMounted(() => void loadSports().catch(() => {}))
       <div class="flex flex-col gap-2" data-testid="slice-sports">
         <h3 class="u-h3">{{ t('ui.sliceDefaults.perSport') }}</h3>
         <p class="m-0 u-small u-muted">{{ t('ui.sliceDefaults.perSportText') }}</p>
-        <details v-for="r in rows" :key="r.slug" class="u-sport-slices" :data-sport="r.slug">
+        <template v-for="g in groups" :key="g.key">
+        <component :is="g.key === 'mine' ? 'div' : 'details'" v-if="g.rows.length" :class="g.key === 'mine' ? 'flex flex-col' : 'u-sport-others'" :data-testid="`slice-sports-${g.key}`">
+        <summary v-if="g.key === 'others'" class="flex flex-wrap items-center gap-3">
+          <span class="font-semibold">{{ mine.length ? t('ui.sliceDefaults.otherSports') : t('ui.sliceDefaults.allSports') }}</span>
+          <span class="u-small u-muted">{{ t('ui.sliceDefaults.sportCount', { n: g.rows.length }) }}</span>
+        </summary>
+        <details v-for="r in g.rows" :key="r.slug" class="u-sport-slices" :data-sport="r.slug">
           <summary class="flex flex-wrap items-center gap-3">
             <span class="font-semibold">{{ sportName(r.slug) }}</span>
             <span class="u-small u-muted">{{ changes(r) ? t('ui.sliceDefaults.changes', { n: changes(r) }) : t('ui.sliceDefaults.asDefaults') }}</span>
@@ -145,6 +168,8 @@ onMounted(() => void loadSports().catch(() => {}))
             <p v-if="problems[`slices.${r.slug}`]" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ problems[`slices.${r.slug}`] }}</p>
           </div>
         </details>
+        </component>
+        </template>
       </div>
     </template>
   </section>
@@ -155,8 +180,19 @@ onMounted(() => void loadSports().catch(() => {}))
   border-top: 1px solid var(--line);
   padding: var(--sp-3) 0;
 }
-.u-sport-slices > summary {
+.u-sport-slices > summary,
+.u-sport-others > summary {
   cursor: pointer;
   min-height: 32px;
+}
+.u-sport-others {
+  border-top: 1px solid var(--line);
+  padding: var(--sp-3) 0;
+}
+.u-sport-others[open] > summary {
+  margin-bottom: var(--sp-2);
+}
+.u-sport-others > .u-sport-slices {
+  padding-left: var(--sp-5);
 }
 </style>

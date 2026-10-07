@@ -163,7 +163,37 @@ describe('job kinds and targets by their spec', () => {
     expect(jobLeague(job({ kind: 'clear', spec: { tournament_id: 17 } }))).toBe(17)
   })
 
+  it('a job names its follow by the name it recorded (FX-20), also when this tab never read the follows', () => {
+    const names = { 'team:42': 'Arsenal', 'player:7': 'Bukayo Saka', 'tournament:17': 'Premier League' }
+    expect(jobTarget(job({ spec: { follows: ['team:42'], names } }))).toBe('Arsenal')
+    expect(jobTarget(job({ spec: { follows: ['player:7'], names } }))).toBe('Bukayo Saka')
+    expect(jobTarget(job({ spec: { league_id: 17, names } }))).toBe('Premier League')
+    // a league whose data was deleted is not in the catalog any more
+    expect(jobTarget(job({ kind: 'clear', spec: { scope: 'all', tournament_id: 17, names } }))).toBe('Premier League')
+    // without a recorded name: the number, as before
+    expect(jobTarget(job({ spec: { follows: ['team:43'], names } }))).toBe('Team #43')
+    // the follows read in this tab (a renamed follow) come first
+    noteFollowNames([{ id: 'team:42', name: 'The Gunners' }])
+    expect(jobTarget(job({ spec: { follows: ['team:42'], names } }))).toBe('The Gunners')
+  })
+
+  it('a league’s deletion names the league in its output after the catalog forgot it', async () => {
+    setActivePinia(createPinia())
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:p(.*)*', component: { template: '<div />' } }] })
+    const spec = { scope: 'all', tournament_id: 17, names: { 'tournament:17': 'Premier League' } }
+    w = mount(JobOutput, {
+      props: { job: job({ kind: 'clear', spec, result: { clear: { scopes: ['tournament'], tournament_id: 17, season_id: null, events: 3, event_dirs: 3, listings: 1, catalog_rebuilt: true } } }) },
+      global: { plugins: [i18n, router] },
+    })
+    await flush()
+    expect(w.find('[data-testid="output-clear-league"]').text()).toContain('Premier League')
+  })
+
   it('"Run again" keeps the follows, the season-list choice and the event ids', () => {
+    // the body's fields, as recorded since FX-20; a `sync` of event details only (`ssc sync --only events`) is a fetch
+    expect(rerunBody(job({ spec: { league_id: 52, selections: [], follows: [], only: 'seasons', event_ids: [], names: { 'tournament:52': 'Süper Lig' } } }))).toEqual({ kind: 'sync', spec: { league_id: 52, only: 'seasons' } })
+    expect(rerunBody(job({ spec: { league_id: 17, selections: [], follows: [], only: 'events', event_ids: [] } }))).toEqual({ kind: 'fetch', spec: { league_id: 17 } })
+    expect(rerunBody(job({ spec: { follows: ['team:42'], only: null, names: { 'team:42': 'Arsenal' } } }))).toEqual({ kind: 'sync', spec: { follows: ['team:42'], only: null } })
     expect(rerunBody(job({ spec: { follows: ['team:42'], only: null } }))).toEqual({ kind: 'sync', spec: { follows: ['team:42'], only: null } })
     expect(rerunBody(job({ spec: { mode: 'seasons', league_id: 52, selections: [] } }))).toEqual({ kind: 'sync', spec: { league_id: 52, only: 'seasons' } })
     expect(rerunBody(job({ kind: 'fetch', spec: { event_ids: [5] } }))).toEqual({ kind: 'fetch', spec: { event_ids: [5] } })

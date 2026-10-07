@@ -44,7 +44,6 @@ export const META: Record<string, Meta> = {
   'breaker.server_error_consecutive': { section: 'requests', control: int(1, 1000) },
   'breaker.ignore': { section: 'requests', control: bool },
   'fetch.only_finished': { section: 'data', control: bool },
-  'fetch.save_empty_rounds': { section: 'data', control: bool },
   'defaults.slices': { section: 'data', control: list },
   'defaults.seasons': { section: 'data', control: text() },
   'client.odds_provider': { section: 'data', control: int(1) },
@@ -78,6 +77,13 @@ export const META: Record<string, Meta> = {
   'live.max_event_polls': { section: 'server', control: int(1) },
   'schedule.enabled': { section: 'server', control: bool },
 }
+
+/**
+ * Settings the server still reports but that do nothing any more; not shown at all (not even under
+ * "Other"). `fetch.save_empty_rounds` retired with ST-27: a round without a match is never stored (FX-20;
+ * P30 removes the setting itself).
+ */
+export const RETIRED: readonly string[] = ['fetch.save_empty_rounds']
 
 export function metaOf(key: string): Meta {
   return META[key] ?? { section: 'other', control: text() }
