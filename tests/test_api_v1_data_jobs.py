@@ -207,6 +207,36 @@ def test_a_backup_job_and_the_backup_list(jobs: JobStore, store: Store) -> None:
     error(client.get("/api/v1/backups/..%2Fstate.db"), 404, "not_found")
 
 
+def test_an_export_runs_while_a_download_runs(jobs: JobStore, store: Store) -> None:
+    """F14 (FX-23): dışa aktarma veriyi yalnızca okur; web'in indirmesi `writer`ı tutarken de başlar ve biter."""
+    sync_id = jobs.create_running({"kind": "sync"}, kind="sync", replace_running=False)
+    try:
+        job = start({"kind": "export", "spec": {"dataset": "events", "format": "jsonl"}})
+        done = ended(job["id"])
+        assert done["state"] == "succeeded", done
+        assert done["result"]["export"]["rows"] > 0
+        listed = {j["id"]: j["state"] for j in data(client.get("/api/v1/jobs"))}
+        assert listed == {sync_id: "running", job["id"]: "succeeded"}
+    finally:
+        jobs.update(status="Completed", finished=True)
+
+
+def test_an_export_runs_while_another_process_downloads(jobs: JobStore, store: Store) -> None:
+    with store.lease("writer", purpose="job"):
+        done = ended(start({"kind": "export", "spec": {"dataset": "events", "format": "csv"}})["id"])
+    assert done["state"] == "succeeded", done
+
+
+def test_an_export_waits_for_maintenance_and_for_another_export(jobs: JobStore, store: Store) -> None:
+    body = {"kind": "export", "spec": {"dataset": "events", "format": "csv"}}
+    with store.lease("maintenance", purpose="op:clear"):
+        refused = error(client.post("/api/v1/jobs", json=body), 409, "data_operation_running")
+    assert refused["details"]["holder"]["lease"] == "maintenance"
+    with store.lease("export", purpose="export"):
+        error(client.post("/api/v1/jobs", json=body), 409, "data_operation_running")
+    assert data(client.get("/api/v1/jobs")) == []  # reddedilen istek iş kaydı bırakmaz
+
+
 def test_a_backup_job_records_itself_as_finished_in_the_archive(jobs: JobStore, store: Store,
                                                                  tmp_path: Path) -> None:
     """F30 (FX-23): yedekteki state.db'de yedeği alan iş `completed`; geri yüklemeden sonra yarıda kalmış görünmez."""

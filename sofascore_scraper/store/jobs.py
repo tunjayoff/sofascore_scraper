@@ -42,7 +42,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Mapping, Optional, 
 
 from sofascore_scraper.store import layout
 from sofascore_scraper.store.errors import LeaseHeld, StoreError
-from sofascore_scraper.store.lease import MAINTENANCE, WRITER, Lease, LeaseManager
+from sofascore_scraper.store.lease import EXPORT, MAINTENANCE, WRITER, Lease, LeaseManager
 from sofascore_scraper.store.state import APPLICATION_ID, BUSY_TIMEOUT_MS, StateDb
 from sofascore_scraper.store.streams import JOB_STREAM, StreamEvent, StreamLog
 
@@ -62,8 +62,10 @@ OPERATION_PREFIX = "op:"  # "op:clear", "op:backup", ...
 # (silme, lig silme, DATA_DIR değişimi) `maintenance` (docs/design/01-storage.md bölüm 6.1)
 WRITER_OPERATIONS = frozenset({"backup"})
 # Bir işin tutabileceği kilitler (docs/design/02-services.md 2.8): indirmeler ve yedek `writer`, temizleme ve
-# katalog yeniden kurulumu `maintenance`
-JOB_LEASES: Tuple[str, ...] = (WRITER, MAINTENANCE)
+# katalog yeniden kurulumu `maintenance`, web'in dışa aktarma işi `export` (FX-23, F14: indirme sürerken de
+# çalışır; işini ayrı bir iş deposu yürütür, çünkü bir depo aynı anda tek iş çalıştırır)
+JOB_LEASES: Tuple[str, ...] = (WRITER, MAINTENANCE, EXPORT)
+EXPORT_KIND = "export"  # `export` kilidiyle çalışan işin türü (jobs.kind)
 
 # Saklama (bölüm 9.3): iş yaratılırken en yeni bu kadar satır kalır; iş başına en yeni bu kadar olay
 JOB_HISTORY_LIMIT = 500
@@ -558,11 +560,18 @@ class JobStore:
         tek bir SELECT'tir.
         """
         with self._lock:
-            rows = self._state.connection().execute(f"SELECT id FROM jobs WHERE {_ACTIVE_WHERE}").fetchall()
+            rows = self._state.connection().execute(f"SELECT id, kind FROM jobs WHERE {_ACTIVE_WHERE}").fetchall()
             stale = [str(row[0]) for row in rows if str(row[0]) != self._active_id]
             if not stale:
                 return 0
-            holds_writer = self._writer is not None and self._writer.held
+            # `export` kilidi `writer` ile birlikte tutulabilir: onu tutan dışa aktarma işi yaşıyordur (FX-23)
+            if self._leases.holder(EXPORT) is not None:
+                exports = {str(row[0]) for row in rows if row[1] == EXPORT_KIND}
+                stale = [job_id for job_id in stale if job_id not in exports]
+                if not stale:
+                    return 0
+            # Dışa aktarma deposunun kilidi (`export`) yazma kilidi değildir: öteki işlerin satırlarını bayat saydırmaz
+            holds_writer = self._writer is not None and self._writer.held and self._writer.name != EXPORT
             # Bakım işi (`maintenance` kilidi) de bir işin sahibidir: kilit başka bir süreçteyse satır onun olabilir
             if not holds_writer and (self._leases.holder(WRITER) is not None
                                      or self._leases.holder(MAINTENANCE) is not None):

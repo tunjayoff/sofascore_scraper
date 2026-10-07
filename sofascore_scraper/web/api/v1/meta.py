@@ -434,7 +434,7 @@ def _sport(spec: sports.SportSpec) -> Sport:
 # --- durum ---------------------------------------------------------------------------------------
 
 # Kilit adları: sabitler ve her kayıtlı spor için `watcher:<spor>` (sofascore_scraper/store/lease.py)
-_LEASES: Tuple[str, ...] = ("writer", "live", "sinks", "maintenance")
+_LEASES: Tuple[str, ...] = ("writer", "live", "sinks", "export", "maintenance")
 _LEGACY_LAYOUT = "legacy"
 
 

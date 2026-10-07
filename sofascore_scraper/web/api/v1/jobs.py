@@ -41,9 +41,9 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
              kilidiyle; geri yüklenen state.db'nin iş geçmişine işin kendi satırı korunarak taşınır
              (sofascore_scraper/store/backup.py `_load_state`), iş bitişini yine kendi satırına yazar
 
-İndirmeler, dışa aktarma, yedek ve deneme `writer` kilidiyle; temizleme, katalog ve geri yükleme `maintenance` kilidiyle
-çalışır
-(docs/design/02-services.md 2.8). Belirtim, alma hattı hedeflere ve aşamalara geçtiğinde değişecektir;
+İndirmeler, yedek ve deneme `writer` kilidiyle; temizleme, katalog ve geri yükleme `maintenance` kilidiyle
+çalışır (docs/design/02-services.md 2.8). Dışa aktarma `export` kilidiyle ve kendi iş deposuyla çalışır: veriyi
+yalnızca okur, indirme sürerken de başlar; temizleme ve geri yüklemeyi dışlar (FX-23, bulgu F14). Belirtim, alma hattı hedeflere ve aşamalara geçtiğinde değişecektir;
 değişiklik OpenAPI kaydında görünür.
 """
 from __future__ import annotations
@@ -358,6 +358,8 @@ StartJob = Union[
 ]
 # Bakım işleri `maintenance` kilidiyle çalışır (docs/design/02-services.md 2.8): başka her işi ve veri işlemini dışlar
 MAINTENANCE_LEASE = "maintenance"
+# Dışa aktarma işinin kilidi (sofascore_scraper/store/lease.py EXPORT): `writer` ile birlikte tutulabilir
+EXPORT_LEASE = "export"
 
 
 def job_model(job: JobSnapshot) -> Job:
@@ -855,6 +857,41 @@ def start_tournament_clear(tournament_id: int, *, season_id: Optional[int] = Non
     return found if found is not None else job
 
 
+def _start_export(spec: Dict[str, Any], run: Any) -> JobSnapshot:
+    """
+    Dışa aktarma işini indirmeden bağımsız başlatır (FX-23, F14). Bir iş deposu aynı anda tek iş çalıştırır ve
+    web'in deposundaki iş (indirme) `writer` kilidini tutar; dışa aktarma veriyi yalnızca okuduğu için kendi iş
+    deposunda (aynı state.db, ayrı yansı) `export` kilidiyle çalışır. Depo iş bitince kapatılır. Kilit başka
+    bir dışa aktarmadaysa ya da bir bakım işi (`maintenance`) sürüyorsa 409 `data_operation_running`.
+    İptal ve okuma her iş gibi web'in iş yöneticisinden geçer (satırdaki iptal bayrağı).
+    """
+    from sofascore_scraper.jobs.manager import JobManager, local_origin
+    from sofascore_scraper.store import DataOperationRunningError, JobRunningError, JobStore
+
+    jobs = JobStore(deps.job_store().db_path)
+    manager = JobManager(jobs)
+    try:
+        job = manager.start(JobKind.EXPORT, spec, origin=local_origin("api"), lease=EXPORT_LEASE,
+                            lease_purpose=JobKind.EXPORT.value)
+    except JobRunningError as e:  # bu depo yeni açıldı: çakışan iş ancak başka bir dışa aktarmadır
+        jobs.close()
+        raise DataOperationRunningError(JobKind.EXPORT.value) from e
+    except BaseException:
+        jobs.close()
+        raise
+
+    def target() -> None:
+        try:
+            manager.run(job.id, run)
+        except BaseException as e:  # arka plan thread'i: hata iş kaydındadır
+            logger.error("Background job %s failed: %s", job.id, type(e).__name__)
+        finally:
+            jobs.close()
+
+    threading.Thread(target=target, name="job-export", daemon=True).start()
+    return job
+
+
 def _start_data_job(body: Any) -> JobSnapshot:
     """Bir veri işini denetler ve başlatır. Denetim iş başlamadan yapılır: reddedilen istek iş kaydı bırakmaz."""
     from sofascore_scraper.jobs.manager import local_origin
@@ -866,7 +903,7 @@ def _start_data_job(body: Any) -> JobSnapshot:
 
         spec: Dict[str, Any] = body.spec.model_dump(by_alias=True)
         check_export(export_request(spec))
-        run = _export_body(spec)
+        return _start_export(spec, _export_body(spec))
     elif isinstance(body, StartBackupJob):
         spec = body.spec.model_dump()
         run = _backup_body(spec)

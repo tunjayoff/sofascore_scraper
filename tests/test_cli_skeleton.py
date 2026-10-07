@@ -343,6 +343,7 @@ def _lease_held(name: str, purpose: str = "") -> Exception:
     ("writer", "sync", "job_running"),
     ("writer", "op:backup", "data_operation_running"),
     ("maintenance", "restore", "data_operation_running"),
+    ("export", "export", "data_operation_running"),  # web'in dışa aktarma işi (FX-23)
     ("live", "watch", "instance_running"),
     ("watcher:football", "watch", "instance_running"),
     ("sinks", "", "instance_running"),
