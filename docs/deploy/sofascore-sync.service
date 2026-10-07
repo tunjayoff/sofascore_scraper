@@ -2,6 +2,10 @@
 #   sudo cp docs/deploy/sofascore-sync.service docs/deploy/sofascore-sync.timer /etc/systemd/system/
 #   sudo systemctl daemon-reload && sudo systemctl enable --now sofascore-sync.timer
 #
+# The command is `python -m sofascore_scraper.cli.main` (the same as `ssc`; it also works without
+# `pip install -e .`). Copies made before the import package was renamed from `src` run
+# `python -m src.cli.main`, which no longer exists: change them.
+#
 # Adjust User, Group, WorkingDirectory and the paths in ExecStart to your install.
 
 [Unit]
@@ -17,7 +21,7 @@ Group=sofascore
 WorkingDirectory=/opt/sofascore_scraper
 EnvironmentFile=-/etc/sofascore/sofascore.env
 # --wait 900: when the web app or another process is downloading, wait up to 15 minutes instead of exiting with 6
-ExecStart=/opt/sofascore_scraper/.venv/bin/python -m src.cli.main --wait 900 sync
+ExecStart=/opt/sofascore_scraper/.venv/bin/python -m sofascore_scraper.cli.main --wait 900 sync
 # 3 = finished, some matches or lists could not be fetched; they are retried next time. Count it as done.
 SuccessExitStatus=3
 UMask=0007

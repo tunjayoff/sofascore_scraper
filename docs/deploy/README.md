@@ -12,8 +12,12 @@ This folder is for people who run the platform on a server or in automation. It 
 | [`sofascore-sync.service`](sofascore-sync.service), [`sofascore-sync.timer`](sofascore-sync.timer) | a scheduled `ssc sync` (downloads) |
 
 The commands are those of the command line (`ssc --help`, `ssc <command> --help`). `ssc` exists after
-`pip install -e .` in the project folder; without it, `python -m src.cli.main <command>` from the project folder
-is the same thing. The units below use the second form, so they work with either install.
+`pip install -e .` in the project folder; without it, `python -m sofascore_scraper.cli.main <command>` from the
+project folder is the same thing. The units below use the second form, so they work with either install. The
+import package was called `src` before 3.0.0: a unit copied earlier runs `python -m src.cli.main`, which no
+longer exists, so change its `ExecStart`; after pulling the rename into a checkout, run `pip install -e .`
+again, because the old `ssc` script still imports `src`. In the Docker image `ssc` is on the PATH
+([`docker.md`](docker.md)).
 
 ## The processes
 

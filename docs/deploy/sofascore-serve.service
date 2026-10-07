@@ -3,6 +3,10 @@
 #   sudo cp docs/deploy/sofascore-serve.service /etc/systemd/system/
 #   sudo systemctl daemon-reload && sudo systemctl enable --now sofascore-serve
 #
+# The command is `python -m sofascore_scraper.cli.main` (the same as `ssc`; it also works without
+# `pip install -e .`). Copies made before the import package was renamed from `src` run
+# `python -m src.cli.main`, which no longer exists: change them.
+#
 # Adjust User, Group, WorkingDirectory and the paths in ExecStart to your install.
 
 [Unit]
@@ -21,7 +25,7 @@ WorkingDirectory=/opt/sofascore_scraper
 EnvironmentFile=-/etc/sofascore/sofascore.env
 # Listen on this computer only and let a reverse proxy be the way in (README.md, "Behind a reverse proxy").
 # To listen on the network instead: --host 0.0.0.0 --allowed-hosts <names>, and set the access token.
-ExecStart=/opt/sofascore_scraper/.venv/bin/python -m src.cli.main serve --host 127.0.0.1 --port 8000
+ExecStart=/opt/sofascore_scraper/.venv/bin/python -m sofascore_scraper.cli.main serve --host 127.0.0.1 --port 8000
 # SIGTERM: graceful stop, sinks drained for up to 10 s, exit code 0
 KillSignal=SIGTERM
 TimeoutStopSec=30

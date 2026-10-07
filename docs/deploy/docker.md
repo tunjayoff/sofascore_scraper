@@ -109,6 +109,17 @@ started while another one runs exits with code 6, or waits with `--wait SECONDS`
 systemd timer that runs `docker compose run --rm --no-deps sofascore-scraper sync` is the scheduled download;
 the exit codes are those of [`README.md`](README.md#scheduled-downloads).
 
+The image has the `ssc` command on its PATH, so a command can also run in a container that is already up:
+
+```bash
+docker exec <container> ssc status
+docker exec <container> ssc backup list
+```
+
+This suits commands that do not download (`status`, `backup`, `export`, `describe`). A download started this
+way would share the server's browser profile, which one process at a time can use: start downloads from the
+web app or with the one-shot commands above.
+
 ## Updating
 
 ```bash
