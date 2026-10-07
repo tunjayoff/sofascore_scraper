@@ -1,0 +1,11 @@
+{
+  "case_id": "F2_penalties_without_extra_time",
+  "event_id": 13960989,
+  "source_note": "UEFA Super Cup 2025, PSG - Tottenham: status and scores of the stored /event payload (FX-23, finding F10)",
+  "id": 13960989,
+  "status": {"code": 120, "description": "AP", "type": "finished"},
+  "winnerCode": 1,
+  "homeScore": {"current": 6, "display": 2, "period1": 0, "period2": 2, "normaltime": 2, "penalties": 4},
+  "awayScore": {"current": 5, "display": 2, "period1": 1, "period2": 1, "normaltime": 2, "penalties": 3},
+  "tournament": {"name": "UEFA Super Cup", "category": {"sport": {"slug": "football"}}}
+}

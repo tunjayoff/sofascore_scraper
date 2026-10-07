@@ -146,7 +146,7 @@ def test_scores_json_is_compact_sorted_and_stable():
     assert first == derive.scores_json(json.loads(json.dumps(event)), sport)
     assert first == json.dumps(json.loads(first), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     assert json.loads(first) == {
-        "family": "football", "ht": [2, 2], "ft90": [3, 3], "aet": [3, 3], "penalties": [7, 6],
+        "family": "football", "ht": [2, 2], "ft90": [3, 3], "aet": None, "penalties": [7, 6],
         "aggregated": None, "aggregated_winner_code": None,
     }
 

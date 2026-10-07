@@ -150,7 +150,7 @@ class FootballScores(ScoreSheet):
     """`current` kullanılmaz: AP'de penaltıları içerir (10-9), `display` içermez (3-3)."""
     ht: Optional[Pair] = None  # period1
     ft90: Optional[Pair] = None  # normaltime
-    aet: Optional[Pair] = None  # display; yalnızca code 110/120
+    aet: Optional[Pair] = None  # display; code 110, ya da code 120 ve uzatma oynandıysa (bkz. _football_extra_time)
     penalties: Optional[Pair] = None
     aggregated: Optional[Pair] = None
     aggregated_winner_code: Optional[int] = None
@@ -318,6 +318,24 @@ def _is_match_tiebreak(games: List[Pair]) -> bool:
     return max(last.home or 0, last.away or 0) >= 10
 
 
+# Futbolda uzatmanın oynandığını gösteren anahtarlar: iki uzatma devresi ve toplamları (kod 110 ve uzatmadan
+# sonra penaltıya giden kod 120 yüklerinde görüldü; 0-0 biten uzatmada da gelir)
+_FOOTBALL_EXTRA_TIME_KEYS = ("overtime", "extra1", "extra2")
+
+
+def _football_extra_time(code: Any, home: Dict[str, Any], away: Dict[str, Any]) -> bool:
+    """
+    Uzatma oynandı mı. Kod 110 (AET) her zaman evet. Kod 120 (AP) tek başına yetmez: uzatmasız doğrudan
+    penaltıya giden maçlar var (UEFA Süper Kupası 2025, event 13960989: normaltime 2-2, penaltılar 4-3, uzatma
+    anahtarı yok). Kod 120'de yalnızca SofaScore uzatma anahtarlarından birini yolladıysa evet.
+    """
+    if code == 110:
+        return True
+    if code != 120:
+        return False
+    return any(_pair(home, away, key) is not None for key in _FOOTBALL_EXTRA_TIME_KEYS)
+
+
 def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreSheet:
     """
     Spor parametre ile verilirse o kullanılır; yoksa event.tournament.category.sport.slug.
@@ -347,7 +365,7 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             **common,
             ht=_pair(home, away, "period1"),
             ft90=ft90,
-            aet=display if code in (110, 120) else None,
+            aet=display if _football_extra_time(code, home, away) else None,
             penalties=_pair(home, away, "penalties"),
             aggregated=_pair(home, away, "aggregated"),
             aggregated_winner_code=event.get("aggregatedWinnerCode"),

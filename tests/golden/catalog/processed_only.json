@@ -1,5 +1,5 @@
 {
- "derive_version": 5,
+ "derive_version": 6,
  "report": {
   "counts": {"events": 2, "events_legacy": 2, "events_v3": 0, "slices": 8},
   "problems": [],
