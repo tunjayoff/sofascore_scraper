@@ -38,6 +38,20 @@ stylesheet's rules removed) and REN-1 (#168: the Python package is `sofascore_sc
 name it, and `frontend/src/...` paths are unchanged). The screen sections say "As built (FX-20)" where it
 changed them; section 11 items 54 to 57.
 
+Checked a fifth time at `48e4c4c` (2026-10-08, the eighth revision), after the orchestrator's end-to-end test
+of every feature through the web UI against the real SofaScore (2026-10-07 and 2026-10-08, at 1 request per
+second; findings F1 to F39, kept outside the repository) and its three fix items: FX-24 (#170, the UI
+findings: dialogs outside the table rows, the follow page's header, completeness and other-follows note, the
+readable odds table, team and match follows in the export filter and in the coverage column, places in the
+reader's language, players of individual sports, seasons by year in the job log, the ETA, Health's running
+job and scheduler intervals in words, the Advanced fold of Settings), FX-23 (#171, the backend findings; for
+this document: search hits with `gender` and `national`, an export next to a running download, searches
+ahead of download requests in the request budget, completeness of finished matches, three new job log codes)
+and FX-25 (#172: the kinds of non-match data named in the job log, "Women" and "National team" in search hits
+and the follow header). The screen sections say "As built (FX-24)", "(FX-23)" or "(FX-25)" where they
+changed them; section 11 items 58 to 71. The API gaps FX-24 reported and FX-23 did not close are listed
+in 7.3 as open after 3.0.0.
+
 ## Contents
 
 1. What this document decides, and the rules that bind it
@@ -261,7 +275,9 @@ Desktop (from 1024 px):
   so decision 20 no longer holds as written: the palette sends a SofaScore search after a 350 ms pause,
   one per settled text, cached for the page and for 10 minutes on the server (the owner's decision of
   2026-10-06). Enter on a hit opens the editor already filled in, or the follow page of a league or team
-  that is already added.
+  that is already added. **As built (FX-24, FX-25):** the palette's hits follow the rules of the editor's
+  list (6.3): places and players of individual sports, "No team" hidden, "Women" / "National team", and the
+  number only for same-named hits that nothing else tells apart.
 - **As built: the Sinks warning dot is not shown** (#132). The shell does not poll `/sinks`, so the rail
   cannot know that a sink fails or lags; Overview and the Sinks screen show it. FX-13 (#152) added the sink
   state to `/status` (`sinks`: `served`, `max_lag_events` and more; `sofascore_scraper/web/api/v1/meta.py:255-284` at
@@ -414,7 +430,7 @@ Word lists are locale keys (`status.event.completed`, `status.job.partial`, …)
 | `FactList` | label/value pairs | detail pages, Health |
 | `ProgressBar` | determinate or indeterminate bar with percent and an ETA text | jobs |
 | `Tabs` | keyboard-navigable tabs (arrow keys), state in the query string | |
-| `Dialog` | modal with title, body, actions; focus is trapped; Esc closes unless work is in progress | |
+| `Dialog` | modal with title, body, actions; focus is trapped; Esc closes unless work is in progress | As built (FX-24, #170): a dialog is shown at the end of `<body>` (a `Teleport` in `frontend/src/ui/UiDialog.vue`) and the rest of the page is `inert` while it is open (`frontend/src/ui/modal.ts` at `48e4c4c`); with stacked dialogs only the newest is live. Before, a dialog opened from a table row (Remove in Leagues & follows) was rendered inside the row: a click on its text or padding bubbled to the row, opened the row's page and unmounted the dialog mid-action (end-to-end finding F22) |
 | `ConfirmDialog` | for destructive or costly actions. States what will happen, in numbers when known. For irreversible actions the user types a word (the scope name, or "restore") before the button enables | clear, restore with replace, remove follow with data. As built (FX-14a, FX-14b): the word is a shown, localized word, compared without case in the user's language: "SİL" / "DELETE" for a clear or a removal with data, "GERİ YÜKLE" / "RESTORE" for a restore |
 | `SidePanel` | a panel from the right for secondary content (raw view, filters on phone, a job's log) | |
 | `Toast` | short message, bottom right (bottom on phone), `aria-live="polite"`; errors stay until closed, others close after 6 s | a toast never carries the only copy of important information |
@@ -468,6 +484,9 @@ One `DataTable` for every list.
 - Status is never colour only (icon and word, 4.6). Progress bars have `aria-valuenow`.
 - Toasts and job progress use `aria-live="polite"`; errors that block a form use `role="alert"`.
 - `prefers-reduced-motion` turns off panel slides and spinners become static icons.
+- As built (FX-24, #170): while a dialog is open the page behind it is `inert`, so it can be neither
+  clicked nor focused and the accessibility tree has only the dialog (4.7). Playwright's `getByRole` ignores
+  `inert`, so a test script scopes its locators to `[role=alertdialog]`.
 
 ### 4.10 Language, numbers and time
 
@@ -490,6 +509,17 @@ One `DataTable` for every list.
 - Numbers use the locale's grouping (`12,345` / `12.345`). Times: decision 13. Durations: "2 h 5 min".
 - Sport names come from the locale (`sport.<slug>`), with the registry's `name` as the fallback, so a sport
   added by SP-1 to SP-3 shows its English name until its translation is added.
+- Places, as built (FX-24, #170): SofaScore's regions and home nations (Europe, South America, North &
+  Central America, England with its code `EN`, World, International, …) come from the locale
+  (`ui.place.*`, both languages); a country SofaScore names in English without a code ("Turkey") is named
+  by the browser in the reader's language; ISO codes as before (`Intl.DisplayNames`). Used by the search
+  hits, Ctrl K and the follow header (`placeName`). The end-to-end test had found "England", "Europe" and
+  "South America" in English in the Turkish UI (F12).
+- New job log codes, as built: `sync_season_list_fresh` and `sync_schedule_fresh` (FX-23, #171: a season
+  list or a match list is up to date and is not read again) and `sync_extras_kinds` (FX-23: the kinds of
+  non-match data saved and not available, as lists of slice keys), whose text names the kinds by their data
+  type (FX-25, #172: "Standings saved; Season odds (champion, relegation) not available on SofaScore."; an
+  unknown key is shown as it is). `frontend/tests/jobWords.test.ts` lists all three in `CODES` (G24).
 
 ## 5. Shared behaviour: loading, errors, the token, refusals
 
@@ -516,7 +546,7 @@ Every v1 error has `{"error": {"code", "message", "details", "request_id"}}` (`0
 | 403 | `forbidden_origin` | Error page "This page was opened from another site. Open the app from its own address." |
 | 404 | `not_found` | Detail pages: "Not found" page with a link back to the list. Raw view: "No payload stored for this slice". |
 | 409 | `job_running` | "Another job is writing to the data folder: Sync started by the CLI on host X." with a link to that job (`details`) and a button "Open job". The form keeps its input so it can be sent again. |
-| 409 | `data_operation_running` | "A backup / restore / clear is running. Try again when it has finished." Link to the job. |
+| 409 | `data_operation_running` | "A backup / restore / clear is running. Try again when it has finished." Link to the job. Since FX-23 (#171) also an export: a second export while one runs, or a restore, clear or rebuild while an export runs (the `export` lease, 5.4) |
 | 409 | `instance_running` | Restore or clear while the live service runs: "The live service (`ssc watch`, pid 4121 on host X) uses this data folder. Stop it first." |
 | 409 | `follow_exists` | Follow editor: "You already follow this tournament." Link to it. |
 | 409 | `follow_managed` | "This follow comes from the config file. Change it in sofascore.toml." |
@@ -544,6 +574,12 @@ Settings, only when a token is in use.
   with 409 shows the message of 5.2. The UI does not guess the lock ahead, because another process can take
   or release it at any moment; the only exception is a banner on Backups and Maintenance while
   `/status.active_job` is set.
+- As built (FX-23, #171): an **export no longer waits for a download**. It takes the new `export` lease
+  (one export at a time, next to the `writer` lease of a download) and runs in a job store of its own;
+  clear, restore and rebuild (`maintenance`) wait for it. A second export while one runs, and a clear,
+  restore or rebuild while an export runs, are refused with 409 `data_operation_running` (5.2). Before, the
+  export took `writer` and was refused for the whole length of a download (end-to-end finding F14;
+  `02-services.md` 2.8, `01-storage.md` 6.1).
 
 ## 6. Screens
 
@@ -598,7 +634,7 @@ screen differs say so ("As built"). Section 7 lists the state of every route and
 | Live service | running, source, number of sports | `/status` (P21: live fields) | `live.running`, `live.source`, `live.sports`, `live.blocked` |
 | Sinks | one line | `/sinks` (built by P21, #122; read once per visit) | see 6.13 |
 | Scheduler | next run | `/status` (P29) | `schedule.next_runs`. As built (#132): on or off from `capabilities.scheduler` only. P29 (#128) has added `schedule.enabled` and `schedule.next_runs[]` to `/status`, but the screen still does not read them at `b6caf2f` (`frontend/src/screens/OverviewScreen.vue:247-248`); FX-14b did not wire them (7.3, open after FX-14b) |
-| Running now | the active job with progress; Open, Stop | `/status`; `/jobs/{id}/events`; `POST /jobs/{id}/cancel` | `active_job` (Job), `progress` |
+| Running now | the active job with progress; Open, Stop | `/status`; `/jobs/{id}/events`; `POST /jobs/{id}/cancel` | `active_job` (Job), `progress`. As built (FX-24, #170): the counts name the unit of every phase ("0 / 1 season lists", "2 / 5 match lists", "2 / 49 matches"; `countsText`), where the end-to-end test saw a bare "0 / 1" (F25); the time left is the longer of the server's `eta_seconds` and the pace of the last three minutes measured from the status reads (`frontend/src/app/eta.ts`, 6.9) |
 | Recent jobs | last 5 jobs | `GET /jobs?limit=5` | `kind`, `state`, `origin.face`, `started_at`, `finished_at` |
 | Recent corrections | last 5 changes | `GET /changes` (P21) | `event_id`, `fields`, `recorded_at_utc` |
 
@@ -654,7 +690,7 @@ row menu ⋯ : Sync now · Edit · Disable · Remove
 | Table | one row per follow | `GET /api/v1/follows` (P21), `?q=` for the name search | `kind`, `entity_id`, `name`, `sport`, `seasons`, `slices`, `live`, `enabled`, `origin` |
 | Data column | "Defaults" when `slices` is null; "Custom" otherwise; a chip "+odds" when the odds group is on | same | `slices` |
 | Live column (optional column) | "Watched by `ssc watch`" when `live` is true | same | `live` |
-| Coverage | details / matches of the tournament | `/status` data summary by tournament (P21) | `summary.tournaments[].coverage` |
+| Coverage | details / matches of the tournament | `/status` data summary by tournament (P21) | `summary.tournaments[].coverage`. As built (FX-24, #170): a team's "Matches with details" is counted from its stored matches (`GET /events?participant=`, at most 5 pages of 200, with the summary's only-finished rule; `frontend/src/screens/follows/followCoverage.ts` at `48e4c4c`), a single match's from its record, in the list and in the follow's facts; a player's shows "—" with the reason on hover, because stored matches do not say who played (end-to-end finding F23; per-follow coverage in `/status` is open after 3.0.0, 7.3) |
 | Last sync | end of the newest sync job that included this follow | `GET /jobs?kind=sync` (target matching: P13) | `finished_at`. As built (#133): the newest finished sync whose spec names this tournament or every follow |
 | Sync now | sync of this follow | `POST /jobs {kind: "sync", spec: {follows: [...]}}` (spec of P13) | — As built (#133): P13 (#113) did not add a spec by follow, so Sync now was offered for tournament follows only (G23). FX-13 (#152) added `sync {follows: [...]}` and FX-19 (#156) made team, player and event follows download; since FX-14b (#161) **"Download now"** sends `sync {follows: [id]}` for every kind, with the follow's own season choice, where a league's used to download every season through `league_id` (`frontend/src/screens/follows/FollowActions.vue:128` at `b6caf2f`) |
 | Disable / enable | | `PATCH /follows/{id}` (P21) | `enabled` |
@@ -678,6 +714,9 @@ UI or the API is always an `api` row of the follows table, with or without a con
 a config file, a tournament follow went to `config/leagues.txt` and came back as a locked `legacy` row with
 only its sport writable (the review's second problem). A `legacy` row is still writable only in `sport`
 and `origin`; "Move here" adopts it.
+
+**As built (FX-24, #170).** Two follows of the same kind, sport and name show their SofaScore number in
+the list, so that the men's and the women's team of one club can be told apart.
 
 **Navigation.** Row → Follow detail. Sync now → toast with the job link.
 
@@ -737,6 +776,32 @@ sends 1 SofaScore request, slowly (a pause after every key) 5, and the same text
 by kind, not one relevance order across kinds as the owner's "one mixed list" may have meant, so "la"
 keeps LaLiga at the top; the owner may still ask for one relevance order (`03-implementation-plan.md`
 section 13).
+
+As built after the end-to-end test (FX-24 #170, FX-23 #171, FX-25 #172). **The hits say what they are.**
+A "team" of tennis, badminton, table tennis, padel, darts, snooker or MMA is shown under **Players** with
+the player icon, in the editor and in Ctrl K; it is still followed as a team (`team:<id>`), and the editor
+says so ("SofaScore lists tennis players as teams: this one is added as a team, …"); the list of these sports is
+`INDIVIDUAL_SPORTS` in `frontend/src/app/sports.ts` (`:40` at `48e4c4c`), because `GET /sports` has no
+field for it (7.3). SofaScore's placeholder team **"No team"** is never shown as a player's team. A team
+hit shows **"Women"** ("Kadın") for `gender: "F"` and **"National team"** ("Milli takım") for
+`national: true`, from the two fields FX-23 added to the search hits (`TournamentHit.gender`, `national`;
+null for tournaments, players and stored names): "Fenerbahçe · Volleyball · Turkey · Women". A men's team
+gets no word. Two hits of one group with the same name and sport show their number ("No. 36456", with a
+hover text) only when gender or the national flag do not already tell them apart: the values must be known
+for both and differ (`traitsApart` in `frontend/src/app/suggest.ts:76`; `markTwins` takes it as its
+`apart` rule). The end-to-end test had found two "Fenerbahçe · Voleybol · Türkiye" hits that could not be
+told apart (F26), a tennis player under Teams (F31) and "takımı: No team" (F32). Places are named in the
+reader's language (4.10, F12). Searches typed while a download runs no longer wait behind the download's
+requests: the request budget gives a search the first free slot (FX-23's priority lane, `02-services.md`;
+at 1 request per second "galatasaray" answered within 4 s during a download in the re-test, where
+"barcel" had taken up to 12 s, F16).
+
+The end-to-end test against the real site (2026-10-07) answered part of the type-ahead's live questions
+(57 below): "sü" (2 letters) returned leagues and teams (Trendyol Süper Lig, UEFA Super Cup, Supercopa,
+Villarreal, …; F4); longer texts such as "süper" got a 403 on the direct path and were answered by the
+browser bridge after it solved the challenge (about 4 s). Still open for the live validation: the request
+counts while typing on a real server, and the cancel of an aborted fetch behind a reverse proxy
+(`03-implementation-plan.md` section 18).
 
 Step 2: seasons. `( ● Current season ) ( ○ Last [2] seasons ) ( ○ All seasons ) ( ○ Choose… )`. "Choose"
 lists the seasons that are stored (`GET /tournaments/{id}/seasons`, P21) with a button "Get the season list
@@ -880,6 +945,38 @@ has a Matches tab with its stored matches (`/events?participant=`); a single-mat
 match. When a download of the follow ends, the page reads its last download, its counts and its seasons
 again (FX-14a).
 
+**As built after the end-to-end test (FX-24 #170, FX-23 #171, FX-25 #172).**
+- **Header.** The line under the title is "sport · country or region · kind" ("Football · Europe ·
+  League", "Futbol · Avrupa · Lig"; a tennis "team" is "Player"), with the place in the reader's language
+  (4.10); the SofaScore number moved to the facts ("SofaScore number"). The test had read "Futbol · Lig ya
+  da turnuva #465", the number where a reader expects the country (F5). The league's record is read again
+  when its download ends, since the first download is what stores its category. A team follow's header
+  adds "Women" or "National team" when a hit of that team was seen in a search on this page (`seenTeam` in
+  `frontend/src/app/suggest.ts:132` at `48e4c4c`, kept in memory, at most 500, no extra request): "Volleyball
+  · Turkey · Team · Women". Without such a hit it stays "Football · Team": `FollowRecord` has no gender and
+  there is no team record route (7.3), so after a reload the word comes back only once the team is seen in
+  a search again (FX-25).
+- **Seasons tab.** Completeness is labelled **"with all data: N %"** ("tüm verisi inen: %N"), with an
+  explanation on hover, and the missing data types are listed by name ("missing: Pre-game form (1)", from
+  `counts.missing`). The test had seen "%0 tamam" with every match detailed (F6): a data type that
+  SofaScore answered "no data" for counted as missing until a second "no data" confirmed it. Since FX-23
+  (#171) completeness counts a **finished** match's data type whose last answer was "no data" as resolved
+  (`planning.unresolved_slice_keys`), so the first download no longer shows 0 %; a data type whose last
+  request failed, and those of matches that are not finished, still count as missing. The planner still
+  asks once more to confirm (`02-services.md` 3.2).
+- **Refresh during a job.** While a job of this follow runs (any process, from `/status`) the tab is read
+  with each status read, as the coverage beside it already was; when the active job is gone the seasons,
+  the league and the jobs are read again, even if the job watch never saw the end (a CLI or scheduler job
+  that ended between two status reads). The test had seen "0 matches · Fixtures not read yet" right after a
+  download (F6); it could not be reproduced offline, and the change makes the tab independent of the job
+  watch.
+- **Seasons not followed.** `current` and `last:N` are resolved as a download resolves them (the newest
+  seasons of the stored list), so the other stored seasons are marked "not followed". The side panel says
+  when the counts include matches of seasons not followed here: "Includes 27 matches of seasons not
+  followed here, brought by other follows (a team, a player, a match) or by a download of one season."
+  (F28: a team follow had filled 27 matches of a league season.)
+- **Coverage** of a team or a single match is counted from its matches (6.2, F23).
+
 ### 6.5 Events
 
 **Purpose.** Find matches in the stored data, see their state, fetch what is missing.
@@ -1021,6 +1118,18 @@ single-match follows did not download. The Odds tab still lists the stored odds 
 P28 added the normalized odds at `/events/{id}/odds/{key}`, which the tab does not read (open after
 FX-14b, 7.3).
 
+**As built (FX-24, #170): a readable Odds tab.** The tab reads the normalized odds of P28 (`GET
+/events/{id}/odds/{key}?history=false`, the latest read of each bookmaker; client call
+`v1.eventOddsSnapshots`, `frontend/src/screens/events/OddsView.vue:39` at `48e4c4c`), featured markets first
+and all markets on a switch: one block per market (common market names, outcomes and periods in the
+reader's language, others SofaScore's English marked `lang="en"`; the line, for example "Total goals
+2.5"; suspended or in play), each outcome with its decimal price (the fraction under it), the opening
+price, the direction of the last change (word and arrow; the arrow only on a phone) and the winner. A
+market that the featured list names twice (`default`, `fullTime`) is shown once. The stored odds slices
+with their raw view follow under "SofaScore's answer". The bookmaker is shown as "Bookmaker 1": `Odds`
+carries only `provider_id`, and a provider name is open after 3.0.0 (7.3). The end-to-end test had found
+only the raw viewer with "readable view coming soon" (F11).
+
 **Navigation.** Back to the list keeps its filters. A job toast after Fetch again; when it finishes the page
 reloads the event.
 
@@ -1119,6 +1228,25 @@ of `/jobs/{id}`. Stream unsupported (501, no `sse-starlette`): the page polls `/
 a finished job: 404 or no change; the button is hidden for finished jobs. A running job whose heartbeat is
 older than 30 s: "No sign of life for 45 s; the process may have stopped."
 
+**As built after the end-to-end test (FX-24 #170, FX-23 #171, FX-25 #172).**
+- **Seasons by year.** The log named a season by its id ("UEFA Super Cup için #76138 sezonunun maçları
+  okunuyor…", F8), because the log parameters carry `league_id` and `season_id` only. Job detail reads
+  the stored season list of the job's league and of any league a log line names (once per page, this
+  server only) and writes the season's year ("… 2025 sezonunun …"); a season the stored list lacks keeps
+  "#id". A `season_name` in the parameters would spare that read (open after 3.0.0, 7.3).
+- **Time left.** The server's ETA is the phase's average since the phase began (`JobProgress.eta_seconds`),
+  which the first, faster matches make optimistic (about twice in the test: "about 1 min left" at 33 of
+  70 matches, then 2.5 minutes; F17). Job detail (from the job's events) and Overview (from the status
+  reads) measure the pace of the last three minutes (`frontend/src/app/eta.ts`, `ETA_WINDOW_MS`) and show
+  the longer of the two estimates. A pace in requests is not possible: the progress has no request
+  counter (7.3).
+- **Units.** Counts name the unit of the phase (6.1, F25).
+- **New lines.** "The season list of … is up to date; it is not read again." and "The matches of …, season
+  … are up to date; they are not read again." (`sync_season_list_fresh`, `sync_schedule_fresh`, FX-23:
+  the freshness rule had skipped the request but the log still said "Reading the season list", F9). After
+  "Odds and non-match data: N stored, M failed" a line names the kinds saved and the kinds SofaScore did
+  not have (`sync_extras_kinds`, F18), by their data-type names since FX-25 (4.10).
+
 ### 6.10 Exports
 
 **Purpose.** Take data out in open formats, normalized or raw, at full size.
@@ -1173,6 +1301,18 @@ readable file names of FX-19 (`<league or dataset>_<UTC date>_<last 8 characters
 **States.** Empty: "No exports yet." 501 `not_supported`: 5.2. A running export appears at the top with its
 progress and a link to the job.
 
+**As built after the end-to-end test (FX-24 #170, FX-23 #171).** The filter's added follows include
+**teams and single matches**, not only leagues (F13: a followed team could not be chosen). `ExportFilter`
+has no participant field, so a single match is sent as its match number and a team as the numbers of its
+stored matches, read when it is chosen (`GET /events?participant=`, up to 2,000; the dialog waits and shows
+"70 stored matches"). A note says that the choices narrow each other (the filter is AND). Players cannot be
+chosen, and the dialog says why (stored matches do not say who played; an `ExportFilter` participant is
+open after 3.0.0, 7.3). **An export starts while a download runs** (FX-23, the `export` lease; 5.4): the
+test had been refused with "Another job is writing to the data folder" for the whole download (F14); in
+the re-test a CSV export of 161 rows finished while the Süper Lig 25/26 download ran. Exports written
+before FX-23 keep the old extra-time score of a match that went straight to penalties
+(`score_after_extra_time`, F10); export again to correct them (`04-schema-v1.md`).
+
 ### 6.11 Backups and restore; Maintenance
 
 **Backups** (`/backups`).
@@ -1223,13 +1363,21 @@ row ⋯ : Download · Check (dry run) · Restore…
   is the backup's plus the restore job, so the screen reads the status and the jobs again. FX-14a had
   only reworded the note ("only on the server, from the command line"), hidden "Sink positions" in a
   backup's counts and renamed "Event log entries" to "Change records".
+
+  **As built (FX-23, #171).** A backup made from the web or the scheduler records its own job as
+  completed in the archive's copy of `state.db`, so a restore of it no longer shows "The last Backup job
+  was interrupted" on Overview (end-to-end finding F30, a false alarm after every restore); a restore of
+  an older archive keeps the finished live record of a job that was still running in the archive
+  (`01-storage.md` 9). The end-to-end test ran the whole wizard (check, replace, typed "GERİ YÜKLE")
+  against real data: data, follows, job history and a saved setting came back (F21). The typed-confirm
+  field is clickable in an automated browser since FX-24 (4.7, F22).
 - The archive must be in the server's backups folder. The UI has no upload (decision 15).
 
 | Element | Route | Field |
 |---|---|---|
 | Table | `GET /api/v1/backups` (P21) | `name`, `scope`, `created_at`, `bytes`, `format`, `with_env` (from ST-24's `backup.json`) |
 | Download | `GET /backups/{name}` (P21) | the zip itself; there is no metadata route per backup, the list has the fields (P21 #126) |
-| Refusals | 409 `job_running`, `data_operation_running`, `instance_running` | 5.2: "Stop `ssc watch` first" for the live service |
+| Refusals | 409 `job_running`, `data_operation_running`, `instance_running` | 5.2: "Stop `ssc watch` first" for the live service. As built (FX-23, #171): a restore, a clear and a rebuild also wait for a running export (the `export` lease; 5.4) |
 
 **Maintenance** (`/maintenance`). Three cards; a fourth since FX-14b. The screen is named **Data cleanup**
 ("Veri bakımı") since FX-14a.
@@ -1283,6 +1431,12 @@ row ⋯ : Download · Check (dry run) · Restore…
 | Scheduler | on/off and next runs | `/status` (P29) | `schedule.enabled`, `schedule.next_runs[]`. Built by P29 (#128): each run has `index`, `run`, `every`, `cron`, `options`, `next_run_at_utc`, `last_run_at_utc`, `last_job_id`, `last_result`. As built, the card (#132) shows only on/off from `capabilities.scheduler` and "The next runs appear here when the server reports them": it was written before P29 merged and is still not wired at `b6caf2f` (`frontend/src/screens/HealthScreen.vue:251-257`; 7.3, open after FX-14b). Wired by FX-20 (#167): the card lists the next runs with each task's kind and league. The wireframe's hint reads as if both the setting and the flag were needed; either one turns the scheduler on, and `--no-scheduler` overrides the setting (P29). Since FX-15 (#155) an `every` task counts from its last run in the job history, not from the server start, and the scheduler has a `prune-history` task (off by default) |
 | Who holds the data folder | the four leases and their holders | `/status` (proposed `leases`, 7.3) | lease name, purpose, pid, host, since. Built (G3, P21 #122): `leases[]` with `name` (also `watcher:<sport>`), `purpose`, `pid`, `host`, `since_utc` |
 | Storage | | `/status` (P21 data summary) | `summary.data_dir`, `summary.disk.total`, `summary.catalog_rebuild_reason`; `version`, `api_version`. As built (#132): `/status` has no data-folder path (G20), so the card shows the size, the index state with a link to Maintenance, the version and schema version and whether a token is in use, and the Diagnostics tab of Logs shows the path; the size is the sum of `disk.entries`, as on Overview (G21). FX-13 added `summary.data_dir` and `disk.v3` / `disk.changes` (with `total` counting both); the card still uses its fallbacks at `b6caf2f` (`frontend/src/app/statusStore.ts:12-19`), which give the same size |
+
+**As built (FX-24, #170).** The running job reads by its kind and target with the names the job recorded
+("Download · Göztepe") and links to the job, with its id as the hover text; the end-to-end test had seen
+the bare id (F15). The scheduler's intervals are in words with the locale's plural forms: "every 20
+minutes", "once a day", "every 6 hours" ("20 dakikada bir", "günde bir"; 1.5 h is "every 90 minutes";
+`everyText`), where the test had seen "her 20m" (F37); cron tasks are unchanged.
 
 **States.** A heartbeat older than 2 minutes while `running` is true: "No heartbeat for 3 min; the service
 may hang." Connection check refused (503): the translated reason. Before P21: the cards whose fields are
@@ -1441,6 +1595,13 @@ the setting itself). The review found Settings hard for a newcomer (every field
 shows its config key, the API address is the first field, many keys are `sofascore.toml`-only, and the
 screen does not say whether a change needs a restart); #161's recheck still rates it hard.
 
+**As built (FX-24, #170): an Advanced fold.** Rarely needed and risky settings (`client.base_url`,
+`client.captcha_token`, `client.browser_profile`, `client.throttle_dir`) are last in their section under
+a closed **"Advanced"** ("Gelişmiş") fold with a warning (`advanced: true` in
+`frontend/src/screens/settings/settingsMeta.ts:19` at `48e4c4c`); the fold opens by itself when one of them
+has an unsaved change or a refusal. Requests now starts with "Requests per second", where the end-to-end
+test had found the SofaScore address first (F20). The wireframe's "Base address" row is under the fold.
+
 **States.** Save refused 400 `invalid_request` with `details.locked` or `details.read_only`: the key's row
 shows the reason and nothing is saved (all or nothing). 409 `job_running` for a data-folder change: 5.2. 507:
 the overrides file could not be written. Unsaved changes when leaving: "Discard 2 changes?". A key unknown to
@@ -1497,7 +1658,9 @@ Added since, at `b6caf2f`:
 ### 7.2 Planned by a remaining plan item
 
 FX-20 (#167) built all four rows below, so no remaining plan item has a route or a screen of this document
-left; P30 removes the legacy routes and the retired setting.
+left; P30 removes the legacy routes and the retired setting. The UI findings of the end-to-end test were
+fixed by FX-24 (#170) and FX-25 (#172) and the API ones it needed by FX-23 (#171); what they left is in 7.3
+(G34 to G41), after 3.0.0.
 
 | Need | Plan item | Screens |
 |---|---|---|
@@ -1512,9 +1675,10 @@ season-data groups of the picker) were built by FX-14b, part 5 (the classic view
 ### 7.3 Gaps: G1 to G13, the ones FE-2 found, and the ones FX-14a and FX-14b found
 
 G1 to G13 are the gaps of the first version; G14 to G24 were found while FE-2 was built (#107, #132,
-#133); G25 and later by FX-14a (#154) and FX-14b (#161). "Built" means the route exists at `b6caf2f`;
-"UI" says whether a screen uses it. The rows of G25, G26, G29 and G31 to G33 give the state at `6f79344`,
-after FX-20 (#167).
+#133); G25 to G33 by FX-14a (#154) and FX-14b (#161); G34 to G41 by FX-24 (#170), as the API gaps of the
+end-to-end test's UI findings. "Built" means the route exists at `b6caf2f`; "UI" says whether a screen uses
+it. The rows of G25, G26, G29 and G31 to G33 give the state at `6f79344`, after FX-20 (#167), and the rows
+of G34 to G41 the state at `48e4c4c`, after FX-23 (#171) and FX-25 (#172).
 
 | # | Need | State at `b6caf2f` | Owner |
 |---|---|---|---|
@@ -1551,12 +1715,21 @@ after FX-20 (#167).
 | G31 | The live switch of the editor is offered for player follows, which `ssc watch` skips (`live_follow_skipped`) | **Built** by FX-20 (#167): not offered for player follows; shown on a player's edit page only when already on. | done |
 | G32 | Settings › Data lists all 21 registered sports, collapsed | **Built** by FX-20 (#167): followed sports first, the others in one closed "Other sports" group. | done |
 | G33 | The retired `fetch.save_empty_rounds` is still a control, and the texts of it and of `fetch.only_finished` still describe the old write-time meaning (`settingsMeta.ts:46-47`; `frontend/src/locales/ui/en.ts:1567`, `:1625`) | **Built** by FX-20 (#167): the control is gone, and "Show finished matches only" says that it only filters the lists. | done (FX-20); P30 removes the setting |
+| G34 | A search hit's gender and national flag, to tell same-named teams apart (F26; FX-24 gap 1) | **Built** by FX-23 (#171): `TournamentHit.gender` (`M`/`F` as SofaScore gives it) and `national`, from `/search/all`; null for tournaments, players and stored names. UI: "Women" and "National team" in the editor, Ctrl K and the picked line (FX-25, #172; 6.3). Not stored in the catalog. | done |
+| G35 | A team record route with gender and country (`GET /teams/{id}` or a participant route; `FollowRecord` has neither), for a team follow's header (F5, F26; FX-24 gap 2) | **Missing.** The header uses a team hit seen in a search on the page (FX-25, `seenTeam`; 6.4). | after 3.0.0 (`03` section 17) |
+| G36 | Whether a sport's participants are players (`participants: "individual" \| "team"` on `Sport`, F31; FX-24 gap 3) | **Missing.** The UI keeps a list of slugs (`INDIVIDUAL_SPORTS` in `frontend/src/app/sports.ts:40`), against R4 (sport lists come from the API). | after 3.0.0 (`03` section 17) |
+| G37 | The season's name in the log parameters of `sync_schedule` and `sync_season_outdated` (F8; FX-24 gap 4) | **Missing.** Job detail reads the stored season lists to name seasons (6.9). | after 3.0.0 (`03` section 17) |
+| G38 | An odds provider's name (F11; FX-24 gap 5) | **Missing**: `Odds.provider_id` only; the Odds tab says "Bookmaker 1" (6.6). | after 3.0.0 (`03` section 17) |
+| G39 | Export by team or player: a participant field on `ExportFilter` (F13; FX-24 gap 6) | **Missing.** The dialog sends a team as up to 2,000 match numbers and offers no players (6.10). | after 3.0.0 (`03` section 17) |
+| G40 | Coverage per follow in `/status` (`summary.follows[]` or `FollowRecord.coverage`), and a way to count a player's matches (F23; FX-24 gap 7) | **Missing**: `/status.summary.tournaments[]` only; a team takes up to 5 requests of `/events`, a player cannot be counted (6.2). | after 3.0.0 (`03` section 17) |
+| G41 | Request counters in job progress (requests sent, expected requests per match), for an ETA in requests (F17; FX-24 gap 8) | **Missing.** The UI measures the recent pace instead (6.9). | after 3.0.0 (`03` section 17) |
 
 **Open after FX-14b, not gaps of the API.** `/status.schedule` (P29) is not read by Overview and Health
 (6.1, 6.12; the comment at `frontend/src/screens/HealthScreen.vue:28` still says the next runs are not
 reported). Done for Health by FX-20 (#167): it lists the scheduler's next runs and names each task's league
 (from the stored catalog); Overview still does not show them. The normalized odds of `/events/{id}/odds/{key}` (P28) have no markets view; the Odds tab lists
-the stored odds slices with the raw view (6.6). The classic stylesheet's rules in `frontend/src/style.css`
+the stored odds slices with the raw view (6.6). Done by FX-24 (#170): the Odds tab shows the normalized odds
+as a readable table (6.6). The classic stylesheet's rules in `frontend/src/style.css`
 were removed by FX-20 (#167; 4.5). FX-14b's script did not take the phone
 (390 px) screenshots of the row-menu dialogs (Remove, Restore); the 390 px layouts of the screens were
 taken. Each is listed with its owner in `03-implementation-plan.md` section 16.
@@ -1909,6 +2082,62 @@ Corrections after FX-20 (2026-10-07, the seventh revision; checked at `6f79344`)
     empty answer); the real requests while typing (per settled text, what an aborted fetch costs, the
     10-minute cache under real typing); and whether an aborted fetch closes the connection in time for the
     server's cancel check behind a reverse proxy (tested with uvicorn directly only).
+
+Corrections after FX-23 to FX-25 (2026-10-08, the eighth revision; checked at `48e4c4c`). The orchestrator
+tested every feature through the web UI against the real SofaScore at 1 request per second (2026-10-07,
+re-tested on 2026-10-08 after FX-23 and FX-24); the F numbers are its findings:
+
+58. **Dialogs outside the table rows** (4.7, 4.9; F22). The design said only that focus is trapped. A
+    dialog opened from a table row was rendered inside the row, so a click on its text opened the row's
+    page and removed the dialog. FX-24 (#170) shows every dialog at the end of `<body>` and makes the page
+    behind it `inert`; with stacked dialogs only the newest is live.
+59. **Places in the reader's language** (3.3, 4.10, 6.3, 6.4; F12). FX-20 named ISO countries in the
+    reader's language but left SofaScore's regions and home nations ("Europe", "England") in English;
+    FX-24 names them from the locale and names an English country without a code through the browser.
+60. **What a search hit is** (3.3, 6.2, 6.3; F26, F31, F32; G34). Players of individual sports are under
+    Players (FX-24; a slug list until G36); "No team" is hidden (FX-24); a team hit says "Women" or
+    "National team" from the new `gender` and `national` fields (FX-23 API, FX-25 UI); the number of a
+    same-named hit is shown only when gender and the national flag do not tell the hits apart (FX-24, FX-25),
+    in the editor, Ctrl K and the list of follows.
+61. **Searches during a download** (6.3; F16). The design counted every type-ahead request in the shared
+    budget, behind any waiting download request. FX-23's priority lane lets a search take the first free
+    slot without exceeding the budget (`02-services.md`).
+62. **The follow header** (6.4; F5). The wireframe's "Football · England · tournament #17" is "sport ·
+    country or region · kind"; the number is a fact; a team adds "Women" or "National team" only from a
+    hit seen in a search on the page (FX-24, FX-25; G35).
+63. **Completeness** (6.4; F6). The Seasons tab's completion is "with all data" with the missing data
+    types by name (FX-24), and a finished match's data type with one "no data" answer counts as resolved
+    (FX-23, `planning.unresolved_slice_keys`), so a first download no longer shows 0 %. The tab is also
+    read while a job of the follow runs and once after it, without the job watch.
+64. **Seasons not followed** (6.4; F28). `current` and `last:N` mark the other stored seasons as not
+    followed, and the side panel says when the counts include matches that other follows brought (FX-24).
+65. **Coverage of team and match follows** (6.2, 6.4; F23; G40). "Matches with details" of a team is
+    counted from its stored matches (up to 5 pages of `/events?participant=`), of a match from its record;
+    a player's stays "—" (FX-24).
+66. **The Odds tab** (6.6, 7.3; F11; G38). The tab listed only the raw odds slices ("open after FX-14b").
+    FX-24 shows the normalized odds as a table of markets and outcomes with decimal and fractional prices,
+    the opening price, the change and the winner; the raw slices follow. The bookmaker has no name (G38).
+67. **The job log and progress** (4.10, 6.1, 6.9; G24, G37, G41; F8, F9, F17, F18, F25). Seasons by year
+    (from the stored season lists), units in every phase, the time left as the longer of the server's
+    estimate and the recent pace (FX-24); three new codes, `sync_season_list_fresh`,
+    `sync_schedule_fresh` and `sync_extras_kinds` (FX-23), the last with the kinds named by data type
+    (FX-25).
+68. **Exports and backups** (5.2, 5.4, 6.10, 6.11; F13, F14, F30; G39). A restore of a web or scheduler
+    backup no longer reports the backup's own job as interrupted (FX-23). The filter offers added teams (as their stored
+    match numbers) and single matches, not players (FX-24). An export runs next to a download under the
+    new `export` lease, one export at a time; a restore, clear or rebuild waits for it, with 409
+    `data_operation_running` (FX-23). Export files written before FX-23 keep the old extra-time score of a
+    match that went straight to penalties (F10); export again.
+69. **Health** (6.12; F15, F37). The running job by kind and name, linked; scheduler intervals in words
+    (FX-24).
+70. **Settings** (6.16; F20). The SofaScore address, the captcha token, the browser profile and the
+    throttle folder are under a closed "Advanced" fold per section; Requests starts with "Requests per
+    second" (FX-24). The rest of the review's "Settings is hard" stands.
+71. **Open after the test** (7.2, 7.3, item 57). The API gaps FX-24 reported and FX-23 did not close are
+    G35 to G41, all after 3.0.0. Of item 57, the end-to-end test answered the 2-letter prefix in part: "sü"
+    returned leagues and teams (F4), and longer texts were answered by the browser bridge after a 403 (about
+    4 s). The requests while typing on a real server and the cancel behind a reverse proxy are still for the
+    live validation (`03-implementation-plan.md` section 18).
 
 The words, as built (FX-14a, #154; design word → Turkish → English):
 

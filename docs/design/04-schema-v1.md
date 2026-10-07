@@ -33,6 +33,22 @@ recorded in the slice's meta, not in the `Odds` record. REN-1 (#168) renamed the
 `sofascore_scraper`, so the `x-source` notes of the models and the paths in the field tables name
 `sofascore_scraper/…` files.
 
+Revised on 2026-10-08 (the eighth revision, checked against `origin/main` at `48e4c4c`), after the end-to-end
+test against the real SofaScore. It found a wrong football score (finding F10): a match that went straight
+from 90 minutes to penalties (status 120, "AP", no extra time played) had `after_extra_time` set to the
+score after 90 minutes. FX-23 (#171) corrected the rule in `extract_scores`
+(`sofascore_scraper/status.py:325-336` at `48e4c4c`): `after_extra_time` is set for status 110, and for
+status 120 only when SofaScore sends `overtime`, `extra1` or `extra2`. The definition of the field did not
+change, only which matches have a value, so `schema_version` stays 1. The derived values live in the
+catalog, so `DERIVE_VERSION` went from 5 to 6 (`sofascore_scraper/store/derive.py:50`) and a catalog written
+by the old rule is rebuilt from the stored files when it is first opened; export files written before are not
+rewritten (export again). The example Event below (event 16950622, status 120 without extra-time keys) is
+such a match and now has `after_extra_time: null`. The `Source` column of the generated `FootballScore`
+table still says "only when `status.code` is 110 or 120", because it is printed from
+`sofascore_scraper/schema/models.py`, which FX-23 left unchanged so that the table and the code stay equal; the
+prose under the table gives the rule, and the next item that edits the models (FX-16) corrects the text in
+both places (`REGEN_SCHEMA_DOC=1`; `03-implementation-plan.md` section 16).
+
 ## 1. What the schema is, and what it is not
 
 The platform stores SofaScore's responses as they are (one file per response, see `01-storage.md`). The
@@ -309,7 +325,7 @@ A match. One record per SofaScore event id.
  "participants": {"home": {"id": 54, "name": "Peterborough United"}, "away": {"id": 23, "name": "Barnsley"}},
  "score": {"family": "football", "home": 3, "away": 3,
            "half_time": {"home": 2, "away": 2}, "regulation": {"home": 3, "away": 3},
-           "after_extra_time": {"home": 3, "away": 3}, "penalties": {"home": 7, "away": 6}},
+           "after_extra_time": null, "penalties": {"home": 7, "away": 6}},
  "winner": "home", "aggregate": null, "slug": "peterborough-united-barnsley", "custom_id": "yseb",
  "quality": {"source": "event", "observed_at_utc": "2026-09-29T15:52:47Z", "change_ts": 1789504592,
              "settlement": "final", "provisional": false, "tier_hint": true, "stale": false,
@@ -512,7 +528,14 @@ How the stages relate, by status code:
 |---|---|---|---|---|
 | 100 (ended) | final | null | null | equal to `regulation` (SofaScore's `display` and `normaltime` agree) |
 | 110 (after extra time) | score after 90 minutes | final | null | equal to `after_extra_time` |
-| 120 (after penalties) | score after 90 minutes | score after 120 minutes (level) | shoot-out | equal to `after_extra_time`; the winner is in `winner` |
+| 120 (after penalties), extra time played | score after 90 minutes | score after 120 minutes (level) | shoot-out | equal to `after_extra_time`; the winner is in `winner` |
+| 120 (after penalties), straight to penalties | final, level | null | shoot-out | equal to `regulation`; the winner is in `winner` |
+
+Since FX-23 (#171, 2026-10-07) `after_extra_time` has a value only when extra time was played: always for
+status 110, and for status 120 only when SofaScore sends one of `overtime`, `extra1` or `extra2` (a match
+whose extra time ended 0–0 still sends them). A cup final that goes from 90 minutes straight to penalties
+(the UEFA Super Cup 2025, event 13960989: `normaltime` 2–2, `penalties` 4–3, no extra-time key) has
+`after_extra_time` null. The `Source` text of the table above predates this rule (see the header).
 
 Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2`) and of extra time alone
 (`overtime`).

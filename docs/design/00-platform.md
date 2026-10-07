@@ -58,6 +58,17 @@ in the owner's Chrome, at 1 request per second, with a few small leagues, teams 
 `direct` source; and the repository's description and topics were updated. The notes of sections 1, 3, 10
 and 11 say what changed; section 13 has one more row (the published package).
 
+Revised an eighth time, on 2026-10-08, after the end-to-end test against the real site and its three fix
+items FX-24, FX-23 and FX-25 (pull requests #170 to #172); checked at `48e4c4c`. No decision of the draft
+changed. The test ran on 2026-10-07 in the orchestrator's own headless browser (not the owner's Chrome) at 1
+request per second; it found one wrong football score (an extra-time score for a match that went straight
+to penalties), a false warning after a restore, a second process that could not use the browser while the
+server held it, and gaps of the web UI, all fixed and re-tested on 2026-10-08. The owner decided on
+2026-10-08: the coder session has ended and every remaining step, the live validation included, runs from
+the orchestrator's session (the `direct` step still needs the owner's approval given there); the
+validation runs that evening from 20:00 to 23:00 Turkish time; and 3.0.0 is not published to PyPI. The notes
+of sections 10 and 11 and the installation row of section 13 say so.
+
 ## 1. Decisions (Tuncay, 2026-10-01)
 
 | Topic | Decision | State on 2026-10-06 |
@@ -423,6 +434,14 @@ and its fixes, the live validation, FX-16, the decision on a published package, 
 test, real screenshots in the README, the version bump, the changelog close and the tag
 (`03-implementation-plan.md` section 18). P30 comes in 3.1.
 
+Note (2026-10-08). The end-to-end test is done and its fixes are merged: FX-24 (#170, the web UI), FX-23
+(#171: the football extra-time score, exports during a download, searches ahead of downloads in the request
+budget, a temporary browser profile for a second process, English logs) and FX-25 (#172: the Store's
+messages in English and small points of the re-test). Left before 3.0.0: the live validation (Talimat 07)
+on the evening of 2026-10-08, FX-16, the Docker build and smoke test, real screenshots in the README, the
+version bump, the changelog close and the tag (`03-implementation-plan.md` section 18). 3.0.0 is released
+as the tag, the GitHub Release and the Docker image, without a PyPI package (owner, 2026-10-08).
+
 ## 11. Open questions
 
 - Is the push channel robust in production (this evening's test). Changed on 2026-10-01: answered for one
@@ -447,6 +466,13 @@ test, real screenshots in the README, the version bump, the changelog close and 
   becomes fix items before the validation. The validation itself also checks the type-ahead of FX-20:
   `/search/all` with 2-letter prefixes, the real number of requests while typing, and the cancel of a
   search behind a reverse proxy.
+- Changed on 2026-10-08 (owner): the end-to-end test is done. It ran in the orchestrator's own headless
+  browser, not in the owner's Chrome; its findings are fixed (FX-23 to FX-25), and it answered a 2-letter
+  prefix of the type-ahead ("sü" gave leagues and teams). The coder session has ended: the orchestrator
+  runs the live validation from its own session, on 2026-10-08 from 20:00 to 23:00 Turkish time, and the
+  owner gives the approval of its `direct` step there. Added to the validation: the event flow of the `page`
+  source in a busy window, also next to a running server (the test saw no event in 5 minutes on a quiet
+  match).
 
 ## 12. Old data and migration (detail of the decision)
 
@@ -493,4 +519,4 @@ needed" in `03-implementation-plan.md`.
 | Every data type is selectable (section 1) | The registry also says which detail slices a sport offers at all: a slice SofaScore does not have for a sport is not requested, and one it has only sometimes does not count against completeness (PR #121, from one match page per sport). Three proposals for football, basketball and tennis wait for the live validation | `docs/all-sports/README.md`, `02-services.md` 3.1 |
 | Wave order (section 10) | Kept. Inside wave 3 the Store and the service layer are interleaved PR by PR because they share files; the plan gives the order | `03-implementation-plan.md` |
 | The package name (not in the draft) | The import package is renamed from `src` to `sofascore_scraper` (decision D1, the owner's, 2026-10-03), in one pull request when no other branch is open; done by REN-1 (#168), with no `src` alias | `03-implementation-plan.md` REN-1 |
-| Installation (not in the draft) | Only a source checkout with `pip install -e .` and the Docker image (which installs the same way) are supported: the wheel lacks the Store's `.sql` files, the locales and the web build, and the version is read from `pyproject.toml` next to the package. Whether 3.0.0 is published as a package (PyPI) is open for the owner | `03-implementation-plan.md` sections 14, 18 |
+| Installation (not in the draft) | Only a source checkout with `pip install -e .` and the Docker image (which installs the same way) are supported: the wheel lacks the Store's `.sql` files, the locales and the web build, and the version is read from `pyproject.toml` next to the package. Decided by the owner on 2026-10-08: 3.0.0 is not published to PyPI; the release is the git tag, the GitHub Release and the Docker image, and the README tells users to install from source. Publishing to PyPI comes after 3.0.0 | `03-implementation-plan.md` sections 14, 18 |
