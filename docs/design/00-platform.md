@@ -48,6 +48,16 @@ merged work; the notes of sections 3, 5, 6 and 10 say what exists now; section 1
 validation at the end of the project, now with the team, player and single-match follows and the search;
 section 13 has two more rows (where new follows are kept, and the package name).
 
+Revised a seventh time, on 2026-10-07, after FX-20, FX-21, FX-22 and REN-1 (pull requests #164, #165, #167,
+#168) and the rewrite of the user documents (#163, #166); checked at `6f79344`. No decision of the draft
+changed. The package is now `sofascore_scraper` (REN-1), and paths in these documents use that name. The
+owner took three decisions on 2026-10-07: the raw research files keep the push server's address as research
+records (no masking, no history rewrite; the design documents and the READMEs stay without it); before the
+live validation the orchestrator tests every feature end to end through the web UI against the real site,
+in the owner's Chrome, at 1 request per second, with a few small leagues, teams and matches and without the
+`direct` source; and the repository's description and topics were updated. The notes of sections 1, 3, 10
+and 11 say what changed; section 13 has one more row (the published package).
+
 ## 1. Decisions (Tuncay, 2026-10-01)
 
 | Topic | Decision | State on 2026-10-06 |
@@ -56,7 +66,7 @@ section 13 has two more rows (where new follows are kept, and the package name).
 | Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | done: all 21 are in the sport registry with their score mapping (PRs #112, #115, #118). Which detail data each sport requests rests on one match page per sport (PR #121); the live validation checks it on the real site (section 11) |
 | Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched | done: the selection of data slices end to end, per follow, in the configuration and in the web UI (PRs #134, #161); odds (four slices, the provider id recorded, off by default) and the data of a season, team, player or sport (PR #140). The odds country is recorded only when the user sets `[client] odds_country` (delegated decision of 2026-10-06; PR #155). Which provider ids answer without login, and the shape of two odds slices that have only 404 samples, wait for the live validation (section 11) |
 | History / live | History: by requests. Live: the push channel, with polling as the fallback. How the push channel is used was decided after the draft: see the two rows at the end of this table | measured, PR #42; built, PRs #95 and #101 (the last two rows) |
-| Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table). Changed on 2026-10-02 (owner): the web UI is designed and built from scratch on the same technology stack (Vue 3, TypeScript, Pinia, the same build tooling), as a professional interface for the new platform, not as an incremental change of today's views; only what fits is carried over as code (the API client, the locale files, the eval-free build, the token handling). Added on 2026-10-06 (owner): team, player and single-match follows work in 3.0.0 (search by name, their matches downloaded), and search suggests as the user types, like the site | done for the CLI: the data commands, `serve` and the removal of the terminal menu (PRs #119, #125, #131). The new web UI is built (screen design PR #105, approved with all 22 of its decisions on 2026-10-02; implementation PRs #107, #132, #133). A first-time-user review on 2026-10-06 found it hard for a newcomer; a newcomer pass (PR #154), the backend gaps (PR #156: team, player and match follows that download, per-league delete, the connection state) and the last screens (PR #161) followed, and the old views under `/classic` were removed (PR #161). Search as the user types is in progress (`03-implementation-plan.md`, FX-20). The web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer (Tailwind CSS 4, PR #136) |
+| Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table). Changed on 2026-10-02 (owner): the web UI is designed and built from scratch on the same technology stack (Vue 3, TypeScript, Pinia, the same build tooling), as a professional interface for the new platform, not as an incremental change of today's views; only what fits is carried over as code (the API client, the locale files, the eval-free build, the token handling). Added on 2026-10-06 (owner): team, player and single-match follows work in 3.0.0 (search by name, their matches downloaded), and search suggests as the user types, like the site | done for the CLI: the data commands, `serve` and the removal of the terminal menu (PRs #119, #125, #131). The new web UI is built (screen design PR #105, approved with all 22 of its decisions on 2026-10-02; implementation PRs #107, #132, #133). A first-time-user review on 2026-10-06 found it hard for a newcomer; a newcomer pass (PR #154), the backend gaps (PR #156: team, player and match follows that download, per-league delete, the connection state) and the last screens (PR #161) followed, and the old views under `/classic` were removed (PR #161). Search as the user types, one search across kinds and job names are built (PR #167, FX-20). The web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer (Tailwind CSS 4, PR #136) |
 | Request rate | Default 5 requests per second; the user may take the risk and remove the limit | done, PR #33 |
 | Storage | Raw JSON files stay + a rebuildable SQLite catalog | done: every download writes the new layout and updates the catalog in the same write (PRs #98, #104); every reader and the planning of downloads read the catalog (PRs #78 to #80, #89, #97); old data is read in place and converted only by `ssc migrate` (PR #110); backups contain the state database and the new layout (PR #109). The transition code is removed and the boundary tests allow no file access outside the Store except a documented list (PR #135) |
 | Data format | A fixed, versioned common schema + raw data for those who want it | done: `04-schema-v1.md`, approved on 2026-10-02 (PR #72), is served by API v1 (PRs #122 to #127) and by the normalized exports (PR #130); raw payloads by the raw routes and the raw export (PRs #108, #123) |
@@ -67,7 +77,7 @@ section 13 has two more rows (where new follows are kept, and the package name).
 | Raw payloads | Stored compressed; the application and the CLI export them at full size (plain JSON) on request | done: compressed in the new layout (PR #104); exported by `ssc export` and API v1 (PRs #108, #123, #130) |
 | Old data layout | No automatic migration. New writes use the new layout; old data is read in place; whoever wants to moves it with the `migrate` command (manager decision) | done: `ssc migrate` (PR #110) |
 | Scheduler | In-app automatic updating is optional, off by default | done, PR #128: `ssc serve --scheduler` or `[schedule] enabled = true`. Since PR #155 a task that runs `every` some time counts from its last run in the job history, not from the start of the server, and a `prune-history` task (off by default) removes old odds snapshots |
-| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | the version number is still 2.0.0 (`pyproject.toml`; the web UI shows v2.0.0); raising it is a step of the release (`03-implementation-plan.md` section 18). The import package becomes `sofascore_scraper` (decision D1, owner, 2026-10-03; plan item REN-1, when no other branch is open) |
+| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | the version number is still 2.0.0 (`pyproject.toml`; the web UI shows v2.0.0); raising it is a step of the release (`03-implementation-plan.md` section 18). The import package is `sofascore_scraper` since REN-1 (#168; decision D1, owner, 2026-10-03), and the Docker image has the `ssc` command |
 | Merging | The manager session reviews and merges; the release tag is Tuncay's | since 2026-10-03 a pull request merges on a green Linux CI plus a local run of the full suite on its merge with main; the Windows and macOS jobs of CI are best-effort (Platform) |
 | Live is not a web feature (2026-10-01, after the draft) | Live data is not part of the web UI and is not exposed over an HTTP endpoint (no SSE stream). A person at a screen can watch live scores on SofaScore itself; the value of the live stream is for servers and programs. Live watching is a CLI service (`watch`) that delivers events to sinks: stdout (JSON lines), file, webhook. A program that wants live data over the network uses the webhook. The event stream is still stored with sequence numbers | done: `ssc watch` delivers to the configured sinks (PR #91); no route of API v1 and no screen of the new web UI carries live data |
 | Live sources (2026-10-01, after the draft) | Two selectable push sources in the CLI, plus polling as the fallback that is always present. `page` (default): the service keeps a real browser page open and listens to the page's own push connection; no credential is handled. `direct` (explicit opt-in): a lightweight client connects to the push server itself with the credential read at runtime from the bridge page's own connection, kept in memory only. `direct` is never the default, is never enabled implicitly, and carries clear warnings wherever it is configured or documented (section 8) | built: `page`, the default (PR #95), and `direct` (PR #101). Neither has been run against the real site yet; that happens in the live validation at the end of the project, whose `direct` step needs the owner's approval (section 11) |
@@ -154,10 +164,10 @@ pages). And an Event carries an aggregate score only where its sport's mapping r
 slice raw; Odds and non-match data get their models with plan item P28.
 
 Note (2026-10-06). P28 (PR #140) added the models `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine` and
-`StandingsRow`; API v1 and the exports use them. They are not yet part of the generated contract
-(`describe schemas` and the JSON Schema do not show them) until a follow-up moves them in with their field
-tables (`04-schema-v1.md`; `03-implementation-plan.md`, FX-21). The odds country is not a field of `Odds`; it
-is in the slice's meta, and only when the user sets it.
+`StandingsRow`; API v1 and the exports use them. Since FX-21 (PR #164, 2026-10-07) they are part of the
+generated contract, `Odds`, `OddsLine` and `StandingsRow` as records (`describe schemas` and the JSON Schema
+show them; `04-schema-v1.md` section 4). The odds country is not a field of `Odds`; it is in the slice's
+meta, and only when the user sets it.
 
 Note (2026-10-03). The score mapping of all 21 sports exists (PRs #112, #115, #118): periods for the eight
 period-based sports, sets for the five set-based ones, and an own family for each of the five class B sports
@@ -221,7 +231,7 @@ their successor in a `Link` header. The data resources (`tournaments`, `seasons`
 Note (2026-10-03). The data resources exist since PRs #122 to #127 (plan item P21): tournaments, seasons,
 events with their slices and raw payloads, changes, follows, the job kinds for downloads, exports, backups,
 clear, rebuild and a restore check, logs and diagnostics, and the `auth` routes; the old routes are adapters
-over the same services in `src/web/api/legacy.py`. Exports write the normalized datasets since PR #130
+over the same services in `sofascore_scraper/web/api/legacy.py`. Exports write the normalized datasets since PR #130
 (SC-2). `events/{id}/odds` comes with odds (P28). The new web UI uses only `/api/v1`; a few routes it still
 needs (a season-list job, a fetch of one match by its id alone, a real restore, some filters) are listed in
 `05-web-ui.md` section 7 and planned as FX-13.
@@ -407,6 +417,12 @@ search as the user types (FX-20, in progress), the schema follow-up of P28 (FX-2
 package (REN-1, decided by the owner), the live validation, the detail slices of the three main sports
 after it (FX-16) and the release steps; `03-implementation-plan.md` section 18 lists them.
 
+Note (2026-10-07). FX-20 (#167), FX-21 (#164) and REN-1 (#168) are merged, and FX-22 (#165), a fix item from
+the audit of the user documents. Left before 3.0.0: the orchestrator's end-to-end test through the web UI
+and its fixes, the live validation, FX-16, the decision on a published package, the Docker build and smoke
+test, real screenshots in the README, the version bump, the changelog close and the tag
+(`03-implementation-plan.md` section 18). P30 comes in 3.1.
+
 ## 11. Open questions
 
 - Is the push channel robust in production (this evening's test). Changed on 2026-10-01: answered for one
@@ -425,6 +441,12 @@ after it (FX-16) and the release steps; `03-implementation-plan.md` section 18 l
   the catalog), the team, player and single-match follows (SofaScore's general search, the team and player
   match lists, their page sizes and limits), the connection state on the browser path, and the search as
   the user types with short prefixes. `03-implementation-plan.md` section 18 has the full list.
+- Changed on 2026-10-07 (owner): before the live validation the orchestrator tests every feature end to end
+  through the web UI against the real site, in the owner's Chrome, with a budget of 1 request per second
+  and a few small leagues, teams and matches; the `direct` source is excluded from it. What it finds
+  becomes fix items before the validation. The validation itself also checks the type-ahead of FX-20:
+  `/search/all` with 2-letter prefixes, the real number of requests while typing, and the cancel of a
+  search behind a reverse proxy.
 
 ## 12. Old data and migration (detail of the decision)
 
@@ -470,4 +492,5 @@ needed" in `03-implementation-plan.md`.
 | `FETCH_ONLY_FINISHED` becomes a read filter (section 4) | The same for the counts and the match lists, with one rule: with the setting on, a match counts when it is finished or its details were downloaded (decision D21, settled on 2026-10-02) | `02-services.md` 2.7 |
 | Every data type is selectable (section 1) | The registry also says which detail slices a sport offers at all: a slice SofaScore does not have for a sport is not requested, and one it has only sometimes does not count against completeness (PR #121, from one match page per sport). Three proposals for football, basketball and tennis wait for the live validation | `docs/all-sports/README.md`, `02-services.md` 3.1 |
 | Wave order (section 10) | Kept. Inside wave 3 the Store and the service layer are interleaved PR by PR because they share files; the plan gives the order | `03-implementation-plan.md` |
-| The package name (not in the draft) | The import package is renamed from `src` to `sofascore_scraper` (decision D1, the owner's, 2026-10-03), in one pull request when no other branch is open | `03-implementation-plan.md` REN-1 |
+| The package name (not in the draft) | The import package is renamed from `src` to `sofascore_scraper` (decision D1, the owner's, 2026-10-03), in one pull request when no other branch is open; done by REN-1 (#168), with no `src` alias | `03-implementation-plan.md` REN-1 |
+| Installation (not in the draft) | Only a source checkout with `pip install -e .` and the Docker image (which installs the same way) are supported: the wheel lacks the Store's `.sql` files, the locales and the web build, and the version is read from `pyproject.toml` next to the package. Whether 3.0.0 is published as a package (PyPI) is open for the owner | `03-implementation-plan.md` sections 14, 18 |

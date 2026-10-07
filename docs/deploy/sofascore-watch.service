@@ -4,6 +4,10 @@
 #   sudo cp docs/deploy/sofascore-watch.service /etc/systemd/system/
 #   sudo systemctl daemon-reload && sudo systemctl enable --now sofascore-watch
 #
+# The command is `python -m sofascore_scraper.cli.main` (the same as `ssc`; it also works without
+# `pip install -e .`). Copies made before the import package was renamed from `src` run
+# `python -m src.cli.main`, which no longer exists: change them.
+#
 # Adjust User, Group, WorkingDirectory, the paths in ExecStart and MemoryMax to your install.
 
 [Unit]
@@ -23,7 +27,7 @@ EnvironmentFile=-/etc/sofascore/sofascore.env
 #   page   (default) one browser page per watched sport; about 1.8 to 2.6 GB of memory per sport
 #   poll   polling only, no browser
 #   direct an explicit opt-in with four warnings (watch.md); about 0.2 GB
-ExecStart=/opt/sofascore_scraper/.venv/bin/python -m src.cli.main watch
+ExecStart=/opt/sofascore_scraper/.venv/bin/python -m sofascore_scraper.cli.main watch
 # SIGTERM: the service finishes its round, saves its state, drains the sinks for up to 10 s, exit code 0
 KillSignal=SIGTERM
 TimeoutStopSec=60

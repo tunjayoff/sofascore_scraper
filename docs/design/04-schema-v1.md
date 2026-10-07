@@ -16,18 +16,22 @@ The requirement is `00-platform.md`, section 3. Where this document is more spec
 document is the contract. `schema_version` is **1**. The schema's id is `sofascore.data/1`; the envelope of
 stream events keeps the id `sofascore.event/1` that `02-services.md` 5.1 gave it.
 
-The field tables below are generated from the models in `src/schema/models.py`, and a test fails when a table
+The field tables below are generated from the models in `sofascore_scraper/schema/models.py`, and a test fails when a table
 and the code differ (`tests/test_schema_v1.py`). The same models produce the JSON Schema that
 `ssc describe schemas` will print. So the tables, the JSON Schema and the code cannot drift apart.
 
-Revised on 2026-10-06 (the sixth revision of the design documents, checked against `origin/main` at
-`b6caf2f`). P28 (#140) added the models of odds and standings, `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine`
-and `StandingsRow` (`src/schema/models.py:708-829`). They are in `models.PENDING_MODELS`, not in `MODELS` and
-`RECORDS`: API v1 and the exports use them, but `ssc describe schemas` and the JSON Schema golden do not show
-them yet. Section 4, "Odds and standings", describes them with field tables copied from the models; plan item
-FX-21 moves them into `MODELS` (and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`), makes those tables
-generated blocks and regenerates `tests/golden/schema/`. FX-15 (#155) added the odds country as an opt-in
-setting; it is recorded in the slice's meta, not in the `Odds` record.
+Revised on 2026-10-07 (the seventh revision of the design documents, checked against `origin/main` at
+`6f79344`). P28 (#140) added the models of odds and standings, `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine`
+and `StandingsRow` (`sofascore_scraper/schema/models.py:736-858` at `6f79344`), and FX-21 (#164) put them into
+version 1: they are in `MODELS`, and `Odds`, `OddsLine` and `StandingsRow` are records (`RECORDS`), so
+`ssc describe schemas` and the JSON Schema show them, and their tables in section 4, "Odds and standings",
+are generated blocks with an example for each record. This changed no existing definition, so
+`schema_version` stays 1. FX-21 also listed the slice keys of P28 and `innings` among the known values of
+`Slice.key`, renamed section 9 "Decisions", and rewrote the descriptions of the set and period score fields
+per sport (no unit, type or name changed). FX-15 (#155) added the odds country as an opt-in setting; it is
+recorded in the slice's meta, not in the `Odds` record. REN-1 (#168) renamed the package to
+`sofascore_scraper`, so the `x-source` notes of the models and the paths in the field tables name
+`sofascore_scraper/…` files.
 
 ## 1. What the schema is, and what it is not
 
@@ -52,14 +56,16 @@ Records of version 1:
 | [Slice](#slice) | one stored response about an event (statistics, lineups, …) and its state | `/events/{id}/slices`, export dataset `slices` |
 | [Change](#change) | a change of an already stored event that a later read found | `/changes`, export dataset `changes` |
 | [LiveEvent](#liveevent) | an event of a stream (live, change, job, system) | `ssc events`, `watch --stdout`, the sinks; no HTTP route |
+| [Odds](#odds) | the odds of one market list of one event, from one provider, at one read | `/events/{id}/odds/{key}` |
+| [OddsLine](#oddsline) | one outcome of one market at one read: the flat row of the odds export | export dataset `odds` |
+| [StandingsRow](#standingsrow) | one team's row of a season's standings table | `/seasons/{id}/standings`, export dataset `standings` |
 
 Not part of version 1:
 
-- **Odds** and **non-match data** (standings, season statistics, squads, rankings). Plan item P28 adds their
-  models. Until then their payloads are slices like any other and are available raw.
-  P28 (#140) added the models `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine` and `StandingsRow` (section 4,
-  "Odds and standings"); they are not in version 1's `MODELS` yet (FX-21). The other non-match slices (season
-  info, cup trees, top players and teams, season odds, rankings, player statistics) stay raw slices.
+- **Non-match data other than standings** (season information, cup trees, top players and teams, season
+  odds, rankings, player statistics). These slices are stored and given out raw, like any slice. The odds
+  and the standings have records since P28 (#140) and FX-21 (#164): `Odds` with its `OddsMarket` and
+  `OddsChoice`, `OddsLine` and `StandingsRow` (section 4, "Odds and standings").
 - **Normalized content of slices.** A slice's payload (statistics, lineups, incidents, head-to-head, form,
   streaks, point-by-point) is SofaScore's response, unchanged. Version 1 normalizes the state of a slice, not
   its content (section 9, point 16).
@@ -161,8 +167,8 @@ in the same way. "Derived" means the platform computes the value. "Null" says wh
 
 ### Sport
 
-A sport. The supported sports come from the platform's sport registry; today they are football, basketball
-and tennis.
+A sport. The supported sports come from the platform's sport registry (`sofascore_scraper/sports.py`): 21
+since SP-3 (PR #118), listed by `ssc describe sports` and `/sports`.
 
 <!-- fields:Sport -->
 | Field | Type | Null | Unit | Source | Meaning |
@@ -539,9 +545,10 @@ A game of two halves (seen in the French lower leagues) has its two scores in So
 and `period4`; the schema numbers them 1 and 2 and says `"format": "halves"`.
 
 `PeriodsScore` is the structure of nine sports since SP-1 (PR #112): basketball, American football, Aussie
-rules, ice hockey, handball, rugby, futsal, minifootball and floorball. The field texts above still speak of
-basketball and of points; the unit stays `points` because changing a unit would need a new schema version,
-and in the goal sports (ice hockey, handball, futsal, minifootball, floorball) the values are goals.
+rules, ice hockey, handball, rugby, futsal, minifootball and floorball. Since FX-21 (#164) the field texts
+above say so: the unit stays `points`, because changing a unit would need a new schema version, and the
+texts add that in the goal sports (ice hockey, handball, futsal, minifootball, floorball) the values are
+goals, and which sports use quarters, halves and thirds.
 `format` comes from the sport registry (`SportSpec.period_format`): `quarters` for American football and
 Aussie rules, `thirds` for ice hockey and floorball (a value SP-1 added; the set is open, so no version
 change), `halves` for handball, rugby, futsal and minifootball. Only basketball still detects its format
@@ -603,10 +610,11 @@ cannot know it from the sport alone:
 | `legs_won` | darts without sets | legs won | empty |
 | `games_won` | e-sports | games won | empty: `periodN` only marks who won game N; the games are in the slice `esports_games` |
 
-The field texts of `home`, `away` and `sets_won` above still say "sets won" with the unit `sets`, and those
-of `SetScore` say games; for the formats `frames`, `legs_won` and `games_won` the values are frames, legs or
-games won, and for `points` a set's values are points. The units stay as they are, because changing a unit
-would need a new schema version; `format` is the field to read. For the sports of SP-2 and SP-3 up to
+The units of `home`, `away` and `sets_won` stay `sets`, and those of `SetScore` games, because changing a
+unit would need a new schema version; since FX-21 (#164) their texts say what they count: for the formats
+`frames`, `legs_won` and `games_won` the frames, legs or games won, and per set games in tennis and padel,
+points in volleyball, badminton and table tennis and legs in darts played in sets. Snooker has no set list
+(`period1` repeats `current`), so a set is never a frame. `format` is the field to read. For the sports of SP-2 and SP-3 up to
 `period7` is read (a table tennis match can have seven sets; tennis keeps its 2.x sheet and `period5`), and
 a set keeps its number: a live table tennis payload that carries only the
 current set (`period4` alone) gives one set numbered 4. Only `bestOfSets` tells the two darts formats apart
@@ -742,21 +750,23 @@ Keys of an event today (the slice registry, `ssc describe slices`):
 "All" includes a sport that is not registered. The sports a slice is not requested in, and those where it is
 requested but does not count for completeness, come from PR #121 (`not_in` and `optional_in` of the slice
 registry; `docs/all-sports/README.md`, "Maç detay dilimleri, spor başına"), on the evidence of one match page
-per sport. The known values of `Slice.key` in the field table above do not list `innings` yet: the field is an
-open set, and the list follows `src/schema/models.py`, which PR #121 did not change.
+per sport. The known values of `Slice.key` in the field table above list every key of the registry,
+`innings` included, since FX-21 (#164); `tests/test_schema_v1.py::test_slice_key_lists_every_registered_slice`
+fails when a registry key is missing from them (the only known values outside the registry are `event`,
+`seasons` and `schedule`). The field stays an open set: a new key adds an example, not a version.
 
 Slices of other owners today: `seasons` of a tournament (the season list), and `schedule` of a season, one
-payload per round or page with `sub` such as `round_12` or `last_0`. More keys come with P28 (odds, standings,
-…); `key` is an open set.
+payload per round or page with `sub` such as `round_12` or `last_0`, and the odds and owner slices of P28
+below; `key` is an open set.
 
-Keys added by P28 (#140; `src/sports.py:556-608` at `b6caf2f`), all off unless a selection names them and none
+Keys added by P28 (#140; `sofascore_scraper/sports.py:556-608` at `b6caf2f`), all off unless a selection names them and none
 counting for completeness. Event slices of group `odds`, with the provider id as `sub` (`[client]
 odds_provider`, default `1`): `odds_featured` (`/event/{id}/odds/{provider}/featured`), `odds_all`
 (`/event/{id}/odds/{provider}/all`), `odds_changes` (`/event/{id}/odds/{provider}/changes`) and `winning_odds`
 (`/event/{id}/provider/{provider}/winning-odds`). Slices of other owners: `owner_kind` `season`: `standings`
 (sub `total` or `home`), `season_info`, `cuptrees`, `top_players`, `top_teams`, `season_odds` (provider sub);
 `team`: `team_rankings`; `player`: `player_statistics`; `sport`: `rankings` (sub `5`, the ATP list). The known
-values of `Slice.key` in the field table above do not list them, nor `innings`; FX-21 adds them. An odds
+values of `Slice.key` in the field table above list them since FX-21 (#164). An odds
 slice records the provider in its meta (`meta.provider_id`) and, only when the user sets `[client]
 odds_country`, the country (`meta.country`, upper case; a decision of 2026-10-06: opt-in, never derived from
 the machine). The slice record of API v1 does not carry the meta.
@@ -870,7 +880,7 @@ connection gap the events of one match may skip intermediate states.
 
 Version 1 fixes the envelope. The content of `data` depends on `type`. It was not fixed when version 1 was
 approved and was left to the live service (plan item P23; section 9, point 18). P23 (PR #91) settled it
-(`stream_data` in `src/services/live/reducer.py` and the supervisor in `src/services/live/supervisor.py`).
+(`stream_data` in `sofascore_scraper/services/live/reducer.py` and the supervisor in `sofascore_scraper/services/live/supervisor.py`).
 The model still types `data` as an object, so the field table above and the JSON Schema do not change;
 this table is the contract for `data`:
 
@@ -918,7 +928,7 @@ What was stored before P23, and what was proposed when version 1 was approved:
 
 Job events carry the origin of the job. The `origin` of `job.started` says which interface started the job
 (`face`: `cli`, `api`, `scheduler` or `library`) and gives the process id (`pid`) and the host name (`host`)
-of the process that started it (`src/jobs/manager.py:319-329` at `e0bae0c`). A sink that is subscribed to
+of the process that started it (`sofascore_scraper/jobs/manager.py:319-329` at `e0bae0c`). A sink that is subscribed to
 `job.*` therefore delivers a host name and a pid, and API v1 shows the same `origin` on a job. This is kept
 on purpose (decision D20 in `03-implementation-plan.md`, section 13, settled on 2026-10-02): a sink and the
 API deliver to the operator's own systems. The diagnostics bundle, which is made to be handed to other
@@ -933,16 +943,21 @@ snapshot) and the export dataset `odds` as `OddsLine` rows; standings come from 
 at `/seasons/{id}/standings` and the export dataset `standings`. `odds_featured` gives the values of its
 `featured` object, each with its key as `label`; `odds_all` its `markets`. Prices are fractions as SofaScore
 gives them, with a decimal derived as 1 + the fraction, rounded to three places (`fraction_decimal`,
-`src/schema/mappers.py:632`). The mappers are `odds_from_payload`, `odds_lines` and `standings_rows`
+`sofascore_scraper/schema/mappers.py:632`). The mappers are `odds_from_payload`, `odds_lines` and `standings_rows`
 (`:680-742`); `standings_rows` skips rows that have neither a team nor a position. The country SofaScore
 answered for is not a field of `Odds`: it is in the slice's meta (`meta.country`) when the user set `[client]
 odds_country`, and the provider id is in `meta.provider_id` as well as in the record. `winning_odds` and
 `season_odds` have no model (their only samples were 404s); they are raw slices.
 
-These models are in `models.PENDING_MODELS` (`src/schema/models.py:845`), not in `MODELS`: `ssc describe
-schemas` and the JSON Schema (`tests/golden/schema/`) do not include them, while API v1 and the exports use
-them, and a test applies the field-contract checks of the other models to them. Plan item FX-21 moves them
-into `MODELS`, and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`.
+Since FX-21 (#164) the five models are in `MODELS` (after `LiveEvent`, `sofascore_scraper/schema/models.py:859` at
+`6f79344`) and `Odds`, `OddsLine` and `StandingsRow` are records (`RECORDS`, `:872`): `ssc describe schemas` and
+the JSON Schema (`tests/golden/schema/`) include them, the tables below are generated blocks, and each record
+has an example built from the mappers applied to `tests/fixtures/p28`, which the document test validates
+against the JSON Schema. `tests/test_schema_v1.py::test_odds_and_standings_records_follow_the_json_schema`
+maps the recorded `odds_all`, `odds_featured` and `standings_total` bodies and validates every record. The
+models are reached as `sofascore_scraper.schema.models.Odds` and so on; `sofascore_scraper/schema/__init__.py`
+does not export them. A record that a later item adds goes the same way: into `MODELS` and `RECORDS`, a
+block and an example here, then `REGEN_SCHEMA_DOC=1` and `REGEN_SCHEMA_GOLDEN=1`.
 
 #### Odds
 
@@ -1119,7 +1134,7 @@ which no test checks.
 
 ## 6. JSON Schema
 
-`src/schema/jsonschema.py` produces one JSON Schema document (draft 2020-12) with every record under `$defs`.
+`sofascore_scraper/schema/jsonschema.py` produces one JSON Schema document (draft 2020-12) with every record under `$defs`.
 `ssc describe schemas` will print it; a copy is kept as a test golden in
 `tests/golden/schema/json_schema.json`. How the rules of section 2 appear in it:
 
@@ -1161,17 +1176,18 @@ What a raw request returns:
 
 ## 8. Implementation and tests
 
-- `src/schema/models.py`: the records as frozen dataclasses; each field's description, unit and source are
+- `sofascore_scraper/schema/models.py`: the records as frozen dataclasses; each field's description, unit and source are
   field metadata. `SCHEMA_VERSION = 1`.
-- `src/schema/mappers.py`: pure functions from the Store's rows to the records: `event_from_row` (EventRow),
+- `sofascore_scraper/schema/mappers.py`: pure functions from the Store's rows to the records: `event_from_row` (EventRow),
   `tournament_from_row`, `season_from_row`, `participant_from_row`, `category_from_row`, `sport_from_row`,
   `slice_from_info` (SliceInfo), `change_from_row` (ChangeRow), `live_event_from_record` (StreamRecord). The
   refresh window is passed in; nothing reads a setting, a file or the clock.
-- `src/schema/jsonschema.py`: the JSON Schema, generated from the models.
-- Since P28 (#140): the models `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine` and `StandingsRow` in
-  `models.PENDING_MODELS`, and the mappers `odds_from_payload`, `odds_lines`, `standings_rows` and
-  `fraction_decimal`; they are outside the JSON Schema and the generated tables until FX-21 (section 4).
-- The package imports only the pure domain modules (`src.sports`, `src.status`, `src.refresh`).
+- `sofascore_scraper/schema/jsonschema.py`: the JSON Schema, generated from the models.
+- Since P28 (#140): the models `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine` and `StandingsRow`, and the
+  mappers `odds_from_payload`, `odds_lines`, `standings_rows` and `fraction_decimal`, which read payloads,
+  not Store rows. Since FX-21 (#164) the five models are in `MODELS` (three in `RECORDS`), so they are in
+  the JSON Schema and the generated tables (section 4); `models.PENDING_MODELS` is gone.
+- The package imports only the pure domain modules (`sofascore_scraper.sports`, `sofascore_scraper.status`, `sofascore_scraper.refresh`).
 - `tests/test_schema_v1.py`, with goldens under `tests/golden/schema/`:
   - each of the real status payloads maps to a golden Event record (154 of three sports at SC-1; 231 of the
     21 registered sports since SP-3);
@@ -1188,11 +1204,8 @@ What a raw request returns:
 ## 9. Decisions
 
 None are left. The 28 points of this section were the open questions of the proposal, and the approval of
-2026-10-02 settled every one of them as chosen (decision P2). The heading of the section is kept as it was,
-because `tests/test_schema_v1.py` asserts that line; what the section holds is the list of decisions. The
-heading and its assertion are renamed together by an item that owns the test (P28; P28 did not, so it is
-FX-21's now, with the move of the P28 models into `MODELS`). Points 11 and 13 say below
-what SP-1 to SP-3 changed.
+2026-10-02 settled every one of them as chosen (decision P2). Points 11 and 13 say below what SP-1 to SP-3
+changed.
 
 ### Decisions taken (approved on 2026-10-02)
 

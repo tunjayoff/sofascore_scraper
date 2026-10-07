@@ -57,10 +57,19 @@ strict), and the Store-side parts of P28 #140 (odds and non-match slices, entity
 a data-folder change; the last migration read), FX-15 #155 (the five shadow hooks removed; the first caller
 of `HistoryStore.prune`; the `parquet` extra at `pyarrow>=16`) and FX-19 #156 (`Store.purge`: one
 tournament's or one season's data deleted). `src/fsutil.py` is gone; the 2.x file helpers live in
-`src/config_files.py`, outside the Store, and the Store root exports `league_dir_name`. The strict boundary
+`sofascore_scraper/config_files.py`, outside the Store, and the Store root exports `league_dir_name`. The strict boundary
 checks, the purge, the restore step that keeps the job record and the prune caller are described as built;
 section 12 lists the corrections, from item 128 on. References marked `b6caf2f` are to `origin/main` at
 that commit.
+
+Revised a seventh time on 2026-10-07 after FX-22 #165 (the settings saved on the Settings page,
+`config/overrides.json`, go into a backup and come back with a restore; 9.1 and 9.2) and REN-1 #168 (the
+import package `src` is now `sofascore_scraper`). Paths of the package are written with the new name
+throughout. A `file:line` reference keeps the line it had at the commit its revision names (`3ae2599`,
+`b3cb819`, `b6caf2f`, …), when the file was still under `src/`; REN-1 rewrote module paths in place
+and kept every file's line count, so the rename itself moved no line. Paths of files removed before the rename (`src/fsutil.py`,
+`src/ui/`, `src/web/routes/`, `src/web/fetch_job.py`, `src/SofaScoreUi.py`) keep the old form. References
+marked `6f79344` are to `origin/main` at that commit. Section 12 lists the corrections from item 137 on.
 
 Terms used throughout:
 
@@ -95,7 +104,7 @@ chosen on 2026-10-03). Decision 4 governs writes and maintenance: a write, a pro
 rebuild, a reconcile and a repair never delete legacy data. A delete or a clear that the user asks for
 removes every form of what it names, legacy copies included, because a legacy copy left behind would
 bring the data back at the next reconcile, and its help text says so. `EventStore.delete` removes the v3
-directory and every legacy copy of the event, each moved to `.meta/trash` first (`src/store/events.py:1456`
+directory and every legacy copy of the event, each moved to `.meta/trash` first (`sofascore_scraper/store/events.py:1456`
 at `b3cb819`); it still has no caller. `Store.clear` removes whole trees of both layouts: `v3/events` and
 `match_details/` for `events`, since ST-22 also the v3 schedule pages and season lists for `schedules` and
 `seasons` (9.3). The callers of the clear are the web clear (ST-19), the terminal menu's clear (ST-21, until
@@ -105,7 +114,7 @@ delete.
 
 Decision S13 (subs are lower-case; `layout.validate_sub` rejects an upper-case sub and never folds it) has
 one exception since FX-5 (#77): `legacy.schedule_sub` folds the slug of a 2.x round file name to lower case
-when it derives the sub (`src/store/legacy.py:396-418` at `9b03c64`). The fold applies only to reading 2.x
+when it derives the sub (`sofascore_scraper/store/legacy.py:396-418` at `9b03c64`). The fold applies only to reading 2.x
 names; the file keeps its name on disk, and two files that fold to one sub are one page, the newest wins and
 the other is reported as superseded, not merged (5.1).
 
@@ -115,49 +124,49 @@ the other is reported as superseded, not merged (5.1).
 
 ### 1.1 Layout under `DATA_DIR` today
 
-`DATA_DIR` comes from the environment, default `data` (`src/config_manager.py:288-295`).
+`DATA_DIR` comes from the environment, default `data` (`sofascore_scraper/config_manager.py:288-295`).
 
 | Path under `DATA_DIR` | Content | Written by | Read by |
 |---|---|---|---|
-| `seasons/<lid>_<name>_seasons.json` | `{"seasons": [...]}`, pretty JSON | `src/season_fetcher.py:357-370` (name from `src/paths.py:60-61`) | `src/season_fetcher.py:289-316` (scan at start), `:423-463` (three alternate file names at `:441-445`); `src/web/routes/common.py:26-38` (bare `<lid>_seasons.json` first, otherwise the newest `<lid>_*_seasons.json` by mtime); `src/web/routes/leagues.py:173-187`; `src/services/stats.py:89`, `:127-130`; `src/SofaScoreUi.py:109-113` |
-| `league_seasons.csv` | pre-JSON season list; header `Liga Adı,Lig ID,Sezon ID,Sezon Adı,Sezon Yılı` | nobody on main | `src/season_fetcher.py:291` |
-| `matches/<lid>_<name>/<sid>_<name>/round_<n>[_<slug>].json` | round response plus a `_complete` key; **not** filtered by status | `src/match_fetcher.py:452-471` | `src/match_fetcher.py:403-425` (cache with a 6 h TTL on file mtime, `:393`); `src/season_fetcher.py:177-183`; `src/ui/match_ui.py:441-450` |
-| `matches/.../events_<last\|next>_<page>.json` | de-duplicated page, filtered to finished events when `FETCH_ONLY_FINISHED` | `src/match_fetcher.py:362-378` | same as above |
-| `matches/<lid>_<name>/<sid>_<name>_summary.json` and `.csv` | derived per-season list. Ten columns (`src/match_fetcher.py:547-548`); scores are `homeScore.current` with default 0 (`:570-571`); `match_date` is naive local time (`:572`); `tournament` is `tournament.name` (`:574`) | `src/match_fetcher.py:514-595` (paths from `src/paths.py:72-77`) | `src/match_data_fetcher.py:1855-1884`, `:1953-2007`, `:1822-1852`; `src/web/routes/matches.py:165-216`, `:284-303`, `:316-337`; `src/services/stats.py:73-77`, `:93-95`, `:131`. Old `*_matches.csv` is still accepted (`src/match_data_fetcher.py:1871-1875`). The first version wrote `round_<n>_matches.csv` (13 other columns) and `round_<n>_full.json` inside the season directory; `_season_summary_files` and the statistics accept both places (`src/match_data_fetcher.py:1790-1797` at `0aa73b4`), while `/api/matches` and missing-details read neither nested file |
-| `match_details/<lid>_<name>/season_<name>/<eid>/<slice>.json` | one pretty JSON per slice; `basic.json` is `/event/{id}` | `src/match_data_fetcher.py:1215-1225` (directory computed at `:1151-1192`); refresh rewrites `basic.json` at `:888` | `src/match_data_fetcher.py:124-181`, `:534-557`, `:1535-1730`; `src/web/routes/matches.py:219-242`, `:340-347`, `:361-393`; `src/services/stats.py:80-81`, `:132`; `src/web/league_sports.py:77-89` |
-| `.../<eid>/observation.json` | `{observed_at_utc, change_ts[, status_regressed]}` | `src/match_data_fetcher.py:897`, record built at `src/status.py:260-266` | `src/match_data_fetcher.py:551-554`, used by `src/refresh.py:63-81` |
-| `.../<eid>/_unavailable.json` | `{slice: count}` | `src/match_data_fetcher.py:710-711`, `:788-793` | `:639-645`, `:804-811` |
-| `.../<eid>/_slice_status.json` | `{slice: {empty: {count, at}, error: {reason, status, at, count}}}` | `src/match_data_fetcher.py:712-717`, `:794-799` | `:647-656` |
-| `match_details/_no_tournament/<sport>/<eid>/` | events without `uniqueTournament.id` | `src/match_data_fetcher.py:58`, `:1165-1172` | the same walkers |
-| `match_details/<eid>/` (flat) and `<eid>/<eid>.json` (one combined file) | two older forms, still read | combined file is still *updated* by refresh at `:889-894` | `src/match_data_fetcher.py:154-157`, `:170-171`, `:538-542`; `src/web/routes/matches.py:375-378` |
-| `match_details/processed/all_matches_<ts>.csv`, `<league>_<ts>.csv`, `match_files_stats.json`, `match_files_report.csv` | derived exports and reports | `src/match_data_fetcher.py:518` (directory), `:1535-1820`, `:2323-2482` | `src/web/routes/data.py:185-221`, `src/web/routes/matches.py:134-150` |
-| `score_changes.jsonl` | one line per post-finish change | `src/match_data_fetcher.py:911-915` (name at `src/refresh.py:21`) | no reader in `src/` |
-| `watch_events.jsonl`, `watch_state_<sport>.json` | watcher event stream and last known state. Since ST-18 (PR #59) the state is authoritative in the `watch_state` table of `state.db`: the state file is read once, on the first run, and afterwards written as a copy; each event is also appended to the `live` stream. Since P23 (#91) the state file is no longer written: `--watch` and `ssc watch` keep the state only in the table, under the sport as watcher name, and `watch_events.jsonl` is still written by `--watch` until P30 | `src/watcher.py:45-46`, `:177-179`, `:212-222`; since PR #59 through `store.watch` (`src/store/watch.py`) | `src/watcher.py:204-210`; since PR #59 only the one-time import |
-| `.meta/jobs.db` | SQLite job history, rollback journal mode, `user_version` 0 (checked on the local file). Since ST-09 (PR #44) the history is in `.meta/state.db`; `jobs.db` is imported once and left in place | `src/web/jobs.py:18-21`, `:100-127`, `:193-223`, `:322-362` | `src/web/jobs.py:388-402`; the diagnostics bundle (`src/diagnostics.py:389-398` at `0aa73b4`, read-only; `state.db` first, `jobs.db` for a directory 3.x has not opened) |
+| `seasons/<lid>_<name>_seasons.json` | `{"seasons": [...]}`, pretty JSON | `sofascore_scraper/season_fetcher.py:357-370` (name from `sofascore_scraper/paths.py:60-61`) | `sofascore_scraper/season_fetcher.py:289-316` (scan at start), `:423-463` (three alternate file names at `:441-445`); `src/web/routes/common.py:26-38` (bare `<lid>_seasons.json` first, otherwise the newest `<lid>_*_seasons.json` by mtime); `src/web/routes/leagues.py:173-187`; `sofascore_scraper/services/stats.py:89`, `:127-130`; `src/SofaScoreUi.py:109-113` |
+| `league_seasons.csv` | pre-JSON season list; header `Liga Adı,Lig ID,Sezon ID,Sezon Adı,Sezon Yılı` | nobody on main | `sofascore_scraper/season_fetcher.py:291` |
+| `matches/<lid>_<name>/<sid>_<name>/round_<n>[_<slug>].json` | round response plus a `_complete` key; **not** filtered by status | `sofascore_scraper/match_fetcher.py:452-471` | `sofascore_scraper/match_fetcher.py:403-425` (cache with a 6 h TTL on file mtime, `:393`); `sofascore_scraper/season_fetcher.py:177-183`; `src/ui/match_ui.py:441-450` |
+| `matches/.../events_<last\|next>_<page>.json` | de-duplicated page, filtered to finished events when `FETCH_ONLY_FINISHED` | `sofascore_scraper/match_fetcher.py:362-378` | same as above |
+| `matches/<lid>_<name>/<sid>_<name>_summary.json` and `.csv` | derived per-season list. Ten columns (`sofascore_scraper/match_fetcher.py:547-548`); scores are `homeScore.current` with default 0 (`:570-571`); `match_date` is naive local time (`:572`); `tournament` is `tournament.name` (`:574`) | `sofascore_scraper/match_fetcher.py:514-595` (paths from `sofascore_scraper/paths.py:72-77`) | `sofascore_scraper/match_data_fetcher.py:1855-1884`, `:1953-2007`, `:1822-1852`; `src/web/routes/matches.py:165-216`, `:284-303`, `:316-337`; `sofascore_scraper/services/stats.py:73-77`, `:93-95`, `:131`. Old `*_matches.csv` is still accepted (`sofascore_scraper/match_data_fetcher.py:1871-1875`). The first version wrote `round_<n>_matches.csv` (13 other columns) and `round_<n>_full.json` inside the season directory; `_season_summary_files` and the statistics accept both places (`sofascore_scraper/match_data_fetcher.py:1790-1797` at `0aa73b4`), while `/api/matches` and missing-details read neither nested file |
+| `match_details/<lid>_<name>/season_<name>/<eid>/<slice>.json` | one pretty JSON per slice; `basic.json` is `/event/{id}` | `sofascore_scraper/match_data_fetcher.py:1215-1225` (directory computed at `:1151-1192`); refresh rewrites `basic.json` at `:888` | `sofascore_scraper/match_data_fetcher.py:124-181`, `:534-557`, `:1535-1730`; `src/web/routes/matches.py:219-242`, `:340-347`, `:361-393`; `sofascore_scraper/services/stats.py:80-81`, `:132`; `sofascore_scraper/web/league_sports.py:77-89` |
+| `.../<eid>/observation.json` | `{observed_at_utc, change_ts[, status_regressed]}` | `sofascore_scraper/match_data_fetcher.py:897`, record built at `sofascore_scraper/status.py:260-266` | `sofascore_scraper/match_data_fetcher.py:551-554`, used by `sofascore_scraper/refresh.py:63-81` |
+| `.../<eid>/_unavailable.json` | `{slice: count}` | `sofascore_scraper/match_data_fetcher.py:710-711`, `:788-793` | `:639-645`, `:804-811` |
+| `.../<eid>/_slice_status.json` | `{slice: {empty: {count, at}, error: {reason, status, at, count}}}` | `sofascore_scraper/match_data_fetcher.py:712-717`, `:794-799` | `:647-656` |
+| `match_details/_no_tournament/<sport>/<eid>/` | events without `uniqueTournament.id` | `sofascore_scraper/match_data_fetcher.py:58`, `:1165-1172` | the same walkers |
+| `match_details/<eid>/` (flat) and `<eid>/<eid>.json` (one combined file) | two older forms, still read | combined file is still *updated* by refresh at `:889-894` | `sofascore_scraper/match_data_fetcher.py:154-157`, `:170-171`, `:538-542`; `src/web/routes/matches.py:375-378` |
+| `match_details/processed/all_matches_<ts>.csv`, `<league>_<ts>.csv`, `match_files_stats.json`, `match_files_report.csv` | derived exports and reports | `sofascore_scraper/match_data_fetcher.py:518` (directory), `:1535-1820`, `:2323-2482` | `src/web/routes/data.py:185-221`, `src/web/routes/matches.py:134-150` |
+| `score_changes.jsonl` | one line per post-finish change | `sofascore_scraper/match_data_fetcher.py:911-915` (name at `sofascore_scraper/refresh.py:21`) | no reader in `sofascore_scraper/` |
+| `watch_events.jsonl`, `watch_state_<sport>.json` | watcher event stream and last known state. Since ST-18 (PR #59) the state is authoritative in the `watch_state` table of `state.db`: the state file is read once, on the first run, and afterwards written as a copy; each event is also appended to the `live` stream. Since P23 (#91) the state file is no longer written: `--watch` and `ssc watch` keep the state only in the table, under the sport as watcher name, and `watch_events.jsonl` is still written by `--watch` until P30 | `sofascore_scraper/watcher.py:45-46`, `:177-179`, `:212-222`; since PR #59 through `store.watch` (`sofascore_scraper/store/watch.py`) | `sofascore_scraper/watcher.py:204-210`; since PR #59 only the one-time import |
+| `.meta/jobs.db` | SQLite job history, rollback journal mode, `user_version` 0 (checked on the local file). Since ST-09 (PR #44) the history is in `.meta/state.db`; `jobs.db` is imported once and left in place | `sofascore_scraper/web/jobs.py:18-21`, `:100-127`, `:193-223`, `:322-362` | `sofascore_scraper/web/jobs.py:388-402`; the diagnostics bundle (`sofascore_scraper/diagnostics.py:389-398` at `0aa73b4`, read-only; `state.db` first, `jobs.db` for a directory 3.x has not opened) |
 | `backups/backup_<scope>_<ts>.zip` | zip of `seasons/`, `matches/`, `match_details/` and optionally the league config and `.env`; does **not** contain `.meta`, `score_changes.jsonl` or watcher files | `src/web/routes/data.py:103-149` | `src/web/routes/data.py:251-260` |
-| `datasets/`, `reports/<kind>_report_<ts>.json` | terminal-UI leftovers | `src/SofaScoreUi.py:79-83`, `src/ui/stats_ui.py:157-161` | `src/services/stats.py:139` (size only) |
+| `datasets/`, `reports/<kind>_report_<ts>.json` | terminal-UI leftovers | `src/SofaScoreUi.py:79-83`, `src/ui/stats_ui.py:157-161` | `sofascore_scraper/services/stats.py:139` (size only) |
 
 Also touching `DATA_DIR`:
 
 - Clear: `src/web/routes/data.py:152-182` removes the three data trees with `shutil.rmtree`; it leaves `.meta`,
   `score_changes.jsonl`, watcher files and `backups/`. Since ST-19 (#90) the web clear and the web backup go
   through `Store.clear` and `BackupManager` (2.3, 9.1, 9.3).
-- `DATA_DIR` change: `src/web/routes/settings.py:134-167` re-points the job database (`src/web/jobs.py:170-191`);
+- `DATA_DIR` change: `src/web/routes/settings.py:134-167` re-points the job database (`sofascore_scraper/web/jobs.py:170-191`);
   files are not moved.
 - Terminal UI: backup, restore, clear and "move data directory" with `shutil` (`src/ui/settings_ui.py:297-457`,
   `:459-549`, `:551-669`); match listing from `matches/` (`src/ui/match_ui.py:347-450`). Since #86 its clear,
   restore and move are followed by the hook `shadow_cleared` (3.5); they still delete and copy with `shutil`.
   Since ST-21 (#104) its clear goes through `Store.clear`; P26 (#131) removed the menu with `src/ui/` and
   `src/SofaScoreUi.py`, so none of these paths exists at `b3cb819`.
-- `DATA_DIR` change, as built at `b3cb819`: `src/web/api/v1/settings.py:334` and the legacy route
-  (`src/web/api/legacy.py:1051`) rebind the job store; neither closes the Store that `open_store` keeps for
+- `DATA_DIR` change, as built at `b3cb819`: `sofascore_scraper/web/api/v1/settings.py:334` and the legacy route
+  (`sofascore_scraper/web/api/legacy.py:1051`) rebind the job store; neither closes the Store that `open_store` keeps for
   the old directory for the life of the process (2.3). On Windows a data directory can be removed or moved
   only after `Store.close()` (#120, 6.4). As built since FX-13 (#152) the v1 route closes the old
-  directory's Stores after the rebind (`close_data_dir`, `src/web/api/v1/settings.py:489` and `:492` at
+  directory's Stores after the rebind (`close_data_dir`, `sofascore_scraper/web/api/v1/settings.py:489` and `:492` at
   `b6caf2f`), unless this process holds one of that directory's leases; the legacy route still only
   rebinds, until P30 removes it.
 - `scripts/migrate_match_details.py:33-73` renames id-less league directories in place.
-- `src/doctor.py` probes that the directory is writable.
+- `sofascore_scraper/doctor.py` probes that the directory is writable.
 - The web backend builds the terminal-UI object to reach the fetchers (`src/web/fetch_job.py:19`, `:109`;
   `src/web/routes/data.py:193-197`; `src/web/routes/leagues.py:90-93`).
 - Research scripts write `data/research_index` through a hard-coded path, not `DATA_DIR`
@@ -165,9 +174,9 @@ Also touching `DATA_DIR`:
   top-level directories it does not know.
 
 Related state outside `DATA_DIR` (not moved by this design, listed for completeness): `config/leagues.txt`
-(`src/config_manager.py:471-554`), `config/league_sports.json` (`src/web/league_sports.py:37-74`), the
-request-budget files in `~/.cache/sofascore_scraper/throttle` (`src/throttle.py:103-107`), the browser profile
-(`src/paths.py:28-35`).
+(`sofascore_scraper/config_manager.py:471-554`), `config/league_sports.json` (`sofascore_scraper/web/league_sports.py:37-74`), the
+request-budget files in `~/.cache/sofascore_scraper/throttle` (`sofascore_scraper/throttle.py:103-107`), the browser profile
+(`sofascore_scraper/paths.py:28-35`).
 
 ### 1.2 The tree walkers and where their rules differ
 
@@ -175,7 +184,7 @@ Each of these walks the tree with its own rule. The catalog replaces all of them
 
 | Walker | Rule it applies |
 |---|---|
-| `MatchDataFetcher._find_match_path` (`src/match_data_fetcher.py:124-159`) | any `<league>/<season>/<id>/basic.json`, then flat `<id>/basic.json` |
+| `MatchDataFetcher._find_match_path` (`sofascore_scraper/match_data_fetcher.py:124-159`) | any `<league>/<season>/<id>/basic.json`, then flat `<id>/basic.json` |
 | `_build_match_index` (`:161-181`) | same, plus treats a first-level directory containing `basic.json` as a flat event |
 | `reset_unavailable_markers` (`:719-763`), `refresh_due_ids` (`:917-935`) | league filter by directory-name prefix `<lid>_` |
 | `create_csv_dataset` (`:1535-1730`) | three separate scans, both structures |
@@ -183,9 +192,9 @@ Each of these walks the tree with its own rule. The catalog replaces all of them
 | `generate_file_report` (`:2347-2372`) | only `season_*` directories |
 | `routes/matches._detail_match_ids` (`src/web/routes/matches.py:219-242`) | three levels, league prefix |
 | `routes/matches._get_missing_details_sync` (`:340-347`) | recursive `**/basic.json` over **all** leagues, parent directory name parsed as the id |
-| `services/stats._detail_basics` and `system_stats` (`src/services/stats.py:80-81`, `:132`) | only `season_*`: events under `_no_tournament/<sport>/` and flat events are not counted. Match counts are **sums of CSV rows** (`:95`, `:131`) and season counts are sums over every `*_seasons.json` file (`:128-130`), so an event listed in two summary files, or a league with two season-list files, is counted twice |
-| `league_sports.infer_from_data` (`src/web/league_sports.py:77-89`) | first `basic.json` under `<lid>_*/*/*` |
-| season list readers | `SeasonFetcher` uses the configured league name with three fallbacks (`src/season_fetcher.py:437-451`); the web routes take the bare `<lid>_seasons.json` when it exists and otherwise the newest `<lid>_*_seasons.json` (`src/web/routes/common.py:31-38`). The two can pick different files |
+| `services/stats._detail_basics` and `system_stats` (`sofascore_scraper/services/stats.py:80-81`, `:132`) | only `season_*`: events under `_no_tournament/<sport>/` and flat events are not counted. Match counts are **sums of CSV rows** (`:95`, `:131`) and season counts are sums over every `*_seasons.json` file (`:128-130`), so an event listed in two summary files, or a league with two season-list files, is counted twice |
+| `league_sports.infer_from_data` (`sofascore_scraper/web/league_sports.py:77-89`) | first `basic.json` under `<lid>_*/*/*` |
+| season list readers | `SeasonFetcher` uses the configured league name with three fallbacks (`sofascore_scraper/season_fetcher.py:437-451`); the web routes take the bare `<lid>_seasons.json` when it exists and otherwise the newest `<lid>_*_seasons.json` (`src/web/routes/common.py:31-38`). The two can pick different files |
 
 The table describes `3ae2599`. As built at `9b03c64`, several of these readers go through the catalog:
 
@@ -194,7 +203,7 @@ The table describes `3ae2599`. As built at `9b03c64`, several of these readers g
   visible differences come with them: an event stored in two places resolves to the copy with the newest
   event payload, and a directory whose payload id is not its name is not a record.
 - **Statistics** (RD-4, #78): the dashboard, `GET /api/stats/system` and the terminal statistics count from
-  the catalog through `StatusService(store)` (`src/services/status.py`), so the double counting and the
+  the catalog through `StatusService(store)` (`sofascore_scraper/services/status.py`), so the double counting and the
   `season_*` glob of the row above are gone. Two more differences follow from counting catalog events
   instead of summary CSV rows, accepted as decision D21: (a) `FETCH_ONLY_FINISHED` applies when the count is
   read (with the setting on an event counts when it is finished or has stored details; with it off, every
@@ -202,7 +211,7 @@ The table describes `3ae2599`. As built at `9b03c64`, several of these readers g
   lists counts as a match. The per-league disk size of the terminal UI still walks the league directories,
   because `StoreInfo.bytes` has one number per top-level entry.
 - **Season lists and sports** (RD-5, #79): the web routes, `SeasonFetcher` and the terminal menu read season
-  lists through `src/services/tournaments.py` (functions on a Store), and `league_sports.infer_from_data`
+  lists through `sofascore_scraper/services/tournaments.py` (functions on a Store), and `league_sports.infer_from_data`
   asks `tournaments.sport_of`. Every reader now takes the newest file of a tournament by mtime, whatever its
   name, so the row "season list readers" is history (5.1). Matches stored only under `_no_tournament/` still
   give no league a sport: their payloads name no unique tournament, so the catalog cannot attribute them
@@ -218,7 +227,7 @@ The table describes `3ae2599`. As built at `9b03c64`, several of these readers g
   said otherwise: "missing details" does not use `Store.events.missing`; it takes the catalog's listed events
   that have no event payload (a read like RD-2's lists, which does not refuse an out-of-date catalog). A
   planner refuses: `QueryService.require_current` raises `CatalogNotCurrent`, a `StoreError`, when
-  `Store.catalog_current` is False (`src/services/query.py:166`, `:387` at `b3cb819`), so a download stops
+  `Store.catalog_current` is False (`sofascore_scraper/services/query.py:166`, `:387` at `b3cb819`), so a download stops
   with a storage error instead of calling every match missing. A flat or `_no_tournament/` record has no
   tournament, so a league filter never selects it; only the unfiltered `refresh_due_ids()` reaches it. An
   event listed only by a summary row whose round label is not recognised has `listed_in` NULL (8.2) and is
@@ -227,9 +236,9 @@ The table describes `3ae2599`. As built at `9b03c64`, several of these readers g
   as in the lists, so a season stored with the setting off no longer offers its unfinished matches while the
   setting is on; a summary row without a status is still a candidate. On the owner's data the sets were
   equal to main's (section 11); the reader goldens changed only where these rules say. P12 (#106), P13
-  (#113) and ST-27 (#129) then moved the decision into `src/services/planning.py`, which reads
+  (#113) and ST-27 (#129) then moved the decision into `sofascore_scraper/services/planning.py`, which reads
   `Store.events.states()` and computes the need in Python; `QueryService.detail_needs` and `refresh_due`
-  forward to it since ST-27, and nothing in `src/` calls `Store.events.missing` at `b3cb819` (8.4).
+  forward to it since ST-27, and nothing in `sofascore_scraper/` calls `Store.events.missing` at `b3cb819` (8.4).
 
 ### 1.3 Measured size of the local data
 
@@ -255,32 +264,32 @@ The table describes `3ae2599`. As built at `9b03c64`, several of these readers g
 the fixture factory (plan item G-02), not by real data.
 
 Note for the layout design: the detail tree's season directory is `season_<name>` and carries **no season id**
-(`src/match_data_fetcher.py:1183-1191`), while `matches/` uses `<sid>_<name>`. The season id of a stored event is
+(`sofascore_scraper/match_data_fetcher.py:1183-1191`), while `matches/` uses `<sid>_<name>`. The season id of a stored event is
 only in its payload.
 
 ---
 
-## 2. The `Store` module (`src/store/`)
+## 2. The `Store` module (`sofascore_scraper/store/`)
 
 ### 2.1 Rule
 
-`src/store/` is the only code that opens, lists, creates, renames or deletes anything under `DATA_DIR`, and
-the only code that opens `catalog.db` or `state.db`. Everything else imports from `src.store` (the package
+`sofascore_scraper/store/` is the only code that opens, lists, creates, renames or deletes anything under `DATA_DIR`, and
+the only code that opens `catalog.db` or `state.db`. Everything else imports from `sofascore_scraper.store` (the package
 root) and nothing from its submodules.
 
-One import of a submodule exists during the transition: the shim `src/fsutil.py` imports `src.store.files`
-until ST-28 deletes it. `src/web/jobs.py` imported `src.store.jobs` until FX-1 (PR #60) switched it to the
-root; its ratchet file is gone. As built since ST-28 (#135) no module outside `src/store/` imports a
+One import of a submodule exists during the transition: the shim `src/fsutil.py` imports `sofascore_scraper.store.files`
+until ST-28 deletes it. `sofascore_scraper/web/jobs.py` imported `sofascore_scraper.store.jobs` until FX-1 (PR #60) switched it to the
+root; its ratchet file is gone. As built since ST-28 (#135) no module outside `sofascore_scraper/store/` imports a
 submodule: `src/fsutil.py` is deleted, and the 2.x file helpers it re-exported (`atomic_write_text`,
-`atomic_write_json`, `file_lock`) are in `src/config_files.py`, which writes only the configuration files
+`atomic_write_json`, `file_lock`) are in `sofascore_scraper/config_files.py`, which writes only the configuration files
 outside `DATA_DIR` (`config/leagues.txt`, `config/league_sports.json`, `overrides.json`, and the lock of
 the log rotation). They write atomically with mode 0600 and, after the Windows retries, raise the plain
-`PermissionError` (`src/config_files.py:44-55` at `b6caf2f`); before, `ReplaceBusy`, a subclass of
+`PermissionError` (`sofascore_scraper/config_files.py:44-55` at `b6caf2f`); before, `ReplaceBusy`, a subclass of
 `PermissionError`, so callers see no difference. The Store keeps no 2.x helper; `ReplaceBusy` stays inside
-`src/store/files.py` (`:48`) as the internal signal of its own retry, which `_store_error` turns into a
+`sofascore_scraper/store/files.py` (`:48`) as the internal signal of its own retry, which `_store_error` turns into a
 non-fatal `StoreError` (`:132-139`).
 
-The root as built (`src/store/__init__.py` at `e0bae0c`) exports the error classes, the facade (`open_store`,
+The root as built (`sofascore_scraper/store/__init__.py` at `e0bae0c`) exports the error classes, the facade (`open_store`,
 `Store`, `StoreInfo`), `Lease` and `LeaseInfo`, the job store names (`JobStore`, `JobStoreConflict`,
 `JobRunningError`, `DataOperationRunningError`, `default_db_path`, `get_job_store`), since ST-18 the stream
 types and `WatchStateStore`, and since ST-17 the follows names (`FollowStore`, `Follow`, `FollowSpec`,
@@ -293,7 +302,7 @@ with its reports (`RebuildReport`, `ReconcileReport`, `IndexProblem`, `Supersede
 `shadow_season_lists`, `shadow_changes`, `shadow_cleared`; 3.5). At `9b03c64` it also exports `PutResult`
 (ST-20), `HistoryStore`, `Snapshot` and `SnapshotInfo` (ST-26), and `ClearReport`, `BackupManager` and
 `BackupInfo` (ST-19). `InstanceRunningConflict` (P23) is not exported; it is a subclass of
-`DataOperationRunningError` in `src/store/jobs.py` (6.1). At `b3cb819` the root also exports `CategoryRow`
+`DataOperationRunningError` in `sofascore_scraper/store/jobs.py` (6.1). At `b3cb819` the root also exports `CategoryRow`
 and `SportRow` (ST-22), `Exporter`, `ExportReport` and `ExportSkip` (ST-25), `BackupCheck`, `RestoreReport`,
 `BackupNotFound`, `BackupInvalid`, `RestoreRefused`, `SinkCursor`, `DEFAULT_PRUNE_MAX_AGE_SECONDS` and
 `DEFAULT_PRUNE_MAX_ROWS` (ST-24), and `Migrator`, `MigrationPlan`, `MigrationReport`, `MigrationProgress` and
@@ -302,17 +311,17 @@ P19 (#119) `LAYOUT_VERSION`, `CATALOG_SCHEMA` and `load_migrations` are, for `ss
 `DERIVE_VERSION` and `MIN_READER_LAYOUT` stay inside, and a caller reads the versions of a directory from
 `StoreInfo`. At `b6caf2f` the five hooks are no longer exported: FX-15 (#155) removed them, because no
 product code called them after P26 (3.5). ST-28 (#135) added `league_dir_name`, the 2.x folder name of a
-league (`src/store/legacy.py:344`), which `src/paths.py` held before and `QueryService` now imports from
+league (`sofascore_scraper/store/legacy.py:344`), which `sofascore_scraper/paths.py` held before and `QueryService` now imports from
 the root; FX-19 (#156) added `Purger` and `TournamentClearReport` (9.3). Every name except the error
 classes is loaded on first use (a module `__getattr__`, with a `TYPE_CHECKING` block for static tools and
 the API snapshot). The reason: importing a submodule runs the package root first, `src/fsutil.py` imported
-`src.store.files` from the lowest layers of the application until ST-28, and `tests/test_store_catalog.py`
+`sofascore_scraper.store.files` from the lowest layers of the application until ST-28, and `tests/test_store_catalog.py`
 pins the exact set of modules that importing a store submodule loads. A new public name therefore goes
 into three places of that file: the `TYPE_CHECKING` import, `_LAZY` and `__all__`.
 
 The Store contains no network code and no policy. It does not know which slices a sport needs, how long the
 refresh window is, or what "finished" means for a job. Callers pass those in as arguments. It may import
-`src.sports`, `src.status`, `src.slices`, `src.exceptions` and `src.version`, nothing else from `src`.
+`sofascore_scraper.sports`, `sofascore_scraper.status`, `sofascore_scraper.slices`, `sofascore_scraper.exceptions` and `sofascore_scraper.version`, nothing else from `src`.
 
 Services do not wrap the Store in a second interface. `02-services.md` section 2.5 maps what the services need
 onto the API below; the API-surface test (2.4) pins it.
@@ -320,14 +329,14 @@ onto the API below; the API-surface test (2.4) pins it.
 ### 2.2 Package layout
 
 ```
-src/store/
+sofascore_scraper/store/
   __init__.py     public names only (see 2.3), loaded on first use (2.1)
   api.py          Store facade, open_store(), per-data-dir registry, clear, info; since ST-11 the catalog
                   sync on open and the hooks of the legacy writers (3.4, 3.5)
   errors.py       StoreError and subclasses
   codec.py        canonical JSON bytes, gzip read/write, sha256
   files.py        atomic write/replace/remove, staging dir, retry on Windows (absorbed src/fsutil.py; since
-                  ST-28 the 2.x helpers are in src/config_files.py, outside the Store)
+                  ST-28 the 2.x helpers are in sofascore_scraper/config_files.py, outside the Store)
   purge.py        one tournament's or one season's data deleted (FX-19, #156; 9.3)
   layout.py       v3 path functions (pure)
   manifest.py     manifest.json dataclasses, read, write, validate
@@ -357,7 +366,7 @@ src/store/
 ```
 
 The adapters that reproduce today's response shapes (summary-row dictionaries, the `basic` key) are not part of
-the Store. They live in `src/services/` next to the readers that need them and are deleted with the legacy
+the Store. They live in `sofascore_scraper/services/` next to the readers that need them and are deleted with the legacy
 `/api` routes.
 
 ### 2.3 Public API
@@ -407,8 +416,8 @@ class Ref:
     # constructors: Ref.event(id), Ref.tournament(id), Ref.season(tournament_id, season_id),
     #               Ref.team(id), Ref.player(id), Ref.sport(sport_id)
 
-# One outcome type for the whole code base, defined in src/slices.py (plan item ST-02). It is today's
-# SliceOutcome (src/match_data_fetcher.py:65-89) with two more fields and one more status.
+# One outcome type for the whole code base, defined in sofascore_scraper/slices.py (plan item ST-02). It is today's
+# SliceOutcome (sofascore_scraper/match_data_fetcher.py:65-89) with two more fields and one more status.
 @dataclass(frozen=True)
 class Outcome:
     status: Literal["ok", "empty", "failed", "skipped"]
@@ -462,7 +471,7 @@ class EventQuery:
     offset: int | None = None               # only for the old /api/matches paging; not together with cursor
 ```
 
-The facade as built so far (ST-10 #50, ST-18 #59, ST-17 #62, ST-30 #68, ST-11 #75; `src/store/api.py` at
+The facade as built so far (ST-10 #50, ST-18 #59, ST-17 #62, ST-30 #68, ST-11 #75; `sofascore_scraper/store/api.py` at
 `e0bae0c`, as are the line references of this list). The block above is the target; this is the part of it
 that exists:
 
@@ -471,12 +480,12 @@ that exists:
   `runtime`, `streams`, `watch`, `follows` and `close()`; since ST-30 `events`, `entities` and `changes`
   with their read methods; since ST-11 `catalog` and `jobs`. Since ST-20 (#82) `events` has `put`,
   `observe`, `reset_empty_markers` and `delete`, and `changes` has `append`; since ST-26 (#92) `history`;
-  since ST-19 (#90) `backup`, `clear` and `catalog_current` (`src/store/api.py:282-283`, `:504-512`,
+  since ST-19 (#90) `backup`, `clear` and `catalog_current` (`sofascore_scraper/store/api.py:282-283`, `:504-512`,
   `:590-642` at `9b03c64`). `EntityStore.put` exists since ST-22 (#98), `export` since ST-25 (#108) and
   `migrate` since ST-23 (#110); `backup` gained format 2, `verify`, `restore`, `prune` and `path_of` with
   ST-24 (#109) and P21 (#126). At `b3cb819` the facade is complete: `backup`, `export` and `migrate` are
-  attribute lines of `Store.__init__` (`src/store/api.py:288-290`). FX-19 (#156) added `purge`, the
-  `Purger` of 9.3 (`src/store/api.py:287` at `b6caf2f`).
+  attribute lines of `Store.__init__` (`sofascore_scraper/store/api.py:288-290`). FX-19 (#156) added `purge`, the
+  `Purger` of 9.3 (`sofascore_scraper/store/api.py:287` at `b6caf2f`).
 - `catalog_current` (ST-19) answers whether the catalog is in sync: True when the Store is open and the
   last sync of this process, and every hook since, succeeded. A reader that plans from the catalog refuses
   to plan when it is False, instead of calling every match missing (`open_store` does not fail when the
@@ -485,16 +494,16 @@ that exists:
 - `clear(scope)` takes one scope name or several (`events`, `schedules`, `seasons`, `all`) and returns a
   `ClearReport` (`scopes`, `cleared`, `v3_events`, `catalog_rebuilt`); it is described in 9.3. `backup` is
   the `BackupManager` of 9.1.
-- `catalog` is the `CatalogAdmin` on the Store's shared `Catalog` (`src/store/api.py:237`). Its
+- `catalog` is the `CatalogAdmin` on the Store's shared `Catalog` (`sofascore_scraper/store/api.py:237`). Its
   `league_names` is a function that returns `store.follows.leagues()` and is asked on every scan (`:282`).
-- `jobs` is a property, not an attribute line in `__init__` (`src/store/api.py:391-395`). It returns
-  `JobStore.for_store(store)` (P11; `src/store/jobs.py:315-331`): one job store per open Store, which uses
+- `jobs` is a property, not an attribute line in `__init__` (`sofascore_scraper/store/api.py:391-395`). It returns
+  `JobStore.for_store(store)` (P11; `sofascore_scraper/store/jobs.py:315-331`): one job store per open Store, which uses
   the Store's `state.db` connection, its lease manager and its stream log, and is kept in a weak cache
-  (`_by_store`, `src/store/jobs.py:985`) because the mirror of the running job and its writer lease live in
+  (`_by_store`, `sofascore_scraper/store/jobs.py:985`) because the mirror of the running job and its writer lease live in
   that object. It is created on first access: `for_store` runs `reap_stale()` when it creates the object,
   which an attribute line would do on every open. A closed Store raises `StoreError`; a Store that is opened
   again gets a new job store. The service context builds its `JobManager` on the same call
-  (`src/services/context.py:77`). The web server still uses the process-wide object that rebinds between
+  (`sofascore_scraper/services/context.py:77`). The web server still uses the process-wide object that rebinds between
   directories (`get_job_store`), which a per-directory property cannot express.
 - The registry is keyed by the real path of the directory **and** `readonly`, so a read-only and a writable
   Store of one directory are two objects. `close()` closes the connections and removes the Store from the
@@ -504,7 +513,7 @@ that exists:
   `tests/conftest.py` fails a test that leaves an open Store pointing at a deleted directory. Since FX-12
   (#100) `close()` first waits for a job of `store.jobs` that is inside its finishing block (at most 30 s,
   `JobStore.wait_for_finishing_job`; 3.2).
-- `open_store` brings the catalog up to date (ST-11; `Store._sync_catalog`, `src/store/api.py:298-346`): a
+- `open_store` brings the catalog up to date (ST-11; `Store._sync_catalog`, `sofascore_scraper/store/api.py:298-346`): a
   catalog that is not usable is built from the files, a usable one is reconciled, on every open (3.4, 3.5).
   A read-only Store syncs as well, because the catalog is derived. A catalog that cannot be synced never
   fails the open; since ST-19 `catalog_current` says so. Since ST-19 the reconcile on open skips the pass
@@ -519,7 +528,7 @@ that exists:
   entry of the data directory, and the leases held by any process. Summing the bytes walks the whole
   directory; `info(sizes=False)` skips the walk (15 ms against 0.5 ms on a copy of the owner's data).
   `Store.info` keeps no cache. The dashboard's cache of the sizes (at most 60 s old per data directory,
-  dropped when the catalog changes) is in `src/services/status.py` (RD-4, #78), so a change the catalog
+  dropped when the catalog changes) is in `sofascore_scraper/services/status.py` (RD-4, #78), so a change the catalog
   does not see (a CSV export, a backup, files deleted by hand) shows in the sizes up to a minute late. There
   is no byte count per league; the terminal UI's per-league size still walks the league directories.
 - Inside the package a Store gives `_state` (the `StateDb`), `_catalog` (the shared `Catalog` with `state`
@@ -527,7 +536,7 @@ that exists:
   `WatchStateStore(store)`, `FollowStore(store)`), not the `StateDb`: with `StateDb` in a public signature
   the API snapshot would start tracking `StateDb` itself, and with it the internal `Connection` class (the
   snapshot's scanner matches the identifier `Connection` in `sqlite3.Connection` to
-  `src.store.sqlite.Connection`). A new attribute is one line in `Store.__init__`, after `_state` exists;
+  `sofascore_scraper.store.sqlite.Connection`). A new attribute is one line in `Store.__init__`, after `_state` exists;
   the read APIs (`EventStore(store)`, `EntityStore(store)`, `ChangeLog(store)`) are created after `_catalog`.
   The export of `CatalogAdmin` did widen the snapshot in that way: it now tracks `Catalog`, `CatalogState`,
   `Connection`, `LegacyEventDir` and `LegacySuperseded`, which public signatures of the admin reach.
@@ -587,7 +596,7 @@ class EventStore:
         # = put(event_id, {"event": Outcome("ok", payload, fetched_at=observed_at)}, on_event_change=..., ...)
     def reset_empty_markers(self, scope: Scope | None = None, *, include_confirmed: bool = False,
                             threshold: int = 2) -> dict[str, int]
-        # same result keys as today: {"matches", "slices", "scanned"} (src/match_data_fetcher.py:719-763)
+        # same result keys as today: {"matches", "slices", "scanned"} (sofascore_scraper/match_data_fetcher.py:719-763)
     def delete(self, event_id: int) -> bool
 
 @dataclass(frozen=True)
@@ -601,7 +610,7 @@ class PutResult:
     history: tuple[str, ...] = ()       # slice names that got a history snapshot (ST-26)
 ```
 
-The write half as built (ST-20 #82, ST-26 #92; `src/store/events.py:1217-1339` at `9b03c64`). The signatures
+The write half as built (ST-20 #82, ST-26 #92; `sofascore_scraper/store/events.py:1217-1339` at `9b03c64`). The signatures
 above are the built ones; `keep_history` came with ST-26, which ST-20 left out rather than accept and ignore
 it. Where the numbered rules below say less, or something else:
 
@@ -644,14 +653,14 @@ it. Where the numbered rules below say less, or something else:
   is put again with `keep_history`, nothing is appended. `PutResult.history` names the slices that got a
   snapshot.
 - **Callers.** At `9b03c64` only the live service of P23 called a write method (`observe` for a finished
-  match, `src/services/live/supervisor.py:521` there). Since ST-21 (#104) the detail writers call `put`
+  match, `sofascore_scraper/services/live/supervisor.py:521` there). Since ST-21 (#104) the detail writers call `put`
   for a download and `observe(id, new, on_event_change=...)` for a refresh, whose callback is built from
   `diff_basic` and `change_row` and only compares; `reset_unavailable_markers(league_id)` calls
   `reset_empty_markers(Scope(tournament_ids=(league_id,)), threshold=2)`. The marker rules of today are kept
   through the arguments, as the paragraph after the numbered rules says. Since P13 (#113) every download,
-  refill, refresh and single-match fetch goes through `FetchPipeline` (`src/services/pipeline.py`), which
+  refill, refresh and single-match fetch goes through `FetchPipeline` (`sofascore_scraper/services/pipeline.py`), which
   calls `put` and `observe` from one writer thread. A write that meets `StoreBusy` is tried four times in
-  all, waiting 0.5, 1 and 2 s in between (`put_retrying`, `src/services/pipeline.py:568` at `b3cb819`); a
+  all, waiting 0.5, 1 and 2 s in between (`put_retrying`, `sofascore_scraper/services/pipeline.py:568` at `b3cb819`); a
   store that stays busy fails that match with the non-fatal `StoreBusy`, and any other unexpected error
   fails only that match, as a non-fatal `StorageError`. The catalog is updated inside `put`, so the
   shadow-mode rule that
@@ -668,7 +677,7 @@ it. Where the numbered rules below say less, or something else:
 Semantics of `put` (the only way event payloads reach the disk):
 
 1. Keys are validated: `key` matches `[a-z][a-z0-9_]{0,39}`, `sub` matches `[a-z0-9_.-]{0,80}`. As built
-   (ST-03 and FX-4, `src/store/layout.py` at `f286723`) two more rules apply: Windows device names (`con`,
+   (ST-03 and FX-4, `sofascore_scraper/store/layout.py` at `f286723`) two more rules apply: Windows device names (`con`,
    `nul`, `aux`, `prn`, `com1`-`com9`, `lpt1`-`lpt9`) are rejected as a key or as the stem of a sub, and the
    sub `_` is rejected, because `_history/<key>/_.jsonl.gz` is the history file of the slice without a sub.
    Subs are lower-case only (decision S13, FX-4, PR #53), because Windows and default macOS file systems do
@@ -684,7 +693,7 @@ Semantics of `put` (the only way event payloads reach the disk):
 3. Per outcome:
    - `ok`: canonical bytes are computed (4.1). If their sha256 equals the manifest's, no file is written and
      only `fetched_at`/`checked_at` move. Otherwise the file is replaced atomically. Empty and error marks of
-     that slice are cleared (today: `src/match_data_fetcher.py:686-689`).
+     that slice are cleared (today: `sofascore_scraper/match_data_fetcher.py:686-689`).
    - `empty` with data (an empty 200 body): the payload is stored, as today (`:1223-1225`), state `empty`.
    - `empty` without data (404): no file is written and an existing payload is never removed.
    - For both `empty` forms, `empty_count` is incremented only when `count_empties` covers the key, and a
@@ -705,8 +714,8 @@ Semantics of `put` (the only way event payloads reach the disk):
    payload is about to change, with the stored payload (or `None`). It returns one change-log row or `None`.
    The row is appended to the change log in the same critical section; since FX-12 (#100) it is first
    written to an intent file, so an interrupted write does not lose it (6.2). This keeps the comparison
-   atomic with the write while the comparison rule (`diff_basic`, `change_row`, `src/refresh.py:95-140`)
-   stays outside the Store. `status_regressed=True` is sticky (`src/match_data_fetcher.py:878-885`).
+   atomic with the write while the comparison rule (`diff_basic`, `change_row`, `sofascore_scraper/refresh.py:95-140`)
+   stays outside the Store. `status_regressed=True` is sticky (`sofascore_scraper/match_data_fetcher.py:878-885`).
 6. For a key listed in `keep_history`, the payload is also appended to the slice's history file when its
    content hash differs from the last stored one. As built (ST-26) "the last stored one" is the last
    snapshot in the history file, not the stored payload (see "The write half as built" above).
@@ -714,7 +723,7 @@ Semantics of `put` (the only way event payloads reach the disk):
 8. The whole call runs under the write protocol of 6.2 and is atomic with respect to the catalog.
 
 Callers keep today's marker rules by what they pass. Today slice markers are updated only for events that are
-finished (`src/match_data_fetcher.py:1228-1229`) and only for `required` slices (`:684`); a caller reproduces
+finished (`sofascore_scraper/match_data_fetcher.py:1228-1229`) and only for `required` slices (`:684`); a caller reproduces
 that with `count_empties=False` (or the set of required keys) and by leaving failed outcomes of an unfinished
 event out of the call.
 
@@ -728,14 +737,14 @@ Slice state as stored and as reported:
 | `not_requested` | no row |
 
 A slice is still **expected** when `state != 'ok'` and `empty_count + unverified_empty_count < threshold`
-(threshold 2 today, `src/match_data_fetcher.py:49`, `:804-811`). This replaces `_unavailable.json` and
+(threshold 2 today, `sofascore_scraper/match_data_fetcher.py:49`, `:804-811`). This replaces `_unavailable.json` and
 `_slice_status.json`. Mapping from the legacy files:
 
 - `<key>.json` present: `ok` when the presence predicate says it has data, else `empty` with a payload. The
-  predicates are today's `match_detail_slice_present` family (`src/match_data_fetcher.py:559-637`); they move to
-  the pure module `src/slices.py` first (plan item ST-02) so the legacy reader can call them. As built
+  predicates are today's `match_detail_slice_present` family (`sofascore_scraper/match_data_fetcher.py:559-637`); they move to
+  the pure module `sofascore_scraper/slices.py` first (plan item ST-02) so the legacy reader can call them. As built
   (FX-5, #77) there are three answers, not two: `slices.slice_body_state(key, body)`
-  (`src/slices.py:225` at `9b03c64`) returns `BODY_DATA` (state `ok`), `BODY_NO_DATA` (`empty` with a
+  (`sofascore_scraper/slices.py:225` at `9b03c64`) returns `BODY_DATA` (state `ok`), `BODY_NO_DATA` (`empty` with a
   payload, or `error` when `_slice_status.json` holds an error mark) or `BODY_MALFORMED` (state `error`,
   reason `corrupt`, with a `malformed` problem in the report).
   The third existed since ST-05 as a caught exception of the predicate. The legacy reader imports
@@ -779,7 +788,7 @@ class EntityStore:
     def sport_of_tournament(self, tournament_id: int) -> str | None  # replaces league_sports.infer_from_data
 ```
 
-`EntityStore.put` as built (ST-22, #98; `src/store/entities.py:1594` at `b3cb819`). The signature is
+`EntityStore.put` as built (ST-22, #98; `sofascore_scraper/store/entities.py:1594` at `b3cb819`). The signature is
 `put(ref, outcomes, *, count_empties=True, keep_history=()) -> PutResult`, without `index_listed_events`:
 
 - **Listing rows come from the stored pages.** A rebuild derives the listing rows from the stored schedule
@@ -808,7 +817,7 @@ class EntityStore:
 - **Writers.** Since ST-22 `SeasonFetcher` stores a season list with `put(Ref.tournament(id), {"seasons":
   ...})` (an empty list with state `empty`), and `MatchFetcher` stores round pages with
   `meta={"complete": bool}` and event pages with `meta={"filtered": True}` (5.2). Since P14 (#116) both
-  run in `src/services/listing.py`, which reads the freshness of a listing from the slice rows
+  run in `sofascore_scraper/services/listing.py`, which reads the freshness of a listing from the slice rows
   (`SliceInfo.fetched_at` and the `complete` mark of a round): a season list is fresh for 6 h, a schedule for
   15 min while its newest page is that young and every page is complete or that young. The rounds list
   itself is not stored, so its freshness is inferred from the pages. A round cached by 2.x is found through
@@ -819,7 +828,7 @@ class EntityStore:
   `seasons` slice", so `tournaments.season_lists` still misses a v3-only list of a tournament that is not
   configured, not followed and has no events. When the configured league name differs from the follows
   name, a legacy `<name>_seasons.json` can still win over a newer v3 list in `seasons_of` and
-  `season_lists` (`_named_only_lists` of `src/services/tournaments.py`), and `index_v3_entity` of a
+  `season_lists` (`_named_only_lists` of `sofascore_scraper/services/tournaments.py`), and `index_v3_entity` of a
   tournament without a v3 list falls back to the legacy files scanned without league names, so a name-only
   list file is found only by a rebuild or a reconcile, which have the names.
 
@@ -836,7 +845,7 @@ owner + key + optional sub. Examples of how the known endpoints map:
 | a player's season statistics | `player(id)` | `season_statistics` / `<ut>-<sid>` |
 | rankings | `sport(id)` | `rankings` / `<ranking type>` |
 
-As built (P28, #140; `OWNER_SLICES`, `src/sports.py:576-607` at `b6caf2f`), all off by default: season
+As built (P28, #140; `OWNER_SLICES`, `sofascore_scraper/sports.py:576-607` at `b6caf2f`), all off by default: season
 slices `standings` with the subs `total` and `home` (no `away` in the endpoint catalog), `season_info`,
 `cuptrees`, `top_players`, `top_teams` and `season_odds` (provider as sub); the team slice `team_rankings`;
 the player slice `player_statistics` (no sub, `/player/{id}/statistics/seasons`); the sport slice
@@ -858,7 +867,7 @@ SofaScore's own change list for the main market (`/event/{id}/odds/{provider}/ch
 slice. As built (P28 #140, FX-15 #155) the slice's `meta` records where the payload came from: always the
 provider id (`meta.provider_id`, the sub, `[client] odds_provider`, default 1) and, only when the user sets
 `[client] odds_country`, the country (`meta.country`); the country is never derived from the machine
-(decision of 2026-10-06; `with_provenance`, `src/services/pipeline.py:627` at `b6caf2f`). The normalized
+(decision of 2026-10-06; `with_provenance`, `sofascore_scraper/services/pipeline.py:627` at `b6caf2f`). The normalized
 `Odds` record carries no country.
 
 ```python
@@ -870,7 +879,7 @@ class HistoryStore:
     def prune(self, ref: Ref | None = None, *, older_than: float) -> int              # rewrites history files; needs "writer"
 ```
 
-`HistoryStore` as built (ST-26, #92; `src/store/history.py:360-500` at `9b03c64`), with the signatures above:
+`HistoryStore` as built (ST-26, #92; `sofascore_scraper/store/history.py:360-500` at `9b03c64`), with the signatures above:
 
 - `index` gives `fetched_at` in whole seconds, from the catalog's `slice_history` rows; `snapshots` and
   `snapshot` give the precise time from the history line. `n` is the position of the member in the file,
@@ -881,34 +890,34 @@ class HistoryStore:
 - Reads already resolve the directories of other entities (a season without `tournament_id` is looked up
   in the `seasons` table), but no entity history is written, indexed by a rebuild or pruned until ST-22.
   As built since ST-22 (#98) `EntityStore.put(keep_history=...)` writes entity history and the v3 entity
-  scan indexes it (3.4); `prune` still handles events only (`src/store/history.py` was not ST-22's file),
+  scan indexes it (3.4); `prune` still handles events only (`sofascore_scraper/store/history.py` was not ST-22's file),
   so a ref of another kind still returns 0. Nothing keeps entity history at `b3cb819`.
 - A reader retries once when a member's sha256 does not match the catalog (a prune ran meanwhile); no test
   runs a prune against concurrent readers.
 - The first caller is P28, which registers the odds slices and passes them as `keep_history`; nothing in the
   application keeps history at `9b03c64`. As built (P28, #140): the four odds slices of an event
   (`odds_featured`, `odds_all`, `odds_changes`, `winning_odds`) and the season slice `season_odds` have
-  `keep_history` (`src/sports.py:558-569` and `:594-596` at `b6caf2f`); the pipeline passes the selected
-  keys to `EventStore.put` and to `EntityStore.put` (`src/services/pipeline.py:452`, `:528`). So entity
+  `keep_history` (`sofascore_scraper/sports.py:558-569` and `:594-596` at `b6caf2f`); the pipeline passes the selected
+  keys to `EventStore.put` and to `EntityStore.put` (`sofascore_scraper/services/pipeline.py:452`, `:528`). So entity
   history is written now (`season_odds`, off by default and experimental), while `prune` still handles
-  event history only (`src/store/history.py:486`: `kind = 'event'`); the history of a season is never
+  event history only (`sofascore_scraper/store/history.py:486`: `kind = 'event'`); the history of a season is never
   pruned.
 - The first caller of `prune` is FX-15 (#155), not P28: the scheduler task `prune-history` with a required
   `older_than` (for example `"90d"`) runs a `clear` job with the spec `{scope: history, older_than}` that
   calls `store.history.prune(older_than=...)` under the job's writer lease and reports `prune_history`
-  (`src/jobs/scheduler.py:327-358` at `b6caf2f`). No task exists by default, so nothing is pruned unless
+  (`sofascore_scraper/jobs/scheduler.py:327-358` at `b6caf2f`). No task exists by default, so nothing is pruned unless
   the user configures one (decision of 2026-10-06). The concurrency test against readers that ST-26 asked
   of the first caller was not added.
 
 The catalog does not shred odds payloads into market/choice rows. Normalising a payload is the job of the
-schema layer (`src/schema/`), on request or during export, never of the catalog. Reason: those tables would
+schema layer (`sofascore_scraper/schema/`), on request or during export, never of the catalog. Reason: those tables would
 multiply the catalog size and its rebuild time, and every change of the normalised schema would force a
 rebuild. The first version of this paragraph gave the normalising of odds, statistics, lineups and standings
 to plan item SC-1. As built (SC-1, #72) schema v1 covers the entities, `Event`, `Slice`, `Change` and
 `LiveEvent`, and gives slice payloads raw; P28 adds odds and the non-match models; no plan item normalises
 statistics, lineups or incidents. Schema v1 was approved as written on 2026-10-02 (decision P2 is settled;
 all 28 choices of `04-schema-v1.md` section 9 stand), so normalised slice models are later, additive items.
-`src/schema` does not import the Store at run time: its mappers take the rows of the read API, and the
+`sofascore_scraper/schema` does not import the Store at run time: its mappers take the rows of the read API, and the
 caller reads the payload through the Store.
 
 **Change log**
@@ -923,7 +932,7 @@ class ChangeLog:
 
 **The read API as built**
 
-As built (ST-30, #68; `src/store/events.py`, `src/store/entities.py` and `src/store/changes.py` at
+As built (ST-30, #68; `sofascore_scraper/store/events.py`, `sofascore_scraper/store/entities.py` and `sofascore_scraper/store/changes.py` at
 `e0bae0c`). The read methods of `EventStore`, `EntityStore` and `ChangeLog` exist with the signatures
 printed above, as `Store.events`, `Store.entities` and `Store.changes`. The write methods (`put`, `observe`,
 `reset_empty_markers`, `delete`, `EntityStore.put`, `ChangeLog.append`) did not exist then; all but
@@ -944,7 +953,7 @@ the first version of this section was silent, or from which the code differs:
   as the catalog stores them; `SliceInfo` and `SliceError` carry `datetime`, as the block above prints.
 - **The catalog decides whether a payload exists.** `payload()` trusts the catalog: when the event has no
   slice row for the key, or the row has `has_payload = 0`, it returns None without touching the disk
-  (`src/store/events.py:706-713`). Three consequences. A truncated legacy slice file, which the indexer
+  (`sofascore_scraper/store/events.py:706-713`). Three consequences. A truncated legacy slice file, which the indexer
   records as state `error` with reason `corrupt` (3.4), reads as "no payload" instead of raising. `basic` and
   `observation` are not slice keys; the event payload is `event`. A v3 payload file that is damaged while
   the catalog says `ok` raises `PayloadCorrupt`. A writer therefore has to keep `has_payload` true exactly
@@ -965,8 +974,8 @@ the first version of this section was silent, or from which the code differs:
   `refresh._parse_utc`.
 - **`EventRow.path`** is set only for an event with a legacy detail directory. A listing-only row and a v3
   event have no path, and `SliceInfo` carries none either, so a caller that needs the league folder of such
-  an event derives it (RD-2 uses `src/paths.league_dir_name`; since ST-28, #135, the function is
-  `src.store.league_dir_name`, and `src/paths.py` keeps only the configuration and browser-profile paths).
+  an event derives it (RD-2 uses `sofascore_scraper/paths.league_dir_name`; since ST-28, #135, the function is
+  `sofascore_scraper.store.league_dir_name`, and `sofascore_scraper/paths.py` keeps only the configuration and browser-profile paths).
 - **`EventQuery`** joins its conditions with AND. RD-2 (#89) runs the counting rule of decision D21
   ("finished, or has stored details") as two disjoint queries merged in order; an OR option would let it
   page in SQL. There is no date-substring filter: the legacy date filter, a substring of local ISO text,
@@ -979,8 +988,8 @@ the first version of this section was silent, or from which the code differs:
   key, with all subs. An unknown event gives an empty dictionary. A slice the catalog marks corrupt is
   absent; a legacy file whose content is the JSON value `null` is returned as None under its key.
 - **`Scope.followed`** restricts to the enabled follows of kind `tournament`, the one shape 3.7 pins
-  (`src/store/events.py:82-83`). Team, player and event follows do not widen the scope. This still holds
-  at `b6caf2f` (`_FOLLOWED_SQL`, `src/store/events.py:123-124`) after FX-19 (#156): the matches of a
+  (`sofascore_scraper/store/events.py:82-83`). Team, player and event follows do not widen the scope. This still holds
+  at `b6caf2f` (`_FOLLOWED_SQL`, `sofascore_scraper/store/events.py:123-124`) after FX-19 (#156): the matches of a
   team, player or event follow are downloaded, but `GET /events?followed=true` does not list them unless
   their tournament is followed too.
 - **`EventQuery.text`** searches `participants.name_folded`, as 3.7 prescribes. A listing row that was built
@@ -990,41 +999,41 @@ the first version of this section was silent, or from which the code differs:
   the API uses the index `events_updated`. An order for consumer sync needs a cursor shape of its own.
 - **Keyset paging and rows without a start time.** The row-value comparison `(start_ts, id) < (?, ?)` never
   matches a row whose `start_ts` is NULL. Such rows form a second region, last in `start_desc` and first in
-  `start_asc`, which is entered with a second query (`_keyset_page`, `src/store/events.py:935-958`). The
+  `start_asc`, which is entered with a second query (`_keyset_page`, `sofascore_scraper/store/events.py:935-958`). The
   cursor is opaque and carries the sort, so a cursor of the other order is refused; `offset` and `cursor`
   cannot be combined, and in the offset mode `next_cursor` stays None. `with_total` counts in the same
   snapshot.
 - **Errors.** An argument error is a `ValueError`, as in `follows.py`: a non-integer or a `bool` where an
-  integer is expected, an integer outside SQLite's 64-bit range (`check_int`, `src/store/events.py:336-345`),
+  integer is expected, an integer outside SQLite's 64-bit range (`check_int`, `sofascore_scraper/store/events.py:336-345`),
   an unknown status class or sort, a cursor of another query. An invalid slice key or sub is `LayoutError`.
 - **`states()`** runs two statements per batch, not "one indexed range query": the events in id order, then
-  their slices by primary key (`src/store/events.py:767-785`). A `BETWEEN` over the id range would read the
+  their slices by primary key (`sofascore_scraper/store/events.py:767-785`). A `BETWEEN` over the id range would read the
   slices of every foreign event that lies between two ids of a sparse scope.
 - **`missing()`** joins the requirement with `LEFT JOIN`, so an event without a payload is returned even
   when nothing is required for its sport; the inner join of the first version would drop it
-  (`src/store/events.py:818-827`; the query is in 3.7). `missing_keys` come back in the order of the
+  (`sofascore_scraper/store/events.py:818-827`; the query is in 3.7). `missing_keys` come back in the order of the
   caller's `required`; a key listed under `""` and under a sport counts once; an empty `status_classes`
   means no status filter. The method returns an iterator over a list that is already complete. With `""`
   covering every sport, a sport could not drop a common slice; since #121 the keyword `exclusive=True`
   makes a sport's own entry replace the `""` entry, and `""` then applies only to the sports without an
-  entry (`src/store/events.py:1205-1243` at `b3cb819`). `QueryService.required_detail_keys()` lists every
-  registered sport in full for use with it. Nothing in `src/` calls `missing()` at `b3cb819`: the planners
+  entry (`sofascore_scraper/store/events.py:1205-1243` at `b3cb819`). `QueryService.required_detail_keys()` lists every
+  registered sport in full for use with it. Nothing in `sofascore_scraper/` calls `missing()` at `b3cb819`: the planners
   read `states()` (8.4).
 - **`refresh_candidates()`** returns nothing for `window_s <= 0`, also with `include_unobserved`, as
-  today's `refresh_due` does (`src/store/events.py:853-854`). `observed_at` is whole seconds in the catalog.
+  today's `refresh_due` does (`sofascore_scraper/store/events.py:853-854`). `observed_at` is whole seconds in the catalog.
 - **`Ref.season`** does not need `tournament_id` for a read: `entity_slices` is keyed by kind and id. The
   writers need it for the directory.
 - **`EntityStore.payload` on legacy files.** A round file is returned without the `_complete` key that 2.x
   adds (it is in `SliceInfo.meta`), and `raw=True` then gives canonical bytes instead of the bytes of the
   file. A season list that exists only in `league_seasons.csv` is returned as `{"seasons": [...]}`. A `Ref`
-  of kind `event` is passed on to `Store.events` (`src/store/entities.py:853-895`).
+  of kind `event` is passed on to `Store.events` (`sofascore_scraper/store/entities.py:853-895`).
 - **`sport_of_tournament`** returns the slug as stored, not normalised: the web layer's `normalize_sport`
   is code the Store may not import, so RD-5 applies it. The slug is the tournament row's, else the most
   frequent sport among the tournament's events. Since RD-5 (#79) `league_sports.infer_from_data` asks it
   through `tournaments.sport_of`. The tournament is the one the payload names, so a league directory
   without id is found; an event under `_no_tournament/` names no unique tournament and gives no league a
   sport.
-- **Season lists through the read API** (RD-5, #79; `src/services/tournaments.py` at `9b03c64`).
+- **Season lists through the read API** (RD-5, #79; `sofascore_scraper/services/tournaments.py` at `9b03c64`).
   `seasons_of` reads the stored payload, `store.entities.payload(Ref.tournament(id), "seasons")`, because the
   legacy response is SofaScore's own objects (key order, extra keys), which `SeasonRow` does not carry.
   `EntityStore` has no method that lists the tournaments having a season list (a tournament with a list and
@@ -1043,7 +1052,7 @@ the first version of this section was silent, or from which the code differs:
 - **Categories and sports have no read method.** `EntityStore` returns tournaments, seasons and
   participants; the `categories` and `sports` tables have no read method and no row class, and the schema
   mappers take such a row as a mapping. P21 needs the method before `/tournaments` can show a category; the
-  plan gives it to ST-22, the next owner of `src/store/entities.py`. ST-22 (#98) added them (above).
+  plan gives it to ST-22, the next owner of `sofascore_scraper/store/entities.py`. ST-22 (#98) added them (above).
 - **`ChangeLog`** reads the index in the catalog: `list` returns rows in `seq` order, a consumer passes the
   last `seq` it saw as `after_seq`, and `last_seq()` is 0 for an empty log. `append` exists since ST-20
   (#82): it writes the line to the month's segment and indexes it under the catalog's write lock (8.5); a
@@ -1093,7 +1102,7 @@ class StreamLog:            # StreamLog(store)
     def set_cursor(self, sink: str, seq: int, *, error: str | None = None) -> None
     def cursors(self) -> list[SinkCursor]                   # since ST-24: sink, seq, updated_at, last_error
 
-class WatchStateStore:      # WatchStateStore(store); replaces watch_state_{sport}.json (src/watcher.py:204-214)
+class WatchStateStore:      # WatchStateStore(store); replaces watch_state_{sport}.json (sofascore_scraper/watcher.py:204-214)
     def load(self, watcher: str) -> dict[str, dict[str, Any]]
     def save(self, watcher: str, state: Mapping[str, Mapping[str, Any]], *, changed: Iterable[str] | None = None) -> None
     # for the 2.x files, because only the Store touches DATA_DIR (removed with the 2.x watcher, P30):
@@ -1133,7 +1142,7 @@ Sequence numbers:
 - The sink cursors with their `last_error`, which the status command needs, are listed by `cursors()` since
   ST-24 (#109): `[SinkCursor(sink, seq, updated_at, last_error)]`, sorted by name; the lag of a sink is
   `head().last_seq - seq`. Since ST-24 `prune()` without arguments prunes at 7 days and 1,000,000 rows
-  (`DEFAULT_PRUNE_MAX_AGE_SECONDS`, `DEFAULT_PRUNE_MAX_ROWS`, exported from `src.store`; before, it removed
+  (`DEFAULT_PRUNE_MAX_AGE_SECONDS`, `DEFAULT_PRUNE_MAX_ROWS`, exported from `sofascore_scraper.store`; before, it removed
   nothing), `None` still turns a limit off, and the dispatcher's own constants are gone. A restore gives
   `state.db` a new `stream_id` (9.2), so `stream_id` no longer changes only when the state db is
   recreated. The first caller of `prune` is the sink
@@ -1141,9 +1150,9 @@ Sequence numbers:
   once per hour (9.3).
 - `EventStore.put` appends no `change.recorded` event (ST-20): `PutResult.change_seq` is what the caller
   announces, after `put` returned and so after the catalog transaction committed (6.2). The live service of
-  P23 does so (`src/services/live/supervisor.py:528-532` at `9b03c64`), and since P13 (#113) so do the
+  P23 does so (`sofascore_scraper/services/live/supervisor.py:528-532` at `9b03c64`), and since P13 (#113) so do the
   downloads and refreshes: `FetchPipeline` appends `change.recorded` with the `change_seq` after the write,
-  with the `dedup_key` `change:<seq>`, best effort (`src/services/pipeline.py:530-542` at `b3cb819`). A row
+  with the `dedup_key` `change:<seq>`, best effort (`sofascore_scraper/services/pipeline.py:530-542` at `b3cb819`). A row
   that a reconcile recovers at open (FX-12, 6.2) gets no `change.recorded` event; one that the next write
   of the event recovers is announced by that write's caller.
 - The watcher state (P23, #91). The live service and the 2.x `--watch` both use the sport as the watcher
@@ -1190,16 +1199,16 @@ Three origins:
 
 The legacy files are never rewritten from the table. An installation without a config file therefore keeps
 working exactly as today, a hand edit of `leagues.txt` is picked up as today
-(`ConfigManager._refresh_if_changed`, `src/config_manager.py:489`), and a downgrade to 2.x finds its files
+(`ConfigManager._refresh_if_changed`, `sofascore_scraper/config_manager.py:489`), and a downgrade to 2.x finds its files
 current. The uniqueness rules of today's file are kept: one row per id and one row per tournament name
-(`src/config_manager.py:490-495`).
+(`sofascore_scraper/config_manager.py:490-495`).
 
-As built (ST-17, PR #62; `src/store/follows.py` at `f286723`). `FollowStore(store)` is `store.follows`; the
+As built (ST-17, PR #62; `sofascore_scraper/store/follows.py` at `f286723`). `FollowStore(store)` is `store.follows`; the
 table mirrors the two league files. Two things inside the Store read it since: `Scope.followed` (ST-30) and
 the name map of `store.catalog` (ST-11). No feature of the application reads it yet.
 
 - **Types.** `FollowSpec` is what is asked for. P09 defined a class with the same fields in
-  `src/config/settings.py`, because the Store may not import `src.config`; both exist, `apply` reads the
+  `sofascore_scraper/config/settings.py`, because the Store may not import `sofascore_scraper.config`; both exist, `apply` reads the
   fields, and `build_context` converts explicitly. `Follow` is a row: `id`, `kind`, `entity_id`, `name`,
   `sport`, `seasons`, `slices`, `live`, `enabled`, `origin`, `position`, `created_at`, `updated_at`, and
   `spec()`. `ApplyResult` has `origin`, `added`, `updated`, `removed`, `unchanged`, `conflicts` and
@@ -1237,7 +1246,7 @@ the name map of `store.catalog` (ST-11). No feature of the application reads it 
   of `03-implementation-plan.md` section 15 on the reader side only: the season-list service passes the
   `ConfigManager` name and resolves such a file itself (2.3, "Season lists through the read API"). The
   catalog still reports the file as `unresolved_tournament`; the durable fix needs the `leagues.txt` name in
-  what `Store._league_names` returns (`src/store/api.py:333-340` at `9b03c64`), which ST-19 did not add.
+  what `Store._league_names` returns (`sofascore_scraper/store/api.py:333-340` at `9b03c64`), which ST-19 did not add.
 - **When the mirror runs.** `ConfigManager` mirrors the leagues (origin `legacy`, with the sports of
   `league_sports.json`) after every load, including a hand edit of `leagues.txt` that it notices on the next
   read, and after `add_league` / `remove_league`; `league_sports.set_sport` and `resolve_all` mirror after
@@ -1265,7 +1274,7 @@ the name map of `store.catalog` (ST-11). No feature of the application reads it 
 **Jobs, administration, export, backup, migrate**
 
 ```python
-class JobStore:      # today's methods (src/web/jobs.py:49-402), on state.db, plus what the job manager needs
+class JobStore:      # today's methods (sofascore_scraper/web/jobs.py:49-402), on state.db, plus what the job manager needs
     create_running, update, snapshot, request_cancel, cancel_requested, list_jobs, get_job,
     exclusive, mark_stale_running_interrupted
     writer_busy          # ST-10: a job of this store runs, or another process holds the writer lease (6.1)
@@ -1288,14 +1297,14 @@ class CatalogAdmin:      # as built (ST-07, ST-08, ST-11)
     def verify(self, *, deep: bool = False, repair: bool = False) -> VerifyReport                    # 3.6
     def stats(self) -> dict[str, Any]                                 # counts and meta keys, for Store.info
 
-class Migrator:      # as built (ST-23, #110; src/store/migrate.py:379)
+class Migrator:      # as built (ST-23, #110; sofascore_scraper/store/migrate.py:379)
     def plan(self, *, tournaments: Iterable[int] = (), limit: int | None = None, exact: bool = False,
              delete_legacy: bool = False, purge_derived: bool = False) -> MigrationPlan             # dry run
     def run(self, *, tournaments: Iterable[int] = (), limit: int | None = None, delete_legacy: bool = False,
             purge_derived: bool = False, should_stop: Callable[[], bool] | None = None,
             progress: Callable[[MigrationProgress], None] | None = None) -> MigrationReport
 
-class Exporter:      # as built (ST-25 #108, SC-2 #130; src/store/export.py:447)
+class Exporter:      # as built (ST-25 #108, SC-2 #130; sofascore_scraper/store/export.py:447)
     def raw(self, q: EventQuery, dest: str, *, keys: Sequence[str] | None = None,
             fmt: Literal["tree", "jsonl"] = "tree", pretty: bool = False,
             overwrite: bool = False) -> ExportReport                                                # 4.5
@@ -1317,7 +1326,7 @@ class ExportSkip:
     reason: str                         # "missing" | "corrupt"
     detail: str
 
-class BackupManager:  # as built (ST-24 #109, P21 #126; src/store/backup.py:379)
+class BackupManager:  # as built (ST-24 #109, P21 #126; sofascore_scraper/store/backup.py:379)
     def create(self, scope: str = "all", *, config_files: Sequence[str] = (), env_file: str | None = None,
                now: datetime | None = None) -> BackupInfo
         # scope: all | state | data | config | seasons | matches | match_details (BACKUP_SCOPES)
@@ -1329,7 +1338,7 @@ class BackupManager:  # as built (ST-24 #109, P21 #126; src/store/backup.py:379)
               now: datetime | None = None) -> list[BackupInfo]    # the removed backups; keeps all by default
 ```
 
-`BackupManager` as built (ST-19, #90; `src/store/backup.py` at `9b03c64`) is the first step of the block
+`BackupManager` as built (ST-19, #90; `sofascore_scraper/store/backup.py` at `9b03c64`) is the first step of the block
 above, not the block: it writes today's zip unchanged (9.1). It has `directory`, `create(scope="all", *,
 config_files=(), env_file=None, now=None) -> BackupInfo` and `list()`. The scopes are today's five (`all`,
 `config`, `seasons`, `matches`, `match_details`), not `all` / `state` / `data`; config files go to the root
@@ -1357,13 +1366,13 @@ which is read from the zip, while `with_env` still comes from the file name. `Ba
 `purge_derived`, so that its counts are those of the run with the same options, and `run` takes
 `purge_derived`; the details are in 5.4.
 
-`JobStore` as built (P11, #69; `src/store/jobs.py` at `e0bae0c`, as are the line references of this list;
-the job manager that uses it is `src/jobs/manager.py`, `02-services.md` 2.8):
+`JobStore` as built (P11, #69; `sofascore_scraper/store/jobs.py` at `e0bae0c`, as are the line references of this list;
+the job manager that uses it is `sofascore_scraper/jobs/manager.py`, `02-services.md` 2.8):
 
 - **`for_store(store)`** returns the job store of an open Store (see the facade above). A `JobStore(db_path)`
   that opens its own `state.db` still exists for the web server's process-wide object.
 - **Liveness is the row plus the lease.** A row that says `running` (or `queued`) belongs to a live job only
-  while someone holds `writer`. `reap_stale()` (`src/store/jobs.py:449-471`) marks such rows `interrupted`
+  while someone holds `writer`. `reap_stale()` (`sofascore_scraper/store/jobs.py:449-471`) marks such rows `interrupted`
   when the lease is free, and writes a `finished` job event for each. It never touches the store's own
   running job, and it touches nothing while another process holds `writer`. It runs when a job store is
   created or rebound, when a job is created (under the lease) and whenever the history is read (`list_jobs`,
@@ -1379,16 +1388,16 @@ the job manager that uses it is `src/jobs/manager.py`, `02-services.md` 2.8):
   With `replace_running=True`, the behaviour before P11 that `tests/test_store_lease.py` pins, a store that
   already runs a job reuses its lease and orphans the first row; that row is now marked `interrupted` by
   the next `reap_stale` instead of staying `running` forever. The job manager passes `replace_running=False`
-  and gets `JobRunningError` (`src/store/jobs.py:575-576`).
+  and gets `JobRunningError` (`sofascore_scraper/store/jobs.py:575-576`).
 - **Cancel across processes.** `cancel(job_id)` writes the flag into the row of a job that any process
   runs; the running process reads it with `poll_cancel()` (the manager does so once per second).
   `cancel_requested(job_id=None)` reads the mirror. `update()` writes
-  `cancel_requested = MAX(cancel_requested, ?)` (`src/store/jobs.py:802`): before P11 a progress write
+  `cancel_requested = MAX(cancel_requested, ?)` (`sofascore_scraper/store/jobs.py:802`): before P11 a progress write
   wrote the mirror's value and could erase a cancel request that another process had just written. The
   final write reads the row's flag once more.
 - **`heartbeat()`** writes `jobs.heartbeat_at` (epoch milliseconds) of the running job, every 5 s from the
   manager. It is for display only: liveness is the lease. The heartbeat is written to the job row only;
-  `leases.heartbeat_at` is still written once, when the lease is taken (`src/store/lease.py:361-373`).
+  `leases.heartbeat_at` is still written once, when the lease is taken (`sofascore_scraper/store/lease.py:361-373`).
 - **`update(..., job_id=, state=, error=)`.** `job_id` makes a late write of a finished job a no-op when
   another job runs by then; `state` is the terminal state and `error` goes to `error_json`. The column holds
   `running`, `completed`, `partial`, `failed`, `cancelled` or `interrupted`: success is still written as
@@ -1418,7 +1427,7 @@ Since ST-11 (#75) the admin is on the facade as `store.catalog`, and `CatalogAdm
 root. `sync_listings`, `diff_from_rebuild` and the `quiet` keyword of `reconcile` are described in 3.5.
 
 Errors: `StoreError(StorageError)` keeps the `fatal` property of today's `StorageError`
-(`src/exceptions.py:109-137`), so callers that stop a job on a full disk keep working. Subclasses: `LeaseHeld`,
+(`sofascore_scraper/exceptions.py:109-137`), so callers that stop a job on a full disk keep working. Subclasses: `LeaseHeld`,
 `StoreBusy`, `UnknownEvent`, `PayloadMissing`, `PayloadCorrupt`, `CatalogCorrupt`, `SchemaTooNew`, `LayoutError`,
 `FollowExists`, `FollowManaged`. The mapping to error codes, exit codes and HTTP statuses is the single table in
 `02-services.md` section 2.6: any `StoreError` is `storage_error` (exit code 5), `LeaseHeld` is one of the three
@@ -1435,7 +1444,7 @@ Error types as built (ST-03, ST-06, ST-09), where the first version of this sect
 | an unknown file suffix, or a payload write to anything but `.json.gz` | `LayoutError` |
 | a `.json.zst` file while no zstd module can be imported | a plain `StoreError` that names `backports.zstd` |
 | a payload that cannot be serialised | a non-fatal `StoreError` |
-| a replace that still fails after the Windows retries | Store-layer functions: a non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py`: `ReplaceBusy`, a `PermissionError` subclass, which 2.x callers treat as fatal (4.4). Since ST-28 (#135) the Store has no 2.x helpers; `src/config_files.py`, outside the Store, raises the plain `PermissionError` for the configuration files (2.1) |
+| a replace that still fails after the Windows retries | Store-layer functions: a non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py`: `ReplaceBusy`, a `PermissionError` subclass, which 2.x callers treat as fatal (4.4). Since ST-28 (#135) the Store has no 2.x helpers; `sofascore_scraper/config_files.py`, outside the Store, raises the plain `PermissionError` for the configuration files (2.1) |
 | a SQLite lock that outlasts `busy_timeout`, including the switch to WAL | `StoreBusy` |
 | the SQLite library is older than 3.24 | a plain `StoreError`, one wording for both files, with the found version in `detail` (FX-3) |
 | a `sub` with an upper-case letter (FX-4) | `LayoutError` |
@@ -1454,9 +1463,9 @@ so `Class.from_exception(exc, path, reading=True)` works on each.
 Four tests, all in the normal `pytest` job (`.github/workflows/ci.yml:85-93`), no new CI job. This section
 describes them as built by plan item ST-04 (PR #47).
 
-1. **Static check** (`tests/test_store_boundary.py`, uses `ast`). For every module under `src/` outside
-   `src/store/` it fails on:
-   - any import of a `src.store.<submodule>` (only `from src.store import ...` is allowed), whether absolute,
+1. **Static check** (`tests/test_store_boundary.py`, uses `ast`). For every module under `sofascore_scraper/` outside
+   `sofascore_scraper/store/` it fails on:
+   - any import of a `sofascore_scraper.store.<submodule>` (only `from sofascore_scraper.store import ...` is allowed), whether absolute,
      relative, inside a function, through `importlib.import_module` or by attribute access through the root;
    - any call to `open`, `os.listdir`, `os.scandir`, `os.walk`, `os.remove`, `os.unlink`, `os.rename`,
      `os.replace`, `os.makedirs`, `os.mkdir`, `os.rmdir`, `os.stat`, `os.path.exists/isfile/isdir/getsize/getmtime/getctime`,
@@ -1471,58 +1480,58 @@ describes them as built by plan item ST-04 (PR #47).
      `rename`, `replace`) are flagged only when the receiver is inferred to be a `Path`. What it misses is
      left to the runtime check.
    An allowlist names the modules that legitimately touch *other* files, each with a one-line reason:
-   `src/config_manager.py` and `src/config/` (config files and `.env`), `src/paths.py`, `src/i18n.py`
-   (locales), `src/doctor.py` (environment probes), `src/throttle.py` (budget files), `src/challenge_solver.py`
-   (browser profile), `src/logger.py` and `src/diagnostics.py` (log files and the diagnostics bundle, PR #24),
-   `src/sinks/file.py` (the file sink's own output path), `src/web/app.py` and `src/web/missing_ui.py` (static
+   `sofascore_scraper/config_manager.py` and `sofascore_scraper/config/` (config files and `.env`), `sofascore_scraper/paths.py`, `sofascore_scraper/i18n.py`
+   (locales), `sofascore_scraper/doctor.py` (environment probes), `sofascore_scraper/throttle.py` (budget files), `sofascore_scraper/challenge_solver.py`
+   (browser profile), `sofascore_scraper/logger.py` and `sofascore_scraper/diagnostics.py` (log files and the diagnostics bundle, PR #24),
+   `sofascore_scraper/sinks/file.py` (the file sink's own output path), `sofascore_scraper/web/app.py` and `sofascore_scraper/web/missing_ui.py` (static
    files). The allowlist exempts a module from the file-system rule only; the import rule and the runtime
    check still apply to it. As built since ST-28 (#135; `FS_ALLOWLIST`, `tests/test_store_boundary.py:55-76`
-   at `b6caf2f`) it also names seven modules that sat in the baseline before: `src/config_files.py` (the
-   atomic writes and the lock of the configuration files), `src/private_files.py` (modes of `.env` and the
-   browser profile), `src/redact.py` (when `.env` changed), `src/version.py` (`pyproject.toml`; the Store
-   may import it), `src/web/security.py` (the UI's `index.html`, for the CSP decision),
-   `src/web/league_sports.py` (`league_sports.json`) and `src/web/openapi.py` (the committed OpenAPI
+   at `b6caf2f`) it also names seven modules that sat in the baseline before: `sofascore_scraper/config_files.py` (the
+   atomic writes and the lock of the configuration files), `sofascore_scraper/private_files.py` (modes of `.env` and the
+   browser profile), `sofascore_scraper/redact.py` (when `.env` changed), `sofascore_scraper/version.py` (`pyproject.toml`; the Store
+   may import it), `sofascore_scraper/web/security.py` (the UI's `index.html`, for the CSP decision),
+   `sofascore_scraper/web/league_sports.py` (`league_sports.json`) and `sofascore_scraper/web/openapi.py` (the committed OpenAPI
    document, a developer tool).
 2. **Runtime check** (`tests/conftest.py`, `sys.addaudithook`). CPython raises audit events for `open`,
    `os.listdir`, `os.scandir`, `os.remove`, `os.rename`, `os.mkdir`, `os.rmdir`, `shutil.rmtree`,
    `sqlite3.connect` and others. The hook looks at paths inside the test data directory, walks the call stack
-   to the nearest frame under `src/`, and records a violation when that frame is not in `src/store/`. Frames
+   to the nearest frame under `sofascore_scraper/`, and records a violation when that frame is not in `sofascore_scraper/store/`. Frames
    in `tests/` are ignored, so tests can still seed fixtures. This catches paths that are built dynamically,
    which the static check cannot see. As built:
    - The hook follows the current value of the `DATA_DIR` environment variable, not only the directory of
      `tests/conftest.py`, because most tests that exercise readers and routes point `DATA_DIR` at their own
      temporary directory. Tests that pass `data_dir=` as an argument are observed only when they register the
      directory with `conftest.STORE_BOUNDARY.add_data_dir(path)`.
-   - A record is named after the function the `src/` frame called directly (`shutil.rmtree`, `os.makedirs`,
+   - A record is named after the function the `sofascore_scraper/` frame called directly (`shutil.rmtree`, `os.makedirs`,
      `pandas`), not after the raw audit events: one `shutil.rmtree` raises different events on Linux, on
      Windows and across Python versions. System calls made inside a library generator that is being iterated
      (`os.walk`, whose frame is `os._walk` on Python 3.10 and 3.11) are attributed to the library's own call.
      Records keep the on-disk case of module paths.
    - The hook cannot be removed once installed. Later recorders are added to `conftest.BOUNDARY_RECORDERS`.
-   - A write that goes through the `src/fsutil.py` shim has its nearest `src/` frame in `src/store/files.py`
+   - A write that goes through the `src/fsutil.py` shim has its nearest `sofascore_scraper/` frame in `sofascore_scraper/store/files.py`
      and is therefore not a violation, although the caller built the path; the static check does not flag
      `from src.fsutil import ...` either. Those call sites become visible when the shim is removed (ST-28).
-     As built (ST-28, #135) the shim is gone; its writers moved to `src/config_files.py` (allowlisted, and
+     As built (ST-28, #135) the shim is gone; its writers moved to `sofascore_scraper/config_files.py` (allowlisted, and
      writing outside `DATA_DIR` only), so no hidden call site appeared. The shadow recorder of 3.5
-     (`ShadowEdits`) still skips frames of `src/store/files.py` and looks at their caller
+     (`ShadowEdits`) still skips frames of `sofascore_scraper/store/files.py` and looks at their caller
      (`tests/conftest.py:361` at `b6caf2f`), which mattered only for the shim; it is harmless now and keeps
      tests that call `files.remove_tree` themselves counted as test writes.
    - On Windows with Python 3.12 or later `shutil.copy2` copies through `_winapi.CopyFile2`, which raises only
      the audit event `_winapi.CopyFile2` and no `shutil.copyfile` or `open` event. #86 found that such a copy
      into a data directory was invisible to this check and to the shadow check; since #88 both event sets of
      `tests/conftest.py` list it (`tests/conftest.py:167`, `:368` at `9b03c64`).
-3. **Layering check** (`tests/test_layers.py`): `src/store/` imports only what 2.1 allows (`src.sports`,
-   `src.status`, `src.slices`, `src.exceptions`, `src.version`). It is checked as that allow-list, which is
+3. **Layering check** (`tests/test_layers.py`): `sofascore_scraper/store/` imports only what 2.1 allows (`sofascore_scraper.sports`,
+   `sofascore_scraper.status`, `sofascore_scraper.slices`, `sofascore_scraper.exceptions`, `sofascore_scraper.version`). It is checked as that allow-list, which is
    stricter than a list of forbidden packages, and it includes what the allowed modules pull in: every Store
    module is loaded in a fresh interpreter, and the test fails if another `src` module or an HTTP client, the
    browser bridge or the web framework is loaded with it. `socket` is allowed, so that a lease can record the
    host name.
-4. **API-surface snapshot** (`tests/test_store_api_surface.py`): compares `src.store.__all__` and every public
+4. **API-surface snapshot** (`tests/test_store_api_surface.py`): compares `sofascore_scraper.store.__all__` and every public
    signature with checked-in text files under `tests/fixtures/store_api/`, one per public name (classes,
    functions, constants and type aliases), so an API change always shows up in review and two PRs that extend
    different classes do not edit the same file. The text is rendered from the source with `ast`, so it is the
    same on Python 3.10 to 3.14. A Store class that appears in a public signature without being exported gets a
-   file too. Every public name bound in `src/store/__init__.py` must be in `__all__`.
+   file too. Every public name bound in `sofascore_scraper/store/__init__.py` must be in `__all__`.
 
 Until ST-28 (#135; "The strict checks as built" below), both the static and the runtime check used a
 **ratchet**: `tests/store_boundary/baseline/<module>.txt`, one
@@ -1549,39 +1558,39 @@ _dir_state:tempfile.mkstemp
   for code that moves between modules or for a renamed function, and the added lines show in the diff.
   `STORE_API_UPDATE=1 python -m pytest tests/test_store_api_surface.py` regenerates the API snapshot.
 - The debt at `0aa73b4`: 23 files, 166 static entries covering 291 calls in 21 modules, 3 runtime entries
-  (`src/match_data_fetcher.py` 105 calls, `src/ui/settings_ui.py` 67, `src/web/routes/matches.py` 26,
-  `src/web/routes/data.py` 24, `src/services/stats.py` 17, `src/season_fetcher.py` 11, the rest 6 or fewer).
+  (`sofascore_scraper/match_data_fetcher.py` 105 calls, `src/ui/settings_ui.py` 67, `src/web/routes/matches.py` 26,
+  `src/web/routes/data.py` 24, `sofascore_scraper/services/stats.py` 17, `sofascore_scraper/season_fetcher.py` 11, the rest 6 or fewer).
   At `f286723`: 22 files, 163 static entries covering 288 calls in 20 modules, 3 runtime entries. The file of
-  `src/watcher.py` is gone (ST-18 moved its four accesses into the Store), the file of `src/web/jobs.py` is
-  gone (FX-1), and `src/services/context.py` has a new one with the two directory calls that moved there
+  `sofascore_scraper/watcher.py` is gone (ST-18 moved its four accesses into the Store), the file of `sofascore_scraper/web/jobs.py` is
+  gone (FX-1), and `sofascore_scraper/services/context.py` has a new one with the two directory calls that moved there
   from the terminal UI's constructor (P08).
 
 Open points that ST-28 has to settle before the baseline directory can be deleted:
 
 - Three modules touch files outside `DATA_DIR` and are not on the allowlist, so they sit in the baseline and
-  look like debt: `src/version.py` (`read_version` reads `pyproject.toml`; the Store is allowed to import this
-  module), `src/redact.py` (`_env_file_values` stats the `.env` file) and `src/web/league_sports.py` (`load`
-  reads `league_sports.json` next to the league list). The two modules PR #43 added, `src/private_files.py`
-  (modes of `.env` and the browser profile) and `src/web/security.py`, are in the same position.
-- The runtime check has no allowlist, but two allowlisted modules do touch `DATA_DIR`: `src/doctor.py`
-  (`_dir_state` creates and removes a probe file in the data directory) and `src/diagnostics.py` (`_jobs`
+  look like debt: `sofascore_scraper/version.py` (`read_version` reads `pyproject.toml`; the Store is allowed to import this
+  module), `sofascore_scraper/redact.py` (`_env_file_values` stats the `.env` file) and `sofascore_scraper/web/league_sports.py` (`load`
+  reads `league_sports.json` next to the league list). The two modules PR #43 added, `sofascore_scraper/private_files.py`
+  (modes of `.env` and the browser profile) and `sofascore_scraper/web/security.py`, are in the same position.
+- The runtime check has no allowlist, but two allowlisted modules do touch `DATA_DIR`: `sofascore_scraper/doctor.py`
+  (`_dir_state` creates and removes a probe file in the data directory) and `sofascore_scraper/diagnostics.py` (`_jobs`
   opens the job database read-only). Each needs a Store method or a named exception.
 
 **The strict checks as built (ST-28, #135; `tests/test_store_boundary.py` at `b6caf2f`).** The two lists
 above and the ratchet are history. `tests/store_boundary/baseline/` is deleted and a test asserts that it
 stays deleted (`test_the_ratchet_baseline_is_gone`, `:584`); there are no `STORE_BOUNDARY_UPDATE` modes and
-no counts. Both open points are settled: the five modules are on the allowlist (with `src/config_files.py`
-and `src/web/openapi.py`, item 1 above), and every remaining access to `DATA_DIR` from outside the Store is
+no counts. Both open points are settled: the five modules are on the allowlist (with `sofascore_scraper/config_files.py`
+and `sofascore_scraper/web/openapi.py`, item 1 above), and every remaining access to `DATA_DIR` from outside the Store is
 a **named exception**: one function, its reason and the item that removes it (`NAMED_EXCEPTIONS`,
 `:80-95`). There are five:
 
 | Function | Why it touches `DATA_DIR` | Removed by |
 |---|---|---|
-| `src/doctor.py::_dir_state` | the writability probe opens and removes a file; the doctor runs without opening the Store | whoever adds a Store method for the probe |
-| `src/diagnostics.py::_jobs` | the diagnostics bundle opens `state.db` (or the 2.x `jobs.db`) read-only, without a lease or a reconcile | whoever adds a Store method for that read |
-| `src/services/context.py::_ensure_directory` | the context creates the data directory and the 2.x folders it still needs (`DATA_SUBDIRECTORIES`, `match_details` and `datasets` since FX-15) | P30, with the 2.x directory creation |
-| `src/utils.py::ensure_directory` | the 2.x fetchers and the CSV export create their directories | P30, with the fetcher faces |
-| `src/services/export.py::_write_file` | the export's output file at the path the user chose, which may lie inside the data directory (like the file sink) | — (kept) |
+| `sofascore_scraper/doctor.py::_dir_state` | the writability probe opens and removes a file; the doctor runs without opening the Store | whoever adds a Store method for the probe |
+| `sofascore_scraper/diagnostics.py::_jobs` | the diagnostics bundle opens `state.db` (or the 2.x `jobs.db`) read-only, without a lease or a reconcile | whoever adds a Store method for that read |
+| `sofascore_scraper/services/context.py::_ensure_directory` | the context creates the data directory and the 2.x folders it still needs (`DATA_SUBDIRECTORIES`, `match_details` and `datasets` since FX-15) | P30, with the 2.x directory creation |
+| `sofascore_scraper/utils.py::ensure_directory` | the 2.x fetchers and the CSV export create their directories | P30, with the fetcher faces |
+| `sofascore_scraper/services/export.py::_write_file` | the export's output file at the path the user chose, which may lie inside the data directory (like the file sink) | — (kept) |
 
 An exception covers every file call of that function, static and at run time, never an import. A new access
 outside the Store now fails at once: a new file outside `DATA_DIR` needs an allowlist entry with a reason,
@@ -1629,7 +1638,7 @@ What is authoritative where:
 
 ### 3.2 Connection settings
 
-Applied on every new connection by the shared module `src/store/sqlite.py` (FX-3, PR #55), which
+Applied on every new connection by the shared module `sofascore_scraper/store/sqlite.py` (FX-3, PR #55), which
 `catalog.py` and `state.py` both use:
 
 ```sql
@@ -1673,7 +1682,7 @@ PRAGMA synchronous = FULL;        -- state.db
   because the weak registry still shows the connection while the finalizer runs. On Python 3.10
   `sqlite3.Connection.close` then runs `sqlite3_close` twice and the process aborts; since 3.11 the second
   call is harmless. `Connection.close` takes a re-entrant module lock, `_close_lock`
-  (`src/store/sqlite.py:61` and `:132-134` at `9b03c64`), so the second close waits and finds the
+  (`sofascore_scraper/store/sqlite.py:61` and `:132-134` at `9b03c64`), so the second close waits and finds the
   connection closed; it is re-entrant because the garbage collector can run another connection's finalizer
   inside a close. The readers that RD-1, RD-4 and RD-5 moved onto the Store read from short-lived route
   threads, which made the case common: the first CI run of #79 died on it. With a fixed stress script on
@@ -1684,12 +1693,12 @@ PRAGMA synchronous = FULL;        -- state.db
 - What the lock does not cover. `close_all` requires that no other thread is running a statement on the
   connection it closes; `Store.close()` from one thread while another thread is inside a read still breaks
   that and can crash Python 3.10. Nothing in the web process calls `Store.close()`; `main.py` does at the end
-  of a CLI run. `Store.close()` also closes `state.db` (`src/store/api.py:655-666` at `9b03c64`) without
+  of a CLI run. `Store.close()` also closes `state.db` (`sofascore_scraper/store/api.py:655-666` at `9b03c64`) without
   waiting for a job of `store.jobs` that is finishing: since #93 the job manager does its last store accesses
   inside a finishing block of the job store, and `JobStore.close` and `rebind` wait for that block (at most
   30 s; 6.1), but `Store.close` does not. Closing a store while a job is mid-run is not covered either. Item
   (2) of the fix item FX-12 adds the wait through a small public `JobStore` helper. As built (FX-12, #100;
-  `src/store/api.py:675-697` at `b3cb819`) `Store.close()` first calls the classmethod
+  `sofascore_scraper/store/api.py:675-697` at `b3cb819`) `Store.close()` first calls the classmethod
   `JobStore.wait_for_finishing_job(store)`: it looks up the job store of that Store without creating one,
   waits up to 30 s while a job of it is inside its finishing block, does not wait when called from the
   finishing thread itself, and on a timeout logs one warning and returns False, after which the Store is
@@ -1697,7 +1706,7 @@ PRAGMA synchronous = FULL;        -- state.db
   docstring says that the caller must make sure they are done. Without the wait, a stress loop that closed
   the Store at the moment a job's row was finished logged a `StoreError` for the closed `state.db` in every
   one of its 15 rounds.
-- `src/store/sqlite.py` had no owner in the plan's chain table when RD-5 changed it; the lock is pinned by
+- `sofascore_scraper/store/sqlite.py` had no owner in the plan's chain table when RD-5 changed it; the lock is pinned by
   `tests/test_store_sqlite.py`.
 - Error mapping differs between the two files, as before FX-3. `catalog.py` converts every sqlite3 error
   inside a read or write helper to `StoreError` (table in 2.3). `state.py` converts only the lock timeout
@@ -1705,9 +1714,9 @@ PRAGMA synchronous = FULL;        -- state.db
   as `sqlite3.Error`, because the job store's callers catch them as such. One gap of the facade follows from
   that (FX-11, #85): `open_store` wraps only the construction of `StateDb` into a `StoreError`, so when
   `state.db` can be read but its WAL index cannot be written (leftover read-only `-shm` files, 4.4)
-  `Store._sync_schema` (`src/store/api.py:308-329` at `9b03c64`) lets a bare `sqlite3.OperationalError` out,
+  `Store._sync_schema` (`sofascore_scraper/store/api.py:308-329` at `9b03c64`) lets a bare `sqlite3.OperationalError` out,
   which a caller that catches `StoreError` does not catch. Item (3) of FX-12 wraps it. As built (FX-12,
-  #100; `src/store/api.py:315-327` at `b3cb819`) `_sync_schema` turns a `sqlite3.Error` into a `StoreError`
+  #100; `sofascore_scraper/store/api.py:315-327` at `b3cb819`) `_sync_schema` turns a `sqlite3.Error` into a `StoreError`
   with `sqlite.to_store_error(e, <state.db path>)`; a "readonly database" message also gets `errno=EROFS`,
   so `fatal` is true. The body moved unchanged into `_sync_schema_locked`.
 - Only `SQLITE_BUSY` counts as busy (on Python 3.10, which has no error codes, the text `database is
@@ -1823,7 +1832,7 @@ CREATE TABLE events (
   home_score_current INTEGER,                      -- homeScore.current as given (legacy list and CSV shapes)
   away_score_current INTEGER,
   winner_code        INTEGER,
-  scores_json        TEXT,                         -- normalised score sheet (src/status.extract_scores)
+  scores_json        TEXT,                         -- normalised score sheet (sofascore_scraper/status.extract_scores)
   slug               TEXT,
   custom_id          TEXT,
   -- quality
@@ -1997,7 +2006,7 @@ CREATE TABLE follows (
 CREATE UNIQUE INDEX follows_tournament_name ON follows(name) WHERE kind = 'tournament';
 CREATE INDEX follows_position ON follows(position, id);
 
-CREATE TABLE jobs (                                 -- the columns of today's .meta/jobs.db (src/web/jobs.py:105-124)
+CREATE TABLE jobs (                                 -- the columns of today's .meta/jobs.db (sofascore_scraper/web/jobs.py:105-124)
   id                        TEXT PRIMARY KEY,
   status                    TEXT    NOT NULL,
   progress                  INTEGER NOT NULL DEFAULT 0,
@@ -2084,7 +2093,7 @@ CREATE TABLE migration_runs (
 );
 ```
 
-Migration `0002_job_manager` as shipped (P11, #69; `src/store/migrations/state/0002_job_manager.sql` at
+Migration `0002_job_manager` as shipped (P11, #69; `sofascore_scraper/store/migrations/state/0002_job_manager.sql` at
 `e0bae0c`; the job model is in `02-services.md` 2.8). The statements are the file's; its comments are
 Turkish and are given here in English:
 
@@ -2115,7 +2124,7 @@ in 7.3. The next state migration is 0003.
 `migration_runs` as used (ST-23, #110): every real run of `migrate` leaves one row with its counts and a
 JSON summary in `report_json` (`report_summary`); a dry run writes nothing, `state.db` included, so the
 `dry_run` column is always 0. No item added a state migration in batches eleven to nineteen; the next one
-is still 0003. Since FX-13 (#152) `Migrator.last_run()` (`src/store/migrate.py:390` at `b6caf2f`) gives the
+is still 0003. Since FX-13 (#152) `Migrator.last_run()` (`sofascore_scraper/store/migrate.py:390` at `b6caf2f`) gives the
 newest real run without `report_json`; `ssc status` and `/api/v1/status` show it. No item of this revision
 added a state migration either.
 
@@ -2126,7 +2135,7 @@ Notes on the event row:
   the payload's own sport wins. The function returns exactly `derive.EVENT_DERIVED_COLUMNS`; the other columns
   (`status_regressed`, `stale`, `listed_in`, `layout`, `path`, `legacy_path`, `sig`, `first_seen_at`,
   `updated_at`) are the indexer's. A payload without an integer id raises `PayloadCorrupt`. This is the single
-  place where a score is read out of a payload. `status_class` comes from `src.status.classify_status` and
+  place where a score is read out of a payload. `status_class` comes from `sofascore_scraper.status.classify_status` and
   `scores_json` from `extract_scores`. `home_score`/`away_score` are what the column comment says,
   `homeScore.display`, else `.current`: no field of the score sheet is that value for all three sports.
   `scores_json` holds `{"family": ..., <sport-specific fields>}` with sorted keys; the five common fields of
@@ -2136,8 +2145,8 @@ Notes on the event row:
   non-string) or returns NaN (`'nan'`).
 - `home_score_current`, `away_score_current`, `stage_name` and `listed_in` exist only so that the legacy list
   routes and the legacy CSV can be reproduced from the catalog: today's summary writes `homeScore.current`
-  (`src/match_fetcher.py:570-571`; in football that value includes penalties, see the docstring at
-  `src/status.py:140`), `tournament.name` (`:574`) and, for seasons fetched as event pages, the page name as
+  (`sofascore_scraper/match_fetcher.py:570-571`; in football that value includes penalties, see the docstring at
+  `sofascore_scraper/status.py:140`), `tournament.name` (`:574`) and, for seasons fetched as event pages, the page name as
   the round (`:372`). They are not part of the public contract and can be dropped (a catalog rebuild) when the
   legacy `/api` routes are removed.
 - When an event has an `/event/{id}` payload, its row always equals `derive(event payload)`. A listing never
@@ -2205,10 +2214,10 @@ the list above does not say:
 - **Only what has a writer is indexed.** Steps 1 and 3 (v3 entity directories) have no writer yet and are
   not scanned; they come with ST-22. ST-20 (#82) already wires them: the indexer looks the two entry points up
   by name in `entities.py` (`V3_ENTITY_SCAN = "apply_v3_entities"`, `V3_ENTITY_INDEX = "index_v3_entity"`,
-  `src/store/indexer.py:197-198` and `:1203-1215` at `9b03c64`), because the functions do not exist until
+  `sofascore_scraper/store/indexer.py:197-198` and `:1203-1215` at `9b03c64`), because the functions do not exist until
   ST-22; a missing function means that source does not exist yet. The `changes/<yyyy>-<mm>.jsonl` segments of
   step 6 are indexed since ST-20 (8.5). As built since ST-22 (#98) both functions exist in
-  `src/store/entities.py`, and the order differs from steps 1 to 3: `apply_v3_entities` indexes the slices
+  `sofascore_scraper/store/entities.py`, and the order differs from steps 1 to 3: `apply_v3_entities` indexes the slices
   of v3 entity directories that are not listings, and their history files; the season lists and schedule
   pages of both layouts are applied together, in `apply_season_lists` and in `read_season` /
   `apply_season`, where the precedence of a v3 copy over a legacy one is decided (`EntityStore.put` as
@@ -2217,7 +2226,7 @@ the list above does not say:
   row. `index_v3_entity` re-indexes one tournament's season list or one season's pages, so pending markers of
   every kind are now recovered (3.5).
 - **History rows are not a step of their own** (ST-26, #92). They come with each v3 event record
-  (`read_v3_event`, `src/store/indexer.py:470-500`), so the re-index of one event and a reconcile keep them
+  (`read_v3_event`, `sofascore_scraper/store/indexer.py:470-500`), so the re-index of one event and a reconcile keep them
   right as well as a rebuild. A history file that cannot be read does not make the event invalid; it has no
   rows and is not reported. Indexing a member means decompressing and parsing it: about 0.15 to 0.2 s more
   per rebuild for 3,000 events with 5,000 snapshots.
@@ -2262,7 +2271,7 @@ last step of a build, so an interrupted build never looks usable. The final `ANA
 3.7).
 
 The build on open, as built (ST-11, #75; `Store._sync_catalog` and `Store._build_catalog`,
-`src/store/api.py:298-383` at `e0bae0c`):
+`sofascore_scraper/store/api.py:298-383` at `e0bae0c`):
 
 - **When.** `open_store` builds the catalog when it is not usable: the file is missing, its schema or
   derive version is another one, it cannot be read, `quick_check` reports damage after an unclean writer
@@ -2280,7 +2289,7 @@ The build on open, as built (ST-11, #75; `Store._sync_catalog` and `Store._build
 - **A catalog that cannot be synced never fails the open**, and never fails a write. A storage error
   (`StoreError`, `sqlite3.Error`, `OSError`) is one warning per Store, which says that the catalog could
   not be brought up to date and is retried later; further ones are DEBUG. The hooks leave such a catalog
-  alone and try the sync again after 30 s (`CATALOG_RETRY_SECONDS`, `src/store/api.py:95`), and so does a
+  alone and try the sync again after 30 s (`CATALOG_RETRY_SECONDS`, `sofascore_scraper/store/api.py:95`), and so does a
   later `open_store` call for the open Store. Any other exception of the indexer is logged with its
   traceback and that Store does not use its catalog again; in the check mode of the test suite it is raised.
   The "never fails a write" half described the shadow mode, where the 2.x writers wrote the files and a
@@ -2328,7 +2337,7 @@ transaction.
   re-listed when its tournament has become known. `score_changes.jsonl` is indexed again from the start when
   it changed (line numbers, and so `seq`, stay the same). As built at `b3cb819` two things changed. Since
   FX-12 (#100) the event pass first closes the change intents of interrupted writes (`recover_changes`,
-  `src/store/indexer.py:1541`; 6.2), before the pending markers. Since ST-22 (#98) pending markers of every
+  `sofascore_scraper/store/indexer.py:1541`; 6.2), before the pending markers. Since ST-22 (#98) pending markers of every
   kind are re-indexed (`index_v3_entity` for a tournament or a season), so `pending_skipped` stays 0 where a
   season marker was skipped before. v3 entity directories have no signature in `legacy_roots`: a change
   behind the catalog in `v3/tournaments` is found through a pending marker or a deep reconcile, not by a
@@ -2372,7 +2381,7 @@ transaction.
   point: `sync_listings(kinds)` (ST-11, below) is per kind of source, and the listing scan walks the whole
   `matches/` tree (0.08 s for 3,800 pages).
 
-On open, as built (ST-11, #75; `src/store/api.py:291-346` at `e0bae0c`). The first version of this section
+On open, as built (ST-11, #75; `sofascore_scraper/store/api.py:291-346` at `e0bae0c`). The first version of this section
 said that the open calls `ensure()` and then `reconcile()` under the `maintenance` lease.
 
 - **Every open reconciles.** `open_store` reconciles a usable catalog on every open, and builds one that is
@@ -2386,7 +2395,7 @@ said that the open calls `ensure()` and then `reconcile()` under the `maintenanc
   `writer` first, and of any process that opens the directory while another one holds a lease there. Only
   the rebuild takes `maintenance` (3.4).
 - **The unclean rule.** `v3=True` is passed when the marker `.meta/locks/unclean` exists and no process
-  holds `writer` (`Store._unclean_writer`, `src/store/api.py:291-296`). The open then runs
+  holds `writer` (`Store._unclean_writer`, `sofascore_scraper/store/api.py:291-296`). The open then runs
   `PRAGMA quick_check` first (2 ms on the owner's data); damage means a rebuild that recreates the file. The
   rule repeats on every open until a writer lease is taken and released cleanly, because only a clean
   release removes the marker (6.1).
@@ -2397,7 +2406,7 @@ said that the open calls `ensure()` and then `reconcile()` under the `maintenanc
   directories, and by extrapolation about 2.6 s for every open at 100,000. The plan recorded this as the
   open decision S17; it was settled on 2026-10-02 as chosen, and ST-19 (#90) bounds the pass (next bullet).
 - **The bound of decision S17, as built** (ST-19, #90; `Store._reconcile_on_open` and
-  `_open_reconciled_recently`, `src/store/api.py:407-459` at `9b03c64`). An open skips the pass over the
+  `_open_reconciled_recently`, `sofascore_scraper/store/api.py:407-459` at `9b03c64`). An open skips the pass over the
   legacy event directories when an open of the same directory, in this or another process, finished one
   less than `STORE_OPEN_RECONCILE_SECONDS` ago (default 60; `0` checks on every open; an invalid value is
   the default). The half for season lists, schedules and the change log (`sync_listings`) runs on every
@@ -2438,16 +2447,16 @@ said that the open calls `ensure()` and then `reconcile()` under the `maintenanc
   sandboxes are copies of a seeded directory, so the stamp `open_reconciled_at` names another folder and
   their first open always runs the full pass.
 
-The hooks of the legacy writers, as built (ST-11, #75; `src/store/api.py:773-867` at `e0bae0c`). While the
+The hooks of the legacy writers, as built (ST-11, #75; `sofascore_scraper/store/api.py:773-867` at `e0bae0c`). While the
 2.x writers still write the files, each write is followed by a hook that re-indexes from disk what was
 written, so the catalog is current after `open_store` and after every legacy write:
 
 | Hook | Called after | What it runs |
 |---|---|---|
-| `shadow_event(data_dir, event_id, directory)` | a match save with its markers (`src/match_data_fetcher.py:1244`), a marker reset (`:763`), a refresh (`:864`) | `index_event(id, paths=[directory])` |
-| `shadow_schedules(data_dir)` | the round and page fetch of a season (`src/match_fetcher.py:505`) and its summary files (`:603`) | `sync_listings(LISTING_SCHEDULES)` |
-| `shadow_season_lists(data_dir)` | a season-list save (`src/season_fetcher.py:386`) | `sync_listings(LISTING_SEASON_LISTS)` |
-| `shadow_changes(data_dir)` | an append to `score_changes.jsonl` (`src/match_data_fetcher.py:880`) | `sync_listings(LISTING_CHANGES)` |
+| `shadow_event(data_dir, event_id, directory)` | a match save with its markers (`sofascore_scraper/match_data_fetcher.py:1244`), a marker reset (`:763`), a refresh (`:864`) | `index_event(id, paths=[directory])` |
+| `shadow_schedules(data_dir)` | the round and page fetch of a season (`sofascore_scraper/match_fetcher.py:505`) and its summary files (`:603`) | `sync_listings(LISTING_SCHEDULES)` |
+| `shadow_season_lists(data_dir)` | a season-list save (`sofascore_scraper/season_fetcher.py:386`) | `sync_listings(LISTING_SEASON_LISTS)` |
+| `shadow_changes(data_dir)` | an append to `score_changes.jsonl` (`sofascore_scraper/match_data_fetcher.py:880`) | `sync_listings(LISTING_CHANGES)` |
 | `shadow_cleared(data_dir)` | the web API's clear (`src/web/routes/data.py:191` at `e0bae0c`); since ST-19 only the terminal menu's clear, restore and data-directory move (#86) | `rebuild(mode="in_place")`, without a lease |
 
 As built at `b3cb819` none of the five hooks has a caller in the application. ST-21 (#104) removed the
@@ -2463,7 +2472,7 @@ left them because tests called them; FX-15 (#155) removed all five with their te
 (`tests/test_shadow_cleared_hook.py` is gone), so the table above and the list below are history at
 `b6caf2f`. Tests that build records in the old layout index the catalog themselves (`tests/catalog_index.py`;
 `tests/schedule_runner.py` replaces the menu path), and the shared body `_shadow` survives only as the
-wrapper of `Store.clear`'s in-place rebuild (`src/store/api.py:653`). The list below describes the hooks as
+wrapper of `Store.clear`'s in-place rebuild (`sofascore_scraper/store/api.py:653`). The list below describes the hooks as
 ST-11 built them:
 
 - **Eight call sites**, not "one line per site": five of them sit in a `finally` (the three of
@@ -2477,7 +2486,7 @@ ST-11 built them:
   `catalog.db`, for example during that process's first build.
 - **`sync_listings(kinds)`** is the listing half of a reconcile (the season lists, the schedule directories
   and the change log) without the pass over the event directories; only roots whose signature in
-  `legacy_roots` changed are indexed again (`src/store/indexer.py:1387-1410`). It is per kind of source
+  `legacy_roots` changed are indexed again (`sofascore_scraper/store/indexer.py:1387-1410`). It is per kind of source
   (`LISTING_SCHEDULES`, `LISTING_SEASON_LISTS`, `LISTING_CHANGES`), not per season: a schedule hook lists the
   whole `matches/` tree without reading a file (1.6 ms on the owner's data) and re-indexes the seasons whose
   signature changed. `index_event` also re-lists a season whose summary rows can take a sport from the
@@ -2487,7 +2496,7 @@ ST-11 built them:
   ST-19 (#90) the web clear no longer calls it: the route calls `Store.clear`, which deletes inside the
   Store and rebuilds the catalog in place under its own `maintenance` lease (9.3), so it needs no outside
   hook. `shadow_cleared` now follows only the terminal menu's clear, restore and data-directory move
-  (`src/store/api.py:1041-1049` at `9b03c64`). The menu takes no lease, so these rebuilds run without one,
+  (`sofascore_scraper/store/api.py:1041-1049` at `9b03c64`). The menu takes no lease, so these rebuilds run without one,
   as the menu's downloads already write without one. On a directory that was never opened in the process
   (the usual case of a move) the hook builds the catalog on open and then rebuilds it, so the tree is read
   twice. Its warning still says "after a clear", which `tests/test_settings_ui_catalog.py` pins.
@@ -2529,7 +2538,7 @@ ST-11 built them:
   reader that is no planner (the match detail, the lists, "missing details") still reopens the Store.
 
 The comparison rule of the shadow check, as built (ST-11, #75; `CatalogAdmin.diff_from_rebuild`,
-`src/store/indexer.py:1414-1442`, and the constants at `:167-169`, at `e0bae0c`). `diff_from_rebuild()`
+`sofascore_scraper/store/indexer.py:1414-1442`, and the constants at `:167-169`, at `e0bae0c`). `diff_from_rebuild()`
 builds a catalog of the same tree in a temporary file and returns the differences:
 
 - The comparison is by rows, not by `ReconcileReport.changed`: an event whose newest copy cannot be read is
@@ -2551,7 +2560,7 @@ product call is not compared. A full run makes 182 comparisons in 17 test files.
 run inside the subprocesses of the CLI goldens, whose environment is an allow-list; checked by hand, all
 39 stores those runs leave equal a rebuild once the harness's own in-place edits are reconciled. As built
 since FX-15 (#155), with no hooks left, the check notes two things: a product write under a legacy root
-from outside the Store (`shadow_written`, `src/store/api.py:902` at `b6caf2f`; no product code does that
+from outside the Store (`shadow_written`, `sofascore_scraper/store/api.py:902` at `b6caf2f`; no product code does that
 any more, so such a write is reported at the end of the test unless the catalog was synced after it, even
 in a directory whose Store was never opened), and the data directories `Store.clear` touched; the report
 still says "written without a shadow hook afterwards" (`:965`).
@@ -2589,7 +2598,7 @@ Invariants:
 checks all of them by reading every payload. `repair=True` re-indexes mismatching entities from the files,
 removes leftover temporary files, and marks unreadable payloads as `error/corrupt`. It never deletes a payload.
 
-As built (ST-07 #49, `src/store/verify.py` at `f286723`):
+As built (ST-07 #49, `sofascore_scraper/store/verify.py` at `f286723`):
 
 - The quick form checks `quick_check` on both files, I1, I3, I5 and I6; the deep form adds I2, I4 and I9.
   `VerifyReport.checked` names what was checked. I7 and I8 were not checked then: the change-log index and
@@ -2664,7 +2673,7 @@ reconciliation with the changed index (200,000 synthetic rows).
 | Events that should have started | `WHERE status_class IN ('not_started','live','unknown') AND start_ts <= ?` | `events_open` | — |
 | Stream read | `stream_events WHERE stream=? AND seq>? ORDER BY seq LIMIT 500` | `stream_events_stream` | — |
 
-The "what is missing" query, as `EventStore.missing` builds it (ST-30, `src/store/events.py:818-827` at
+The "what is missing" query, as `EventStore.missing` builds it (ST-30, `sofascore_scraper/store/events.py:818-827` at
 `e0bae0c`; the `VALUES` list comes from the caller's `required` mapping, with the position of each key, so
 that the keys come back in the caller's order):
 
@@ -2734,7 +2743,7 @@ measurement add an estimated 15–20 MB). The real data gives 1.1 MB for 1,051 e
 
 - Bytes stored: `json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")`. Key order is
   the order of the response. This is the parsed response serialised again, as today
-  (`src/fsutil.py:33-36` at `3ae2599`; `src/store/codec.py` since ST-03), not the bytes on the wire:
+  (`src/fsutil.py:33-36` at `3ae2599`; `sofascore_scraper/store/codec.py` since ST-03), not the bytes on the wire:
   escapes and number spelling may differ, values do not.
   "Raw" everywhere in the platform (raw export, the `/raw` API routes) means these bytes.
 - Compression: `gzip.compress(data, 6, mtime=0)`. `mtime=0` makes the output deterministic on one machine:
@@ -2793,7 +2802,7 @@ directories). All names are ASCII digits and fixed words, so they are valid on W
 As built at `b3cb819`: the detail writers write `v3/events` since ST-21 (#104), the schedule and
 season-list writers `v3/tournaments` since ST-22 (#98); teams, players and sports have no writer yet.
 `.meta/pending_changes/` is new with FX-12 (#100; the constant `CHANGE_INTENT_DIR` is in
-`src/store/events.py:648`, not in `layout.py`). It is transient: a catalog rebuild does not read it, only a
+`sofascore_scraper/store/events.py:648`, not in `layout.py`). It is transient: a catalog rebuild does not read it, only a
 reconcile and the next write of the event do (6.2), and a backup leaves it out (9.1). `_extra/` is new
 with ST-23 (#110; `layout.EXTRA_DIR_NAME`).
 
@@ -2819,7 +2828,7 @@ with ST-23 (#110; `layout.EXTRA_DIR_NAME`).
 }
 ```
 
-`observation` keeps the two fields of today's `observation.json` (`src/status.py:260-266`) and the sticky flag.
+`observation` keeps the two fields of today's `observation.json` (`sofascore_scraper/status.py:260-266`) and the sticky flag.
 `migrated_from` is present only for an event that came from the legacy layout.
 
 As built (ST-03), the manifest goes beyond the example in three ways. A slice entry may carry `meta` (the
@@ -2922,7 +2931,7 @@ Conclusions:
   than its manifest entry; the intent marker (6.2) makes the next open re-index that entity, and the indexer
   trusts the file (hash and size from the file, `fetched_at` from its mtime). As built (ST-20, #82) a
   rebuild still takes the slice rows from the manifest (3.4); the file is trusted only where an intent
-  marker says a write was unfinished. Then `indexer.heal_v3_event` (`src/store/indexer.py:548` at
+  marker says a write was unfinished. Then `indexer.heal_v3_event` (`sofascore_scraper/store/indexer.py:548` at
   `9b03c64`), under the catalog's write lock, takes hash and sizes from each readable payload file, its
   `fetched_at` from the file's mtime, registers a payload file the manifest does not name, renews the
   observation when the event payload changed (its time is the file's mtime, so a repeated `put` of the same
@@ -2948,7 +2957,7 @@ Conclusions:
   before the retry existed. One sharing violation can therefore still stop a 2.x job, only more rarely, until
   the writers use the Store (ST-21, ST-22). Since ST-21 (#104) and ST-22 (#98) they do, so a download meets
   the Store's retry and its non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py` remain for the
-  callers that ST-28 removes. As built (ST-28, #135) they left the Store: `src/config_files.py` keeps the
+  callers that ST-28 removes. As built (ST-28, #135) they left the Store: `sofascore_scraper/config_files.py` keeps the
   same atomic write and retry for the configuration files outside `DATA_DIR` and raises the plain
   `PermissionError` when the retries are spent (2.1); nothing under `DATA_DIR` is written by them.
 - The retries do not help against a reader that holds the file open in a tight loop: the test
@@ -2968,7 +2977,7 @@ Conclusions:
   rewrite gives the file the umask mode again; the old file's mode is not kept. The 2.x helpers
   (`atomic_write_*`) keep 0600, as `tempfile.mkstemp` creates them, and files that hold secrets (`.env`, the
   browser profile) are not written through the Store. Since ST-28 (#135) those helpers are
-  `src/config_files.py`, still 0600, and `src/store/files.py` has no 0600 path left: every file the Store
+  `sofascore_scraper/config_files.py`, still 0600, and `sofascore_scraper/store/files.py` has no 0600 path left: every file the Store
   writes follows the umask.
 - `publish_dir` cannot normalise a directory that was staged by other means (`mkdtemp`, `mkstemp`, the
   `atomic_write_*` helpers, a copy): such a tree is published with the modes it has (pinned by a test). A
@@ -2976,10 +2985,10 @@ Conclusions:
   functions, so that the published tree follows the umask at every level. A file appended with a plain
   `open(path, 'ab')` follows the umask too; with `os.open`, pass `files.STORE_FILE_MODE`.
 - Lock files follow the umask too since FX-8 (#70; decision S15, settled as chosen on 2026-10-02). Until
-  then `src/store/lease.py` created them with mode 0644 whatever the umask, so under umask 002 a second
+  then `sofascore_scraper/store/lease.py` created them with mode 0644 whatever the umask, so under umask 002 a second
   account of the group could not take a lease on a lock file the first account had created. Both places
   that open a lock file, the acquire and the probe behind `holder()` and `holders()`, now pass
-  `files.STORE_FILE_MODE` (`src/store/lease.py:317` and `:413` at `e0bae0c`): a new lock file is 0644 under
+  `files.STORE_FILE_MODE` (`sofascore_scraper/store/lease.py:317` and `:413` at `e0bae0c`): a new lock file is 0644 under
   022, 0664 under 002, 0600 under 077 and 0640 under 027 (measured by the tests of FX-8). Existing lock
   files keep their mode, so a directory created before the change still refuses a second account until
   `chmod g+w DATA_DIR/.meta/locks/*.lock` is run once, or the lock files are deleted while nothing uses the
@@ -2992,21 +3001,21 @@ Conclusions:
   read-only for the second account the Store opened and the lease was granted, but the holder row was not
   written (a warning; `lease_holder` then gave a `LeaseInfo` without pid and host), and every write to
   `state.db` or `catalog.db` (a job row, the index) failed; since ST-11 every process that opens the
-  directory writes the catalog. As built, `sqlite.create_database_file(path)` (`src/store/sqlite.py:141` at
+  directory writes the catalog. As built, `sqlite.create_database_file(path)` (`sofascore_scraper/store/sqlite.py:141` at
   `9b03c64`) creates a missing database file empty, with `files.STORE_FILE_MODE` and `O_EXCL`, before SQLite
   opens it; SQLite keeps the mode of an existing file and gives `-wal`, `-shm` and `-journal` the mode of
   the database file. A new `state.db` and `catalog.db` are therefore 0664 under umask 002, 0600 under 077,
   0640 under 027, and 0644 under 022 as before. Three places call it: `sqlite.connect()` for `catalog.db`,
   the identity probe of `StateDb._check_identity`, a bare `sqlite3.connect` that runs before `connect()` and
-  creates a new `state.db` (`src/store/state.py:228-229`), and the copy `state.db.bak-v<N>` before a
-  migration (`:275-276`). `src/store/sqlite.py` imports `src.store.files` inside the function, because two
+  creates a new `state.db` (`sofascore_scraper/store/state.py:228-229`), and the copy `state.db.bak-v<N>` before a
+  migration (`:275-276`). `sofascore_scraper/store/sqlite.py` imports `sofascore_scraper.store.files` inside the function, because two
   tests pin the modules that importing it loads. A new place that may create a SQLite file of the data
   directory calls `create_database_file` first; `tests/test_store_sqlite.py` lists the creating places.
 - Existing database files keep their mode, with two exceptions that were new files before FX-11 as well and
   follow the umask of the writing process, not the mode of the file they replace or copy: a recreated
   `catalog.db` (`catalog.db.build` put in place of the old file, or a rebuild after deletion) and the copy
   `state.db.bak-v<N>`. `Catalog.inspect` still checks `os.path.exists` and then opens with a bare
-  `sqlite3.connect` (`src/store/catalog.py:372` at `9b03c64`); if the file disappears between the two calls,
+  `sqlite3.connect` (`sofascore_scraper/store/catalog.py:372` at `9b03c64`); if the file disappears between the two calls,
   SQLite creates it with its own mode. That is not reachable in normal use.
 - Repair of a directory created before FX-11, next to FX-8's line for the lock files above: stop everything
   that uses the directory and run `chmod g+w DATA_DIR/.meta/state.db* DATA_DIR/.meta/catalog.db*` once, by the
@@ -3047,7 +3056,7 @@ file with the contract's tables; it is not a copy of `catalog.db`, whose schema 
 The legacy wide CSV (`all_matches_*.csv`) is not a Store function. It is the `legacy-wide-csv` profile of
 `ExportService` (`02-services.md` 2.7), which reads events through the Store.
 
-As built (ST-25, #108; `src/store/export.py` at `b3cb819`; signatures and report types in 2.3). Where it
+As built (ST-25, #108; `sofascore_scraper/store/export.py` at `b3cb819`; signatures and report types in 2.3). Where it
 differs from the text above:
 
 - **The work list.** One catalog read transaction (`Catalog.read()`) covers the whole export, which pages
@@ -3102,17 +3111,17 @@ differs from the text above:
 
 | Form | Pattern | Source of the rule |
 |---|---|---|
-| L1 | `match_details/<lid>_<name>/season_<name>/<eid>/` | `src/match_data_fetcher.py:1174-1192` |
-| L2 | `match_details/<name>/season_<name>/<eid>/` (league directory without id) | `scripts/migrate_match_details.py:47-73`, `src/services/stats.py:66-69` |
-| L3 | `match_details/<eid>/` (flat) | `src/match_data_fetcher.py:154-157`, `:170-171` |
+| L1 | `match_details/<lid>_<name>/season_<name>/<eid>/` | `sofascore_scraper/match_data_fetcher.py:1174-1192` |
+| L2 | `match_details/<name>/season_<name>/<eid>/` (league directory without id) | `scripts/migrate_match_details.py:47-73`, `sofascore_scraper/services/stats.py:66-69` |
+| L3 | `match_details/<eid>/` (flat) | `sofascore_scraper/match_data_fetcher.py:154-157`, `:170-171` |
 | L4 | `<event dir>/<eid>.json` holding all slices in one object | `:538-542` |
 | L5 | `match_details/_no_tournament/<sport>/<eid>/` | `:58`, `:1165-1172` |
-| schedule | `matches/<lid>_<name>/<sid>_<name>/round_*.json`, `events_*.json` | `src/match_fetcher.py:367`, `:452-454` |
+| schedule | `matches/<lid>_<name>/<sid>_<name>/round_*.json`, `events_*.json` | `sofascore_scraper/match_fetcher.py:367`, `:452-454` |
 | schedule, first version | `matches/<lid>_<name>/<sid>_<name>/round_<n>_full.json` | matches the `round_*.json` pattern but is the older file and has no `_complete` key; read as a round page with sub `round_<n>_full` and meta `{filtered: true}` |
-| summaries | `matches/<lid>_<name>/*_summary.{json,csv}`, `*_matches.csv` in the league directory; `round_<n>_matches.csv` of the first version (13 other columns) inside the season directory | `src/match_fetcher.py:514-595`, `src/match_data_fetcher.py:1871-1875`; both places are accepted by `_season_summary_files` (`:1790-1797` at `0aa73b4`) |
-| season lists | `seasons/<lid>_*_seasons.json`, `<lid>_seasons.json`, `<name>_seasons.json`, `league_seasons.csv` (header `Liga Adı,Lig ID,Sezon ID,Sezon Adı,Sezon Yılı`) | `src/season_fetcher.py:291`, `:441-445`, `src/web/routes/common.py:31-36` |
-| change log | `score_changes.jsonl` | `src/refresh.py:21` |
-| watcher | `watch_events.jsonl`, `watch_state_<sport>.json` | `src/watcher.py:45-46` |
+| summaries | `matches/<lid>_<name>/*_summary.{json,csv}`, `*_matches.csv` in the league directory; `round_<n>_matches.csv` of the first version (13 other columns) inside the season directory | `sofascore_scraper/match_fetcher.py:514-595`, `sofascore_scraper/match_data_fetcher.py:1871-1875`; both places are accepted by `_season_summary_files` (`:1790-1797` at `0aa73b4`) |
+| season lists | `seasons/<lid>_*_seasons.json`, `<lid>_seasons.json`, `<name>_seasons.json`, `league_seasons.csv` (header `Liga Adı,Lig ID,Sezon ID,Sezon Adı,Sezon Yılı`) | `sofascore_scraper/season_fetcher.py:291`, `:441-445`, `src/web/routes/common.py:31-36` |
+| change log | `score_changes.jsonl` | `sofascore_scraper/refresh.py:21` |
+| watcher | `watch_events.jsonl`, `watch_state_<sport>.json` | `sofascore_scraper/watcher.py:45-46` |
 
 An event directory is recognised by `basic.json` (or by L4's combined file with a `basic` key) whose `id`
 equals the directory name. `match_details/processed/` is skipped, as every walker does today. Two parts of
@@ -3143,7 +3152,7 @@ a schedule page for the reader either: `legacy.schedule_sub` validated the file'
 lower-case only, and returned None, and the indexer reported the file as `unknown_name`. SofaScore's slugs
 are lower-case and neither the fixtures nor the owner's data (38 distinct `round_*.json` names; 90 schedule
 pages, none with an upper-case name, when FX-5 measured) have such a file. As built since FX-5 (#77;
-`src/store/legacy.py:396-418` at `9b03c64`) `schedule_sub` folds the stem to lower case when it derives the
+`sofascore_scraper/store/legacy.py:396-418` at `9b03c64`) `schedule_sub` folds the stem to lower case when it derives the
 sub (`round_1_final`); the file keeps its name, and the `round_` and `events_` prefixes must be lower-case as
 the writer wrote them. This is the one exception to decision S13 (section 0): the fold applies only to
 reading 2.x names. Two files in one directory that differ only in case are one page: the newest wins and
@@ -3165,10 +3174,10 @@ the caller supplies, because the Store may not read the league configuration; wi
 reported as `unresolved_tournament`.
 Neither of the readers of `3ae2599` did exactly this: the web routes preferred the bare `<lid>_seasons.json`
 when it existed (`src/web/routes/common.py:31-33`) and `SeasonFetcher` preferred the file named after the
-configured league (`src/season_fetcher.py:436-451`). The difference only shows when a directory holds an
+configured league (`sofascore_scraper/season_fetcher.py:436-451`). The difference only shows when a directory holds an
 old-format file next to a newer one. Since RD-5 (#79) this is history: every reader (web route,
 `SeasonFetcher`, terminal menu) takes the newest list by mtime whatever its name, through
-`src/services/tournaments.py`, and RD-5 listed it as a behaviour change. The id-to-name map of the catalog
+`sofascore_scraper/services/tournaments.py`, and RD-5 listed it as a behaviour change. The id-to-name map of the catalog
 comes from the follows table (2.3, "Follows"), which holds one name per tournament and not the `leagues.txt`
 name when a config row exists; RD-5 compensates on the reader side only, and the catalog still reports such
 a name-only file as `unresolved_tournament`. In the first server session on a fresh data directory the
@@ -3181,7 +3190,7 @@ The indexer fills the same tables from legacy files as from v3 files:
 
 - `events` row from `basic.json`, with `layout = 'legacy'` and `path` set to the directory.
 - `observed_at` from `observation.json`; when that file is missing it is `NULL`, which the refresh rules treat
-  as "final unless legacy refresh is asked for", exactly as today (`src/refresh.py:72-74`).
+  as "final unless legacy refresh is asked for", exactly as today (`sofascore_scraper/refresh.py:72-74`).
 - Slice rows from the slice files and the two marker files (mapping in 2.3). `fetched_at` is the file mtime.
   A marker file that holds a value Python's `json` accepts but the counters cannot use (`Infinity`) is
   reported as malformed; today's `_load_unavailable` raises `OverflowError` on it.
@@ -3241,7 +3250,7 @@ Rejected alternative: keep writing such events in place in the old format. It wo
 pretty-JSON format and the three marker files alive for as long as any legacy data exists.
 
 Promotion as built (ST-20, #82; `events.promote_legacy` and `events.manifest_from_legacy`,
-`src/store/events.py:781-872` at `9b03c64`). It covers steps 1 to 4 of 5.4 for one event, staged under the
+`sofascore_scraper/store/events.py:781-872` at `9b03c64`). It covers steps 1 to 4 of 5.4 for one event, staged under the
 label of 9.3, and leaves the legacy tree byte- and mtime-identical (checked in all 51 interrupted states of
 the crash tests). Where it differs from 5.4:
 
@@ -3334,7 +3343,7 @@ directories, season-list files and the change log. There is no separate journal:
 - `score_changes.jsonl` is copied to `changes/0000-legacy.jsonl` (and removed only with `--delete-legacy`).
   Line numbers, and therefore `seq` values, do not change. As built (ST-20) the indexer takes only
   `<yyyy>-<mm>.jsonl` as a segment and reports any other file in `changes/`, `0000-legacy.jsonl` included,
-  as `unknown_name`; ST-23 teaches `src/store/changes.py` that file, and it has no other owner.
+  as `unknown_name`; ST-23 teaches `sofascore_scraper/store/changes.py` that file, and it has no other owner.
 - Summary files and `match_details/processed/*` are derived. They are listed in the dry run as "derived, not
   migrated" and are deleted only with `--purge-derived`. A legacy season that has summary CSVs but no round or
   page JSON cannot be converted; it stays in place, stays readable, and is reported.
@@ -3345,7 +3354,7 @@ directories, season-list files and the change log. There is no separate journal:
   copy of the table, the events file with LF line endings on every platform. As built since P23 (#91) the
   state file is no longer written: `--watch` and `ssc watch` keep the state only in the table, under the
   sport as watcher name, and each imports an existing file once. `--watch` still writes its stdout lines and
-  `watch_events.jsonl` in the 2.x format for one more release; P30 removes `src/watcher.py` and
+  `watch_events.jsonl` in the 2.x format for one more release; P30 removes `sofascore_scraper/watcher.py` and
   `append_legacy_events`.
 - `_history/` of a v3 event travels with the directory when it is staged or rebuilt; legacy events have no
   history, and `verify.directory_files` skips `_history/` (ST-26).
@@ -3359,7 +3368,7 @@ unconvertible seasons. The size estimate compresses a sample of 200 events in me
 **Resumable.** `--limit N` and `should_stop` end the run between two events. Running it again continues,
 because the work list is recomputed from the catalog. A finished event is never converted twice.
 
-**As built** (ST-23, #110; `src/store/migrate.py`, `src/cli/commands/migrate.py` at `b3cb819`). `migrate`
+**As built** (ST-23, #110; `sofascore_scraper/store/migrate.py`, `sofascore_scraper/cli/commands/migrate.py` at `b3cb819`). `migrate`
 is `Store.migrate` and the command `ssc migrate`; it is never run automatically. `plan()` takes no lease
 and writes nothing; `run()` takes `writer`, then `live`, both with purpose `op:migrate`, so a download, a
 live service or a `--watch` watcher refuses it (exit 6), and then reconciles the catalog, which closes
@@ -3425,15 +3434,15 @@ say less, or something else:
 
 A lease is an OS file lock on `DATA_DIR/.meta/locks/<name>.lock`, held for as long as the `Lease` object
 lives. The kernel releases it when the process dies, so there are no stale locks to clean up. The technique
-is the one `src/throttle.py:112-129` already uses (`fcntl.flock` on POSIX, `msvcrt.locking` on Windows).
+is the one `sofascore_scraper/throttle.py:112-129` already uses (`fcntl.flock` on POSIX, `msvcrt.locking` on Windows).
 
-There is one implementation, `src/store/lease.py`. The job manager, the live service and the sink dispatcher
+There is one implementation, `sofascore_scraper/store/lease.py`. The job manager, the live service and the sink dispatcher
 (`02-services.md`) take their leases through `Store.lease()`; they do not create lock files of their own.
 
 | Lease | Who takes it | Excludes |
 |---|---|---|
 | `writer` | download and refresh jobs, single-event fetch (target; today the route only asks, see below), `migrate`, history pruning, backup creation, the reset of the "unavailable" markers (`--recheck-unavailable`; it rewrites the marker files of stored matches) | another `writer`; `maintenance` |
-| `watcher:<sport>` | the 2.x-style polling watcher, one per sport (`src/watcher.py:10-12`), until the live service replaces it | the same watcher name; `live`; `maintenance` |
+| `watcher:<sport>` | the 2.x-style polling watcher, one per sport (`sofascore_scraper/watcher.py:10-12`), until the live service replaces it | the same watcher name; `live`; `maintenance` |
 | `live` | the live service (one per data directory, all sports) | another `live`; every `watcher:<sport>`; `maintenance`; a running `migrate` |
 | `sinks` | the process that dispatches streams to webhooks and file sinks | another `sinks` |
 | `maintenance` | clear, restore, catalog rebuild, state-db migrations, data-directory change | everything except `sinks` |
@@ -3450,7 +3459,7 @@ the `leases` table. That table is filled when a lease is taken and is only infor
 The holder information is not written into the lock file itself, because a byte-range lock on Windows makes
 the locked bytes unreadable for other processes.
 
-As built (ST-10 #50, `src/store/lease.py` at `f286723`):
+As built (ST-10 #50, `sofascore_scraper/store/lease.py` at `f286723`):
 
 - **Who blocks is found by probing, not from the table.** The table cannot tell which of several shared
   holders blocks `maintenance`, and a row outlives a killed process. `LeaseHeld`, `Store.lease_holder(name)`
@@ -3469,13 +3478,13 @@ As built (ST-10 #50, `src/store/lease.py` at `f286723`):
   (`job_running`), and any other holder `DataOperationRunningError` with its purpose or lease name as the
   operation. The last case is a `live` or `watcher:<sport>` holder that blocks a data operation:
   `InstanceRunningError` (`02-services.md` 2.6) did not exist when the job store was written. It exists
-  since P18 (`src/errors.py`, where `lease_error_code(name, purpose)` gives the three codes). The first
+  since P18 (`sofascore_scraper/errors.py`, where `lease_error_code(name, purpose)` gives the three codes). The first
   revision expected the job manager to replace the job store's own mapping; it did not: after P11 (#69)
-  `conflict_from_lease` still has no `instance_running` (`src/store/jobs.py:207-218` at `e0bae0c`). A job
+  `conflict_from_lease` still has no `instance_running` (`sofascore_scraper/store/jobs.py:207-218` at `e0bae0c`). A job
   takes `writer`, which `live` and `watcher` do not exclude, so a job cannot be blocked by them; the case
   exists only for data operations. Since P23 (#91) that case maps to `instance_running`:
   `conflict_from_lease` returns `InstanceRunningConflict` for a `live` or `watcher:<sport>` holder
-  (`src/store/jobs.py:210-238` at `9b03c64`). It is a subclass of `DataOperationRunningError`, so the old
+  (`sofascore_scraper/store/jobs.py:210-238` at `9b03c64`). It is a subclass of `DataOperationRunningError`, so the old
   callers still catch it; its code is `instance_running`, `.operation` is still the holder's purpose (or the
   lease name) and `.lease` the lease name. A clear or restore that a running live service or watcher blocks
   therefore answers `instance_running` instead of `data_operation_running`, and a second `ssc watch`, or a
@@ -3489,13 +3498,13 @@ As built (ST-10 #50, `src/store/lease.py` at `f286723`):
   `Lease.unclean` on a new writer lease says that the previous writer did not release cleanly. Nothing reads
   `Lease.unclean` yet: the open, which takes no writer lease, looks at the marker file itself and at who
   holds `writer` (ST-11; 3.5). The marker is written with a plain `open(path, "w")`
-  (`src/store/lease.py:354-359` at `e0bae0c`), so it followed the umask before FX-8 already.
+  (`sofascore_scraper/store/lease.py:354-359` at `e0bae0c`), so it followed the umask before FX-8 already.
 - **Fork.** A forked child inherits the lease's file descriptors, and with `flock` an unlock in the child
   would drop the parent's lock. `Lease.release` in a forked copy only closes its descriptors (a test pins
   this); the lock stays held until both processes have closed.
 - **Lock files** follow the umask since FX-8 (#70; 4.4): 0664 under 002, 0600 under 077, 0640 under 027,
   and 0644 under 022 as before. Existing lock files keep their mode. Two things that FX-8 found and left as
-  they are (`src/store/lease.py` at `e0bae0c`). `holder()` and `holders()` report "not held" for a lock file
+  they are (`sofascore_scraper/store/lease.py` at `e0bae0c`). `holder()` and `holders()` report "not held" for a lock file
   that the caller cannot open, because the probe swallows the `OSError` (`:412-415`), while `acquire` fails
   with a `StoreError` that carries `EACCES` and the path of the file; a test pins both. And a shared lock is
   also taken on a descriptor opened `O_RDWR` (`:129`), so read-only access to `maintenance.lock` is not
@@ -3555,7 +3564,7 @@ As built (ST-10 #50, `src/store/lease.py` at `f286723`):
   background job finishes) closed the SQLite connection under the job thread and could crash the process
   (4 of 100 test runs before the test fix of #88; 14 of 60 stress processes on main). As built the job does
   every store access of its end inside a finishing block of the job store (`JobStore._job_finishing`,
-  `src/store/jobs.py:418`) and releases the lease when the block ends. During the block `rebind` and
+  `sofascore_scraper/store/jobs.py:418`) and releases the lease when the block ends. During the block `rebind` and
   `exclusive` raise `JobRunningError` (409 `job_running`), `JobStore.close` waits (at most 30 s), and
   `create_running` on the same job store waits; 0 of 60 stress processes crashed. Another process can see
   the row finished while the lease is held a few milliseconds longer; that window existed before, between
@@ -3566,9 +3575,9 @@ As built (ST-10 #50, `src/store/lease.py` at `f286723`):
   processes taking `writer` and `maintenance` 300 times each never overlapped (2,393 acquisitions, checked
   with an `O_EXCL` flag file; run outside the test suite).
 
-This replaces the in-process slot of `JobStore.exclusive` (`src/web/jobs.py:150-168`), which cannot see a CLI
+This replaces the in-process slot of `JobStore.exclusive` (`sofascore_scraper/web/jobs.py:150-168`), which cannot see a CLI
 process writing the same directory. `JobStore.exclusive` keeps its interface and its error classes
-(`JobRunningError`, `DataOperationRunningError`, turned into HTTP 409 at `src/web/app.py:59-65`) and is
+(`JobRunningError`, `DataOperationRunningError`, turned into HTTP 409 at `sofascore_scraper/web/app.py:59-65`) and is
 implemented with these leases. A job is "running" when its row says so **and** its owner holds the `writer`
 lease; this is what lets another process tell a crashed job from a live one. P11 built it as `reap_stale`
 ("Liveness of a job" above).
@@ -3586,7 +3595,7 @@ write of an entity runs like this:
 5. Write the new manifest (temporary file + `os.replace`).
 6. Upsert the catalog rows, append the change-log line if any, delete the `pending_writes` row. Commit.
 
-As built (ST-20 #82, ST-26 #92; `EventStore._entity_write` and `_apply`, `src/store/events.py:1358-1397` and
+As built (ST-20 #82, ST-26 #92; `EventStore._entity_write` and `_apply`, `sofascore_scraper/store/events.py:1358-1397` and
 `:1460-1628` at `9b03c64`) the order is:
 
 1. Transaction A: `INSERT OR IGNORE INTO pending_writes`. A row that is already there marks an unfinished
@@ -3611,12 +3620,12 @@ line for good: the payload on disk is new, the log has no row, and a repeated re
 payload and no difference. The intent marker re-indexes the event but cannot bring the row back. The crash
 tests pin it (`CHANGE_LOST`). Appending the line before the payload would turn the loss into a possible
 duplicate. It was not reachable while nothing called `put`; since P23 the live service calls `observe`
-(`src/services/live/supervisor.py:521` at `9b03c64`), so `ssc watch` can meet it now. Item (1) of the fix
+(`sofascore_scraper/services/live/supervisor.py:521` at `9b03c64`), so `ssc watch` can meet it now. Item (1) of the fix
 item FX-12 changes the order of this section so that the line is recoverable, before ST-21 makes the
 downloads call `put`.
 
 **The change row as built** (FX-12, #100; `write_change_intent`, `recover_change` and `recover_changes`,
-`src/store/events.py:916-990` at `b3cb819`). The defect above is fixed; the crash tests no longer have
+`sofascore_scraper/store/events.py:916-990` at `b3cb819`). The defect above is fixed; the crash tests no longer have
 `CHANGE_LOST`, and every interrupted state ends with the change log equal to the expected one, without a
 duplicate.
 
@@ -3668,7 +3677,7 @@ Consequences:
   long-running producer must not end on it: the live service retries an append with back-off (P23). The job
   manager decided it as follows (P11, #69): a `state.db` that stays locked for more than 5 s does not fail
   a job on a progress or log write, the final write of a job is tried three times
-  (`FINAL_WRITE_ATTEMPTS`, `src/jobs/manager.py:65` at `e0bae0c`), and an append to the `job` stream is
+  (`FINAL_WRITE_ATTEMPTS`, `sofascore_scraper/jobs/manager.py:65` at `e0bae0c`), and an append to the `job` stream is
   best effort and not retried.
 
 ### 6.3 Readers
@@ -3681,7 +3690,7 @@ Readers take no lease and no lock.
 - A reader may hold a catalog row whose file has just gone (legacy directory removed by `migrate` after the
   event moved to v3; clear). On `FileNotFoundError` the Store re-reads the event's row once and retries with
   the new location; if the file is still missing it raises `PayloadMissing`. As built (ST-30, #68;
-  `read_with_retry`, `src/store/events.py:552-568` at `e0bae0c`) the missing file surfaces as
+  `read_with_retry`, `sofascore_scraper/store/events.py:552-568` at `e0bae0c`) the missing file surfaces as
   `PayloadMissing` from the codec, not as `FileNotFoundError`. The retry re-reads the row once: if the row
   no longer shows a payload (the event was cleared meanwhile) the call returns None, otherwise the read is
   repeated with the new location and a second miss raises `PayloadMissing`. `EventStore` and `EntityStore`
@@ -3718,7 +3727,7 @@ remove a temporary data directory now close the registry's Store first). The dat
 settings routes rebinds the job store but does not close the Store of the old directory (1.1); closing it
 there is left to a follow-up item of the plan (FX-13 of `03-implementation-plan.md`). As built (FX-13,
 #152) `PATCH /api/v1/settings` closes the writable and read-only Stores of the old directory after the
-rebind (`close_data_dir`, `src/web/api/v1/settings.py:492` at `b6caf2f`); it leaves the Store open, with a
+rebind (`close_data_dir`, `sofascore_scraper/web/api/v1/settings.py:492` at `b6caf2f`); it leaves the Store open, with a
 warning, while this process holds one of that directory's leases (for example the `sinks` lease of
 `serve`'s dispatcher), because a thread still uses it. The legacy settings route only rebinds; it goes with
 P30. Neither was run on a Windows machine: CI's Windows jobs are best-effort.
@@ -3795,14 +3804,14 @@ that it does.
 
 As built, `DERIVE_VERSION` is the version of the rows that the same files give, not only of `derive.py`'s
 output: it is also bumped when a rule outside that module changes them, such as the presence rules of
-`src/slices.py` or the legacy names of `src/store/legacy.py`. FX-5 (#77) did so: it is 2 at `9b03c64`
-(`src/store/derive.py:41`), and the next bump is 3. With the bump every catalog is rebuilt once on the next
+`sofascore_scraper/slices.py` or the legacy names of `sofascore_scraper/store/legacy.py`. FX-5 (#77) did so: it is 2 at `9b03c64`
+(`sofascore_scraper/store/derive.py:41`), and the next bump is 3. With the bump every catalog is rebuilt once on the next
 open (one INFO line, `Catalog built from the files in ...`; 0.73 s on a copy of the owner's data). The
 version is recorded in nine goldens (`tests/golden/catalog/*`, `tests/golden/catalog_listings/*`,
 `tests/golden/derive/event_rows.json`), which a bump regenerates; the tests that held the number follow the
 constant.
 
-At `b3cb819` it is 5 (`src/store/derive.py:47`), after three bumps for new sports in the registry, each of
+At `b3cb819` it is 5 (`sofascore_scraper/store/derive.py:47`), after three bumps for new sports in the registry, each of
 which rebuilds every catalog once: 3 with SP-1 (#112; American football, Aussie rules, ice hockey,
 handball, rugby, futsal, minifootball and floorball get a score sheet in `scores_json`), 4 with SP-2
 (#115; volleyball, badminton, table tennis, padel and snooker), 5 with SP-3 (#118; baseball, cricket,
@@ -3813,7 +3822,7 @@ derive version, because a root export would make its API snapshot a file that ev
 
 ### 7.3 State db
 
-`src/store/migrations/state/NNNN_<name>.sql`, applied in order on open under the `maintenance` lease:
+`sofascore_scraper/store/migrations/state/NNNN_<name>.sql`, applied in order on open under the `maintenance` lease:
 
 1. If `user_version` is behind: copy the file with SQLite's online backup API to
    `.meta/state.db.bak-v<old>` (one copy per old version is kept).
@@ -3823,7 +3832,7 @@ derive version, because a root export would make its API snapshot a file that ev
 Migrations are written to be safe to run again after a crash between the script and the version bump
 (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN` guarded by a column check in a small Python hook).
 
-As built (ST-09, `src/store/state.py`):
+As built (ST-09, `sofascore_scraper/store/state.py`):
 
 - Since ST-10 (PR #50) the migration step runs under the `maintenance` lease (purpose `op:state_migration`),
   taken with a wait of 5 s: without the wait, two processes that open a new directory together would fail.
@@ -3842,7 +3851,7 @@ As built (ST-09, `src/store/state.py`):
   open (a newer file, a SQLite file that is not a state database, a failed migration, `StoreBusy`,
   `LeaseHeld`) answers 400 `data_dir_unusable` and changes nothing.
 - The first open of a directory logs one INFO line per applied script. Since FX-8 (#70) the line is English:
-  `Store: state.db migration applied: 0001_initial` (`src/store/state.py:317` at `e0bae0c`; before, the text
+  `Store: state.db migration applied: 0001_initial` (`sofascore_scraper/store/state.py:317` at `e0bae0c`; before, the text
   was Turkish). Since P11 a fresh directory logs two such lines, for `0001_initial` and `0002_job_manager`;
   the pair is in seven places of five CLI goldens. A command that starts opening the Store therefore prints
   these lines on a fresh directory, and its CLI golden changes (`03-implementation-plan.md` section 7).
@@ -3854,22 +3863,22 @@ As built (ST-09, `src/store/state.py`):
   world at version 1 use the fixture `first_migration_only` of `tests/test_store_state.py`.
 - Other log lines of the two modules are still Turkish: the line of the copy in step 1 (INFO; since P11
   every existing data directory logs it once, when it moves from schema 1 to 2; the CLI goldens start from
-  fresh directories and do not show it) and three warnings of `src/store/lease.py` (the holder row could not
+  fresh directories and do not show it) and three warnings of `sofascore_scraper/store/lease.py` (the holder row could not
   be written, the unclean marker could not be written, the file system does not support locks). The texts
   of `StoreError` and `LeaseHeld` are Turkish too (an open question of the plan). The plan gives the log
   lines of `state.py` and `lease.py` to the new item FX-11. As built (FX-11, #85) there were five such
-  lines, not four: `src/store/lease.py` also had a DEBUG line (the holder record could not be removed). All
+  lines, not four: `sofascore_scraper/store/lease.py` also had a DEBUG line (the holder record could not be removed). All
   five are English: INFO `state.db copied before migration (schema version %s): %s`
-  (`src/store/state.py:292` at `9b03c64`), which an existing data directory logs once when it moves to
+  (`sofascore_scraper/store/state.py:292` at `9b03c64`), which an existing data directory logs once when it moves to
   schema 2, and in `lease.py` the WARNING lines `The file system does not support file locks (%s); leases
   cannot keep other processes out. Only one process at a time may use this data directory: %s`, `Could not
   write the unclean-shutdown marker: %s: %s` and `Could not record the holder of the lease (%s): %s`, and the
   DEBUG line `Could not remove the holder record of the lease (%s): %s`. The texts of `StoreError` and
   `LeaseHeld` are unchanged. Seven log lines of other Store modules are still Turkish
-  (`src/store/indexer.py:1043` and `:1051`, `src/store/jobs.py:282` and `:296`, `src/store/verify.py:547`
-  and `:587`, `src/store/derive.py:202` at `9b03c64`); item (4) of FX-12 translates them. As built (FX-12,
-  #100) all seven are English, `src/store/jobs.py` has one more English warning (a Store closed while a
-  finishing job still uses it), and the log-language test scans every module of `src/store` instead of
+  (`sofascore_scraper/store/indexer.py:1043` and `:1051`, `sofascore_scraper/store/jobs.py:282` and `:296`, `sofascore_scraper/store/verify.py:547`
+  and `:587`, `sofascore_scraper/store/derive.py:202` at `9b03c64`); item (4) of FX-12 translates them. As built (FX-12,
+  #100) all seven are English, `sofascore_scraper/store/jobs.py` has one more English warning (a Store closed while a
+  finishing job still uses it), and the log-language test scans every module of `sofascore_scraper/store` instead of
   three, with a second test that makes sure the scan finds log calls. The texts of `StoreError` and its
   subclasses are still partly Turkish (for example `Depo kapatılmış` of a closed Store).
 - `open_store` imports the 2.x job rows but does not sweep them: a row that 2.x left as `running` stays
@@ -3892,7 +3901,7 @@ once but mirrored (2.3).
 ### 8.1 All statuses are stored
 
 - The Store accepts an event payload in any status. The write-time filters
-  (`src/match_data_fetcher.py:210-214`, `:1038-1043`; `src/match_fetcher.py:189-200`, `:368-378`) are removed by
+  (`sofascore_scraper/match_data_fetcher.py:210-214`, `:1038-1043`; `sofascore_scraper/match_fetcher.py:189-200`, `:368-378`) are removed by
   plan item ST-27; until then the callers keep applying them and the Store simply stores what it is given.
   As built (ST-27, #129) they are removed. By then they lived in the pipeline (`FetchPipeline._fetch`) and
   in the listing's event pages, not in the planner: event pages (`events/last/N`, `events/next/N`) are
@@ -3904,10 +3913,10 @@ once but mirrored (2.3).
   constant `False`). `FETCH_ONLY_FINISHED` now applies only when data is read; `QueryService.detail_candidates`
   still applies it, which is redundant for planning and harmless. What the planner downloads is in 8.3.
 - Round files already contain every status today, because they are written unfiltered
-  (`src/match_fetcher.py:471`). Indexing them gives the catalog its first fixtures: locally 628 events that
+  (`sofascore_scraper/match_fetcher.py:471`). Indexing them gives the catalog its first fixtures: locally 628 events that
   have no detail directory (311 not started, 315 completed, 2 void).
 - "Finished only" is `EventQuery.status_classes = ("completed", "decided_without_play")`, the same two classes
-  `MatchFetcher._is_finished_event` uses (`src/match_fetcher.py:63-65`). The existing endpoints pass it when
+  `MatchFetcher._is_finished_event` uses (`sofascore_scraper/match_fetcher.py:63-65`). The existing endpoints pass it when
   `FETCH_ONLY_FINISHED` is true, so their output does not change when fixtures start to be listed. As built
   the readers that count or list matches from the catalog apply decision D21 (settled 2026-10-02 with RD-4,
   #78; RD-2, #89 applies it to the two match lists): with `FETCH_ONLY_FINISHED` on, an event counts when it
@@ -3915,7 +3924,7 @@ once but mirrored (2.3).
   no schedule lists counts as a match. The setting is read from the environment when the page is read
   (`os.getenv`), while the writers read it once at import, so after a change in the web UI the counts follow
   at once and the writers only after a restart (P30 moves it into the Settings).
-- `status_class` is `classify_status` (`src/status.py:68-103`); the SofaScore triple is kept in three columns.
+- `status_class` is `classify_status` (`sofascore_scraper/status.py:68-103`); the SofaScore triple is kept in three columns.
 
 ### 8.2 Rows from listings, and reconciling copies of a score
 
@@ -3927,7 +3936,7 @@ A schedule page lists events with their status and score. Today those copies (ro
 2. An event without one: its row comes from the listing with the newest `fetched_at` (`row_source = 'listing'`,
    `has_event_payload = 0`, `layout = NULL`). This is how fixtures appear.
 3. When a listing is newer than the stored event payload and disagrees with it in status triple, winner code,
-   start time or any score field (the fields `src/refresh.py:84-92` compares), the row gets `stale = 1`. The
+   start time or any score field (the fields `sofascore_scraper/refresh.py:84-92` compares), the row gets `stale = 1`. The
    refresh service reads `EventStore.stale()` and re-reads `/event/{id}` for those first; that write goes
    through `put`, logs the change and clears the flag.
 
@@ -3935,12 +3944,12 @@ Rule 3 is new behaviour (extra refresh requests) and ships with plan item ST-27;
 computed but nothing reads it. As built, P13 (#113) already refreshed a `stale` record in downloads (the
 need rule "stale → refresh" comes first). ST-27 (#129) adds the stale rows to `--refresh-only`:
 `planning.refresh_due_events` returns `Store.events.stale()` first and then the due provisional rows, each
-group in id order (`src/services/planning.py:255-275` at `b3cb819`). `MatchDataFetcher.refresh_due_ids`
+group in id order (`sofascore_scraper/services/planning.py:255-275` at `b3cb819`). `MatchDataFetcher.refresh_due_ids`
 sorts by the legacy path again, so "first" holds for the planner's list only. A stale record is refreshed
 also with `REFRESH_WINDOW_HOURS=0`, because a listing correction is not the provisional policy. A stale
 refresh does not queue the refill of the record's slices in the same run.
 
-As built (ST-08 #61, `src/store/entities.py`):
+As built (ST-08 #61, `sofascore_scraper/store/entities.py`):
 
 - The time of "the stored event payload" in rule 3 is its `observed_at`, else the `fetched_at` of the event
   slice (`EventRecord.compared_at`). The compared fields are kept as a digest (`entities.compare_digest`,
@@ -3971,7 +3980,7 @@ normalised score sheet.
 ### 8.3 What "provisional" means
 
 Today: a stored record is provisional while it was last observed before `startTimestamp + window`
-(`src/refresh.py:63-81`); the window is a setting read at call time (`:27-35`). The rule does **not** look at
+(`sofascore_scraper/refresh.py:63-81`); the window is a setting read at call time (`:27-35`). The rule does **not** look at
 the status. It only ever sees records that were finished when they were first stored, because nothing else is
 stored today.
 
@@ -3998,13 +4007,13 @@ follows it while it is live.
 The public field `quality.provisional` is `settlement == 'provisional'`. The first version left it to the
 schema design whether the contract also exposes `open`. It does (SC-1, #72; `04-schema-v1.md`, approved on
 2026-10-02): the contract has `quality.settlement` with the values `open`, `provisional` and `final`, next
-to the boolean `quality.provisional`. The mapper (`settlement`, `src/schema/mappers.py:361-375` at
+to the boolean `quality.provisional`. The mapper (`settlement`, `sofascore_scraper/schema/mappers.py:361-375` at
 `e0bae0c`) already applies the "from ST-27 on" rows of the table, so a non-terminal status class is `open`
 today and the contract does not change its meaning when ST-27 merges. The Store's own planning call,
 `refresh_candidates`, keeps today's rule without a status condition until then (the paragraph above).
 
 As built (ST-27, #129). The planner passes `status_classes=SETTLED_CLASSES` (completed, decided without
-play, void; `src/services/planning.py:71` at `b3cb819`) plus the ids of `stale` rows, as the paragraph
+play, void; `sofascore_scraper/services/planning.py:71` at `b3cb819`) plus the ids of `stale` rows, as the paragraph
 above says, so the "from ST-27 on" rows of the table now hold for planning too; `refresh_candidates`
 itself still applies no status condition by default. In the planner (`compute_need`; `02-services.md`
 3.2) an open record that has a payload (not started, live, unknown) needs nothing: it is left to the
@@ -4019,17 +4028,17 @@ match fetched on purpose before its end (a single match, an id) is stored and is
 
 | Today | With the Store |
 |---|---|
-| `refresh_due(basic, observation)` per event, after loading its files (`src/match_data_fetcher.py:830-843`) | `EventStore.refresh_candidates(now, window_s, min_interval_s)`: `observed_gap < :window_s AND observed_at <= :now - :min_interval_s` on the `events_unsettled` index |
-| `REFRESH_LEGACY` for records without observation (`src/refresh.py:49-51`, `:72-74`) | `include_unobserved=True` adds the rows of `events_unobserved` |
-| `refresh_due_ids(league_id)` walks the tree (`src/match_data_fetcher.py:917-935`) | the same call with `Scope(tournament_ids=[...])` |
+| `refresh_due(basic, observation)` per event, after loading its files (`sofascore_scraper/match_data_fetcher.py:830-843`) | `EventStore.refresh_candidates(now, window_s, min_interval_s)`: `observed_gap < :window_s AND observed_at <= :now - :min_interval_s` on the `events_unsettled` index |
+| `REFRESH_LEGACY` for records without observation (`sofascore_scraper/refresh.py:49-51`, `:72-74`) | `include_unobserved=True` adds the rows of `events_unobserved` |
+| `refresh_due_ids(league_id)` walks the tree (`sofascore_scraper/match_data_fetcher.py:917-935`) | the same call with `Scope(tournament_ids=[...])` |
 | `_needs_detail_fetch` → `full / refill / refresh / none` by loading every slice file (`:813-843`) | `full`: `has_event_payload = 0`; `refill`: returned by `missing()`; `refresh`: returned by `refresh_candidates()`; otherwise `none` |
-| `refresh_match` writes `basic.json`, `observation.json`, appends to `score_changes.jsonl` (`:856-909`) | the service fetches and calls `events.observe(id, new, on_event_change=...)`; the callback computes `diff_basic` and `change_row` (both stay in `src/refresh.py`) against the payload that is stored at that moment |
+| `refresh_match` writes `basic.json`, `observation.json`, appends to `score_changes.jsonl` (`:856-909`) | the service fetches and calls `events.observe(id, new, on_event_change=...)`; the callback computes `diff_basic` and `change_row` (both stay in `sofascore_scraper/refresh.py`) against the payload that is stored at that moment |
 | unchanged refresh only updates `observation.json` (`:897`) | `observe` with an identical payload writes no payload file; it updates `observation` in the manifest and `observed_at`, `observed_gap` in the catalog |
 | COMPLETED → VOID keeps the record and sets `status_regressed` (`:878-886`) | same; the flag is sticky in the manifest and in `events.status_regressed` |
 | `begin_job_cache` / `end_job_cache` (`:183-190`) | not needed; the catalog is the index |
 
 The policy values and functions (`refresh_window_hours`, `refresh_min_interval_hours`, `diff_basic`,
-`change_row`, `status_regressed`) stay in `src/refresh.py`. The Store only gets numbers, a callback and rows.
+`change_row`, `status_regressed`) stay in `sofascore_scraper/refresh.py`. The Store only gets numbers, a callback and rows.
 
 As built (ST-30, #68) the read half of this table is pinned against today's code. On the four fixture
 directories `missing()` returns the set that `_needs_detail_fetch` calls `refill`, with the same keys, and
@@ -4037,7 +4046,7 @@ directories `missing()` returns the set that `_needs_detail_fetch` calls `refill
 `REFRESH_LEGACY`; a property test with 12 seeds compares both per event. The differences on the `legacy`
 fixture are those of 5.2. The write half (`observe`, the callback) exists since ST-20 (#82; 2.3). Its first
 caller is the live service of P23 (#91), which stores a finished match with `observe` and a callback that
-follows the refresh rule of `src/refresh.py`: a change row is written only when the stored payload was
+follows the refresh rule of `sofascore_scraper/refresh.py`: a change row is written only when the stored payload was
 already terminal; a first stored payload, or an older payload of a match that had not finished, is not a
 change. This document did not say which. The refresh of the detail writers moves onto `observe` with ST-21.
 
@@ -4045,7 +4054,7 @@ As built at `b3cb819` the table's right column holds with three differences. The
 writers calls `observe` since ST-21 (#104), and since P13 (#113) through `FetchPipeline` (2.3). The need is
 not computed from `missing()` and `refresh_candidates()`: `planning.event_needs` reads `states()` in chunks
 of 500 and applies `compute_need` in Python (P12, #106), and only `refresh_due_events` asks
-`refresh_candidates()` and `stale()` for its candidates (8.2, 8.3); nothing in `src/` calls `missing()`.
+`refresh_candidates()` and `stale()` for its candidates (8.2, 8.3); nothing in `sofascore_scraper/` calls `missing()`.
 And `refresh_due_ids` reaches a record without a tournament (a flat or `_no_tournament/` directory) only
 when it is called without a league (RD-3, 1.2).
 
@@ -4063,7 +4072,7 @@ gives the service layer the fixtures and live events whose start has passed; wha
 - The line is appended and flushed before the catalog row is inserted. If the process dies in between, the
   next open finds the file longer than the indexed length recorded in `meta` and indexes the tail. A last line
   without a newline is a torn write; it is skipped and reported, and the next append starts on a fresh line.
-- As built (ST-20, #82; `src/store/changes.py` at `9b03c64`). `meta.changes_indexed` holds per file the
+- As built (ST-20, #82; `sofascore_scraper/store/changes.py` at `9b03c64`). `meta.changes_indexed` holds per file the
   indexed offset, the line count, the size, the mtime and a digest of the last indexed bytes. The index is
   incremental: a file that grew has only its tail read, so an append to a 100,000-line
   `score_changes.jsonl` with its hook costs 0.57 to 0.75 ms (2.2 to 3.0 s before), and the first index of a
@@ -4076,7 +4085,7 @@ gives the service layer the fixtures and live events whose start has passed; wha
   `score_changes.jsonl` is kept and read but never appended to. Since ST-23 (#110) `changes/0000-legacy.jsonl`,
   the copy that `migrate` makes, is a numbered segment (`seq` is the line number): when it exists it takes
   the place of `score_changes.jsonl` in the index, its rows carry it as their `segment`, and the old file's
-  rows are not indexed twice (`changes.NUMBERED_SEGMENTS`, `src/store/changes.py:61-63` at `b3cb819`). A v3
+  rows are not indexed twice (`changes.NUMBERED_SEGMENTS`, `sofascore_scraper/store/changes.py:61-63` at `b3cb819`). A v3
   line is written with `json.dumps(row, ensure_ascii=False)` and `seq` as its last key; `ChangeLog.append`
   writes it under the catalog's write lock (the `max(seq) + 1` above), after it has synced the index with the
   files. `ReconcileReport.changes` is the number of rows in the index after a sync that found a change.
@@ -4086,7 +4095,7 @@ gives the service layer the fixtures and live events whose start has passed; wha
 - The change log has its own gap-free `seq`. The `change` stream (2.3) is a notification: each
   `change.recorded` stream event carries the `change_seq` it announces. Consumers that want every change read
   the change log; consumers that want to be told read the stream.
-- The watcher's own `provisional` marker on the first completed status (`src/watcher.py:256-262`) is part of
+- The watcher's own `provisional` marker on the first completed status (`sofascore_scraper/watcher.py:256-262`) is part of
   the live event payload and is not changed by this design.
 
 ---
@@ -4100,7 +4109,7 @@ gives the service layer the fixtures and live events whose start has passed; wha
 to CLI processes). A live service may keep running: every file it writes is replaced atomically, and a payload
 that is newer than its manifest is healed by the reconcile after a restore. As built (ST-19, #90) the caller
 holds the lease, not `BackupManager`: the web route takes `writer` with purpose `op:backup` through
-`JobStore.exclusive("backup")` and calls the manager inside it (`src/store/backup.py:15-17` at `9b03c64`).
+`JobStore.exclusive("backup")` and calls the manager inside it (`sofascore_scraper/store/backup.py:15-17` at `9b03c64`).
 
 Archive: a zip in `backups/` named `backup_<scope>_<yyyymmdd>_<hhmmss>.zip`, the pattern the download route
 already validates (`src/web/routes/data.py:95`).
@@ -4122,7 +4131,7 @@ passed is the caller's decision (it can hold a proxy password); the service expo
 Compared with today this adds `state.db` and the change log. Today's backup contains neither `.meta/jobs.db`
 nor `score_changes.jsonl` (`src/web/routes/data.py:129-134`).
 
-Format 2 as built (ST-24, #109; `src/store/backup.py` at `b3cb819`). Where it differs from the table:
+Format 2 as built (ST-24, #109; `sofascore_scraper/store/backup.py` at `b3cb819`). Where it differs from the table:
 
 - **Scopes.** The design's three (`all`, `state`, `data`) sit next to today's four web scopes, because the
   web route pins them: `config`, and three partial scopes that take their v3 counterpart, `match_details`
@@ -4160,12 +4169,20 @@ to the root of the zip under their own names and the `.env` file, when `env_file
 file-system error is a `StoreError`. The members and the name are the same as before (pinned by
 `tests/golden/backup/members.json`); one edge differs: when `backups/` cannot be created the route answers 500
 `Backup failed` instead of an unhandled 500. Format 2 (the table above, with `backup.json`, `state.db`,
-`config/` and `include_catalog`), `verify`, `restore` and `prune` remain ST-24's, in `src/store/backup.py`.
+`config/` and `include_catalog`), `verify`, `restore` and `prune` remain ST-24's, in `sofascore_scraper/store/backup.py`.
 ST-24 (#109) built them, without `include_catalog` ("Format 2 as built" above); the five scopes and their
 old member names survive as the partial scopes, renamed without the data directory's name. The four old
-partial scopes (`config`, `seasons`, `matches`, `match_details`; `BACKUP_SCOPES`, `src/store/backup.py:74`
+partial scopes (`config`, `seasons`, `matches`, `match_details`; `BACKUP_SCOPES`, `sofascore_scraper/store/backup.py:74`
 at `b6caf2f`) are deprecated in 3.0.0 and removed with the legacy aliases in P30 (decision of 2026-10-03);
 `all`, `state` and `data` stay.
+
+Since FX-22 (#165, `1c20fb9`) the settings saved on the web app's Settings page go into the archive too.
+`BackupManager.create(..., overrides_file=)` adds `CONFIG_DIR/overrides.json` as the member
+`config/overrides.json` in the scopes that take config files (`all`, `state` and `config`; `CONFIG_SCOPES`),
+when the caller passes it and the file exists; `BackupService.create` and therefore `ssc backup create` and
+the v1 backup job always pass it. The file can hold the proxy address with its password, so such an
+archive is created 0600 from the start, as one with `.env` is; its name does not change (only `.env` adds
+`_with_env`). `data` never takes it. Archives made before FX-22 have no such member.
 
 ### 9.2 Restore
 
@@ -4186,7 +4203,7 @@ The web UI has no restore today (only the terminal UI copies directories back,
 `src/ui/settings_ui.py:459-549`, and it cannot read the web's zip backups), so restore is new functionality.
 A merge of an archive into a non-empty directory is not offered: `force` replaces, it never mixes.
 
-As built (ST-24, #109; `BackupManager.restore`, `src/store/backup.py:649` at `b3cb819`; `ssc backup restore
+As built (ST-24, #109; `BackupManager.restore`, `sofascore_scraper/store/backup.py:649` at `b3cb819`; `ssc backup restore
 NAME [--force] [--dry-run] [--yes]`):
 
 - **By name.** It takes only the name of a backup inside `backups/`; another name, a path or `../` gives
@@ -4212,7 +4229,21 @@ NAME [--force] [--dry-run] [--yes]`):
 - **Step 4.** On success the catalog is rebuilt in place (the internal path `Store.clear` uses) and
   `catalog.verify()` runs; staging and trash are then removed. There is no `include_catalog`: a
   `catalog.db` member is accepted and skipped.
-- **Config files and `.env`** are never restored; they are listed in `RestoreReport.skipped`.
+- **Config files and `.env`** are never restored; they are listed in `RestoreReport.skipped`. One exception
+  since FX-22 (#165): `config/overrides.json`, the settings saved on the Settings page, which would
+  otherwise be lost with a restore. It is restored only when the caller passes its place
+  (`restore(..., overrides_file=)`) and the archive has the member: it is written last in step 3, atomically
+  and with mode 0600, and a failure of any step puts the previous file back (or removes it when there was
+  none) with the rest of the rollback. A member that is not a JSON object, is larger than 1 MB or cannot be
+  read is not restored (`skipped`, a warning without the content). An archive without the member (every
+  archive older than FX-22, and every `data` archive) leaves the current file alone. The content is never
+  logged. `BackupService.restore` holds the Settings file's lock (`config_files.file_lock` on
+  `overrides.json`, the lock `PATCH /api/v1/settings` takes) around the whole restore, then reloads the
+  settings; when the restored document cannot be loaded (for example a key this version does not know), it
+  puts the previous file back, the previous settings stay in force, and the report moves the member from
+  `restored` to `skipped`. The reload is per process: `ssc backup restore` while `ssc serve` runs reloads
+  the settings of the CLI process only, and the server sees the restored file at its next reload (`02-services.md`
+  2.7).
 - **`dry_run`** takes no lease, writes nothing and reports `restored`, `replaced`, `occupied`, `skipped` and
   `counts`.
 - **Format 1** (2.x and ST-19 zips, without `backup.json`): the members `<one root>/<seasons|matches|
@@ -4226,7 +4257,7 @@ As built since FX-13 (#152) and its Windows fix (#153), a restore also runs as a
 (`restore` with `dry_run: false`, under the job's `maintenance` lease; a non-empty target is refused with
 `confirmation_required` and `details.occupied` before any job record is written, and `force` replaces). The
 job runs inside the `state.db` it replaces, so the step that loads the backup's state keeps more than the
-lease rows (`BackupManager._load_state`, `src/store/backup.py:817-862` at `b6caf2f`):
+lease rows (`BackupManager._load_state`, `sofascore_scraper/store/backup.py:817-862` at `b6caf2f`):
 
 - It reads from the open database the lease rows, the rows of every running or queued job and their
   `job_events`, and writes them, with a new `stream_id`, into the **staged copy** in one transaction.
@@ -4253,9 +4284,9 @@ Nothing is deleted unless a setting says so. Defaults:
 | payloads, manifests | kept | `EventStore.delete`, `Store.clear(scope)` on request; since FX-19 (#156) also `Store.purge.tournament(id, season_id=)` for one tournament or one season (below) |
 | change log | kept | — |
 | slice history (odds snapshots) | kept | `HistoryStore.prune(older_than=...)`. As built since FX-15 (#155) the scheduler task `prune-history` with `older_than` calls it as a `clear` job under the writer lease; no task exists by default, so history is kept unless the user adds one. It prunes event history only; the history of `season_odds` (an entity slice, P28) is never pruned (2.3) |
-| stream events | 7 days and at most 1,000,000 rows | `StreamLog.prune`, run by the process that holds `live` or `sinks`, once per hour. Since ST-24 (#109) these are the defaults of `prune()` itself (2.3). `prune` exists (ST-18). Since P22 (#73) the sink dispatcher calls it with these values, once per hour (`src/sinks/dispatcher.py:79-81`, `:586-592` at `e0bae0c`), but no process hosts the dispatcher yet (P23, P25, P19); the live service's call comes with P23. Since P23 (#91) `ssc watch` hosts the dispatcher, and the live service prunes with the same values once per hour (`src/services/live/supervisor.py:561-572` at `9b03c64`) |
+| stream events | 7 days and at most 1,000,000 rows | `StreamLog.prune`, run by the process that holds `live` or `sinks`, once per hour. Since ST-24 (#109) these are the defaults of `prune()` itself (2.3). `prune` exists (ST-18). Since P22 (#73) the sink dispatcher calls it with these values, once per hour (`sofascore_scraper/sinks/dispatcher.py:79-81`, `:586-592` at `e0bae0c`), but no process hosts the dispatcher yet (P23, P25, P19); the live service's call comes with P23. Since P23 (#91) `ssc watch` hosts the dispatcher, and the live service prunes with the same values once per hour (`sofascore_scraper/services/live/supervisor.py:561-572` at `9b03c64`) |
 | watcher state | rows of events that are done and older than 7 days are dropped | on `WatchStateStore.save`. As built the age is the row's `updated_at` (its last content change); the check runs on every save, for the saved watcher only, and reads `done` in Python, because SQLite's JSON functions are optional before 3.38 and the minimum is 3.24 |
-| jobs | newest 500 rows; 2,000 events per job | As built (P11, #69; `src/store/jobs.py:616-630` and `:163-172` at `e0bae0c`): job rows beyond the newest 500 are removed when a job is created, with their events; a running or queued row is never removed. Each job keeps its newest 2,000 events: the check runs at every 100th event of a job, so up to 2,099 exist in between |
+| jobs | newest 500 rows; 2,000 events per job | As built (P11, #69; `sofascore_scraper/store/jobs.py:616-630` and `:163-172` at `e0bae0c`): job rows beyond the newest 500 are removed when a job is created, with their events; a running or queued row is never removed. Each job keeps its newest 2,000 events: the check runs at every 100th event of a job, so up to 2,099 exist in between |
 | backups | kept | `BackupManager.prune(keep=..., max_age_days=...)`; as built (ST-24) it keeps everything by default and nothing calls it |
 | `exports/` | kept | the export command can be told to replace its previous output; as built (ST-25) through `overwrite=True` of `Exporter.raw` and `rows` (4.5) |
 | `.meta/tmp`, `.meta/trash` | the writer's own staging area and the trash are emptied when the `writer` lease is taken (see below); as built (ST-20) also every entry of no lease that is older than a day | — |
@@ -4268,7 +4299,7 @@ names map as `match_details` → `events`, `matches` → `schedules`, `seasons` 
 itself and the hook `shadow_cleared` then rebuilds the catalog in place (ST-11; 3.5); the terminal UI's
 clear and restore have no hook yet, and ST-19 moves them onto the Store as well.
 
-`Store.clear` as built (ST-19, #90; `src/store/api.py:590-642` at `9b03c64`):
+`Store.clear` as built (ST-19, #90; `sofascore_scraper/store/api.py:590-642` at `9b03c64`):
 
 - It takes one scope or several (`events`, `schedules`, `seasons`, `all`); an unknown scope is a
   `ValueError`, a read-only Store a `StoreError`. The web route maps today's names through `DataScope`,
@@ -4279,7 +4310,7 @@ clear and restore have no hook yet, and ST-19 moves them onto the Store as well.
   The v3 entity trees under `v3/tournaments` have no writer yet; ST-22 adds them for the `schedules` and
   `seasons` scopes. A legacy tree that exists is removed and created again empty, as the web clear did.
   As built since ST-22 (#98) `schedules` also removes the v3 schedule pages and `seasons` the v3 season
-  lists (`entities.clear_v3_listings`, `src/store/api.py:119-120` and `:640-646` at `b3cb819`), so the
+  lists (`entities.clear_v3_listings`, `sofascore_scraper/store/api.py:119-120` and `:640-646` at `b3cb819`), so the
   ST-19 finding that only `v3/events` is removed no longer holds.
 - It deletes whole trees itself and moves nothing to `.meta/trash`; it does not use `EventStore.delete`
   (S18, section 0). It keeps `state.db`, `score_changes.jsonl`, `changes/`, `backups/`, `exports/` and every
@@ -4296,7 +4327,7 @@ clear and restore have no hook yet, and ST-19 moves them onto the Store as well.
   menu; the callers of the clear at `b3cb819` are the legacy web clear, the `clear` job of API v1 (under a
   `maintenance` job lease since P21, #126; 6.1) and `ssc data clear`.
 
-`Store.purge`, one tournament's data, as built (FX-19, #156; `Purger.tournament`, `src/store/purge.py:83-182`
+`Store.purge`, one tournament's data, as built (FX-19, #156; `Purger.tournament`, `sofascore_scraper/store/purge.py:83-182`
 at `b6caf2f`). The first-time-user review found no way to delete one league's data; `Store.clear` deletes
 by scope for every tournament. `store.purge.tournament(tournament_id, season_id=None)` deletes what one
 tournament, or one of its seasons, has stored, and returns a `TournamentClearReport` (`events`,
@@ -4316,7 +4347,7 @@ tournament, or one of its seasons, has stored, and returns a `TournamentClearRep
   `op:clear` when this process does not hold it, as `Store.clear` does) and then, also when the delete
   stops half way, rebuilds the catalog in place from the remaining files under the same lease; a failed
   rebuild is a warning and `catalog_rebuilt` False.
-- **Callers.** `MaintenanceService.clear_tournament` (`src/services/maintenance.py:106-119`), the API's
+- **Callers.** `MaintenanceService.clear_tournament` (`sofascore_scraper/services/maintenance.py:106-119`), the API's
   `clear` job with `tournament_id` (and optionally `season_id`), and `DELETE /api/v1/follows/{id}?
   delete_data=true`, which removes a tournament follow and starts that job (`clear_job` in the answer).
 - It deletes whole directories itself, like `Store.clear`, and does not use `EventStore.delete`; decision
@@ -4340,8 +4371,8 @@ ST-23 (#110) needed nothing of its own: `migrate` holds `writer` and stages unde
 next to its target (4.5). ST-24 (#109) uses `.meta/tmp/backup.<random>` for the copy of `state.db` and
 `.meta/tmp/restore.<random>` for a restore, which holds `maintenance`.
 
-As built (ST-20, #82; `files.staging_holder` and `files.purge_staging`, `src/store/files.py:339` and `:345`,
-and `LeaseManager._purge_staging`, `src/store/lease.py:347-359` at `9b03c64`). There is a third label, `put`,
+As built (ST-20, #82; `files.staging_holder` and `files.purge_staging`, `sofascore_scraper/store/files.py:339` and `:345`,
+and `LeaseManager._purge_staging`, `sofascore_scraper/store/lease.py:347-359` at `9b03c64`). There is a third label, `put`,
 for a write by a process that holds neither `writer` nor `live` (the single-match fetch until P13, the 2.x
 watcher); `EventStore` picks the label from the leases this process holds. A granted `writer` lease removes
 the `writer` entries, every entry that belongs to no lease (`export`, `put`, an unknown label) once it is
@@ -4359,7 +4390,7 @@ as follows:
 | This document | Plan item |
 |---|---|
 | fixture factory and reader goldens | G-02 |
-| presence predicates and the outcome type in `src/slices.py` | ST-02 |
+| presence predicates and the outcome type in `sofascore_scraper/slices.py` | ST-02 |
 | Store core (errors, codec, files, layout, manifest) | ST-03 |
 | boundary, layering and API-surface tests | ST-04 |
 | legacy reader | ST-05 |
@@ -4488,13 +4519,13 @@ Claims that did not hold against the code, and what was changed:
    Store's rule (newest of all names) is stated as a difference from both readers.
 2. **Refresh has no status condition.** The draft defined "provisional" over the terminal status classes and
    put that condition into the `events_unsettled` index. `refresh_due` does not look at the status
-   (`src/refresh.py:63-81`). The index predicate and section 8.3 were changed so that the default is exactly
+   (`sofascore_scraper/refresh.py:63-81`). The index predicate and section 8.3 were changed so that the default is exactly
    today's rule; the status filter is a parameter.
 3. **Legacy list scores.** The draft's test "catalog rows equal the summary CSV" cannot pass with
-   `home_score = display`: the summary holds `homeScore.current` (`src/match_fetcher.py:570-571`). Four columns
+   `home_score = display`: the summary holds `homeScore.current` (`sofascore_scraper/match_fetcher.py:570-571`). Four columns
    were added for the legacy shapes (3.3) and the difference is described in 8.2.
 4. **Dashboard counts.** Besides counting only `season_*` directories, today's statistics sum CSV rows and
-   season-list files without de-duplicating (`src/services/stats.py:95`, `:128-131`). Added to 1.2 as a second
+   season-list files without de-duplicating (`sofascore_scraper/services/stats.py:95`, `:128-131`). Added to 1.2 as a second
    known difference for the statistics reader.
 5. **Line references.** CI matrix rows for Windows and macOS are `ci.yml:62-63`; the pytest steps are `:85-93`;
    `NO_TOURNAMENT_DIR` is at `match_data_fetcher.py:58`; the terminal UI's restore is
@@ -4505,7 +4536,7 @@ Changes that come from reconciling with the service design:
 6. **`state.db` holds more.** Job events, sink cursors, runtime facts and all event streams (not only live
    events) are in `state.db`; the service design's "extended `jobs.db`" was dropped. `live_events` became
    `stream_events` with a `stream` column, a de-duplication key and one sequence for all streams.
-7. **One outcome type.** `Outcome` is defined once in `src/slices.py` with the statuses `ok`, `empty`, `failed`,
+7. **One outcome type.** `Outcome` is defined once in `sofascore_scraper/slices.py` with the statuses `ok`, `empty`, `failed`,
    `skipped`. The Store stores `failed` as state `error` and ignores `skipped`. `keep_history` moved from the
    outcome to an argument of `put`.
 8. **Atomic change detection.** `put(change=row)` became `put(on_event_change=callback)`, so the comparison
@@ -4559,7 +4590,7 @@ Corrections after batches three and four (2026-10-02; the same list, by document
 `03-implementation-plan.md` section 11):
 
 31. **The package root** loads its public names on first use, and exports the facade, the leases, the job
-    store, the stream types and the follows names; `src/web/jobs.py` imports from the root. Section 2.1
+    store, the stream types and the follows names; `sofascore_scraper/web/jobs.py` imports from the root. Section 2.1
     (ST-10, ST-18, ST-17, FX-1).
 32. **The facade as built**: no `jobs` attribute (a property since ST-11, item 59), a registry keyed by
     directory and `readonly`, `lease_holder`, `info(sizes=)`, constructors that take the Store. Section 2.3
@@ -4940,14 +4971,14 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
 125. **A data directory on Windows.** The document did not say that the registry's open Store keeps a data
      directory busy. On Windows it can be deleted or moved only after `Store.close()`, and the settings
      routes do not close it yet. Sections 1.1, 2.3, 6.4, 13 (#120).
-126. **The root exports.** The document said that no version number is exported from `src.store`. Since P19
+126. **The root exports.** The document said that no version number is exported from `sofascore_scraper.store`. Since P19
      `LAYOUT_VERSION`, `CATALOG_SCHEMA` and `load_migrations` are, and the items of these batches added their
      types. Section 2.1 (P19 #119; ST-22, ST-23, ST-24, ST-25).
 127. **Measurements** of RD-3, ST-22, FX-12, ST-21, ST-25 with #111, ST-24 and ST-23 were added, with what was
      not measured. Section 11.
 128. **No submodule import, no 2.x helper in the Store.** The document said that `src/fsutil.py` imports
-     `src.store.files` and re-exports the 2.x helpers, which keep 0600 and raise `ReplaceBusy`. ST-28
-     deleted the shim; the helpers are `src/config_files.py`, outside the Store (0600, the plain
+     `sofascore_scraper.store.files` and re-exports the 2.x helpers, which keep 0600 and raise `ReplaceBusy`. ST-28
+     deleted the shim; the helpers are `sofascore_scraper/config_files.py`, outside the Store (0600, the plain
      `PermissionError` after the Windows retries), and the Store root exports `league_dir_name`. Sections
      2.1, 2.2, 2.3 (error table), 4.4 (ST-28 #135).
 129. **The boundary checks are strict.** The document described the ratchet, the `STORE_BOUNDARY_UPDATE`
@@ -4981,6 +5012,17 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
      and event follows download their matches (2.3, FX-19); `Migrator.last_run()` feeds the status pages
      (3.3, FX-13); the four old backup scope names are deprecated (9.1, decision of 2026-10-03); the
      `parquet` extra needs pyarrow 16 and CI installs it (4.5, FX-15, FX-17).
+137. **The Settings page's settings in a backup.** The document said that config files and `.env` are never
+     restored, and the backup took only the files the caller named (`leagues.txt`, `league_sports.json`,
+     the active `sofascore.toml`), so the settings saved in the web app were lost with a restore. Since
+     FX-22 `config/overrides.json` goes into `all`, `state` and `config` archives (0600) and comes back with
+     the restore, under the Settings file lock, with a reload and a rollback to the previous file when it
+     cannot be loaded; the other config files and `.env` are still never restored. Sections 9.1, 9.2 (FX-22
+     #165).
+138. **The package name.** `src/` is `sofascore_scraper/` since REN-1; the paths of this document follow
+     (header). The Store's modules, its public names and the boundary rules are unchanged; the boundary
+     tables of `tests/test_store_boundary.py` (`FS_ALLOWLIST`, `NAMED_EXCEPTIONS`) are keyed by the new
+     paths (REN-1 #168).
 
 ---
 

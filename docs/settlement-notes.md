@@ -1,7 +1,7 @@
 # Sonuçlandırma notları
 
 Sonuçlandırma **bu repoda yapılmaz**; ayrı bir serviste yapılacak. Bu belge o servisin kullanacağı kuralları
-araştırma verisine bağlar. Sınıflar ve skor alanları: `src/status.py` (`classify_status`, `extract_scores`).
+araştırma verisine bağlar. Sınıflar ve skor alanları: `sofascore_scraper/status.py` (`classify_status`, `extract_scores`).
 Kaynak: `docs/status-matrix/README.md` (aşağıda "README") ve `research/finish_lag/retro_2026-09-29_{sport}.jsonl`.
 
 "Üst lig" README'deki tanımdır: futbol ve basketbolda SofaScore'un oyuncu istatistiği yayınladığı turnuvalar
