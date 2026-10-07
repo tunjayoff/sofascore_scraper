@@ -71,6 +71,15 @@ and kept every file's line count, so the rename itself moved no line. Paths of f
 `src/ui/`, `src/web/routes/`, `src/web/fetch_job.py`, `src/SofaScoreUi.py`) keep the old form. References
 marked `6f79344` are to `origin/main` at that commit. Section 12 lists the corrections from item 137 on.
 
+Revised an eighth time on 2026-10-08 after the end-to-end test against the real SofaScore (2026-10-07 and
+2026-10-08) and its fix items FX-24 #170, FX-23 #171 and FX-25 #172. The Store-side changes: a new lease
+`export`, so that an export runs while a download runs (6.1); a backup records its own job as completed in
+the archive, and a restore of an older archive keeps the finished record of a job that was running when the
+archive was taken (9.1, 9.2); the catalog's derived values are at `DERIVE_VERSION` 6 (a football score rule,
+`04-schema-v1.md`; 7.2); the Store's exception messages are English (7.3); the lock file of a settings file
+is removed after use (2.1). References marked `48e4c4c` are to `origin/main` at that commit. Section 12
+lists the corrections from item 139 on.
+
 Terms used throughout:
 
 - **payload**: one SofaScore JSON response, stored as a file.
@@ -285,7 +294,13 @@ submodule: `src/fsutil.py` is deleted, and the 2.x file helpers it re-exported (
 outside `DATA_DIR` (`config/leagues.txt`, `config/league_sports.json`, `overrides.json`, and the lock of
 the log rotation). They write atomically with mode 0600 and, after the Windows retries, raise the plain
 `PermissionError` (`sofascore_scraper/config_files.py:44-55` at `b6caf2f`); before, `ReplaceBusy`, a subclass of
-`PermissionError`, so callers see no difference. The Store keeps no 2.x helper; `ReplaceBusy` stays inside
+`PermissionError`, so callers see no difference. Since FX-25 (#172) `file_lock` removes its `<path>.lock`
+file while it still holds the lock, and a waiter checks after `flock` that the path still names the file
+it locked (same device and inode) and opens it again if not, so two processes never hold the lock on two
+different files (`sofascore_scraper/config_files.py:81-111` at `48e4c4c`); this covers `overrides.json`,
+`leagues.txt`, `league_sports.json` and the log rotation. A backup names the settings files it takes, so a
+`.lock` file was never a member. A process of an older version that waits on the same lock file during an
+upgrade can overlap once with a new one that removes it. The Store keeps no 2.x helper; `ReplaceBusy` stays inside
 `sofascore_scraper/store/files.py` (`:48`) as the internal signal of its own retry, which `_store_error` turns into a
 non-fatal `StoreError` (`:132-139`).
 
@@ -3445,10 +3460,11 @@ There is one implementation, `sofascore_scraper/store/lease.py`. The job manager
 | `watcher:<sport>` | the 2.x-style polling watcher, one per sport (`sofascore_scraper/watcher.py:10-12`), until the live service replaces it | the same watcher name; `live`; `maintenance` |
 | `live` | the live service (one per data directory, all sports) | another `live`; every `watcher:<sport>`; `maintenance`; a running `migrate` |
 | `sinks` | the process that dispatches streams to webhooks and file sinks | another `sinks` |
+| `export` | the export job of the API and the scheduler (since FX-23, #171) | another `export`; `maintenance` |
 | `maintenance` | clear, restore, catalog rebuild, state-db migrations, data-directory change | everything except `sinks` |
 
-Implementation of the exclusion with `maintenance`: every `writer`, `watcher` and `live` holder also holds a
-shared lock on `maintenance.lock`; `maintenance` takes that file exclusively and fails if anyone holds it
+Implementation of the exclusion with `maintenance`: every `writer`, `watcher`, `live` and `export` holder
+also holds a shared lock on `maintenance.lock`; `maintenance` takes that file exclusively and fails if anyone holds it
 shared. On Windows, where `msvcrt.locking` has no shared mode, each holder locks one distinct byte of the file
 (the first free one of 64) and `maintenance` locks the whole 64-byte range. `live` and `watcher:<sport>`
 exclude each other the same way through `live.lock`; `migrate` holds `writer` and additionally takes
@@ -3574,6 +3590,21 @@ As built (ST-10 #50, `sofascore_scraper/store/lease.py` at `f286723`):
 - **Measured.** Taking and releasing a lease 0.12 ms on tmpfs, a refusal 10.5 ms (the three attempts). Eight
   processes taking `writer` and `maintenance` 300 times each never overlapped (2,393 acquisitions, checked
   with an `O_EXCL` flag file; run outside the test suite).
+- **The `export` lease** (FX-23, #171; finding F14 of the end-to-end test). An export job took `writer`,
+  so it was refused for the whole length of a download ("another job is writing to the data folder"),
+  although an export only reads the catalog and the payloads (SQLite WAL readers, files replaced atomically)
+  and writes only into `exports/` and its own `export.<random>` staging entries; the only reason was the
+  job model, one running job per job store. As built: `export` is a lease of its own (`export.lock`
+  exclusive, `maintenance.lock` shared; `EXPORT`, `sofascore_scraper/store/lease.py:78` at `48e4c4c`), so
+  one export runs at a time, next to `writer`, and clear, restore, rebuild and a data-folder change
+  (`maintenance`) wait for it; a held `export` lease maps to `data_operation_running` (409). The API runs an
+  export job in a job store of its own on the same `state.db`, closed when the job ends, so the download's
+  running row and its mirror are untouched (`JOB_LEASES`, `EXPORT_KIND`,
+  `sofascore_scraper/store/jobs.py:67-68`). `reap_stale` treats rows of kind `export` as alive while someone
+  holds `export`, and the export store's lease does not count as holding `writer`, so it never marks the
+  download's row stale (`:567-574`). Cancel works through the row's flag as for any job. `ssc export` takes
+  no lease. Queueing the export behind the download was the alternative and was not chosen: the user would
+  still wait for the whole download.
 
 This replaces the in-process slot of `JobStore.exclusive` (`sofascore_scraper/web/jobs.py:150-168`), which cannot see a CLI
 process writing the same directory. `JobStore.exclusive` keeps its interface and its error classes
@@ -3820,6 +3851,13 @@ esports, darts and MMA, and cricket's `willcontinue` status, the end of a day's 
 to `tests/golden/derive/event_rows.json`. The next bump is 6. `ssc version` (P19) does not print the
 derive version, because a root export would make its API snapshot a file that every bump changes.
 
+At `48e4c4c` it is 6 (`sofascore_scraper/store/derive.py:50`): FX-23 (#171) changed the football rule for
+`after_extra_time` (finding F10 of the end-to-end test: a match that went straight to penalties showed an
+extra-time score; `04-schema-v1.md`, `FootballScore`). Every catalog is rebuilt once on its next open, so
+stored data is corrected without a command (`tests/test_score_rederive.py` opens a version-5 catalog with
+the stale value). Export files written before are not rewritten; the user exports again. The bump changed
+one row of the derive and catalog goldens (event 16950622). The next bump is 7.
+
 ### 7.3 State db
 
 `sofascore_scraper/store/migrations/state/NNNN_<name>.sql`, applied in order on open under the `maintenance` lease:
@@ -3880,7 +3918,15 @@ As built (ST-09, `sofascore_scraper/store/state.py`):
   #100) all seven are English, `sofascore_scraper/store/jobs.py` has one more English warning (a Store closed while a
   finishing job still uses it), and the log-language test scans every module of `sofascore_scraper/store` instead of
   three, with a second test that makes sure the scan finds log calls. The texts of `StoreError` and its
-  subclasses are still partly Turkish (for example `Depo kapatılmış` of a closed Store).
+  subclasses are still partly Turkish (for example `Depo kapatılmış` of a closed Store). As built (FX-25,
+  #172) they are English: the `default_message` of every Store error class, `from_exception` ("Data could
+  not be written to disk (…)"), `SchemaTooNew`, `LeaseHeld` ("The 'writer' lease could not be taken: another
+  owner holds the '…' lease of the data directory (pid …, host …, purpose …, since …)") and about 110
+  messages of 23 Store modules, with the manifest's validation problems; they reach users as the CLI's
+  error text, a failed job's message and `details.store_message` of a v1 error. Six `ValueError`s that
+  report a misuse by the code itself stay Turkish (v1 turns them into `internal` without the text), and
+  `tests/test_store_messages_english.py` lists them by name. The issue texts of `verify` and of the scans
+  (`ssc verify`, rebuild reports) are still Turkish (a follow-up after 3.0.0).
 - `open_store` imports the 2.x job rows but does not sweep them: a row that 2.x left as `running` stays
   `running` in `state.db` until a job store looks at that directory. Since P11 that is `reap_stale`, which
   replaces the unconditional sweep (2.3, 6.1): it runs when a `JobStore` is constructed on the directory,
@@ -4182,7 +4228,15 @@ Since FX-22 (#165, `1c20fb9`) the settings saved on the web app's Settings page 
 when the caller passes it and the file exists; `BackupService.create` and therefore `ssc backup create` and
 the v1 backup job always pass it. The file can hold the proxy address with its password, so such an
 archive is created 0600 from the start, as one with `.env` is; its name does not change (only `.env` adds
-`_with_env`). `data` never takes it. Archives made before FX-22 have no such member.
+`_with_env`). `data` never takes it. Archives made before FX-22 have no such member. Only the settings files
+are taken by name; a `.lock` file next to them is never a member (FX-25, #172).
+
+Since FX-23 (#171; finding F30 of the end-to-end test) a backup records the job that makes it. The web and
+scheduler `backup` jobs pass their id (`BackupManager.create(..., job_id=)`,
+`sofascore_scraper/store/backup.py:448` at `48e4c4c`), and the archive's copy of `state.db` holds that job
+as `completed` (progress 100, `finished_at`). Before, the copy was taken while the job ran, so every restore
+of such an archive brought the job back as running, marked it interrupted and showed a false "the last
+backup was interrupted" warning on the Overview. `ssc backup create`, which runs as no job, passes none.
 
 ### 9.2 Restore
 
@@ -4269,6 +4323,9 @@ lease rows (`BackupManager._load_state`, `sofascore_scraper/store/backup.py:817-
 - The rollback loads the saved state through the same function.
 - After the restore the job history is the backup's plus the jobs that were running, among them the restore
   job, which finishes in its own row.
+- Since FX-23 (#171) a job that is running in the archive but finished in this data folder (the job that
+  took an older archive, made before FX-23) keeps its finished row and events from the open database
+  (`BackupManager._finished_here`), instead of coming back as running and being marked interrupted.
 - One edge is left, unchanged in kind: a write by another thread to a kept job row between the read and the
   backup step (a heartbeat, a cancel request) is not carried over. The restore job writes its own progress
   on the restoring thread, so nothing of its own is lost. `tests/test_restore_keeps_the_running_job.py`
@@ -5023,6 +5080,29 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
      (header). The Store's modules, its public names and the boundary rules are unchanged; the boundary
      tables of `tests/test_store_boundary.py` (`FS_ALLOWLIST`, `NAMED_EXCEPTIONS`) are keyed by the new
      paths (REN-1 #168).
+
+Corrections after the end-to-end test and FX-23 to FX-25 (2026-10-08, the eighth revision; checked at
+`48e4c4c`):
+
+139. **An export runs while a download runs.** The lease table had no `export`; an export job took
+     `writer` and was refused during a download. Since FX-23 an export job holds the lease `export`
+     (exclusive among exports, shared on `maintenance.lock`), runs next to `writer` in a job store of its
+     own, and makes clear, restore, rebuild and a data-folder change wait; `reap_stale` keeps export rows
+     alive while the lease is held. Section 6.1 (FX-23 #171).
+140. **A backup records its own job.** The archive's `state.db` was copied while the backup job ran, so a
+     restore marked that job interrupted. The web and scheduler backup jobs pass their id and the copy holds
+     the job as `completed`; a restore of an older archive keeps the finished live record of such a job.
+     Sections 9.1, 9.2 (FX-23 #171).
+141. **Store messages in English.** Section 7.3 said that the texts of `StoreError` and its subclasses were
+     partly Turkish. They are English since FX-25, except six internal `ValueError`s; the issue texts of
+     `verify` and the scans are still Turkish. Section 7.3 (FX-25 #172).
+142. **The lock file of a settings file.** `file_lock` left `<path>.lock` next to `overrides.json` and the
+     other settings files. It removes it after use, with an inode check for a waiter; a backup never took
+     it. Sections 2.1, 9.1 (FX-25 #172).
+143. **Derived values at version 6.** `DERIVE_VERSION` is 6: the football `after_extra_time` of a match that
+     went straight to penalties is null (`04-schema-v1.md`), and a catalog written at version 5 is
+     re-derived from the files on its first open; export files written before are not rewritten. Section
+     7.2 (FX-23 #171).
 
 ---
 
