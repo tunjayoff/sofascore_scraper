@@ -6,8 +6,11 @@ import ConfirmDialog from '@/ui/ConfirmDialog.vue'
 import { openModals, setTeleportDialogs } from '@/ui/modal'
 import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
-import { flush } from './helpers'
-import { axeViolations } from './v1'
+import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
+import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
+import { resetSports } from '@/app/sports'
+import { callsTo, flush, mockFetch } from './helpers'
+import { axeViolations, mountScreen, sport, status } from './v1'
 
 /**
  * FX-24: the findings of the end-to-end test of the web UI against the real SofaScore (F5 to F37 of the
@@ -111,5 +114,84 @@ describe('F22: a dialog is modal for real', () => {
     await flush()
     expect(first.closest('[inert]')).toBeNull()
     expect(page.hasAttribute('inert')).toBe(true)
+  })
+})
+
+const list = <T>(data: T[]) => ({ data, page: { limit: 0, next_cursor: null } })
+const SPORTS = {
+  'GET /api/v1/sports': list([sport('football'), sport('tennis')]),
+  'GET /api/v1/sports/football': { data: sport('football') },
+  'GET /api/v1/sports/tennis': { data: sport('tennis') },
+  'GET /api/v1/status': { data: status() },
+}
+const regionEn = (code: string) => new Intl.DisplayNames(['en'], { type: 'region' }).of(code)
+
+describe('F12, F31, F32: search hits in the reader’s words', () => {
+  beforeEach(() => resetSports())
+
+  it('regions, home nations and countries SofaScore writes in English are named in the reader’s language', () => {
+    setLocale('tr')
+    expect(placeName(null, 'Europe')).toBe('Avrupa')
+    expect(placeName(null, 'South America')).toBe('Güney Amerika')
+    expect(placeName(null, 'North & Central America')).toBe('Kuzey ve Orta Amerika')
+    expect(placeName('EN', 'England')).toBe('İngiltere')
+    expect(placeName(null, 'England')).toBe('İngiltere')
+    // a country without a code, by SofaScore's English name, also an older one ("Turkey")
+    expect(placeName(null, 'Turkey')).toBe('Türkiye')
+    expect(placeName(null, 'Spain')).toBe('İspanya')
+    expect(placeName('TR', 'Turkey')).toBe('Türkiye')
+    // a league's category that is a tour, not a place, stays as SofaScore writes it
+    expect(placeName(null, 'ATP')).toBe('ATP')
+    expect(hitPlace({ category: { name: 'Europe' }, country: null })).toBe('Avrupa')
+    setLocale('en')
+    expect(placeName(null, 'Europe')).toBe('Europe')
+    expect(placeName('EN', 'England')).toBe('England')
+    expect(placeName(null, 'Turkey')).toBe(regionEn('TR'))
+    expect(placeName('', null)).toBe('')
+  })
+
+  it('SofaScore’s placeholder team “No team” is never shown', () => {
+    expect(playerTeam({ id: 0, name: 'No team' })).toBeNull()
+    expect(playerTeam({ name: ' no team ' })).toBeNull()
+    expect(playerTeam(null)).toBeNull()
+    expect(playerTeam({ name: 'Galatasaray' })).toBe('Galatasaray')
+  })
+
+  it('a tennis player SofaScore lists as a team is shown with the players and followed as a team; a region in Turkish', async () => {
+    setLocale('tr')
+    const f = mockFetch({
+      ...SPORTS,
+      'POST /api/v1/tournaments/search': list([
+        { kind: 'team', id: 412345, name: 'Chiara Icardi', slug: 'icardi-chiara', sport: 'tennis', category: { country_code: 'IT' }, country: { code: 'IT', name: 'Italy' }, team: null, followed: false },
+        { kind: 'player', id: 70996, name: 'Mauro Icardi', sport: 'football', category: { country_code: 'AR' }, country: { code: 'AR', name: 'Argentina' }, team: { id: 3061, name: 'Galatasaray' }, followed: false },
+        { kind: 'player', id: 99001, name: 'Luca Icardi', sport: 'football', category: { country_code: 'IT' }, country: { code: 'IT', name: 'Italy' }, team: { id: 0, name: 'No team' }, followed: false },
+        { kind: 'tournament', id: 384, name: 'CONMEBOL Libertadores', sport: 'football', category: { id: 1470, name: 'South America' }, country: null, team: null, followed: false },
+      ]),
+    })
+    const { w } = await mountScreen(FollowEditorScreen, '/follows/new')
+    wrappers.push(w)
+    await flush()
+    await w.find('[data-testid="editor-query"]').setValue('icardi')
+    await w.find('[data-testid="editor-search"]').trigger('submit')
+    await flush()
+    expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
+    // no "Teams" group: the tennis player is with the players, with the player icon
+    expect(w.find('[data-group="team"]').exists()).toBe(false)
+    const players = w.find('[data-group="player"]')
+    expect(players.findAll('[role="option"]').map((o) => o.attributes('data-hit'))).toEqual(['team:412345', 'player:70996', 'player:99001'])
+    expect(w.find('[data-group="tournament"] [data-hit="tournament:384"]').text()).toContain('Güney Amerika')
+    // “No team” is not a team
+    expect(w.find('[data-hit="player:99001"]').text()).not.toContain('No team')
+    expect(w.find('[data-hit="player:99001"] [data-testid="hit-team"]').exists()).toBe(false)
+    expect(w.find('[data-hit="player:70996"] [data-testid="hit-team"]').text()).toBe(t('ui.followEditor.playsFor', { team: 'Galatasaray' }))
+    expect(await axeViolations(w.find('[data-testid="editor-hits"]').element)).toEqual([])
+    // picked: shown as a player, followed as a team (its follow id stays team:412345)
+    await w.find('[data-hit="team:412345"]').trigger('click')
+    await flush()
+    const picked = w.find('[data-testid="editor-picked"]')
+    expect(picked.attributes('data-hit')).toBe('team:412345')
+    expect(picked.text()).toContain(t('ui.follows.kind.player'))
+    expect(w.find('[data-testid="editor-individual"]').text()).toBe(t('ui.suggest.individual', { sport: 'tenis' }))
+    expect((w.find('[data-kind="team"] input').element as HTMLInputElement).checked).toBe(true)
   })
 })

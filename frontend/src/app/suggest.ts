@@ -1,6 +1,7 @@
 import { computed, getCurrentScope, onScopeDispose, ref, watch, type Ref } from 'vue'
 import { v1 } from '@/api/v1/client'
 import type { FollowRecord, TournamentHit } from '@/api/v1/schema'
+import { isIndividual } from '@/app/sports'
 
 /**
  * Suggestions while typing (FX-20), for the follow editor's search and the quick search (Ctrl K):
@@ -35,11 +36,21 @@ export type Suggestion = {
   /** `<kind>:<id>`, the follow id it would get. */
   key: string
   kind: SuggestKind
+  /** The group it is shown in: a "team" of a sport of one against one is a player (FX-24 F31). */
+  group: SuggestKind
   hit: TournamentHit
   followed: boolean
   source: SuggestSource
 }
 export type SuggestGroup = { kind: SuggestKind; items: Suggestion[] }
+
+/**
+ * The kind a hit is shown as: SofaScore lists the players of tennis, darts, MMA … as teams (`team`), so such
+ * a "team" is shown with the players; it is still followed as a team (its follow id stays `team:<id>`).
+ */
+export function shownKind(kind: SuggestKind, sport: string | null | undefined): SuggestKind {
+  return kind === 'team' && isIndividual(sport) ? 'player' : kind
+}
 
 /** The text as it is sent: trimmed, inner spaces as one. */
 export function normalize(q: string): string {
@@ -275,7 +286,7 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
       }
       // "already added" from the follows; the server's flag only until they are read (a kept answer may be older)
       const known = source === 'follow' || followed.has(key) || (!follows.value.length && !!hit.followed)
-      out.set(key, { key, kind, hit: { ...hit, kind }, followed: known, source })
+      out.set(key, { key, kind, group: shownKind(kind, hit.sport), hit: { ...hit, kind }, followed: known, source })
     }
     if (local) {
       const starts = (name: string) => (fold(name).startsWith(wanted) ? 0 : 1)
@@ -295,7 +306,7 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
   })
 
   const groups = computed<SuggestGroup[]>(() =>
-    SUGGEST_KINDS.map((kind) => ({ kind, items: items.value.filter((s) => s.kind === kind).slice(0, PER_KIND) })).filter((g) => g.items.length),
+    SUGGEST_KINDS.map((kind) => ({ kind, items: items.value.filter((s) => s.group === kind).slice(0, PER_KIND) })).filter((g) => g.items.length),
   )
   /** The suggestions in the order they are shown (for the arrow keys). */
   const flat = computed(() => groups.value.flatMap((g) => g.items))

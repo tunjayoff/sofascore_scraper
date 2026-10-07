@@ -11,7 +11,7 @@ import { jobKindText, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
 import { loadTournaments } from '@/screens/events/eventText'
 import { MIN_CHARS, noteFollows, normalize, useSuggest } from '@/app/suggest'
 import { sportName } from '@/app/sports'
-import { hitPlace, kindIcon } from '@/screens/follows/followText'
+import { hitPlace, kindIcon, playerTeam } from '@/screens/follows/followText'
 
 /**
  * Quick search, `Ctrl K` / `⌘ K` (3.3, decision 20). It searches stored data: the actions (Add league,
@@ -125,11 +125,11 @@ const remoteHits = computed<Hit[]>(() => {
   const text = normalize(query.value)
   const found: Hit[] = remote.flat.value.map((s) => {
     const h = s.hit
-    const hint = [t(`ui.follows.kind.${s.kind}`), h.sport ? sportName(h.sport) : '', hitPlace(h), h.team?.name ?? ''].filter(Boolean).join(' · ')
+    const hint = [t(`ui.follows.kind.${s.group}`), h.sport ? sportName(h.sport) : '', hitPlace(h), playerTeam(h.team) ?? ''].filter(Boolean).join(' · ')
     const to: RouteLocationRaw = s.followed
       ? `/follows/${s.kind}/${h.id}`
       : { path: '/follows/new', query: { kind: s.kind, id: String(h.id), name: h.name, ...(h.sport ? { sport: h.sport } : {}) } }
-    return { id: `ss-${s.kind}-${h.id}`, label: h.name, hint, icon: kindIcon(s.kind), to, added: s.followed }
+    return { id: `ss-${s.kind}-${h.id}`, label: h.name, hint, icon: kindIcon(s.group), to, added: s.followed }
   })
   // every result of the text in the follow editor (where the kept answer costs nothing)
   found.push({ id: 'sofascore', label: t('ui.palette.searchSofascore', { q: text }), hint: t('ui.palette.searchSofascoreHint'), icon: 'external', to: { path: '/follows/new', query: { q: text } } })

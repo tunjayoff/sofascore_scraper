@@ -12,7 +12,7 @@ import EmptyState from '@/ui/EmptyState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1, V1Error } from '@/api/v1/client'
 import type { FollowPatch, FollowRecord, TournamentHit } from '@/api/v1/schema'
-import { loadSports, sportName, sports } from '@/app/sports'
+import { isIndividual, loadSports, sportInText, sportName, sports } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
 import { toast } from '@/ui/toast'
 import { toastError } from '@/api/v1/errors'
@@ -23,7 +23,7 @@ import MoveFollow from './MoveFollow.vue'
 import HelpTip from '@/ui/HelpTip.vue'
 import { noteFollowAdded } from '@/app/suggest'
 import FollowSearch from './FollowSearch.vue'
-import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, dataText, followKindReady, followPath, hitPlace, lockReason, seasonsText, type FollowKind } from './followText'
+import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, dataText, followKindReady, followPath, hitPlace, lockReason, playerTeam, seasonsText, type FollowKind } from './followText'
 
 /**
  * The follow editor (6.3), "Add a league or team". A new follow in four steps:
@@ -80,6 +80,8 @@ const searchBox = ref<InstanceType<typeof FollowSearch> | null>(null)
 const nextButton = ref<HTMLButtonElement | null>(null)
 const picked = ref<TournamentHit | null>(null)
 const pickedHit = computed(() => (picked.value ? `${picked.value.kind ?? 'tournament'}:${picked.value.id}` : null))
+/** A player SofaScore lists as a team (tennis, darts …): shown as a player, followed as a team (FX-24 F31). */
+const pickedIndividual = computed(() => picked.value?.kind === 'team' && isIndividual(picked.value.sport))
 let picking = false
 
 function pick(hit: TournamentHit) {
@@ -298,12 +300,13 @@ onMounted(() => {
             <p v-if="picked" class="m-0 u-notice flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="editor-picked" :data-hit="pickedHit">
               <UiIcon name="check" :size="16" />
               <span>{{ t('ui.suggest.picked') }} <strong>{{ picked.name }}</strong></span>
-              <span class="u-small u-muted">{{ t(`ui.follows.kind.${picked.kind ?? 'tournament'}`) }}</span>
+              <span class="u-small u-muted">{{ t(`ui.follows.kind.${pickedIndividual ? 'player' : (picked.kind ?? 'tournament')}`) }}</span>
               <span v-if="picked.sport" class="u-small u-muted">{{ sportName(picked.sport) }}</span>
               <span v-if="hitPlace(picked)" class="u-small u-muted">{{ hitPlace(picked) }}</span>
-              <span v-if="picked.team?.name" class="u-small u-muted">{{ t('ui.followEditor.playsFor', { team: picked.team.name }) }}</span>
+              <span v-if="playerTeam(picked.team)" class="u-small u-muted">{{ t('ui.followEditor.playsFor', { team: playerTeam(picked.team) }) }}</span>
               <span class="u-small u-muted u-mono">#{{ picked.id }}</span>
               <UiBadge v-if="picked.followed" tone="ok" icon="check">{{ t('ui.followEditor.alreadyFollowed') }}</UiBadge>
+              <span v-if="pickedIndividual" class="basis-full u-small u-muted" data-testid="editor-individual">{{ t('ui.suggest.individual', { sport: sportInText(picked.sport) }) }}</span>
             </p>
           </template>
           <p v-else class="m-0 u-small u-muted" data-testid="editor-event-note">{{ t('ui.followEditor.eventNote') }}</p>
