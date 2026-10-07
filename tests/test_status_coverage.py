@@ -13,6 +13,7 @@ Ağ yok.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 from pathlib import Path
@@ -26,6 +27,7 @@ from sofascore_scraper.services import planning
 from sofascore_scraper.services import status as status_module
 from sofascore_scraper.services.status import CoverageReport, SeasonCoverage, StatusService, TournamentCoverage
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, Outcome, match_detail_slice_present
+from sofascore_scraper.status import classify_status
 from sofascore_scraper.store import Ref, Scope, Store, open_store
 
 REQUIRED = planning.expected_slice_keys("football")
@@ -89,14 +91,19 @@ def test_coverage_agrees_with_the_summary(fx: sf.LegacyFixture) -> None:
     assert all(key in planning.expected_slice_keys(None) for key in report.missing)
 
 
-def test_complete_means_the_planner_has_nothing_to_fill(fx: sf.LegacyFixture) -> None:
-    """Tam sayılan maç planlayıcının `refill` demediği maçtır (aynı eşik, aynı beklenen dilimler)."""
+def test_complete_means_the_planner_has_nothing_to_fill_but_a_confirmation(fx: sf.LegacyFixture) -> None:
+    """
+    Tam sayılan maç, planlayıcının doldurmayı beklediği dilimi olmayan maçtır (aynı eşik, aynı beklenen dilimler);
+    bitmiş maçta son yanıtı "veri yok" olan dilim, planlayıcı onu doğrulamak için bir kez daha istese de çözülmüş
+    sayılır (FX-23: ilk indirmeden sonra tamlık "%0" görünmesin).
+    """
     store = open_store(fx.data_dir)
     report = StatusService(store).coverage()
     incomplete = 0
     for state in store.events.states():
-        if state.event.has_event_payload and planning.missing_slice_keys(state):
+        if state.event.has_event_payload and planning.unresolved_slice_keys(state):
             incomplete += 1
+        assert set(planning.unresolved_slice_keys(state)) <= set(planning.missing_slice_keys(state))
     assert report.matches - report.complete == incomplete
 
 
@@ -108,9 +115,18 @@ def _read(path: Path) -> Any:
 
 
 def file_missing(directory: Path) -> Tuple[str, ...]:
-    """Dosyalardan elle: veri dosyası olmayan ve `_unavailable.json` sayacı eşiğe varmamış beklenen dilimler."""
+    """
+    Dosyalardan elle: veri dosyası olmayan ve `_unavailable.json` sayacı eşiğe varmamış beklenen dilimler. Bitmiş
+    maçta sayacı olan ("veri yok" denmiş) dilim eksik sayılmaz (FX-23).
+    """
     unavailable = _read(directory / "_unavailable.json")
     counts = {str(k): int(v) for k, v in unavailable.items()} if isinstance(unavailable, dict) else {}
+    basic = _read(directory / "basic.json")
+    event = basic.get("event", basic) if isinstance(basic, dict) else None
+    finished = classify_status(event).value in ("completed", "decided_without_play")
+    status = _read(directory / "_slice_status.json")
+    failed_last = {str(k) for k, v in status.items() if isinstance(v, dict) and "error" in v} \
+        if isinstance(status, dict) else set()
     missing: List[str] = []
     for key in REQUIRED:
         body = _read(directory / f"{key}.json")
@@ -118,6 +134,8 @@ def file_missing(directory: Path) -> Tuple[str, ...]:
             continue
         if counts.get(key, 0) >= planning.DEFAULT_EMPTY_THRESHOLD:
             continue
+        if finished and counts.get(key, 0) > 0 and key not in failed_last:
+            continue  # son yanıt "veri yok" (son isteği başarısız olan dilim değil)
         missing.append(key)
     return tuple(missing)
 
@@ -190,7 +208,8 @@ def test_written_events(store: Store) -> None:
     # İki kesin "veri yok": kadro artık beklenmez, maç tamdır
     settled = put(store, _payload(pl, sf.PL_2526, 9300003), have=tuple(k for k in REQUIRED if k != "lineups"),
                   empty=("lineups",), empties=2)
-    # Tek "veri yok" yetmez: dilim eksik sayılır (planlayıcı onu yeniden ister)
+    # Tek "veri yok": bitmiş maçta tamlık için çözülmüş sayılır (FX-23); planlayıcı onu doğrulamak için bir kez
+    # daha ister
     once = put(store, _payload(pl, sf.PL_2526, 9300004), have=tuple(k for k in REQUIRED if k != "h2h"),
                empty=("h2h",), empties=1)
     bare = put(store, _payload(cup, sf.FA_2627, 9300005, OTHER_FINISHED), have=())
@@ -198,26 +217,27 @@ def test_written_events(store: Store) -> None:
     assert len({full, no_lineups, settled, once, bare, orphan}) == 6
 
     report = StatusService(store).coverage()
-    assert (report.matches, report.complete) == (6, 3)
-    assert dict(report.missing) == {key: (2 if key in ("lineups", "h2h") else 1) for key in REQUIRED}
+    assert planning.missing_slice_keys(_state(store, once)) == ("h2h",)
+    assert (report.matches, report.complete) == (6, 4)
+    assert dict(report.missing) == {key: (2 if key == "lineups" else 1) for key in REQUIRED}
     assert list(report.missing) == list(REQUIRED)  # kayıt defterinin sırası
     assert [t.tournament_id for t in report.tournaments] == [None, pl.id, cup.id]
 
     premier = report.tournament(pl.id)
-    assert (premier.matches, premier.complete) == (4, 2)
-    assert dict(premier.missing) == {"h2h": 1, "lineups": 1}
+    assert (premier.matches, premier.complete) == (4, 3)
+    assert dict(premier.missing) == {"lineups": 1}
     assert premier.seasons == (
         SeasonCoverage(sf.PL_2627.id, 2, 1, {"lineups": 1}),
-        SeasonCoverage(sf.PL_2526.id, 2, 1, {"h2h": 1}),
+        SeasonCoverage(sf.PL_2526.id, 2, 2, {}),
     )
-    assert premier.completion_rate == 50.0
+    assert premier.completion_rate == 75.0
     assert premier.seasons[0].completion_rate == 50.0
 
     cup_row = report.tournament(cup.id)
     assert (cup_row.matches, cup_row.complete, dict(cup_row.missing)) == (1, 0, {key: 1 for key in REQUIRED})
     assert report.tournament(None).matches == 1 and report.tournament(None).complete == 1
     assert report.tournament(12345) == TournamentCoverage(12345)
-    assert report.completion_rate == 50.0
+    assert report.completion_rate == 66.67
 
 
 def test_listing_only_events_are_not_counted(store: Store) -> None:
@@ -248,11 +268,29 @@ def test_scope(store: Store) -> None:
 
 
 def test_threshold(store: Store) -> None:
-    put(store, _payload(sf.PL, sf.PL_2627, 9300031), have=tuple(k for k in REQUIRED if k != "lineups"),
-        empty=("lineups",), empties=1)
+    """Eşik, son yanıtı "veri yok" olmayan dilimde sayılır: bir "veri yok", sonra başarısız bir istek."""
+    event_id = put(store, _payload(sf.PL, sf.PL_2627, 9300031), have=tuple(k for k in REQUIRED if k != "lineups"),
+                   empty=("lineups",), empties=1)
+    store.events.put(event_id, {"lineups": Outcome("failed", reason="timeout")})
+    assert _state(store, event_id).slice("lineups").state != "empty"
     service = StatusService(store)
     assert service.coverage().complete == 0
     assert service.coverage(threshold=1).complete == 1
+
+
+def test_one_no_data_answer_is_resolved_only_for_a_finished_match(store: Store) -> None:
+    """FX-23: bitmemiş maçta tek "veri yok" çözülmüş sayılmaz (maç sürerken veri daha gelebilir)."""
+    finished = put(store, _payload(sf.PL, sf.PL_2627, 9300041), have=tuple(k for k in REQUIRED if k != "lineups"),
+                   empty=("lineups",), empties=1)
+    state = _state(store, finished)
+    assert planning.missing_slice_keys(state) == ("lineups",) and planning.unresolved_slice_keys(state) == ()
+    void = dataclasses.replace(state, event=dataclasses.replace(state.event, status_class="void"))
+    assert planning.unresolved_slice_keys(void) == planning.missing_slice_keys(void)
+
+
+def _state(store: Store, event_id: int) -> Any:
+    (found,) = store.events.states(Scope(event_ids=(event_id,)))
+    return found
 
 
 def test_empty_data_directory(store: Store) -> None:
