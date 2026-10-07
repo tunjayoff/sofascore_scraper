@@ -26,11 +26,17 @@ found that the new UI had swapped the user's words for internal ones ("Follow", 
 and single-match follows were dead ends, and that seasons, data types, restore and the deletion of one
 league's data could not be done in the UI. Four items came out of it: FX-14a (frontend words, entry points,
 help), FX-19 (the backend gaps), FX-14b (the screens on the new routes, classic views removed) and FX-20
-(in progress: type-ahead search like the site, one search across kinds, job names, small UI gaps). The
+(type-ahead search like the site, one search across kinds, job names, small UI gaps; merged as #167). The
 owner asked that **the review wins over this document where they disagree**; the screen sections below say
 "As built (FX-14a)" or "As built (FX-14b)" where it did. #161 ran the review's twelve newcomer tasks again
 on the same offline set-up: all are OK except Settings (still hard) and live watching (hard by design: it is
 `ssc watch` on the server, which Help explains).
+
+Checked a fourth time at `6f79344` (2026-10-07, the seventh revision), after FX-20 (#167: the search as the
+user types, one search across kinds, job names, the small gaps G31 to G33, Health's next runs, the classic
+stylesheet's rules removed) and REN-1 (#168: the Python package is `sofascore_scraper`; the paths below
+name it, and `frontend/src/...` paths are unchanged). The screen sections say "As built (FX-20)" where it
+changed them; section 11 items 54 to 57.
 
 ## Contents
 
@@ -250,7 +256,12 @@ Desktop (from 1024 px):
   '<text>'"** (`frontend/src/app/CommandPalette.vue:58-119` at `b6caf2f`), which opens the editor with
   `?q=<text>` and runs that one search there; the palette itself still sends nothing to SofaScore, so
   decision 20 holds for typing. Search as the user types, with SofaScore suggestions after two characters,
-  is FX-20 (owner decision of 2026-10-06; 7.3, G29).
+  is FX-20 (owner decision of 2026-10-06; 7.3, G29). **As built (FX-20, #167):** from 2 characters the
+  palette has an **"On SofaScore"** section with the same suggestions as the follow editor (below, 6.2),
+  so decision 20 no longer holds as written: the palette sends a SofaScore search after a 350 ms pause,
+  one per settled text, cached for the page and for 10 minutes on the server (the owner's decision of
+  2026-10-06). Enter on a hit opens the editor already filled in, or the follow page of a league or team
+  that is already added.
 - **As built: the Sinks warning dot is not shown** (#132). The shell does not poll `/sinks`, so the rail
   cannot know that a sink fails or lags; Overview and the Sinks screen show it. FX-13 (#152) added the sink
   state to `/status` (`sinks`: `served`, `max_lag_events` and more; `sofascore_scraper/web/api/v1/meta.py:255-284` at
@@ -364,9 +375,8 @@ As built (#107): the tokens are in `frontend/src/ui/tokens.css`, and `frontend/t
 the values above and the WCAG AA contrast of 25 text pairs in both themes. The classic stylesheet's extra
 tokens (`--surface-3`, `--hover`, `--ink` and others) remained for the classic views; the names both shared
 took the values above, so `--muted` and three dark status backgrounds of the classic views changed
-slightly. The classic views are gone (FX-14b), but `frontend/src/style.css` still carries the classic
-stylesheet's shared names (only its comment changed); pruning it is a separate change with a visual diff
-(section 7.3, "Open after FX-14b").
+slightly. The classic views are gone (FX-14b). FX-20 (#167) removed the classic stylesheet's rules from
+`frontend/src/style.css`, checked with 42 offline screenshots before and after (byte-identical).
 
 **Browser floor (#136).** Tailwind CSS 4 (cascade layers, `@property`, `color-mix()`) needs Safari 16.4,
 Chrome 111 or Firefox 128 or newer; older browsers show the app unstyled or partly styled. The move kept
@@ -710,6 +720,24 @@ switch the kind. A **single match** is added by its number ("Or enter the SofaSc
 with an example line), or from the match page (6.6). Searching all kinds at once and suggestions while
 typing are FX-20 (G29).
 
+As built (FX-20, #167; `frontend/src/app/suggest.ts`, `frontend/src/screens/follows/FollowSearch.vue`):
+**one search box for every kind, with suggestions while typing**. Typing `l` or `la` shows at once, with no
+request, the follows whose name holds the text; the stored tournaments and teams follow about 120 ms later
+from `GET /catalog/suggest` (this server only). From 2 characters, 350 ms after the last keystroke, one
+SofaScore search runs for all three kinds (`POST /tournaments/search` with `kinds: [tournament, team,
+player]`). A newer keystroke aborts the older fetch, and a keystroke that does not change the text (a
+trailing space) does nothing; Enter or the search button searches at once. The page keeps each answer
+while it is open (up to 100 texts; a reload clears it, and the server's 10-minute cache answers after
+it). The results form one listbox grouped **Leagues / Teams / Players** (at most 6 each, local names first,
+a name found twice shown once), with sport, country in the reader's language, a player's team, "in your
+data" and "Already added". It is an ARIA combobox (`aria-activedescendant`, arrow keys, Enter to pick, Esc,
+a live status line). Picking a hit fills in the kind, number, name and sport; the kind radio follows the
+pick, and the "switch the kind" hint is gone. Counted in the tests (fake timers): typing "la liga" fast
+sends 1 SofaScore request, slowly (a pause after every key) 5, and the same text again 0. The grouping is
+by kind, not one relevance order across kinds as the owner's "one mixed list" may have meant, so "la"
+keeps LaLiga at the top; the owner may still ask for one relevance order (`03-implementation-plan.md`
+section 13).
+
 Step 2: seasons. `( ● Current season ) ( ○ Last [2] seasons ) ( ○ All seasons ) ( ○ Choose… )`. "Choose"
 lists the seasons that are stored (`GET /tournaments/{id}/seasons`, P21) with a button "Get the season list
 from SofaScore", which starts a listing job. As built (#133): there was no listing job kind (G15), so the
@@ -784,7 +812,8 @@ scores", "Sync now after saving" checkbox (on). Button "Follow". As built (FX-14
 "Start downloading right away" and starts `sync {follows: [id]}` for every kind
 (`frontend/src/screens/follows/FollowEditorScreen.vue:152`); the button is "Add". The live switch is still
 offered for a player follow, although `ssc watch` skips player follows (FX-19); hiding it there is FX-20
-(G31).
+(G31). As built (FX-20, #167): the switch is not offered for a player follow; a player's edit page says
+why and shows it only when it is already on, so it can be turned off.
 
 | Element | Shows / does | Route | Field |
 |---|---|---|---|
@@ -1044,7 +1073,10 @@ prune-history `clear {scope: history, older_than}` of the scheduler is "Old odds
 false` is "Restore" and the dry run stays "Backup check". A team or player job reads "Team #42" unless the
 follows were read in this tab: the job record carries no follow name (G25, FX-20). The recorded spec is
 the service's, not the request's (`only: "seasons"` is recorded as `mode: "seasons"`, `event_ids` as `mode:
-"details"` with per-tournament selections); the UI reads both forms (G26).
+"details"` with per-tournament selections); the UI reads both forms (G26). As built (FX-20, #167): the job
+record carries `spec.names` (`{"team:42": "Arsenal"}`), so Job detail, the job list and the job output name
+the follow, also after it was removed or the league's data was cleared, and the recorded spec has the
+request's fields (`only`, `event_ids`; older records are returned in that shape; `02-services.md` 6).
 
 **States.** Empty: "No jobs yet." Polling every 10 s while open. A job of another process that died is
 shown `interrupted` after the server reaps it.
@@ -1248,7 +1280,7 @@ row ⋯ : Download · Check (dry run) · Restore…
 | Live service | read-only; no start or stop in the UI (R2) | `/status` live fields (P21, from `live_status(store)`) | `running`, `pid`, `host`, `source`, `sports`, `leaders` (per sport: `page`, `direct` or `poll`), `last_switch`, `heartbeat_at`, `blocked`, `last` (the last run when not running) |
 | `direct` warning | when any sport's source is `direct`: a warn badge "Direct source (opt-in)" with a one-line summary of the four warnings of `02-services.md` 8.3 | same | `source`, `leaders` |
 | Not running | "Not running. Live watching runs on the server: `ssc watch`." + CodeHint; the last run's end time | same | `running`, `last` |
-| Scheduler | on/off and next runs | `/status` (P29) | `schedule.enabled`, `schedule.next_runs[]`. Built by P29 (#128): each run has `index`, `run`, `every`, `cron`, `options`, `next_run_at_utc`, `last_run_at_utc`, `last_job_id`, `last_result`. As built, the card (#132) shows only on/off from `capabilities.scheduler` and "The next runs appear here when the server reports them": it was written before P29 merged and is still not wired at `b6caf2f` (`frontend/src/screens/HealthScreen.vue:251-257`; 7.3, open after FX-14b). The wireframe's hint reads as if both the setting and the flag were needed; either one turns the scheduler on, and `--no-scheduler` overrides the setting (P29). Since FX-15 (#155) an `every` task counts from its last run in the job history, not from the server start, and the scheduler has a `prune-history` task (off by default) |
+| Scheduler | on/off and next runs | `/status` (P29) | `schedule.enabled`, `schedule.next_runs[]`. Built by P29 (#128): each run has `index`, `run`, `every`, `cron`, `options`, `next_run_at_utc`, `last_run_at_utc`, `last_job_id`, `last_result`. As built, the card (#132) shows only on/off from `capabilities.scheduler` and "The next runs appear here when the server reports them": it was written before P29 merged and is still not wired at `b6caf2f` (`frontend/src/screens/HealthScreen.vue:251-257`; 7.3, open after FX-14b). Wired by FX-20 (#167): the card lists the next runs with each task's kind and league. The wireframe's hint reads as if both the setting and the flag were needed; either one turns the scheduler on, and `--no-scheduler` overrides the setting (P29). Since FX-15 (#155) an `every` task counts from its last run in the job history, not from the server start, and the scheduler has a `prune-history` task (off by default) |
 | Who holds the data folder | the four leases and their holders | `/status` (proposed `leases`, 7.3) | lease name, purpose, pid, host, since. Built (G3, P21 #122): `leases[]` with `name` (also `watcher:<sport>`), `purpose`, `pid`, `host`, `since_utc` |
 | Storage | | `/status` (P21 data summary) | `summary.data_dir`, `summary.disk.total`, `summary.catalog_rebuild_reason`; `version`, `api_version`. As built (#132): `/status` has no data-folder path (G20), so the card shows the size, the index state with a link to Maintenance, the version and schema version and whether a token is in use, and the Diagnostics tab of Logs shows the path; the size is the sum of `disk.entries`, as on Overview (G21). FX-13 added `summary.data_dir` and `disk.v3` / `disk.changes` (with `total` counting both); the card still uses its fallbacks at `b6caf2f` (`frontend/src/app/statusStore.ts:12-19`), which give the same size |
 
@@ -1402,7 +1434,10 @@ ticked; both are staged and saved with "Save changes" like any other setting
 shortening it is FX-20 (G32). `fetch.save_empty_rounds` is still a control, and the texts of
 `fetch.only_finished` and `fetch.save_empty_rounds` still describe the old write-time meaning
 (`settingsMeta.ts:46-47`, `frontend/src/locales/ui/en.ts:1567` and `:1625` at `b6caf2f`; ST-27 retired the
-setting and made the other a read filter; G33, FX-20; P30 removes the setting). The review found Settings hard for a newcomer (every field
+setting and made the other a read filter; G33, FX-20; P30 removes the setting). As built (FX-20, #167): the
+followed sports come first and the others are in one closed "Other sports" group; the "Keep empty rounds"
+control is gone, and "Show finished matches only" says that it only filters the lists (P30 still removes
+the setting itself). The review found Settings hard for a newcomer (every field
 shows its config key, the API address is the first field, many keys are `sofascore.toml`-only, and the
 screen does not say whether a change needs a restart); #161's recheck still rates it hard.
 
@@ -1434,7 +1469,8 @@ At `b3cb819`:
 | normalized datasets `events`, `slices`, `changes` in JSONL, CSV, Parquet, SQLite for `POST /jobs {kind: "export"}`; `ExportRecord.schema_version` | SC-2 (#130) | Exports (wired by FX-14b) |
 | `GET /api/v1/auth`, `POST /auth/login`, `POST /auth/logout` | P21 (#122) | token prompt, sign-out (used since #132) |
 | `GET /status` with `version`, `api_version`, `schema_version`, `auth_required`, `bridge`, `throttle`, `active_job`, `live` (with `leaders`, `last_switch`), `summary` (data summary with `tournaments[]`, `disk`, `legacy_events`, `catalog_rebuild_reason`), `leases[]`, `capabilities` (`parquet`, `sse`, `scheduler`), `storage_error` | P20 (#74), P21 (#122) | shell, Overview, Health, Maintenance |
-| `/status.schedule` (`enabled`, `next_runs[]`) | P29 (#128) | Overview, Health (not read yet; open after FX-14b) |
+| `/status.schedule` (`enabled`, `next_runs[]`) | P29 (#128) | Health (read since FX-20, #167, with the tasks' leagues); Overview (not read yet) |
+| `GET /catalog/suggest` (`q`, `sport`, `limit`): stored tournaments and teams as search hits, no SofaScore request | FX-20 (#167) | Follow editor, quick search |
 | `POST /status/check` | P21 (#122) | Health |
 | `GET /sinks` | P21 (#122) | Sinks, Overview |
 | `GET /follows` (`kind`, `origin`, `enabled`, `q`), `GET`, `PATCH`, `DELETE /follows/{id}`, `POST /follows` | P21 (#124) | Follows, Follow editor, Follow detail |
@@ -1460,12 +1496,15 @@ Added since, at `b6caf2f`:
 
 ### 7.2 Planned by a remaining plan item
 
+FX-20 (#167) built all four rows below, so no remaining plan item has a route or a screen of this document
+left; P30 removes the legacy routes and the retired setting.
+
 | Need | Plan item | Screens |
 |---|---|---|
-| Search as the user types, like the site: suggestions from stored data first (followed and catalog tournaments, no request), then SofaScore's search after two characters with a pause of about 350 ms, stale requests cancelled, one answer per query kept for the session, every request counted in the request budget, keyboard navigation in the list; the same in quick search (owner decision of 2026-10-06) | FX-20 (in progress) | Follow editor step 1, quick search |
-| One search across kinds (tournaments, teams and players in one request) | FX-20 | Follow editor step 1 |
-| A job's follow or target name (for example a `target_name` on `Job`), so that "Team #42" reads "Arsenal" without an extra request | FX-20 | Jobs, Job detail, toasts |
-| Small UI gaps: the live switch offered for player follows, which `ssc watch` skips (G31); the long sport list of Settings › Data (G32) | FX-20 | Follow editor, Settings |
+| Search as the user types, like the site: suggestions from stored data first (followed and catalog tournaments, no request), then SofaScore's search after two characters with a pause of about 350 ms, stale requests cancelled, one answer per query kept for the session, every request counted in the request budget, keyboard navigation in the list; the same in quick search (owner decision of 2026-10-06) | FX-20 (#167), built; the browser keeps answers for the page, the server for 10 minutes | Follow editor step 1, quick search |
+| One search across kinds (tournaments, teams and players in one request) | FX-20 (#167), built | Follow editor step 1 |
+| A job's follow or target name (for example a `target_name` on `Job`), so that "Team #42" reads "Arsenal" without an extra request | FX-20 (#167), built as `spec.names` | Jobs, Job detail, toasts |
+| Small UI gaps: the live switch offered for player follows, which `ssc watch` skips (G31); the long sport list of Settings › Data (G32) | FX-20 (#167), built | Follow editor, Settings |
 
 FE-2's order proposal (section 8) is complete: part 3 (the slice choice) and part 4 (the odds and
 season-data groups of the picker) were built by FX-14b, part 5 (the classic views removed) too.
@@ -1474,7 +1513,8 @@ season-data groups of the picker) were built by FX-14b, part 5 (the classic view
 
 G1 to G13 are the gaps of the first version; G14 to G24 were found while FE-2 was built (#107, #132,
 #133); G25 and later by FX-14a (#154) and FX-14b (#161). "Built" means the route exists at `b6caf2f`;
-"UI" says whether a screen uses it.
+"UI" says whether a screen uses it. The rows of G25, G26, G29 and G31 to G33 give the state at `6f79344`,
+after FX-20 (#167).
 
 | # | Need | State at `b6caf2f` | Owner |
 |---|---|---|---|
@@ -1502,21 +1542,22 @@ G1 to G13 are the gaps of the first version; G14 to G24 were found while FE-2 wa
 | G22 | Sink state in `/status` | **Built**: top-level `sinks` (FX-13; `sofascore_scraper/web/api/v1/meta.py:255-284`). UI: not read; no warning dot on Sinks in the rail and no amber pill for a lagging sink. | open, after 3.0.0 (`03-implementation-plan.md` section 17) |
 | G23 | Job spec by target | **Built**: `sync {follows}` for every kind (FX-13, FX-19), `fetch` and `refresh` with `event_ids` (FX-13). UI: Download now and Fetch again (FX-14b). | done |
 | G24 | Codes for the job log lines, texts for the diagnostics checks | **Built**: every line of the sync and fetch path has a code (FX-13, FX-19); UI: texts in both locales (FX-14b). The diagnostics checks still have no translated texts. | log lines done; the check texts: open, after 3.0.0 (`03` section 17) |
-| G25 | A job's follow name: `sync {follows: ["team:42"]}` reads "Team #42" unless the follows were read in this tab; the job record has only `progress.league_name` while listing | **Missing** (#161). | FX-20 |
-| G26 | A stable, documented job-spec shape: the recorded spec is the service's `SyncSpec` (`only: "seasons"` → `mode: "seasons"`; `event_ids` → `mode: "details"` with per-tournament selections), not the request body | **Missing** (#161); the UI reads both forms. | P30 (`03` section 16) |
+| G25 | A job's follow name: `sync {follows: ["team:42"]}` reads "Team #42" unless the follows were read in this tab; the job record has only `progress.league_name` while listing | **Built** by FX-20 (#167): `spec.names` on the job record (`{"team:42": "Arsenal"}`, also a cleared league's name); Job detail, the job list and the job output read it. | done |
+| G26 | A stable, documented job-spec shape: the recorded spec is the service's `SyncSpec` (`only: "seasons"` → `mode: "seasons"`; `event_ids` → `mode: "details"` with per-tournament selections), not the request body | **Built** by FX-20 (#167): the recorded spec has the request body's fields (`only`, `event_ids`, and per-tournament `selections` for a job by `event_ids`), older records are returned in that shape (`02-services.md` 6). | done (FX-20; it was P30's) |
 | G27 | The age of a tournament's own season list (the `seasons` slice's `fetched_at`) | **Missing** (FX-13 Not done, #161); the Seasons tab shows each season's schedule age instead. | after 3.0.0 (`03` section 17) |
 | G28 | The connection state across processes: `/status.connection` is per process, so requests of `ssc` commands and `ssc watch` do not count in the web server | **Missing** (FX-19 Not done, #161). | after 3.0.0 (`03` section 17) |
-| G29 | One search across kinds; suggestions while typing | **Missing**: one kind per search, on the button or Enter (#161). | FX-20 |
+| G29 | One search across kinds; suggestions while typing | **Built** by FX-20 (#167): one search across kinds as the user types, in the editor and in Ctrl K (6.2, 3.3); `GET /catalog/suggest` for stored names. | done; grouped by kind, not one relevance order (the owner may ask for it, `03` section 13) |
 | G30 | Restore of an uploaded archive | Not a gap: decision 15 (no upload) stands; the archive must be in the server's backups folder. | — |
-| G31 | The live switch of the editor is offered for player follows, which `ssc watch` skips (`live_follow_skipped`) | **Missing** (#161). | FX-20 |
-| G32 | Settings › Data lists all 21 registered sports, collapsed | **Long list** (#161). | FX-20 |
-| G33 | The retired `fetch.save_empty_rounds` is still a control, and the texts of it and of `fetch.only_finished` still describe the old write-time meaning (`settingsMeta.ts:46-47`; `frontend/src/locales/ui/en.ts:1567`, `:1625`) | **Stale** (ST-27's note to FX-14, not done by FX-14b). | FX-20 (small UI gap); P30 removes the setting |
+| G31 | The live switch of the editor is offered for player follows, which `ssc watch` skips (`live_follow_skipped`) | **Built** by FX-20 (#167): not offered for player follows; shown on a player's edit page only when already on. | done |
+| G32 | Settings › Data lists all 21 registered sports, collapsed | **Built** by FX-20 (#167): followed sports first, the others in one closed "Other sports" group. | done |
+| G33 | The retired `fetch.save_empty_rounds` is still a control, and the texts of it and of `fetch.only_finished` still describe the old write-time meaning (`settingsMeta.ts:46-47`; `frontend/src/locales/ui/en.ts:1567`, `:1625`) | **Built** by FX-20 (#167): the control is gone, and "Show finished matches only" says that it only filters the lists. | done (FX-20); P30 removes the setting |
 
 **Open after FX-14b, not gaps of the API.** `/status.schedule` (P29) is not read by Overview and Health
 (6.1, 6.12; the comment at `frontend/src/screens/HealthScreen.vue:28` still says the next runs are not
-reported). The normalized odds of `/events/{id}/odds/{key}` (P28) have no markets view; the Odds tab lists
-the stored odds slices with the raw view (6.6). `frontend/src/style.css` still carries the classic
-stylesheet's shared names; pruning it needs a visual diff (4.5). FX-14b's script did not take the phone
+reported). Done for Health by FX-20 (#167): it lists the scheduler's next runs and names each task's league
+(from the stored catalog); Overview still does not show them. The normalized odds of `/events/{id}/odds/{key}` (P28) have no markets view; the Odds tab lists
+the stored odds slices with the raw view (6.6). The classic stylesheet's rules in `frontend/src/style.css`
+were removed by FX-20 (#167; 4.5). FX-14b's script did not take the phone
 (390 px) screenshots of the row-menu dialogs (Remove, Restore); the 390 px layouts of the screens were
 taken. Each is listed with its owner in `03-implementation-plan.md` section 16.
 
@@ -1550,7 +1591,7 @@ added as a dev dependency for the accessibility checks. The stack at `b6caf2f`: 
 | `lib/theme.ts` | light / dark / system with storage guarded by try/catch | keep; add density |
 | `lib/upstream.ts` | translated reasons of an upstream refusal | keep for the buttons that call SofaScore |
 | `lib/matchDetail.ts` | renders statistics, line-ups and incidents from raw payloads | basis for the friendly views of 6.6 |
-| `style.css` tokens and the Geist fonts | the palette direction (decision 10) | rename to the token list of 4.5. As built: the classic stylesheet's shared names are still in `frontend/src/style.css` after the classic views went (FX-14b; 4.5, 7.3) |
+| `style.css` tokens and the Geist fonts | the palette direction (decision 10) | rename to the token list of 4.5. As built: the classic stylesheet's shared names stayed in `frontend/src/style.css` after the classic views went (FX-14b) and were removed by FX-20 (#167; 4.5) |
 | `tests/a11y.test.ts`, `tests/i18n.test.ts` | accessibility and locale completeness checks | extend to every new screen |
 | the locale files | many texts can be reused | new key tree per screen; delete keys no screen uses |
 
@@ -1651,7 +1692,7 @@ words and some defaults, which the owner asked to win over this document (FX-14a
     global search; filters only. As built (FX-14a): also actions, and one explicit "Search SofaScore" entry
     when nothing stored matches, which sends one request only when it is picked (3.3). Changed by the owner
     on 2026-10-06: search as the user types, like the site ("la" suggests La Liga), here and in the
-    editor: FX-20 (7.2).
+    editor: FX-20 (7.2). Built by FX-20 (#167): an "On SofaScore" section from 2 characters (3.3).
 21. **Locked settings.** Chosen: shown in place, greyed, with the reason and the source. Alternative:
     hidden behind a "Show locked settings" switch.
 22. **FE-2 delivery.** Chosen: build the new app part by part in the existing `frontend/` (section 8),
@@ -1846,6 +1887,28 @@ document claimed and what is built:
     G23 are used by the screens, and G4, G14, G18, G19, G20, G22 and the diagnostics texts of G24 are not
     read yet. FX-14a and FX-14b found G25 to G33. FX-20 owns G25, G29, G31, G32 and G33; G26 goes to P30, and
     the rest are deliberately left for after 3.0.0 (`03-implementation-plan.md` section 17; 7.3).
+
+Corrections after FX-20 (2026-10-07, the seventh revision; checked at `6f79344`):
+
+54. **Search as the user types** (3.3, 6.2, 10 decision 20; G29). The editor searched one kind at a time on
+    the button or Enter, and Ctrl K typed ahead over stored data only. FX-20 (#167) built one search box
+    for all kinds with local suggestions at once (follows in the browser, stored tournaments and teams from
+    `GET /catalog/suggest` after 120 ms) and one SofaScore search from 2 characters after 350 ms, aborted by
+    a newer keystroke, kept for the page and for 10 minutes on the server; an "On SofaScore" section in
+    Ctrl K. Where it differs from the brief: the "local" catalog part is one request to this server, not a
+    list in the browser; the answers are kept per page, not per session; the list is grouped by kind
+    (Leagues, Teams, Players, at most 6 each), not one relevance order (the owner may ask for one).
+55. **Job names and the recorded spec** (6.8; G25, G26). The job record carries `spec.names` and the request
+    body's fields; G26, which this document gave to P30, is done by FX-20.
+56. **Small gaps** (6.2, 6.12, 6.16; G31 to G33). No live switch for player follows; followed sports first
+    in Settings › Data; the "Keep empty rounds" control gone and the "Show finished matches only" text
+    corrected; Health lists the scheduler's next runs with their leagues; a search hit's country is named
+    in the reader's language; the classic stylesheet's rules removed (4.5).
+57. **Needs live validation** (`03-implementation-plan.md` section 18): how `/search/all` answers a
+    2-letter prefix (`la`, `ba`, `fe`: leagues at all, how many hits in which order, how often a 404 or an
+    empty answer); the real requests while typing (per settled text, what an aborted fetch costs, the
+    10-minute cache under real typing); and whether an aborted fetch closes the connection in time for the
+    server's cancel check behind a reverse proxy (tested with uvicorn directly only).
 
 The words, as built (FX-14a, #154; design word → Turkish → English):
 
