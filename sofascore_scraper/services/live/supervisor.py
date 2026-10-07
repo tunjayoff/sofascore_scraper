@@ -87,7 +87,7 @@ from sofascore_scraper.services.live.push_source import (
     PageSource,
     Signal,
 )
-from sofascore_scraper.status import classify_status
+from sofascore_scraper.status import StatusClass, classify_status
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +116,9 @@ PRUNE_INTERVAL_SECONDS = 3600.0
 PUSH_DRAIN_SECONDS = 1.0  # push kareleri bu aralıkla okunur (gecikmenin üst sınırına eklenir)
 HEARTBEAT_SECONDS = 30.0  # push varken kalp atışı en çok bu aralıkla yazılır (yoklama turunda her zaman)
 UNKNOWN_LOOKUPS_PER_MINUTE = 6  # yoklamanın hiç görmediği maç için /event isteği, spor başına
+# Takip edilen tek maç: kaydı başlamamış ve başlangıcı bundan daha uzaktaysa izleme başında okunmaz (FX-23, F35).
+# Başladığında canlı listede görünür ve oradan izlenir; aylar sonraki maç her başlangıçta bir istek yakmasın.
+FOLLOW_START_WINDOW_SECONDS = 6 * 3600.0
 CONFIRM_RETRY_SECONDS = 20.0  # push bitişinin onayı: maç sayfası henüz bitmiş göstermiyorsa yeniden
 CONFIRM_ATTEMPTS = 4
 
@@ -620,7 +623,7 @@ class LiveService:
                 continue
             try:
                 if not slot.started:
-                    slot.source.start(slot.tracker, slot.tracker.scope.event_ids)
+                    slot.source.start(slot.tracker, self._start_ids(slot.tracker))
                     slot.started = True
                 slot.source.tick(slot.tracker)
                 slot.failures = 0
@@ -749,6 +752,39 @@ class LiveService:
         logger.info("Live source of %s: %s -> %s (%s)", switch.sport, switch.from_source, switch.to_source,
                     switch.reason)
         self._system(SYSTEM_SOURCE_CHANGED, switch.to_data())
+
+    def _start_ids(self, tracker: _Tracker) -> List[int]:
+        """
+        İzleme başında maç sayfası okunacak maçlar. Komut satırından verilen maçların hepsi (izleme onlar bitince
+        biter). Takipten gelen maçlardan, kaydı "başlamadı" diyen ve başlangıcı FOLLOW_START_WINDOW_SECONDS'tan
+        uzak olanlar okunmaz: başladığında canlı listeden görülür. Kaydı olmayan maç bir kez okunur (başlangıcı
+        bilinmiyor); sonra izleyicinin durumunda kalır ve yeniden okunmaz.
+        """
+        ids = sorted(tracker.scope.event_ids)
+        if self._scope is None or not self._scope.from_follows:
+            return ids
+        horizon = self._clock() + FOLLOW_START_WINDOW_SECONDS
+        near: List[int] = []
+        later: List[int] = []
+        for eid in ids:
+            if str(eid) in tracker.state:
+                near.append(eid)  # kaynak durumda olanı zaten okumaz
+                continue
+            try:
+                row = self._store.events.get(eid)
+            except Exception as e:  # katalog okunamadı: eskisi gibi okunur
+                logger.debug("Event %s could not be looked up before the start read: %s", eid, e)
+                row = None
+            start_ts = getattr(row, "start_ts", None)
+            if (row is not None and getattr(row, "status_class", None) == StatusClass.NOT_STARTED.value
+                    and isinstance(start_ts, (int, float)) and start_ts > horizon):
+                later.append(eid)
+            else:
+                near.append(eid)
+        if later:
+            logger.info("Not reading %d followed event(s) at start, they begin more than %.0f h from now: %s",
+                        len(later), FOLLOW_START_WINDOW_SECONDS / 3600, ", ".join(map(str, later)))
+        return near
 
     def _all_done(self) -> bool:
         if not self._slots or self._scope is None or self._scope.from_follows:
