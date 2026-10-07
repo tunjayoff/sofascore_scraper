@@ -20,9 +20,9 @@ import { duration, formatTime, num, secondsBetween, now as clockNow, useClock } 
 import StartJobDialog from './StartJobDialog.vue'
 import JobOutput from './JobOutput.vue'
 import { JobStream, type JobEventMessage } from './jobStream'
-import { logLine, codeText, type LogLine } from './eventText'
-import { loadTournaments } from '@/screens/events/eventText'
-import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
+import { logLine, codeText, seasonsWanted, type LogLine } from './eventText'
+import { loadSeasons, loadTournaments } from '@/screens/events/eventText'
+import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobLeague, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
 
 /**
  * Job detail (6.9): state, origin and times; the live progress with phase, counts, ETA and SofaScore's
@@ -107,6 +107,8 @@ async function load() {
   try {
     job.value = await v1.job(id.value)
     error.value = null
+    const league = jobLeague(job.value)
+    if (league) nameSeasons(league)
     if (terminal.value) live.value = null
   } catch (e) {
     error.value = e
@@ -119,7 +121,22 @@ function addEvent(e: JobEventMessage) {
   eventLog.push(e)
   if (e.type === 'progress') live.value = readProgress(e.data)
   lines.value = [...lines.value, logLine(e)]
+  const league = seasonsWanted(e)
+  if (league) nameSeasons(league)
   if (e.type === 'finished' || e.type === 'cancel_requested') void load()
+}
+
+/**
+ * The season names of a league, read once (the stored season list, this server only), so that the log says
+ * "season 2025" instead of "season #76138" (FX-24 F8); the lines already shown are written again then.
+ */
+const seasonsAsked = new Set<number>()
+function nameSeasons(league: number) {
+  if (seasonsAsked.has(league)) return
+  seasonsAsked.add(league)
+  loadSeasons(league)
+    .then(() => (lines.value = eventLog.map(logLine)))
+    .catch(() => {})
 }
 
 function openStream(after = 0) {

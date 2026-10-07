@@ -1,7 +1,7 @@
 import { i18n } from '@/i18n'
 import type { JobEventMessage } from './jobStream'
 import { breakerText, faceText, followName, leagueName, phaseText } from './jobText'
-import { seasonName } from '@/screens/events/eventText'
+import { seasonName, seasonNames } from '@/screens/events/eventText'
 import { num, pct } from '@/ui/time'
 
 /**
@@ -49,6 +49,19 @@ export function codeText(code: unknown, params: unknown): string | null {
   if (typeof p.what === 'string') args.what = whatText(p.what)
   for (const k of ['count', 'stored', 'failed', 'skipped']) if (typeof p[k] === 'number') args[k] = num(p[k] as number)
   return t(`ui.job.code.${code}`, args)
+}
+
+/**
+ * The league whose season names a log line needs and the page does not know yet (FX-24 F8): a line names
+ * a season by its id (`season_id`, `resolved`), and the season list of its league (`league_id`) has its
+ * name ("2025", "25/26"); null when none is needed.
+ */
+export function seasonsWanted(e: JobEventMessage): number | null {
+  const d = e.data ?? {}
+  const p = (d.params && typeof d.params === 'object' ? d.params : d) as Record<string, unknown>
+  const league = typeof p.league_id === 'number' && p.league_id > 0 ? p.league_id : null
+  const ids = [p.season_id, p.resolved].filter((x): x is number => typeof x === 'number')
+  return league && ids.some((id) => !seasonNames.value.has(id)) ? league : null
 }
 
 export function logLine(e: JobEventMessage): LogLine {

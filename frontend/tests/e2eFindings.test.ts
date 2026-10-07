@@ -11,10 +11,12 @@ import FollowsScreen from '@/screens/follows/FollowsScreen.vue'
 import FollowDetailScreen from '@/screens/follows/FollowDetailScreen.vue'
 import { JOB_WATCH_MS, watchJob, watchJobs } from '@/app/jobWatch'
 import { useStatusStore } from '@/app/statusStore'
+import JobDetailScreen from '@/screens/jobs/JobDetailScreen.vue'
+import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
 import { callsTo, flush, mockFetch } from './helpers'
-import { axeViolations, follow, job, mountScreen, page, sport, status } from './v1'
+import { axeViolations, FakeES, follow, job, mountScreen, page, sport, status, useFakeES } from './v1'
 
 /**
  * FX-24: the findings of the end-to-end test of the web UI against the real SofaScore (F5 to F37 of the
@@ -351,5 +353,40 @@ describe('F6: the Seasons tab follows a download and says what "complete" means'
     store.fetchedAt = Date.now() + 2
     await flush()
     expect(seasonsRead()).toBe(3)
+  })
+})
+
+describe('F8: the job log names seasons, not their numbers', () => {
+  const ID = '01M4BYD0TMM9QB9Y4MY79JVB4V'
+  beforeEach(() => {
+    resetNames()
+    useFakeES()
+  })
+
+  it('"Reading the matches of UEFA Super Cup, season 2025", in Turkish "2025 sezonunun"; an unknown season keeps its number', async () => {
+    setLocale('tr')
+    const f = mockFetch({
+      [`GET /api/v1/jobs/${ID}`]: { data: job({ id: ID, state: 'running', finished_at: null, result: null, spec: { follows: ['tournament:465'], names: { 'tournament:465': 'UEFA Super Cup' } } }) },
+      'GET /api/v1/status': { data: status() },
+      'GET /api/v1/tournaments': page([{ id: 465, sport: 'football', category_id: 1465, name: 'UEFA Super Cup', slug: 'x' }]),
+      'GET /api/v1/tournaments/465/seasons': list([
+        { id: 76138, tournament_id: 465, name: 'UEFA Super Cup 2025', year: '2025' },
+        { id: 61644, tournament_id: 465, name: 'UEFA Super Cup 2024', year: '2024' },
+      ]),
+    })
+    const { w } = await mountScreen(JobDetailScreen, `/jobs/${ID}`, '/jobs/:id')
+    wrappers.push(w)
+    await flush()
+    const es = FakeES.last
+    es.emit('log', 1, { code: 'sync_schedule', params: { league_id: 465, season_id: 76138 }, message: 'Fetching matches: league 465, season 76138' }, ID)
+    es.emit('log', 2, { code: 'sync_season_outdated', params: { league_id: 465, season_id: 61644, resolved: 99999 }, message: 'x' }, ID)
+    await flush()
+    const lines = w.findAll('[data-testid="job-log"] li').map((li) => li.text())
+    expect(lines.some((l) => l.includes('UEFA Super Cup için 2025 sezonunun maçları okunuyor…'))).toBe(true)
+    expect(lines.some((l) => l.includes('#76138'))).toBe(false)
+    // a season the stored list does not have keeps its number
+    expect(lines.some((l) => l.includes('2024') && l.includes('#99999'))).toBe(true)
+    // the season list is read once, from this server
+    expect(callsTo(f, 'GET /api/v1/tournaments/465/seasons')).toHaveLength(1)
   })
 })
