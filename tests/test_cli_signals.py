@@ -23,10 +23,10 @@ from typing import Any, List, Tuple
 
 import pytest
 
-from src.cli import signals
-from src.jobs.manager import JobManager
-from src.jobs.model import JobState
-from src.store import JobStore, open_store
+from sofascore_scraper.cli import signals
+from sofascore_scraper.jobs.manager import JobManager
+from sofascore_scraper.jobs.model import JobState
+from sofascore_scraper.store import JobStore, open_store
 from test_cli_skeleton import Sandbox
 
 posix_only = pytest.mark.skipif(os.name == "nt", reason="POSIX sinyalleri gerekir")
@@ -40,7 +40,7 @@ _SCRIPT = """
 import sys, time
 MODE = sys.argv[1]
 # Servis modülleri burada, CLI'den önce yüklenir: log satırları CLI'deki gibi baştan stderr'e gitsin
-from src import logger
+from sofascore_scraper import logger
 logger.set_console_stream("stderr")
 
 def wait(cancelled):
@@ -52,14 +52,14 @@ def wait(cancelled):
         time.sleep(0.02)
 
 if MODE == "status":
-    from src.services.status import StatusService
+    from sofascore_scraper.services.status import StatusService
     real = StatusService.summary
     def summary(self, **kwargs):
         wait(None)
         return real(self, **kwargs)
     StatusService.summary = summary
 else:
-    from src.services.sync import SyncResult, SyncService
+    from sofascore_scraper.services.sync import SyncResult, SyncService
     def run(self, spec, *, handle=None):
         handle.progress.start_phase("details", 1)
         wait(handle.cancelled if MODE == "cooperative" else None)
@@ -67,7 +67,7 @@ else:
                           progress=handle.progress.result())
     SyncService.run = run
 
-from src.cli.main import main
+from sofascore_scraper.cli.main import main
 sys.exit(main(sys.argv[2:]))
 """ % {"ready": READY}
 
@@ -177,7 +177,7 @@ def test_sigterm_on_a_one_shot_command_exits_143(box: Sandbox) -> None:
 def test_a_following_stream_stops_with_0(box: Sandbox, signum: int) -> None:
     open_store(box.root / "data").close()
     proc = subprocess.Popen(
-        [sys.executable, "-m", "src.cli.main", "--data-dir", str(box.root / "data"), "events", "--follow"],
+        [sys.executable, "-m", "sofascore_scraper.cli.main", "--data-dir", str(box.root / "data"), "events", "--follow"],
         cwd=box.cwd, env=box.environ(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     time.sleep(2.0)  # komut yüklendi ve izlemeye başladı

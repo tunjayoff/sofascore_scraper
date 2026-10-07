@@ -1,5 +1,5 @@
 """
-src/store/indexer.py ve src/store/verify.py: maçların ve dilimlerinin dizinlenmesi, yeniden kurma, doğrulama
+sofascore_scraper/store/indexer.py ve sofascore_scraper/store/verify.py: maçların ve dilimlerinin dizinlenmesi, yeniden kurma, doğrulama
 (plan maddesi ST-07; docs/design/01-storage.md bölüm 3.4, 3.6, 5.2).
 
 Altın dosyalar tests/golden/catalog/<dizin>.json, `tests/store_fixtures.py`'nin kurduğu her veri dizini
@@ -29,13 +29,13 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 import pytest
 
 import store_fixtures as sf
-from src.store import catalog as catalog_mod
-from src.store import codec, derive, files, indexer, layout, manifest, verify
-from src.store.catalog import Catalog
-from src.store.errors import CatalogCorrupt, StoreBusy, StoreError
-from src.store.indexer import CatalogAdmin, IndexProblem, SupersededDir
-from src.store.legacy import LegacyEvent, LegacyReader
-from src.store.manifest import EmptyMark, ErrorMark, HistoryMark, Manifest, Observation, SliceEntry
+from sofascore_scraper.store import catalog as catalog_mod
+from sofascore_scraper.store import codec, derive, files, indexer, layout, manifest, verify
+from sofascore_scraper.store.catalog import Catalog
+from sofascore_scraper.store.errors import CatalogCorrupt, StoreBusy, StoreError
+from sofascore_scraper.store.indexer import CatalogAdmin, IndexProblem, SupersededDir
+from sofascore_scraper.store.legacy import LegacyEvent, LegacyReader
+from sofascore_scraper.store.manifest import EmptyMark, ErrorMark, HistoryMark, Manifest, Observation, SliceEntry
 
 ROOT = Path(__file__).resolve().parent.parent
 GOLDEN_DIR = Path(__file__).parent / "golden" / "catalog"
@@ -1538,27 +1538,27 @@ def test_stats(old_forms: sf.LegacyFixture, make_admin) -> None:
 # --- katmanlama -----------------------------------------------------------------------------------------
 
 def test_modules_import_only_what_the_store_may_import() -> None:
-    """Bölüm 2.1: Store yalnızca src.sports, src.status, src.slices, src.exceptions ve src.version'ı içe aktarabilir."""
+    """Bölüm 2.1: Store yalnızca sofascore_scraper.sports, sofascore_scraper.status, sofascore_scraper.slices, sofascore_scraper.exceptions ve sofascore_scraper.version'ı içe aktarabilir."""
     code = (
-        "import sys, json; import src.store.indexer, src.store.verify; "
-        "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.store.indexer, sofascore_scraper.store.verify; "
+        "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
     loaded = set(json.loads(out.stdout))
 
-    assert {m for m in loaded if not m.startswith("src.store")} == {
-        "src", "src.exceptions", "src.slices", "src.sports", "src.status", "src.version"}
-    assert {"src.store.indexer", "src.store.verify", "src.store.legacy", "src.store.catalog"} <= loaded
+    assert {m for m in loaded if not m.startswith("sofascore_scraper.store")} == {
+        "sofascore_scraper", "sofascore_scraper.exceptions", "sofascore_scraper.slices", "sofascore_scraper.sports", "sofascore_scraper.status", "sofascore_scraper.version"}
+    assert {"sofascore_scraper.store.indexer", "sofascore_scraper.store.verify", "sofascore_scraper.store.legacy", "sofascore_scraper.store.catalog"} <= loaded
 
 
 def test_store_package_root_exports_the_admin_and_its_reports() -> None:
     """ST-11: yönetim sınıfı ve raporları kökten alınır (`Store.catalog` onları döndürür)."""
-    import src.store
-    from src.store import verify as verify_mod
+    import sofascore_scraper.store
+    from sofascore_scraper.store import verify as verify_mod
 
     exported = {"CatalogAdmin": indexer, "RebuildReport": indexer, "ReconcileReport": indexer,
                 "IndexProblem": indexer, "SupersededDir": indexer, "VerifyReport": verify_mod,
                 "VerifyIssue": verify_mod}
-    assert set(exported) <= set(src.store.__all__)
+    assert set(exported) <= set(sofascore_scraper.store.__all__)
     for name, module in exported.items():
-        assert getattr(src.store, name) is getattr(module, name)
+        assert getattr(sofascore_scraper.store, name) is getattr(module, name)

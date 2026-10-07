@@ -1,5 +1,5 @@
 """
-Bir ligin saklanan verisinin silinmesi (plan maddesi FX-19; src/store/purge.py, MaintenanceService.clear_tournament):
+Bir ligin saklanan verisinin silinmesi (plan maddesi FX-19; sofascore_scraper/store/purge.py, MaintenanceService.clear_tournament):
 
   * Store: turnuvanın (ya da sezonunun) maçları iki düzende de, programları, turnuvanın tamamında sezon listesi;
     öteki turnuvalar, takipler ve değişiklik günlüğü kalır; katalog yeniden kurulur; `maintenance` kilidi;
@@ -23,15 +23,15 @@ import conftest
 import store_fixtures as sf
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src.config import loader
-from src.services import planning
-from src.services.maintenance import MaintenanceService
-from src.services.pipeline import FetchPipeline
-from src.services.query import RefreshPolicy
-from src.store import EventQuery, FollowSpec, JobStore, Scope, Store, apply_follows, default_db_path, open_store
-from src.store import layout
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.config import loader
+from sofascore_scraper.services import planning
+from sofascore_scraper.services.maintenance import MaintenanceService
+from sofascore_scraper.services.pipeline import FetchPipeline
+from sofascore_scraper.services.query import RefreshPolicy
+from sofascore_scraper.store import EventQuery, FollowSpec, JobStore, Scope, Store, apply_follows, default_db_path, open_store
+from sofascore_scraper.store import layout
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 PL, LALIGA = 17, 8

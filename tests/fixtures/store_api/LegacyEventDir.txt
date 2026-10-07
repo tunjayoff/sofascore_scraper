@@ -1,5 +1,5 @@
-# LegacyEventDir: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
-# kaynak: src/store/legacy.py
+# LegacyEventDir: sofascore_scraper.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: sofascore_scraper/store/legacy.py
 @dataclass(frozen=True)
 class LegacyEventDir:
     name: str

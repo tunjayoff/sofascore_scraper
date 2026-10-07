@@ -1,5 +1,5 @@
-# src.store.TournamentClearReport
-# kaynak: src/store/purge.py
+# sofascore_scraper.store.TournamentClearReport
+# kaynak: sofascore_scraper/store/purge.py
 @dataclass(frozen=True)
 class TournamentClearReport:
     tournament_id: int

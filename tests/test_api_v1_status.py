@@ -20,14 +20,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src import redact
-from src.config import SinkSpec
-from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
-from src.services.status import StatusService
-from src.store import FollowSpec, SchemaTooNew, StreamEvent, open_store
-from src.web import deps, security
-from src.web.api.v1 import meta
-from src.web.app import app
+from sofascore_scraper import redact
+from sofascore_scraper.config import SinkSpec
+from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
+from sofascore_scraper.services.status import StatusService
+from sofascore_scraper.store import FollowSpec, SchemaTooNew, StreamEvent, open_store
+from sofascore_scraper.web import deps, security
+from sofascore_scraper.web.api.v1 import meta
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 # Sahte bir erişim belirteci, parçalardan kurulur (gizli değer tarayıcısı düz metin bir belirteç görmesin)
@@ -171,7 +171,7 @@ def test_status_has_the_data_summary_of_the_catalog(canonical: sf.LegacyFixture)
 def test_status_has_the_path_a_disk_total_with_the_v3_tree_and_the_last_migration(
         canonical: sf.LegacyFixture) -> None:
     """05-web-ui.md G20 ve G21, ST-23'ün notu (FX-13): dizinin yolu, v3'ü sayan disk toplamı, son taşıma."""
-    from src.services.status import forget_sizes
+    from sofascore_scraper.services.status import forget_sizes
 
     summary = data(client.get("/api/v1/status"))["summary"]
     assert summary["data_dir"] == str(canonical.data_dir)
@@ -193,7 +193,7 @@ def test_status_has_the_path_a_disk_total_with_the_v3_tree_and_the_last_migratio
 
 def test_a_folder_written_by_3_0_has_a_disk_total(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """G21: `summary.disk.total` bir 3.0 dizininde 0 değildir (önceden yalnızca 2.x ağaçlarını sayıyordu)."""
-    from src.services.status import forget_sizes
+    from sofascore_scraper.services.status import forget_sizes
 
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "fresh"))
     store = open_store(tmp_path / "fresh")
@@ -284,12 +284,12 @@ def upstream(monkeypatch: pytest.MonkeyPatch) -> List[Any]:
             raise outcome[0]
         return outcome[0]
 
-    monkeypatch.setattr("src.utils.make_api_request", fake)
+    monkeypatch.setattr("sofascore_scraper.utils.make_api_request", fake)
     return [calls, outcome]
 
 
 def test_the_connection_check_sends_one_request_through_the_client(upstream: List[Any]) -> None:
-    from src.client import api_url, endpoints
+    from sofascore_scraper.client import api_url, endpoints
 
     calls, _outcome = upstream
     check = data(client.post("/api/v1/status/check", json={"target": "sofascore"}))
@@ -390,14 +390,14 @@ def test_status_has_the_sinks_at_a_glance(canonical: sf.LegacyFixture, monkeypat
 
 
 def test_the_sink_status_service_names_what_the_dispatcher_writes() -> None:
-    from src.services import sink_status
-    from src.sinks import SINK_DROPPED
-    from src.sinks.dispatcher import LEASE_NAME
+    from sofascore_scraper.services import sink_status
+    from sofascore_scraper.sinks import SINK_DROPPED
+    from sofascore_scraper.sinks.dispatcher import LEASE_NAME
 
     assert (sink_status.DROPPED_TYPE, sink_status.SINKS_LEASE) == (SINK_DROPPED, LEASE_NAME)
 
 
 def test_status_states_the_schema_version() -> None:
-    from src.schema import SCHEMA_VERSION
+    from sofascore_scraper.schema import SCHEMA_VERSION
 
     assert data(client.get("/api/v1/status"))["schema_version"] == SCHEMA_VERSION == 1

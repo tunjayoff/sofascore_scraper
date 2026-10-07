@@ -32,7 +32,7 @@ from typing import Any, Dict, Iterator, List, Mapping, Tuple
 import pytest
 
 import store_fixtures as sf
-from src.store import (
+from sofascore_scraper.store import (
     EventQuery,
     Exporter,
     ExportReport,
@@ -43,10 +43,10 @@ from src.store import (
     StoreError,
     open_store,
 )
-from src.store import codec, layout
-from src.store import events as events_mod
-from src.store import export as export_mod
-from src.store.legacy import LegacyReader
+from sofascore_scraper.store import codec, layout
+from sofascore_scraper.store import events as events_mod
+from sofascore_scraper.store import export as export_mod
+from sofascore_scraper.store.legacy import LegacyReader
 from test_store_put import ARS, LIV, at, basic_of, ok
 
 UTC = dt.timezone.utc
@@ -123,8 +123,8 @@ def v3_store(store: Store) -> Store:
 
 def test_the_exporter_is_exported_from_the_store_root(store: Store) -> None:
     assert isinstance(store.export, Exporter)
-    assert Exporter.__module__ == "src.store.export"
-    assert ExportReport.__module__ == ExportSkip.__module__ == "src.store.export"
+    assert Exporter.__module__ == "sofascore_scraper.store.export"
+    assert ExportReport.__module__ == ExportSkip.__module__ == "sofascore_scraper.store.export"
 
 
 def test_every_file_of_a_tree_export_parses_to_the_stored_payload(fx: sf.LegacyFixture, tmp_path: Path) -> None:
@@ -353,7 +353,7 @@ def test_a_corrupt_payload_is_skipped_and_reported(v3_store: Store, tmp_path: Pa
     path.write_bytes(gzip.compress(b'{"statistics":')[:-6])  # yarım gzip akışı
 
     for fmt, target in (("tree", tmp_path / "raw"), ("jsonl", tmp_path / "raw.jsonl")):
-        with caplog.at_level("WARNING", logger="src.store.export"):
+        with caplog.at_level("WARNING", logger="sofascore_scraper.store.export"):
             report = v3_store.export.raw(EventQuery(), target, fmt=fmt)
         assert [(s.event_id, s.key, s.sub, s.reason) for s in report.skipped] == [(ARS, "statistics", "", "corrupt")]
         assert report.items == 3

@@ -1,11 +1,11 @@
-"""Spor kayıt defteri (src/sports.py): arama, ad normalizasyonu, bilinmeyen spor, dilim tablosu."""
+"""Spor kayıt defteri (sofascore_scraper/sports.py): arama, ad normalizasyonu, bilinmeyen spor, dilim tablosu."""
 import re
 from pathlib import Path
 
 import pytest
 
-from src import sports
-from src.sports import WatcherParams
+from sofascore_scraper import sports
+from sofascore_scraper.sports import WatcherParams
 
 REPO = Path(__file__).resolve().parent.parent
 ORIGINAL = ("football", "basketball", "tennis")
@@ -33,7 +33,7 @@ SOFASCORE_NAMES = (
 
 
 def _normalize_before_registry(raw):
-    """src/web/league_sports.normalize_sport'un kayıt defterinden önceki hali (karşılaştırma için kopya)."""
+    """sofascore_scraper/web/league_sports.normalize_sport'un kayıt defterinden önceki hali (karşılaştırma için kopya)."""
     s = str(raw or "").strip().lower()
     if "basket" in s:
         return "basketball"

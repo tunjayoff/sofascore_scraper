@@ -13,17 +13,17 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
-from src.web import deps
-from src.web.api import legacy as fetch_job
-from src.web.app import app
-from src.web.jobs import (
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.api import legacy as fetch_job
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.jobs import (
     DataOperationRunningError,
     JobRunningError,
     JobStore,
     default_db_path,
 )
-from src.web.api import legacy as data_mod
-from src.web.api import legacy as settings_mod
+from sofascore_scraper.web.api import legacy as data_mod
+from sofascore_scraper.web.api import legacy as settings_mod
 
 client = TestClient(app)
 store = deps.job_store()

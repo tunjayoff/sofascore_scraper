@@ -1,10 +1,10 @@
 """
 Uçtan uca: proxy parolası kaydedildikten sonra hiçbir yerden geri okunamamalı.
 
-İki özellik birlikte denenir: proxy ayarları web API'sinden kaydedilir (src/web/routes/settings.py),
+İki özellik birlikte denenir: proxy ayarları web API'sinden kaydedilir (sofascore_scraper/web/routes/settings.py),
 istekler o proxy üzerinden gider ve başarısız olur (hata metninde proxy adresi geçer), sonra
-parolanın API yanıtlarında, log dosyasında (src/logger.py), /api/logs'ta ve tanılama özetinde /
-paketinde (src/diagnostics.py; web ve CLI yolu) bulunmadığı doğrulanır.
+parolanın API yanıtlarında, log dosyasında (sofascore_scraper/logger.py), /api/logs'ta ve tanılama özetinde /
+paketinde (sofascore_scraper/diagnostics.py; web ve CLI yolu) bulunmadığı doğrulanır.
 
 Çevrimdışı: yalnızca curl sahtedir; gerçek tarayıcıyı conftest engeller.
 """
@@ -21,13 +21,13 @@ from urllib.parse import unquote
 import pytest
 from fastapi.testclient import TestClient
 
-import src.utils as utils
+import sofascore_scraper.utils as utils
 from conftest import LEAGUE_ID
-from src import diagnostics, redact
-from src import logger as app_logger
-from src.paths import env_file_path
-from src.web.app import app
-from src.web.deps import config_manager as _web_config
+from sofascore_scraper import diagnostics, redact
+from sofascore_scraper import logger as app_logger
+from sofascore_scraper.paths import env_file_path
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.deps import config_manager as _web_config
 config_manager = _web_config()
 
 client = TestClient(app)

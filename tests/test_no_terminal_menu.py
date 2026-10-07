@@ -2,7 +2,7 @@
 Terminal menüsü 3.0'da kaldırıldı (plan maddesi P26; docs/design/02-services.md bölüm 7): insanlar web arayüzünü,
 sunucular ve otomasyon komut satırını (`ssc`) kullanır.
 
-  * src/ui/ ve src/SofaScoreUi.py yok ve hiçbir modül onları içe aktarmaz;
+  * sofascore_scraper/ui/ ve sofascore_scraper/SofaScoreUi.py yok ve hiçbir modül onları içe aktarmaz;
   * `python main.py` argümansız (ya da yalnızca eylemsiz eski bayraklarla) kısa bir yardım yazar ve 2 ile çıkar.
 """
 from __future__ import annotations
@@ -16,15 +16,15 @@ from typing import Dict, Iterator, List
 import pytest
 
 import main as cli
-from src.cli import exit_codes
+from sofascore_scraper.cli import exit_codes
 
 ROOT = Path(__file__).resolve().parents[1]
-MENU_MODULES = ("src.ui", "src.SofaScoreUi")
+MENU_MODULES = ("sofascore_scraper.ui", "sofascore_scraper.SofaScoreUi")
 
 
 def _python_files() -> Iterator[Path]:
     yield ROOT / "main.py"
-    for folder in ("src", "scripts", "tests"):
+    for folder in ("sofascore_scraper", "scripts", "tests"):
         yield from sorted((ROOT / folder).rglob("*.py"))
 
 
@@ -45,8 +45,8 @@ def _is_menu_module(name: str) -> bool:
 
 
 def test_the_terminal_menu_modules_are_gone() -> None:
-    assert not (ROOT / "src" / "ui").exists() or not any((ROOT / "src" / "ui").rglob("*.py"))
-    assert not (ROOT / "src" / "SofaScoreUi.py").exists()
+    assert not (ROOT / "sofascore_scraper" / "ui").exists() or not any((ROOT / "sofascore_scraper" / "ui").rglob("*.py"))
+    assert not (ROOT / "sofascore_scraper" / "SofaScoreUi.py").exists()
 
 
 def test_no_module_imports_the_terminal_menu() -> None:
@@ -107,10 +107,10 @@ def test_a_legacy_warning_is_printed_before_the_short_help(capsys: pytest.Captur
 # kaldırıldı (P26). Kod bazı anahtarları önek + değişken ile kurar; o önekler aşağıda.
 
 DYNAMIC_PREFIXES = {
-    "bridge_reason_": "src/bridge_health.py",  # t(f"bridge_reason_{kind}")
-    "doctor_label_": "src/doctor.py",  # ctx.t("doctor_label_" + check_id)
+    "bridge_reason_": "sofascore_scraper/bridge_health.py",  # t(f"bridge_reason_{kind}")
+    "doctor_label_": "sofascore_scraper/doctor.py",  # ctx.t("doctor_label_" + check_id)
     "launcher_": "scripts/start_web.py",  # _messages.t("launcher_" + key)
-    "ssc_error_": "src/cli/output.py",  # "ssc_error_" + error.code
+    "ssc_error_": "sofascore_scraper/cli/output.py",  # "ssc_error_" + error.code
 }
 # Kodun artık kullanmadığı ama başka testlerin varlığını denetlediği anahtarlar (o testlerle birlikte gidebilir):
 # tests/test_diagnostics.py::test_cli_messages_exist_in_both_languages, tests/test_language.py.
@@ -120,7 +120,7 @@ KEPT_FOR_OTHER_TESTS = frozenset({
 
 
 def _product_text() -> str:
-    paths = [ROOT / "main.py", *sorted((ROOT / "src").rglob("*.py")), *sorted((ROOT / "scripts").glob("*.py"))]
+    paths = [ROOT / "main.py", *sorted((ROOT / "sofascore_scraper").rglob("*.py")), *sorted((ROOT / "scripts").glob("*.py"))]
     return "\n".join(path.read_text(encoding="utf-8") for path in paths)
 
 

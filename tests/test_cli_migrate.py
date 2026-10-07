@@ -16,11 +16,11 @@ import pytest
 
 import store_fixtures as sf
 import test_cli_skeleton as skeleton
-from src.services.maintenance import MaintenanceService
-from src.store import FollowSpec, LeaseHeld, MigrationPlan, MigrationReport, Store, open_store
-from src.store import files
-from src.store import migrate as migrate_mod
-from src.store.migrate import Migrator
+from sofascore_scraper.services.maintenance import MaintenanceService
+from sofascore_scraper.store import FollowSpec, LeaseHeld, MigrationPlan, MigrationReport, Store, open_store
+from sofascore_scraper.store import files
+from sofascore_scraper.store import migrate as migrate_mod
+from sofascore_scraper.store.migrate import Migrator
 from test_cli_skeleton import CliRunner
 from test_store_migrate import (
     CANONICAL_EVENTS,

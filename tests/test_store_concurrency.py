@@ -25,9 +25,9 @@ from typing import Any, Dict, List, Tuple
 import pytest
 
 import store_fixtures as sf
-from src.slices import SLICE_EMPTY, SLICE_OK, Outcome
-from src.store import PayloadCorrupt, PayloadMissing, Store, StoreError, open_store
-from src.store import layout, manifest
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, Outcome
+from sofascore_scraper.store import PayloadCorrupt, PayloadMissing, Store, StoreError, open_store
+from sofascore_scraper.store import layout, manifest
 
 ROOT = Path(__file__).resolve().parent.parent
 EVENT = sf.event_id(sf.PL_ARS)

@@ -3,9 +3,9 @@ CLI goldenları: `python main.py <bayraklar>` bugün ne yapıyor? Her bayrak iç
 SofaScore'a giden istekler ve yazılan dosyalar.
 
 `main.py` gerçek bir alt süreçte çalışır. P19'dan beri bir geçiş kabuğudur: eski bayraklar yeni CLI'nin
-komutlarına çevrilir (src/cli/legacy_flags.py; `--headless --update-all` → `sync`, `--refresh-only` → `refresh`,
+komutlarına çevrilir (sofascore_scraper/cli/legacy_flags.py; `--headless --update-all` → `sync`, `--refresh-only` → `refresh`,
 `--csv-export` → `export`, `--watch` → `watch --source poll --stdout`, ...), stderr'e tek bir kullanımdan kalkma satırı
-yazılır, loglar stderr'e gider ve çıkış kodları yeni tablonundur (src/cli/exit_codes.py: 3 kısmi, 4 devre kesici,
+yazılır, loglar stderr'e gider ve çıkış kodları yeni tablonundur (sofascore_scraper/cli/exit_codes.py: 3 kısmi, 4 devre kesici,
 5 depolama, 6 kilit, 130/143 iptal). Terminal menüsü (bayraksız) ve `--web` eskisi gibidir. Ağ yoktur: alt sürecin PYTHONPATH'ine yalnızca burada eklenen
 `cli_env/sitecustomize.py`, istek katmanı yüklendiği anda G-01'in sahte taşıyıcısını (tests/fakes/sofascore.py)
 kurar ve süreç kapanırken kaydını dosyaya yazar. Üretim kodu değişmez.
@@ -56,7 +56,7 @@ from characterization import STATE_DIR, UPDATE_ENV, WORLD, snapshot_tree
 import detail_records
 from characterization.test_fetch_flows import _as_legacy_record, _change_score, _delete_record, _make_provisional
 from fakes.sofascore import REQUEST_LAYER_MODULES, FakeSofaScore
-from src.version import __version__
+from sofascore_scraper.version import __version__
 
 REPO = Path(__file__).resolve().parents[2]
 MAIN = REPO / "main.py"
@@ -100,7 +100,7 @@ _CONCURRENT_MARK = re.compile(f"({re.escape(cli_env.CONCURRENT_BEGIN)}|{re.escap
 # yazılma anı (`ts`, sofascore.event/1)
 _WATCH_VOLATILE = frozenset({"at_utc", "last_event_poll", "ts"})
 # Beklemesi sayılmayan kaynak: izleyicinin şeridi yalnızca iki istek arası 1 sn'den kısaysa bekler
-_UNPINNED_SLEEP_SOURCES = frozenset({"src.throttle"})
+_UNPINNED_SLEEP_SOURCES = frozenset({"sofascore_scraper.throttle"})
 
 # Bir akışın karşılaştırılabilir hali: sıralı satırlar ve {"concurrent": [sıralanmış satırlar]} bölümleri
 Stream = List[Union[str, Dict[str, List[str]]]]
@@ -169,7 +169,7 @@ class Sandbox:
             "USERPROFILE": home,
             "PYTHONPATH": str(CLI_ENV_DIR),
             "PYTHONIOENCODING": "utf-8",
-            # Dil: açık ayar yok, ileti dili "C" → her makinede İngilizce (src/language.py)
+            # Dil: açık ayar yok, ileti dili "C" → her makinede İngilizce (sofascore_scraper/language.py)
             "LC_MESSAGES": "C",
             "DATA_DIR": str(self.data),
             "SOFASCORE_CONFIG_DIR": str(self.config),
@@ -384,10 +384,10 @@ def run_cli(box: Sandbox, *argv: str, world: Optional[FakeSofaScore] = None, std
 
 
 def terminal_ui_modules(run: CliRun) -> List[str]:
-    """Süreçte yüklenmiş terminal arayüzü modülleri (src/SofaScoreUi.py, src/ui/): headless kiplerde boş olmalı."""
+    """Süreçte yüklenmiş terminal arayüzü modülleri (sofascore_scraper/SofaScoreUi.py, sofascore_scraper/ui/): headless kiplerde boş olmalı."""
     return [
         name for name in run.process["src_modules"]
-        if name == "src.SofaScoreUi" or name == "src.ui" or name.startswith("src.ui.")
+        if name == "sofascore_scraper.SofaScoreUi" or name == "sofascore_scraper.ui" or name.startswith("sofascore_scraper.ui.")
     ]
 
 
@@ -518,7 +518,7 @@ def test_version(box: Sandbox, argv: List[str]) -> None:
 
     assert run.stdout == [f"SofaScore Scraper {__version__}"]
     assert (run.exit_code, run.stderr, run.files) == (0, [], {})
-    assert run.process == {"fake_installed": False, "src_modules": ["src", "src.version"]}
+    assert run.process == {"fake_installed": False, "src_modules": ["sofascore_scraper", "sofascore_scraper.version"]}
 
 
 # Tarayıcı başlatmayan ve makineye (Python sürümü, kurulu paketler, Node) bağlı olmayan denetimler
@@ -540,7 +540,7 @@ def _doctor_report(box: Sandbox, run: CliRun) -> Dict[str, Any]:
 
 
 def deprecated(*commands: str) -> str:
-    """Eski bayrakların stderr'e yazdığı tek satır (src/cli/legacy_flags.py)."""
+    """Eski bayrakların stderr'e yazdığı tek satır (sofascore_scraper/cli/legacy_flags.py)."""
     return "main.py flags are deprecated and will be removed; this run is: " + " && ".join(
         f"ssc {command}" for command in commands)
 
@@ -785,7 +785,7 @@ def test_headless_storage_error_exits_with_5(new_box: NewBox) -> None:
     for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)])):
         box = new_box(name, data="settled")  # yapılacak tek iş, yazılamayacak olan maç
         _delete_record(box.data, 9100003)
-        # Maçın v3 dizininin üst dizini (src/store/layout.py `event_dir`): yeni maç oraya yayımlanamaz
+        # Maçın v3 dizininin üst dizini (sofascore_scraper/store/layout.py `event_dir`): yeni maç oraya yayımlanamaz
         events_dir = box.data / "v3" / "events" / "9" / "100"
         os.chmod(events_dir, 0o555)
         try:
@@ -980,7 +980,7 @@ def test_recheck_unavailable(new_box: NewBox, settled: Seed) -> None:
 # Veri dizininin bir kilidini alıp "ready <pid>" yazan ve stdin kapanana kadar tutan süreç
 _LEASE_HOLDER = """
 import os, sys
-from src.store import open_store
+from sofascore_scraper.store import open_store
 
 store = open_store(sys.argv[1])
 with store.lease(sys.argv[2], purpose=sys.argv[3]):

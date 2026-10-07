@@ -10,9 +10,9 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from src.paths import env_file_path
-from src.web.app import app
-from src.web.api.proxy import PROXY_PASSWORD_MASK, mask_proxy_url
+from sofascore_scraper.paths import env_file_path
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.api.proxy import PROXY_PASSWORD_MASK, mask_proxy_url
 
 client = TestClient(app)
 

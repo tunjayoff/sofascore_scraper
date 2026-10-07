@@ -1,5 +1,5 @@
 """
-Ayar modeli ve yükleyici (src/config; plan maddesi P09, docs/design/02-services.md bölüm 4.3).
+Ayar modeli ve yükleyici (sofascore_scraper/config; plan maddesi P09, docs/design/02-services.md bölüm 4.3).
 
 Dört grup:
 
@@ -26,15 +26,15 @@ import pytest
 
 import conftest
 import test_cli_skeleton as skeleton
-from src import breaker, bridge_health, language, paths, refresh, throttle, watcher
-from src import logger as app_logger
-from src.config import Settings, config_schema, loader
-from src.config import settings as model
-from src.config.schema import environment_only_keys
-from src.config_manager import ConfigManager
-from src.exceptions import ConfigError
-from src.store import files as store_files
-from src.web import security
+from sofascore_scraper import breaker, bridge_health, language, paths, refresh, throttle, watcher
+from sofascore_scraper import logger as app_logger
+from sofascore_scraper.config import Settings, config_schema, loader
+from sofascore_scraper.config import settings as model
+from sofascore_scraper.config.schema import environment_only_keys
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.exceptions import ConfigError
+from sofascore_scraper.store import files as store_files
+from sofascore_scraper.web import security
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -206,7 +206,7 @@ def test_get_by_dotted_key():
 
 def test_every_documented_environment_key_is_modelled():
     """.env.example'daki ve tanılama paketindeki her anahtarın modelde bir karşılığı var."""
-    from src.diagnostics import SETTING_KEYS
+    from sofascore_scraper.diagnostics import SETTING_KEYS
 
     documented = set()
     for line in (ROOT / ".env.example").read_text(encoding="utf-8").splitlines():
@@ -225,7 +225,7 @@ def test_every_documented_environment_key_is_modelled():
 # === bugünkü davranış: yapılandırma dosyası yokken ==================================================
 
 # GET /api/settings yanıtındaki alan -> ayar. log_level ve debug yanıtta ham olarak yankılanır
-# (routes/settings.py); model log modülünün kuralını izler ve aşağıda src/logger ile karşılaştırılır.
+# (routes/settings.py); model log modülünün kuralını izler ve aşağıda sofascore_scraper/logger ile karşılaştırılır.
 GOLDEN_FIELDS = {
     "language": "display.language",
     "api_base_url": "client.base_url",
@@ -328,10 +328,10 @@ def test_legacy_variable_is_parsed_like_the_module_that_reads_it_today(monkeypat
 def test_effective_base_url_is_the_one_the_request_layer_applies(monkeypatch, tmp_path):
     """
     API_BASE_URL'yi iki yer okur: ayarlar sayfası yazıldığı gibi gösterir (`base_url`), istek katmanı boş değeri
-    varsayılana çevirip sondaki "/" işaretini atar (`effective_base_url`, src/client/transport.py).
+    varsayılana çevirip sondaki "/" işaretini atar (`effective_base_url`, sofascore_scraper/client/transport.py).
     """
-    from src import client
-    from src.client import endpoints, transport
+    from sofascore_scraper import client
+    from sofascore_scraper.client import endpoints, transport
 
     assert model.DEFAULT_API_BASE_URL == endpoints.DEFAULT_BASE_URL
     for raw in (None, "", "  ", "https://api.example.invalid/api/v1", " https://api.example.invalid/api/v1/ "):
@@ -360,7 +360,7 @@ def test_bridge_blocked_threshold_is_never_below_the_degraded_one(monkeypatch):
 
 
 def test_browser_headed_matches_the_bridge(monkeypatch):
-    from src import challenge_solver
+    from sofascore_scraper import challenge_solver
 
     for raw in (None,) + RAW_VALUES:
         if raw is None:
@@ -380,7 +380,7 @@ def test_browser_headed_matches_the_bridge(monkeypatch):
     ],
 )
 def test_language_follows_the_one_rule(env):
-    """src/language.resolve_language ile aynı sonuç; kaynağı da doğru (açık ayar mı, sistem dili mi)."""
+    """sofascore_scraper/language.resolve_language ile aynı sonuç; kaynağı da doğru (açık ayar mı, sistem dili mi)."""
     loaded = _load(env=env)
     assert loaded.settings.display.language == language.resolve_language(env)
     explicit = language.explicit_language(env) is not None
@@ -948,7 +948,7 @@ def test_config_show_never_prints_the_value_of_an_unknown_sink_option(cli, tmp_p
 
 
 def test_the_shown_sink_options_are_the_ones_the_sinks_define():
-    from src import sinks
+    from sofascore_scraper import sinks
 
     # Her sink türünün seçenek listesi vardır; modelin alanları seçenek sayılmaz
     assert set(sinks.TYPE_OPTIONS) == set(model.SINK_TYPES)
@@ -1136,7 +1136,7 @@ def test_config_manager_rate_and_language_getters(active, monkeypatch):
     monkeypatch.delenv("REQUEST_RATE_LIMIT")
     assert cm.get_request_rate_limit() == throttle.DEFAULT_RATE_LIMIT
 
-    from src.i18n import app_language
+    from sofascore_scraper.i18n import app_language
 
     for env in ({}, {"APP_LANGUAGE": "tr"}, {"LANGUAGE": "tr"}, {"APP_LANGUAGE": "de"}, {"LC_MESSAGES": "tr_TR.UTF-8"}):
         with monkeypatch.context() as patch:
@@ -1300,9 +1300,9 @@ def test_activate_takes_an_explicit_file_and_flags(active, tmp_path, monkeypatch
 def test_secrets_named_by_the_config_file_reach_today_s_readers_and_are_masked(active, monkeypatch):
     """
     token_env / proxy_env başka bir değişkeni gösterse de değer, belirteci ve proxy'yi bugün ortamdan okuyan
-    koda (src/web/security.py, src/challenge_solver.py) bugünkü adıyla ulaşır ve loglarda maskelenir.
+    koda (sofascore_scraper/web/security.py, sofascore_scraper/challenge_solver.py) bugünkü adıyla ulaşır ve loglarda maskelenir.
     """
-    from src import redact
+    from sofascore_scraper import redact
 
     token, proxy = "tok-0123456789abcdef", "http://scraper:pr0xy-passw0rd@proxy.example.com:8080"
     monkeypatch.setenv("MY_TOKEN", token)
@@ -1357,7 +1357,7 @@ def _run_python(code: str, tmp_path: Path, **env: str) -> subprocess.CompletedPr
 def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(tmp_path):
     """
     Uçtan uca, ayrı bir süreçte, main.py'nin içe aktarma sırasıyla (önce config_manager): dosya içe aktarma
-    sırasında okunur; bütçe ve yenileme modülleri ile src/utils.py'nin içe aktarılırken donan sabitleri onu görür.
+    sırasında okunur; bütçe ve yenileme modülleri ile sofascore_scraper/utils.py'nin içe aktarılırken donan sabitleri onu görür.
     """
     config = tmp_path / "my.toml"
     config.write_text(
@@ -1367,8 +1367,8 @@ def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(t
     )
     code = (
         "import json, os\n"
-        "import src.config_manager as cm\n"
-        "from src import refresh, throttle, utils\n"
+        "import sofascore_scraper.config_manager as cm\n"
+        "from sofascore_scraper import refresh, throttle, utils\n"
         "print(json.dumps([throttle.configured_rate(), refresh.refresh_window_hours(), os.environ['DATA_DIR'],"
         " cm.ConfigManager().get_request_rate_limit(), utils.API_BASE_URL, utils.FETCH_ONLY_FINISHED]))\n"
     )
@@ -1381,8 +1381,8 @@ def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(t
     code = (
         "import json, os\n"
         "before = dict(os.environ)\n"
-        "import src.config_manager as cm\n"
-        "from src import throttle, utils\n"
+        "import sofascore_scraper.config_manager as cm\n"
+        "from sofascore_scraper import throttle, utils\n"
         "names = set(os.environ) - set(before)\n"
         f"added = sorted(n for n in names if n.startswith('SOFASCORE_') or n in {sorted(loader.LEGACY_ENV_NAMES)!r})\n"
         "print(json.dumps([throttle.configured_rate(), added, cm.ConfigManager().get_data_dir(),"
@@ -1398,7 +1398,7 @@ def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(t
 def test_a_broken_config_file_stops_the_application_at_start_up(tmp_path):
     config = tmp_path / "broken.toml"
     config.write_text("[client]\nrate = 'fast'\n", encoding="utf-8")
-    done = _run_python("import src.config_manager\n", tmp_path, SOFASCORE_CONFIG=str(config))
+    done = _run_python("import sofascore_scraper.config_manager\n", tmp_path, SOFASCORE_CONFIG=str(config))
     assert done.returncode != 0
     assert "ConfigError" in done.stderr and 'broken.toml: [client] rate: expected a number or "off"' in done.stderr
 
@@ -1439,7 +1439,7 @@ def test_schema_is_generated_from_the_model():
     assert properties["display"]["properties"]["language"]["x-legacy-env"] == "APP_LANGUAGE"
     assert properties["server"]["properties"]["allowed_hosts"]["default"] == ["localhost", "127.0.0.1", "[::1]"]
     assert set(properties["schedule"]["properties"]) == {"enabled", "task"}
-    assert set(properties["slices"]["properties"]) == set(__import__("src.sports", fromlist=["sport_slugs"]).sport_slugs())
+    assert set(properties["slices"]["properties"]) == set(__import__("sofascore_scraper.sports", fromlist=["sport_slugs"]).sport_slugs())
     assert [list(option["required"]) for option in properties["follow"]["items"]["oneOf"]] == [
         ["tournament"], ["team"], ["player"], ["event"],
     ]

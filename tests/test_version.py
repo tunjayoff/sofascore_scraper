@@ -9,8 +9,8 @@ import sys
 import pytest
 from fastapi.testclient import TestClient
 
-from src.version import PYPROJECT_PATH, UNKNOWN_VERSION, __version__, read_version
-from src.web.app import app
+from sofascore_scraper.version import PYPROJECT_PATH, UNKNOWN_VERSION, __version__, read_version
+from sofascore_scraper.web.app import app
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

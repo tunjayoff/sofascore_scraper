@@ -1,5 +1,5 @@
-# src.store.RestoreReport
-# kaynak: src/store/backup.py
+# sofascore_scraper.store.RestoreReport
+# kaynak: sofascore_scraper/store/backup.py
 @dataclass(frozen=True)
 class RestoreReport:
     name: str

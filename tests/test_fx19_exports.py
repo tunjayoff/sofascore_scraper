@@ -21,10 +21,10 @@ from fastapi.testclient import TestClient
 import conftest
 import store_fixtures as sf
 import test_cli_skeleton as skeleton
-from src.services.data_jobs import ExportRequest, export_label, export_name, slug
-from src.store import FollowSpec, JobStore, Store, default_db_path, open_store
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.services.data_jobs import ExportRequest, export_label, export_name, slug
+from sofascore_scraper.store import FollowSpec, JobStore, Store, default_db_path, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 cli = skeleton.cli  # komut satırı fikstürü

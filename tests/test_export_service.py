@@ -27,10 +27,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src.errors import NotSupportedError
-from src.services import export as export_module
-from src.services import sync as sync_module
-from src.services.export import (
+from sofascore_scraper.errors import NotSupportedError
+from sofascore_scraper.services import export as export_module
+from sofascore_scraper.services import sync as sync_module
+from sofascore_scraper.services.export import (
     PRIORITY_COLUMNS,
     ExportService,
     ExportSpec,
@@ -39,9 +39,9 @@ from src.services.export import (
     legacy_folders,
     legacy_wide_row,
 )
-from src.slices import SLICE_OK, Outcome
-from src.store import StoreError, open_store
-from src.web.app import app
+from sofascore_scraper.slices import SLICE_OK, Outcome
+from sofascore_scraper.store import StoreError, open_store
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 

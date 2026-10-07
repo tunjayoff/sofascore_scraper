@@ -1,5 +1,5 @@
-# src.store.IndexProblem
-# kaynak: src/store/indexer.py
+# sofascore_scraper.store.IndexProblem
+# kaynak: sofascore_scraper/store/indexer.py
 @dataclass(frozen=True)
 class IndexProblem:
     layout: str

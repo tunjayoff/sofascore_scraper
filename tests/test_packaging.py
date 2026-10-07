@@ -49,7 +49,7 @@ def test_dockerfile_runs_as_non_root_with_healthcheck_and_volumes():
     for path in ("/app/data", "/app/config", "/app/logs"):
         assert path in volumes
 
-    # Sürümün tek kaynağı imajda olmalı (src/version.py çalışma anında okur)
+    # Sürümün tek kaynağı imajda olmalı (sofascore_scraper/version.py çalışma anında okur)
     assert any(ln.startswith("COPY ") and "pyproject.toml" in ln for ln in final_stage)
     # Web arayüzü Node aşamasında derlenip kopyalanır; çalışma imajında Node yoktur
     assert any(ln.startswith("COPY --from=frontend") and "frontend/dist" in ln for ln in final_stage)
@@ -66,7 +66,7 @@ def test_dockerignore_is_an_allowlist_without_user_state():
     assert patterns[0] == "*", "everything is excluded unless allowed"
     allowed = {p[1:].rstrip("/") for p in patterns if p.startswith("!")}
     for needed in (
-        "pyproject.toml", "requirements.txt", "constraints.txt", "main.py", "src", "locales", "frontend", "docker", "LICENSE",
+        "pyproject.toml", "requirements.txt", "constraints.txt", "main.py", "sofascore_scraper", "locales", "frontend", "docker", "LICENSE",
     ):
         assert needed in allowed
     # Kullanıcı durumu ve yerel çıktılar imaja/bağlama girmemeli
@@ -84,7 +84,7 @@ def test_entrypoint_is_a_valid_lf_shell_script():
     text = raw.decode("utf-8")
     code = [w for ln in text.splitlines() if not ln.lstrip().startswith("#") for w in ln.split()]
     # Web sunucusu `ssc serve` ile başlar (karar D17); doğrudan uvicorn ve eski `--web` yolu yoktur
-    assert "src.cli.main serve" in " ".join(code)
+    assert "sofascore_scraper.cli.main serve" in " ".join(code)
     assert "uvicorn" not in code and "--web" not in code
     sh = shutil.which("sh")
     if sh is None:
@@ -203,12 +203,12 @@ def _entrypoint(tmp_path: Path, *args: str, env: Optional[Dict[str, str]] = None
 
 def test_entrypoint_starts_serve_on_every_interface_with_the_loopback_names(tmp_path: Path) -> None:
     started = _entrypoint(tmp_path)
-    assert started["argv"] == ["-m", "src.cli.main", "serve", "--host", "0.0.0.0", "--port", "8000"]
+    assert started["argv"] == ["-m", "sofascore_scraper.cli.main", "serve", "--host", "0.0.0.0", "--port", "8000"]
     assert started["hosts"] == "localhost,127.0.0.1,[::1]"
     # `serve` ve eski `web` aynıdır; sonraki seçenekler serve'e geçer; HOST ve PORT ortamdan
     started = _entrypoint(tmp_path, "serve", "--dev", env={"PORT": "9000", "HOST": "::"})
-    assert started["argv"] == ["-m", "src.cli.main", "serve", "--host", "::", "--port", "9000", "--dev"]
-    assert _entrypoint(tmp_path, "web")["argv"][:3] == ["-m", "src.cli.main", "serve"]
+    assert started["argv"] == ["-m", "sofascore_scraper.cli.main", "serve", "--host", "::", "--port", "9000", "--dev"]
+    assert _entrypoint(tmp_path, "web")["argv"][:3] == ["-m", "sofascore_scraper.cli.main", "serve"]
 
 
 @pytest.mark.parametrize("env,files", [

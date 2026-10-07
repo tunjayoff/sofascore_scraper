@@ -1,5 +1,5 @@
-# src.store.JobRunningError
-# kaynak: src/store/jobs.py
+# sofascore_scraper.store.JobRunningError
+# kaynak: sofascore_scraper/store/jobs.py
 class JobRunningError(JobStoreConflict):
     code = ...
     def __init__(self) -> None

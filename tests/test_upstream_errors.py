@@ -1,7 +1,7 @@
 """
 Engellenen / başarısız SofaScore isteği "Sonuç yok" ya da sebepsiz bir başarı olarak görünmemeli.
 
-Lig arama ve sezon yenileme tipli bir neden döndürür (src/web/upstream.py):
+Lig arama ve sezon yenileme tipli bir neden döndürür (sofascore_scraper/web/upstream.py):
 blocked / browser / rate_limited / network / not_found / upstream. Boş liste yalnızca istek
 gerçekten başarılı olup hiçbir şey bulunamadığında döner. Bütün testler çevrimdışıdır: istek
 katmanı (curl ya da make_api_request) sahtedir, gerçek tarayıcı conftest tarafından engellenir.
@@ -16,21 +16,21 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-import src.challenge_solver as cs
-import src.season_fetcher as season_fetcher_mod
-import src.utils as utils
+import sofascore_scraper.challenge_solver as cs
+import sofascore_scraper.season_fetcher as season_fetcher_mod
+import sofascore_scraper.utils as utils
 from conftest import DATA_DIR, LEAGUE_ID, SEASON_ID, SEASON_NAME
-from src import bridge_health
-from src.exceptions import (
+from sofascore_scraper import bridge_health
+from sofascore_scraper.exceptions import (
     APIError,
     DataParsingError,
     NetworkError,
     RateLimitError,
     ResourceNotFoundError,
 )
-from src.season_fetcher import SeasonFetcher
-from src.web import deps
-from src.web import upstream
+from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.web import deps
+from sofascore_scraper.web import upstream
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
 CHALLENGE = '{"error":{"code":403,"reason":"challenge"}}'
@@ -64,7 +64,7 @@ def _curl(*responses, **kw):
 
 @pytest.fixture
 def client():
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     return TestClient(app)
 

@@ -19,16 +19,16 @@ from fastapi.testclient import TestClient
 
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src import sports
-from src.client import endpoints
-from src.config import loader
-from src.schema import mappers
-from src.services import planning
-from src.services.export import ExportService
-from src.services.pipeline import FetchPipeline, run_extras
-from src.services.query import RefreshPolicy
-from src.store import FollowSpec, Ref, Store, open_store
-from src.web.app import app
+from sofascore_scraper import sports
+from sofascore_scraper.client import endpoints
+from sofascore_scraper.config import loader
+from sofascore_scraper.schema import mappers
+from sofascore_scraper.services import planning
+from sofascore_scraper.services.export import ExportService
+from sofascore_scraper.services.pipeline import FetchPipeline, run_extras
+from sofascore_scraper.services.query import RefreshPolicy
+from sofascore_scraper.store import FollowSpec, Ref, Store, open_store
+from sofascore_scraper.web.app import app
 
 FIXTURES = Path(__file__).parent / "fixtures" / "p28"
 LEAGUE, SEASON = 17, 61627  # dört maçı var, biri başlamamış: etkin sezon
@@ -290,8 +290,8 @@ def test_a_sync_runs_the_selected_extras_after_the_details(fake: FakeSofaScore, 
                                                           monkeypatch: pytest.MonkeyPatch) -> None:
     from types import SimpleNamespace
 
-    from src.config_manager import ConfigManager
-    from src.services.sync import SyncService, SyncSpec
+    from sofascore_scraper.config_manager import ConfigManager
+    from sofascore_scraper.services.sync import SyncService, SyncSpec
     from test_sync_service import FakeDetails, RecordingHandle
 
     download(store, SEASON_EVENTS + [9100010])

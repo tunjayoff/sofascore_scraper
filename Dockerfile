@@ -70,9 +70,9 @@ RUN groupadd --non-unique --gid "${APP_GID}" app \
     && mkdir -p /app/data /app/config /app/logs /app/browser-profile /app/browser-profile-live \
     && chown app:app /app/data /app/config /app/logs /app/browser-profile /app/browser-profile-live
 
-# pyproject.toml sürümün tek kaynağıdır (src/version.py çalışma anında okur)
+# pyproject.toml sürümün tek kaynağıdır (sofascore_scraper/version.py çalışma anında okur)
 COPY pyproject.toml main.py LICENSE README.md README.tr.md CHANGELOG.md ./
-COPY src/ ./src/
+COPY sofascore_scraper/ ./sofascore_scraper/
 COPY locales/ ./locales/
 COPY --chown=app:app config/leagues.example.txt ./config/
 COPY docker/entrypoint.sh /usr/local/bin/sofascore-entrypoint

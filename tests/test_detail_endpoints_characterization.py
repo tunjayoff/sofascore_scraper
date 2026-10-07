@@ -1,11 +1,11 @@
 """
 Karakterizasyon: bir maç için istenen detay uç noktaları.
 
-Beklenen listeler bu dosyada elle yazılıdır; kayıt defterinden (src/sports.py) türetilmez. Böylece
+Beklenen listeler bu dosyada elle yazılıdır; kayıt defterinden (sofascore_scraper/sports.py) türetilmez. Böylece
 tablo değişirse hangi isteğin eklendiği ya da düştüğü burada görünür. Gerçek ağ yok: istekler sahte taşıyıcıya
 gider (tests/fakes/sofascore.py), istek katmanı gerçektir.
 
-P13'ten beri bütün yollar tek boru hattıdır (src/services/pipeline.py); üç giriş noktası yine ayrı ayrı sabitlenir:
+P13'ten beri bütün yollar tek boru hattıdır (sofascore_scraper/services/pipeline.py); üç giriş noktası yine ayrı ayrı sabitlenir:
   - toplu indirme: sporun bütün dilimleri, teniste point-by-point dahil
   - tek maç indirme: aynısı (eskiden teniste de point-by-point yoktu)
   - eksik dilim tamamlama (refill): yalnızca eksik ve "yok" sayılmayan dilimler, isteğe bağlılar dahil
@@ -19,7 +19,7 @@ import pytest
 import detail_records
 from characterization import pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, SLICE_EMPTY, MatchDataFetcher, SliceOutcome
+from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, SLICE_EMPTY, MatchDataFetcher, SliceOutcome
 
 MID = "4242"
 EVENT = f"/event/{MID}"

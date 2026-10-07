@@ -12,7 +12,7 @@ docs/design/01-storage.md bölüm 5.4).
   * `delete_legacy` yalnızca doğrulanan kopyaları siler.
   * Yalnızca özet CSV'si olan sezon bildirilir ve yerinde kalır.
 
-Ayrıca: değişiklik günlüğünün taşınmış kopyası (src/store/changes.py), kilitler, `migration_runs`, `limit` ile
+Ayrıca: değişiklik günlüğünün taşınmış kopyası (sofascore_scraper/store/changes.py), kilitler, `migration_runs`, `limit` ile
 sürdürme, turnuva seçimi. Servis ve komutlar: tests/test_cli_migrate.py.
 """
 from __future__ import annotations
@@ -30,11 +30,11 @@ import pytest
 
 import store_dump
 import store_fixtures as sf
-from src.store import FollowSpec, LeaseHeld, MigrationPlan, Store, StoreError, open_store
-from src.store import changes as changes_mod
-from src.store import layout, manifest
-from src.store import migrate as migrate_mod
-from src.store.migrate import EVENT_STEPS, Migrator
+from sofascore_scraper.store import FollowSpec, LeaseHeld, MigrationPlan, Store, StoreError, open_store
+from sofascore_scraper.store import changes as changes_mod
+from sofascore_scraper.store import layout, manifest
+from sofascore_scraper.store import migrate as migrate_mod
+from sofascore_scraper.store.migrate import EVENT_STEPS, Migrator
 from test_store_put import ARS, LIV, at, basic_of, consistent, ok, pending
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -364,7 +364,7 @@ def _list_layout(store: Store, tournament_id: int) -> str:
 
 
 def _query(tournament_id: int) -> Any:
-    from src.store import EventQuery, Scope
+    from sofascore_scraper.store import EventQuery, Scope
 
     return EventQuery(scope=Scope(tournament_ids=(tournament_id,)), limit=500)
 
@@ -564,7 +564,7 @@ def test_segments_prefer_the_copy_of_the_legacy_file(tmp_path: Path) -> None:
 
 HOLDER = """
 import sys
-from src.store import open_store
+from sofascore_scraper.store import open_store
 lease = open_store(sys.argv[1]).lease(sys.argv[2], purpose=sys.argv[3])
 print("ready", flush=True)
 sys.stdin.readline()

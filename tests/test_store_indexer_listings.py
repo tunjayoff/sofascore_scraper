@@ -1,6 +1,6 @@
 """
-Listelerin, sezon listelerinin ve değişiklik günlüğünün dizinlenmesi: src/store/entities.py,
-src/store/changes.py ve bunları sıraya koyan src/store/indexer.py (plan maddesi ST-08;
+Listelerin, sezon listelerinin ve değişiklik günlüğünün dizinlenmesi: sofascore_scraper/store/entities.py,
+sofascore_scraper/store/changes.py ve bunları sıraya koyan sofascore_scraper/store/indexer.py (plan maddesi ST-08;
 docs/design/01-storage.md bölüm 3.4, 5.2, 8.2 ve 8.5).
 
 Altın dosyalar tests/golden/catalog_listings/<dizin>.json, `tests/store_fixtures.py`'nin kurduğu her veri
@@ -28,13 +28,13 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tupl
 import pytest
 
 import store_fixtures as sf
-from src import refresh
-from src.store import catalog as catalog_mod
-from src.store import changes, codec, derive, entities, files, indexer, layout, manifest
-from src.store.catalog import Catalog
-from src.store.indexer import CatalogAdmin
-from src.store.legacy import LegacyReader
-from src.store.manifest import Manifest, Observation, SliceEntry
+from sofascore_scraper import refresh
+from sofascore_scraper.store import catalog as catalog_mod
+from sofascore_scraper.store import changes, codec, derive, entities, files, indexer, layout, manifest
+from sofascore_scraper.store.catalog import Catalog
+from sofascore_scraper.store.indexer import CatalogAdmin
+from sofascore_scraper.store.legacy import LegacyReader
+from sofascore_scraper.store.manifest import Manifest, Observation, SliceEntry
 
 ROOT = Path(__file__).resolve().parent.parent
 GOLDEN_DIR = Path(__file__).parent / "golden" / "catalog_listings"
@@ -536,7 +536,7 @@ def test_stale_for_a_v3_event(tmp_path: Path, make_admin) -> None:
 
 
 def test_compare_digest_agrees_with_diff_basic_on_every_status_fixture() -> None:
-    """Store `src.refresh`'i içe aktaramaz; karşılaştırma kuralının aynı olduğunu bu test tutar."""
+    """Store `sofascore_scraper.refresh`'i içe aktaramaz; karşılaştırma kuralının aynı olduğunu bu test tutar."""
     payloads = []
     for path in sorted(sf.STATUS_DIR.rglob("*.json")):
         body = json.loads(path.read_text(encoding="utf-8"))
@@ -594,7 +594,7 @@ def test_catalog_rows_equal_the_season_summary_csv(fx: sf.LegacyFixture, make_ad
                 continue
             assert (row["home_name"], row["away_name"], row["status_description"]) == (
                 line["home_team"], line["away_team"], line["status"])
-            # özet, `current` yoksa 0 yazar (src/match_fetcher.py); katalog yok olanı NULL tutar
+            # özet, `current` yoksa 0 yazar (sofascore_scraper/match_fetcher.py); katalog yok olanı NULL tutar
             assert (row["home_score_current"] or 0, row["away_score_current"] or 0) == (
                 int(line["home_score"]), int(line["away_score"]))
             assert dt.datetime.fromtimestamp(row["start_ts"]).isoformat() == line["match_date"]
@@ -1102,15 +1102,15 @@ def test_index_event_keeps_listed_in_and_recomputes_stale(tmp_path: Path, make_a
 # --- katmanlama ------------------------------------------------------------------------------------------
 
 def test_new_modules_import_only_what_the_store_may_import() -> None:
-    """Bölüm 2.1: Store yalnızca src.sports, src.status, src.slices, src.exceptions ve src.version'ı içe aktarabilir."""
+    """Bölüm 2.1: Store yalnızca sofascore_scraper.sports, sofascore_scraper.status, sofascore_scraper.slices, sofascore_scraper.exceptions ve sofascore_scraper.version'ı içe aktarabilir."""
     code = (
-        "import sys, json; import src.store.entities, src.store.changes; "
-        "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.store.entities, sofascore_scraper.store.changes; "
+        "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
     loaded = set(json.loads(out.stdout))
 
-    assert {m for m in loaded if not m.startswith("src.store")} == {
-        "src", "src.exceptions", "src.slices", "src.sports", "src.status"}
-    assert "src.store.indexer" not in loaded  # dizinleyici bu iki modülü kullanır, tersi değil
+    assert {m for m in loaded if not m.startswith("sofascore_scraper.store")} == {
+        "sofascore_scraper", "sofascore_scraper.exceptions", "sofascore_scraper.slices", "sofascore_scraper.sports", "sofascore_scraper.status"}
+    assert "sofascore_scraper.store.indexer" not in loaded  # dizinleyici bu iki modülü kullanır, tersi değil
     assert catalog_mod.DERIVE_VERSION == derive.DERIVE_VERSION  # bu modüller sürümü kendileri tutmaz

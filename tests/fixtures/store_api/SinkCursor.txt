@@ -1,5 +1,5 @@
-# src.store.SinkCursor
-# kaynak: src/store/streams.py
+# sofascore_scraper.store.SinkCursor
+# kaynak: sofascore_scraper/store/streams.py
 @dataclass(frozen=True)
 class SinkCursor:
     sink: str

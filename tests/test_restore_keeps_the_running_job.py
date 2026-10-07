@@ -20,9 +20,9 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src.store import Store, StoreError
-from src.store import backup as backup_mod
-from src.store.streams import META_STREAM_ID
+from sofascore_scraper.store import Store, StoreError
+from sofascore_scraper.store import backup as backup_mod
+from sofascore_scraper.store.streams import META_STREAM_ID
 from test_store_backup import backup_all, into, rich_store
 
 
@@ -42,7 +42,7 @@ def _peek(db_path: str, job_id: str) -> Dict[str, Any]:
 
 def _watch_the_swap(monkeypatch: pytest.MonkeyPatch, store: Store, job_id: str) -> List[Dict[str, Any]]:
     """
-    `src.store.backup`un gördüğü sqlite3'ü, açık veritabanına yapılan her yedekleme adımının hemen ardından
+    `sofascore_scraper.store.backup`un gördüğü sqlite3'ü, açık veritabanına yapılan her yedekleme adımının hemen ardından
     state.db'yi ayrı bir bağlantıyla okuyan bir bağlantı sınıfıyla değiştirir; okunanları döndürür.
     """
     seen: List[Dict[str, Any]] = []

@@ -1,6 +1,6 @@
 """
 Her sporun maç sayfasının istediği detay uç noktaları ve aldığı yanıtlar: research/all_sports'tan (PR #17) türeyen
-kanıt tablosu ve dilim kayıt defterinin (src/sports.py, DETAIL_SLICES) ondan çıkan kuralları.
+kanıt tablosu ve dilim kayıt defterinin (sofascore_scraper/sports.py, DETAIL_SLICES) ondan çıkan kuralları.
 
 Ağ yok: yalnızca research/all_sports/requests.jsonl ve events/*.jsonl okunur. Tablo
 tests/fixtures/sport_slices/evidence.json'a yazılıdır; tests/test_sport_slices.py yazılı tablonun araştırma

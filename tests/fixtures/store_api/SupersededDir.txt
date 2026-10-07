@@ -1,5 +1,5 @@
-# src.store.SupersededDir
-# kaynak: src/store/indexer.py
+# sofascore_scraper.store.SupersededDir
+# kaynak: sofascore_scraper/store/indexer.py
 @dataclass(frozen=True)
 class SupersededDir:
     event_id: int

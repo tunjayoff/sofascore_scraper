@@ -1,8 +1,8 @@
 """
-src/store/errors.py ve src/store/files.py: Store hata sınıfları ve dosya ilkelleri
+sofascore_scraper/store/errors.py ve sofascore_scraper/store/files.py: Store hata sınıfları ve dosya ilkelleri
 (docs/design/01-storage.md, bölüm 2.3 ve 4.4).
 
-Config dosyalarının yazımı (2.x'in src/fsutil.py'si) src/config_files.py'dedir; testleri
+Config dosyalarının yazımı (2.x'in sofascore_scraper/fsutil.py'si) sofascore_scraper/config_files.py'dedir; testleri
 tests/test_config_files.py'de. Buradaki testler Store katmanını dener: StoreError çevirisi, Windows'taki yeniden
 deneme (her platformda, sahte os.replace ile), isteğe bağlı fsync, dosya izinleri (karar S12),
 hazırlık ve çöp dizinleri.
@@ -18,9 +18,9 @@ from typing import Iterator
 
 import pytest
 
-import src.store as store_package
-from src.exceptions import StorageError
-from src.store import (
+import sofascore_scraper.store as store_package
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.store import (
     CatalogCorrupt,
     FollowExists,
     FollowManaged,

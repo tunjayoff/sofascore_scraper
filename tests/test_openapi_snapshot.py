@@ -5,7 +5,7 @@ docs/design/02-services.md bölüm 6 ve 6.1).
 `docs/api/openapi-v1.json` sözleşmenin kaydıdır: bu test onu uygulamanın ürettiği belgeyle karşılaştırır ve
 bildirilmemiş her değişiklikte düşer. Sözleşme bilerek değiştirildiyse dosya şöyle yeniden üretilir:
 
-    python -m src.web.openapi --write
+    python -m sofascore_scraper.web.openapi --write
 
 Karşılaştırma ayrıştırılmış JSON üzerindedir (nesnelerde anahtar sırası sayılmaz, listelerde sayılır). Belgeyi
 FastAPI ve pydantic üretir; kayıt `constraints.txt`'deki sürümlerle alınmıştır.
@@ -28,10 +28,10 @@ from typing import Any, Dict, Iterator, List, Tuple
 import pytest
 from fastapi.testclient import TestClient
 
-from src import sports
-from src.web import api as api_paths
-from src.web import openapi
-from src.web.app import app
+from sofascore_scraper import sports
+from sofascore_scraper.web import api as api_paths
+from sofascore_scraper.web import openapi
+from sofascore_scraper.web.app import app
 
 MAX_SHOWN = 40
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
@@ -68,7 +68,7 @@ def operations(doc: Dict[str, Any]) -> Iterator[Tuple[str, str, Dict[str, Any]]]
 
 def test_the_committed_document_matches_the_application(document: Dict[str, Any]) -> None:
     recorded = openapi.read_snapshot()
-    assert recorded is not None, "docs/api/openapi-v1.json is missing; run: python -m src.web.openapi --write"
+    assert recorded is not None, "docs/api/openapi-v1.json is missing; run: python -m sofascore_scraper.web.openapi --write"
 
     found = openapi.differences(recorded, document)
 
@@ -77,7 +77,7 @@ def test_the_committed_document_matches_the_application(document: Dict[str, Any]
         more = f"\n  ... and {len(found) - MAX_SHOWN} more" if len(found) > MAX_SHOWN else ""
         pytest.fail(
             f"docs/api/openapi-v1.json: {len(found)} difference(s) (recorded -> current)\n  {shown}{more}\n"
-            "If the contract was changed on purpose: python -m src.web.openapi --write",
+            "If the contract was changed on purpose: python -m sofascore_scraper.web.openapi --write",
             pytrace=False,
         )
 
@@ -266,7 +266,7 @@ def test_check_passes_on_the_committed_file_and_fails_on_a_stale_one(
     assert openapi.main(["--check"]) == 1
     err = capsys.readouterr().err
     assert "$ > paths: added '/api/v1/health'" in err and "$ > info > version: '0' -> '1'" in err
-    assert "2 difference(s); run: python -m src.web.openapi --write" in err
+    assert "2 difference(s); run: python -m sofascore_scraper.web.openapi --write" in err
 
 
 def test_write_regenerates_the_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture) -> None:
@@ -291,7 +291,7 @@ def test_without_a_flag_the_document_goes_to_stdout(capsys: pytest.CaptureFixtur
 
 def test_the_program_prints_only_the_document_and_leaves_nothing_behind(tmp_path: Path) -> None:
     """
-    `python -m src.web.openapi`, bir geliştiricinin kabuğundaki gibi (testlerin yalıtım değişkenleri olmadan):
+    `python -m sofascore_scraper.web.openapi`, bir geliştiricinin kabuğundaki gibi (testlerin yalıtım değişkenleri olmadan):
     standart çıktı kaydın kendisidir (log satırları stderr'e gider), çalışma dizininde dosya oluşmaz ve yerel
     yapılandırma (sunucunun başlamasını durduracak bir dosya, bir erişim belirteci) sonucu etkilemez.
     """
@@ -305,7 +305,7 @@ def test_the_program_prints_only_the_document_and_leaves_nothing_behind(tmp_path
     env.update(PYTHONPATH=str(openapi.ROOT), SOFASCORE_API_TOKEN="short", PYTHONIOENCODING="utf-8")
 
     done = subprocess.run(
-        [sys.executable, "-m", "src.web.openapi"], cwd=str(tmp_path), env=env, capture_output=True, timeout=120,
+        [sys.executable, "-m", "sofascore_scraper.web.openapi"], cwd=str(tmp_path), env=env, capture_output=True, timeout=120,
         check=False,
     )
 

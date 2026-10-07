@@ -27,13 +27,13 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 import pytest
 
-import src.store
+import sofascore_scraper.store
 import store_dump
 import store_fixtures as sf
 import legacy_writer
-from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
-from src.status import observation_record
-from src.store import (
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
+from sofascore_scraper.status import observation_record
+from sofascore_scraper.store import (
     EventQuery,
     LayoutError,
     PutResult,
@@ -44,10 +44,10 @@ from src.store import (
     UnknownEvent,
     open_store,
 )
-from src.store import changes as changes_mod
-from src.store import codec, entities, files, indexer, layout, manifest, verify
-from src.store import events as events_mod
-from src.store.legacy import LegacyProblem
+from sofascore_scraper.store import changes as changes_mod
+from sofascore_scraper.store import codec, entities, files, indexer, layout, manifest, verify
+from sofascore_scraper.store import events as events_mod
+from sofascore_scraper.store.legacy import LegacyProblem
 
 UTC = dt.timezone.utc
 NOW = sf.FIXTURE_NOW
@@ -262,10 +262,10 @@ def test_a_readonly_or_closed_store_refuses_to_write(canonical: sf.LegacyFixture
 
 
 def test_the_write_api_is_exported_from_the_package_root() -> None:
-    assert "PutResult" in src.store.__all__ and src.store.PutResult is events_mod.PutResult
+    assert "PutResult" in sofascore_scraper.store.__all__ and sofascore_scraper.store.PutResult is events_mod.PutResult
     for name in ("put", "observe", "reset_empty_markers", "delete"):
-        assert callable(getattr(src.store.EventStore, name))
-    assert callable(src.store.ChangeLog.append)
+        assert callable(getattr(sofascore_scraper.store.EventStore, name))
+    assert callable(sofascore_scraper.store.ChangeLog.append)
 
 
 # --- dilim durumu kuralları ---------------------------------------------------------------------------
@@ -531,7 +531,7 @@ def test_observe_with_an_identical_payload_only_moves_the_observation(store: Sto
 
 def change_of(old: Optional[Mapping[str, Any]], new: Mapping[str, Any], *, ts: str = "2026-10-01T12:00:05+00:00",
               **extra: Any) -> Dict[str, Any]:
-    """`src/refresh.change_row` biçiminde küçük bir satır."""
+    """`sofascore_scraper/refresh.change_row` biçiminde küçük bir satır."""
     return {"ts_utc": ts, "event_id": new["id"], "sport": "football",
             "tournament": {"id": 17, "name": "Premier League"},
             "changed": {"winnerCode": [(old or {}).get("winnerCode"), new.get("winnerCode")]}, **extra}
@@ -1148,7 +1148,7 @@ def test_a_marker_removed_between_the_two_transactions_is_set_again(store: Store
     # işaret her seferinde siliniyorsa yazma vazgeçer ve hiçbir şey yazmaz
     monkeypatch.setattr(store.events, "_checkpoint",
                         lambda step: store.catalog.reconcile() if step == events_mod.STEP_MARKER else None)
-    with pytest.raises(src.store.StoreBusy):
+    with pytest.raises(sofascore_scraper.store.StoreBusy):
         store.events.put(ARS + 1, {"event": ok(basic_of(event_id=ARS + 1))})
     assert store.events.get(ARS + 1) is None and staging(store) == []
 
@@ -1181,7 +1181,7 @@ def test_an_unreadable_manifest_is_written_anew_and_keeps_the_readable_payloads(
     path = Path(layout.resolve(store.data_dir, layout.manifest_path(layout.event_dir(ARS))))
     path.write_bytes(b"")  # elektrik kesintisinden sonra boş kalmış dosya
 
-    with pytest.raises(src.store.PayloadCorrupt):
+    with pytest.raises(sofascore_scraper.store.PayloadCorrupt):
         store.events.put(ARS, {"lineups": gone()})  # olay yükü gelmeden üzerine yazılmaz
     changed = basic_of(winnerCode=2)
     result = store.events.put(ARS, {"event": ok(changed, at(10))})
@@ -1206,7 +1206,7 @@ def test_a_manifest_of_a_newer_format_is_not_overwritten(store: Store) -> None:
     path.write_text(json.dumps({**data, "format": 2}), encoding="utf-8")
     newer = path.read_bytes()
 
-    with pytest.raises(src.store.SchemaTooNew):
+    with pytest.raises(sofascore_scraper.store.SchemaTooNew):
         store.events.put(ARS, {"event": ok(basic_of(winnerCode=2))})
     assert path.read_bytes() == newer and pending(store) == []
 

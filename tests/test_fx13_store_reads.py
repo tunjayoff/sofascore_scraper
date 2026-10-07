@@ -17,8 +17,8 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 import store_fixtures as sf
-from src.services import listing, tournaments
-from src.store import FollowSpec, LayoutError, Store, open_store
+from sofascore_scraper.services import listing, tournaments
+from sofascore_scraper.store import FollowSpec, LayoutError, Store, open_store
 
 
 @pytest.fixture

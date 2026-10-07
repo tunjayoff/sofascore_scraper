@@ -1,5 +1,5 @@
 """
-src/store/state.py ve src/store/jobs.py: state.db, geçiş çalıştırıcısı, RuntimeFacts ve iş deposunun
+sofascore_scraper/store/state.py ve sofascore_scraper/store/jobs.py: state.db, geçiş çalıştırıcısı, RuntimeFacts ve iş deposunun
 state.db'ye taşınması (docs/design/01-storage.md bölüm 3.1-3.3 ve 7.3; plan maddesi ST-09).
 
 İş deposunun davranış testleri yerinde durur (tests/test_job_store.py, tests/test_job_guards.py). Buradaki
@@ -25,13 +25,13 @@ from typing import Any, Dict, List
 
 import pytest
 
-import src.web.jobs as web_jobs
-from src.exceptions import StorageError
-from src.store import SchemaTooNew, StoreBusy, StoreError, layout
-from src.store import jobs as store_jobs
-from src.store import state as state_mod
-from src.store.jobs import JOB_COLUMNS, META_IMPORTED_JOBS_DB, JobStore, default_db_path, import_legacy_jobs
-from src.store.state import APPLICATION_ID, RuntimeFacts, StateDb, load_migrations, split_statements
+import sofascore_scraper.web.jobs as web_jobs
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.store import SchemaTooNew, StoreBusy, StoreError, layout
+from sofascore_scraper.store import jobs as store_jobs
+from sofascore_scraper.store import state as state_mod
+from sofascore_scraper.store.jobs import JOB_COLUMNS, META_IMPORTED_JOBS_DB, JobStore, default_db_path, import_legacy_jobs
+from sofascore_scraper.store.state import APPLICATION_ID, RuntimeFacts, StateDb, load_migrations, split_statements
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -44,7 +44,7 @@ INDEXES = {
     "stream_events_ts", "stream_events_dedup",
 }
 
-# 2.x'in jobs.db'yi kurduğu DDL (bu PR'dan önceki src/web/jobs.py:105-124), olduğu gibi
+# 2.x'in jobs.db'yi kurduğu DDL (bu PR'dan önceki sofascore_scraper/web/jobs.py:105-124), olduğu gibi
 LEGACY_JOBS_DDL = """
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
@@ -688,7 +688,7 @@ def test_runtime_facts_are_visible_to_another_process(db, tmp_path):
     RuntimeFacts(db).set("parent", {"n": 1})
     script = (
         "import sys\n"
-        "from src.store.state import RuntimeFacts, StateDb\n"
+        "from sofascore_scraper.store.state import RuntimeFacts, StateDb\n"
         "state = StateDb(sys.argv[1])\n"
         "facts = RuntimeFacts(state)\n"
         "assert facts.get('parent').value == {'n': 1}\n"
@@ -961,7 +961,7 @@ def test_rebind_to_a_newer_state_db_keeps_the_current_one(tmp_path):
 # --- tanılama paketi ---------------------------------------------------------------------------
 
 def test_diagnostics_reads_state_db_and_falls_back_to_a_2x_jobs_db(tmp_path, monkeypatch):
-    from src import diagnostics
+    from sofascore_scraper import diagnostics
 
     # 3.x'in henüz açmadığı 2.x dizini: yalnızca jobs.db var; okumak state.db oluşturmaz
     data_dir = tmp_path / "data"

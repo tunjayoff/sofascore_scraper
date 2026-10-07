@@ -1,9 +1,9 @@
 """
-src/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı" kuralları.
+sofascore_scraper/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı" kuralları.
 
-Beklenen değerler tabloya elle yazıldı ve yüklemler src/slices.py'ye taşınmadan ÖNCEKİ kodla
-(MatchDataFetcher metotları, src/match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
-IMPLEMENTATIONS'taki her uygulamaya uygulanır (src.slices'taki işlevler, tek tek ve dağıtıcı üzerinden).
+Beklenen değerler tabloya elle yazıldı ve yüklemler sofascore_scraper/slices.py'ye taşınmadan ÖNCEKİ kodla
+(MatchDataFetcher metotları, sofascore_scraper/match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
+IMPLEMENTATIONS'taki her uygulamaya uygulanır (sofascore_scraper.slices'taki işlevler, tek tek ve dağıtıcı üzerinden).
 MatchDataFetcher'ın vekil metotları P15'te kalktı; onların iki satırı tablodan çıktı.
 
 Kurallar toplamdır ve üç yanıt verir (slice_body_state: veri var, veri yok, okunamadı). Altı eski kuralın
@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
-from src.exceptions import (
+from sofascore_scraper.exceptions import (
     APIError,
     CircuitOpenError,
     DataParsingError,
@@ -30,14 +30,14 @@ from src.exceptions import (
     RateLimitError,
     ResourceNotFoundError,
 )
-from src import match_data_fetcher, slices, sports
-from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SliceOutcome
-from src.services import pipeline
-from src.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA, SLICE_SKIPPED, Outcome
+from sofascore_scraper import match_data_fetcher, slices, sports
+from sofascore_scraper.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SliceOutcome
+from sofascore_scraper.services import pipeline
+from sofascore_scraper.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA, SLICE_SKIPPED, Outcome
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
-# src.slices'ta kendi işlevi olan dilimler: anahtar → işlev adı (ilk altısı eskiden MatchDataFetcher'ın
+# sofascore_scraper.slices'ta kendi işlevi olan dilimler: anahtar → işlev adı (ilk altısı eskiden MatchDataFetcher'ın
 # metotlarıydı, adları baştaki alt çizgiyle)
 TYPED_FUNCTIONS = {
     "statistics": "statistics_has_data",
@@ -283,11 +283,11 @@ def test_keys_without_a_rule_are_never_malformed():
 
 def test_every_registered_slice_has_a_rule_of_its_own():
     """
-    Kayıt defterine (src/sports.py DETAIL_SLICES) dilim ekleyen, src/slices.py'ye kuralını da ekler: kuralı
+    Kayıt defterine (sofascore_scraper/sports.py DETAIL_SLICES) dilim ekleyen, sofascore_scraper/slices.py'ye kuralını da ekler: kuralı
     olmayan dilim dolu her gövdeyi (`{"pointByPoint": []}` gibi) veri sayardı.
     """
     registered = {detail.key for detail in sports.DETAIL_SLICES}
-    assert registered - slices.PRESENCE_RULE_KEYS == set(), "src/slices.py'de kuralı olmayan kayıtlı dilim"
+    assert registered - slices.PRESENCE_RULE_KEYS == set(), "sofascore_scraper/slices.py'de kuralı olmayan kayıtlı dilim"
     assert slices.PRESENCE_RULE_KEYS == registered == set(RULE_KEYS)
     for spec in sports.SPORTS:
         assert set(spec.detail_slices) <= slices.PRESENCE_RULE_KEYS
@@ -631,7 +631,7 @@ def test_outcome_is_frozen_and_compares_by_value():
         outcome.status = SLICE_OK  # type: ignore[misc]
 
 
-# --- src/slices.py'ye taşıma ---------------------------------------------------------------
+# --- sofascore_scraper/slices.py'ye taşıma ---------------------------------------------------------------
 
 def test_moved_names_stay_importable_from_match_data_fetcher():
     assert slices.SliceOutcome is Outcome
@@ -677,15 +677,15 @@ def test_from_error_does_not_set_new_fields():
 
 _PURITY_PROBE = """
 import sys
-import src.slices
-print(",".join(sorted(m for m in sys.modules if m == "src" or m.startswith("src."))))
+import sofascore_scraper.slices
+print(",".join(sorted(m for m in sys.modules if m == "sofascore_scraper" or m.startswith("sofascore_scraper."))))
 print(",".join(sorted(m for m in ("pandas", "tqdm", "rich", "dotenv", "curl_cffi") if m in sys.modules)))
 """
 
 
 def test_slices_module_is_pure():
     """
-    src.slices import edildiğinde çekici, istek katmanı, günlükçü ve ağır kitaplıklar yüklenmez: depo ve
+    sofascore_scraper.slices import edildiğinde çekici, istek katmanı, günlükçü ve ağır kitaplıklar yüklenmez: depo ve
     servisler yüklemleri bunlara bağlanmadan çağırabilir. Temiz bir yorumlayıcıda bakılır (bu süreçte
     diğer testler hepsini zaten yüklemiş olur).
     """
@@ -695,5 +695,5 @@ def test_slices_module_is_pure():
     )
     assert result.returncode == 0, result.stderr
     lines = result.stdout.splitlines()
-    assert lines[0].split(",") == ["src", "src.exceptions", "src.slices"]
+    assert lines[0].split(",") == ["sofascore_scraper", "sofascore_scraper.exceptions", "sofascore_scraper.slices"]
     assert lines[1:] in ([], [""])

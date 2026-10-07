@@ -1,7 +1,7 @@
 """
-Bağlantı durumu (plan maddesi FX-19; src/bridge_health.py `ConnectionState`): `/api/v1/status`, `/health` ve
+Bağlantı durumu (plan maddesi FX-19; sofascore_scraper/bridge_health.py `ConnectionState`): `/api/v1/status`, `/health` ve
 `/status/check` "hiç denenmedi", "yanıt aldı" ve "yanıt alamadı"yı ayırır; son başarı ve son hatanın zamanı ve nedeni
-istek katmanından gelir (src/breaker.py `report_ok` / `report_exception`). İlk kullanıcı incelemesinde arayüz hiçbir
+istek katmanından gelir (sofascore_scraper/breaker.py `report_ok` / `report_exception`). İlk kullanıcı incelemesinde arayüz hiçbir
 istek başarmadan "Bağlı" diyordu.
 
 Ağ yok: istekler tests/fakes/sofascore.py'nin sahte taşıyıcısına gider.
@@ -15,11 +15,11 @@ from fastapi.testclient import TestClient
 
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src import breaker, bridge_health
-from src.client import Client
-from src.config import loader
-from src.exceptions import CircuitOpenError
-from src.web.app import app
+from sofascore_scraper import breaker, bridge_health
+from sofascore_scraper.client import Client
+from sofascore_scraper.config import loader
+from sofascore_scraper.exceptions import CircuitOpenError
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 

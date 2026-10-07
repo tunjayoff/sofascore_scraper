@@ -1,5 +1,5 @@
-# src.store.MissingRow
-# kaynak: src/store/events.py
+# sofascore_scraper.store.MissingRow
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class MissingRow:
     event_id: int

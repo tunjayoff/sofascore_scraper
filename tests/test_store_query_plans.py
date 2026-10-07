@@ -15,7 +15,7 @@ başka yazılmış sorgu (SQLite 3.53'e kadar) kullanmaz. İkinci tür bir test,
 kırılırsa kural gevşetilebilir ve o satır silinir.
 
 ATTACH edilen sorgu ve akış okuma sorgusu `state.db` tablolarına (follows, stream_events) dokunur. O dosya
-burada da `StateDb` ile, yani gerçek göç betiğiyle (src/store/migrations/state/0001_initial.sql) kurulur;
+burada da `StateDb` ile, yani gerçek göç betiğiyle (sofascore_scraper/store/migrations/state/0001_initial.sql) kurulur;
 DDL'in testte ayrı bir kopyası yoktur. state.db'de `ANALYZE` çalıştırılmaz (tasarım da çalıştırmıyor):
 istatistik varken ve akışlar eşit doluyken planlayıcı akış okuma sorgusunda `stream_events_stream` yerine
 rowid aralığını seçer.
@@ -27,9 +27,9 @@ import sqlite3
 
 import pytest
 
-from src.store import catalog
-from src.store.catalog import Catalog
-from src.store.state import StateDb
+from sofascore_scraper.store import catalog
+from sofascore_scraper.store.catalog import Catalog
+from sofascore_scraper.store.state import StateDb
 
 SPORTS = ("football", "basketball", "tennis", "handball")
 TOURNAMENTS = 40

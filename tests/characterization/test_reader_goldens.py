@@ -46,9 +46,9 @@ import conftest
 import detail_records
 import legacy_writer
 import store_fixtures as sf
-from src.config_manager import ConfigManager
-from src.match_data_fetcher import MatchDataFetcher
-from src.web.app import app
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.web.app import app
 
 GOLDEN_DIR = Path(__file__).resolve().parent.parent / "golden" / "readers"
 REGENERATE = os.getenv("REGEN_READER_GOLDENS") == "1"
@@ -230,7 +230,7 @@ def fx(request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.Monke
 
 @pytest.fixture
 def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Yenileme kararı `time.time()`'a bakar (src/refresh.py): saat FIXTURE_NOW'da durur."""
+    """Yenileme kararı `time.time()`'a bakar (sofascore_scraper/refresh.py): saat FIXTURE_NOW'da durur."""
     monkeypatch.setattr(time, "time", lambda: float(sf.FIXTURE_NOW))
 
 
@@ -608,7 +608,7 @@ def test_fidelity_detail_directories(tmp_path: Path) -> None:
 
 def test_fidelity_marker_files(tmp_path: Path) -> None:
     """_unavailable.json ve _slice_status.json: eski yazıcının ürettiği biçim fabrikanınkiyle aynı (zaman hariç)."""
-    from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SliceOutcome
+    from sofascore_scraper.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SliceOutcome
 
     basic = sf.basic_payload(sf.PL_BHA)
     data = {"basic": basic, **{key: sf.slice_payload(key, basic) for key in sf.REQUIRED_SLICES if key != "lineups"}}
@@ -634,11 +634,11 @@ def test_fidelity_marker_files(tmp_path: Path) -> None:
 
 def test_fidelity_slices_and_names() -> None:
     """Dilim listesi, "veri var mı" denetimleri, dizin adları ve gözlem kaydı kodla aynı."""
-    from src.match_data_fetcher import DETAIL_SLICE_KEYS, NO_TOURNAMENT_DIR
-    from src.slices import match_detail_slice_present
-    from src.sports import slices_for
-    from src.status import observation_record
-    from src.store import legacy
+    from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, NO_TOURNAMENT_DIR
+    from sofascore_scraper.slices import match_detail_slice_present
+    from sofascore_scraper.sports import slices_for
+    from sofascore_scraper.status import observation_record
+    from sofascore_scraper.store import legacy
 
     assert sf.REQUIRED_SLICES == DETAIL_SLICE_KEYS
     assert tuple(s.key for s in slices_for("tennis") if not s.counts_in("tennis")) == sf.OPTIONAL_SLICES
@@ -674,7 +674,7 @@ def _score_change_inputs() -> List[Any]:
 
 
 def test_fidelity_score_changes() -> None:
-    from src.refresh import change_row, diff_basic
+    from sofascore_scraper.refresh import change_row, diff_basic
 
     rows = [change_row(old, new, diff_basic(old, new), sport, now=dt.datetime.fromisoformat(when))
             for old, new, sport, when in _score_change_inputs()]
@@ -683,7 +683,7 @@ def test_fidelity_score_changes() -> None:
 
 def _replay_watcher(data_dir: Path) -> None:
     """Fabrikadaki WATCH_EVENTS / WATCH_STATE'in kaynağı: canlı → gol → bitti (futbol), canlı (tenis)."""
-    from src.watcher import MatchWatcher
+    from sofascore_scraper.watcher import MatchWatcher
 
     now = [1790690000.0]  # 2026-09-29T13:53:20Z
 
@@ -719,7 +719,7 @@ def test_fidelity_watcher_files(tmp_path: Path) -> None:
     assert set(written) == {"watch_events.jsonl"}
     assert written == {f: built[f] for f in written}
     # Durum yalnızca state.db'dedir (P23: 2.x durum dosyaları artık yazılmaz); içeriği fabrikadaki dosyalarınkidir
-    from src.store import open_store
+    from sofascore_scraper.store import open_store
 
     store = open_store(root)
     for sport in ("football", "tennis"):

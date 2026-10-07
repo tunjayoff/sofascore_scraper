@@ -1,12 +1,12 @@
 """
-Store sınırı: DATA_DIR'e yalnızca src/store/ dokunur (docs/design/01-storage.md bölüm 2.1 ve 2.4; plan maddeleri
+Store sınırı: DATA_DIR'e yalnızca sofascore_scraper/store/ dokunur (docs/design/01-storage.md bölüm 2.1 ve 2.4; plan maddeleri
 ST-04 ve ST-28).
 
 İki denetim:
 
-  statik           src/ altındaki (src/store/ dışı) her modül `ast` ile taranır. Dosya sistemi ve sqlite3
-                   çağrıları ile `src.store.<altmodül>` içe aktarmaları ihlaldir.
-  çalışma zamanı   tests/conftest.py'deki denetim kancası, testler koşarken test veri dizinine src/store/
+  statik           sofascore_scraper/ altındaki (sofascore_scraper/store/ dışı) her modül `ast` ile taranır. Dosya sistemi ve sqlite3
+                   çağrıları ile `sofascore_scraper.store.<altmodül>` içe aktarmaları ihlaldir.
+  çalışma zamanı   tests/conftest.py'deki denetim kancası, testler koşarken test veri dizinine sofascore_scraper/store/
                    dışından yapılan erişimleri kaydeder; buradaki testler onları oturumun sonunda değerlendirir.
 
 İkisi de katıdır (ST-28): her ihlal testi düşürür. Ratchet (tests/store_boundary/baseline/) geçiş boyunca
@@ -42,7 +42,7 @@ import pytest
 import conftest
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC_DIR = ROOT / "src"
+SRC_DIR = ROOT / "sofascore_scraper"
 # ST-28'e kadar ratchet'in dizini; artık var olmamalı (test_the_ratchet_baseline_is_gone)
 BASELINE_DIR = Path(__file__).resolve().parent / "store_boundary" / "baseline"
 MODULE_SCOPE = "<module>"
@@ -51,45 +51,45 @@ DESIGN = "docs/design/01-storage.md bölüm 2.4"
 
 # Statik dosya sistemi kuralından muaf modüller (01-storage.md 2.4'teki liste ve ST-28'in ekledikleri): DATA_DIR
 # dışındaki dosyalara meşru olarak dokunurlar. Muafiyet yalnızca dosya sistemi çağrılarını kapsar;
-# `src.store.<altmodül>` içe aktarma kuralı ve çalışma zamanı denetimi bu modüller için de geçerlidir.
+# `sofascore_scraper.store.<altmodül>` içe aktarma kuralı ve çalışma zamanı denetimi bu modüller için de geçerlidir.
 FS_ALLOWLIST: Dict[str, str] = {
-    "src/config_manager.py": "yapılandırma dosyaları ve .env",
-    "src/config/": "yapılandırma dosyaları ve .env",
-    "src/config_files.py": "yapılandırma dosyalarının atomik yazımı ve kilidi (leagues.txt, league_sports.json, "
+    "sofascore_scraper/config_manager.py": "yapılandırma dosyaları ve .env",
+    "sofascore_scraper/config/": "yapılandırma dosyaları ve .env",
+    "sofascore_scraper/config_files.py": "yapılandırma dosyalarının atomik yazımı ve kilidi (leagues.txt, league_sports.json, "
                            "overrides.json; ST-28)",
-    "src/paths.py": "yapılandırma ve tarayıcı profili yolları",
-    "src/private_files.py": ".env ve tarayıcı profilinin izinleri (ST-28)",
-    "src/redact.py": ".env dosyasının değiştiği an (maskelenecek değerlerin önbelleği; ST-28)",
-    "src/version.py": "pyproject.toml'daki sürüm (Store bu modülü içe aktarabilir; ST-28)",
-    "src/i18n.py": "çeviri dosyaları (locales/)",
-    "src/doctor.py": "ortam yoklamaları",
-    "src/throttle.py": "istek bütçesi dosyaları",
-    "src/challenge_solver.py": "tarayıcı profili",
-    "src/logger.py": "log dosyaları",
-    "src/diagnostics.py": "log dosyaları ve tanılama paketi",
-    "src/sinks/file.py": "dosya sink'inin kendi çıktı yolu",
-    "src/web/app.py": "statik dosyalar (frontend/dist)",
-    "src/web/missing_ui.py": "statik dosyalar (yardım sayfası)",
-    "src/web/security.py": "statik dosyalar: arayüzün index.html'i (CSP kararı; ST-28)",
-    "src/web/league_sports.py": "league_sports.json, lig listesinin yanındaki yapılandırma dosyası (ST-28)",
-    "src/web/openapi.py": "API v1 OpenAPI anlık görüntüsü (docs/api/openapi-v1.json; geliştirici aracı, ST-28)",
+    "sofascore_scraper/paths.py": "yapılandırma ve tarayıcı profili yolları",
+    "sofascore_scraper/private_files.py": ".env ve tarayıcı profilinin izinleri (ST-28)",
+    "sofascore_scraper/redact.py": ".env dosyasının değiştiği an (maskelenecek değerlerin önbelleği; ST-28)",
+    "sofascore_scraper/version.py": "pyproject.toml'daki sürüm (Store bu modülü içe aktarabilir; ST-28)",
+    "sofascore_scraper/i18n.py": "çeviri dosyaları (locales/)",
+    "sofascore_scraper/doctor.py": "ortam yoklamaları",
+    "sofascore_scraper/throttle.py": "istek bütçesi dosyaları",
+    "sofascore_scraper/challenge_solver.py": "tarayıcı profili",
+    "sofascore_scraper/logger.py": "log dosyaları",
+    "sofascore_scraper/diagnostics.py": "log dosyaları ve tanılama paketi",
+    "sofascore_scraper/sinks/file.py": "dosya sink'inin kendi çıktı yolu",
+    "sofascore_scraper/web/app.py": "statik dosyalar (frontend/dist)",
+    "sofascore_scraper/web/missing_ui.py": "statik dosyalar (yardım sayfası)",
+    "sofascore_scraper/web/security.py": "statik dosyalar: arayüzün index.html'i (CSP kararı; ST-28)",
+    "sofascore_scraper/web/league_sports.py": "league_sports.json, lig listesinin yanındaki yapılandırma dosyası (ST-28)",
+    "sofascore_scraper/web/openapi.py": "API v1 OpenAPI anlık görüntüsü (docs/api/openapi-v1.json; geliştirici aracı, ST-28)",
 }
 
 # Store'un dışından DATA_DIR'e dokunmasına izin verilen işlevler: (modül, işlev) -> gerekçe ve kaldıracak madde.
 # Muaf bir modüldeki işlev yalnızca çalışma zamanında görülür (statik denetim o modülün dosya çağrılarına bakmaz).
 NAMED_EXCEPTIONS: Dict[Tuple[str, str], str] = {
-    ("src/doctor.py", "_dir_state"):
+    ("sofascore_scraper/doctor.py", "_dir_state"):
         "veri dizininin yazılabilirliği bir yoklama dosyası açılıp silinerek sınanır (ortam yoklaması; Store "
         "açılmadan çalışmalı). Bir Store yöntemine taşınabilir.",
-    ("src/diagnostics.py", "_jobs"):
+    ("sofascore_scraper/diagnostics.py", "_jobs"):
         "tanılama paketi iş veritabanını (state.db ya da 2.x jobs.db) salt okunur açar; depo kilidi ve "
         "uzlaştırma istemez. Bir Store yöntemine taşınabilir.",
-    ("src/services/context.py", "_ensure_directory"):
+    ("sofascore_scraper/services/context.py", "_ensure_directory"):
         "bağlam kurulurken veri dizini ve 2.x alt dizinleri var edilir (bugünkü davranış). P30'la gider.",
-    ("src/utils.py", "ensure_directory"):
-        "2.x indiricilerinin ve CSV dışa aktarmasının dizinleri var etmesi (src/season_fetcher.py, "
-        "src/match_fetcher.py, src/match_data_fetcher.py, src/cli/commands/export.py). P30'la gider.",
-    ("src/services/export.py", "_write_file"):
+    ("sofascore_scraper/utils.py", "ensure_directory"):
+        "2.x indiricilerinin ve CSV dışa aktarmasının dizinleri var etmesi (sofascore_scraper/season_fetcher.py, "
+        "sofascore_scraper/match_fetcher.py, sofascore_scraper/match_data_fetcher.py, sofascore_scraper/cli/commands/export.py). P30'la gider.",
+    ("sofascore_scraper/services/export.py", "_write_file"):
         "dışa aktarmanın kullanıcının seçtiği yoldaki çıktı dosyası (dosya sink'i gibi; yol veri dizininde "
         "de olabilir).",
 }
@@ -182,7 +182,7 @@ class Scopes:
 
 
 def _package_of(module_path: str) -> str:
-    """'src/web/routes/data.py' -> 'src.web.routes'; 'src/web/__init__.py' -> 'src.web'."""
+    """'sofascore_scraper/web/routes/data.py' -> 'sofascore_scraper.web.routes'; 'sofascore_scraper/web/__init__.py' -> 'sofascore_scraper.web'."""
     return ".".join(module_path[: -len(".py")].split("/")[:-1])
 
 
@@ -247,8 +247,8 @@ class _Scanner:
     # --- içe aktarmalar -------------------------------------------------------------------------
 
     def _store_submodule(self, module: str) -> Optional[str]:
-        """'src.store.files.x' -> 'src.store.files'; Store kökü ya da başka bir paket için None."""
-        if module.startswith("src.store."):
+        """'sofascore_scraper.store.files.x' -> 'sofascore_scraper.store.files'; Store kökü ya da başka bir paket için None."""
+        if module.startswith("sofascore_scraper.store."):
             return module
         return None
 
@@ -277,8 +277,8 @@ class _Scanner:
                             self._add(node, f"{base}.*")
                         continue
                     self.aliases[alias.asname or alias.name] = f"{base}.{alias.name}" if base else alias.name
-                    if base == "src.store" and alias.name in self.store_submodules:
-                        self._add(node, f"{IMPORT_PREFIX}src.store.{alias.name}")
+                    if base == "sofascore_scraper.store" and alias.name in self.store_submodules:
+                        self._add(node, f"{IMPORT_PREFIX}sofascore_scraper.store.{alias.name}")
                         self.imported_submodules.add(alias.name)
 
     def _collect_bindings(self) -> None:
@@ -325,10 +325,10 @@ class _Scanner:
             return None if member in FS_MODULE_EXEMPT else member
         if len(parts) == 2 and parts[0] == "pandas" and parts[1].startswith("read_"):
             return name
-        # Alt modüle kök üzerinden erişim: `from src import store; store.files.write_bytes(...)`
-        if (len(parts) >= 3 and parts[:2] == ["src", "store"] and parts[2] in self.store_submodules
-                and head_target in ("src", "src.store") and parts[2] not in self.imported_submodules):
-            return f"{IMPORT_PREFIX}src.store.{parts[2]}"
+        # Alt modüle kök üzerinden erişim: `from sofascore_scraper import store; store.files.write_bytes(...)`
+        if (len(parts) >= 3 and parts[:2] == ["sofascore_scraper", "store"] and parts[2] in self.store_submodules
+                and head_target in ("sofascore_scraper", "sofascore_scraper.store") and parts[2] not in self.imported_submodules):
+            return f"{IMPORT_PREFIX}sofascore_scraper.store.{parts[2]}"
         return None
 
     # --- Path çıkarımı --------------------------------------------------------------------------
@@ -487,7 +487,7 @@ def defined_names(source: str) -> Set[str]:
 
 
 def iter_modules(src_dir: Path) -> Iterator[Tuple[str, Path]]:
-    """src/ altındaki, src/store/ dışındaki her modül: (depo köküne göre yol, dosya)."""
+    """sofascore_scraper/ altındaki, sofascore_scraper/store/ dışındaki her modül: (depo köküne göre yol, dosya)."""
     base = src_dir.parent
     for path in sorted(src_dir.rglob("*.py")):
         rel = path.relative_to(base).as_posix()
@@ -547,7 +547,7 @@ def test_static_no_violations():
         shown = "\n".join(f"  {module}:{f.line}  {f.function}:{f.call}" for module, items in found.items() for f in items)
         pytest.fail(
             f"Store sınırı: {sum(map(len, found.values()))} ihlal ({DESIGN}).\n{shown}\n"
-            "src/store/ dışındaki kod DATA_DIR'e dokunmaz ve yalnızca `from src.store import ...` kullanır: erişimi\n"
+            "sofascore_scraper/store/ dışındaki kod DATA_DIR'e dokunmaz ve yalnızca `from sofascore_scraper.store import ...` kullanır: erişimi\n"
             "Store üzerinden yapın. DATA_DIR dışındaki bir dosyaysa modülü FS_ALLOWLIST'e, kaçınılmaz bir veri\n"
             "dizini erişimiyse işlevi NAMED_EXCEPTIONS'a gerekçesiyle ekleyin (tests/test_store_boundary.py) ve\n"
             "PR açıklamasında anın.",
@@ -566,7 +566,7 @@ def test_static_named_exceptions_are_still_needed():
 def test_allowlist_names_real_modules_with_a_reason():
     for entry, reason in FS_ALLOWLIST.items():
         assert reason.strip(), f"{entry}: gerekçe yok"
-        assert entry.startswith("src/") and not entry.startswith("src/store/"), entry
+        assert entry.startswith("sofascore_scraper/") and not entry.startswith("sofascore_scraper/store/"), entry
         target = ROOT / entry
         exists = target.is_dir() if entry.endswith("/") else target.is_file()
         assert exists, f"{entry}: böyle bir modül yok (muafiyet listesinden çıkarın)"
@@ -575,7 +575,7 @@ def test_allowlist_names_real_modules_with_a_reason():
 def test_named_exceptions_name_real_functions_with_a_reason():
     for (module, function), reason in NAMED_EXCEPTIONS.items():
         assert reason.strip(), f"{module}:{function}: gerekçe yok"
-        assert module.startswith("src/") and not module.startswith("src/store/"), module
+        assert module.startswith("sofascore_scraper/") and not module.startswith("sofascore_scraper/store/"), module
         path = ROOT / module
         assert path.is_file(), f"{module}: böyle bir modül yok (istisnayı silin)"
         assert function in defined_names(path.read_text(encoding="utf-8")), f"{module}: `{function}` yok"
@@ -587,8 +587,8 @@ def test_the_ratchet_baseline_is_gone():
 
 
 def test_store_itself_is_not_scanned():
-    assert all(not rel.startswith("src/store/") for rel, _path in iter_modules(SRC_DIR))
-    assert {"src/match_data_fetcher.py", "src/web/api/legacy.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
+    assert all(not rel.startswith("sofascore_scraper/store/") for rel, _path in iter_modules(SRC_DIR))
+    assert {"sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/web/api/legacy.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
     assert {"errors", "codec", "files", "layout", "manifest"} <= store_submodules(SRC_DIR)
 
 
@@ -625,7 +625,7 @@ def test_runtime_no_violations():
     if shown:
         pytest.fail(
             f"Store sınırı: testler koşarken {len(shown)} ihlal görüldü ({DESIGN}).\n" + "\n".join(shown) + "\n"
-            "Test veri dizinine src/store/ dışındaki koddan erişildi: erişimi Store üzerinden yapın (kaçınılmazsa\n"
+            "Test veri dizinine sofascore_scraper/store/ dışındaki koddan erişildi: erişimi Store üzerinden yapın (kaçınılmazsa\n"
             "işlevi gerekçesiyle NAMED_EXCEPTIONS'a ekleyin ve PR açıklamasında anın).",
             pytrace=False,
         )
@@ -647,7 +647,7 @@ def test_runtime_named_exceptions_are_still_needed():
 SUBMODULES = ("files", "codec", "errors", "schema")
 
 
-def calls(source: str, module_path: str = "src/reader.py") -> List[str]:
+def calls(source: str, module_path: str = "sofascore_scraper/reader.py") -> List[str]:
     return [f"{f.function}:{f.call}" for f in scan_source(source, module_path, SUBMODULES)]
 
 
@@ -715,20 +715,20 @@ def calls(source: str, module_path: str = "src/reader.py") -> List[str]:
     ("def f(d):\n    for child in sorted(d.iterdir()):\n        if child.exists():\n            child.rename('x')\n",
      ["f:Path.iterdir", "f:Path.exists", "f:Path.rename"]),
     # alt modül içe aktarmaları: yalnızca paket kökü serbest
-    ("from src.store import StoreError, open_store\n", []),
-    ("import src.store\n", []),
-    ("from src.store.files import write_bytes\n", ["<module>:import src.store.files"]),
-    ("import src.store.files\n", ["<module>:import src.store.files"]),
-    ("import src.store.files as files\n", ["<module>:import src.store.files"]),
-    ("from src.store import files, StoreError\n", ["<module>:import src.store.files"]),
-    ("from src.store.schema import catalog\n", ["<module>:import src.store.schema"]),
-    ("def f():\n    from src.store.codec import read_payload\n    return read_payload\n",
-     ["f:import src.store.codec"]),
-    ("import importlib\ndef f():\n    return importlib.import_module('src.store.codec')\n",
-     ["f:import src.store.codec"]),
-    ("def f():\n    return __import__('src.store.codec')\n", ["f:import src.store.codec"]),
-    ("from src import store\ndef f(p):\n    return store.files.read_bytes(p)\n", ["f:import src.store.files"]),
-    ("import src.store\ndef f(p):\n    return src.store.codec.read_payload(p)\n", ["f:import src.store.codec"]),
+    ("from sofascore_scraper.store import StoreError, open_store\n", []),
+    ("import sofascore_scraper.store\n", []),
+    ("from sofascore_scraper.store.files import write_bytes\n", ["<module>:import sofascore_scraper.store.files"]),
+    ("import sofascore_scraper.store.files\n", ["<module>:import sofascore_scraper.store.files"]),
+    ("import sofascore_scraper.store.files as files\n", ["<module>:import sofascore_scraper.store.files"]),
+    ("from sofascore_scraper.store import files, StoreError\n", ["<module>:import sofascore_scraper.store.files"]),
+    ("from sofascore_scraper.store.schema import catalog\n", ["<module>:import sofascore_scraper.store.schema"]),
+    ("def f():\n    from sofascore_scraper.store.codec import read_payload\n    return read_payload\n",
+     ["f:import sofascore_scraper.store.codec"]),
+    ("import importlib\ndef f():\n    return importlib.import_module('sofascore_scraper.store.codec')\n",
+     ["f:import sofascore_scraper.store.codec"]),
+    ("def f():\n    return __import__('sofascore_scraper.store.codec')\n", ["f:import sofascore_scraper.store.codec"]),
+    ("from sofascore_scraper import store\ndef f(p):\n    return store.files.read_bytes(p)\n", ["f:import sofascore_scraper.store.files"]),
+    ("import sofascore_scraper.store\ndef f(p):\n    return sofascore_scraper.store.codec.read_payload(p)\n", ["f:import sofascore_scraper.store.codec"]),
 ])
 def test_scanner_finds(source: str, expected: List[str]):
     assert calls(source) == expected
@@ -750,7 +750,7 @@ def test_scanner_finds(source: str, expected: List[str]):
     # tür açıklamaları çağrı değildir
     "import sqlite3, zipfile\ndef f(conn: sqlite3.Connection, z: 'zipfile.ZipFile') -> zipfile.ZipFile:\n    return z\n",
     # başka paketlerin `store` adlı modülleri
-    "from src.storefront.files import x\nfrom other.store.files import y\n",
+    "from sofascore_scraper.storefront.files import x\nfrom other.store.files import y\n",
     "import json\ndef f(text):\n    return json.loads(text)\n",
 ])
 def test_scanner_ignores(source: str):
@@ -758,17 +758,17 @@ def test_scanner_ignores(source: str):
 
 
 def test_scanner_resolves_relative_imports_of_store_submodules():
-    assert calls("from .store.files import write_bytes\n", "src/fsutil.py") == ["<module>:import src.store.files"]
-    assert calls("from ..store import codec\n", "src/web/jobs.py") == ["<module>:import src.store.codec"]
-    assert calls("from ...store.errors import StoreError\n", "src/web/routes/data.py") == \
-        ["<module>:import src.store.errors"]
-    assert calls("from . import files\n", "src/web/routes/data.py") == []
-    assert calls("from .store import StoreError\n", "src/fsutil.py") == []
-    assert calls("from .store import files\n", "src/services/__init__.py") == []  # src.services.store: başka paket
+    assert calls("from .store.files import write_bytes\n", "sofascore_scraper/fsutil.py") == ["<module>:import sofascore_scraper.store.files"]
+    assert calls("from ..store import codec\n", "sofascore_scraper/web/jobs.py") == ["<module>:import sofascore_scraper.store.codec"]
+    assert calls("from ...store.errors import StoreError\n", "sofascore_scraper/web/routes/data.py") == \
+        ["<module>:import sofascore_scraper.store.errors"]
+    assert calls("from . import files\n", "sofascore_scraper/web/routes/data.py") == []
+    assert calls("from .store import StoreError\n", "sofascore_scraper/fsutil.py") == []
+    assert calls("from .store import files\n", "sofascore_scraper/services/__init__.py") == []  # sofascore_scraper.services.store: başka paket
 
 
 def test_scanner_reports_every_occurrence_with_its_line():
-    findings = scan_source("import os\n\ndef f(p):\n    os.listdir(p)\n    return os.listdir(p), open(p)\n", "src/x.py")
+    findings = scan_source("import os\n\ndef f(p):\n    os.listdir(p)\n    return os.listdir(p), open(p)\n", "sofascore_scraper/x.py")
     assert [(f.function, f.call, f.line) for f in findings] == [
         ("f", "os.listdir", 4), ("f", "os.listdir", 5), ("f", "open", 5)]
 
@@ -799,33 +799,33 @@ def make_tree(tmp_path: Path, files: Dict[str, str]) -> Path:
         path = tmp_path / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
-    return tmp_path / "src"
+    return tmp_path / "sofascore_scraper"
 
 
 def test_scan_tree_skips_the_store_and_applies_the_allowlist(tmp_path: Path):
     src = make_tree(tmp_path, {
-        "src/store/__init__.py": "",
-        "src/store/files.py": "import os\ndef write(p):\n    os.replace(p, p)\n",
-        "src/reader.py": "import os\nfrom src.store.files import write\ndef load(p):\n    return os.listdir(p)\n",
-        "src/clean.py": "from src.store import StoreError\n",
-        "src/doctor.py": "import os\nfrom src.store import files\ndef probe(p):\n    return os.path.exists(p)\n",
-        "src/web/app.py": "from pathlib import Path\nINDEX = Path('dist').is_dir()\n",
+        "sofascore_scraper/store/__init__.py": "",
+        "sofascore_scraper/store/files.py": "import os\ndef write(p):\n    os.replace(p, p)\n",
+        "sofascore_scraper/reader.py": "import os\nfrom sofascore_scraper.store.files import write\ndef load(p):\n    return os.listdir(p)\n",
+        "sofascore_scraper/clean.py": "from sofascore_scraper.store import StoreError\n",
+        "sofascore_scraper/doctor.py": "import os\nfrom sofascore_scraper.store import files\ndef probe(p):\n    return os.path.exists(p)\n",
+        "sofascore_scraper/web/app.py": "from pathlib import Path\nINDEX = Path('dist').is_dir()\n",
     })
     found = scan_tree(src)
     assert {m: [f"{f.function}:{f.call}" for f in items] for m, items in found.items()} == {
-        "src/reader.py": ["<module>:import src.store.files", "load:os.listdir"],
-        "src/doctor.py": ["<module>:import src.store.files"],  # muaf modülde yalnızca içe aktarma kuralı kalır
+        "sofascore_scraper/reader.py": ["<module>:import sofascore_scraper.store.files", "load:os.listdir"],
+        "sofascore_scraper/doctor.py": ["<module>:import sofascore_scraper.store.files"],  # muaf modülde yalnızca içe aktarma kuralı kalır
     }
 
 
 def test_named_exceptions_cover_file_calls_of_one_function_but_never_an_import(monkeypatch):
-    src_path = "src/reader.py"
-    findings = {src_path: [Finding("<module>", "import src.store.files", 1), Finding("probe", "os.remove", 4),
+    src_path = "sofascore_scraper/reader.py"
+    findings = {src_path: [Finding("<module>", "import sofascore_scraper.store.files", 1), Finding("probe", "os.remove", 4),
                            Finding("probe", "tempfile.mkstemp", 3), Finding("load", "open", 7)]}
     assert violations(findings) == findings
     monkeypatch.setitem(NAMED_EXCEPTIONS, (src_path, "probe"), "test")
     monkeypatch.setitem(NAMED_EXCEPTIONS, (src_path, "<module>"), "test")  # içe aktarma kuralını kapsamaz
-    assert violations(findings) == {src_path: [Finding("<module>", "import src.store.files", 1),
+    assert violations(findings) == {src_path: [Finding("<module>", "import sofascore_scraper.store.files", 1),
                                                Finding("load", "open", 7)]}
     monkeypatch.setitem(NAMED_EXCEPTIONS, (src_path, "load"), "test")
     assert violations({src_path: findings[src_path][1:]}) == {}
@@ -841,7 +841,7 @@ def test_defined_names_are_qualified():
 
 class Sandbox:
     """
-    Geçici bir proje: `src/`, `src/store/`, `tests/` altında sahte modüller ve bir veri dizini. Modüller
+    Geçici bir proje: `sofascore_scraper/`, `sofascore_scraper/store/`, `tests/` altında sahte modüller ve bir veri dizini. Modüller
     dosya adlarıyla derlenir; böylece çerçeveleri gerçek kancaya o dizinlerdeki kod gibi görünür.
     """
 
@@ -850,7 +850,7 @@ class Sandbox:
         self.data = root / "data"
         self.data.mkdir()
         (self.data / "a.json").write_text("{}", encoding="utf-8")
-        self.recorder = conftest.BoundaryRecorder(str(root / "src"), str(root / "tests"), [str(self.data)])
+        self.recorder = conftest.BoundaryRecorder(str(root / "sofascore_scraper"), str(root / "tests"), [str(self.data)])
 
     def module(self, rel: str, source: str, name: str = "sandbox") -> Dict[str, object]:
         namespace: Dict[str, object] = {"__name__": name}
@@ -872,7 +872,7 @@ def sandbox(tmp_path: Path) -> Iterator[Sandbox]:
 
 
 def test_hook_records_direct_access_from_src(sandbox: Sandbox):
-    reader = sandbox.module("src/reader.py", (
+    reader = sandbox.module("sofascore_scraper/reader.py", (
         "import os\n"                          # 1
         "def load(path):\n"                    # 2
         "    with open(path) as f:\n"          # 3
@@ -882,15 +882,15 @@ def test_hook_records_direct_access_from_src(sandbox: Sandbox):
     ))
     assert reader["load"](str(sandbox.data / "a.json")) == "{}"
     assert reader["names"](str(sandbox.data)) == ["a.json"]
-    assert sandbox.seen() == [("src/reader.py", 3, "open"), ("src/reader.py", 6, "os.listdir")]
-    test, path = sandbox.recorder.records[("src/reader.py", 3, "open")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 3, "open"), ("sofascore_scraper/reader.py", 6, "os.listdir")]
+    test, path = sandbox.recorder.records[("sofascore_scraper/reader.py", 3, "open")]
     assert path == str(sandbox.data / "a.json")
     assert test == ""  # yalnızca oturumun kaydedicisi test adını bilir
 
 
 def test_hook_names_the_library_function_src_called(sandbox: Sandbox):
     """Kitaplığın içeride yaptığı sistem çağrıları (platforma göre değişir) tek bir ada toplanır."""
-    writer = sandbox.module("src/writer.py", (
+    writer = sandbox.module("sofascore_scraper/writer.py", (
         "import os, shutil, zipfile\n"                         # 1
         "from pathlib import Path\n"                           # 2
         "def run(data):\n"                                     # 3
@@ -904,23 +904,23 @@ def test_hook_names_the_library_function_src_called(sandbox: Sandbox):
     ))
     writer["run"](str(sandbox.data))
     assert sandbox.seen() == [
-        ("src/writer.py", 4, "os.makedirs"),
-        ("src/writer.py", 5, "pathlib.Path.write_text"),
-        ("src/writer.py", 6, "zipfile.ZipFile"),
-        ("src/writer.py", 7, "zipfile.ZipFile.write"),
-        ("src/writer.py", 8, "os.walk"),
-        ("src/writer.py", 10, "shutil.rmtree"),
+        ("sofascore_scraper/writer.py", 4, "os.makedirs"),
+        ("sofascore_scraper/writer.py", 5, "pathlib.Path.write_text"),
+        ("sofascore_scraper/writer.py", 6, "zipfile.ZipFile"),
+        ("sofascore_scraper/writer.py", 7, "zipfile.ZipFile.write"),
+        ("sofascore_scraper/writer.py", 8, "os.walk"),
+        ("sofascore_scraper/writer.py", 10, "shutil.rmtree"),
     ]
 
 
 def test_hook_names_lazy_iterators_once_whatever_the_python_version(sandbox: Sandbox):
     """
-    Yineleme sürerken src/ çerçevesinin altında kitaplığın iç üreteçleri durur (3.11'e kadar `os._walk`,
+    Yineleme sürerken sofascore_scraper/ çerçevesinin altında kitaplığın iç üreteçleri durur (3.11'e kadar `os._walk`,
     `glob._iglob`, 3.13'ten beri pathlib'in glob yardımcıları). Kayıtta yalnızca çağrılan işlevin adı kalır.
     """
     (sandbox.data / "sub").mkdir()
     (sandbox.data / "sub" / "b.json").write_text("{}", encoding="utf-8")
-    lazy = sandbox.module("src/lazy.py", (
+    lazy = sandbox.module("sofascore_scraper/lazy.py", (
         "import glob, os\n"                                             # 1
         "from pathlib import Path\n"                                    # 2
         "def run(data):\n"                                              # 3
@@ -939,12 +939,12 @@ def test_hook_names_lazy_iterators_once_whatever_the_python_version(sandbox: San
     ))
     assert len(lazy["run"](str(sandbox.data))) == 10
     assert sandbox.seen() == [
-        ("src/lazy.py", 5, "os.walk"),
-        ("src/lazy.py", 7, "glob.iglob"),
-        ("src/lazy.py", 9, "pathlib.Path.glob"),
-        ("src/lazy.py", 11, "pathlib.Path.rglob"),
-        ("src/lazy.py", 12, "pathlib.Path.iterdir"),
-        ("src/lazy.py", 14, "glob.glob"),
+        ("sofascore_scraper/lazy.py", 5, "os.walk"),
+        ("sofascore_scraper/lazy.py", 7, "glob.iglob"),
+        ("sofascore_scraper/lazy.py", 9, "pathlib.Path.glob"),
+        ("sofascore_scraper/lazy.py", 11, "pathlib.Path.rglob"),
+        ("sofascore_scraper/lazy.py", 12, "pathlib.Path.iterdir"),
+        ("sofascore_scraper/lazy.py", 14, "glob.glob"),
     ]
 
 
@@ -955,30 +955,30 @@ def test_hook_names_third_party_packages_by_their_top_level_name(sandbox: Sandbo
         "def read_table(path):\n"
         "    return _open(path)\n"
     ), name="fastframes.io.parsers")
-    reader = sandbox.module("src/reader.py", "def load(read, path):\n    return read(path)\n")
+    reader = sandbox.module("sofascore_scraper/reader.py", "def load(read, path):\n    return read(path)\n")
     reader["load"](library["read_table"], str(sandbox.data / "a.json"))
-    assert sandbox.seen() == [("src/reader.py", 2, "fastframes")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 2, "fastframes")]
 
 
 def test_hook_keeps_the_case_of_the_module_path(sandbox: Sandbox):
-    """Kayıtlar modül yolunu olduğu gibi taşır (ör. `src/ui/MatchUi.py`): hata iletisi diskteki adı göstermeli; Windows'ta da küçültülmemeli."""
-    module = sandbox.module("src/ui/MatchUi.py", "import os\ndef names(path):\n    return os.listdir(path)\n")
+    """Kayıtlar modül yolunu olduğu gibi taşır (ör. `sofascore_scraper/ui/MatchUi.py`): hata iletisi diskteki adı göstermeli; Windows'ta da küçültülmemeli."""
+    module = sandbox.module("sofascore_scraper/ui/MatchUi.py", "import os\ndef names(path):\n    return os.listdir(path)\n")
     module["names"](str(sandbox.data))
-    assert sandbox.seen() == [("src/ui/MatchUi.py", 3, "os.listdir")]
+    assert sandbox.seen() == [("sofascore_scraper/ui/MatchUi.py", 3, "os.listdir")]
 
 
 def test_hook_ignores_access_through_the_store(sandbox: Sandbox):
-    files = sandbox.module("src/store/files.py", "def read(path):\n    return open(path).read()\n")
-    reader = sandbox.module("src/reader.py", "def load(read, path):\n    return read(path)\n")
+    files = sandbox.module("sofascore_scraper/store/files.py", "def read(path):\n    return open(path).read()\n")
+    reader = sandbox.module("sofascore_scraper/reader.py", "def load(read, path):\n    return read(path)\n")
     assert reader["load"](files["read"], str(sandbox.data / "a.json")) == "{}"
     assert sandbox.seen() == []
 
 
 def test_hook_ignores_access_made_by_test_code(sandbox: Sandbox):
-    """Fixture kuran test kodu serbesttir; src/ içinden çağrılan bir test yardımcısı da (ör. sahte yazıcı)."""
+    """Fixture kuran test kodu serbesttir; sofascore_scraper/ içinden çağrılan bir test yardımcısı da (ör. sahte yazıcı)."""
     helper = sandbox.module("tests/helper.py", "def seed(path):\n    open(path, 'w').close()\n")
     helper["seed"](str(sandbox.data / "seeded.json"))
-    caller = sandbox.module("src/caller.py", "def run(callback, path):\n    return callback(path)\n")
+    caller = sandbox.module("sofascore_scraper/caller.py", "def run(callback, path):\n    return callback(path)\n")
     caller["run"](helper["seed"], str(sandbox.data / "seeded.json"))
     assert sandbox.seen() == []
 
@@ -989,15 +989,15 @@ def test_hook_walks_past_generated_code_without_a_file(sandbox: Sandbox, monkeyp
     monkeypatch.chdir(sandbox.root / "tests")  # "<string>" göreli bir yol sayılsaydı tests/ altına düşerdi
     generated: Dict[str, Any] = {}
     exec(compile("def read(path):\n    return open(path).read()\n", "<string>", "exec"), generated)
-    reader = sandbox.module("src/reader.py", "def load(read, path):\n    return read(path)\n")
+    reader = sandbox.module("sofascore_scraper/reader.py", "def load(read, path):\n    return read(path)\n")
     assert reader["load"](generated["read"], str(sandbox.data / "a.json")) == "{}"
-    assert sandbox.seen() == [("src/reader.py", 2, "<dynamic>")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 2, "<dynamic>")]
 
 
 def test_hook_ignores_paths_outside_the_data_dir(sandbox: Sandbox, tmp_path: Path):
     (tmp_path / "config.json").write_text("{}", encoding="utf-8")
     (tmp_path / "data-other").mkdir()
-    reader = sandbox.module("src/reader.py", (
+    reader = sandbox.module("sofascore_scraper/reader.py", (
         "import os\n"
         "def load(path):\n"
         "    return open(path).read()\n"
@@ -1009,11 +1009,11 @@ def test_hook_ignores_paths_outside_the_data_dir(sandbox: Sandbox, tmp_path: Pat
     reader["names"](str(tmp_path))
     assert sandbox.seen() == []
     reader["names"](str(sandbox.data))  # dizinin kendisi içeride sayılır
-    assert sandbox.seen() == [("src/reader.py", 5, "os.listdir")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 5, "os.listdir")]
 
 
 def test_hook_sees_relative_paths_path_objects_bytes_and_the_second_argument(sandbox: Sandbox, monkeypatch):
-    reader = sandbox.module("src/reader.py", (
+    reader = sandbox.module("sofascore_scraper/reader.py", (
         "import os\n"                             # 1
         "def load(path):\n"                       # 2
         "    return open(path).read()\n"          # 3
@@ -1022,21 +1022,21 @@ def test_hook_sees_relative_paths_path_objects_bytes_and_the_second_argument(san
     ))
     monkeypatch.chdir(sandbox.root)
     reader["load"](os.path.join("data", "a.json"))
-    assert sandbox.seen() == [("src/reader.py", 3, "open")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 3, "open")]
     sandbox.recorder.records.clear()
     reader["load"](sandbox.data / "a.json")
     reader["load"](os.fsencode(str(sandbox.data / "a.json")))
     reader["load"](os.path.join(str(sandbox.data), "..", "data", "a.json"))
-    assert sandbox.seen() == [("src/reader.py", 3, "open")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 3, "open")]
     sandbox.recorder.records.clear()
     outside = sandbox.root / "incoming.json"
     outside.write_text("{}", encoding="utf-8")
     reader["move"](str(outside), str(sandbox.data / "moved.json"))  # kaynak dışarıda, hedef veri dizininde
-    assert sandbox.seen() == [("src/reader.py", 5, "os.rename")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 5, "os.rename")]
 
 
 def test_hook_sees_sqlite_connections_including_uri_form(sandbox: Sandbox):
-    db = sandbox.module("src/db.py", (
+    db = sandbox.module("sofascore_scraper/db.py", (
         "import sqlite3\n"
         "def plain(path):\n"
         "    sqlite3.connect(path).close()\n"
@@ -1046,7 +1046,7 @@ def test_hook_sees_sqlite_connections_including_uri_form(sandbox: Sandbox):
     path = sandbox.data / "state.db"
     db["plain"](str(path))
     db["readonly"](f"{path.as_uri()}?mode=ro")
-    assert sandbox.seen() == [("src/db.py", 3, "sqlite3.connect"), ("src/db.py", 5, "sqlite3.connect")]
+    assert sandbox.seen() == [("sofascore_scraper/db.py", 3, "sqlite3.connect"), ("sofascore_scraper/db.py", 5, "sqlite3.connect")]
 
 
 def test_hook_follows_the_data_dir_environment_variable(tmp_path: Path, monkeypatch):
@@ -1054,10 +1054,10 @@ def test_hook_follows_the_data_dir_environment_variable(tmp_path: Path, monkeypa
     fixed, other = tmp_path / "fixed", tmp_path / "other"
     for directory in (fixed, other):
         directory.mkdir()
-    recorder = conftest.BoundaryRecorder(str(tmp_path / "src"), str(tmp_path / "tests"), [str(fixed)], follow_env=True)
+    recorder = conftest.BoundaryRecorder(str(tmp_path / "sofascore_scraper"), str(tmp_path / "tests"), [str(fixed)], follow_env=True)
     source = "import os\ndef names(path):\n    return os.listdir(path)\n"
     namespace: Dict[str, object] = {}
-    exec(compile(source, str(tmp_path / "src" / "reader.py"), "exec"), namespace)
+    exec(compile(source, str(tmp_path / "sofascore_scraper" / "reader.py"), "exec"), namespace)
     conftest.BOUNDARY_RECORDERS.append(recorder)
     try:
         monkeypatch.setenv("DATA_DIR", str(tmp_path / "elsewhere"))
@@ -1079,12 +1079,12 @@ def test_hook_follows_the_data_dir_environment_variable(tmp_path: Path, monkeypa
 def test_hook_can_be_told_about_another_data_dir(sandbox: Sandbox, tmp_path: Path):
     extra = tmp_path / "second-data"
     extra.mkdir()
-    reader = sandbox.module("src/reader.py", "import os\ndef names(path):\n    return os.listdir(path)\n")
+    reader = sandbox.module("sofascore_scraper/reader.py", "import os\ndef names(path):\n    return os.listdir(path)\n")
     reader["names"](str(extra))
     assert sandbox.seen() == []
     sandbox.recorder.add_data_dir(str(extra))
     reader["names"](str(extra))
-    assert sandbox.seen() == [("src/reader.py", 3, "os.listdir")]
+    assert sandbox.seen() == [("sofascore_scraper/reader.py", 3, "os.listdir")]
 
 
 def test_session_recorder_watches_the_test_data_dir_and_ignores_this_module():
@@ -1095,7 +1095,7 @@ def test_session_recorder_watches_the_test_data_dir_and_ignores_this_module():
     with os.scandir(os.path.join(conftest.DATA_DIR, "seasons")) as entries:
         assert [entry.name for entry in entries]
     assert recorder.records == before
-    assert all(module.startswith("src/") and not module.startswith("src/store/") for module, _l, _c in recorder.records)
+    assert all(module.startswith("sofascore_scraper/") and not module.startswith("sofascore_scraper/store/") for module, _l, _c in recorder.records)
 
 
 def _fake_config(args: Sequence[str] = ("tests",), source: str = "TESTPATHS", **options: Any) -> Any:
@@ -1147,36 +1147,36 @@ def test_runtime_tests_are_moved_to_the_end_of_the_session():
 
 def test_runtime_entries_are_kept_only_for_functions_the_static_check_does_not_track(tmp_path: Path):
     src = make_tree(tmp_path, {
-        "src/store/__init__.py": "",
-        "src/reader.py": (
+        "sofascore_scraper/store/__init__.py": "",
+        "sofascore_scraper/reader.py": (
             "import os\n"                                   # 1
-            "from src.store import files\n"                 # 2
+            "from sofascore_scraper.store import files\n"                 # 2
             "def listed(p):\n"                              # 3
             "    return os.listdir(p)\n"                    # 4
             "def dynamic(p):\n"                             # 5
             "    return getattr(os, 'listdir')(p)\n"        # 6
         ),
-        "src/store/files.py": "",
-        "src/doctor.py": "import tempfile\ndef probe(p):\n    return tempfile.mkstemp(dir=p)\n",
+        "sofascore_scraper/store/files.py": "",
+        "sofascore_scraper/doctor.py": "import tempfile\ndef probe(p):\n    return tempfile.mkstemp(dir=p)\n",
     })
     records = {
-        ("src/reader.py", 4, "os.listdir"): ("t1", "/d"),         # statik denetim `listed`i zaten izliyor
-        ("src/reader.py", 6, "os.listdir"): ("t2", "/d"),         # yalnızca çalışırken görülür
-        ("src/reader.py", 2, "pandas"): ("", "/d/x.csv"),         # modül düzeyi: içe aktarma ihlali örtmez
-        ("src/doctor.py", 3, "tempfile.mkstemp"): ("t3", "/d"),   # muaf modül: statik izleme yok
+        ("sofascore_scraper/reader.py", 4, "os.listdir"): ("t1", "/d"),         # statik denetim `listed`i zaten izliyor
+        ("sofascore_scraper/reader.py", 6, "os.listdir"): ("t2", "/d"),         # yalnızca çalışırken görülür
+        ("sofascore_scraper/reader.py", 2, "pandas"): ("", "/d/x.csv"),         # modül düzeyi: içe aktarma ihlali örtmez
+        ("sofascore_scraper/doctor.py", 3, "tempfile.mkstemp"): ("t3", "/d"),   # muaf modül: statik izleme yok
     }
     findings = scan_tree(src)
     assert {m: [f"{f.function}:{f.call}" for f in items] for m, items in findings.items()} == {
-        "src/reader.py": ["<module>:import src.store.files", "listed:os.listdir"]}
+        "sofascore_scraper/reader.py": ["<module>:import sofascore_scraper.store.files", "listed:os.listdir"]}
     assert uncovered_runtime(resolve_records(records, tmp_path), findings) == {
-        "src/reader.py": {("<module>", "pandas"): (2, "", "/d/x.csv"), ("dynamic", "os.listdir"): (6, "t2", "/d")},
-        "src/doctor.py": {("probe", "tempfile.mkstemp"): (3, "t3", "/d")},
+        "sofascore_scraper/reader.py": {("<module>", "pandas"): (2, "", "/d/x.csv"), ("dynamic", "os.listdir"): (6, "t2", "/d")},
+        "sofascore_scraper/doctor.py": {("probe", "tempfile.mkstemp"): (3, "t3", "/d")},
     }
-    assert uncovered_runtime({"src/reader.py": {("listed", "os.listdir"): (4, "t1", "/d")}}, findings) == {}
+    assert uncovered_runtime({"sofascore_scraper/reader.py": {("listed", "os.listdir"): (4, "t1", "/d")}}, findings) == {}
 
 
 def test_resolve_records_turns_lines_into_function_names(tmp_path: Path):
-    make_tree(tmp_path, {"src/reader.py": (
+    make_tree(tmp_path, {"sofascore_scraper/reader.py": (
         "import os\n"                         # 1
         "LISTING = os.listdir('.')\n"         # 2
         "class Reader:\n"                     # 3
@@ -1185,11 +1185,11 @@ def test_resolve_records_turns_lines_into_function_names(tmp_path: Path):
         "            return [open(q) for q in f]\n"  # 6
     )})
     records = {
-        ("src/reader.py", 2, "os.listdir"): ("", "/d"),
-        ("src/reader.py", 6, "open"): ("tests/test_b.py::test_two", "/d/b"),
-        ("src/reader.py", 5, "open"): ("tests/test_a.py::test_one", "/d/a"),
+        ("sofascore_scraper/reader.py", 2, "os.listdir"): ("", "/d"),
+        ("sofascore_scraper/reader.py", 6, "open"): ("tests/test_b.py::test_two", "/d/b"),
+        ("sofascore_scraper/reader.py", 5, "open"): ("tests/test_a.py::test_one", "/d/a"),
     }
-    assert resolve_records(records, tmp_path) == {"src/reader.py": {
+    assert resolve_records(records, tmp_path) == {"sofascore_scraper/reader.py": {
         ("<module>", "os.listdir"): (2, "", "/d"),
         ("Reader.load", "open"): (5, "tests/test_a.py::test_one", "/d/a"),  # aynı işlev: tek satır, ilk görülen
     }}

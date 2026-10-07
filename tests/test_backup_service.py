@@ -24,12 +24,12 @@ from typing import Any, Dict, List, Tuple
 import pytest
 
 import store_fixtures as sf
-from src.services.backup import BackupService
-from src.services.maintenance import MaintenanceService
-from src.store import StoreError, open_store
-from src.web import deps
-from src.web.api import legacy as data_routes
-from src.web.api.legacy import _SyncHttpError
+from sofascore_scraper.services.backup import BackupService
+from sofascore_scraper.services.maintenance import MaintenanceService
+from sofascore_scraper.store import StoreError, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.api import legacy as data_routes
+from sofascore_scraper.web.api.legacy import _SyncHttpError
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "backup" / "members.json"
 REGEN = os.getenv("REGEN_BACKUP_GOLDEN") == "1"

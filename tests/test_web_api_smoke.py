@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 
 
 def test_health_and_leagues_and_cancel_idle():

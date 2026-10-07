@@ -1,5 +1,5 @@
 """
-Testlerin sezon programı çekimi: src/services/listing.py `ScheduleLister`'ı, sahte bir istek işleviyle çalıştırır.
+Testlerin sezon programı çekimi: sofascore_scraper/services/listing.py `ScheduleLister`'ı, sahte bir istek işleviyle çalıştırır.
 
 Terminal menüsünün eski yüzü (`MatchFetcher.fetch_all_matches_for_season` ve `fetch_all_rounds_async`; istek
 katmanının async işlevi `make_api_request_async(session, yol, max_retries)`) plan maddesi FX-15'te kalktı. Onu
@@ -12,17 +12,17 @@ import asyncio
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Optional, Union
 
-from src.exceptions import CircuitOpenError, SofaScoreScraperError
-from src.services import listing
-from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
-from src.store import open_store
+from sofascore_scraper.exceptions import CircuitOpenError, SofaScoreScraperError
+from sofascore_scraper.services import listing
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
+from sofascore_scraper.store import open_store
 
 # Eski istek işlevinin imzası: (oturum, göreli yol, deneme sayısı) → yanıt
 LegacyApi = Callable[[Any, str, Optional[int]], Awaitable[Any]]
 
 
 def _answer(data: Any) -> Outcome:
-    """İstek katmanının döndürdüğü veri → sonuç (src.client.Client ile aynı kural)."""
+    """İstek katmanının döndürdüğü veri → sonuç (sofascore_scraper.client.Client ile aynı kural)."""
     if data is None:
         return Outcome(SLICE_FAILED, reason="other")
     if not data:

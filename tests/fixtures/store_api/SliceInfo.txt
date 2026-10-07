@@ -1,5 +1,5 @@
-# src.store.SliceInfo
-# kaynak: src/store/events.py
+# sofascore_scraper.store.SliceInfo
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class SliceInfo:
     ref: Ref

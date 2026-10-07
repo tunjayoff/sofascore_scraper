@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from src.jobs.manager import JobManager, local_origin
-from src.jobs.model import JobKind
-from src.store import DataOperationRunningError, JobRunningError, JobStore, default_db_path, open_store
+from sofascore_scraper.jobs.manager import JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind
+from sofascore_scraper.store import DataOperationRunningError, JobRunningError, JobStore, default_db_path, open_store
 
 
 @pytest.fixture

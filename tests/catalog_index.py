@@ -19,8 +19,8 @@ import sqlite3
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
-from src.store import StoreError, open_store
-from src.store.indexer import LISTING_CHANGES, LISTING_SCHEDULES, LISTING_SEASON_LISTS, canonical_id
+from sofascore_scraper.store import StoreError, open_store
+from sofascore_scraper.store.indexer import LISTING_CHANGES, LISTING_SCHEDULES, LISTING_SEASON_LISTS, canonical_id
 
 PathLike = Union[str, "os.PathLike[str]"]
 logger = logging.getLogger(__name__)

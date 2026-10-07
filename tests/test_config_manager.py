@@ -5,8 +5,8 @@ import os
 
 import pytest
 
-from src.config_manager import ConfigManager
-from src.i18n import app_language
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.i18n import app_language
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-# src.store.PayloadMissing
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.PayloadMissing
+# kaynak: sofascore_scraper/store/errors.py
 class PayloadMissing(StoreError):
     default_message = ...

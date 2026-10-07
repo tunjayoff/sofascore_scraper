@@ -1,5 +1,5 @@
-# Catalog: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
-# kaynak: src/store/catalog.py
+# Catalog: sofascore_scraper.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: sofascore_scraper/store/catalog.py
 class Catalog:
     def __init__(self, path: PathLike, *, busy_timeout_ms: int = BUSY_TIMEOUT_MS, attach: Optional[Mapping[str, PathLike]] = None)
     self.path

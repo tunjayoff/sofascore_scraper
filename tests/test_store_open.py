@@ -1,5 +1,5 @@
 """
-src/store/api.py: `open_store`, süreç içi kayıt defteri, `.meta/schema.json` ve `Store.info`
+sofascore_scraper/store/api.py: `open_store`, süreç içi kayıt defteri, `.meta/schema.json` ve `Store.info`
 (docs/design/01-storage.md bölüm 2.3 ve 7.1; plan maddesi ST-10).
 
 Açılış bir 2.x dizinine yalnızca `.meta/` altındaki üç şeyi ekler (schema.json, state.db, catalog.db) ve
@@ -21,9 +21,9 @@ from typing import Any, Dict
 
 import pytest
 
-import src.store
+import sofascore_scraper.store
 import store_fixtures as sf
-from src.store import (
+from sofascore_scraper.store import (
     LeaseHeld,
     PayloadCorrupt,
     SchemaTooNew,
@@ -32,14 +32,14 @@ from src.store import (
     StoreInfo,
     open_store,
 )
-from src.store import api as api_mod
-from src.store import jobs as jobs_mod
-from src.store import layout
-from src.store.jobs import JobStore
-from src.store.catalog import CATALOG_SCHEMA
-from src.store.derive import DERIVE_VERSION
-from src.store.manifest import MANIFEST_FORMAT
-from src.version import __version__ as APP_VERSION
+from sofascore_scraper.store import api as api_mod
+from sofascore_scraper.store import jobs as jobs_mod
+from sofascore_scraper.store import layout
+from sofascore_scraper.store.jobs import JobStore
+from sofascore_scraper.store.catalog import CATALOG_SCHEMA
+from sofascore_scraper.store.derive import DERIVE_VERSION
+from sofascore_scraper.store.manifest import MANIFEST_FORMAT
+from sofascore_scraper.version import __version__ as APP_VERSION
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -246,7 +246,7 @@ def test_threads_get_the_same_store(data_dir):
 
 
 def test_processes_opening_a_new_directory_agree_on_the_store_id(data_dir):
-    script = "import sys\nfrom src.store import open_store\nprint(open_store(sys.argv[1]).store_id)\n"
+    script = "import sys\nfrom sofascore_scraper.store import open_store\nprint(open_store(sys.argv[1]).store_id)\n"
     procs = [
         subprocess.Popen([sys.executable, "-c", script, str(data_dir)], cwd=ROOT,
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -259,7 +259,7 @@ def test_processes_opening_a_new_directory_agree_on_the_store_id(data_dir):
 
 def test_a_writer_in_another_process_is_seen_through_the_facade(data_dir):
     script = (
-        "import sys\nfrom src.store import open_store\n"
+        "import sys\nfrom sofascore_scraper.store import open_store\n"
         "lease = open_store(sys.argv[1]).lease('writer', purpose='headless')\n"
         "print('ready', flush=True)\nsys.stdin.readline()\nlease.release()\n"
     )
@@ -442,26 +442,26 @@ def test_runtime_facts_are_reachable_through_the_store(data_dir):
 def test_facade_is_exported_from_the_package_root():
     for name in ("open_store", "Store", "StoreInfo", "Lease", "LeaseInfo", "JobStore", "JobStoreConflict",
                  "JobRunningError", "DataOperationRunningError", "default_db_path", "get_job_store"):
-        assert name in src.store.__all__ and name in dir(src.store)
-    from src.store import jobs, lease
+        assert name in sofascore_scraper.store.__all__ and name in dir(sofascore_scraper.store)
+    from sofascore_scraper.store import jobs, lease
 
-    assert src.store.open_store is api_mod.open_store and src.store.Lease is lease.Lease
-    assert src.store.JobStore is jobs.JobStore and src.store.get_job_store is jobs.get_job_store
+    assert sofascore_scraper.store.open_store is api_mod.open_store and sofascore_scraper.store.Lease is lease.Lease
+    assert sofascore_scraper.store.JobStore is jobs.JobStore and sofascore_scraper.store.get_job_store is jobs.get_job_store
     with pytest.raises(AttributeError):
-        _ = src.store.no_such_name
+        _ = sofascore_scraper.store.no_such_name
 
 
 def test_importing_a_submodule_does_not_load_the_facade():
-    """Bir alt modülü (`src.store.files`) içe aktarmak kökü çalıştırır: kök, SQLite'lı cepheyi kendiliğinden yüklememeli."""
+    """Bir alt modülü (`sofascore_scraper.store.files`) içe aktarmak kökü çalıştırır: kök, SQLite'lı cepheyi kendiliğinden yüklememeli."""
     code = (
-        "import sys, json; import src.store.files; "
-        "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.store.files; "
+        "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
     loaded = set(json.loads(out.stdout))
-    assert "src.store.files" in loaded
-    assert not loaded & {"src.store.api", "src.store.jobs", "src.store.lease", "src.store.state",
-                         "src.store.catalog", "src.store.derive", "src.sports", "src.status", "src.version"}
+    assert "sofascore_scraper.store.files" in loaded
+    assert not loaded & {"sofascore_scraper.store.api", "sofascore_scraper.store.jobs", "sofascore_scraper.store.lease", "sofascore_scraper.store.state",
+                         "sofascore_scraper.store.catalog", "sofascore_scraper.store.derive", "sofascore_scraper.sports", "sofascore_scraper.status", "sofascore_scraper.version"}
 
 
 def test_store_paths_match_the_layout(data_dir):
@@ -482,7 +482,7 @@ def test_a_state_db_that_cannot_be_written_on_open_raises_a_store_error(data_dir
     olarak çıkar; açılış yarım kalan depoyu kapatır ve kayıt defterine koymaz.
     """
     import errno as errno_mod
-    from src.store.state import StateDb
+    from sofascore_scraper.store.state import StateDb
 
     open_store(data_dir).close()
 
@@ -508,10 +508,10 @@ def test_a_state_db_that_cannot_be_written_on_open_raises_a_store_error(data_dir
 _CLOSE_WHILE_A_JOB_FINISHES = r'''
 import json, logging, os, sqlite3, sys, threading, time
 sys.path.insert(0, sys.argv[2])
-from src.jobs.manager import STREAM_JOB_FINISHED, JobManager, local_origin
-from src.jobs.model import JobKind
-from src.store import open_store
-from src.store.streams import StreamLog
+from sofascore_scraper.jobs.manager import STREAM_JOB_FINISHED, JobManager, local_origin
+from sofascore_scraper.jobs.model import JobKind
+from sofascore_scraper.store import open_store
+from sofascore_scraper.store.streams import StreamLog
 
 data = os.path.join(sys.argv[1], "data")
 rounds = int(sys.argv[3])

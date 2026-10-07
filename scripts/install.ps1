@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Dil: açık ayar (APP_LANGUAGE; ortamda ya da .env'de) > sistem dili (LC_ALL, LC_MESSAGES, LANG; yoksa
-# Windows arayüz dili) > İngilizce. Uygulamanın kuralıyla aynı (src\language.py); betik depo
+# Windows arayüz dili) > İngilizce. Uygulamanın kuralıyla aynı (sofascore_scraper\language.py); betik depo
 # klonlanmadan önce de çalıştığı için burada yinelenir.
 function Get-UiLanguage {
     $value = $env:APP_LANGUAGE
@@ -186,8 +186,8 @@ if (-not (Test-Path $envFile) -and (Test-Path $envEx)) {
     Write-Host (L "→ Copied .env.example → .env." "→ .env.example → .env kopyalandı.")
 }
 
-# Web arayüzü Node.js ile bir kez derlenir (frontend\ → frontend\dist\). Sürüm kuralı src\doctor.py'de.
-& $venvPy -c "import sys; from src import doctor; sys.exit(0 if doctor.node_is_supported(doctor.installed_node_version()) else 1)"
+# Web arayüzü Node.js ile bir kez derlenir (frontend\ → frontend\dist\). Sürüm kuralı sofascore_scraper\doctor.py'de.
+& $venvPy -c "import sys; from sofascore_scraper import doctor; sys.exit(0 if doctor.node_is_supported(doctor.installed_node_version()) else 1)"
 if ($LASTEXITCODE -eq 0) {
     Write-Host (L "→ Building the web UI (npm install, npm run build; this can take a few minutes)…" `
             "→ Web arayüzü derleniyor (npm install, npm run build; birkaç dakika sürebilir)…")
@@ -224,7 +224,7 @@ else {
 Write-Host ""
 Write-Host (L "→ Checking the installation (python main.py --doctor)…" "→ Kurulum denetleniyor (python main.py --doctor)…")
 Write-Host ""
-& $venvPy -m src.doctor
+& $venvPy -m sofascore_scraper.doctor
 $doctorStatus = $LASTEXITCODE
 
 Write-Host ""
@@ -236,6 +236,6 @@ if ($doctorStatus -ne 0) {
 }
 Write-Host (L "Installation complete." "Kurulum tamam.") -ForegroundColor Green
 Write-Host "  Web:      cd `"$root`" ; .\.venv\Scripts\python.exe scripts\start_web.py  → http://127.0.0.1:8000"
-Write-Host "  $(L 'CLI:    ' 'Komutlar:')  cd `"$root`" ; .\.venv\Scripts\python.exe -m src.cli.main --help"
+Write-Host "  $(L 'CLI:    ' 'Komutlar:')  cd `"$root`" ; .\.venv\Scripts\python.exe -m sofascore_scraper.cli.main --help"
 Write-Host "  $(L 'Check:  ' 'Denetim:')  cd `"$root`" ; .\.venv\Scripts\python.exe main.py --doctor"
 Write-Host ""

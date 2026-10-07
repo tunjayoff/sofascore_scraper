@@ -14,13 +14,13 @@ import zipfile
 import pytest
 from fastapi.testclient import TestClient
 
-from src import bridge_health, diagnostics, redact
-from src import logger as app_logger
-from src.store import LeaseHeld
-from src.store.jobs import JOB_COLUMNS
-from src.version import __version__
-from src.web.app import app
-from src.web.jobs import JobStore, default_db_path
+from sofascore_scraper import bridge_health, diagnostics, redact
+from sofascore_scraper import logger as app_logger
+from sofascore_scraper.store import LeaseHeld
+from sofascore_scraper.store.jobs import JOB_COLUMNS
+from sofascore_scraper.version import __version__
+from sofascore_scraper.web.app import app
+from sofascore_scraper.web.jobs import JobStore, default_db_path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -217,7 +217,7 @@ def test_summary_has_the_expected_sections(log_dir):
     doc = diagnostics.collect(source="cli")
     assert doc["source"] == "cli"
     assert doc["app"]["name"] == "sofascore-scraper"
-    assert doc["app"]["version"] == __version__  # pyproject.toml (src/version.py)
+    assert doc["app"]["version"] == __version__  # pyproject.toml (sofascore_scraper/version.py)
     assert set(doc["app"]) == {"name", "version", "commit", "ref"}
     assert doc["runtime"]["python"] == ".".join(map(str, sys.version_info[:3]))
     assert doc["runtime"]["platform"] and doc["runtime"]["system"]
@@ -232,7 +232,7 @@ def test_summary_has_the_expected_sections(log_dir):
 
 
 def test_setup_check_is_included_without_starting_a_browser(log_dir, monkeypatch):
-    from src import doctor
+    from sofascore_scraper import doctor
 
     def no_probe(*args, **kwargs):
         raise AssertionError("the diagnostics summary must not start the browser probe")
@@ -486,7 +486,7 @@ ORIGIN_HOST = "ci-runner-3"     # bir işi başlatan başka makine
 
 
 def _log_a_refused_lease(holder_host):
-    """Çağıranın LeaseHeld'i traceback'iyle log'a yazması; ileti src/store/lease.py'nin kurduğu biçimdedir."""
+    """Çağıranın LeaseHeld'i traceback'iyle log'a yazması; ileti sofascore_scraper/store/lease.py'nin kurduğu biçimdedir."""
     try:
         raise LeaseHeld(
             f"'writer' kilidi alınamadı: veri dizini 'writer' kilidiyle başka bir sahipte (pid 77, makine {holder_host})",

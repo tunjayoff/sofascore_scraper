@@ -22,11 +22,11 @@ import pytest
 
 import conftest
 import store_fixtures as sf
-from src.services import planning
-from src.services import status as status_module
-from src.services.status import CoverageReport, SeasonCoverage, StatusService, TournamentCoverage
-from src.slices import SLICE_EMPTY, SLICE_OK, Outcome, match_detail_slice_present
-from src.store import Ref, Scope, Store, open_store
+from sofascore_scraper.services import planning
+from sofascore_scraper.services import status as status_module
+from sofascore_scraper.services.status import CoverageReport, SeasonCoverage, StatusService, TournamentCoverage
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, Outcome, match_detail_slice_present
+from sofascore_scraper.store import Ref, Scope, Store, open_store
 
 REQUIRED = planning.expected_slice_keys("football")
 

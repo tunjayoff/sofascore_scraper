@@ -1,5 +1,5 @@
 """
-src/store/manifest.py: varlık başına manifest.json (docs/design/01-storage.md, bölüm 4.2), biçim 1.
+sofascore_scraper/store/manifest.py: varlık başına manifest.json (docs/design/01-storage.md, bölüm 4.2), biçim 1.
 
 Veri sınıfları, okuma, yazma ve doğrulama. Manifest kaynaktır (katalog onu yansıtır), bu yüzden bozuk
 bir manifest sessizce kabul edilmemeli ve bu sürümün tanımadığı alanlar yeniden yazarken kaybolmamalıdır.
@@ -13,8 +13,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from src.store import LayoutError, PayloadCorrupt, PayloadMissing, SchemaTooNew, manifest
-from src.store.manifest import EmptyMark, ErrorMark, HistoryMark, Manifest, Observation, SliceEntry
+from sofascore_scraper.store import LayoutError, PayloadCorrupt, PayloadMissing, SchemaTooNew, manifest
+from sofascore_scraper.store.manifest import EmptyMark, ErrorMark, HistoryMark, Manifest, Observation, SliceEntry
 
 SHA_A = "a" * 64
 SHA_B = "0123456789abcdef" * 4

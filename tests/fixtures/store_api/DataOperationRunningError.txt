@@ -1,5 +1,5 @@
-# src.store.DataOperationRunningError
-# kaynak: src/store/jobs.py
+# sofascore_scraper.store.DataOperationRunningError
+# kaynak: sofascore_scraper/store/jobs.py
 class DataOperationRunningError(JobStoreConflict):
     code = ...
     def __init__(self, operation: str) -> None

@@ -1,8 +1,8 @@
-"""GET /api/sports: kayıt defterinin (src/sports.py) salt okunur görünümü."""
+"""GET /api/sports: kayıt defterinin (sofascore_scraper/sports.py) salt okunur görünümü."""
 from fastapi.testclient import TestClient
 
-from src import sports
-from src.web.app import app
+from sofascore_scraper import sports
+from sofascore_scraper.web.app import app
 
 REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-rules", "ice-hockey", "handball",
               "rugby", "futsal", "minifootball", "floorball",  # SP-1: + sekiz periyot sporu

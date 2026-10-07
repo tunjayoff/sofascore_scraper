@@ -1,8 +1,8 @@
 """
-src/config_files.py: config dosyalarının atomik yazımı ve onları koruyan süreçler arası kilit.
+sofascore_scraper/config_files.py: config dosyalarının atomik yazımı ve onları koruyan süreçler arası kilit.
 
 Config dosyaları (leagues.txt, league_sports.json, overrides.json) bu iki yardımcıdan geçer; log dosyasının
-çevrilmesi yalnızca kilidi kullanır. 2.x'te aynı işlevler src/fsutil.py'deydi (ST-28 taşıdı).
+çevrilmesi yalnızca kilidi kullanır. 2.x'te aynı işlevler sofascore_scraper/fsutil.py'deydi (ST-28 taşıdı).
 Buradaki testler platformdan bağımsız yazılmıştır; Windows'ta bilinen
 eksikler `xfail` ile işaretlidir (gerekçe işaretin içinde).
 """
@@ -17,8 +17,8 @@ import time
 
 import pytest
 
-from src import config_files
-from src.config_files import atomic_write_json, atomic_write_text, file_lock
+from sofascore_scraper import config_files
+from sofascore_scraper.config_files import atomic_write_json, atomic_write_text, file_lock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -29,8 +29,8 @@ no_lock_on_windows = pytest.mark.xfail(
     strict=True,
     reason=(
         "Bilinen eksik: fcntl olmayan platformda (Windows) file_lock hiçbir şey kilitlemez "
-        "(src/config_files.py) — CLI ve web aynı anda leagues.txt / league_sports.json düzenlerse "
-        "bir tarafın değişikliği kaybolabilir. src/throttle.py'deki kilit msvcrt ile Windows'u destekliyor."
+        "(sofascore_scraper/config_files.py) — CLI ve web aynı anda leagues.txt / league_sports.json düzenlerse "
+        "bir tarafın değişikliği kaybolabilir. sofascore_scraper/throttle.py'deki kilit msvcrt ile Windows'u destekliyor."
     ),
 )
 replace_fails_on_windows = pytest.mark.xfail(
@@ -39,7 +39,7 @@ replace_fails_on_windows = pytest.mark.xfail(
     reason=(
         "Bilinen hata (Windows): hedef dosya başka bir iş parçacığı/süreç tarafından açıkken ya da aynı "
         "anda değiştirilirken os.replace PermissionError (WinError 5, 'Access is denied') verir. "
-        "atomic_write_text yerine koymayı 20 ms arayla 10 kez yeniden dener (src/config_files.py; PR #37'den beri); "
+        "atomic_write_text yerine koymayı 20 ms arayla 10 kez yeniden dener (sofascore_scraper/config_files.py; PR #37'den beri); "
         "denemeler tükenirse yazma kaybolur ve hata çağırana çıkar. CI windows-latest: aynı dosyaya yazan "
         "6 iş parçacığı artık geçiyor (XPASS); dosyayı sıkı döngüde açık tutan okuyucu varken tek yazıcı "
         "hâlâ başarısız, çünkü okuyucu yeniden denemelerden uzun sürüyor."
@@ -266,7 +266,7 @@ def test_reader_never_sees_a_partial_file_while_it_is_rewritten(tmp_path):
 
 _HOLD_LOCK = """
 import sys
-from src.config_files import file_lock
+from sofascore_scraper.config_files import file_lock
 
 with file_lock(sys.argv[1]):
     print("locked", flush=True)
@@ -405,7 +405,7 @@ def test_file_lock_without_fcntl_runs_the_body_and_locks_nothing(tmp_path, monke
             raise ValueError("inside")
 
 
-# --- Windows'ta yerine koymayı yeniden deneme, fsync ve dosya izni (src/store/files.py testlerinden taşındı) --
+# --- Windows'ta yerine koymayı yeniden deneme, fsync ve dosya izni (sofascore_scraper/store/files.py testlerinden taşındı) --
 
 class _BusyReplace:
     """Her çağrıda PermissionError verir: hedef başka bir süreçte açık (Windows)."""

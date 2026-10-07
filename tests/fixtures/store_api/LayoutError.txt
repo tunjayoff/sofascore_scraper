@@ -1,4 +1,4 @@
-# src.store.LayoutError
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.LayoutError
+# kaynak: sofascore_scraper/store/errors.py
 class LayoutError(StoreError):
     default_message = ...

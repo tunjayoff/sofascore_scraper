@@ -29,11 +29,11 @@ from typing import Any, Dict, Iterator
 
 import pytest
 
-import src.utils as utils
+import sofascore_scraper.utils as utils
 import store_dump
 from characterization import WORLD, assert_golden, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from src.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
 
 LEAGUE = 17
 NO_TOURNAMENT = 9400001  # turnuvası (uniqueTournament) olmayan maç: dünyada yok, test ekler
@@ -55,7 +55,7 @@ def fake() -> Iterator[FakeSofaScore]:
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.deps import config_manager as _web_config
+    from sofascore_scraper.web.deps import config_manager as _web_config
     config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))

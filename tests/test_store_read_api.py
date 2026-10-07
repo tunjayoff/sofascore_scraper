@@ -34,15 +34,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import src.store
+import sofascore_scraper.store
 import legacy_writer
 import store_fixtures as sf
 import test_store_query_plans as plans
-from src import refresh
-from src.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher
-from src.slices import match_detail_slice_present
-from src.sports import event_sport_slug, slices_for
-from src.store import (
+from sofascore_scraper import refresh
+from sofascore_scraper.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher
+from sofascore_scraper.slices import match_detail_slice_present
+from sofascore_scraper.sports import event_sport_slug, slices_for
+from sofascore_scraper.store import (
     ChangeLog,
     ChangeRow,
     EntityStore,
@@ -68,12 +68,12 @@ from src.store import (
     TournamentSummary,
     open_store,
 )
-from src.store import codec, layout, manifest
-from src.store import events as events_mod
-from src.store import sqlite as sqlite_mod
-from src.store.indexer import CatalogAdmin
-from src.store.legacy import LegacyReader
-from src.store.manifest import SliceEntry
+from sofascore_scraper.store import codec, layout, manifest
+from sofascore_scraper.store import events as events_mod
+from sofascore_scraper.store import sqlite as sqlite_mod
+from sofascore_scraper.store.indexer import CatalogAdmin
+from sofascore_scraper.store.legacy import LegacyReader
+from sofascore_scraper.store.manifest import SliceEntry
 from test_store_indexer import promote
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -81,7 +81,7 @@ UTC = dt.timezone.utc
 NOW = sf.FIXTURE_NOW
 BASE = sf.BASE_MTIME
 HOUR = 3600
-WINDOW_S = 72 * HOUR  # src/refresh.py varsayılanları
+WINDOW_S = 72 * HOUR  # sofascore_scraper/refresh.py varsayılanları
 MIN_INTERVAL_S = 6 * HOUR
 
 ARS = sf.event_id(sf.PL_ARS)  # kesin kayıt, bütün dilimler tam
@@ -173,7 +173,7 @@ def own(tmp_path: Path) -> Tuple[sf.LegacyFixture, Store]:
 
 @pytest.fixture
 def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Dosya tabanlı yenileme kararı `time.time()`'a bakar (src/refresh.py): saat FIXTURE_NOW'da durur."""
+    """Dosya tabanlı yenileme kararı `time.time()`'a bakar (sofascore_scraper/refresh.py): saat FIXTURE_NOW'da durur."""
     monkeypatch.setattr(time, "time", lambda: float(NOW))
 
 
@@ -217,8 +217,8 @@ def test_store_has_the_event_store(canon: Store) -> None:
              "MissingRow", "TournamentSummary"}
 
     assert isinstance(canon.events, EventStore)
-    assert names <= set(src.store.__all__)
-    assert src.store.EventStore is events_mod.EventStore
+    assert names <= set(sofascore_scraper.store.__all__)
+    assert sofascore_scraper.store.EventStore is events_mod.EventStore
 
 
 def test_an_unbuilt_catalog_answers_empty(tmp_path: Path) -> None:
@@ -253,17 +253,17 @@ def test_a_closed_store_refuses_reads(canon: Store) -> None:
 
 
 def test_read_modules_import_only_what_the_store_may_import() -> None:
-    """Bölüm 2.1: Store yalnızca src.sports, src.status, src.slices, src.exceptions ve src.version'ı içe aktarabilir."""
+    """Bölüm 2.1: Store yalnızca sofascore_scraper.sports, sofascore_scraper.status, sofascore_scraper.slices, sofascore_scraper.exceptions ve sofascore_scraper.version'ı içe aktarabilir."""
     code = (
-        "import sys, json; import src.store.events; "
-        "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.store.events; "
+        "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
     loaded = set(json.loads(out.stdout))
 
-    assert {m for m in loaded if not m.startswith("src.store")} == {
-        "src", "src.exceptions", "src.slices", "src.sports", "src.status"}
-    assert not loaded & {"src.store.api", "src.store.indexer", "src.store.entities", "src.store.state"}
+    assert {m for m in loaded if not m.startswith("sofascore_scraper.store")} == {
+        "sofascore_scraper", "sofascore_scraper.exceptions", "sofascore_scraper.slices", "sofascore_scraper.sports", "sofascore_scraper.status"}
+    assert not loaded & {"sofascore_scraper.store.api", "sofascore_scraper.store.indexer", "sofascore_scraper.store.entities", "sofascore_scraper.store.state"}
 
 
 # --- ortak türler -------------------------------------------------------------------------------------
@@ -989,8 +989,8 @@ def _deferred(store: Store, needs: Dict[int, str]) -> Set[int]:
     ST-27: yalnızca listeden bilinen bitmemiş maç (başlamamış, oynanıyor, void) indirilmez (`none`); açık kayıt
     (başlamamış, oynanıyor, bilinmiyor) `none`; void kayıt dilim beklemez, yalnızca yenilenir.
     """
-    from src.services.planning import SETTLED_CLASSES, refresh_due
-    from src.services.query import RefreshPolicy
+    from sofascore_scraper.services.planning import SETTLED_CLASSES, refresh_due
+    from sofascore_scraper.services.query import RefreshPolicy
 
     found: Set[int] = set()
     for event_id, need in needs.items():
@@ -1488,7 +1488,7 @@ def test_ids_are_written_as_literals_so_long_lists_work(synthetic: Store) -> Non
 
 def test_store_has_the_entity_store(canon: Store, tmp_path: Path) -> None:
     assert isinstance(canon.entities, EntityStore)
-    assert {"EntityStore", "TournamentRow", "SeasonRow", "ParticipantRow"} <= set(src.store.__all__)
+    assert {"EntityStore", "TournamentRow", "SeasonRow", "ParticipantRow"} <= set(sofascore_scraper.store.__all__)
     # ST-22: yazma yöntemi `put`tur; maç dışı varlıklar gözlenmez, silinmez
     assert [name for name in WRITE_METHODS if hasattr(EntityStore, name)] == ["put"]
     # kurulmamış katalog boş yanıt verir
@@ -1772,7 +1772,7 @@ def test_plan_entity_queries(synthetic: Store, explain: Any) -> None:
 
 def test_store_has_the_change_log(canon: Store, tmp_path: Path) -> None:
     assert isinstance(canon.changes, ChangeLog)
-    assert {"ChangeLog", "ChangeRow"} <= set(src.store.__all__)
+    assert {"ChangeLog", "ChangeRow"} <= set(sofascore_scraper.store.__all__)
     unbuilt = open_store(tmp_path / "data")  # kurulmamış katalog
     assert unbuilt.changes.list() == [] and unbuilt.changes.last_seq() == 0
     canon.close()

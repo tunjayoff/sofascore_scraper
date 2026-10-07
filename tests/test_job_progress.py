@@ -6,9 +6,9 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src.web import deps
-from src.web.jobs import JobStore
-from src.jobs.progress import MAX_FAILED_LISTED, JobProgress
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.jobs import JobStore
+from sofascore_scraper.jobs.progress import MAX_FAILED_LISTED, JobProgress
 
 
 class Clock:
@@ -174,7 +174,7 @@ def fake_ui(md: FakeMatchData, seasons: Dict[int, List[Dict[str, Any]]]):
 
 @pytest.fixture
 def job_env(tmp_path, monkeypatch):
-    import src.web.api.legacy as fj
+    import sofascore_scraper.web.api.legacy as fj
 
     store = JobStore(str(tmp_path / "jobs.db"))
     snaps: List[Dict[str, Any]] = []
@@ -189,7 +189,7 @@ def _listing_faces(ui: Any) -> None:
     Sahte sezon / program indiricilerine servisin tipli yüzünü (P14: `list_seasons`, `list_schedule`) ekler: eski adlı
     sahte yöntemlerin sonucu liste sonucu olur (program True → maç listelendi, False → boş).
     """
-    from src.services.listing import ListingResult
+    from sofascore_scraper.services.listing import ListingResult
 
     seasons, schedule = getattr(ui, "season_fetcher", None), getattr(ui, "match_fetcher", None)
     if seasons is not None and not hasattr(seasons, "list_seasons"):
@@ -201,7 +201,7 @@ def _listing_faces(ui: Any) -> None:
 
 
 def run(fj, store, monkeypatch, ui, payload):
-    from src.web.api.legacy import FetchRequest
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = deps.config_manager()
@@ -264,7 +264,7 @@ def test_breaker_stops_remaining_leagues_and_is_reported(job_env, monkeypatch):
 
 def test_wait_notifier_reaches_the_card(job_env, monkeypatch):
     fj, store, _ = job_env
-    from src import utils
+    from sofascore_scraper import utils
 
     class WaitingMD(FakeMatchData):
         def fetch_detail_ids(self, ids, **kw):

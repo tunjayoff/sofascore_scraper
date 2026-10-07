@@ -4,7 +4,7 @@ Toplu indirme yolunun (fetch_matches_batch_async) istek hızını ağ olmadan ö
 SofaScore'a hiç istek atılmaz: tarayıcı köprüsü, sabit gecikmeli sahte bir taşıyıcıyla
 değiştirilir. Ölçülen şey, kodun kendi sınırlarının (MAX_CONCURRENT, istek sonrası
 WAIT_TIME_MIN/MAX beklemesi) ve ortak istek bütçesinin izin verdiği istek hızıdır.
-Varsayılan bütçe (5 istek/sn, bkz. src/throttle.py) bu tavanın bilerek çok altındadır.
+Varsayılan bütçe (5 istek/sn, bkz. sofascore_scraper/throttle.py) bu tavanın bilerek çok altındadır.
 
 Kullanım:
     python scripts/bench_bulk_rate.py                       # sınırlayıcı kapalı (kodun kendi tavanı)
@@ -58,11 +58,11 @@ def run_once(matches: int, latency: float, sport: str, rate: str) -> Dict[str, f
         else:
             os.environ["REQUEST_RATE_LIMIT"] = rate
 
-        import src.challenge_solver as cs
-        import src.utils as utils
-        from src import throttle
-        from src.config_manager import ConfigManager
-        from src.match_data_fetcher import MatchDataFetcher
+        import sofascore_scraper.challenge_solver as cs
+        import sofascore_scraper.utils as utils
+        from sofascore_scraper import throttle
+        from sofascore_scraper.config_manager import ConfigManager
+        from sofascore_scraper.match_data_fetcher import MatchDataFetcher
 
         throttle.reset_for_tests()
         stamps: List[float] = []

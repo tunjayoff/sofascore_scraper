@@ -1,5 +1,5 @@
-# src.store.EventQuery
-# kaynak: src/store/events.py
+# sofascore_scraper.store.EventQuery
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class EventQuery:
     scope: Scope = Scope()

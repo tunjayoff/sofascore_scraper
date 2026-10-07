@@ -1,5 +1,5 @@
-# src.store.SnapshotInfo
-# kaynak: src/store/history.py
+# sofascore_scraper.store.SnapshotInfo
+# kaynak: sofascore_scraper/store/history.py
 @dataclass(frozen=True)
 class SnapshotInfo:
     n: int

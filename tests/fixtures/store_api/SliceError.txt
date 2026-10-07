@@ -1,5 +1,5 @@
-# src.store.SliceError
-# kaynak: src/store/events.py
+# sofascore_scraper.store.SliceError
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class SliceError:
     reason: str

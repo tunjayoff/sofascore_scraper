@@ -30,10 +30,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-import src.challenge_solver as cs  # noqa: E402
+import sofascore_scraper.challenge_solver as cs  # noqa: E402
 
 API = "https://www.sofascore.com/api/v1"
-SPORTS = ("football", "basketball", "tennis")  # src/web/league_sports.py:SPORTS
+SPORTS = ("football", "basketball", "tennis")  # sofascore_scraper/web/league_sports.py:SPORTS
 CACHE_HEADERS = ("cache-control", "age", "etag", "date", "expires", "last-modified")
 MIN_REQUEST_GAP = 1.0
 _RATE_FILE = os.path.join(tempfile.gettempdir(), "sofascore_research_ratelimit")

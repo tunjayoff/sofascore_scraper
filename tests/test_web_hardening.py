@@ -1,5 +1,5 @@
 """
-Web uygulamasının güvenlik sınırları (src/web/security.py, src/web/app.py):
+Web uygulamasının güvenlik sınırları (sofascore_scraper/web/security.py, sofascore_scraper/web/app.py):
 
   - kaynak (origin) denetimi: aynı kaynaktan tarayıcı, başka siteden tarayıcı, Origin göndermeyen program
   - GET ile durum değiştiren uç nokta kalmadı
@@ -34,18 +34,18 @@ from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 
 import conftest
-import src.challenge_solver as cs
-import src.utils as utils
-from src import bridge_health, diagnostics, private_files, redact
-from src.paths import env_file_path
-from src.store import open_store
-from src.web import deps
-from src.web import security
-from src.web.api import legacy as fetch_job
-from src.web.app import FRONTEND_DIST, app
-from src.web.missing_ui import MISSING_UI_HTML
-from src.web.api import legacy as data_mod
-from src.web.api.legacy import FetchRequest
+import sofascore_scraper.challenge_solver as cs
+import sofascore_scraper.utils as utils
+from sofascore_scraper import bridge_health, diagnostics, private_files, redact
+from sofascore_scraper.paths import env_file_path
+from sofascore_scraper.store import open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web import security
+from sofascore_scraper.web.api import legacy as fetch_job
+from sofascore_scraper.web.app import FRONTEND_DIST, app
+from sofascore_scraper.web.missing_ui import MISSING_UI_HTML
+from sofascore_scraper.web.api import legacy as data_mod
+from sofascore_scraper.web.api.legacy import FetchRequest
 
 REPO = Path(__file__).resolve().parents[1]
 client = TestClient(app)
@@ -195,7 +195,7 @@ READ_ONLY_GETS = {
     "/api/sports",
     "/api/stats/system",
     "/api/status",
-    # API v1 (src/web/api/v1): sağlık, durum, sporlar, iş geçmişi ve olay akışı, ayarların okunması
+    # API v1 (sofascore_scraper/web/api/v1): sağlık, durum, sporlar, iş geçmişi ve olay akışı, ayarların okunması
     "/api/v1/auth",
     "/api/v1/backups",
     "/api/v1/backups/backup_all_20260101_000000.zip",
@@ -276,8 +276,8 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
     },
 }
 
-_STATE_DB = "state.db"  # iş deposu (src/store/jobs.py): DATA_DIR/.meta/state.db
-_CATALOG_DB = "catalog.db"  # katalog (src/store/catalog.py): DATA_DIR/.meta/catalog.db
+_STATE_DB = "state.db"  # iş deposu (sofascore_scraper/store/jobs.py): DATA_DIR/.meta/state.db
+_CATALOG_DB = "catalog.db"  # katalog (sofascore_scraper/store/catalog.py): DATA_DIR/.meta/catalog.db
 _SQLITE_FILES = (_STATE_DB, _CATALOG_DB)
 
 
@@ -295,7 +295,7 @@ def _tree_digest() -> dict:
     """
     Veri ve yapılandırma dosyalarının içerik özeti (kilit dosyaları hariç).
 
-    İş deposu state.db WAL kipinde bir SQLite dosyasıdır (src/store/state.py). Baytları değil mantıksal
+    İş deposu state.db WAL kipinde bir SQLite dosyasıdır (sofascore_scraper/store/state.py). Baytları değil mantıksal
     içeriği özetlenir: WAL'da kayıt varken salt okunur bir bağlantı bile `state.db-shm` dizinine okuyucu
     işareti yazar (ör. GET /api/diagnostics), bir checkpoint de satırları değiştirmeden `state.db-wal`'dan
     ana dosyaya taşır. Böylece iş deposuna satır yazan bir GET yakalanır, SQLite'ın kendi defter tutması
@@ -560,7 +560,7 @@ def test_one_warning_when_exposed_without_a_token(monkeypatch, hosts_env, caplog
 
 
 def test_the_warning_is_printed_even_when_the_log_level_hides_it(monkeypatch, hosts_env, capsys):
-    from src.cli.commands import serve
+    from sofascore_scraper.cli.commands import serve
 
     monkeypatch.setattr(serve.logger, "isEnabledFor", lambda level: False)
     code, _ = _run_web(monkeypatch, ["--host", "192.168.1.5"])
@@ -598,7 +598,7 @@ def test_with_a_token_every_api_route_needs_it(token, method, path):
         return
     assert r.status_code == 401
     if path.startswith("/api/v1/"):
-        # v1 hata modeli (src/web/errors.py): kod `unauthorized`; eski yolların gövdesi değişmedi
+        # v1 hata modeli (sofascore_scraper/web/errors.py): kod `unauthorized`; eski yolların gövdesi değişmedi
         error = r.json()["error"]
         assert (error["code"], error["message"], error["details"]) == ("unauthorized", "An access token is required.", None)
     else:
@@ -620,7 +620,7 @@ def test_token_check_uses_the_routed_path_not_the_url_built_from_the_host_header
 
     from starlette.requests import Request
 
-    from src.web.app import security_boundary
+    from sofascore_scraper.web.app import security_boundary
 
     reached = []
 
@@ -781,7 +781,7 @@ def test_token_comparison_is_constant_time(token, monkeypatch):
     assert len(seen) == 3
     assert all(isinstance(a, bytes) and isinstance(b, bytes) for a, b in seen)
     # Kaynakta == ile karşılaştırma yok
-    source = (REPO / "src" / "web" / "security.py").read_text(encoding="utf-8")
+    source = (REPO / "sofascore_scraper" / "web" / "security.py").read_text(encoding="utf-8")
     assert "== token" not in source and "token ==" not in source
 
 
@@ -848,7 +848,7 @@ def test_token_is_a_masked_setting(monkeypatch):
         redact.refresh()
     # Ayarlar API'si belirteci ne okur ne yazar
     assert "token" not in json.dumps(client.get("/api/settings").json()).lower()
-    from src.web.api.legacy import SettingsUpdate
+    from sofascore_scraper.web.api.legacy import SettingsUpdate
 
     assert not [name for name in SettingsUpdate.model_fields if "token" in name]
 
@@ -1166,7 +1166,7 @@ def test_browser_profile_directory_is_created_private(tmp_path):
 @posix_only
 def test_the_app_and_the_cli_tighten_permissions_at_startup():
     # main.py bunu terminal menüsü dalında yapardı (P26 kaldırdı); CLI, komutların bağlamını kurarken yapar
-    for name in ("src/web/app.py", "src/cli/commands/sync.py"):
+    for name in ("sofascore_scraper/web/app.py", "sofascore_scraper/cli/commands/sync.py"):
         text = (REPO / name).read_text(encoding="utf-8")
         assert re.search(r"^\s*harden_secret_paths\(\)$", text, flags=re.M), name
     install = (REPO / "scripts" / "install.sh").read_text(encoding="utf-8")

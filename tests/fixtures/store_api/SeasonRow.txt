@@ -1,5 +1,5 @@
-# src.store.SeasonRow
-# kaynak: src/store/entities.py
+# sofascore_scraper.store.SeasonRow
+# kaynak: sofascore_scraper/store/entities.py
 @dataclass(frozen=True)
 class SeasonRow:
     id: int

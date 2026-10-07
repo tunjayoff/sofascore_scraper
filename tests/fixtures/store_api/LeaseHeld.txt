@@ -1,5 +1,5 @@
-# src.store.LeaseHeld
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.LeaseHeld
+# kaynak: sofascore_scraper/store/errors.py
 class LeaseHeld(StoreError):
     default_message = ...
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None, errno_code: Optional[int] = None, detail: str = '', *, name: str = '', pid: Optional[int] = None, host: Optional[str] = None, purpose: str = '', started_at: Optional[float] = None)

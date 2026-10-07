@@ -1,5 +1,5 @@
-# Connection: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
-# kaynak: src/store/sqlite.py
+# Connection: sofascore_scraper.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: sofascore_scraper/store/sqlite.py
 class Connection(sqlite3.Connection):
     def close(self) -> None
     def __del__(self) -> None

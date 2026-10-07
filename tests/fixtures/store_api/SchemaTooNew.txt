@@ -1,5 +1,5 @@
-# src.store.SchemaTooNew
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.SchemaTooNew
+# kaynak: sofascore_scraper/store/errors.py
 class SchemaTooNew(StoreError):
     default_message = ...
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None, errno_code: Optional[int] = None, detail: str = '', *, component: str = '', found: Optional[int] = None, supported: Optional[int] = None)

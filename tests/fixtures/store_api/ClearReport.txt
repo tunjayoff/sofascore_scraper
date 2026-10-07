@@ -1,5 +1,5 @@
-# src.store.ClearReport
-# kaynak: src/store/api.py
+# sofascore_scraper.store.ClearReport
+# kaynak: sofascore_scraper/store/api.py
 @dataclass(frozen=True)
 class ClearReport:
     scopes: Tuple[str, ...]

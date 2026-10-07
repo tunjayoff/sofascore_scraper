@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import src.utils as utils
+import sofascore_scraper.utils as utils
 
 
 def test_sync_request_does_not_retry_404():

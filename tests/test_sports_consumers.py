@@ -1,4 +1,4 @@
-"""Kayıt defterini (src/sports.py) okuyan modüller: lig sporları, skor çıkarımı, izleyici, indirici."""
+"""Kayıt defterini (sofascore_scraper/sports.py) okuyan modüller: lig sporları, skor çıkarımı, izleyici, indirici."""
 import contextlib
 import dataclasses
 from unittest.mock import MagicMock, patch
@@ -6,12 +6,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src import sports, watcher
-from src.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, MatchDataFetcher
-from src.sports import DetailSlice
-from src.status import BasketballScores, FootballScores, ScoreSheet, TennisScores, extract_scores
-from src.web import league_sports
-from src.web.app import app
+from sofascore_scraper import sports, watcher
+from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, MatchDataFetcher
+from sofascore_scraper.sports import DetailSlice
+from sofascore_scraper.status import BasketballScores, FootballScores, ScoreSheet, TennisScores, extract_scores
+from sofascore_scraper.web import league_sports
+from sofascore_scraper.web.app import app
 
 REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-rules", "ice-hockey", "handball",
               "rugby", "futsal", "minifootball", "floorball",  # SP-1: + sekiz periyot sporu
@@ -67,7 +67,7 @@ def test_watcher_constants_keep_their_values():
 
 def test_every_registered_near_end_rule_is_implemented():
     for spec in sports.SPORTS:
-        # "never": kural yok (src/sports.py NearEndRule); SP-1'de saat verisi olmayan sporlar
+        # "never": kural yok (sofascore_scraper/sports.py NearEndRule); SP-1'de saat verisi olmayan sporlar
         assert spec.watcher.near_end_rule == "never" or spec.watcher.near_end_rule in watcher._NEAR_END_RULES
 
 
@@ -124,7 +124,7 @@ def _basic(sport: str) -> dict:
 @contextlib.contextmanager
 def _api(sport: str, calls: list):
     """
-    İstek katmanının sahtesi (boru hattının istemcisi src.client.transport'u çağırır): /event/42 maçı, dilimler boş
+    İstek katmanının sahtesi (boru hattının istemcisi sofascore_scraper.client.transport'u çağırır): /event/42 maçı, dilimler boş
     nesne; oturum ısınmasız. `calls` /event/42'den sonraki yol parçalarıyla dolar.
     """
     basic = _basic(sport)
@@ -137,7 +137,7 @@ def _api(sport: str, calls: list):
     async def session():
         yield MagicMock()
 
-    with patch("src.utils.make_api_request_async", new=fake), patch("src.utils.create_session_async", session):
+    with patch("sofascore_scraper.utils.make_api_request_async", new=fake), patch("sofascore_scraper.utils.create_session_async", session):
         yield
 
 

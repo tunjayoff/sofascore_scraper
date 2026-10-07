@@ -22,13 +22,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src.jobs.manager import JobManager, JobOutcome
-from src.jobs.model import JobKind, Origin
-from src.services import sync as sync_service
-from src.store import FollowSpec, JobStore, Store, default_db_path, open_store
-from src.web import deps
-from src.web.api.v1 import jobs as jobs_v1
-from src.web.app import app
+from sofascore_scraper.jobs.manager import JobManager, JobOutcome
+from sofascore_scraper.jobs.model import JobKind, Origin
+from sofascore_scraper.services import sync as sync_service
+from sofascore_scraper.store import FollowSpec, JobStore, Store, default_db_path, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.api.v1 import jobs as jobs_v1
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 

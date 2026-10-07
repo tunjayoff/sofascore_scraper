@@ -1,17 +1,17 @@
 """
-Yeni CLI'nin iskeleti (src/cli; plan maddesi P18, docs/design/02-services.md bölüm 4).
+Yeni CLI'nin iskeleti (sofascore_scraper/cli; plan maddesi P18, docs/design/02-services.md bölüm 4).
 
 Gruplar:
 
-  hata tablosu      src/errors.py: her kodun sınıfı, çıkış kodu ve HTTP durumu tasarımdaki tabloyla aynı; her
+  hata tablosu      sofascore_scraper/errors.py: her kodun sınıfı, çıkış kodu ve HTTP durumu tasarımdaki tabloyla aynı; her
                     PlatformError alt sınıfının bir satırı var; devralınan sınıflar doğru koda bağlanıyor
-  çıkış kodları     src/cli/exit_codes.py: tablo, öncelik
+  çıkış kodları     sofascore_scraper/cli/exit_codes.py: tablo, öncelik
   çıktı kuralları   JSON zarfı, metin kipi, stdout / stderr ayrımı
   komutlar          version, doctor, config show|validate|init|path, diagnostics: her biri için zarf ve çıkış
                     kodu (describe: tests/test_cli_describe.py)
   genel bayraklar   komuttan önce ve sonra; --lang; --config / --data-dir göreli yolları
   kayıt             komut modülleri kendini kaydeder
-  log               src/logger.py: konsol akışı seçimi; yeni CLI'de log satırları stderr'de
+  log               sofascore_scraper/logger.py: konsol akışı seçimi; yeni CLI'de log satırları stderr'de
 
 Komutların çoğu aynı süreçte, `main()` çağrılarak sınanır (kapsam ölçümü alt süreçleri görmez); akış ayrımı,
 çalışma dizini ve "paketler kurulmadan da çalışır" kuralı gerçek bir alt süreçte sınanır. Alt süreç G-03
@@ -37,21 +37,21 @@ from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Seque
 import pytest
 
 import conftest
-from src import doctor, errors
-from src import logger as app_logger
-from src.cli import PROG, VERSION_TEXT, exit_codes, output
-from src.cli import commands as registry
-from src.cli import main as cli_main
-from src.cli.commands import meta
-from src.cli.output import CliWarning, CommandResult, Output
-from src.config import loader
-from src.exceptions import ConfigError as LegacyConfigError
-from src.exceptions import StorageError
-from src.sports import sport_slugs
-from src.version import __version__
+from sofascore_scraper import doctor, errors
+from sofascore_scraper import logger as app_logger
+from sofascore_scraper.cli import PROG, VERSION_TEXT, exit_codes, output
+from sofascore_scraper.cli import commands as registry
+from sofascore_scraper.cli import main as cli_main
+from sofascore_scraper.cli.commands import meta
+from sofascore_scraper.cli.output import CliWarning, CommandResult, Output
+from sofascore_scraper.config import loader
+from sofascore_scraper.exceptions import ConfigError as LegacyConfigError
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.sports import sport_slugs
+from sofascore_scraper.version import __version__
 
 REPO = Path(__file__).resolve().parents[1]
-CLI_SOURCES = sorted((REPO / "src" / "cli").rglob("*.py"))
+CLI_SOURCES = sorted((REPO / "sofascore_scraper" / "cli").rglob("*.py"))
 
 # docs/design/02-services.md bölüm 2.6: kod -> (sınıf, çıkış kodu, HTTP durumları)
 DESIGN_ERROR_TABLE: Dict[str, Any] = {
@@ -225,7 +225,7 @@ class Sandbox:
         return env
 
     def run(self, *args: str, code: Optional[str] = None, **extra_env: str) -> Run:
-        command = [sys.executable, "-c", code] if code is not None else [sys.executable, "-m", "src.cli.main"]
+        command = [sys.executable, "-c", code] if code is not None else [sys.executable, "-m", "sofascore_scraper.cli.main"]
         proc = subprocess.run(
             [*command, *args], cwd=self.cwd, env=self.environ(**extra_env), capture_output=True, timeout=120,
         )
@@ -334,7 +334,7 @@ def test_cancelled_knows_its_signal():
 
 
 def _lease_held(name: str, purpose: str = "") -> Exception:
-    from src.store import LeaseHeld
+    from sofascore_scraper.store import LeaseHeld
 
     return LeaseHeld("kilit alınamadı", name=name, pid=4121, host="box", purpose=purpose, started_at=1790877602.0)
 
@@ -357,7 +357,7 @@ def test_a_held_lease_becomes_the_running_code_of_its_name(name, purpose, code):
 
 
 def test_a_held_lease_without_holder_fields_still_maps():
-    from src.store import LeaseHeld
+    from sofascore_scraper.store import LeaseHeld
 
     error = errors.to_platform_error(LeaseHeld(name="writer"))
     assert error.code == "job_running"
@@ -365,7 +365,7 @@ def test_a_held_lease_without_holder_fields_still_maps():
 
 
 def test_existing_exceptions_are_mapped_to_their_codes():
-    from src.store import DataOperationRunningError, FollowExists, FollowManaged, JobRunningError, StoreBusy
+    from sofascore_scraper.store import DataOperationRunningError, FollowExists, FollowManaged, JobRunningError, StoreBusy
 
     def code(exc: BaseException) -> str:
         return errors.to_platform_error(exc).code
@@ -554,13 +554,13 @@ def test_version_flag_is_one_line(cli):
 
 
 def _store_versions() -> Dict[str, int]:
-    from src.store import CATALOG_SCHEMA, LAYOUT_VERSION, load_migrations
+    from sofascore_scraper.store import CATALOG_SCHEMA, LAYOUT_VERSION, load_migrations
 
     return {"layout": LAYOUT_VERSION, "catalog": CATALOG_SCHEMA, "state": load_migrations()[-1].version}
 
 
 def test_version_command(cli):
-    from src.schema import SCHEMA_VERSION
+    from sofascore_scraper.schema import SCHEMA_VERSION
 
     store = _store_versions()
     text = cli("version")
@@ -841,7 +841,7 @@ def test_config_init_prints_a_valid_file_with_every_default(cli, tmp_path):
 
     # Her ayar satırının yorumu kaldırılınca dosya yine geçerlidir ve yine varsayılanları verir; yani yazılan
     # her değer o anahtarın gerçek varsayılanıdır ve dosyada yazılabilir
-    from src.config import settings as model
+    from sofascore_scraper.config import settings as model
 
     setting_line = re.compile(r"^# ([a-z_]+ = .+)$")
     uncommented, section, seen = [], None, set()
@@ -945,8 +945,8 @@ def test_config_init_from_legacy_keeps_the_proxy_off_when_it_is_off_today(tmp_pa
 
 def test_config_init_from_legacy_command(cli, tmp_path, monkeypatch):
     """Komut bugünkü dosyaları okur: .env, ortam, leagues.txt ve league_sports.json (test kurulumundaki lig)."""
-    from src.config_manager import ConfigManager
-    from src.web import league_sports
+    from sofascore_scraper.config_manager import ConfigManager
+    from sofascore_scraper.web import league_sports
 
     manager = ConfigManager()
     leagues = manager.get_leagues()
@@ -989,7 +989,7 @@ def test_config_init_from_legacy_only_reads(cli, tmp_path, monkeypatch):
     config_dir.mkdir()
     (config_dir / "leagues.txt").write_text(
         "\ufeff# ligler\nPremier League: 17\n8 LaLiga\nbroken line\nOld Name: 17\n", encoding="utf-8")
-    from src.config_manager import read_league_file
+    from sofascore_scraper.config_manager import read_league_file
 
     assert read_league_file(str(config_dir / "leagues.txt")) == {17: "Old Name", 8: "LaLiga"}
     run = cli("config", "init", "--from-legacy", "--json")
@@ -1012,7 +1012,7 @@ def test_diagnostics_writes_the_bundle_relative_to_where_the_command_was_run(cli
 
 
 def test_diagnostics_that_cannot_be_written_is_a_storage_error(cli, tmp_path, monkeypatch):
-    from src import diagnostics
+    from sofascore_scraper import diagnostics
 
     def refuse(path, source="cli"):
         raise OSError(28, "No space left on device", path)
@@ -1205,7 +1205,7 @@ def test_language_of_the_config_file_applies_to_the_text_of_commands_that_load_i
 def test_help_names_every_sport_and_not_only_football(cli):
     run = cli("--help")
     assert run.exit_code == 0 and run.stderr == ""
-    assert f"match data ({', '.join(sport_slugs())})" in run.stdout  # src/sports.py, SP-1: 11 spor
+    assert f"match data ({', '.join(sport_slugs())})" in run.stdout  # sofascore_scraper/sports.py, SP-1: 11 spor
     assert "football, basketball, tennis, american-football" in run.stdout
     assert "usage: ssc [global options] [--version] COMMAND ..." in run.stdout
     for name in ("config", "describe", "diagnostics", "doctor", "version"):
@@ -1227,9 +1227,9 @@ def test_default_prog_is_the_module_form_unless_run_as_ssc(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["/venv/bin/ssc"])
     assert cli_main._default_prog() == "ssc"
     monkeypatch.setattr(sys, "argv", ["C:\\venv\\Scripts\\ssc.exe"])
-    assert cli_main._default_prog() in ("ssc", "python -m src.cli.main")  # Windows yolu yalnızca Windows'ta ayrışır
-    monkeypatch.setattr(sys, "argv", ["/repo/src/cli/main.py"])
-    assert cli_main._default_prog() == "python -m src.cli.main"
+    assert cli_main._default_prog() in ("ssc", "python -m sofascore_scraper.cli.main")  # Windows yolu yalnızca Windows'ta ayrışır
+    monkeypatch.setattr(sys, "argv", ["/repo/sofascore_scraper/cli/main.py"])
+    assert cli_main._default_prog() == "python -m sofascore_scraper.cli.main"
 
 
 # === kayıt =======================================================================================
@@ -1293,16 +1293,16 @@ def test_a_subcommand_needs_a_declared_group():
 
 def test_command_modules_register_themselves_without_a_shared_list():
     """Bu paketin altındaki her modül yüklenir: komut ekleyen iş bir dosya ekler, ortak bir dosyayı düzenlemez."""
-    shared = [REPO / "src" / "cli" / "main.py", REPO / "src" / "cli" / "commands" / "__init__.py"]
+    shared = [REPO / "sofascore_scraper" / "cli" / "main.py", REPO / "sofascore_scraper" / "cli" / "commands" / "__init__.py"]
     for path in shared:
         imports = re.findall(r"^\s*(?:from|import) .*$", path.read_text(encoding="utf-8"), re.MULTILINE)
         assert imports and not any("meta" in line for line in imports), path
-    assert sys.modules["src.cli.commands.meta"] is meta
-    modules = {path.stem for path in (REPO / "src" / "cli" / "commands").glob("*.py") if not path.stem.startswith("_")}
-    assert {f"src.cli.commands.{name}" for name in modules} <= set(sys.modules)
+    assert sys.modules["sofascore_scraper.cli.commands.meta"] is meta
+    modules = {path.stem for path in (REPO / "sofascore_scraper" / "cli" / "commands").glob("*.py") if not path.stem.startswith("_")}
+    assert {f"sofascore_scraper.cli.commands.{name}" for name in modules} <= set(sys.modules)
 
 
-# === log: akış seçimi (src/logger.py) ============================================================
+# === log: akış seçimi (sofascore_scraper/logger.py) ============================================================
 
 
 @pytest.fixture
@@ -1399,7 +1399,7 @@ def test_module_entry_point_runs_from_any_directory(box: Sandbox):
     assert (box.cwd / "bundle.zip").is_file()
     assert not LOG_LINE.search(run.stdout)
     usage = box.run("--help")
-    assert "usage: python -m src.cli.main [global options] [--version] COMMAND ..." in usage.stdout
+    assert "usage: python -m sofascore_scraper.cli.main [global options] [--version] COMMAND ..." in usage.stdout
 
 
 def test_a_broken_config_in_a_real_process_has_no_traceback(box: Sandbox):
@@ -1425,7 +1425,7 @@ def test_doctor_and_version_create_no_files(box: Sandbox):
 def test_a_reader_that_goes_away_ends_the_command_quietly(box: Sandbox):
     """`ssc describe | head` gibi: okuyan süreç kapanınca iz dökümü ya da "Exception ignored" yazılmaz."""
     proc = subprocess.Popen(
-        [sys.executable, "-m", "src.cli.main", "describe"], cwd=box.cwd, env=box.environ(),
+        [sys.executable, "-m", "sofascore_scraper.cli.main", "describe"], cwd=box.cwd, env=box.environ(),
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     assert proc.stdout is not None and proc.stderr is not None
@@ -1451,7 +1451,7 @@ class Block:
 
 
 sys.meta_path.insert(0, Block())
-from src.cli.main import main
+from sofascore_scraper.cli.main import main
 
 code = main(sys.argv[1:])
 loaded = sorted(name for name in sys.modules if name.split(".")[0] in BLOCKED)
@@ -1482,14 +1482,14 @@ def test_version_and_doctor_work_before_the_packages_are_installed(box: Sandbox)
 
 def test_importing_the_cli_loads_no_heavy_module(box: Sandbox):
     code = (
-        "import sys, json; import src.cli.main; from src.cli import commands; commands.load();"
-        "print(json.dumps(sorted(name for name in sys.modules if name == 'src' or name.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.cli.main; from sofascore_scraper.cli import commands; commands.load();"
+        "print(json.dumps(sorted(name for name in sys.modules if name == 'sofascore_scraper' or name.startswith('sofascore_scraper.'))))"
     )
     run = box.run(code=code)
     assert run.exit_code == 0, run.stderr
     loaded = json.loads(run.stdout)
-    assert {"src.cli.main", "src.cli.commands.meta", "src.errors"} <= set(loaded)
+    assert {"sofascore_scraper.cli.main", "sofascore_scraper.cli.commands.meta", "sofascore_scraper.errors"} <= set(loaded)
     # CLI'nin kendi modülleri dışında yalnızca saf, standart kütüphaneyle yetinen modüller: log (rich), ayar
     # yükleyici (dotenv), istek katmanı ve Store komut çalışırken yüklenir. Yeni bir komut modülü de buna uyar.
-    light = {"src", "src.errors", "src.exceptions", "src.language", "src.sports", "src.version"}
-    assert [name for name in loaded if not name.startswith("src.cli") and name not in light] == []
+    light = {"sofascore_scraper", "sofascore_scraper.errors", "sofascore_scraper.exceptions", "sofascore_scraper.language", "sofascore_scraper.sports", "sofascore_scraper.version"}
+    assert [name for name in loaded if not name.startswith("sofascore_scraper.cli") and name not in light] == []

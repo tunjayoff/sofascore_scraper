@@ -1,5 +1,5 @@
-# src.store.LeaseInfo
-# kaynak: src/store/lease.py
+# sofascore_scraper.store.LeaseInfo
+# kaynak: sofascore_scraper/store/lease.py
 @dataclass(frozen=True)
 class LeaseInfo:
     name: str

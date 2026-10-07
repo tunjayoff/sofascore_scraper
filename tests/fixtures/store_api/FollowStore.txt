@@ -1,5 +1,5 @@
-# src.store.FollowStore
-# kaynak: src/store/follows.py
+# sofascore_scraper.store.FollowStore
+# kaynak: sofascore_scraper/store/follows.py
 class FollowStore:
     def __init__(self, store: Store) -> None
     def list(self, *, kind: Optional[str] = None, enabled: Optional[bool] = None, origin: Optional[str] = None) -> List[Follow]

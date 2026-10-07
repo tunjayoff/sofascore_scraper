@@ -1,5 +1,5 @@
-# src.store.Follow
-# kaynak: src/store/follows.py
+# sofascore_scraper.store.Follow
+# kaynak: sofascore_scraper/store/follows.py
 @dataclass(frozen=True)
 class Follow:
     id: int

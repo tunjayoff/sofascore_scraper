@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import push_channel_run as pcr  # noqa: E402
 from _all_sports_patterns import SOFA_HOST  # noqa: E402
 
-import src.challenge_solver as cs  # noqa: E402
+import sofascore_scraper.challenge_solver as cs  # noqa: E402
 
 ALLOWED_THIRD = ("challenges.cloudflare.com",)
 CANDIDATES = [

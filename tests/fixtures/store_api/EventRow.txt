@@ -1,5 +1,5 @@
-# src.store.EventRow
-# kaynak: src/store/events.py
+# sofascore_scraper.store.EventRow
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class EventRow:
     id: int

@@ -6,12 +6,12 @@ Eskiden reddedilen bir /event isteği 404 "Match data could not be fetched (may 
 dilimlerin hepsinin reddedilmesi de hiçbir dilim kaydedilmeden 200 "success" oluyordu: MatchDataFetcher'ın tek
 maç yolu "maç yok" ile "istek başarısız"ı aynı None'a indirgiyordu. Artık yol her isteğin sonucunu bir rapora
 yazar (SingleFetchReport) ve uç nokta lig araması ile sezon yenilemenin kullandığı tipli hatayı verir
-(src/web/upstream.py: {"detail": {"reason", "message"}}).
+(sofascore_scraper/web/upstream.py: {"detail": {"reason", "message"}}).
 
 Veri dizinine yazan biri varken (bu sürecin işi ya da `writer` kilidini tutan başka bir süreç) çekim
 409 `job_running` ile reddedilir; eskiden yalnızca bu sürecin işi görülüyordu.
 
-P13'ten beri uç nokta boru hattıyla (src/services/pipeline.py) ve kendi devre kesicisiyle çeker; rapor boru
+P13'ten beri uç nokta boru hattıyla (sofascore_scraper/services/pipeline.py) ve kendi devre kesicisiyle çeker; rapor boru
 hattının sonucudur (ItemResult.upstream_failure, aynı kural). Oturum ısınması (ana sayfa) istek sayılarına girmez.
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı gerçektir. Adım adım
@@ -32,8 +32,8 @@ from fastapi.testclient import TestClient
 import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src import bridge_health
-from src.exceptions import (
+from sofascore_scraper import bridge_health
+from sofascore_scraper.exceptions import (
     APIError,
     CircuitOpenError,
     DataParsingError,
@@ -42,9 +42,9 @@ from src.exceptions import (
     SofaScoreScraperError,
     StorageError,
 )
-from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, MatchDataFetcher, SingleFetchReport, SliceOutcome
-from src.web import deps, upstream
-from src.web.jobs import JobStore, default_db_path
+from sofascore_scraper.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, MatchDataFetcher, SingleFetchReport, SliceOutcome
+from sofascore_scraper.web import deps, upstream
+from sofascore_scraper.web.jobs import JobStore, default_db_path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -88,7 +88,7 @@ def client(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> I
 
 
 def _client(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     monkeypatch.setattr(deps, "job_store", lambda: store)
     try:
@@ -267,7 +267,7 @@ def test_a_storage_error_is_not_reported_as_an_upstream_block(
     fake: FakeSofaScore, client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Eskiden metninde "403" ya da "rate" geçen her hata 429 "SofaScore rate limit or block" oluyordu."""
-    import src.services.pipeline as pipeline
+    import sofascore_scraper.services.pipeline as pipeline
 
     def fail_to_save(*args: Any, **kwargs: Any) -> None:
         raise StorageError("disk full: /data/17_Emirates_Cup/9100403")
@@ -297,7 +297,7 @@ def test_a_storage_error_is_not_reported_as_an_upstream_block(
     ids=lambda error: f"{type(error).__name__}-{getattr(error, 'status_code', None)}",
 )
 def test_reason_of_an_outcome_matches_the_reason_of_its_error(error: SofaScoreScraperError) -> None:
-    from src.web.api.legacy import _single_fetch_reason
+    from sofascore_scraper.web.api.legacy import _single_fetch_reason
 
     outcome = SliceOutcome.from_error(error)
 
@@ -330,7 +330,7 @@ def test_report_failure_rules() -> None:
 # --- çekici: rapor yalnızca istenirse tutulur ----------------------------------------------------
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.deps import config_manager as _web_config
+    from sofascore_scraper.web.deps import config_manager as _web_config
     config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
@@ -399,7 +399,7 @@ JOB_RUNNING = {
 # yazar ve stdin'den bir satır gelene kadar tutar
 HOLDER = """
 import sys
-from src.store import open_store
+from sofascore_scraper.store import open_store
 lease = open_store(sys.argv[1]).lease(sys.argv[2], purpose=sys.argv[3])
 print("ready", flush=True)
 sys.stdin.readline()

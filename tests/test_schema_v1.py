@@ -39,11 +39,11 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 import pytest
 
 import store_fixtures as sf
-from src import schema
-from src.refresh import DEFAULT_REFRESH_WINDOW_HOURS
-from src.schema import jsonschema as schema_doc
-from src.schema import mappers, models
-from src.sports import (
+from sofascore_scraper import schema
+from sofascore_scraper.refresh import DEFAULT_REFRESH_WINDOW_HOURS
+from sofascore_scraper.schema import jsonschema as schema_doc
+from sofascore_scraper.schema import mappers, models
+from sofascore_scraper.sports import (
     SPORTS,
     PeriodFormat,
     ScoreFamily,
@@ -52,8 +52,8 @@ from src.sports import (
     score_family,
     set_format,
 )
-from src.status import StatusClass, classify_status
-from src.store import (
+from sofascore_scraper.status import StatusClass, classify_status
+from sofascore_scraper.store import (
     ChangeRow,
     EventQuery,
     EventRow,
@@ -65,8 +65,8 @@ from src.store import (
     derive,
     open_store,
 )
-from src.store import SliceError as StoreSliceError
-from src.store.indexer import CatalogAdmin
+from sofascore_scraper.store import SliceError as StoreSliceError
+from sofascore_scraper.store.indexer import CatalogAdmin
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
@@ -74,7 +74,7 @@ GOLDEN_DIR = Path(__file__).parent / "golden" / "schema"
 INPUTS = sorted((GOLDEN_DIR / "inputs").glob("*.json"))
 PATHS = sorted(FIXTURES.glob("*/*.json"))
 DOC = ROOT / "docs" / "design" / "04-schema-v1.md"
-PACKAGE = ROOT / "src" / "schema"
+PACKAGE = ROOT / "sofascore_scraper" / "schema"
 
 REGEN = os.getenv("REGEN_SCHEMA_GOLDEN") == "1"
 REGEN_DOC = os.getenv("REGEN_SCHEMA_DOC") == "1"
@@ -267,7 +267,7 @@ def test_version_and_ids():
 
 
 def _imports(path: Path) -> List[Tuple[int, str, bool]]:
-    """Dosyadaki `src.*` içe aktarmaları: (satır, modül, yalnızca tür denetimi için mi)."""
+    """Dosyadaki `sofascore_scraper.*` içe aktarmaları: (satır, modül, yalnızca tür denetimi için mi)."""
     tree = ast.parse(path.read_text(encoding="utf-8"))
     typing_only = set()
     for node in ast.walk(tree):
@@ -275,35 +275,35 @@ def _imports(path: Path) -> List[Tuple[int, str, bool]]:
             typing_only.update(id(child) for body in node.body for child in ast.walk(body))
     found = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("src"):
+        if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("sofascore_scraper"):
             found.append((node.lineno, node.module, id(node) in typing_only))
         elif isinstance(node, ast.Import):
             found.extend((node.lineno, alias.name, id(node) in typing_only)
-                         for alias in node.names if alias.name.startswith("src"))
+                         for alias in node.names if alias.name.startswith("sofascore_scraper"))
     return found
 
 
 def test_package_imports_only_domain_modules():
     """Alan modülleri kendilerinden yukarıdaki hiçbir şeyi içe aktarmaz (02-services.md 2.1, madde 4)."""
-    allowed = ("src.schema", "src.sports", "src.status", "src.refresh")
+    allowed = ("sofascore_scraper.schema", "sofascore_scraper.sports", "sofascore_scraper.status", "sofascore_scraper.refresh")
     runtime = [(path.name, line, module) for path in sorted(PACKAGE.glob("*.py"))
                for line, module, typing_only in _imports(path) if not typing_only]
     assert runtime, "the package imports nothing?"
     assert [item for item in runtime if not item[2].startswith(allowed)] == []
-    # src.store yalnızca tür denetimi için anılır
+    # sofascore_scraper.store yalnızca tür denetimi için anılır
     hinted = {module for path in PACKAGE.glob("*.py") for _line, module, typing_only in _imports(path) if typing_only}
-    assert hinted == {"src.store"}
+    assert hinted == {"sofascore_scraper.store"}
 
 
 def test_importing_the_package_loads_no_store_and_no_io_module():
-    code = ("import sys, json; import src.schema; "
-            "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.') "
+    code = ("import sys, json; import sofascore_scraper.schema; "
+            "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.') "
             "or m in ('sqlite3', 'requests', 'curl_cffi', 'fastapi'))))")
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, env=env, capture_output=True, text=True, check=True)
     assert json.loads(out.stdout) == [
-        "src", "src.refresh", "src.schema", "src.schema.jsonschema", "src.schema.mappers", "src.schema.models",
-        "src.sports", "src.status",
+        "sofascore_scraper", "sofascore_scraper.refresh", "sofascore_scraper.schema", "sofascore_scraper.schema.jsonschema", "sofascore_scraper.schema.mappers", "sofascore_scraper.schema.models",
+        "sofascore_scraper.sports", "sofascore_scraper.status",
     ]
 
 
@@ -418,7 +418,7 @@ def _expected_pair(home: Mapping[str, Any], away: Mapping[str, Any], key: str) -
 
 def _expected_score(event: Mapping[str, Any], sport: str) -> Dict[str, Any]:
     """
-    Skor, belgedeki "Source" sütunundaki yollardan yeniden hesaplanır: src.status ve src.store.derive'dan
+    Skor, belgedeki "Source" sütunundaki yollardan yeniden hesaplanır: sofascore_scraper.status ve sofascore_scraper.store.derive'dan
     bağımsız ikinci bir okuma. Eşleyici zinciri (yük → derive → şema) bununla aynı sonucu vermelidir.
     """
     home, away = event.get("homeScore") or {}, event.get("awayScore") or {}
@@ -934,7 +934,7 @@ def test_change_without_a_readable_line_keeps_the_index_columns():
                                 {"path": "winnerCode", "old": None, "new": None}]
     assert (record["start_utc"], record["seconds_after_start"], record["tier_hint"]) == (None, None, None)
     assert check(record, "Change") == []
-    # SofaScore değişiklik anı vermediyse ölçü, değişikliğin görüldüğü andır (src/refresh.change_row)
+    # SofaScore değişiklik anı vermediyse ölçü, değişikliğin görüldüğü andır (sofascore_scraper/refresh.change_row)
     timed = dataclasses.replace(row, row={"start_ts": 1790856000 - 600, "new_change_ts": 0, "old_change_ts": 0})
     assert schema.change_from_row(timed).seconds_after_start == 600
     assert schema.change_from_row(timed).new_change_ts is None
@@ -1048,7 +1048,7 @@ def test_schema_types_by_hand():
     assert defs["Sport"]["properties"]["score_family"] == {
         "type": ["string", "null"], "examples": ["football", "periods", "sets", "innings", "cricket", "fight"],
         "description": defs["Sport"]["properties"]["score_family"]["description"],
-        "x-source": "sport registry (`src/sports.py`)",
+        "x-source": "sport registry (`sofascore_scraper/sports.py`)",
     }
 
 

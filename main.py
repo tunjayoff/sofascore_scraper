@@ -4,7 +4,7 @@ SofaScore Scraper'ın eski giriş noktası; 3.0 boyunca bir geçiş kabuğudur (
 maddesi P19).
 
     python main.py <komut> [seçenekler]     yeni CLI'nin kendisi (`ssc <komut>` ile aynı): sync, status, ...
-    python main.py <eski bayraklar>         yeni komutlara çevrilir (src/cli/legacy_flags.py); stderr'e tek bir
+    python main.py <eski bayraklar>         yeni komutlara çevrilir (sofascore_scraper/cli/legacy_flags.py); stderr'e tek bir
                                             kullanımdan kalkma satırı yazılır
     python main.py --web ...                `ssc serve` olarak çalışır (P25; kullanımdan kalkma satırıyla)
     python main.py                          kısa yardım: terminal menüsü 3.0'da kaldırıldı (P26); web arayüzü
@@ -16,7 +16,7 @@ loglar stderr'de; çıkış kodları 0 başarı, 2 kullanım ya da yapılandırm
 engelledi (devre kesici), 5 depolama hatası, 6 veri dizini başka bir sürecin kilidinde, 130 / 143 Ctrl+C /
 SIGTERM ile iptal.
 
-Bu modül yüklenirken yalnızca standart kütüphaneyi ve src/version.py'yi içe aktarır: ağır modüller (ayarlar,
+Bu modül yüklenirken yalnızca standart kütüphaneyi ve sofascore_scraper/version.py'yi içe aktarır: ağır modüller (ayarlar,
 log, istek katmanı) yalnızca onları kullanan dalda yüklenir.
 """
 
@@ -27,7 +27,7 @@ import os
 import sys
 from typing import Any, Iterator, List, Optional, Sequence
 
-from src.version import __version__
+from sofascore_scraper.version import __version__
 
 VERSION_TEXT = f"SofaScore Scraper {__version__}"
 # Yeni CLI'nin hata ve yardım metinlerinde görünen komut adı
@@ -49,8 +49,8 @@ _VALUE_OPTIONS = frozenset({
 
 
 def get_i18n() -> Any:
-    """Uygulamanın çeviri nesnesi (src/i18n.py); eski bayrakların yardım ve kullanım metinleri için."""
-    from src.i18n import get_i18n as app_i18n
+    """Uygulamanın çeviri nesnesi (sofascore_scraper/i18n.py); eski bayrakların yardım ve kullanım metinleri için."""
+    from sofascore_scraper.i18n import get_i18n as app_i18n
 
     return app_i18n()
 
@@ -60,9 +60,9 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     Eski bayrakları ayrıştırır (`--help` bu listeyi yazar). Yeni komutlar `python main.py <komut> --help` ile
     görülür.
     """
-    from src.sports import sport_slugs
+    from sofascore_scraper.sports import sport_slugs
 
-    # Yardım metinleri locales/*.json'dan gelir (dil kuralı: src/language.py). argparse bunları
+    # Yardım metinleri locales/*.json'dan gelir (dil kuralı: sofascore_scraper/language.py). argparse bunları
     # %-biçimlendirir: çevirilerde yalın "%" olmamalı (tests/test_language.py denetler).
     t = get_i18n().t
     parser = argparse.ArgumentParser(
@@ -141,7 +141,7 @@ def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
 def _command_names() -> frozenset:
     """Yeni CLI'nin üst düzey komut ve grup adları (komut modülleri kendini kaydeder; hafif)."""
-    from src.cli import commands as registry
+    from sofascore_scraper.cli import commands as registry
 
     return frozenset(entry.path[0] for entry in [*registry.commands(), *registry.groups()])
 
@@ -178,18 +178,18 @@ def _restored_process() -> Iterator[None]:
     """
     cwd, environ = os.getcwd(), dict(os.environ)
     level = logging.getLogger().level
-    log_module = sys.modules.get("src.logger")
+    log_module = sys.modules.get("sofascore_scraper.logger")
     stream = log_module.console_stream() if log_module is not None else "stdout"
     log_format = log_module.log_format() if log_module is not None else "text"
     try:
         yield
     finally:
-        loader = sys.modules.get("src.config.loader")
+        loader = sys.modules.get("sofascore_scraper.config.loader")
         if loader is not None:
             loader.reset()
         os.environ.clear()
         os.environ.update(environ)
-        log_module = sys.modules.get("src.logger")
+        log_module = sys.modules.get("sofascore_scraper.logger")
         if log_module is not None:
             log_module.set_console_stream(stream)
             log_module.set_log_format(log_format)
@@ -198,8 +198,8 @@ def _restored_process() -> Iterator[None]:
 
 
 def run_new_cli(argv: Sequence[str]) -> int:
-    """Yeni CLI'yi bu süreçte çalıştırır (src/cli/main.py) ve çıkış kodunu döndürür."""
-    from src.cli.main import main as cli_main
+    """Yeni CLI'yi bu süreçte çalıştırır (sofascore_scraper/cli/main.py) ve çıkış kodunu döndürür."""
+    from sofascore_scraper.cli.main import main as cli_main
 
     with _restored_process():
         return int(cli_main(list(argv), prog=PROG))
@@ -207,8 +207,8 @@ def run_new_cli(argv: Sequence[str]) -> int:
 
 def _say_deprecated(commands: Sequence[Sequence[str]], warnings: Sequence[str] = ()) -> None:
     """Kullanımdan kalkma satırı (ve çevirinin uyarıları) stderr'e; dil uygulamanınkidir."""
-    from src.cli import legacy_flags
-    from src.cli.main import translator
+    from sofascore_scraper.cli import legacy_flags
+    from sofascore_scraper.cli.main import translator
 
     t, _lang = translator(None)
     print(legacy_flags.deprecation_line(t, NEW_PROG, commands), file=sys.stderr)
@@ -221,7 +221,7 @@ def run_legacy(argv: Sequence[str]) -> int:
     Eski bayraklar: yeni komutlara çevrilir ve sırayla çalıştırılır. Bir komut bitmezse (kullanım hatası, kilit,
     depolama hatası, iptal) sonrakiler çalışmaz; çıkış kodu, sonucu belli olanların öncelikli olanıdır.
     """
-    from src.cli import exit_codes, legacy_flags
+    from sofascore_scraper.cli import exit_codes, legacy_flags
 
     if "--doctor" in argv:
         # Seçenekleri `ssc doctor`un; doctor paketler kurulmadan da çalışır (ağır modül yüklenmez)
@@ -253,7 +253,7 @@ def run_legacy(argv: Sequence[str]) -> int:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """
     Giriş noktası. Bir alt komut yeni CLI'ye gider; eski bayraklar çevrilir. Çıkış kodu yeni CLI'nin tablosudur
-    (src/cli/exit_codes.py). Argümansız çalıştırma kısa bir yardım yazar ve 2 ile çıkar (terminal menüsü yok).
+    (sofascore_scraper/cli/exit_codes.py). Argümansız çalıştırma kısa bir yardım yazar ve 2 ile çıkar (terminal menüsü yok).
     """
     arguments = list(sys.argv[1:] if argv is None else argv)
     if arguments and is_subcommand(arguments):
@@ -270,8 +270,8 @@ def print_no_menu_help(warnings: Sequence[str] = ()) -> int:
     maddesi P26). Web arayüzünü (`ssc serve`) ve komut listesini (`ssc --help`) gösteren kısa bir yardım stderr'e
     yazılır; çıkış kodu kullanım hatasıdır (2). Hiçbir dosya ya da dizin oluşturulmaz, istek atılmaz.
     """
-    from src.cli import exit_codes
-    from src.cli.main import translator
+    from sofascore_scraper.cli import exit_codes
+    from sofascore_scraper.cli.main import translator
 
     t, _lang = translator(None)
     for warning in warnings:

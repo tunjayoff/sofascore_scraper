@@ -1,5 +1,5 @@
-# src.store.StreamEvent
-# kaynak: src/store/streams.py
+# sofascore_scraper.store.StreamEvent
+# kaynak: sofascore_scraper/store/streams.py
 @dataclass(frozen=True)
 class StreamEvent:
     type: str

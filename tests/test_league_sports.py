@@ -7,8 +7,8 @@ import os
 import tempfile
 from typing import Any, Dict, List
 
-from src.web import league_sports
-from src.web.api.legacy import _get_matches_sync, _parse_league_ids
+from sofascore_scraper.web import league_sports
+from sofascore_scraper.web.api.legacy import _get_matches_sync, _parse_league_ids
 
 
 def _cfg(root: str) -> str:

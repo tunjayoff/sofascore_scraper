@@ -8,10 +8,10 @@ import zipfile
 import pytest
 from fastapi.testclient import TestClient
 
-from src.paths import env_file_path
-from src.web import deps
-from src.web.app import FRONTEND_DIST, app
-from src.web.api import legacy as api_mod
+from sofascore_scraper.paths import env_file_path
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import FRONTEND_DIST, app
+from sofascore_scraper.web.api import legacy as api_mod
 
 client = TestClient(app)
 

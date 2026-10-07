@@ -1,5 +1,5 @@
 """
-src/store/sqlite.py: catalog.db ve state.db'nin ortak bağlantı katmanı (docs/design/01-storage.md bölüm 3.2;
+sofascore_scraper/store/sqlite.py: catalog.db ve state.db'nin ortak bağlantı katmanı (docs/design/01-storage.md bölüm 3.2;
 plan maddesi FX-3).
 
 ST-06 (catalog.py) ve ST-09 (state.py) paralel yazıldı ve her biri bağlantı kurallarının kendi kopyasını
@@ -29,13 +29,13 @@ from typing import Iterator, List, Optional, Tuple
 
 import pytest
 
-from src.exceptions import StorageError
-from src.store import CatalogCorrupt, StoreBusy, StoreError, catalog, files
-from src.store import sqlite as sq
-from src.store import state as state_mod
-from src.store.catalog import Catalog
-from src.store.indexer import BUILD_SUFFIX, CatalogAdmin
-from src.store.state import StateDb
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.store import CatalogCorrupt, StoreBusy, StoreError, catalog, files
+from sofascore_scraper.store import sqlite as sq
+from sofascore_scraper.store import state as state_mod
+from sofascore_scraper.store.catalog import Catalog
+from sofascore_scraper.store.indexer import BUILD_SUFFIX, CatalogAdmin
+from sofascore_scraper.store.state import StateDb
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -446,7 +446,7 @@ def test_new_data_directory_opened_by_both_stores_at_once(tmp_path, round_no):
 
 _CHILD = """
 import sys, time
-from src.store import sqlite as sq
+from sofascore_scraper.store import sqlite as sq
 path, start_at, synchronous = sys.argv[1], float(sys.argv[2]), sys.argv[3]
 time.sleep(max(0.0, start_at - time.time()))
 conn = sq.connect(path)
@@ -607,7 +607,7 @@ def test_one_of_several_racing_creators_creates_the_file(tmp_path):
 
 _WRITING_CHILD = """
 import sys, time
-from src.store import sqlite as sq
+from sofascore_scraper.store import sqlite as sq
 path, start_at, number = sys.argv[1], float(sys.argv[2]), int(sys.argv[3])
 time.sleep(max(0.0, start_at - time.time()))
 conn = sq.connect(path)
@@ -1077,9 +1077,9 @@ def test_module_loads_only_the_error_classes():
     import json
 
     code = (
-        "import sys, json; import src.store.sqlite; "
-        "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
+        "import sys, json; import sofascore_scraper.store.sqlite; "
+        "print(json.dumps(sorted(m for m in sys.modules if m == 'sofascore_scraper' or m.startswith('sofascore_scraper.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
 
-    assert set(json.loads(out.stdout)) == {"src", "src.exceptions", "src.store", "src.store.errors", "src.store.sqlite"}
+    assert set(json.loads(out.stdout)) == {"sofascore_scraper", "sofascore_scraper.exceptions", "sofascore_scraper.store", "sofascore_scraper.store.errors", "sofascore_scraper.store.sqlite"}

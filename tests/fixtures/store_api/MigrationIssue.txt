@@ -1,5 +1,5 @@
-# src.store.MigrationIssue
-# kaynak: src/store/migrate.py
+# sofascore_scraper.store.MigrationIssue
+# kaynak: sofascore_scraper/store/migrate.py
 @dataclass(frozen=True)
 class MigrationIssue:
     kind: str

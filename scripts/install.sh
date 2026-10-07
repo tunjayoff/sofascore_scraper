@@ -12,7 +12,7 @@ DEFAULT_REMOTE_REPO="${SOFASCORE_SCRAPER_DEFAULT_REPO:-https://github.com/tunjay
 INSTALL_DIR="${SOFASCORE_SCRAPER_DIR:-sofascore_scraper}"
 
 # Dil: açık ayar (APP_LANGUAGE; ortamda ya da .env'de) > sistem dili (LC_ALL, LC_MESSAGES, LANG) >
-# İngilizce. Uygulamanın kuralıyla aynı (src/language.py); betik depo klonlanmadan önce de
+# İngilizce. Uygulamanın kuralıyla aynı (sofascore_scraper/language.py); betik depo klonlanmadan önce de
 # çalıştığı için burada yinelenir (start-sofascore.sh ve "Start SofaScore.command" ile aynı işlev).
 # Eski LANGUAGE değişkeni yalnızca tam olarak tr / en ise ayar sayılır: GNU gettext de aynı adı kullanır.
 detect_lang() {
@@ -170,8 +170,8 @@ if [[ ! -f ".env" ]] && [[ -f ".env.example" ]]; then
   chmod 600 .env
 fi
 
-# Web arayüzü Node.js ile bir kez derlenir (frontend/ → frontend/dist/). Sürüm kuralı src/doctor.py'de.
-if python -c "import sys; from src import doctor; sys.exit(0 if doctor.node_is_supported(doctor.installed_node_version()) else 1)"; then
+# Web arayüzü Node.js ile bir kez derlenir (frontend/ → frontend/dist/). Sürüm kuralı sofascore_scraper/doctor.py'de.
+if python -c "import sys; from sofascore_scraper import doctor; sys.exit(0 if doctor.node_is_supported(doctor.installed_node_version()) else 1)"; then
   msg "→ Building the web UI (npm install && npm run build; this can take a few minutes)…" \
     "→ Web arayüzü derleniyor (npm install && npm run build; birkaç dakika sürebilir)…"
   # </dev/null: `curl | bash` ile çalışırken betiğin kendisi stdin'dedir; npm onu tüketmesin
@@ -195,7 +195,7 @@ echo ""
 msg "→ Checking the installation (python main.py --doctor)…" "→ Kurulum denetleniyor (python main.py --doctor)…"
 echo ""
 DOCTOR_STATUS=0
-python -m src.doctor || DOCTOR_STATUS=$?
+python -m sofascore_scraper.doctor || DOCTOR_STATUS=$?
 
 echo ""
 if [[ "$DOCTOR_STATUS" -ne 0 ]]; then
@@ -207,8 +207,8 @@ fi
 msg "Installation complete." "Kurulum tamam."
 msg "  Web UI:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000" \
   "  Web arayüzü:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000"
-msg "  CLI:     cd \"$ROOT\" && .venv/bin/python -m src.cli.main --help" \
-  "  Komutlar:     cd \"$ROOT\" && .venv/bin/python -m src.cli.main --help"
+msg "  CLI:     cd \"$ROOT\" && .venv/bin/python -m sofascore_scraper.cli.main --help" \
+  "  Komutlar:     cd \"$ROOT\" && .venv/bin/python -m sofascore_scraper.cli.main --help"
 msg "  Check:   cd \"$ROOT\" && .venv/bin/python main.py --doctor" \
   "  Denetim:      cd \"$ROOT\" && .venv/bin/python main.py --doctor"
 echo ""

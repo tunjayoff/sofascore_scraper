@@ -21,10 +21,10 @@ import os
 import re
 from typing import Any, Dict, Mapping, Optional, Tuple
 
-from src import breaker as request_breaker
-from src.match_fetcher import MatchFetcher
-from src.slices import SliceOutcome, match_detail_slice_present
-from src.sports import event_sport_slug, slices_for
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.slices import SliceOutcome, match_detail_slice_present
+from sofascore_scraper.sports import event_sport_slug, slices_for
 from catalog_index import LISTING_CHANGES, index_event, index_listings
 
 UNAVAILABLE_FILE = "_unavailable.json"

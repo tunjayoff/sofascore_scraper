@@ -1,4 +1,4 @@
-"""Tarayıcı köprüsünün sağlık sinyali (src/bridge_health.py): durum makinesi, uç noktalar, CLI mesajı."""
+"""Tarayıcı köprüsünün sağlık sinyali (sofascore_scraper/bridge_health.py): durum makinesi, uç noktalar, CLI mesajı."""
 from __future__ import annotations
 
 import asyncio
@@ -10,11 +10,11 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-import src.challenge_solver as cs
-from src import bridge_health
-from src.bridge_health import BLOCKED, DEGRADED, OK, BridgeHealth
-from src.i18n import I18nManager
-from src.version import __version__
+import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper import bridge_health
+from sofascore_scraper.bridge_health import BLOCKED, DEGRADED, OK, BridgeHealth
+from sofascore_scraper.i18n import I18nManager
+from sofascore_scraper.version import __version__
 
 TH = {"degraded_after": 3, "blocked_after": 5, "blocked_min_seconds": 200.0}
 
@@ -141,7 +141,7 @@ def test_thresholds_come_from_env(monkeypatch, env, expected):
 
 def test_logs_one_warning_per_state_change_not_per_request(caplog):
     h, clock = _health()
-    with caplog.at_level(logging.INFO, logger="src.bridge_health"):
+    with caplog.at_level(logging.INFO, logger="sofascore_scraper.bridge_health"):
         _fail(h, 9)  # ok → degraded (3. istekte)
         clock.t += 300
         _fail(h, 9)  # degraded → blocked (ilk istekte)
@@ -156,7 +156,7 @@ def test_logs_one_warning_per_state_change_not_per_request(caplog):
 
 def test_browser_failures_are_not_blamed_on_sofascore(caplog):
     h, _ = _health(blocked_min_seconds=0)
-    with caplog.at_level(logging.WARNING, logger="src.bridge_health"):
+    with caplog.at_level(logging.WARNING, logger="sofascore_scraper.bridge_health"):
         _fail(h, 5, kind=bridge_health.KIND_BROWSER, detail="RuntimeError: no chromium")
     assert h.state == BLOCKED
     assert "Tarayıcı köprüsü çalışmıyor" in caplog.text and "SofaScore bizi engelliyor" not in caplog.text
@@ -280,8 +280,8 @@ def test_a_live_source_bridge_does_not_report_its_launch_failures(tmp_path):
 
 
 def test_the_live_sources_build_their_bridges_without_health_reports(tmp_path, monkeypatch):
-    from src.client import bridge as bridge_mod
-    from src.services.live import direct_source, push_source
+    from sofascore_scraper.client import bridge as bridge_mod
+    from sofascore_scraper.services.live import direct_source, push_source
 
     made = []
     monkeypatch.setattr(bridge_mod, "BrowserBridge", lambda **kwargs: made.append(kwargs) or object())
@@ -306,7 +306,7 @@ def test_cancelled_launch_is_not_a_health_signal(tmp_path):
 
 @pytest.fixture
 def client():
-    from src.web.app import app
+    from sofascore_scraper.web.app import app
 
     return TestClient(app)
 
@@ -348,7 +348,7 @@ def test_bypass_status_keeps_its_fields_and_adds_health(client):
 
 
 def test_throttle_status_in_health(client, monkeypatch, tmp_path):
-    from src import throttle
+    from sofascore_scraper import throttle
 
     monkeypatch.setenv("REQUEST_RATE_LIMIT", "5")
     monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path))

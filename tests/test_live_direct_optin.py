@@ -26,11 +26,11 @@ import pytest
 
 import conftest
 import test_cli_skeleton as skeleton
-from src.cli.commands import watch as watch_command
-from src.config import settings as model
-from src.services.live import direct_source as ds
-from src.services.live.supervisor import AVAILABLE_SOURCES, LiveService, explicit_scope
-from src.store import Store, open_store
+from sofascore_scraper.cli.commands import watch as watch_command
+from sofascore_scraper.config import settings as model
+from sofascore_scraper.services.live import direct_source as ds
+from sofascore_scraper.services.live.supervisor import AVAILABLE_SOURCES, LiveService, explicit_scope
+from sofascore_scraper.store import Store, open_store
 from test_cli_skeleton import CliRunner
 from test_live_direct_source import FakeNatsServer, FakeReader, fake_credential, fake_value, fast
 from test_live_push_source import FakeOpener, finish_frame, scenario, wait_for
@@ -257,7 +257,7 @@ def test_the_four_warnings_are_in_help_describe_config_validate_and_show(cli: Cl
     assert shown.exit_code == 0 and "live.source" in shown.stdout
     # `config show` yükleyicinin uyarılarını ayarlar etkinleşirken log satırı olarak stderr'e yazar
     assert any(has_all(r.getMessage()) for r in caplog.records)
-    from src.cli.commands.meta import default_config_text  # `config init`'in yazdığı örnek dosya
+    from sofascore_scraper.cli.commands.meta import default_config_text  # `config init`'in yazdığı örnek dosya
 
     assert has_all(" ".join(line.lstrip("# ") for line in default_config_text().splitlines()))
 
@@ -276,7 +276,7 @@ def test_the_readmes_carry_the_four_warnings() -> None:
 
 @pytest.fixture
 def log_files(tmp_path: Path) -> Any:
-    from src import logger as app_logger
+    from sofascore_scraper import logger as app_logger
 
     keys = ("LOG_DIR", "LOG_TO_FILE", "LOG_LEVEL", "DEBUG")
     saved = {k: os.environ.get(k) for k in keys}
@@ -296,7 +296,7 @@ def log_files(tmp_path: Path) -> Any:
 
 
 def test_a_run_with_a_fake_credential_leaves_it_nowhere(store: Store, data_dir: Path, log_files: Path) -> None:
-    from src import diagnostics
+    from sofascore_scraper import diagnostics
 
     live, done, api, clock = scenario()
     server = FakeNatsServer(accept=fake_value("leak"))

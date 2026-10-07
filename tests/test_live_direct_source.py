@@ -1,5 +1,5 @@
 """
-Push kaynağı `direct` (src/services/live/direct_source.py; plan maddesi P31).
+Push kaynağı `direct` (sofascore_scraper/services/live/direct_source.py; plan maddesi P31).
 
 Gerçek sunucu, ağ ve tarayıcı yok. Push sunucusu bu süreçte çalışan sahte bir NATS-over-WebSocket sunucusudur
 (FakeNatsServer, yalnızca 127.0.0.1): WebSocket el sıkışması, INFO, CONNECT denetimi, SUB/UNSUB, MSG, PING/PONG,
@@ -11,7 +11,7 @@ kurulur.
   * PING aralığı, sunucunun PING'ine PONG, düşen bağlantıdan sonra yeniden bağlanma ve yeniden abonelik
   * reddedilen kimlik bilgisi yeniden okunur; art arda başarısızlık sağlıksız sayılır; proxy varken bağlanılmaz
   * WebSocket istemcisi: parçalı mesaj, kontrol kareleri, uzun kare
-  * kimlik bilgisi okuyucusu sahte bir köprüyle; maskeleme (src/redact.py)
+  * kimlik bilgisi okuyucusu sahte bir köprüyle; maskeleme (sofascore_scraper/redact.py)
   * servis: push'tan gelen bitiş tek olaydır (`source` "direct"), kaynak değişikliği yazılır
 """
 from __future__ import annotations
@@ -30,9 +30,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import pytest
 
 import conftest
-from src import redact
-from src.services.live import direct_source as ds
-from src.services.live.direct_source import (
+from sofascore_scraper import redact
+from sofascore_scraper.services.live import direct_source as ds
+from sofascore_scraper.services.live.direct_source import (
     Credential,
     CredentialUnavailable,
     DirectConnection,
@@ -41,9 +41,9 @@ from src.services.live.direct_source import (
     WebSocket,
     parse_connect,
 )
-from src.services.live.push_source import PushFeed, Signal
-from src.services.live.supervisor import LiveService, explicit_scope
-from src.store import Store, open_store
+from sofascore_scraper.services.live.push_source import PushFeed, Signal
+from sofascore_scraper.services.live.supervisor import LiveService, explicit_scope
+from sofascore_scraper.store import Store, open_store
 from test_live_push_source import FINISH, finish_frame, recorded, scenario, wait_for
 from test_live_service import Stop
 
@@ -393,7 +393,7 @@ def test_repeated_failures_make_the_source_unhealthy_and_keep_retrying(server: A
 
 
 def test_a_configured_proxy_is_never_bypassed(server: Any, monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.client import transport
+    from sofascore_scraper.client import transport
 
     monkeypatch.setattr(transport, "_get_proxy_config", lambda: (True, "http://proxy.invalid:8080"))
     assert ds.proxy_in_use()
@@ -648,7 +648,7 @@ class CredentialBridge:
 
 
 def install_bridge(monkeypatch: pytest.MonkeyPatch, sockets: List[Tuple[str, List[Tuple[str, Any]]]]) -> None:
-    from src.client import bridge
+    from sofascore_scraper.client import bridge
 
     CredentialBridge.made = []
     monkeypatch.setattr(bridge, "HOME_URL", "https://www.sofascore.com/tr")

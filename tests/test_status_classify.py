@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from src.match_fetcher import MatchFetcher
-from src.status import StatusClass, classify_status, is_played
+from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.status import StatusClass, classify_status, is_played
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 ALL = sorted(FIXTURES.glob("*/*.json"))
@@ -176,7 +176,7 @@ def test_cricket_end_of_day_is_live_and_not_finished():
 
 @pytest.mark.parametrize("code", [21, 28, 29, 141, 1001, 1002])
 def test_new_live_codes_are_live_without_a_type(code, caplog):
-    with caplog.at_level("WARNING", logger="src.status"):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.status"):
         assert classify_status({"status": {"code": code}}) is StatusClass.LIVE
     assert caplog.text == ""
 
@@ -205,6 +205,6 @@ def test_unknown(event, caplog):
 
 
 def test_unknown_finished_code_is_logged(caplog):
-    with caplog.at_level("WARNING", logger="src.status"):
+    with caplog.at_level("WARNING", logger="sofascore_scraper.status"):
         classify_status({"id": 1, "status": {"type": "finished", "code": 999}})
     assert "999" in caplog.text

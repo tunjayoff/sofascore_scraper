@@ -1,4 +1,4 @@
-# src.store.StoreBusy
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.StoreBusy
+# kaynak: sofascore_scraper/store/errors.py
 class StoreBusy(StoreError):
     default_message = ...

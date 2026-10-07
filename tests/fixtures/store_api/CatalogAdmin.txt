@@ -1,5 +1,5 @@
-# src.store.CatalogAdmin
-# kaynak: src/store/indexer.py
+# sofascore_scraper.store.CatalogAdmin
+# kaynak: sofascore_scraper/store/indexer.py
 class CatalogAdmin:
     def __init__(self, data_dir: PathLike, catalog: Optional[Catalog] = None, *, clock: Callable[[], float] = time.time, league_names: Optional[LeagueNames] = None) -> None
     self.data_dir

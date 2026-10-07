@@ -24,8 +24,8 @@ from typing import Any, Dict, Iterator, List, Tuple
 import pytest
 from fastapi.testclient import TestClient
 
-from src import redact
-from src.errors import (
+from sofascore_scraper import redact
+from sofascore_scraper.errors import (
     ERROR_TABLE,
     ERRORS,
     ConflictError,
@@ -33,12 +33,12 @@ from src.errors import (
     PlatformError,
     UsageError,
 )
-from src.exceptions import ConfigError, StorageError
-from src.store import DataOperationRunningError, JobRunningError, LeaseHeld, SchemaTooNew
-from src.web import deps, errors, security
-from src.web.api import is_v1
-from src.web.app import LOGIN_PATH, app
-from src.web.deps import AttemptLimiter
+from sofascore_scraper.exceptions import ConfigError, StorageError
+from sofascore_scraper.store import DataOperationRunningError, JobRunningError, LeaseHeld, SchemaTooNew
+from sofascore_scraper.web import deps, errors, security
+from sofascore_scraper.web.api import is_v1
+from sofascore_scraper.web.app import LOGIN_PATH, app
+from sofascore_scraper.web.deps import AttemptLimiter
 
 ROOT = Path(__file__).resolve().parent.parent
 TOKEN = "t0ken-Zx9-correct-horse-battery-staple"
@@ -420,7 +420,7 @@ def test_the_token_is_never_part_of_a_v1_response(token: str) -> None:
 
 # --- her v1 rotası eski rotalarla aynı korumanın arkasında -------------------------------------------
 #
-# PR #43'ün korumaları (src/web/security.py) yola değil `/api` önekine bağlıdır; aşağıdaki testler bunu v1
+# PR #43'ün korumaları (sofascore_scraper/web/security.py) yola değil `/api` önekine bağlıdır; aşağıdaki testler bunu v1
 # belgesindeki her işlem için tek tek doğrular. Yeni bir v1 rotası eklendiğinde kendiliğinden listeye girer.
 
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
@@ -619,9 +619,9 @@ def test_v1_responses_carry_the_response_headers_of_the_legacy_routes() -> None:
 _TOKEN_ENV_PROBE = """
 import json
 from fastapi.testclient import TestClient
-from src.web import security
-from src.web.app import app
-from src.config import active_settings
+from sofascore_scraper.web import security
+from sofascore_scraper.web.app import app
+from sofascore_scraper.config import active_settings
 client = TestClient(app)
 print(json.dumps({
     "security": security.api_token(),
@@ -671,7 +671,7 @@ def test_a_token_env_that_names_an_unset_variable_stops_the_start(tmp_path: Path
 
 
 def test_the_default_token_variable_still_works_without_a_config_file(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.web import app as app_module
+    from sofascore_scraper.web import app as app_module
 
     monkeypatch.setenv(security.TOKEN_ENV, f"  {TOKEN} ")
     monkeypatch.setattr(security, "_startup_token", None)  # süreç yeni başlıyor

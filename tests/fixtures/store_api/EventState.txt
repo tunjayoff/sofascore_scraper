@@ -1,5 +1,5 @@
-# src.store.EventState
-# kaynak: src/store/events.py
+# sofascore_scraper.store.EventState
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class EventState:
     event: EventRow

@@ -11,7 +11,7 @@ where python >nul 2>nul && (
   goto :end
 )
 REM Language: an explicit setting (APP_LANGUAGE in the environment or in .env) wins, then the
-REM Windows display language, then English: the same rule as the app (src\language.py). Only this
+REM Windows display language, then English: the same rule as the app (sofascore_scraper\language.py). Only this
 REM message needs it; everything else is printed by scripts\start_web.py. The Turkish text has no
 REM Turkish letters on purpose: this file stays plain ASCII, so it reads the same in every code page.
 set "UI_LANG=en"

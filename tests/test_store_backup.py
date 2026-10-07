@@ -30,10 +30,10 @@ import pytest
 import store_dump
 import store_fixtures as sf
 import test_cli_skeleton as skeleton
-from src.errors import NotFoundError, UsageError
-from src.services.backup import BackupService
-from src.slices import SLICE_OK, Outcome
-from src.store import (
+from sofascore_scraper.errors import NotFoundError, UsageError
+from sofascore_scraper.services.backup import BackupService
+from sofascore_scraper.slices import SLICE_OK, Outcome
+from sofascore_scraper.store import (
     BackupInvalid,
     BackupNotFound,
     FollowSpec,
@@ -44,8 +44,8 @@ from src.store import (
     StreamEvent,
     open_store,
 )
-from src.store import backup as backup_mod
-from src.store import streams as streams_mod
+from sofascore_scraper.store import backup as backup_mod
+from sofascore_scraper.store import streams as streams_mod
 from test_cli_skeleton import CliRunner
 
 cli = skeleton.cli
@@ -250,7 +250,7 @@ def test_backup_then_restore_into_an_empty_directory_gives_an_equal_store(tmp_pa
 
 
 def _all_events() -> Any:
-    from src.store import EventQuery
+    from sofascore_scraper.store import EventQuery
 
     return EventQuery()
 

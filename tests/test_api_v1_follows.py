@@ -20,11 +20,11 @@ from typing import Any, Dict, Iterator, List
 import pytest
 from fastapi.testclient import TestClient
 
-from src.config_manager import ConfigManager
-from src.exceptions import APIError, NetworkError, RateLimitError
-from src.store import FollowSpec, JobRunningError, Store, apply_follows, open_store
-from src.web import deps
-from src.web.app import app
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError
+from sofascore_scraper.store import FollowSpec, JobRunningError, Store, apply_follows, open_store
+from sofascore_scraper.web import deps
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 
@@ -329,12 +329,12 @@ def search(monkeypatch: pytest.MonkeyPatch) -> List[Any]:
             raise outcome[0]
         return outcome[0]
 
-    monkeypatch.setattr("src.utils.make_api_request", fake)
+    monkeypatch.setattr("sofascore_scraper.utils.make_api_request", fake)
     return [calls, outcome]
 
 
 def test_the_tournament_search_asks_sofascore_once(leagues: Path, search: List[Any]) -> None:
-    from src.client import api_url, endpoints
+    from sofascore_scraper.client import api_url, endpoints
 
     hits = data(client.post("/api/v1/tournaments/search", json={"q": "premier"}))
     assert hits[0] == {"kind": "tournament", "id": 17, "name": "Premier League", "slug": "premier-league",

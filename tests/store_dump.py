@@ -9,7 +9,7 @@ Dökümde yol, dosya adı, dosya zamanı ve sıkıştırma yoktur; yalnızca sak
   season_lists  turnuva id → sezon listesi yükünün özeti
   changes       değişiklik günlüğü satırları, sıra numarasıyla
 
-Yük özeti, yükün kurallı JSON baytlarının sha256'sıdır (src/store/codec.py); eski düzendeki girintili
+Yük özeti, yükün kurallı JSON baytlarının sha256'sıdır (sofascore_scraper/store/codec.py); eski düzendeki girintili
 dosya ile v3'teki sıkıştırılmış dosya aynı yük için aynı özeti verir. Yazıcıları Store'a geçiren plan
 maddeleri (ST-21, ST-22), taşıma (ST-23) ve yedekten dönüş (ST-24) dökümün önce ve sonra eşit kaldığını
 gösterir.
@@ -36,12 +36,12 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, Optional, Union
 
-from src.store import changes as changes_mod
-from src.store import codec, indexer, layout
-from src.store import manifest as manifest_mod
-from src.store.errors import StoreError
-from src.store.legacy import LegacyEvent, LegacyReader, LegacySlice
-from src.store.manifest import Manifest, SliceEntry
+from sofascore_scraper.store import changes as changes_mod
+from sofascore_scraper.store import codec, indexer, layout
+from sofascore_scraper.store import manifest as manifest_mod
+from sofascore_scraper.store.errors import StoreError
+from sofascore_scraper.store.legacy import LegacyEvent, LegacyReader, LegacySlice
+from sofascore_scraper.store.manifest import Manifest, SliceEntry
 
 PathLike = Union[str, "os.PathLike[str]"]
 

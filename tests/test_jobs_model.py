@@ -1,4 +1,4 @@
-"""src/jobs paketi: iş modeli, durum eşlemesi, taşınan ilerleme modülü ve katman kuralı."""
+"""sofascore_scraper/jobs paketi: iş modeli, durum eşlemesi, taşınan ilerleme modülü ve katman kuralı."""
 from __future__ import annotations
 
 import ast
@@ -9,10 +9,10 @@ from typing import List, Optional
 
 import pytest
 
-import src.jobs as jobs_pkg
-import src.jobs.progress as new_progress
-import src.web.progress as old_progress
-from src.jobs.model import (
+import sofascore_scraper.jobs as jobs_pkg
+import sofascore_scraper.jobs.progress as new_progress
+import sofascore_scraper.web.progress as old_progress
+from sofascore_scraper.jobs.model import (
     LEGACY_STATUS_TO_STATE,
     ErrorInfo,
     Job,
@@ -21,7 +21,7 @@ from src.jobs.model import (
     Origin,
     job_state_from_status,
 )
-from src.web.jobs import JobStore
+from sofascore_scraper.web.jobs import JobStore
 
 JOBS_DIR = Path(jobs_pkg.__file__).parent
 
@@ -35,7 +35,7 @@ def test_old_import_path_re_exports_the_same_objects():
 
 
 def test_job_progress_lives_in_the_jobs_package():
-    assert new_progress.JobProgress.__module__ == "src.jobs.progress"
+    assert new_progress.JobProgress.__module__ == "sofascore_scraper.jobs.progress"
     assert jobs_pkg.JobProgress is new_progress.JobProgress
     assert jobs_pkg.PHASE_WEIGHTS is new_progress.PHASE_WEIGHTS
     assert jobs_pkg.MAX_FAILED_LISTED == new_progress.MAX_FAILED_LISTED
@@ -64,10 +64,10 @@ def _imported_modules(path: Path) -> List[str]:
 def test_jobs_package_imports_no_face_and_no_sql():
     # Dosya erişimi içe aktarmalardan güvenle anlaşılamaz (os, pid okumak için de gerekir); burada
     # yalnızca yüz modülleri ve sqlite3 yasaklanır.
-    forbidden_prefixes = ("src.web", "src.ui", "src.cli", "src.SofaScoreUi")
+    forbidden_prefixes = ("sofascore_scraper.web", "sofascore_scraper.ui", "sofascore_scraper.cli", "sofascore_scraper.SofaScoreUi")
     forbidden_modules = {"sqlite3"}
     files = sorted(JOBS_DIR.glob("*.py"))
-    assert files, "src/jobs is empty"
+    assert files, "sofascore_scraper/jobs is empty"
     for path in files:
         for module in _imported_modules(path):
             assert not module.startswith(forbidden_prefixes), f"{path.name} imports {module}"
@@ -165,7 +165,7 @@ def _row_state(store: JobStore, job_id: str) -> Optional[JobState]:
 
 
 def test_rows_written_by_todays_job_store_map_as_designed(tmp_path):
-    """Eşleme, JobStore'un gerçekten yazdığı satırlar üzerinde sınanır (src/web/jobs.py)."""
+    """Eşleme, JobStore'un gerçekten yazdığı satırlar üzerinde sınanır (sofascore_scraper/web/jobs.py)."""
     db = str(tmp_path / "jobs.db")
     store = JobStore(db)
 

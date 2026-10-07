@@ -1,11 +1,11 @@
 """
 SyncService, servis bağlamı ve CSV dışa aktarma servisi (plan maddesi P08; docs/design/02-services.md 2.3, 2.7).
 
-Web işinin akışı src/web/fetch_job.py'den src/services/sync.py'ye taşındı; iş kaydına yazılanlar G-01
+Web işinin akışı sofascore_scraper/web/fetch_job.py'den sofascore_scraper/services/sync.py'ye taşındı; iş kaydına yazılanlar G-01
 goldenlarıyla (tests/characterization/test_fetch_flows.py) ve tests/test_job_progress.py, test_breaker_phases.py,
 test_storage_errors.py ile sabitlidir. Burada servis tek başına, bir iş deposu olmadan sınanır:
 
-  * katman: src/web terminal arayüzünü, src/services hiçbir yüzü içe aktarmaz;
+  * katman: sofascore_scraper/web terminal arayüzünü, sofascore_scraper/services hiçbir yüzü içe aktarmaz;
   * build_context: veri dizinleri ve üç indirici;
   * SyncService.run: aşamalar, detay planı, iptal, devre kesici, sonuç, istek bağlamının geri alınması;
   * işin CSV aşaması yoktur (EX-1); eski CSV yönlendirmeleri FX-15'te kalktı;
@@ -29,20 +29,20 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tupl
 
 import pytest
 
-import src.utils as utils
-from src.web import deps
-from src import breaker as request_breaker
-from src.client import context as request_ctx
-from src.client import transport
-from src.config_manager import ConfigManager
-from src.exceptions import StorageError
-from src.jobs.progress import JobProgress
-from src.match_data_fetcher import MatchDataFetcher
-from src.match_fetcher import MatchFetcher
-from src.season_fetcher import SeasonFetcher
-from src.services.context import DATA_SUBDIRECTORIES, ServiceContext, build_context
-from src.services.listing import ListingResult
-from src.services.sync import (
+import sofascore_scraper.utils as utils
+from sofascore_scraper.web import deps
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper.client import context as request_ctx
+from sofascore_scraper.client import transport
+from sofascore_scraper.config_manager import ConfigManager
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.jobs.progress import JobProgress
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.services.context import DATA_SUBDIRECTORIES, ServiceContext, build_context
+from sofascore_scraper.services.listing import ListingResult
+from sofascore_scraper.services.sync import (
     DETAILS_PHASES,
     FULL_PHASES,
     DetachedHandle,
@@ -54,7 +54,7 @@ from src.services.sync import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "src"
+SRC = ROOT / "sofascore_scraper"
 
 LEAGUES = {17: "Premier League", 8: "LaLiga"}
 
@@ -91,23 +91,23 @@ def _violations(directory: Path, forbidden: Sequence[str]) -> List[str]:
 
 def test_web_imports_nothing_from_the_terminal_ui() -> None:
     """Web, indiricilere servis bağlamı üzerinden ulaşır; menü arayüzü (P26'da silinir) ona gerekmez."""
-    assert _violations(SRC / "web", ("src.ui", "src.SofaScoreUi")) == []
+    assert _violations(SRC / "web", ("sofascore_scraper.ui", "sofascore_scraper.SofaScoreUi")) == []
 
 
 def test_services_import_no_face_module() -> None:
-    assert _violations(SRC / "services", ("src.web", "src.ui", "src.cli", "src.SofaScoreUi")) == []
+    assert _violations(SRC / "services", ("sofascore_scraper.web", "sofascore_scraper.ui", "sofascore_scraper.cli", "sofascore_scraper.SofaScoreUi")) == []
 
 
 def test_the_import_scan_sees_function_level_and_from_imports(tmp_path: Path) -> None:
-    source = "import os\ndef f():\n    from src.SofaScoreUi import SimpleSofaScoreUI\n    from src import ui\n"
+    source = "import os\ndef f():\n    from sofascore_scraper.SofaScoreUi import SimpleSofaScoreUI\n    from sofascore_scraper import ui\n"
     path = tmp_path / "module.py"
     path.write_text(source, encoding="utf-8")
 
     found = _imports(path)
 
-    assert "src.SofaScoreUi" in found and "src.ui" in found
-    assert [m for m in found if _is_or_under(m, ("src.ui", "src.SofaScoreUi"))] == [
-        "src.SofaScoreUi", "src.SofaScoreUi.SimpleSofaScoreUI", "src.ui",
+    assert "sofascore_scraper.SofaScoreUi" in found and "sofascore_scraper.ui" in found
+    assert [m for m in found if _is_or_under(m, ("sofascore_scraper.ui", "sofascore_scraper.SofaScoreUi"))] == [
+        "sofascore_scraper.SofaScoreUi", "sofascore_scraper.SofaScoreUi.SimpleSofaScoreUI", "sofascore_scraper.ui",
     ]
 
 
@@ -115,9 +115,9 @@ def test_loading_the_web_job_does_not_load_the_terminal_ui(tmp_path: Path) -> No
     """Ayrı süreçte: rotalar, iş modülü ve servisler yüklendiğinde menü modülleri yüklenmiş olmamalı."""
     code = (
         "import json, sys\n"
-        "import src.web.api.legacy, src.services.sync, src.services.export\n"
+        "import sofascore_scraper.web.api.legacy, sofascore_scraper.services.sync, sofascore_scraper.services.export\n"
         "print(json.dumps(sorted(m for m in sys.modules"
-        " if m == 'src.SofaScoreUi' or m == 'src.ui' or m.startswith('src.ui.'))))\n"
+        " if m == 'sofascore_scraper.SofaScoreUi' or m == 'sofascore_scraper.ui' or m.startswith('sofascore_scraper.ui.'))))\n"
     )
     # Kendi veri dizini: rotalar yüklenirken açılan iş deposu testlerin ortak dizinine dokunmasın
     env = {**os.environ, "DATA_DIR": str(tmp_path / "data")}
@@ -196,7 +196,7 @@ def test_build_context_leaves_the_colour_switch_to_the_logger(
     tmp_path: Path, config: ConfigManager, monkeypatch: pytest.MonkeyPatch, use_color: str
 ) -> None:
     """
-    P15: bağlam NO_COLOR'a dokunmaz. Süreç başlarken günlükçü kurar (src/logger.py); eskiden bağlam da her işte
+    P15: bağlam NO_COLOR'a dokunmaz. Süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); eskiden bağlam da her işte
     kuruyordu, ilerleme çubuğu (P14'te kalktı) renksiz yazsın diye.
     """
     monkeypatch.setenv("USE_COLOR", use_color)
@@ -555,7 +555,7 @@ def test_empty_and_failing_schedules_are_counted_and_published(
 def test_when_every_schedule_is_empty_the_job_log_says_so(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from src.i18n import get_i18n
+    from sofascore_scraper.i18n import get_i18n
 
     seasons = FakeSeasons({17: [{"id": 1}, {"id": 2}]})
     ctx = make_ctx(config, monkeypatch, seasons=seasons, schedule=FakeSchedule(empty=[(17, 1), (17, 2)]))
@@ -849,9 +849,9 @@ def test_a_storage_error_leaves_the_service_and_the_context_is_taken_back(
 @pytest.fixture
 def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
-    import src.web.api.legacy as fj
-    from src.web.jobs import JobStore
-    from src.web.api.legacy import FetchRequest
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.jobs import JobStore
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
@@ -868,8 +868,8 @@ def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 def test_payload_becomes_a_spec() -> None:
-    import src.web.api.legacy as fj
-    from src.web.api.legacy import FetchRequest
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     assert fj._spec_from_payload(FetchRequest()) == SyncSpec(mode="full", league_id=None, selections=())
     assert fj._spec_from_payload(FetchRequest(mode="details", league_id=17, selections=[])) == SyncSpec(
@@ -890,8 +890,8 @@ def test_payload_becomes_a_spec() -> None:
 
 
 def test_the_first_job_log_line_names_the_target() -> None:
-    import src.web.api.legacy as fj
-    from src.web.api.legacy import FetchRequest
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     assert fj._summary(FetchRequest()) == "All Leagues"
     assert fj._summary(FetchRequest(league_id=17)) == "17"
@@ -903,7 +903,7 @@ def test_the_first_job_log_line_names_the_target() -> None:
 def test_web_job_prints_its_console_line_and_no_menu_text(
     web_job: Any, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from src.i18n import get_i18n
+    from sofascore_scraper.i18n import get_i18n
 
     final = web_job(FakeDetails({"17": ["a"]}), mode="details", league_id=17)
 
@@ -998,7 +998,7 @@ def test_league_search_uses_the_api_base_of_the_client(
     sent_urls: List[str], monkeypatch: pytest.MonkeyPatch, base: str
 ) -> None:
     """Eskiden arama, API_BASE_URL ne olursa olsun varsayılan adrese gidiyordu (PR #48'in bıraktığı tek istek)."""
-    from src.web.api import legacy as leagues
+    from sofascore_scraper.web.api import legacy as leagues
 
     monkeypatch.setattr(utils, "API_BASE_URL", base)
 
@@ -1012,7 +1012,7 @@ def test_league_search_uses_the_api_base_of_the_client(
 
 
 def test_the_league_route_module_no_longer_hard_codes_the_api_base() -> None:
-    # Eski lig rotaları src/web/api/legacy.py'dedir (P21); oradaki SofaScore adları yalnızca ayar doğrulamasının
+    # Eski lig rotaları sofascore_scraper/web/api/legacy.py'dedir (P21); oradaki SofaScore adları yalnızca ayar doğrulamasının
     # izin verdiği sunuculardır (`_ALLOWED_API_HOSTS`), bir istek adresi değil
     source = (SRC / "web" / "api" / "legacy.py").read_text(encoding="utf-8")
     assert "sofascore.com/api" not in source and "https://www.sofascore.com" not in source

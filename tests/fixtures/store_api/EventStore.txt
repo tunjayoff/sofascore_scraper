@@ -1,5 +1,5 @@
-# src.store.EventStore
-# kaynak: src/store/events.py
+# sofascore_scraper.store.EventStore
+# kaynak: sofascore_scraper/store/events.py
 class EventStore:
     def __init__(self, store: 'Store') -> None
     def get(self, event_id: int) -> Optional[EventRow]

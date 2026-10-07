@@ -69,7 +69,7 @@ allowed_hosts_given() {
         grep -Eq '^[[:space:]]*(export[[:space:]]+)?SOFASCORE_(SERVER__)?ALLOWED_HOSTS[[:space:]]*=[[:space:]]*[^[:space:]#]' "$env_file"; then
         return 0
     fi
-    # Yapılandırma dosyası (src/config/loader.find_config_file ile aynı yerler): varsa karar onundur
+    # Yapılandırma dosyası (sofascore_scraper/config/loader.find_config_file ile aynı yerler): varsa karar onundur
     case "${SOFASCORE_CONFIG:-}" in
         "" | none | NONE | None) ;;
         *) return 0 ;;
@@ -91,7 +91,7 @@ if [ "$#" -eq 0 ] || [ "$1" = "serve" ] || [ "$1" = "web" ]; then
     if ! allowed_hosts_given; then
         export SOFASCORE_SERVER__ALLOWED_HOSTS="$LOOPBACK_HOSTS"
     fi
-    exec python -m src.cli.main serve --host "${HOST:-0.0.0.0}" --port "${PORT:-8000}" "$@"
+    exec python -m sofascore_scraper.cli.main serve --host "${HOST:-0.0.0.0}" --port "${PORT:-8000}" "$@"
 fi
 
 exec python main.py "$@"

@@ -5,13 +5,13 @@
 modelinden üretilir. Buradaki testler her bölümü kaynağıyla karşılaştırır: kaynak değişince çıktı da değişir,
 ikisi ayrışamaz.
 
-    commands    argparse ağacı (src/cli/main.py) ve komut kaydı (src/cli/commands)
-    sports      spor kayıt defteri (src/sports.py)
-    slices      dilim kayıt defteri (src/sports.py)
-    errors      hata tablosu (src/errors.py)
-    exit-codes  çıkış kodu tablosu (src/cli/exit_codes.py)
-    config      yapılandırma dosyasının JSON Schema'sı (src/config/schema.py)
-    schemas     CLI zarfının şeması (src/cli/output.py)
+    commands    argparse ağacı (sofascore_scraper/cli/main.py) ve komut kaydı (sofascore_scraper/cli/commands)
+    sports      spor kayıt defteri (sofascore_scraper/sports.py)
+    slices      dilim kayıt defteri (sofascore_scraper/sports.py)
+    errors      hata tablosu (sofascore_scraper/errors.py)
+    exit-codes  çıkış kodu tablosu (sofascore_scraper/cli/exit_codes.py)
+    config      yapılandırma dosyasının JSON Schema'sı (sofascore_scraper/config/schema.py)
+    schemas     CLI zarfının şeması (sofascore_scraper/cli/output.py)
 
 Çıktı her zaman JSON'dur ve hiçbir zaman yerelleştirilmez.
 """
@@ -23,14 +23,14 @@ from typing import Any, Dict, List
 
 import pytest
 
-from src import errors, sports
-from src.cli import commands as registry
-from src.cli import exit_codes, output
-from src.cli import main as cli_main
-from src.cli.commands import meta
-from src.config import config_schema, loader
-from src.config import settings as model
-from src.config.schema import environment_only_keys
+from sofascore_scraper import errors, sports
+from sofascore_scraper.cli import commands as registry
+from sofascore_scraper.cli import exit_codes, output
+from sofascore_scraper.cli import main as cli_main
+from sofascore_scraper.cli.commands import meta
+from sofascore_scraper.config import config_schema, loader
+from sofascore_scraper.config import settings as model
+from sofascore_scraper.config.schema import environment_only_keys
 import test_cli_skeleton as skeleton
 from test_cli_skeleton import DESIGN_ERROR_TABLE, CliRunner, validate
 
@@ -255,7 +255,7 @@ def test_schemas_describe_the_envelope(cli: CliRunner, described: Dict[str, Any]
     assert doc["cli"] == {"id": "sofascore.cli/1", "envelope": output.ENVELOPE_SCHEMA}
     assert doc["config"] == {"id": "sofascore.config/1", "version": model.SCHEMA_VERSION, "describe": "config"}
     # Normalleştirilmiş kayıtların şeması (SC-1; P19 bağladı)
-    from src import schema
+    from sofascore_scraper import schema
 
     assert sorted(doc) == ["cli", "config", "data"]
     assert doc["data"] == json.loads(json.dumps(schema.describe())) and doc["data"]["version"] == schema.SCHEMA_VERSION

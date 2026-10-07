@@ -4,11 +4,11 @@ değil.
 
 Kural (PR #25): yalnızca kesin bir "veri yok" yanıtı (HTTP 404 ya da içinde veri olmayan 200) dilimin o
 maçta "yok" sayılmasına doğru sayılır; gerisi başarısızlıktır, not edilir ve sonraki çalıştırmada yeniden
-istenir. src/slices.py'deki kurallar toplam olmadan önce okunamayan gövdede hata fırlatırdı: async hatta
+istenir. sofascore_scraper/slices.py'deki kurallar toplam olmadan önce okunamayan gövdede hata fırlatırdı: async hatta
 bu hata başarısız dilime dönüşüyordu, sync hatta ise maçın tamamını (toplu indirmede işin tamamını)
 düşürüyordu. Kurallar artık üç yanıt verir (veri var, veri yok, okunamadı) ve çekici okunamayan gövdeyi
 iki hatta da başarısız / "parse" olarak bildirir. P13'ten beri iki giriş noktası (lig planı ve kimliğiyle seçilen
-maçlar) aynı boru hattıdır (src/services/pipeline.py); testler ikisini de sınamaya devam eder.
+maçlar) aynı boru hattıdır (sofascore_scraper/services/pipeline.py); testler ikisini de sınamaya devam eder.
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı ve çekici gerçektir.
 Veriyi çekici Store'a yazar (plan maddesi ST-21), testler yalnızca okur: kaydın hali eski düzenin dosyaları
@@ -25,9 +25,9 @@ from fastapi import HTTPException
 import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src import breaker as request_breaker
-from src import bridge_health
-from src.match_data_fetcher import (
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper import bridge_health
+from sofascore_scraper.match_data_fetcher import (
     SLICE_EMPTY,
     SLICE_FAILED,
     SLICE_OK,
@@ -35,15 +35,15 @@ from src.match_data_fetcher import (
     MatchDataFetcher,
     SliceOutcome,
 )
-from src.web import upstream
+from sofascore_scraper.web import upstream
 
 # tests/characterization/fixtures/fetch/world.json
 FINISHED = 9100001  # futbol, bitti, altı `required` dilimi de dolu
 TENNIS = 9200001  # bitti; statistics, h2h ve point-by-point var
 REQUIRED = ["statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents"]
-FETCHER_PAUSES = "src.match_data_fetcher"  # bu modülün maç denemeleri arasındaki beklemeleri
+FETCHER_PAUSES = "sofascore_scraper.match_data_fetcher"  # bu modülün maç denemeleri arasındaki beklemeleri
 
-# (dilim, yolun son parçası, okunamayan gövde): src.slices.slice_body_state bunlara BODY_MALFORMED der
+# (dilim, yolun son parçası, okunamayan gövde): sofascore_scraper.slices.slice_body_state bunlara BODY_MALFORMED der
 MALFORMED: List[Tuple[str, str, Any]] = [
     ("statistics", "statistics", "abc"),  # nesne beklenen yerde metin
     ("statistics", "statistics", {"statistics": {"period": "ALL"}}),  # liste beklenen yerde nesne
@@ -107,7 +107,7 @@ def breaker() -> Iterator[request_breaker.CircuitBreaker]:
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.deps import config_manager as _web_config
+    from sofascore_scraper.web.deps import config_manager as _web_config
     config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
@@ -376,7 +376,7 @@ def test_single_match_route_with_a_malformed_slice(fake: FakeSofaScore, data_dir
     kaydedilmiyordu). Yeniden çekim yalnızca o dilimi ister; istenen dilimlerin hiçbiri yanıt almadığı için
     sonuç tipli `upstream` hatasıdır (502), dilim yine "yok" sayılmaz.
     """
-    import src.web.api.legacy as matches_routes
+    import sofascore_scraper.web.api.legacy as matches_routes
 
     path = _slice_path(FINISHED, "h2h")
     fake.add(path, {"teamDuel": "abc"})

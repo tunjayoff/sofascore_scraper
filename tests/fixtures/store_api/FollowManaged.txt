@@ -1,4 +1,4 @@
-# src.store.FollowManaged
-# kaynak: src/store/errors.py
+# sofascore_scraper.store.FollowManaged
+# kaynak: sofascore_scraper/store/errors.py
 class FollowManaged(StoreError):
     default_message = ...

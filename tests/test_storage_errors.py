@@ -9,7 +9,7 @@ Sabitlenen kurallar:
     uniqueTournament.id'si olmayan maç da aynı yere gider. Eski düzende duran kayıt taşınmaz: ilk yazmada
     v3'e yükseltilir, eski dizinine dokunulmaz.
 
-Gerçek ağ yok: istek katmanı sahte; disk hataları Store'un dosya yazıcısının (`src.store.files.write_bytes`)
+Gerçek ağ yok: istek katmanı sahte; disk hataları Store'un dosya yazıcısının (`sofascore_scraper.store.files.write_bytes`)
 sahtesiyle üretilir.
 """
 from __future__ import annotations
@@ -25,14 +25,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import src.match_data_fetcher as mdf
-import src.utils as utils
-from src.web import deps
-from src.exceptions import StorageError
-from src.match_data_fetcher import MatchDataFetcher
-from src.store import files as store_files
-from src.store import layout
-from src.store import open_store
+import sofascore_scraper.match_data_fetcher as mdf
+import sofascore_scraper.utils as utils
+from sofascore_scraper.web import deps
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.store import files as store_files
+from sofascore_scraper.store import layout
+from sofascore_scraper.store import open_store
 
 MID = "4242"
 H2H = {"teamDuel": {"homeWins": 1, "awayWins": 0, "draws": 0}}
@@ -68,7 +68,7 @@ def _fetcher(tmp_path) -> MatchDataFetcher:
 
 def _failing_writer(code: int, only_for: Optional[int] = None):
     """
-    Store'un dosya yazıcısının (`src.store.files.write_bytes`) sahtesi: maç dosyalarını (v3 ağacı ya da hazırlık
+    Store'un dosya yazıcısının (`sofascore_scraper.store.files.write_bytes`) sahtesi: maç dosyalarını (v3 ağacı ya da hazırlık
     dizini) yazarken, gerçek yazıcı gibi OSError'ı StoreError'a çevirerek düşer. only_for verilirse yalnızca o
     maçın manifesti yazılamaz (yeni maç hazırlık dizininde kurulur: yolunda kimliği yoktur, manifestinde vardır).
     """
@@ -235,9 +235,9 @@ def test_headless_cli_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch,
 def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    import src.web.api.legacy as fj
-    from src.web.jobs import JobStore
-    from src.web.api.legacy import FetchRequest
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.jobs import JobStore
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)

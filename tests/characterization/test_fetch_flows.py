@@ -2,7 +2,7 @@
 İndirme akışlarının goldenları: her akışın SofaScore'a attığı istekler (sırasıyla) ve yazdığı dosyalar.
 
 Sabitlenen akışlar:
-  - web işi (src/web/fetch_job.py): tam güncelleme (lig, tüm ligler, sezon seçimi), yalnızca detay,
+  - web işi (sofascore_scraper/web/fetch_job.py): tam güncelleme (lig, tüm ligler, sezon seçimi), yalnızca detay,
     kimliğiyle seçilen maçlar; ayrıca tam güncellemenin ikinci ve üçüncü çalıştırması
   - tek maç uç noktası (POST /api/matches/{id}/fetch)
   - yalnızca yenileme (main.py --refresh-only'nin çağırdığı sıra)
@@ -31,13 +31,13 @@ import pytest
 import detail_records
 from catalog_index import index_event
 import legacy_writer
-import src.utils as utils
+import sofascore_scraper.utils as utils
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
-from src.web import deps
-from src import breaker as request_breaker
-from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
-from src.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.web import deps
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
 
 LEAGUE = 17
 SEASON_WEEKS = 61627  # haftalık turlar
@@ -72,9 +72,9 @@ def fake() -> Iterator[FakeSofaScore]:
 @pytest.fixture
 def run_job(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> RunJob:
     """Web işini kendi thread'i olmadan, geçici bir iş deposuyla çalıştırır; son iş durumunu döndürür."""
-    import src.web.api.legacy as fj
-    from src.web.jobs import JobStore
-    from src.web.api.legacy import FetchRequest
+    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.web.jobs import JobStore
+    from sofascore_scraper.web.api.legacy import FetchRequest
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
@@ -90,7 +90,7 @@ def run_job(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.deps import config_manager as _web_config
+    from sofascore_scraper.web.deps import config_manager as _web_config
     config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
@@ -126,7 +126,7 @@ def _markers(data_dir: Path) -> Dict[str, Any]:
     "Yok" sayaçları ve hata kayıtları (eski düzende `_unavailable.json` / `_slice_status.json`), Store'dan: maç →
     dilim → {kesin sayım, doğrulanmamış sayım, hata nedeni}; işareti olmayan maç yer almaz.
     """
-    from src.store import EventQuery, open_store
+    from sofascore_scraper.store import EventQuery, open_store
 
     store = open_store(data_dir)
     out: Dict[str, Any] = {}
@@ -139,7 +139,7 @@ def _markers(data_dir: Path) -> Dict[str, Any]:
 
 def _delete_record(data_dir: Path, event_id: int) -> None:
     """Maçın kaydını siler (eski düzende dizinini silmenin karşılığı): Store'un silmesi."""
-    from src.store import open_store
+    from sofascore_scraper.store import open_store
 
     assert open_store(data_dir).events.delete(event_id)
 
@@ -150,7 +150,7 @@ def _as_legacy_record(data_dir: Path, event_id: int, *, drop: Any = (), unavaila
     ve eski düzen yazıcısının dondurulmuş kopyasıyla (tests/legacy_writer.py) yazılır; `drop` dilimleri yazılmaz,
     `unavailable` eski sürümün `_unavailable.json`'ıdır (doğrulanmamış sayımlar). Maç dizinini döndürür.
     """
-    from src.store import open_store
+    from sofascore_scraper.store import open_store
 
     store = open_store(data_dir)
     payloads = store.events.payloads(event_id)
@@ -244,7 +244,7 @@ def test_fake_injects_timeouts_and_connection_errors(fake: FakeSofaScore) -> Non
 
 
 def test_fake_skips_only_the_application_sleeps(fake: FakeSofaScore) -> None:
-    """Uygulama kodu (src.*) dışındaki beklemelere dokunulmaz: test ve kütüphane kodu gerçekten bekler."""
+    """Uygulama kodu (sofascore_scraper.*) dışındaki beklemelere dokunulmaz: test ve kütüphane kodu gerçekten bekler."""
     started = time.monotonic()
 
     time.sleep(0.02)
@@ -261,17 +261,17 @@ def _sleep_as(module: str, seconds: float) -> None:
 
 def test_fake_leaves_storage_waits_real(fake: FakeSofaScore) -> None:
     """
-    Depolama katmanı (src.store) SofaScore'u değil dosya sistemini bekler (Windows'ta meşgul hedefe
+    Depolama katmanı (sofascore_scraper.store) SofaScore'u değil dosya sistemini bekler (Windows'ta meşgul hedefe
     yeniden deneme): beklemesi atlanmaz ve kaydedilmez. Diğer uygulama modüllerininki atlanır.
     """
     started = time.monotonic()
-    _sleep_as("src.match_data_fetcher", 30.0)
+    _sleep_as("sofascore_scraper.match_data_fetcher", 30.0)
     assert time.monotonic() - started < 2
-    assert [(s.source, s.seconds) for s in fake.sleeps] == [("src.match_data_fetcher", 30.0)]
+    assert [(s.source, s.seconds) for s in fake.sleeps] == [("sofascore_scraper.match_data_fetcher", 30.0)]
 
     fake.reset_log()
     started = time.monotonic()
-    _sleep_as("src.store.files", 0.05)
+    _sleep_as("sofascore_scraper.store.files", 0.05)
     assert time.monotonic() - started >= 0.03  # saat çözünürlüğü kaba olabilir (Windows: ~16 ms)
     assert fake.sleeps == []
 
@@ -366,7 +366,7 @@ def test_web_job_full_update_past_the_listing_ttl(
     tamamlanmış olan hiç, tamamlanmamış olan ROUND_CACHE_TTL_SECONDS içinde istenmez (P14'ten önceki her
     çalıştırma böyleydi).
     """
-    from src.services import listing
+    from sofascore_scraper.services import listing
 
     run_job(mode="full", league_id=LEAGUE)
     run_job(mode="full", league_id=LEAGUE)  # boş gelen dilimler ikinci kez: detay isteği kalmaz
@@ -478,8 +478,8 @@ def test_web_job_runs_are_idempotent(fake: FakeSofaScore, run_job: RunJob, data_
 def test_single_match_route(fake: FakeSofaScore, data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
-    from src.web.app import app
-    from src.web.jobs import JobStore
+    from sofascore_scraper.web.app import app
+    from sofascore_scraper.web.jobs import JobStore
 
     idle = JobStore(str(tmp_path / "jobs.db"))  # çalışan iş yok
     monkeypatch.setattr(deps, "job_store", lambda: idle)
@@ -521,7 +521,7 @@ def test_refresh_only(fake: FakeSofaScore, data_dir: Path) -> None:
     main.py --refresh-only'nin sırası: yenilenecekleri bul, her biri için yalnızca /event iste.
     Maçlar arasında sabit bekleme yok (eski 1 sn, PR #33'te kalktı): `pause_seconds` boş. Kalan tek
     bekleme istek katmanınındır: yanıt alınan her istekten sonraki WAIT_TIME ve, açıksa, ortak istek
-    bütçesinin sırası (src/throttle.py; testlerde kapalı: tests/conftest.py).
+    bütçesinin sırası (sofascore_scraper/throttle.py; testlerde kapalı: tests/conftest.py).
     """
     md = _fetcher(data_dir)
     md.fetch_matches_batch([9100001, 9100003, 9100010])
@@ -545,7 +545,7 @@ def test_refresh_only(fake: FakeSofaScore, data_dir: Path) -> None:
         "due_ids": ids,
         "stats": stats,
         "requests": fake.canonical_log(),
-        "pause_seconds": fake.slept("src.match_data_fetcher"),
+        "pause_seconds": fake.slept("sofascore_scraper.match_data_fetcher"),
         "request_layer_waits": len(request_waits),
         "files": {
             path: content

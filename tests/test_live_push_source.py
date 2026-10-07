@@ -1,5 +1,5 @@
 """
-Push kaynağı `page` (src/services/live/push_source.py) ve servisteki yeri (supervisor.py; plan maddesi P24).
+Push kaynağı `page` (sofascore_scraper/services/live/push_source.py) ve servisteki yeri (supervisor.py; plan maddesi P24).
 
 Gerçek tarayıcı ve ağ yok. Kareler kayıttandır: tests/fixtures/push/recorded_wire.jsonl, sitenin kendi
 bağlantısında dinlenmiş karelerin gövdeleri (research/all_sports/ws.jsonl) NATS metin protokolünde yeniden
@@ -28,8 +28,8 @@ from typing import Any, Callable, Dict, List, Optional
 import pytest
 
 import conftest
-from src.services.live import push_source as ps
-from src.services.live.push_source import (
+from sofascore_scraper.services.live import push_source as ps
+from sofascore_scraper.services.live.push_source import (
     LastKnown,
     NatsReader,
     PageSource,
@@ -39,9 +39,9 @@ from src.services.live.push_source import (
     merge_frame,
     route_action,
 )
-from src.services.live.supervisor import LiveService, explicit_scope
-from src.status import StatusClass, classify_status
-from src.store import Store, open_store
+from sofascore_scraper.services.live.supervisor import LiveService, explicit_scope
+from sofascore_scraper.status import StatusClass, classify_status
+from sofascore_scraper.store import Store, open_store
 from test_live_service import FB_DONE, FB_LIVE, Clock, FakeApi, Stop, fetched, fx
 
 PUSH_FIXTURES = Path(__file__).parent / "fixtures" / "push"
@@ -362,7 +362,7 @@ def test_the_live_profile_is_next_to_the_bridge_profile(monkeypatch: pytest.Monk
 
 
 def test_the_sport_page_and_the_quiet_page_follow_the_bridge_home(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.client import bridge
+    from sofascore_scraper.client import bridge
 
     monkeypatch.setattr(bridge, "HOME_URL", "https://www.sofascore.com/tr")
     assert ps.sport_page_url("ice-hockey") == "https://www.sofascore.com/tr/ice-hockey"
@@ -441,7 +441,7 @@ def test_a_finish_from_push_is_one_event_confirmed_with_one_request(store: Store
 
 
 def test_a_stale_event_page_is_not_stored_and_the_confirmation_is_retried(store: Store) -> None:
-    from src.services.live import supervisor
+    from sofascore_scraper.services.live import supervisor
 
     live, done, api, clock = scenario()
     opener = FakeOpener()
@@ -684,7 +684,7 @@ def wait_for(predicate: Callable[[], bool], seconds: float = 5.0) -> None:
 
 @pytest.fixture
 def fake_bridge(monkeypatch: pytest.MonkeyPatch) -> Callable[..., None]:
-    from src.client import bridge
+    from sofascore_scraper.client import bridge
 
     FakeBridge.made = []
 
@@ -698,7 +698,7 @@ def fake_bridge(monkeypatch: pytest.MonkeyPatch) -> Callable[..., None]:
 
 def test_the_opener_uses_the_live_profile_and_opens_the_sport_page(fake_bridge: Any, tmp_path: Path,
                                                                    monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.client import bridge
+    from sofascore_scraper.client import bridge
 
     monkeypatch.setattr(bridge, "HOME_URL", "https://www.sofascore.com/tr")
     opener = ps.BrowserPageOpener(profile_dir=str(tmp_path / "chrome-live"))

@@ -1,5 +1,5 @@
-# src.store.FollowConflict
-# kaynak: src/store/follows.py
+# sofascore_scraper.store.FollowConflict
+# kaynak: sofascore_scraper/store/follows.py
 @dataclass(frozen=True)
 class FollowConflict:
     kind: str

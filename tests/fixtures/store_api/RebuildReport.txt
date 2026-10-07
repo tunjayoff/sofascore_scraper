@@ -1,5 +1,5 @@
-# src.store.RebuildReport
-# kaynak: src/store/indexer.py
+# sofascore_scraper.store.RebuildReport
+# kaynak: sofascore_scraper/store/indexer.py
 @dataclass
 class RebuildReport:
     mode: str

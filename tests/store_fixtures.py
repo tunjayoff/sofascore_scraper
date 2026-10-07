@@ -4,9 +4,9 @@ içeren `DATA_DIR` ağaçları kurar (plan maddesi G-02).
 
 Olayların durum / skor / zaman alanları `tests/fixtures/status/` altındaki gerçek SofaScore
 yanıtlarından gelir; turnuva, sezon ve takım zarfı burada eklenir. Detay dilimleri küçük ama
-`src/match_data_fetcher.py`'deki "veri var mı" denetimlerinden geçen sentetik yanıtlardır.
+`sofascore_scraper/match_data_fetcher.py`'deki "veri var mı" denetimlerinden geçen sentetik yanıtlardır.
 
-Bu modül `src/`'den hiçbir şey içe aktarmaz: okuyucular ve yazıcılar yeniden yazılırken fabrika aynı
+Bu modül `sofascore_scraper/`'den hiçbir şey içe aktarmaz: okuyucular ve yazıcılar yeniden yazılırken fabrika aynı
 baytları üretmeye devam etmelidir. Bugünkü yazıcılarla aynı çıktıyı verdiği
 `tests/characterization/test_reader_goldens.py` içindeki "fabrika sadakati" testleriyle doğrulanır.
 
@@ -52,16 +52,16 @@ FIXTURE_NOW = 1790856000  # 2026-10-01T12:00:00Z: testlerin sabitlediği "şimdi
 BASE_MTIME = FIXTURE_NOW - 86400  # her dosyanın mtime'ı (aksi belirtilmedikçe)
 DAY = 86400
 
-# `required` detay dilimleri, istek sırasıyla (src/sports.py DETAIL_SLICES); tenis ayrıca point_by_point alır
+# `required` detay dilimleri, istek sırasıyla (sofascore_scraper/sports.py DETAIL_SLICES); tenis ayrıca point_by_point alır
 REQUIRED_SLICES: Tuple[str, ...] = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 OPTIONAL_SLICES: Tuple[str, ...] = ("point_by_point",)
 
 SUMMARY_COLUMNS = ["round", "match_id", "home_team", "away_team", "home_score", "away_score",
                    "match_date", "status", "tournament", "season"]
-# İlk sürümün tur başına yazdığı `round_<n>_matches.csv` sütunları (e42deb0, src/match_fetcher.py)
+# İlk sürümün tur başına yazdığı `round_<n>_matches.csv` sütunları (e42deb0, sofascore_scraper/match_fetcher.py)
 OLD_ROUND_CSV_COLUMNS = ["match_id", "home_team", "away_team", "home_team_id", "away_team_id", "home_score",
                          "away_score", "round", "status", "status_type", "start_timestamp", "start_time", "slug"]
-# İlk sürümün `league_seasons.csv` başlığı (e42deb0, src/season_fetcher.py)
+# İlk sürümün `league_seasons.csv` başlığı (e42deb0, sofascore_scraper/season_fetcher.py)
 SEASONS_CSV_COLUMNS = ["Liga Adı", "Lig ID", "Sezon ID", "Sezon Adı", "Sezon Yılı"]
 
 _META_KEYS = ("case_id", "event_id", "fetched_at_utc", "source_file")
@@ -175,7 +175,7 @@ class LegacyFixture:
 
 
 def dump_json(obj: Any) -> bytes:
-    """`src/config_files.atomic_write_json` (2.x: src/fsutil.py) ile aynı baytlar."""
+    """`sofascore_scraper/config_files.atomic_write_json` (2.x: sofascore_scraper/fsutil.py) ile aynı baytlar."""
     return json.dumps(obj, ensure_ascii=False, indent=2).encode("utf-8")
 
 
@@ -207,7 +207,7 @@ class _Writer:
 
 
 def safe_name(name: str) -> str:
-    """`src/store/legacy.safe_name` ile aynı kural (2.x yazıcılarının kuralı)."""
+    """`sofascore_scraper/store/legacy.safe_name` ile aynı kural (2.x yazıcılarının kuralı)."""
     return str(name).replace(" ", "_").replace("/", "_").replace("\\", "_")
 
 
@@ -372,7 +372,7 @@ def slice_payload(key: str, event: Dict[str, Any], empty: bool = False) -> Any:
 
 
 def observation_payload(event: Dict[str, Any], observed_at_utc: str, regressed: bool = False) -> Dict[str, Any]:
-    """`src/status.observation_record` ile aynı biçim."""
+    """`sofascore_scraper/status.observation_record` ile aynı biçim."""
     obs: Dict[str, Any] = {
         "observed_at_utc": observed_at_utc,
         "change_ts": (event.get("changes") or {}).get("changeTimestamp"),
@@ -753,7 +753,7 @@ LIGA_PAGES: Tuple[Listing, ...] = (
     Listing("page", "next/0", (LIGA_NEXT, LIGA_CANCELED), filtered=False),
 )
 
-# `src/refresh.change_row` biçiminde iki satır: bitiş sonrası skor düzeltmesi ve sonradan iptal edilen maç
+# `sofascore_scraper/refresh.change_row` biçiminde iki satır: bitiş sonrası skor düzeltmesi ve sonradan iptal edilen maç
 SCORE_CHANGES: Tuple[Dict[str, Any], ...] = (
     {
         "ts_utc": "2026-09-15T13:10:00+00:00",
@@ -811,7 +811,7 @@ SCORE_CHANGES: Tuple[Dict[str, Any], ...] = (
     },
 )
 
-# İzleyici dosyaları (`src/watcher.py`): canlı → gol → bitti (futbol) ve süren bir tenis maçı
+# İzleyici dosyaları (`sofascore_scraper/watcher.py`): canlı → gol → bitti (futbol) ve süren bir tenis maçı
 WATCH_EVENTS: Tuple[Dict[str, Any], ...] = (
     {
         "type": "score_changed",

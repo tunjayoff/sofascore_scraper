@@ -1,5 +1,5 @@
 """
-`ssc serve` (src/cli/commands/serve.py; plan maddesi P25): bağımsız değişkenler, Host izin listesi kuralları
+`ssc serve` (sofascore_scraper/cli/commands/serve.py; plan maddesi P25): bağımsız değişkenler, Host izin listesi kuralları
 (PR #43'ünkiler), belirteçsiz açık adres uyarısı, sink dağıtıcısının barındırılması, durdurma ve çıkış kodları,
 `main.py --web`in çevirisi. Başlatıcı tests/test_start_web.py'de, Docker giriş noktası tests/test_packaging.py'dedir.
 
@@ -26,9 +26,9 @@ import pytest
 
 import main as legacy_main
 import test_cli_skeleton as skeleton
-from src.cli import legacy_flags, signals
-from src.cli.commands import serve as serve_command
-from src.web import security
+from sofascore_scraper.cli import legacy_flags, signals
+from sofascore_scraper.cli.commands import serve as serve_command
+from sofascore_scraper.web import security
 from test_cli_skeleton import CliRunner, Run, Sandbox
 
 cli = skeleton.cli
@@ -125,7 +125,7 @@ def test_dev_restarts_on_code_changes_only(cli: CliRunner, server: FakeServer) -
     assert run.exit_code == 0
     options = server.calls[0]
     assert options["reload"] is True
-    assert [Path(path) for path in options["reload_dirs"]] == [REPO / "src", REPO / "locales"]
+    assert [Path(path) for path in options["reload_dirs"]] == [REPO / "sofascore_scraper", REPO / "locales"]
     assert run.data["dev"] is True
 
 
@@ -309,7 +309,7 @@ def test_uvicorn_access_lines_go_to_stderr() -> None:
 
 def test_serve_hosts_the_configured_sinks(cli: CliRunner, server: FakeServer, monkeypatch: pytest.MonkeyPatch,
                                           tmp_path: Path) -> None:
-    from src.store import StreamEvent, open_store
+    from sofascore_scraper.store import StreamEvent, open_store
 
     out = tmp_path / "sink" / "events.jsonl"
     monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([{"name": "file", "type": "file", "path": str(out),
@@ -399,7 +399,7 @@ def _free_port() -> int:
 def test_a_real_server_answers_and_stops_on_sigterm_with_0(box: Sandbox) -> None:
     port = _free_port()
     proc = subprocess.Popen(
-        [sys.executable, "-m", "src.cli.main", "--json", "serve", "--port", str(port)],
+        [sys.executable, "-m", "sofascore_scraper.cli.main", "--json", "serve", "--port", str(port)],
         cwd=box.cwd, env=box.environ(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     try:

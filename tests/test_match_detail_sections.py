@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from src.web.app import app
+from sofascore_scraper.web.app import app
 
 REQUIRED_TOP = ("basic", "statistics", "incidents", "lineups", "h2h", "pregame_form", "team_streaks")
 

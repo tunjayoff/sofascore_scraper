@@ -22,10 +22,10 @@ import pytest
 
 import store_dump
 import store_fixtures as sf
-from src.match_data_fetcher import MatchDataFetcher
-from src.services.export import ExportService, ExportSpec
-from src.store import EventQuery, open_store
-from src.store import events as events_mod
+from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.services.export import ExportService, ExportSpec
+from sofascore_scraper.store import EventQuery, open_store
+from sofascore_scraper.store import events as events_mod
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:

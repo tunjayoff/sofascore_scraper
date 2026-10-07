@@ -35,18 +35,18 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src import refresh
-from src.match_data_fetcher import (
+from sofascore_scraper import refresh
+from sofascore_scraper.match_data_fetcher import (
     DETAIL_SLICE_KEYS,
     NO_TOURNAMENT_DIR,
     MatchDataFetcher,
     _stored_observation,
 )
-from src.services import query
-from src.services.query import LEGACY_LIST_COLUMNS, QueryService, legacy_detail_keys
-from src.status import OBSERVATION_KEY
-from src.store import PayloadCorrupt, StoreError, open_store
-from src.web.app import app
+from sofascore_scraper.services import query
+from sofascore_scraper.services.query import LEGACY_LIST_COLUMNS, QueryService, legacy_detail_keys
+from sofascore_scraper.status import OBSERVATION_KEY
+from sofascore_scraper.store import PayloadCorrupt, StoreError, open_store
+from sofascore_scraper.web.app import app
 
 ARS = sf.event_id(sf.PL_ARS)  # legacy: iki yerde duran maç (lig/sezon dizini ve bayat düz kopya)
 LIV = sf.event_id(sf.PL_LIV)  # legacy: basic.json'ın yanında birleşik dosya ve gözlem
@@ -302,8 +302,8 @@ def test_route_answers_from_the_service(old_forms: sf.LegacyFixture) -> None:
 
 def test_route_reads_through_the_store_only(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
     """Uç nokta indirici kurmaz, dizin ağacını gezmez: yanıt servisten gelir."""
-    import src.match_data_fetcher as fetcher_module
-    import src.web.api.legacy as routes
+    import sofascore_scraper.match_data_fetcher as fetcher_module
+    import sofascore_scraper.web.api.legacy as routes
 
     monkeypatch.setattr(fetcher_module, "MatchDataFetcher", MagicMock(side_effect=AssertionError("not used")))
     seen = []
@@ -749,7 +749,7 @@ def test_season_rows_follow_the_only_finished_rule(canonical: sf.LegacyFixture) 
 
 def test_list_routes_answer_from_the_service(old_forms: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
     """Uç noktalar dosya ağacını okumaz: özet CSV'si okuyan bir çağrı testi düşürür."""
-    from src.store.legacy import LegacyReader
+    from sofascore_scraper.store.legacy import LegacyReader
 
     queries = service(old_forms)  # katalog kuruldu: özet CSV'leri dizinlendi
     monkeypatch.setattr(LegacyReader, "read_summary_rows", MagicMock(side_effect=AssertionError("not used")))

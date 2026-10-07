@@ -1,7 +1,7 @@
 """
-Devre kesici (src/breaker.py): kuralları, köprü sağlığıyla eşgüdümü ve istek katmanıyla bağı.
+Devre kesici (sofascore_scraper/breaker.py): kuralları, köprü sağlığıyla eşgüdümü ve istek katmanıyla bağı.
 
-İş başına tek kesici vardır; istek katmanı (src/utils.py) her isteğin SON halini ona bildirir ve
+İş başına tek kesici vardır; istek katmanı (sofascore_scraper/utils.py) her isteğin SON halini ona bildirir ve
 kesici açıkken yeni istek göndermez. Aşamaların kesiciye bakışı tests/test_breaker_phases.py'de.
 
 Gerçek ağ yok: curl taşıyıcısı (cffi_requests.get / AsyncSession.get) sahte.
@@ -16,11 +16,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import src.utils as utils
-from src import breaker as request_breaker
-from src import bridge_health
-from src.breaker import CircuitBreaker
-from src.exceptions import (APIError, CircuitOpenError, DataParsingError, NetworkError, RateLimitError,
+import sofascore_scraper.utils as utils
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper import bridge_health
+from sofascore_scraper.breaker import CircuitBreaker
+from sofascore_scraper.exceptions import (APIError, CircuitOpenError, DataParsingError, NetworkError, RateLimitError,
                             ResourceNotFoundError)
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}

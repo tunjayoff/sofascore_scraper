@@ -1,5 +1,5 @@
-# src.store.JobStore
-# kaynak: src/store/jobs.py
+# sofascore_scraper.store.JobStore
+# kaynak: sofascore_scraper/store/jobs.py
 class JobStore:
     def __init__(self, db_path: str)
     self.db_path

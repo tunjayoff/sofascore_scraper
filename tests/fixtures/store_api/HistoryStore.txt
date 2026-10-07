@@ -1,5 +1,5 @@
-# src.store.HistoryStore
-# kaynak: src/store/history.py
+# sofascore_scraper.store.HistoryStore
+# kaynak: sofascore_scraper/store/history.py
 class HistoryStore:
     def __init__(self, store: 'Store') -> None
     def index(self, ref: Ref, key: str, sub: str = '') -> List[SnapshotInfo]

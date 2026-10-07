@@ -23,12 +23,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src import schema
-from src.schema import models as schema_models
-from src.services.query import QueryService, refresh_window_seconds
-from src.store import EventQuery, FollowSpec, Ref, Scope, Store, open_store
-from src.web.api.v1 import records
-from src.web.app import app
+from sofascore_scraper import schema
+from sofascore_scraper.schema import models as schema_models
+from sofascore_scraper.services.query import QueryService, refresh_window_seconds
+from sofascore_scraper.store import EventQuery, FollowSpec, Ref, Scope, Store, open_store
+from sofascore_scraper.web.api.v1 import records
+from sofascore_scraper.web.app import app
 
 client = TestClient(app)
 
@@ -191,8 +191,8 @@ def test_only_followed_tournaments(store: Store) -> None:
 
 
 def test_the_slice_summary_counts_the_selected_slices(store: Store) -> None:
-    from src.services import planning
-    from src.sports import select_slices
+    from sofascore_scraper.services import planning
+    from sofascore_scraper.sports import select_slices
 
     body = page_of(client.get("/api/v1/events", params={"include": "slices_summary", "limit": 200}))
     states = {s.event.id: s for s in store.events.states()}
@@ -218,7 +218,7 @@ def test_one_event(store: Store) -> None:
 
 
 def test_the_slices_of_an_event(store: Store) -> None:
-    from src.sports import select_slices
+    from sofascore_scraper.sports import select_slices
 
     row = next(r for r in all_rows(store) if r.has_event_payload and r.sport == "football")
     found = data(client.get(f"/api/v1/events/{row.id}/slices"))
@@ -287,7 +287,7 @@ def test_the_tournament_list_pages(store: Store) -> None:
 
 
 def test_a_tournament_has_its_category_when_the_catalog_knows_it(store: Store, monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.store import CategoryRow
+    from sofascore_scraper.store import CategoryRow
 
     real = store.entities.tournament
 

@@ -1,5 +1,5 @@
-# src.store.ParticipantRow
-# kaynak: src/store/entities.py
+# sofascore_scraper.store.ParticipantRow
+# kaynak: sofascore_scraper/store/entities.py
 @dataclass(frozen=True)
 class ParticipantRow:
     id: int

@@ -9,11 +9,11 @@ Ne yapar:
   - İstek katmanının modülleri (tests/fakes/sofascore.py: REQUEST_LAYER_MODULES) uygulama tarafından içe
     aktarıldığı ANDA sahte taşıyıcıyı (G-01) kurar. Daha önce kurmaz: `main.py`nin içe aktarma sırası
     (.env'in yüklenmesi, --version / --doctor'ın ağır modüllerden önce yanıtlanması) olduğu gibi kalır.
-  - Tarayıcı köprüsü (src/challenge_solver.py) içe aktarılırsa gerçek tarayıcının başlatılmasını engeller
+  - Tarayıcı köprüsü (sofascore_scraper/challenge_solver.py) içe aktarılırsa gerçek tarayıcının başlatılmasını engeller
     (tests/conftest.py'deki `_isolate_request_layer` ile aynı kural).
   - Async oturum açıkken yazılan çıktıyı iki işaretin arasına alır (sırası sözleşme olmayan bölüm).
   - Süreç kapanırken iki dosya yazar: `transport.json` (sahtenin kaydı: istekler, beklemeler, oturumlar;
-    yalnızca sahte kurulduysa) ve `process.json` (sahte kuruldu mu, hangi `src.*` modülleri yüklendi).
+    yalnızca sahte kurulduysa) ve `process.json` (sahte kuruldu mu, hangi `sofascore_scraper.*` modülleri yüklendi).
 
 Ortam değişkenleri (okunduktan sonra süreç ortamından silinir: uygulama ve onun alt süreçleri görmez):
   SOFASCORE_CLI_GOLDEN_WORLD          sahte dünyanın JSON dosyası (FakeSofaScore.from_file)
@@ -42,7 +42,7 @@ PROCESS_LOG = "process.json"
 CONCURRENT_BEGIN = "<<cli-golden:concurrent-begin>>"
 CONCURRENT_END = "<<cli-golden:concurrent-end>>"
 
-BRIDGE_MODULE = "src.client.bridge"  # tarayıcı köprüsü (P24); eski adı `src.challenge_solver` bir takma addır
+BRIDGE_MODULE = "sofascore_scraper.client.bridge"  # tarayıcı köprüsü (P24); eski adı `sofascore_scraper.challenge_solver` bir takma addır
 _FAKE_MODULE_NAME = "_cli_golden_fake_sofascore"
 _FAKE_SOURCE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "fakes", "sofascore.py"
@@ -185,7 +185,7 @@ def _save_logs() -> None:
             _state.fake.save_log(os.path.join(_state.out_dir, TRANSPORT_LOG))
         process: Dict[str, Any] = {
             "fake_installed": _state.fake is not None,
-            "src_modules": sorted(name for name in sys.modules if name == "src" or name.startswith("src.")),
+            "src_modules": sorted(name for name in sys.modules if name == "sofascore_scraper" or name.startswith("sofascore_scraper.")),
         }
         with open(os.path.join(_state.out_dir, PROCESS_LOG), "w", encoding="utf-8") as f:
             json.dump(process, f, ensure_ascii=False, indent=1)

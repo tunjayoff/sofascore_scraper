@@ -1,5 +1,5 @@
-# src.store.Purger
-# kaynak: src/store/purge.py
+# sofascore_scraper.store.Purger
+# kaynak: sofascore_scraper/store/purge.py
 class Purger:
     def __init__(self, store: 'Store') -> None
     def tournament(self, tournament_id: int, *, season_id: Optional[int] = None) -> TournamentClearReport

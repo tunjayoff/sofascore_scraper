@@ -1,5 +1,5 @@
-# src.store.Ref
-# kaynak: src/store/events.py
+# sofascore_scraper.store.Ref
+# kaynak: sofascore_scraper/store/events.py
 @dataclass(frozen=True)
 class Ref:
     kind: str

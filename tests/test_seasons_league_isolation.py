@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from src.web.app import app
+from sofascore_scraper.web.app import app
 
 
 def test_seasons_are_league_specific():

@@ -1,5 +1,5 @@
 """
-Tek getirme boru hattı (src/services/pipeline.py, plan maddesi P13; docs/design/02-services.md 3.3).
+Tek getirme boru hattı (sofascore_scraper/services/pipeline.py, plan maddesi P13; docs/design/02-services.md 3.3).
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı ve Store gerçektir. Akışların
 goldenları tests/characterization/test_fetch_flows.py'de, eski iki hattın farkları test_pipeline_divergence.py'dedir;
@@ -19,14 +19,14 @@ import pytest
 import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src import breaker as request_breaker
-from src.client.context import FetchCancelled, request_context
-from src.exceptions import StorageError
-from src.services import planning, pipeline
-from src.services.pipeline import FetchPipeline, ItemResult
-from src.services.query import RefreshPolicy
-from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
-from src.store import Ref, StoreBusy, open_store
+from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper.client.context import FetchCancelled, request_context
+from sofascore_scraper.exceptions import StorageError
+from sofascore_scraper.services import planning, pipeline
+from sofascore_scraper.services.pipeline import FetchPipeline, ItemResult
+from sofascore_scraper.services.query import RefreshPolicy
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
+from sofascore_scraper.store import Ref, StoreBusy, open_store
 
 FINISHED = 9100001
 EMPTY_SLICES = 9100002  # pregame-form 404, lineups boş
@@ -373,7 +373,7 @@ def test_a_busy_store_is_retried_with_growing_waits(fake: FakeSofaScore, store: 
     [result] = _run(store, [_full(FINISHED)]).results
 
     assert result.ok and calls["n"] == 3
-    assert fake.slept("src.services.pipeline") == [pipeline.STORE_BUSY_FIRST_WAIT, 2 * pipeline.STORE_BUSY_FIRST_WAIT]
+    assert fake.slept("sofascore_scraper.services.pipeline") == [pipeline.STORE_BUSY_FIRST_WAIT, 2 * pipeline.STORE_BUSY_FIRST_WAIT]
 
 
 def test_a_store_that_stays_busy_fails_only_that_match(fake: FakeSofaScore, store: Any,

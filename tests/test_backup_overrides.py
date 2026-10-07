@@ -24,11 +24,11 @@ import pytest
 
 import conftest
 import store_fixtures as sf
-from src import redact
-from src.config import loader, overrides
-from src.services.backup import BackupService
-from src.store import Store, open_store
-from src.store import backup as backup_mod
+from sofascore_scraper import redact
+from sofascore_scraper.config import loader, overrides
+from sofascore_scraper.services.backup import BackupService
+from sofascore_scraper.store import Store, open_store
+from sofascore_scraper.store import backup as backup_mod
 from test_store_backup import STAMP, backup_all, into, manifest, rich_store, state_rows, write_zip
 
 SECRET = "s3cret-pass"

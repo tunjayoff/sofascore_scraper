@@ -24,14 +24,14 @@ import pytest
 import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from src import utils
-from src.services import planning
-from src.services.listing import ListingService, ScheduleLister
-from src.services.pipeline import FetchPipeline, PipelineSummary
-from src.services.query import QueryService, RefreshPolicy
-from src.services.status import StatusService
-from src.sports import select_slices
-from src.store import Ref, Store, open_store
+from sofascore_scraper import utils
+from sofascore_scraper.services import planning
+from sofascore_scraper.services.listing import ListingService, ScheduleLister
+from sofascore_scraper.services.pipeline import FetchPipeline, PipelineSummary
+from sofascore_scraper.services.query import QueryService, RefreshPolicy
+from sofascore_scraper.services.status import StatusService
+from sofascore_scraper.sports import select_slices
+from sofascore_scraper.store import Ref, Store, open_store
 
 LEAGUE = 17
 ROUND_SEASON = 61627  # haftalık turlar: 9100001-9100003 bitmiş, 9100004 başlamamış
