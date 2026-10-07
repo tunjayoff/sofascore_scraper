@@ -77,7 +77,12 @@ COPY locales/ ./locales/
 COPY --chown=app:app config/leagues.example.txt ./config/
 COPY docker/entrypoint.sh /usr/local/bin/sofascore-entrypoint
 COPY --from=frontend /build/frontend/dist ./frontend/dist
-RUN chmod 0755 /usr/local/bin/sofascore-entrypoint
+# `ssc` komutu (pyproject.toml [project.scripts]; REN-1): proje /app'ten düzenlenebilir kipte kurulur, çünkü
+# sürüm, çeviriler ve web arayüzü proje klasöründen okunur (düzenlenebilir olmayan kurulum desteklenmez).
+# Bağımlılıklar yukarıda sabit sürümlerle kuruldu (--no-deps). Örnek: docker exec <konteyner> ssc status
+RUN pip install --no-deps -e . \
+    && rm -rf /root/.cache \
+    && chmod 0755 /usr/local/bin/sofascore-entrypoint
 
 LABEL org.opencontainers.image.title="SofaScore Scraper" \
       org.opencontainers.image.description="Download match data of 21 sports from SofaScore and browse it in a web app" \

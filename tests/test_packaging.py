@@ -15,7 +15,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import pytest
 
@@ -57,6 +57,29 @@ def test_dockerfile_runs_as_non_root_with_healthcheck_and_volumes():
     # Paketler CI'ın test ettiği sabit sürümlerle kurulur
     assert any(ln.startswith("COPY ") and "requirements.txt" in ln and "constraints.txt" in ln for ln in final_stage)
     assert any("pip install -r requirements.txt -c constraints.txt" in ln for ln in final_stage)
+
+
+def test_image_installs_the_package_for_the_ssc_command():
+    """
+    İmajda `ssc` komutu vardır (REN-1): paket kodu ve pyproject.toml kopyalandıktan sonra proje düzenlenebilir
+    kipte, bağımlılıksız kurulur (bağımlılıklar requirements.txt + constraints.txt ile kuruldu).
+    """
+    ins = _instructions(_read("Dockerfile"))
+    final_stage = ins[max(i for i, ln in enumerate(ins) if ln.startswith("FROM ")):]
+    scripts = re.search(r"^\[project\.scripts\]\s*\nssc = \"([\w.]+):main\"", _read("pyproject.toml"), flags=re.M)
+    assert scripts and scripts.group(1) == "sofascore_scraper.cli.main"
+
+    def index(predicate: Callable[[str], bool]) -> int:
+        found = [i for i, ln in enumerate(final_stage) if predicate(ln)]
+        assert found, "instruction missing"
+        return found[0]
+
+    package = index(lambda ln: ln.startswith("COPY ") and ln.split()[1:] == ["sofascore_scraper/", "./sofascore_scraper/"])
+    pyproject = index(lambda ln: ln.startswith("COPY ") and "pyproject.toml" in ln)
+    install = index(lambda ln: ln.startswith("RUN ") and "pip install --no-deps -e ." in ln)
+    user = index(lambda ln: ln.startswith("USER "))
+    assert package < install and pyproject < install, "the project is installed after its files are copied"
+    assert install < user, "installed as root, the app user only reads it"
 
 
 def test_dockerignore_is_an_allowlist_without_user_state():
