@@ -210,8 +210,18 @@ function followed(s: SeasonEntry): boolean | null {
   const rule = follow.value?.seasons
   if (Array.isArray(rule)) return rule.includes(s.id)
   if (rule === 'all') return true
-  return null
+  // "current" and "last N" are the newest seasons of the stored list, as a download picks them (FX-24 F28)
+  const n = rule === 'current' ? 1 : typeof rule === 'string' ? Number(/^last:(\d+)$/.exec(rule)?.[1] ?? NaN) : NaN
+  if (!Number.isFinite(n)) return null
+  const at = (seasons.value ?? []).findIndex((x) => x.id === s.id)
+  return at < 0 ? null : at < n
 }
+
+/**
+ * Matches of the league's seasons that this follow does not download (FX-24 F28): another follow (a team, a
+ * player, a match) or a download of one season brought them; the league's counts include them.
+ */
+const otherMatches = computed(() => (seasons.value ?? []).filter((s) => followed(s) === false).reduce((n, s) => n + (s.counts?.events ?? 0), 0))
 
 function moved(f: FollowRecord) {
   follow.value = f
@@ -347,6 +357,7 @@ onMounted(() => void load())
                 {{ pct(coverage.coverage) }} · {{ t('ui.followDetail.coverageText', { details: num(coverage.details), matches: num(coverage.matches) }) }}
               </span>
               <span v-else>—</span>
+              <span v-if="isTournament && otherMatches" class="block mt-1 u-small u-muted" data-testid="follow-other-follows">{{ t('ui.followDetail.otherFollows', { n: num(otherMatches) }) }}</span>
             </template>
             <template #value-origin>{{ t(`ui.status.origin.${follow.origin}`) }}</template>
             <template #value-created><TimeText :value="follow.created_at_utc" /></template>

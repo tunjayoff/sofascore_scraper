@@ -740,3 +740,43 @@ describe('F23: teams and single matches have their matches with details too', ()
     expect(w.find('[data-testid="follow-facts"]').text()).toContain(t('ui.followDetail.coverageText', { details: '1', matches: '2' }))
   })
 })
+
+describe('F28: a league’s numbers say when other follows brought matches', () => {
+  const counts = (events: number) => ({ events, finished: events, details: events, complete: events, completion_rate: 100, missing: {}, schedule_fetched_at_utc: null })
+  const seasons = list([
+    { id: 77805, tournament_id: 52, name: 'Trendyol Süper Lig 25/26', year: '25/26', counts: counts(27) },
+    { id: 70000, tournament_id: 52, name: 'Trendyol Süper Lig 24/25', year: '24/25', counts: counts(82) },
+  ])
+  const mount = async (rule: unknown) => {
+    mockFetch({
+      ...SPORTS,
+      'GET /api/v1/follows/tournament:52': { data: follow({ id: 'tournament:52', entity_id: 52, name: 'Trendyol Süper Lig', seasons: rule as never }) },
+      'GET /api/v1/tournaments/52': { data: { id: 52, sport: 'football', category_id: 46, name: 'Trendyol Süper Lig', slug: 'x', category: null } },
+      'GET /api/v1/tournaments/52/seasons': seasons,
+      'GET /api/v1/jobs': page([]),
+    })
+    const { w } = await mountScreen(FollowDetailScreen, '/follows/tournament/52', '/follows/:kind/:id')
+    wrappers.push(w)
+    useStatusStore().status = status({ summary: { ...status().summary!, tournaments: [{ tournament_id: 52, name: 'Trendyol Süper Lig', followed: true, matches: 109, details: 65, events: 109, finished: 109, seasons: 2, seasons_with_events: 2, coverage: 59.6 }] } })
+    await flush()
+    return w
+  }
+
+  it('a chosen season: the matches of the other season are named in the side panel', async () => {
+    const w = await mount([70000])
+    expect(w.find('[data-testid="follow-other-follows"]').text()).toBe(t('ui.followDetail.otherFollows', { n: '27' }))
+    expect(w.find('[data-season="77805"]').text()).toContain(t('ui.followDetail.notFollowed'))
+    expect(w.find('[data-season="70000"]').text()).not.toContain(t('ui.followDetail.notFollowed'))
+  })
+
+  it('"current" is the newest season of the list; the older one is not followed', async () => {
+    const w = await mount('current')
+    expect(w.find('[data-testid="follow-other-follows"]').text()).toBe(t('ui.followDetail.otherFollows', { n: '82' }))
+    expect(w.find('[data-season="70000"]').text()).toContain(t('ui.followDetail.notFollowed'))
+  })
+
+  it('every season followed: no note', async () => {
+    const w = await mount('all')
+    expect(w.find('[data-testid="follow-other-follows"]').exists()).toBe(false)
+  })
+})

@@ -805,6 +805,7 @@ const en = {
     scheduleRead: 'Schedule read',
     scheduleNever: 'Schedule not read yet',
     coverageText: '{details} of {matches} matches have details',
+    otherFollows: 'Includes {n} matches of seasons not followed here, brought by other follows (a team, a player, a match) or by a download of one season.',
     notFound: 'This follow does not exist.',
     notFoundText: 'Nothing is followed with the id {id}.',
     back: 'Back to Leagues & follows',

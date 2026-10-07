@@ -807,6 +807,7 @@ const tr: typeof en = {
     scheduleRead: 'Fikstür okundu:',
     scheduleNever: 'Fikstür henüz okunmadı',
     coverageText: '{matches} maçın {details} tanesinin ayrıntısı indi',
+    otherFollows: 'Burada takip edilmeyen sezonlardan {n} maç da dahil; onları başka takipler (bir takım, oyuncu ya da maç) ya da tek sezonluk bir indirme getirdi.',
     notFound: 'Bu takip yok.',
     notFoundText: '{id} kimliğiyle takip edilen bir şey yok.',
     back: 'Ligler ve takiplere dön',
