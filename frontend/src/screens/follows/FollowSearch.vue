@@ -7,7 +7,7 @@ import FormError from '@/ui/FormError.vue'
 import type { TournamentHit } from '@/api/v1/schema'
 import { sportName } from '@/app/sports'
 import { MIN_CHARS, normalize, useSuggest, type Suggestion } from '@/app/suggest'
-import { hitPlace, kindIcon, playerTeam } from './followText'
+import { hitPlace, hitTraits, kindIcon, playerTeam } from './followText'
 
 /**
  * The follow editor's search (6.3 step 1; FX-20): a combobox that suggests while typing, like the site.
@@ -174,6 +174,7 @@ const sourceText = (item: Suggestion) => (item.source === 'catalog' ? t('ui.sugg
               <span class="font-semibold">{{ item.hit.name }}</span>
               <span v-if="item.hit.sport" class="u-small u-muted">{{ sportName(item.hit.sport) }}</span>
               <span v-if="hitPlace(item.hit)" class="u-small u-muted">{{ hitPlace(item.hit) }}</span>
+              <span v-for="trait in hitTraits(item.hit)" :key="trait" class="u-small u-muted" data-testid="hit-trait">{{ trait }}</span>
               <span v-if="playerTeam(item.hit.team)" class="u-small u-muted" data-testid="hit-team">{{ t('ui.followEditor.playsFor', { team: playerTeam(item.hit.team) }) }}</span>
               <span v-if="item.twin" class="u-small u-muted u-mono" :title="t('ui.suggest.sameName')" data-testid="hit-number">{{ t('ui.suggest.number', { id: item.hit.id }) }}</span>
               <span v-if="sourceText(item)" class="u-small u-muted">· {{ sourceText(item) }}</span>

@@ -266,6 +266,8 @@ const tr: typeof en = {
     individual: 'SofaScore {sport} oyuncularını takım olarak listeler: bu oyuncu takım olarak eklenir ve maçları böyle indirilir.',
     number: 'No. {id}',
     sameName: 'Başka bir sonuçla aynı ad: numaraları sofascore.com’da karşılaştırın',
+    women: 'Kadın',
+    national: 'Milli takım',
   },
   place: {
     england: 'İngiltere',

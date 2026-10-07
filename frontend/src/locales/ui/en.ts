@@ -264,6 +264,8 @@ const en = {
     individual: 'SofaScore lists {sport} players as teams: this one is added as a team, which downloads its matches.',
     number: 'No. {id}',
     sameName: 'Another result has the same name: compare the numbers on sofascore.com',
+    women: 'Women',
+    national: 'National team',
   },
   place: {
     england: 'England',
