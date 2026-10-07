@@ -15,7 +15,8 @@ import JobDetailScreen from '@/screens/jobs/JobDetailScreen.vue'
 import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
 import ExportsScreen from '@/screens/exports/ExportsScreen.vue'
 import HealthScreen from '@/screens/HealthScreen.vue'
-import { everyText } from '@/screens/jobs/jobText'
+import { countsText, everyText } from '@/screens/jobs/jobText'
+import OverviewScreen from '@/screens/OverviewScreen.vue'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
@@ -563,5 +564,38 @@ describe('F37: scheduler intervals in words', () => {
     wrappers.push(w)
     await flush()
     expect(w.findAll('[data-testid="task-every"]').map((x) => x.text())).toEqual(['20 dakikada bir', 'günde bir'])
+  })
+})
+
+describe('F25: the counts of every phase have a unit', () => {
+  it('season lists, match lists, matches; another phase by its name', () => {
+    setLocale('tr')
+    expect(countsText({ phase: 'seasons', done: 0, total: 1 })).toBe('0 / 1 sezon listesi')
+    expect(countsText({ phase: 'matches', done: 2, total: 5 })).toBe('2 / 5 maç listesi')
+    expect(countsText({ phase: 'details', done: 2, total: 49 })).toBe('2 / 49 maç')
+    expect(countsText({ phase: 'export', done: 3, total: 10 })).toBe('Dışa aktarma: 3 / 10')
+    expect(countsText({ phase: null, done: 3, total: 10 })).toBe('3 / 10')
+    setLocale('en')
+    expect(countsText({ phase: 'seasons', done: 0, total: 1 })).toBe('0 of 1 season lists')
+    expect(countsText({ phase: 'matches', done: 2, total: 5 })).toBe('2 of 5 match lists')
+  })
+
+  it('Overview’s running job during the season list: "0 / 1 sezon listesi", not "0 / 1"', async () => {
+    setLocale('tr')
+    const running = job({ id: 'R1', state: 'running', finished_at: null, result: null, spec: { follows: ['tournament:465'], names: { 'tournament:465': 'UEFA Super Cup' } }, progress: { phase: 'seasons', phase_index: 1, phase_count: 3, done: 0, total: 1, percent: 0 } })
+    mockFetch({
+      'GET /api/v1/status': { data: status({ active_job: running }) },
+      'GET /api/v1/jobs': page([running]),
+      'GET /api/v1/follows': page([follow()]),
+      'GET /api/v1/sinks': list([]),
+      'GET /api/v1/changes': page([]),
+      'GET /api/v1/tournaments': page([]),
+    })
+    const { w } = await mountScreen(OverviewScreen, '/')
+    wrappers.push(w)
+    const store = useStatusStore()
+    store.status = status({ active_job: running })
+    await flush()
+    expect(w.find('[data-testid="running"]').text()).toContain('0 / 1 sezon listesi')
   })
 })

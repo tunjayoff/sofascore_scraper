@@ -258,10 +258,19 @@ export function readProgress(raw: unknown): ProgressView {
   }
 }
 
-/** "3 / 10", with "matches" while the job fetches match details (FX-14a: counts carry their unit). */
+/** The unit of the counts of each download phase: season lists of leagues, match lists (schedules of seasons and the lists of team and player follows), matches. */
+const PHASE_COUNTS: Record<string, string> = { seasons: 'ui.job.countsSeasons', matches: 'ui.job.countsLists', details: 'ui.job.countsMatches' }
+
+/**
+ * "3 / 10 maç": the counts with the unit of the current phase (FX-14a for details; FX-24 F25 for every
+ * phase: "0 / 1 sezon listesi", "2 / 5 maç listesi"); another phase is named ("Dışa aktarma: 3 / 10"),
+ * counts without a phase are bare.
+ */
 export function countsText(p: Pick<ProgressView, 'phase' | 'done' | 'total'>, num: (n: number) => string = String): string {
   const args = { done: num(p.done ?? 0), total: num(p.total ?? 0) }
-  return p.phase === 'details' ? t('ui.job.countsMatches', args) : t('ui.job.counts', args)
+  const key = p.phase ? PHASE_COUNTS[p.phase] : undefined
+  if (key) return t(key, args)
+  return p.phase ? t('ui.job.countsPhase', { ...args, phase: phaseText(p.phase) }) : t('ui.job.counts', args)
 }
 
 /** Percent of a job: the progress for a running one, 100 for a finished one, null when unknown. */
