@@ -10,6 +10,7 @@ import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
 import FollowsScreen from '@/screens/follows/FollowsScreen.vue'
 import FollowDetailScreen from '@/screens/follows/FollowDetailScreen.vue'
 import { JOB_WATCH_MS, watchJob, watchJobs } from '@/app/jobWatch'
+import { useStatusStore } from '@/app/statusStore'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
 import { callsTo, flush, mockFetch } from './helpers'
@@ -287,5 +288,68 @@ describe('F5: the follow page says where the league is from, not its number', ()
     wrappers.push(w)
     await flush()
     expect(w.find('[data-testid="follow-header-line"]').text()).toBe('Futbol · Türkiye · Lig')
+  })
+})
+
+describe('F6: the Seasons tab follows a download and says what "complete" means', () => {
+  const season = (counts: Record<string, unknown> | null) => ({ id: 76138, tournament_id: 465, name: 'UEFA Super Cup 2025', year: '2025', counts })
+  const empty = { events: 0, finished: 0, details: 0, complete: 0, completion_rate: 0, missing: {}, schedule_fetched_at_utc: null }
+  const done = { events: 1, finished: 1, details: 1, complete: 0, completion_rate: 0, missing: { pregame_form: 1 }, schedule_fetched_at_utc: '2026-10-07T19:00:00Z' }
+
+  function mountLeague(seasons: () => unknown) {
+    const f = mockFetch({
+      ...SPORTS,
+      'GET /api/v1/follows/tournament:465': { data: follow({ id: 'tournament:465', entity_id: 465, name: 'UEFA Super Cup', seasons: [76138] }) },
+      'GET /api/v1/tournaments/465': { data: { id: 465, sport: 'football', category_id: null, name: 'UEFA Super Cup', slug: 'x', category: null } },
+      'GET /api/v1/tournaments/465/seasons': () => list([seasons()]),
+      'GET /api/v1/jobs': page([]),
+    })
+    return f
+  }
+
+  it('a detailed match that misses a data type: "with all data: 0 %" and what is missing, with why', async () => {
+    mountLeague(() => season(done))
+    const { w } = await mountScreen(FollowDetailScreen, '/follows/tournament/465', '/follows/:kind/:id')
+    wrappers.push(w)
+    await flush()
+    const row = w.find('[data-season="76138"]')
+    expect(row.find('[data-testid="season-complete"]').text()).toBe(t('ui.followDetail.complete', { pct: '0%' }))
+    expect(row.find('[data-testid="season-complete"]').attributes('title')).toBe(t('ui.followDetail.completeHelp'))
+    expect(row.find('[data-testid="season-missing"]').text()).toBe('still missing: Pre-game form (1)')
+    expect(row.find('[data-testid="season-missing"]').attributes('title')).toBe(t('ui.followDetail.missingHelp'))
+    setLocale('tr')
+    await flush()
+    expect(row.find('[data-testid="season-complete"]').text()).toBe('tüm verisi inen: %0')
+    expect(row.find('[data-testid="season-missing"]').text()).toBe(`eksik: ${t('ui.slice.pregame_form')} (1)`)
+  })
+
+  it('reads the seasons while a download of the follow runs, and again when it is gone, without the job watch', async () => {
+    let counts: Record<string, unknown> = empty
+    const f = mountLeague(() => season(counts))
+    const { w } = await mountScreen(FollowDetailScreen, '/follows/tournament/465', '/follows/:kind/:id')
+    wrappers.push(w)
+    await flush()
+    const store = useStatusStore()
+    const seasonsRead = () => callsTo(f, 'GET /api/v1/tournaments/465/seasons').length
+    expect(seasonsRead()).toBe(1)
+    expect(w.find('[data-testid="season-counts"]').text()).toContain(t('ui.followDetail.seasonCounts', { events: '0', finished: '0', details: '0' }))
+    // a download of this follow runs (started anywhere): each status read brings the seasons again
+    store.status = status({ active_job: job({ id: 'R1', state: 'running', spec: { follows: ['tournament:465'] } }) })
+    store.fetchedAt = Date.now()
+    await flush()
+    expect(seasonsRead()).toBe(2)
+    // it is gone: the seasons, the league and the jobs are read again, though no job watch told the page
+    counts = done
+    store.status = status({ active_job: null })
+    store.fetchedAt = Date.now() + 1
+    await flush()
+    expect(seasonsRead()).toBe(3)
+    expect(callsTo(f, 'GET /api/v1/tournaments/465')).toHaveLength(2)
+    expect(w.find('[data-testid="season-counts"]').text()).toContain(t('ui.followDetail.seasonCounts', { events: '1', finished: '1', details: '1' }))
+    // a download of another league changes nothing here
+    store.status = status({ active_job: job({ id: 'R2', state: 'running', spec: { follows: ['tournament:17'] } }) })
+    store.fetchedAt = Date.now() + 2
+    await flush()
+    expect(seasonsRead()).toBe(3)
   })
 })

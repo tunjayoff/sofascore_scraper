@@ -20,6 +20,7 @@ import { onJobEnded } from '@/app/jobWatch'
 import { num, pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
 import { faceText, jobKindText, jobLeague, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
+import { sliceLabel } from '@/screens/events/eventText'
 import EventsList from '@/screens/events/EventsList.vue'
 import FollowActions from './FollowActions.vue'
 import MoveFollow from './MoveFollow.vue'
@@ -133,13 +134,21 @@ function loadJobs() {
 const stopListening = onJobEnded((job) => {
   const f = follow.value
   if (!f || !(syncIncludes(f, job) || jobLeague(job) === f.entity_id || targets(job))) return
-  loadJobs()
   void status.refresh().catch(() => {})
+  afterJob()
+})
+
+/** The end of a job of this follow: its jobs, the league and its seasons again (once, however it was seen). */
+let lastAfterJob = 0
+function afterJob() {
+  if (Date.now() - lastAfterJob < 2000) return
+  lastAfterJob = Date.now()
+  loadJobs()
   if (isTournament.value) {
     loadTournament()
     loadSeasons()
   }
-})
+}
 onUnmounted(stopListening)
 
 function loadSeasons() {
@@ -151,6 +160,36 @@ function loadSeasons() {
       else seasonsError.value = e
     })
 }
+
+/**
+ * What keeps a season's detailed matches from "with all data" (FX-24 F6): each data type with the number of
+ * matches that miss it ("Pre-game form (1)"). The share counts a data type SofaScore answered "no data" for
+ * once as missing until a second answer confirms it, so a download that just ran can show 0 % with every
+ * match detailed; the next download asks again.
+ */
+function missingText(s: SeasonEntry): string {
+  const missing = Object.entries(s.counts?.missing ?? {}).filter(([, n]) => n > 0)
+  if (!missing.length) return ''
+  return t('ui.followDetail.missing', { list: missing.map(([key, n]) => t('ui.followDetail.missingItem', { name: sliceLabel(key), n: num(n) })).join(', ') })
+}
+
+/** A job that works on this follow runs now, in any process (`/status.active_job`). */
+const runningHere = computed(() => {
+  const j = status.activeJob
+  const f = follow.value
+  return !!j && !!f && (syncIncludes(f, j) || jobLeague(j) === f.entity_id || targets(j))
+})
+// While it runs the seasons follow the counts the status shows beside them; when it is gone the page reads
+// everything again, also when its end was not seen by the job watch (a job of another process, FX-24 F6)
+watch(
+  () => status.fetchedAt,
+  () => {
+    if (runningHere.value && isTournament.value && tab.value === 'seasons') loadSeasons()
+  },
+)
+watch(runningHere, (now, before) => {
+  if (before && !now) afterJob()
+})
 
 /** Whether a season is covered by the follow's season rule, as far as the rule tells without dates. */
 function followed(s: SeasonEntry): boolean | null {
@@ -229,10 +268,11 @@ onMounted(() => void load())
                     </span>
                     <span v-if="s.counts" class="u-small u-muted u-num inline-flex flex-wrap items-center gap-x-3" data-testid="season-counts">
                       <span>{{ t('ui.followDetail.seasonCounts', { events: num(s.counts.events), finished: num(s.counts.finished), details: num(s.counts.details) }) }}</span>
-                      <span v-if="s.counts.details" class="inline-flex items-center gap-2"
+                      <span v-if="s.counts.details" class="inline-flex items-center gap-2" :title="t('ui.followDetail.completeHelp')" data-testid="season-complete"
                         ><span class="u-minibar" aria-hidden="true"><span :style="{ width: `${s.counts.completion_rate}%` }"></span></span
                         >{{ t('ui.followDetail.complete', { pct: pct(s.counts.completion_rate) }) }}</span
                       >
+                      <span v-if="missingText(s)" :title="t('ui.followDetail.missingHelp')" data-testid="season-missing">{{ missingText(s) }}</span>
                       <span v-if="s.counts.schedule_fetched_at_utc">{{ t('ui.followDetail.scheduleRead') }} <TimeText :value="s.counts.schedule_fetched_at_utc" relative /></span>
                       <span v-else>{{ t('ui.followDetail.scheduleNever') }}</span>
                     </span>
