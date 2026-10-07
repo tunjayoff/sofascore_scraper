@@ -243,6 +243,9 @@ export const v1 = {
     request<Op<'getEventSlice'>['response']>('GET', `/api/v1/events/${id}/slices/${enc(key)}`, { query: { sub: sub || null }, signal }).then((r) => r.data),
   eventOdds: (id: number, signal?: AbortSignal): Promise<Data<'listEventOdds'>> =>
     request<Op<'listEventOdds'>['response']>('GET', `/api/v1/events/${id}/odds`, { signal }).then((r) => r.data),
+  /** The normalized odds of one odds slice (P28): one record per provider and snapshot; `history: false` the latest only. */
+  eventOddsSnapshots: (id: number, key: string, query: Op<'listEventOddsSnapshots'>['query'] = {}, signal?: AbortSignal): Promise<Data<'listEventOddsSnapshots'>> =>
+    request<Op<'listEventOddsSnapshots'>['response']>('GET', `/api/v1/events/${id}/odds/${enc(key)}`, { query, signal }).then((r) => r.data),
   /** Address of a stored payload: the event's own (`key` empty or `event`) or a slice's; a full-size download. */
   rawUrl: (id: number, key?: string | null, sub?: string | null) => rawPath(id, key) + queryString({ sub: key && key !== 'event' ? sub || null : null }),
   raw: (id: number, key?: string | null, sub?: string | null, signal?: AbortSignal) =>

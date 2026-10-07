@@ -38,13 +38,70 @@ export function seasonsText(seasons: FollowRecord['seasons'] | null | undefined,
 }
 
 /**
- * Where a search hit is from: the country of a team or a player, the category of a league. A country code
- * the browser knows is named in the user's language (FX-20: SofaScore gives English names, a stored team only
- * its code); SofaScore's own codes such as "EN" (England) keep SofaScore's name.
+ * Where a search hit is from: the country of a team or a player, the category of a league, in the reader's
+ * language (FX-20; FX-24 F12: also SofaScore's regions and own codes). See `placeName`.
  */
 export function hitPlace(h: Pick<TournamentHit, 'country' | 'category'>): string {
-  const code = h.country?.code ?? h.category?.country_code ?? null
-  return (code ? regionName(code) : null) ?? h.country?.name ?? h.category?.name ?? code ?? ''
+  return placeName(h.country?.code ?? h.category?.country_code ?? null, h.country?.name ?? h.category?.name ?? null)
+}
+
+/**
+ * SofaScore's places that are no country of ISO 3166 (regions, the home nations, "World"), by the slug of
+ * their English name, to the key of their name under `ui.place` (FX-24 F12). SofaScore writes them in
+ * English and gives them no code, or a code of its own (`EN` for England).
+ */
+const PLACES: Record<string, string> = {
+  england: 'england',
+  scotland: 'scotland',
+  wales: 'wales',
+  'northern-ireland': 'northernIreland',
+  europe: 'europe',
+  'south-america': 'southAmerica',
+  'north-central-america': 'northCentralAmerica',
+  'north-america': 'northAmerica',
+  'central-america': 'centralAmerica',
+  asia: 'asia',
+  africa: 'africa',
+  oceania: 'oceania',
+  world: 'world',
+  international: 'international',
+  'international-clubs': 'internationalClubs',
+  'international-youth': 'internationalYouth',
+}
+/** SofaScore's own country codes (not ISO 3166) to a slug of `PLACES`. */
+const OWN_CODES: Record<string, string> = { EN: 'england' }
+/** English names SofaScore uses that differ from the browser's English name of the country. */
+const ALIASES: Record<string, string> = { turkey: 'TR', usa: 'US', 'czech-republic': 'CZ', 'korea-republic': 'KR', 'chinese-taipei': 'TW' }
+
+function slugOf(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+/**
+ * A country, region or category in the reader's language: a country by its code through the browser's
+ * names (`Intl.DisplayNames`); SofaScore's regions and own codes ("Europe", "South America", `EN`) from the
+ * locale; a country SofaScore names in English without a code ("Turkey") by that name; anything else as
+ * SofaScore writes it.
+ */
+export function placeName(code: string | null | undefined, name: string | null | undefined): string {
+  const upper = code ? code.toUpperCase() : null
+  const own = upper ? OWN_CODES[upper] : undefined
+  if (own) return t(`ui.place.${PLACES[own]}`)
+  const byCode = upper ? regionName(upper) : null
+  if (byCode) return byCode
+  if (name) {
+    const slug = slugOf(name)
+    if (PLACES[slug]) return t(`ui.place.${PLACES[slug]}`)
+    const found = ALIASES[slug] ?? englishCodes().get(slug)
+    const byName = found ? regionName(found) : null
+    if (byName) return byName
+  }
+  return name ?? upper ?? ''
 }
 
 function regionName(code: string): string | null {
@@ -56,7 +113,36 @@ function regionName(code: string): string | null {
   }
 }
 
-/** The icon of a search hit's kind (FX-20): a league, a team, a player. */
+/** The browser's English country names to their codes ("spain" → ES), made once. */
+let codesByName: Map<string, string> | null = null
+function englishCodes(): Map<string, string> {
+  if (codesByName) return codesByName
+  const found = new Map<string, string>()
+  try {
+    const names = new Intl.DisplayNames(['en'], { type: 'region', fallback: 'none' })
+    for (let i = 0; i < 26; i++)
+      for (let j = 0; j < 26; j++) {
+        const code = String.fromCharCode(65 + i, 65 + j)
+        const name = names.of(code)
+        if (name && name !== code) found.set(slugOf(name), code)
+      }
+  } catch {
+    /* this browser has no names of regions */
+  }
+  codesByName = found
+  return found
+}
+
+/** SofaScore's placeholder for a player without a club, never shown as a team (FX-24 F32). */
+const NO_TEAM = ['no team', 'no-team']
+
+/** The team a player plays for, or null: none, or SofaScore's placeholder "No team". */
+export function playerTeam(team: { name?: string | null } | null | undefined): string | null {
+  const name = team?.name?.trim()
+  return name && !NO_TEAM.includes(name.toLowerCase()) ? name : null
+}
+
+/** The icon of a search hit's kind (FX-20): a league, a team, a player (also one SofaScore lists as a team). */
 export function kindIcon(kind: string | null | undefined): 'trophy' | 'shield' | 'user' {
   return kind === 'team' ? 'shield' : kind === 'player' ? 'user' : 'trophy'
 }

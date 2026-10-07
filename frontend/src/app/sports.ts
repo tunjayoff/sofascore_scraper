@@ -32,6 +32,23 @@ export function resetSports() {
   pending = null
 }
 
+/**
+ * Sports of one against one (or a pair), whose players SofaScore lists as teams: a "team" of these sports is
+ * a player for the reader (FX-24 F31). The registry does not say which sports these are (`GET /sports` has
+ * no such field), so the list is kept here; a sport missing from it only keeps the word "team".
+ */
+export const INDIVIDUAL_SPORTS: readonly string[] = ['tennis', 'badminton', 'table-tennis', 'padel', 'darts', 'snooker', 'mma']
+
+export function isIndividual(slug: string | null | undefined): boolean {
+  return !!slug && INDIVIDUAL_SPORTS.includes(slug)
+}
+
+/** A sport's name inside a sentence: lower case unless it is an abbreviation ("tennis", but "MMA"). */
+export function sportInText(slug: string | null | undefined): string {
+  const name = sportName(slug)
+  return name === name.toLocaleUpperCase() ? name : name.toLocaleLowerCase(String(i18n.global.locale.value))
+}
+
 export function sportName(slug: string | null | undefined): string {
   if (!slug) return '—'
   const key = `sport.${slug}`

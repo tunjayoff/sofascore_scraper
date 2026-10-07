@@ -7,7 +7,7 @@ import FormError from '@/ui/FormError.vue'
 import type { TournamentHit } from '@/api/v1/schema'
 import { sportName } from '@/app/sports'
 import { MIN_CHARS, normalize, useSuggest, type Suggestion } from '@/app/suggest'
-import { hitPlace, kindIcon } from './followText'
+import { hitPlace, kindIcon, playerTeam } from './followText'
 
 /**
  * The follow editor's search (6.3 step 1; FX-20): a combobox that suggests while typing, like the site.
@@ -169,12 +169,13 @@ const sourceText = (item: Suggestion) => (item.source === 'catalog' ? t('ui.sugg
             @mousemove="active = s.flat.value.indexOf(item)"
             @click="pick(item)"
           >
-            <UiIcon :name="kindIcon(item.kind)" :size="16" />
+            <UiIcon :name="kindIcon(item.group)" :size="16" />
             <span class="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-2">
               <span class="font-semibold">{{ item.hit.name }}</span>
               <span v-if="item.hit.sport" class="u-small u-muted">{{ sportName(item.hit.sport) }}</span>
               <span v-if="hitPlace(item.hit)" class="u-small u-muted">{{ hitPlace(item.hit) }}</span>
-              <span v-if="item.hit.team?.name" class="u-small u-muted" data-testid="hit-team">{{ t('ui.followEditor.playsFor', { team: item.hit.team.name }) }}</span>
+              <span v-if="playerTeam(item.hit.team)" class="u-small u-muted" data-testid="hit-team">{{ t('ui.followEditor.playsFor', { team: playerTeam(item.hit.team) }) }}</span>
+              <span v-if="item.twin" class="u-small u-muted u-mono" :title="t('ui.suggest.sameName')" data-testid="hit-number">{{ t('ui.suggest.number', { id: item.hit.id }) }}</span>
               <span v-if="sourceText(item)" class="u-small u-muted">· {{ sourceText(item) }}</span>
             </span>
             <UiBadge v-if="item.followed" tone="ok" icon="check">{{ t('ui.followEditor.alreadyFollowed') }}</UiBadge>

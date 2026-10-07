@@ -1,6 +1,7 @@
 import { computed, getCurrentScope, onScopeDispose, ref, watch, type Ref } from 'vue'
 import { v1 } from '@/api/v1/client'
 import type { FollowRecord, TournamentHit } from '@/api/v1/schema'
+import { isIndividual } from '@/app/sports'
 
 /**
  * Suggestions while typing (FX-20), for the follow editor's search and the quick search (Ctrl K):
@@ -35,11 +36,33 @@ export type Suggestion = {
   /** `<kind>:<id>`, the follow id it would get. */
   key: string
   kind: SuggestKind
+  /** The group it is shown in: a "team" of a sport of one against one is a player (FX-24 F31). */
+  group: SuggestKind
   hit: TournamentHit
   followed: boolean
   source: SuggestSource
+  /**
+   * Another suggestion of the same group has the same name and sport (a men's and a women's team, FX-24 F26):
+   * the number tells them apart, since the search answer has no gender (`TournamentHit` has none).
+   */
+  twin: boolean
 }
 export type SuggestGroup = { kind: SuggestKind; items: Suggestion[] }
+
+/**
+ * The kind a hit is shown as: SofaScore lists the players of tennis, darts, MMA … as teams (`team`), so such
+ * a "team" is shown with the players; it is still followed as a team (its follow id stays `team:<id>`).
+ */
+export function shownKind(kind: SuggestKind, sport: string | null | undefined): SuggestKind {
+  return kind === 'team' && isIndividual(sport) ? 'player' : kind
+}
+
+/** Marks the entries whose `same` key another entry has too (`twin`); returns them in the same order. */
+export function markTwins<T extends { twin: boolean }>(list: T[], same: (x: T) => string): T[] {
+  const count = new Map<string, number>()
+  for (const x of list) count.set(same(x), (count.get(same(x)) ?? 0) + 1)
+  return list.map((x) => ({ ...x, twin: (count.get(same(x)) ?? 0) > 1 }))
+}
 
 /** The text as it is sent: trimmed, inner spaces as one. */
 export function normalize(q: string): string {
@@ -275,7 +298,7 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
       }
       // "already added" from the follows; the server's flag only until they are read (a kept answer may be older)
       const known = source === 'follow' || followed.has(key) || (!follows.value.length && !!hit.followed)
-      out.set(key, { key, kind, hit: { ...hit, kind }, followed: known, source })
+      out.set(key, { key, kind, group: shownKind(kind, hit.sport), hit: { ...hit, kind }, followed: known, source, twin: false })
     }
     if (local) {
       const starts = (name: string) => (fold(name).startsWith(wanted) ? 0 : 1)
@@ -291,11 +314,12 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
       const bare = wanted.replace(/ /g, '')
       remote.value.filter((h) => fresh || fold(h.name).replace(/ /g, '').includes(bare)).forEach((h) => add(h, 'sofascore'))
     }
-    return [...out.values()]
+    const found = [...out.values()]
+    return markTwins(found, (x) => `${x.group}|${x.hit.sport ?? ''}|${fold(x.hit.name)}`)
   })
 
   const groups = computed<SuggestGroup[]>(() =>
-    SUGGEST_KINDS.map((kind) => ({ kind, items: items.value.filter((s) => s.kind === kind).slice(0, PER_KIND) })).filter((g) => g.items.length),
+    SUGGEST_KINDS.map((kind) => ({ kind, items: items.value.filter((s) => s.group === kind).slice(0, PER_KIND) })).filter((g) => g.items.length),
   )
   /** The suggestions in the order they are shown (for the arrow keys). */
   const flat = computed(() => groups.value.flatMap((g) => g.items))

@@ -249,15 +249,16 @@ describe('suggestions while typing', () => {
     expect(w.findAll('[role="option"]')).toHaveLength(0)
   })
 
-  it('a country is named in the reader’s language; SofaScore’s own codes keep SofaScore’s name', () => {
+  it('a country is named in the reader’s language; SofaScore’s own codes and regions too (FX-24 F12)', () => {
     const spain = { category: {}, country: { code: 'ES', name: 'Spain' } }
     const england = { category: { name: 'England', country_code: 'EN' }, country: null }
     expect(hitPlace(spain)).toBe('Spain')
     expect(hitPlace({ category: {}, country: { code: 'TR', name: null } })).toBe('Türkiye')
     setLocale('tr')
     expect(hitPlace(spain)).toBe('İspanya')
-    expect(hitPlace(england)).toBe('England')
-    expect(hitPlace({ category: { name: 'World' }, country: null })).toBe('World')
+    // FX-20 kept SofaScore's English name for its own codes and regions; FX-24 names them in the locale
+    expect(hitPlace(england)).toBe('İngiltere')
+    expect(hitPlace({ category: { name: 'World' }, country: null })).toBe('Dünya')
     setLocale('en')
   })
 })

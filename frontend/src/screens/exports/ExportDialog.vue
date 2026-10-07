@@ -5,10 +5,11 @@ import UiDialog from '@/ui/UiDialog.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import FormError from '@/ui/FormError.vue'
 import { v1 } from '@/api/v1/client'
-import type { ExportFilter, ExportJobSpec, Job, TournamentRecord } from '@/api/v1/schema'
+import type { ExportFilter, ExportJobSpec, FollowRecord, Job, TournamentRecord } from '@/api/v1/schema'
 import { useStatusStore } from '@/app/statusStore'
 import { loadSports, sportName, sports } from '@/app/sports'
 import { startJob } from '@/screens/jobs/startJob'
+import { num } from '@/ui/time'
 
 /**
  * New export (6.10; FX-14b): what the API writes (SC-2, P28). Three kinds:
@@ -19,6 +20,9 @@ import { startJob } from '@/screens/jobs/startJob'
  *  - SofaScore's original data, unchanged (raw, JSONL): the match itself or every data type.
  * The filter is the export spec's: sport, added leagues, season and match numbers, status classes (not for
  * score changes) and a time range. The file is named after the league or dataset and the date (FX-19).
+ * Added teams and single matches can be chosen too (FX-24 F13): the export filter has no team, so a team
+ * stands for the matches of it stored now (`GET /events?participant=`), sent with a match as match numbers.
+ * Added players cannot be chosen: neither the filter nor the event list knows the matches of a player.
  */
 const emit = defineEmits<{ close: []; started: [Job] }>()
 const { t } = useI18n()
@@ -44,6 +48,15 @@ const classes = ref<string[]>([])
 const from = ref('')
 const to = ref('')
 const tournaments = ref<TournamentRecord[]>([])
+const others = ref<FollowRecord[]>([])
+const chosenFollows = ref<string[]>([])
+/** The stored matches of each chosen team, read when it is chosen; null while reading, 'failed' if refused. */
+const teamMatches = ref<Record<string, number[] | null | 'failed'>>({})
+/** At most this many pages of a team's matches are read (200 each). */
+const TEAM_PAGES = 10
+const teamFollows = computed(() => others.value.filter((x) => x.kind === 'team'))
+const matchFollows = computed(() => others.value.filter((x) => x.kind === 'event'))
+const playerFollows = computed(() => others.value.filter((x) => x.kind === 'player'))
 const busy = ref(false)
 const error = ref<unknown>(null)
 
@@ -64,9 +77,59 @@ function ids(text: string): number[] | null {
   return out.every((n) => Number.isInteger(n) && n > 0) ? out : null
 }
 const seasonIds = computed(() => ids(seasonText.value))
-const eventIds = computed(() => ids(eventText.value))
+const typedEventIds = computed(() => ids(eventText.value))
+/** The typed match numbers, the chosen single matches and the stored matches of the chosen teams. */
+const eventIds = computed<number[] | null>(() => {
+  const typed = typedEventIds.value
+  if (typed === null) return null
+  const out = new Set(typed)
+  for (const id of chosenFollows.value) {
+    const f = others.value.find((x) => x.id === id)
+    if (f?.kind === 'event') out.add(f.entity_id)
+    const found = teamMatches.value[id]
+    if (f?.kind === 'team' && Array.isArray(found)) for (const e of found) out.add(e)
+  }
+  return [...out]
+})
+const readingTeams = computed(() => chosenFollows.value.some((id) => teamMatches.value[id] === null))
+
+/** The stored matches of a team, page by page (this server only). */
+async function readTeam(f: FollowRecord) {
+  if (f.id in teamMatches.value) return
+  teamMatches.value = { ...teamMatches.value, [f.id]: null }
+  const found: number[] = []
+  let cursor: string | null = null
+  try {
+    for (let i = 0; i < TEAM_PAGES; i++) {
+      const r = await v1.events({ participant: [f.entity_id], limit: 200, cursor })
+      found.push(...r.data.map((e) => e.id))
+      cursor = r.page.next_cursor ?? null
+      if (!cursor) break
+    }
+    teamMatches.value = { ...teamMatches.value, [f.id]: found }
+    teamMore.value = { ...teamMore.value, [f.id]: !!cursor }
+  } catch {
+    teamMatches.value = { ...teamMatches.value, [f.id]: 'failed' }
+  }
+}
+const teamMore = ref<Record<string, boolean>>({})
+watch(chosenFollows, (list) => {
+  for (const id of list) {
+    const f = teamFollows.value.find((x) => x.id === id)
+    if (f) void readTeam(f)
+  }
+})
+function teamText(id: string): string {
+  const found = teamMatches.value[id]
+  if (found === undefined) return ''
+  if (found === null) return t('ui.exports.dialog.followReading')
+  if (found === 'failed') return t('ui.exports.dialog.followFailed')
+  return teamMore.value[id] ? t('ui.exports.dialog.followMatchesMore', { n: num(found.length) }) : t('ui.exports.dialog.followMatches', { n: num(found.length) })
+}
 const rangeOk = computed(() => !from.value || !to.value || from.value <= to.value)
-const valid = computed(() => seasonIds.value !== null && eventIds.value !== null && rangeOk.value && (format.value !== 'parquet' || parquet.value || kind.value !== 'normalized'))
+const valid = computed(
+  () => seasonIds.value !== null && eventIds.value !== null && !readingTeams.value && rangeOk.value && (format.value !== 'parquet' || parquet.value || kind.value !== 'normalized'),
+)
 
 const spec = computed<ExportJobSpec>(() => {
   const filter: ExportFilter = {
@@ -103,6 +166,9 @@ onMounted(() => {
   void loadSports().catch(() => {})
   v1.tournaments({ followed: true, limit: 200 })
     .then((r) => (tournaments.value = r.data))
+    .catch(() => {})
+  v1.follows()
+    .then((r) => (others.value = r.data.filter((x) => x.kind !== 'tournament')))
     .catch(() => {})
 })
 </script>
@@ -160,13 +226,25 @@ onMounted(() => {
           <p v-else class="m-0 u-small u-muted">{{ t('ui.exports.dialog.noTournaments') }}</p>
           <p class="m-0 u-small u-muted">{{ t('ui.exports.dialog.allTournaments') }}</p>
         </div>
+        <div v-if="others.length" class="flex flex-col gap-1" data-testid="export-follows">
+          <span :id="`${uid}-follows`" class="u-small">{{ t('ui.exports.dialog.follows') }}</span>
+          <div v-if="teamFollows.length || matchFollows.length" class="flex flex-col gap-2" role="group" :aria-labelledby="`${uid}-follows`">
+            <label v-for="fl in [...teamFollows, ...matchFollows]" :key="fl.id" class="flex flex-wrap items-center gap-x-2 gap-y-1" :data-follow="fl.id">
+              <input v-model="chosenFollows" type="checkbox" :value="fl.id" class="u-check" />{{ fl.name }}
+              <span class="u-small u-muted">{{ t(`ui.follows.kind.${fl.kind}`) }}</span>
+              <span v-if="fl.kind === 'team' && teamText(fl.id)" class="u-small u-muted" data-testid="export-team-matches">· {{ teamText(fl.id) }}</span>
+            </label>
+          </div>
+          <p class="m-0 u-small u-muted">{{ t('ui.exports.dialog.followsNote') }}</p>
+          <p v-if="playerFollows.length" class="m-0 u-small u-muted" data-testid="export-players-note">{{ t('ui.exports.dialog.playersNote') }}</p>
+        </div>
         <label v-if="!legacy && !changes" class="flex flex-col">
           <span class="u-small">{{ t('ui.exports.dialog.seasonIds') }}</span>
           <input v-model="seasonText" class="u-field u-mono" inputmode="numeric" autocomplete="off" :aria-invalid="seasonIds === null" />
         </label>
         <label class="flex flex-col">
           <span class="u-small">{{ t('ui.exports.dialog.eventIds') }}</span>
-          <input v-model="eventText" class="u-field u-mono" inputmode="numeric" autocomplete="off" :aria-invalid="eventIds === null" />
+          <input v-model="eventText" class="u-field u-mono" inputmode="numeric" autocomplete="off" :aria-invalid="typedEventIds === null" />
         </label>
         <div v-if="!legacy && !changes" class="flex flex-col gap-1">
           <span :id="`${uid}-classes`" class="u-small">{{ t('ui.exports.dialog.classes') }}</span>
@@ -184,7 +262,7 @@ onMounted(() => {
             <input v-model="to" type="date" class="u-field" :aria-invalid="!rangeOk" />
           </label>
         </div>
-        <p v-if="seasonIds === null || eventIds === null" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ t('ui.exports.dialog.badIds') }}</p>
+        <p v-if="seasonIds === null || typedEventIds === null" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ t('ui.exports.dialog.badIds') }}</p>
         <p v-if="!rangeOk" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ t('ui.exports.dialog.badRange') }}</p>
         <p v-if="legacy" class="m-0 u-small u-muted">{{ t('ui.exports.dialog.legacyFilter') }}</p>
       </fieldset>

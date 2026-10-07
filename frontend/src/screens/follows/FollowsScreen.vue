@@ -16,10 +16,11 @@ import { queryText } from '@/app/pagedList'
 import { loadSports, sportName, sports } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
 import { onJobEnded } from '@/app/jobWatch'
-import { pct } from '@/ui/time'
+import { num, pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
 import { noteFollowNames } from '@/screens/jobs/jobText'
 import FollowActions from './FollowActions.vue'
+import { followCoverage, type FollowCoverage } from './followCoverage'
 import { FOLLOW_KINDS, dataText, followPath, hasOdds, lastSyncOf, seasonsText } from './followText'
 
 /**
@@ -74,6 +75,7 @@ async function load() {
     )
     rows.value = page.data
     noteFollowNames(page.data)
+    loadCounts()
     error.value = null
     loaded.value = true
   } catch (e) {
@@ -84,7 +86,33 @@ async function load() {
 }
 
 const shown = computed(() => (f.value.sport ? rows.value.filter((x) => x.sport === f.value.sport) : rows.value))
+/** Follows with the same kind, sport and name (a men's and a women's team, FX-24 F26): their number is shown. */
+const twins = computed(() => {
+  const key = (x: FollowRecord) => `${x.kind}|${x.sport ?? ''}|${x.name.trim().toLowerCase()}`
+  const count = new Map<string, number>()
+  for (const x of rows.value) count.set(key(x), (count.get(key(x)) ?? 0) + 1)
+  return new Set(rows.value.filter((x) => (count.get(key(x)) ?? 0) > 1).map((x) => x.id))
+})
 const coverage = computed(() => new Map((status.status?.summary?.tournaments ?? []).filter((x) => x.tournament_id != null).map((x) => [x.tournament_id as number, x])))
+/** Teams and single matches, counted from their stored matches (FX-24 F23; `/status` counts leagues only). */
+const counted = ref<Map<string, FollowCoverage>>(new Map())
+let countCtl: AbortController | null = null
+function loadCounts() {
+  countCtl?.abort()
+  const ctl = (countCtl = new AbortController())
+  const onlyFinished = status.status?.summary?.only_finished ?? true
+  for (const row of rows.value.filter((x) => x.kind === 'team' || x.kind === 'event'))
+    followCoverage(row, onlyFinished, ctl.signal)
+      .then((c) => {
+        if (c && ctl === countCtl) counted.value = new Map(counted.value).set(row.id, c)
+      })
+      .catch(() => {})
+}
+/** "Matches with details" of a row: a league's from the data summary, a team's or a match's counted here. */
+function coverageOf(row: FollowRecord): { coverage: number; details: number; matches: number } | null {
+  if (row.kind === 'tournament') return coverage.value.get(row.entity_id) ?? null
+  return counted.value.get(row.id) ?? null
+}
 
 const columns = computed<Column<FollowRecord>[]>(() => [
   { key: 'name', label: t('ui.follows.col.name'), card: 'title', sortable: true },
@@ -92,7 +120,7 @@ const columns = computed<Column<FollowRecord>[]>(() => [
   { key: 'kind', label: t('ui.follows.col.kind'), optional: true },
   { key: 'seasons', label: t('ui.follows.col.seasons') },
   { key: 'data', label: t('ui.follows.col.data') },
-  { key: 'coverage', label: t('ui.follows.col.coverage'), sortable: true, sortValue: (x) => coverage.value.get(x.entity_id)?.coverage ?? -1 },
+  { key: 'coverage', label: t('ui.follows.col.coverage'), sortable: true, sortValue: (x) => coverageOf(x)?.coverage ?? -1 },
   { key: 'lastSync', label: t('ui.follows.col.lastSync'), card: 'meta', sortable: true, sortValue: (x) => lastSyncOf(x, syncs.value)?.finished_at ?? '' },
   { key: 'origin', label: t('ui.follows.col.origin'), card: 'badge' },
   { key: 'live', label: t('ui.follows.col.live'), optional: true },
@@ -121,6 +149,7 @@ function loadSyncs() {
 const stopListening = onJobEnded((job) => {
   if (job.kind !== 'sync' && job.kind !== 'fetch') return
   loadSyncs()
+  loadCounts()
   void status.refresh().catch(() => {})
 })
 onUnmounted(stopListening)
@@ -187,7 +216,11 @@ onMounted(() => {
       @retry="load"
     >
       <template #cell-name="{ row }">
-        <span class="inline-flex items-center gap-2">{{ row.name }}<UiBadge v-if="!row.enabled" tone="neutral" icon="pause">{{ t('ui.follows.disabled') }}</UiBadge></span>
+        <span class="inline-flex items-center gap-2"
+          >{{ row.name
+          }}<span v-if="twins.has(row.id)" class="u-small u-muted u-mono" :title="t('ui.follows.sameName')" data-testid="follow-number">{{ t('ui.suggest.number', { id: row.entity_id }) }}</span
+          ><UiBadge v-if="!row.enabled" tone="neutral" icon="pause">{{ t('ui.follows.disabled') }}</UiBadge></span
+        >
       </template>
       <template #cell-sport="{ row }">{{ sportName(row.sport) }}</template>
       <template #cell-kind="{ row }">{{ t(`ui.follows.kind.${row.kind}`) }}</template>
@@ -196,10 +229,16 @@ onMounted(() => {
         <span class="inline-flex items-center gap-2">{{ dataText(row.slices) }}<UiBadge v-if="hasOdds(row.slices)" tone="info">{{ t('ui.follows.data.odds') }}</UiBadge></span>
       </template>
       <template #cell-coverage="{ row }">
-        <span v-if="row.kind === 'tournament' && coverage.get(row.entity_id)" class="inline-flex items-center gap-2 u-num">
-          <span class="u-minibar" aria-hidden="true"><span :style="{ width: `${coverage.get(row.entity_id)!.coverage}%` }"></span></span>
-          {{ pct(coverage.get(row.entity_id)!.coverage) }}
+        <span
+          v-if="coverageOf(row)"
+          class="inline-flex items-center gap-2 u-num"
+          :title="t('ui.followDetail.coverageText', { details: num(coverageOf(row)!.details), matches: num(coverageOf(row)!.matches) })"
+          data-testid="follow-coverage"
+        >
+          <span class="u-minibar" aria-hidden="true"><span :style="{ width: `${coverageOf(row)!.coverage}%` }"></span></span>
+          {{ pct(coverageOf(row)!.coverage) }}
         </span>
+        <span v-else-if="row.kind === 'player'" class="u-muted" :title="t('ui.follows.coveragePlayer')" data-testid="follow-coverage-player">—</span>
         <span v-else class="u-muted">—</span>
       </template>
       <template #cell-lastSync="{ row }">

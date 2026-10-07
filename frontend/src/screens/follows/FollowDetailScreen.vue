@@ -14,17 +14,19 @@ import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1, V1Error } from '@/api/v1/client'
 import type { FollowRecord, Job, SeasonEntry, TournamentRecord } from '@/api/v1/schema'
-import { sportName } from '@/app/sports'
+import { isIndividual, sportName } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
 import { onJobEnded } from '@/app/jobWatch'
 import { num, pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
 import { faceText, jobKindText, jobLeague, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
+import { sliceLabel } from '@/screens/events/eventText'
 import EventsList from '@/screens/events/EventsList.vue'
 import FollowActions from './FollowActions.vue'
 import MoveFollow from './MoveFollow.vue'
 import SlicePicker from './SlicePicker.vue'
-import { dataText, hasOdds, lastSyncOf, lockReason, seasonsText, syncIncludes } from './followText'
+import { dataText, hasOdds, lastSyncOf, lockReason, placeName, seasonsText, syncIncludes } from './followText'
+import { followCoverage, type FollowCoverage } from './followCoverage'
 
 /**
  * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its downloads.
@@ -70,7 +72,17 @@ function setTab(k: Tab) {
 }
 
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
-const coverage = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
+const leagueCoverage = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
+/** A team's or a match's matches with details, counted from its stored matches (FX-24 F23). */
+const counted = ref<FollowCoverage | null>(null)
+const coverage = computed(() => (isTournament.value ? leagueCoverage.value : counted.value))
+function loadCount() {
+  const f = follow.value
+  if (!f || (f.kind !== 'team' && f.kind !== 'event')) return
+  followCoverage(f, status.status?.summary?.only_finished ?? true)
+    .then((c) => (counted.value = c))
+    .catch(() => {})
+}
 /** The jobs of this follow and the downloads of every follow, newest first. */
 const ownJobs = computed(() => (jobs.value ?? []).filter((j) => (follow.value && syncIncludes(follow.value, j)) || targets(j)))
 const lastSync = computed(() => (follow.value ? lastSyncOf(follow.value, jobs.value ?? []) : null))
@@ -85,10 +97,10 @@ async function load() {
   try {
     follow.value = await v1.follow(followId.value)
     noteFollowNames([follow.value])
+    counted.value = null
+    loadCount()
     if (isTournament.value) {
-      v1.tournament(entityId.value)
-        .then((x) => (tournament.value = x))
-        .catch(() => (tournament.value = null))
+      loadTournament()
       loadSeasons()
     }
     loadJobs()
@@ -99,6 +111,26 @@ async function load() {
     loading.value = false
   }
 }
+
+/** The league's record: its category (country or region) is stored by its first download (FX-24 F5). */
+function loadTournament() {
+  v1.tournament(entityId.value)
+    .then((x) => (tournament.value = x))
+    .catch(() => (tournament.value = null))
+}
+
+/**
+ * The line under the title (FX-24 F5): the sport, the league's country or region in the reader's language
+ * and what is followed in one word ("Football · Europe · League"); the number is in the facts.
+ */
+const headerLine = computed(() => {
+  const f = follow.value
+  if (!f) return ''
+  const category = tournament.value?.category
+  const place = category ? placeName(category.country_code, category.name) : ''
+  const kindWord = t(`ui.followDetail.kindShort.${f.kind === 'team' && isIndividual(f.sport) ? 'player' : f.kind}`)
+  return [sportName(f.sport), place, kindWord].filter(Boolean).join(' · ')
+})
 
 function loadJobs() {
   const byTarget = v1.jobs({ target: followId.value, limit: 50 }).then((r) => r.data)
@@ -115,10 +147,22 @@ function loadJobs() {
 const stopListening = onJobEnded((job) => {
   const f = follow.value
   if (!f || !(syncIncludes(f, job) || jobLeague(job) === f.entity_id || targets(job))) return
-  loadJobs()
   void status.refresh().catch(() => {})
-  if (isTournament.value) loadSeasons()
+  afterJob()
 })
+
+/** The end of a job of this follow: its jobs, the league and its seasons again (once, however it was seen). */
+let lastAfterJob = 0
+function afterJob() {
+  if (Date.now() - lastAfterJob < 2000) return
+  lastAfterJob = Date.now()
+  loadJobs()
+  loadCount()
+  if (isTournament.value) {
+    loadTournament()
+    loadSeasons()
+  }
+}
 onUnmounted(stopListening)
 
 function loadSeasons() {
@@ -131,13 +175,53 @@ function loadSeasons() {
     })
 }
 
+/**
+ * What keeps a season's detailed matches from "with all data" (FX-24 F6): each data type with the number of
+ * matches that miss it ("Pre-game form (1)"). The share counts a data type SofaScore answered "no data" for
+ * once as missing until a second answer confirms it, so a download that just ran can show 0 % with every
+ * match detailed; the next download asks again.
+ */
+function missingText(s: SeasonEntry): string {
+  const missing = Object.entries(s.counts?.missing ?? {}).filter(([, n]) => n > 0)
+  if (!missing.length) return ''
+  return t('ui.followDetail.missing', { list: missing.map(([key, n]) => t('ui.followDetail.missingItem', { name: sliceLabel(key), n: num(n) })).join(', ') })
+}
+
+/** A job that works on this follow runs now, in any process (`/status.active_job`). */
+const runningHere = computed(() => {
+  const j = status.activeJob
+  const f = follow.value
+  return !!j && !!f && (syncIncludes(f, j) || jobLeague(j) === f.entity_id || targets(j))
+})
+// While it runs the seasons follow the counts the status shows beside them; when it is gone the page reads
+// everything again, also when its end was not seen by the job watch (a job of another process, FX-24 F6)
+watch(
+  () => status.fetchedAt,
+  () => {
+    if (runningHere.value && isTournament.value && tab.value === 'seasons') loadSeasons()
+  },
+)
+watch(runningHere, (now, before) => {
+  if (before && !now) afterJob()
+})
+
 /** Whether a season is covered by the follow's season rule, as far as the rule tells without dates. */
 function followed(s: SeasonEntry): boolean | null {
   const rule = follow.value?.seasons
   if (Array.isArray(rule)) return rule.includes(s.id)
   if (rule === 'all') return true
-  return null
+  // "current" and "last N" are the newest seasons of the stored list, as a download picks them (FX-24 F28)
+  const n = rule === 'current' ? 1 : typeof rule === 'string' ? Number(/^last:(\d+)$/.exec(rule)?.[1] ?? NaN) : NaN
+  if (!Number.isFinite(n)) return null
+  const at = (seasons.value ?? []).findIndex((x) => x.id === s.id)
+  return at < 0 ? null : at < n
 }
+
+/**
+ * Matches of the league's seasons that this follow does not download (FX-24 F28): another follow (a team, a
+ * player, a match) or a download of one season brought them; the league's counts include them.
+ */
+const otherMatches = computed(() => (seasons.value ?? []).filter((s) => followed(s) === false).reduce((n, s) => n + (s.counts?.events ?? 0), 0))
 
 function moved(f: FollowRecord) {
   follow.value = f
@@ -153,9 +237,10 @@ const facts = computed(() => {
     { key: 'live', label: t('ui.followDetail.fact.live'), value: f.live ? t('ui.follows.liveYes') : t('ui.common.no') },
     { key: 'enabled', label: t('ui.followDetail.fact.enabled'), value: f.enabled ? t('ui.common.yes') : t('ui.common.no') },
     { key: 'lastSync', label: t('ui.followDetail.fact.lastSync') },
-    ...(f.kind === 'tournament' ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
+    ...(f.kind !== 'player' ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
     { key: 'origin', label: t('ui.followDetail.fact.origin') },
     { key: 'created', label: t('ui.followDetail.fact.created') },
+    { key: 'number', label: t('ui.followDetail.fact.number'), value: String(f.entity_id), mono: true },
   ]
 })
 
@@ -178,7 +263,7 @@ onMounted(() => void load())
     <template v-else-if="follow">
       <PageHeader :title="follow.name" :crumbs="[{ label: t('ui.nav.follows'), to: '/follows' }]">
         <template #meta>
-          <span class="u-small u-muted">{{ [sportName(follow.sport), tournament?.category?.name, `${t(`ui.follows.kind.${follow.kind}`)} #${follow.entity_id}`].filter(Boolean).join(' · ') }}</span>
+          <span class="u-small u-muted" data-testid="follow-header-line">{{ headerLine }}</span>
           <StatusBadge v-if="follow.origin !== 'api'" kind="origin" :value="follow.origin" />
           <UiBadge v-if="!follow.enabled" tone="neutral" icon="pause">{{ t('ui.follows.disabled') }}</UiBadge>
         </template>
@@ -207,10 +292,11 @@ onMounted(() => void load())
                     </span>
                     <span v-if="s.counts" class="u-small u-muted u-num inline-flex flex-wrap items-center gap-x-3" data-testid="season-counts">
                       <span>{{ t('ui.followDetail.seasonCounts', { events: num(s.counts.events), finished: num(s.counts.finished), details: num(s.counts.details) }) }}</span>
-                      <span v-if="s.counts.details" class="inline-flex items-center gap-2"
+                      <span v-if="s.counts.details" class="inline-flex items-center gap-2" :title="t('ui.followDetail.completeHelp')" data-testid="season-complete"
                         ><span class="u-minibar" aria-hidden="true"><span :style="{ width: `${s.counts.completion_rate}%` }"></span></span
                         >{{ t('ui.followDetail.complete', { pct: pct(s.counts.completion_rate) }) }}</span
                       >
+                      <span v-if="missingText(s)" :title="t('ui.followDetail.missingHelp')" data-testid="season-missing">{{ missingText(s) }}</span>
                       <span v-if="s.counts.schedule_fetched_at_utc">{{ t('ui.followDetail.scheduleRead') }} <TimeText :value="s.counts.schedule_fetched_at_utc" relative /></span>
                       <span v-else>{{ t('ui.followDetail.scheduleNever') }}</span>
                     </span>
@@ -271,6 +357,7 @@ onMounted(() => void load())
                 {{ pct(coverage.coverage) }} · {{ t('ui.followDetail.coverageText', { details: num(coverage.details), matches: num(coverage.matches) }) }}
               </span>
               <span v-else>—</span>
+              <span v-if="isTournament && otherMatches" class="block mt-1 u-small u-muted" data-testid="follow-other-follows">{{ t('ui.followDetail.otherFollows', { n: num(otherMatches) }) }}</span>
             </template>
             <template #value-origin>{{ t(`ui.status.origin.${follow.origin}`) }}</template>
             <template #value-created><TimeText :value="follow.created_at_utc" /></template>

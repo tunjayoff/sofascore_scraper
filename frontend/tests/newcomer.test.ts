@@ -371,7 +371,8 @@ describe('plain words', () => {
 
   it('counts carry their unit while match details are fetched', () => {
     expect(countsText({ phase: 'details', done: 0, total: 1 })).toBe(t('ui.job.countsMatches', { done: '0', total: '1' }))
-    expect(countsText({ phase: 'seasons', done: 1, total: 2 })).toBe(t('ui.job.counts', { done: '1', total: '2' }))
+    // FX-24 F25: every phase has its unit (was bare "1 of 2" while the season lists were read)
+    expect(countsText({ phase: 'seasons', done: 1, total: 2 })).toBe(t('ui.job.countsSeasons', { done: '1', total: '2' }))
     setLocale('tr')
     expect(countsText({ phase: 'details', done: 0, total: 1 })).toBe('0 / 1 maç')
   })

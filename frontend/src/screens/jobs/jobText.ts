@@ -182,6 +182,22 @@ export function ageText(value: string): string {
   return m ? i18n.global.t(`ui.job.age.${m[2]}`, { n: Number(m[1]) }, Number(m[1])) : String(value)
 }
 
+const SECONDS: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 }
+
+/**
+ * A scheduler task's interval (`every`: a number and s, m, h or d, as the config file has it) in words
+ * (FX-24 F37): "20m" → "every 20 minutes" / "20 dakikada bir", "1d" → "once a day" / "günde bir", "90m"
+ * → "every 90 minutes", "1.5h" → "every 90 minutes". Anything else as "every <text>".
+ */
+export function everyText(every: string): string {
+  const m = /^(\d+(?:\.\d+)?)\s*([smhd])$/i.exec(String(every).trim())
+  const seconds = m ? Number(m[1]) * SECONDS[m[2].toLowerCase()] : NaN
+  if (!Number.isFinite(seconds) || seconds <= 0 || !Number.isInteger(seconds)) return t('ui.health.every', { every })
+  const unit = seconds % 86400 === 0 ? 'd' : seconds % 3600 === 0 ? 'h' : seconds % 60 === 0 ? 'm' : 's'
+  const n = seconds / SECONDS[unit]
+  return i18n.global.t(`ui.health.everyUnit.${unit}`, { n }, n)
+}
+
 function textOr(key: string, fallback: string): string {
   return i18n.global.te(key, 'en') ? t(key) : fallback
 }
@@ -242,10 +258,19 @@ export function readProgress(raw: unknown): ProgressView {
   }
 }
 
-/** "3 / 10", with "matches" while the job fetches match details (FX-14a: counts carry their unit). */
+/** The unit of the counts of each download phase: season lists of leagues, match lists (schedules of seasons and the lists of team and player follows), matches. */
+const PHASE_COUNTS: Record<string, string> = { seasons: 'ui.job.countsSeasons', matches: 'ui.job.countsLists', details: 'ui.job.countsMatches' }
+
+/**
+ * "3 / 10 maç": the counts with the unit of the current phase (FX-14a for details; FX-24 F25 for every
+ * phase: "0 / 1 sezon listesi", "2 / 5 maç listesi"); another phase is named ("Dışa aktarma: 3 / 10"),
+ * counts without a phase are bare.
+ */
 export function countsText(p: Pick<ProgressView, 'phase' | 'done' | 'total'>, num: (n: number) => string = String): string {
   const args = { done: num(p.done ?? 0), total: num(p.total ?? 0) }
-  return p.phase === 'details' ? t('ui.job.countsMatches', args) : t('ui.job.counts', args)
+  const key = p.phase ? PHASE_COUNTS[p.phase] : undefined
+  if (key) return t(key, args)
+  return p.phase ? t('ui.job.countsPhase', { ...args, phase: phaseText(p.phase) }) : t('ui.job.counts', args)
 }
 
 /** Percent of a job: the progress for a running one, 100 for a finished one, null when unknown. */

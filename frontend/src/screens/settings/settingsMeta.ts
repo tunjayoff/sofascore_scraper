@@ -16,7 +16,8 @@ export type Control =
   | { type: 'text'; maxLength?: number }
   | { type: 'list' }
 
-export type Meta = { section: Section; control: Control }
+/** `advanced`: shown last, under a closed "Advanced" fold (FX-24 F20): rarely changed, risky to change. */
+export type Meta = { section: Section; control: Control; advanced?: boolean }
 
 const int = (min?: number, max?: number): Control => ({ type: 'int', min, max, step: 1 })
 const float = (min?: number, max?: number, step = 0.1): Control => ({ type: 'float', min, max, step })
@@ -34,11 +35,11 @@ export const META: Record<string, Meta> = {
   'client.use_proxy': { section: 'requests', control: bool },
   'client.proxy': { section: 'requests', control: text(500) },
   'client.proxy_env': { section: 'requests', control: text() },
-  'client.base_url': { section: 'requests', control: text(500) },
-  'client.captcha_token': { section: 'requests', control: text() },
-  'client.browser_profile': { section: 'requests', control: text() },
+  'client.base_url': { section: 'requests', control: text(500), advanced: true },
+  'client.captcha_token': { section: 'requests', control: text(), advanced: true },
+  'client.browser_profile': { section: 'requests', control: text(), advanced: true },
   'client.browser_headed': { section: 'requests', control: bool },
-  'client.throttle_dir': { section: 'requests', control: text() },
+  'client.throttle_dir': { section: 'requests', control: text(), advanced: true },
   'breaker.rate_limit_consecutive': { section: 'requests', control: int(1, 1000) },
   'breaker.rate_limit_ratio': { section: 'requests', control: float(0, 1, 0.05) },
   'breaker.server_error_consecutive': { section: 'requests', control: int(1, 1000) },
@@ -84,6 +85,11 @@ export const META: Record<string, Meta> = {
  * P30 removes the setting itself).
  */
 export const RETIRED: readonly string[] = ['fetch.save_empty_rounds']
+
+/** Whether a setting goes under the section's "Advanced" fold. */
+export function isAdvanced(key: string): boolean {
+  return !!META[key]?.advanced
+}
 
 export function metaOf(key: string): Meta {
   return META[key] ?? { section: 'other', control: text() }

@@ -20,9 +20,10 @@ import { duration, formatTime, num, secondsBetween, now as clockNow, useClock } 
 import StartJobDialog from './StartJobDialog.vue'
 import JobOutput from './JobOutput.vue'
 import { JobStream, type JobEventMessage } from './jobStream'
-import { logLine, codeText, type LogLine } from './eventText'
-import { loadTournaments } from '@/screens/events/eventText'
-import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
+import { logLine, codeText, seasonsWanted, type LogLine } from './eventText'
+import { loadSeasons, loadTournaments } from '@/screens/events/eventText'
+import { etaSeconds, noteProgress } from '@/app/eta'
+import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobLeague, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
 
 /**
  * Job detail (6.9): state, origin and times; the live progress with phase, counts, ETA and SofaScore's
@@ -60,6 +61,11 @@ let eventLog: JobEventMessage[] = []
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
 const terminal = computed(() => !!job.value && isTerminal(job.value.state))
 const progress = computed(() => live.value ?? readProgress(job.value?.progress))
+// the pace of the last minutes, measured here: the time left is the longer of it and the server's (FX-24 F17)
+watch(progress, (p) => {
+  if (job.value && !terminal.value) noteProgress(job.value.id, p)
+})
+const eta = computed(() => etaSeconds(job.value?.id, progress.value))
 const result = computed(() => (job.value?.result ?? null) as Record<string, unknown> | null)
 const failedList = computed(() => {
   const r = result.value?.failed
@@ -107,6 +113,8 @@ async function load() {
   try {
     job.value = await v1.job(id.value)
     error.value = null
+    const league = jobLeague(job.value)
+    if (league) nameSeasons(league)
     if (terminal.value) live.value = null
   } catch (e) {
     error.value = e
@@ -119,7 +127,22 @@ function addEvent(e: JobEventMessage) {
   eventLog.push(e)
   if (e.type === 'progress') live.value = readProgress(e.data)
   lines.value = [...lines.value, logLine(e)]
+  const league = seasonsWanted(e)
+  if (league) nameSeasons(league)
   if (e.type === 'finished' || e.type === 'cancel_requested') void load()
+}
+
+/**
+ * The season names of a league, read once (the stored season list, this server only), so that the log says
+ * "season 2025" instead of "season #76138" (FX-24 F8); the lines already shown are written again then.
+ */
+const seasonsAsked = new Set<number>()
+function nameSeasons(league: number) {
+  if (seasonsAsked.has(league)) return
+  seasonsAsked.add(league)
+  loadSeasons(league)
+    .then(() => (lines.value = eventLog.map(logLine)))
+    .catch(() => {})
 }
 
 function openStream(after = 0) {
@@ -279,7 +302,7 @@ onUnmounted(() => {
         <ProgressBar :value="progress.percent" :label="t('ui.job.progressLabel')" :text="progress.total ? countsText(progress, num) : undefined" />
         <p class="m-0 u-small u-muted flex flex-wrap gap-x-4">
           <span v-if="progress.total">{{ countsText(progress, num) }}</span>
-          <span v-if="progress.eta">{{ t('ui.job.eta', { time: duration(progress.eta) }) }}</span>
+          <span v-if="eta" data-testid="job-eta">{{ t('ui.job.eta', { time: duration(eta) }) }}</span>
           <span v-if="progress.failedCount" style="color: var(--danger)">{{ t('ui.jobs.failedCount', { n: num(progress.failedCount) }) }}</span>
         </p>
         <p v-if="waitLeft && progress.wait" class="m-0 u-small flex items-center gap-2" style="color: var(--warn-fg)">
