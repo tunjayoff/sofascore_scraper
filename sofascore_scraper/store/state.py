@@ -90,7 +90,7 @@ class Migration:
         except OSError as e:
             raise StoreError.from_exception(e, self.path, reading=True) from e
         except ValueError as e:
-            raise StoreError(f"state.db geçiş betiği okunamadı: {self.name} ({e})", path=self.path,
+            raise StoreError(f"The state.db migration script could not be read: {self.name} ({e})", path=self.path,
                              detail=str(e)) from e
 
 
@@ -113,7 +113,7 @@ def load_migrations(directory: Optional[PathLike] = None) -> List[Migration]:
     for index, migration in enumerate(found, start=1):
         if migration.version != index:
             raise StoreError(
-                f"state.db geçişleri sıralı değil: {index:04d} bekleniyordu, {migration.name} bulundu", path=root
+                f"state.db migrations are out of order: expected {index:04d}, found {migration.name}", path=root
             )
     return found
 
@@ -184,7 +184,7 @@ class StateDb:
     def connection(self) -> sqlite3.Connection:
         """Çağıran iş parçacığının bağlantısı (ilk çağrıda açılır). İşlem dışında otomatik kayıt kipindedir."""
         if self._closed:
-            raise StoreError(f"state.db kapatılmış: {self.path}", path=self.path)
+            raise StoreError(f"state.db is closed: {self.path}", path=self.path)
         conn = self._connections.current()
         if conn is None:
             conn = self._connect()
@@ -240,7 +240,7 @@ class StateDb:
         finally:
             probe.close()
         if app_id != APPLICATION_ID and (app_id != 0 or version != 0 or objects != 0):
-            raise StoreError(f"Dosya bir state.db değil (application_id {app_id:#x}): {self.path}", path=self.path)
+            raise StoreError(f"The file is not a state.db (application_id {app_id:#x}): {self.path}", path=self.path)
         if version > self.latest_version:
             raise SchemaTooNew(path=self.path, component="state", found=version, supported=self.latest_version)
 
@@ -284,7 +284,7 @@ class StateDb:
                 return
             files.replace(tmp, target)
         except sqlite3.Error as e:
-            raise StoreError(f"state.db geçişten önce kopyalanamadı ({e}): {target}", path=target,
+            raise StoreError(f"state.db could not be copied before the migration ({e}): {target}", path=target,
                              detail=str(e)) from e
         finally:
             with contextlib.suppress(StoreError):
@@ -320,7 +320,7 @@ class StateDb:
             rollback(conn)
             # sqlite3.Warning: Python 3.11 ve öncesinde "aynı anda tek deyim" hatası bu sınıfla gelir
             if isinstance(e, (sqlite3.Error, sqlite3.Warning)):
-                raise StoreError(f"state.db geçişi başarısız, geri alındı: {migration.name} ({e})",
+                raise StoreError(f"The state.db migration failed and was rolled back: {migration.name} ({e})",
                                  path=migration.path, detail=str(e)) from e
             raise
         logger.info("state.db migration applied: %s", migration.name)
@@ -376,7 +376,7 @@ class RuntimeFacts:
         try:
             value_json = json.dumps(dict(value), ensure_ascii=False, separators=(",", ":"))
         except (TypeError, ValueError) as e:
-            raise StoreError(f"Çalışma zamanı bilgisi JSON'a çevrilemedi: {key} ({e})", detail=str(e)) from e
+            raise StoreError(f"The runtime value could not be converted to JSON: {key} ({e})", detail=str(e)) from e
         with self._state.write() as conn:
             conn.execute(
                 """

@@ -222,7 +222,7 @@ def test_one_connection_per_thread_and_close_closes_all(db):
     for conn in (main, seen[0]):
         with pytest.raises(sqlite3.ProgrammingError):
             conn.execute("SELECT 1")
-    with pytest.raises(StoreError, match="kapatılmış"):
+    with pytest.raises(StoreError, match="closed"):
         db.connection()
     release.set()
     thread.join(5)
@@ -547,7 +547,7 @@ def test_foreign_database_is_refused_and_not_modified(tmp_path):
     """Yanlışlıkla verilen başka bir SQLite dosyası (ör. 2.x jobs.db) state.db'ye çevrilmez."""
     path = _make_legacy_db(tmp_path / "data" / ".meta" / "jobs.db")
     before = _sha256(path)
-    with pytest.raises(StoreError, match="state.db değil"):
+    with pytest.raises(StoreError, match="not a state.db"):
         StateDb(path)
     assert _sha256(path) == before
     assert sorted(os.listdir(os.path.dirname(path))) == ["jobs.db"]  # -wal / -shm de oluşmadı
@@ -557,7 +557,7 @@ def test_foreign_database_is_refused_and_not_modified(tmp_path):
     conn.execute("PRAGMA application_id = 0x53464331")
     conn.commit()
     conn.close()
-    with pytest.raises(StoreError, match="state.db değil"):
+    with pytest.raises(StoreError, match="not a state.db"):
         StateDb(catalog)
 
 

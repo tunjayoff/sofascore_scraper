@@ -45,7 +45,7 @@
    },
    {
     "concurrent": [
-     "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
+     "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Data could not be written to disk (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
     ]
    },
    "Storage error: storage error: Permission denied (<SANDBOX>/data/v3/events/9/100/9100003)"
@@ -100,7 +100,7 @@
    },
    {
     "concurrent": [
-     "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
+     "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Data could not be written to disk (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
     ]
    },
    "Storage error: storage error: Permission denied (<SANDBOX>/data/v3/events/9/100/9100003)"

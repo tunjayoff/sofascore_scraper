@@ -18,7 +18,7 @@ from sofascore_scraper.exceptions import StorageError
 class StoreError(StorageError):
     """Store'un fırlattığı her hatanın tabanı."""
 
-    default_message = "Depolama katmanında bir hata oluştu"
+    default_message = "A storage error occurred"
 
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None,
                  errno_code: Optional[int] = None, detail: str = ""):
@@ -34,7 +34,7 @@ class StoreError(StorageError):
         code = exc.errno if isinstance(exc, OSError) else None
         where = path or (getattr(exc, "filename", None) if isinstance(exc, OSError) else None)
         detail = (exc.strerror if isinstance(exc, OSError) and exc.strerror else str(exc)) or type(exc).__name__
-        message = f"Veri diskten okunamadı ({detail})" if reading else f"Veri diske yazılamadı ({detail})"
+        message = f"Data could not be read from disk ({detail})" if reading else f"Data could not be written to disk ({detail})"
         if where:
             message += f": {where}"
         return cls(message, path=where, errno_code=code, detail=detail)
@@ -43,7 +43,7 @@ class StoreError(StorageError):
 class LeaseHeld(StoreError):
     """İstenen kilit (lease) başka bir sahipte. Alanlar `leases` tablosundan okunan sahip bilgisidir."""
 
-    default_message = "Veri dizini başka bir süreç tarafından kullanılıyor"
+    default_message = "The data directory is used by another process"
 
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None,
                  errno_code: Optional[int] = None, detail: str = "", *,
@@ -60,13 +60,13 @@ class LeaseHeld(StoreError):
 class StoreBusy(StoreError):
     """Yazma kilidi `busy_timeout` içinde alınamadı (başka bir süreç yazıyor)."""
 
-    default_message = "Depo meşgul: yazma kilidi alınamadı"
+    default_message = "The store is busy: the write lock could not be taken"
 
 
 class UnknownEvent(StoreError):
     """Katalogda olmayan bir maça, `event` yükü olmadan yazma istendi."""
 
-    default_message = "Bilinmeyen maç"
+    default_message = "Unknown match"
 
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None,
                  errno_code: Optional[int] = None, detail: str = "", *, event_id: Optional[int] = None):
@@ -79,25 +79,25 @@ class UnknownEvent(StoreError):
 class PayloadMissing(StoreError):
     """Kaydı olan bir yük dosyası diskte yok."""
 
-    default_message = "Yük dosyası bulunamadı"
+    default_message = "Payload file not found"
 
 
 class PayloadCorrupt(StoreError):
     """Yük ya da manifest dosyası okunamıyor: yarım, bozuk sıkıştırma ya da geçersiz JSON."""
 
-    default_message = "Yük dosyası bozuk"
+    default_message = "Payload file is corrupt"
 
 
 class CatalogCorrupt(StoreError):
     """catalog.db açılamıyor ya da tutarlılık denetimini geçemiyor."""
 
-    default_message = "Katalog bozuk"
+    default_message = "The catalog is corrupt"
 
 
 class SchemaTooNew(StoreError):
     """Veri dizini (düzen, manifest ya da state şeması) bu sürümün bildiğinden daha yeni."""
 
-    default_message = "Veri dizini daha yeni bir sürümle yazılmış"
+    default_message = "The data directory was written by a newer version"
 
     def __init__(self, message: Optional[str] = None, path: Optional[str] = None,
                  errno_code: Optional[int] = None, detail: str = "", *,
@@ -106,7 +106,7 @@ class SchemaTooNew(StoreError):
         self.found = found
         self.supported = supported
         if message is None and found is not None:
-            message = f"{self.default_message} ({component or 'schema'}: {found}, desteklenen: {supported})"
+            message = f"{self.default_message} ({component or 'schema'}: {found}, supported: {supported})"
             if path:
                 message += f": {path}"
         super().__init__(message, path=path, errno_code=errno_code, detail=detail)
@@ -115,19 +115,19 @@ class SchemaTooNew(StoreError):
 class LayoutError(StoreError):
     """v3 düzeninin kurallarına uymayan ad, yol ya da manifest (geçersiz dilim anahtarı, bilinmeyen sonek...)."""
 
-    default_message = "Geçersiz depo düzeni"
+    default_message = "Invalid store layout"
 
 
 class FollowExists(StoreError):
     """Aynı kimlikle ya da aynı turnuva adıyla bir takip kaydı zaten var."""
 
-    default_message = "Takip kaydı zaten var"
+    default_message = "The follow already exists"
 
 
 class FollowManaged(StoreError):
     """Takip kaydı yapılandırma dosyasından geliyor; API üzerinden değiştirilemez."""
 
-    default_message = "Takip kaydı yapılandırma dosyasından yönetiliyor"
+    default_message = "The follow is managed by the configuration file"
 
 
 __all__ = [

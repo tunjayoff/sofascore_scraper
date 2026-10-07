@@ -533,7 +533,7 @@ def test_sqlite_errors_inside_a_write_become_store_errors(cat):
 
 def test_write_cannot_start_inside_a_read_transaction(cat):
     with cat.read():
-        with pytest.raises(StoreError, match="okuma"):
+        with pytest.raises(StoreError, match="read transaction"):
             with cat.write():
                 pass  # pragma: no cover
     with cat.write():
@@ -823,7 +823,7 @@ def test_upsert_rejects_bad_rows_and_calls_outside_a_write(cat):
             cat.upsert("event_slices", [{"key": "statistics", "state": "ok"}])  # `sub` varsayılanlı, `event_id` değil
         with pytest.raises(StoreError, match="'id'"):
             cat.upsert("events", [{"status_class": "live", "row_source": "event", "first_seen_at": 1, "updated_at": 1}])
-        with pytest.raises(StoreError, match="tablo"):
+        with pytest.raises(StoreError, match="no table"):
             cat.upsert("no_such_table", [{"id": 1}])
         with pytest.raises(ValueError):
             cat.upsert("events", [_event(1)], on_conflict="replace")

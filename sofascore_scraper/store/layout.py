@@ -72,7 +72,7 @@ def _reserved(name: str) -> bool:
 def validate_key(key: str) -> str:
     """Dilim anahtarı: [a-z][a-z0-9_]{0,39}. Geçersizse LayoutError."""
     if not isinstance(key, str) or not _KEY_RE.fullmatch(key) or _reserved(key):
-        raise LayoutError(f"Geçersiz dilim anahtarı: {key!r}")
+        raise LayoutError(f"Invalid slice key: {key!r}")
     return key
 
 
@@ -85,13 +85,13 @@ def validate_sub(sub: str) -> str:
     harf büyüklüğüyle ayrılan iki alt anahtarı tek dosyada birleştirirdi.
     """
     if not isinstance(sub, str) or not _SUB_RE.fullmatch(sub) or sub == _NO_SUB or (sub and _reserved(sub)):
-        raise LayoutError(f"Geçersiz dilim alt anahtarı: {sub!r}")
+        raise LayoutError(f"Invalid slice sub-key: {sub!r}")
     return sub
 
 
 def _check_id(value: int, what: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise LayoutError(f"Geçersiz {what} kimliği: {value!r}")
+        raise LayoutError(f"Invalid {what} id: {value!r}")
     return value
 
 
@@ -134,7 +134,7 @@ def entity_dir(kind: str, entity_id: int, tournament_id: Optional[int] = None) -
         return tournament_dir(entity_id)
     if kind == "season":
         if tournament_id is None:
-            raise LayoutError(f"Sezon dizini için turnuva kimliği gerekli (sezon {entity_id!r})")
+            raise LayoutError(f"A season directory needs a tournament id (season {entity_id!r})")
         return season_dir(tournament_id, entity_id)
     if kind == "team":
         return team_dir(entity_id)
@@ -142,7 +142,7 @@ def entity_dir(kind: str, entity_id: int, tournament_id: Optional[int] = None) -
         return player_dir(entity_id)
     if kind == "sport":
         return sport_dir(entity_id)
-    raise LayoutError(f"Bilinmeyen varlık türü: {kind!r}")
+    raise LayoutError(f"Unknown entity kind: {kind!r}")
 
 
 def event_id_from_dir(rel: str) -> Optional[int]:
@@ -169,10 +169,10 @@ def slice_name(key: str, sub: str = "") -> str:
 def split_slice_name(name: str) -> Tuple[str, str]:
     """`slice_name`in tersi: "odds_all/1" → ("odds_all", "1"). Geçersiz adda LayoutError."""
     if not isinstance(name, str):
-        raise LayoutError(f"Geçersiz dilim adı: {name!r}")
+        raise LayoutError(f"Invalid slice name: {name!r}")
     key, slash, sub = name.partition("/")
     if slash and not sub:
-        raise LayoutError(f"Geçersiz dilim adı: {name!r}")
+        raise LayoutError(f"Invalid slice name: {name!r}")
     return validate_key(key), validate_sub(sub)
 
 
@@ -193,7 +193,7 @@ def lock_path(name: str) -> str:
     """Kilit dosyası: "writer" → .meta/locks/writer.lock, "watcher:tennis" → .meta/locks/watcher-tennis.lock"""
     match = _LEASE_RE.fullmatch(name) if isinstance(name, str) else None
     if match is None:
-        raise LayoutError(f"Geçersiz kilit adı: {name!r}")
+        raise LayoutError(f"Invalid lock name: {name!r}")
     base, qualifier = match.groups()
     return f"{LOCKS_DIR}/{base}-{qualifier}.lock" if qualifier else f"{LOCKS_DIR}/{base}.lock"
 
@@ -201,5 +201,5 @@ def lock_path(name: str) -> str:
 def change_segment(year: int, month: int) -> str:
     """Değişiklik günlüğünün aylık parçası: changes/<yyyy>-<aa>.jsonl (satırın ts_utc ayı)."""
     if not (isinstance(year, int) and isinstance(month, int) and 1 <= year <= 9999 and 1 <= month <= 12):
-        raise LayoutError(f"Geçersiz değişiklik günlüğü ayı: {year!r}-{month!r}")
+        raise LayoutError(f"Invalid change log month: {year!r}-{month!r}")
     return f"{CHANGES_DIR}/{year:04d}-{month:02d}.jsonl"

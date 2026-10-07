@@ -69,7 +69,7 @@ def check_sqlite_version(version: Optional[Sequence[int]] = None) -> None:
     if found < MIN_SQLITE:
         need = ".".join(str(n) for n in MIN_SQLITE[:2])
         have = ".".join(str(n) for n in found)
-        raise StoreError(f"SQLite {need} ya da daha yenisi gerekli; bu Python'daki sürüm {have}", detail=have)
+        raise StoreError(f"SQLite {need} or newer is required; this Python has {have}", detail=have)
 
 
 def _primary_code(exc: BaseException) -> Optional[int]:
@@ -99,16 +99,16 @@ def to_store_error(exc: sqlite3.Error, path: Optional[PathLike] = None) -> Store
     detail = str(exc) or type(exc).__name__
     suffix = f": {where}" if where else ""
     if is_busy_error(exc):
-        return StoreBusy(f"Depo meşgul: veritabanı kilidi alınamadı ({detail}){suffix}", path=where, detail=detail)
+        return StoreBusy(f"The store is busy: the database lock could not be taken ({detail}){suffix}", path=where, detail=detail)
     code = _primary_code(exc)
     text = detail.lower()
     corrupt = code in _SQLITE_CORRUPT_CODES if code is not None else (
         "not a database" in text or "malformed" in text)
     if corrupt:
-        return CatalogCorrupt(f"Veritabanı okunamıyor ({detail}){suffix}", path=where, detail=detail)
+        return CatalogCorrupt(f"The database cannot be read ({detail}){suffix}", path=where, detail=detail)
     errno_code = _SQLITE_ERRNO.get(code) if code is not None else (
         errno.ENOSPC if "disk is full" in text else errno.EROFS if "readonly database" in text else None)
-    return StoreError(f"Veritabanı işlemi başarısız ({detail}){suffix}", path=where, errno_code=errno_code,
+    return StoreError(f"Database operation failed ({detail}){suffix}", path=where, errno_code=errno_code,
                       detail=detail)
 
 

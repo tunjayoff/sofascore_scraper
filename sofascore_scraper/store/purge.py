@@ -98,7 +98,7 @@ class Purger:
         assert tid is not None
         store._require_open()
         if store.readonly:
-            raise StoreError(f"Salt okunur açılmış depo temizlenemez: {store.data_dir}", path=str(store.data_dir))
+            raise StoreError(f"A store opened read-only cannot be cleared: {store.data_dir}", path=str(store.data_dir))
         lease: Optional[Lease] = None
         if not store._leases.held_here(MAINTENANCE):
             lease = store._leases.acquire(MAINTENANCE, purpose=_PURPOSE)

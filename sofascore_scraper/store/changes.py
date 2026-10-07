@@ -503,7 +503,7 @@ def append_row(cat: Catalog, data_dir: PathLike, row: Mapping[str, Any]) -> int:
         line = json.dumps(body, ensure_ascii=False)
         data = line.encode("utf-8")
     except (TypeError, ValueError, RecursionError) as exc:  # UnicodeEncodeError bir ValueError'dır
-        raise StoreError(f"Değişiklik satırı JSON'a çevrilemedi ({exc})", detail=str(exc)) from exc
+        raise StoreError(f"The change row could not be converted to JSON ({exc})", detail=str(exc)) from exc
     indexed = change_row(seq, body, line, segment)
     assert indexed is not None  # ts_utc ve event_id yukarıda denetlendi
 
@@ -572,7 +572,7 @@ class ChangeLog:
         """
         self._store._require_open()
         if self._store.readonly:
-            raise StoreError(f"Depo salt okunur açılmış: {self._store.data_dir}", path=str(self._store.data_dir))
+            raise StoreError(f"The store is opened read-only: {self._store.data_dir}", path=str(self._store.data_dir))
         assert self._catalog is not None
         with self._catalog.write():
             return append_row(self._catalog, self._store.data_dir, row)

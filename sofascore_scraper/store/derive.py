@@ -244,10 +244,10 @@ def event_row(payload: Mapping[str, Any], source: str = "event", observed_at: Ti
     if source not in ROW_SOURCES:
         raise ValueError(f"Geçersiz satır kaynağı: {source!r}")
     if not isinstance(payload, Mapping):
-        raise PayloadCorrupt(f"Olay yükü bir nesne değil: {type(payload).__name__}")
+        raise PayloadCorrupt(f"The event payload is not an object: {type(payload).__name__}")
     event_id = _int(payload.get("id"))
     if event_id is None:
-        raise PayloadCorrupt(f"Olay yükünde geçerli bir kimlik yok: {payload.get('id')!r}")
+        raise PayloadCorrupt(f"The event payload has no valid id: {payload.get('id')!r}")
 
     tournament = _obj(payload, "tournament")
     status = _obj(payload, "status")
@@ -464,7 +464,7 @@ def event_entity_rows(payload: Mapping[str, Any], *, updated_at: Timestamp,
     (dizinleyici turnuva ve sezon satırını yalnızca yoksa ekler; bölüm 3.4, adım 4).
     """
     if not isinstance(payload, Mapping):
-        raise PayloadCorrupt(f"Olay yükü bir nesne değil: {type(payload).__name__}")
+        raise PayloadCorrupt(f"The event payload is not an object: {type(payload).__name__}")
     tournament = _obj(payload, "tournament")
     category = _obj(tournament, "category")
     slug = event_sport_slug(_as_dict(payload)) or (str(sport).lower() if sport else None)

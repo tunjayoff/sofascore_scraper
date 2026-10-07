@@ -250,12 +250,12 @@ def test_a_readonly_or_closed_store_refuses_to_write(canonical: sf.LegacyFixture
         lambda s: s.changes.append({"ts_utc": "2026-10-01T12:00:00+00:00", "event_id": ARS}),
     ]
     for call in calls:
-        with pytest.raises(StoreError, match="salt okunur"):
+        with pytest.raises(StoreError, match="read-only"):
             call(readonly)
     assert readonly.events.get(ARS).layout == "legacy" and readonly.events.payload(ARS) is not None
     readonly.close()
     for call in calls:
-        with pytest.raises(StoreError, match="kapatılmış"):
+        with pytest.raises(StoreError, match="closed"):
             call(readonly)
     assert not os.path.exists(layout.resolve(canonical.data_dir, layout.V3_DIR))
     assert not os.path.exists(layout.resolve(canonical.data_dir, layout.CHANGES_DIR))

@@ -190,10 +190,10 @@ def read_schema(path: PathLike) -> Optional[Dict[str, Any]]:
     try:
         data = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError) as e:
-        raise PayloadCorrupt(f"schema.json okunamıyor ({e}): {where}", path=where, detail=str(e)) from e
+        raise PayloadCorrupt(f"schema.json cannot be read ({e}): {where}", path=where, detail=str(e)) from e
     if (not isinstance(data, dict) or not isinstance(data.get("store_id"), str) or not data["store_id"]
             or not _is_int(data.get("layout_version")) or not _is_int(data.get("min_reader_layout"))):
-        raise PayloadCorrupt(f"schema.json geçersiz (store_id, layout_version, min_reader_layout gerekli): {where}",
+        raise PayloadCorrupt(f"schema.json is not valid (store_id, layout_version and min_reader_layout are required): {where}",
                              path=where)
     return data
 
@@ -253,7 +253,7 @@ class Store:
         if existing is not None:
             check_layout(existing, self._schema_path, readonly=self.readonly)
         if not create and (existing is None or not os.path.isfile(state_path)):
-            raise StoreError(f"Veri dizini henüz bir depo değil (.meta/schema.json ya da state.db yok): "
+            raise StoreError(f"The data directory is not a store yet (no .meta/schema.json or state.db): "
                              f"{self.data_dir}", path=str(self.data_dir))
         meta_dir = layout.resolve(self.data_dir, layout.META_DIR)
         try:
@@ -266,7 +266,7 @@ class Store:
         try:
             self._state = StateDb(state_path, migration_guard=self._leases.migration_guard)
         except sqlite3.Error as e:
-            raise StoreError(f"state.db açılamadı ({e}): {state_path}", path=state_path, detail=str(e)) from e
+            raise StoreError(f"state.db could not be opened ({e}): {state_path}", path=state_path, detail=str(e)) from e
         try:
             self._leases.state = self._state
             import_legacy_jobs(self._state, layout.resolve(self.data_dir, layout.LEGACY_JOBS_DB))
@@ -625,7 +625,7 @@ class Store:
         if not wanted or unknown:
             raise ValueError(f"unknown clear scope: {unknown or wanted!r}")
         if self.readonly:
-            raise StoreError(f"Salt okunur açılmış depo temizlenemez: {self.data_dir}", path=str(self.data_dir))
+            raise StoreError(f"A store opened read-only cannot be cleared: {self.data_dir}", path=str(self.data_dir))
         lease: Optional[Lease] = None
         if not self._leases.held_here(MAINTENANCE):
             lease = self._leases.acquire(MAINTENANCE, purpose=_CLEAR_PURPOSE)
@@ -667,7 +667,7 @@ class Store:
 
     def _require_open(self) -> None:
         if self._closed:
-            raise StoreError(f"Depo kapatılmış: {self.data_dir}", path=str(self.data_dir))
+            raise StoreError(f"The store is closed: {self.data_dir}", path=str(self.data_dir))
 
     def close(self) -> None:
         """

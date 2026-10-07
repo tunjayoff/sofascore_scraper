@@ -47,8 +47,8 @@ _REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 INVALID_REQUEST = "invalid_request"
 STORAGE_ERROR = "storage_error"
-# Deponun kendi iletisi Türkçedir (sofascore_scraper/store/errors.py); v1'in `message` alanı İngilizcedir. Hata bir işletim
-# sistemi nedenini taşımıyorsa bu genel ileti kullanılır ve deponun metni `details.store_message`e gider.
+# Deponun kendi iletisi (sofascore_scraper/store/errors.py; FX-25'ten beri İngilizce) yol ve iç ayrıntı taşır. Hata bir
+# işletim sistemi nedenini taşımıyorsa bu genel ileti kullanılır ve deponun metni `details.store_message`e gider.
 STORAGE_MESSAGE = "The data directory could not be read or written."
 INTERNAL_MESSAGE = "Internal error."
 

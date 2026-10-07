@@ -140,7 +140,7 @@ if os.name == "nt":  # pragma: no cover - yalnızca Windows
             except OSError:
                 continue  # bu bayt başka bir paylaşımlı sahipte (ya da hepsi dışlayıcı sahipte)
             return (offset, 1)
-        raise BlockingIOError(errno.EACCES, "kilit dosyasında boş bayt yok")
+        raise BlockingIOError(errno.EACCES, "no free byte in the lock file")
 
     def _os_unlock(fd: int, region: Region) -> None:
         os.lseek(fd, region[0], os.SEEK_SET)
@@ -194,7 +194,7 @@ def lock_plan(name: str) -> Tuple[Tuple[str, str], ...]:
             return ((MAINTENANCE, SHARED), (EXPORT, EXCLUSIVE))
         if base in (SINKS, MAINTENANCE):
             return ((base, EXCLUSIVE),)
-    raise LayoutError(f"Bilinmeyen kilit adı: {name!r}")
+    raise LayoutError(f"Unknown lease name: {name!r}")
 
 
 def _name_from_file(filename: str) -> Optional[str]:
@@ -517,14 +517,15 @@ class LeaseManager:
         if info.pid is not None:
             parts.append(f"pid {info.pid}")
         if info.host:
-            parts.append(f"makine {info.host}")
+            parts.append(f"host {info.host}")
         if info.purpose:
-            parts.append(f"amaç {info.purpose}")
+            parts.append(f"purpose {info.purpose}")
         if info.acquired_at is not None:
-            parts.append("başlangıç " + time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(info.acquired_at)))
+            parts.append("since " + time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(info.acquired_at)))
         who = f" ({', '.join(parts)})" if parts else ""
         return LeaseHeld(
-            f"'{requested}' kilidi alınamadı: veri dizini '{info.name}' kilidiyle başka bir sahipte{who}",
+            f"The '{requested}' lease could not be taken: another owner holds the '{info.name}' lease of the "
+            f"data directory{who}",
             path=self.lock_file(lock_name), name=info.name, pid=info.pid, host=info.host,
             purpose=info.purpose, started_at=info.acquired_at,
         )

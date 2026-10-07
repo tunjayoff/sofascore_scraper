@@ -589,7 +589,7 @@ def test_in_place_is_refused_for_a_file_with_another_schema(canonical: sf.Legacy
     admin.catalog.close()
     _foreign_file(admin.catalog.path, "PRAGMA user_version = 7")
 
-    with pytest.raises(StoreError, match="yerinde yeniden kurulamaz"):
+    with pytest.raises(StoreError, match="cannot be rebuilt in place"):
         admin.rebuild(mode="in_place")
     assert admin.catalog.inspect().rebuild_reason == "schema_version"  # dosyaya dokunulmadı
     assert admin.rebuild().mode == "recreate" and count(admin.catalog) == len(canonical.detail_ids)
@@ -623,7 +623,7 @@ def test_failed_replace_keeps_the_old_catalog(canonical: sf.LegacyFixture, make_
         raise StoreError("Dosya yerine konamadı, başka bir süreçte açık", path=str(dst))
 
     monkeypatch.setattr(files, "replace", busy)
-    with pytest.raises(StoreError, match="başka bir süreçte açık"):
+    with pytest.raises(StoreError, match="open in another process"):
         admin.rebuild(mode="recreate")
 
     assert snapshot(admin.catalog) == before

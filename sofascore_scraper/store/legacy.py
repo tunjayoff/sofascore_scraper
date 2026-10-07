@@ -479,8 +479,8 @@ class LegacyReader:
         """JSON nesnesi tutması gereken dosya; içeriği nesne değilse de PayloadCorrupt."""
         data = self._load(rel)
         if not isinstance(data, dict):
-            raise PayloadCorrupt(f"Dosya bir JSON nesnesi değil: {self.resolve(rel)}", path=self.resolve(rel),
-                                 detail="JSON nesnesi değil")
+            raise PayloadCorrupt(f"The file is not a JSON object: {self.resolve(rel)}", path=self.resolve(rel),
+                                 detail="not a JSON object")
         return data
 
     def _load_dict(self, rel: str, problems: List[LegacyProblem]) -> Optional[Dict[str, Any]]:
@@ -649,14 +649,14 @@ class LegacyReader:
                 problems.append(_problem_of(e, event_rel))  # basic.json bozuk: birleşik dosyadaki kopya kullanılır
         if event is None:
             if combined_event is None:
-                raise PayloadMissing(f"Maç dizininde olay yükü yok: {self.resolve(base)}", path=self.resolve(base))
+                raise PayloadMissing(f"The match directory has no event payload: {self.resolve(base)}", path=self.resolve(base))
             event, event_rel, in_combined = combined_event, combined_rel, True
         if not isinstance(event, dict) or _plain_int(event.get("id")) is None or str(event["id"]) != name:
             found = event.get("id") if isinstance(event, dict) else type(event).__name__
             raise LayoutError(
-                f"Olay yükündeki id ({found!r}) dizin adına ({name!r}) eşit değil: {self.resolve(base)}",
+                f"The id in the event payload ({found!r}) is not the directory name ({name!r}): {self.resolve(base)}",
                 path=self.resolve(base),
-                detail=f"id {found!r}, dizin {name!r}",
+                detail=f"id {found!r}, directory {name!r}",
             )
 
         event_stat = combined_stat if in_combined else self._stat(event_rel)
@@ -953,7 +953,7 @@ class LegacyReader:
     def read_summary_rows(self, summary: LegacySummaryFile) -> List[Dict[str, str]]:
         """Özet CSV'sinin satırları (başlık → metin). JSON özeti için `read_summary_json` kullanılır."""
         if not summary.path.endswith(".csv"):
-            raise LayoutError(f"CSV özeti değil: {self.resolve(summary.path)}", path=self.resolve(summary.path))
+            raise LayoutError(f"Not a CSV summary: {self.resolve(summary.path)}", path=self.resolve(summary.path))
         text = self._read_text(summary.path)
         return [dict(row) for row in csv.DictReader(io.StringIO(text, newline=""))]
 
@@ -966,7 +966,7 @@ class LegacyReader:
         try:
             return files.read_bytes(path).decode("utf-8-sig")
         except UnicodeDecodeError as e:
-            raise PayloadCorrupt(f"Dosya UTF-8 değil ({e}): {path}", path=path, detail=str(e)) from e
+            raise PayloadCorrupt(f"The file is not UTF-8 ({e}): {path}", path=path, detail=str(e)) from e
 
     # -- sezon listeleri --
 

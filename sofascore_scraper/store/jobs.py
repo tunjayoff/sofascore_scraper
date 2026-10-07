@@ -352,7 +352,7 @@ class JobStore:
         Store kapatılınca bu depo da kullanılamaz; yeniden açılan Store yeni bir depo alır.
         """
         if store.closed:
-            raise StoreError(f"Depo kapatılmış: {store.data_dir}", path=str(store.data_dir))
+            raise StoreError(f"The store is closed: {store.data_dir}", path=str(store.data_dir))
         with _by_store_lock:
             jobs = _by_store.get(store)
             if jobs is None:
