@@ -233,6 +233,9 @@ follows, job history and event log; `data`, the match files and the change log; 
 only; or one old 2.x folder: `seasons`, `matches`, `match_details`). Every scope except `config` takes the writer
 lock: while a download runs it exits with 6, so schedule it between downloads (or as a `backup` task of the
 in-app scheduler). `.env` goes in only with `--include-secrets`, and the file name then says `_with_env`.
+The scopes `all`, `state` and `config` also take `config/overrides.json`, the settings saved on the web app's
+**Settings** page; it can hold the proxy URL with its password, so a backup that has it is readable by its
+owner only (like a `_with_env` backup; its name does not change).
 
 ```bash
 ssc backup create
@@ -259,7 +262,11 @@ ssc backup restore NAME --yes          # into an empty data folder
 ssc backup restore NAME --force --yes  # the folder has data: it is moved to the trash first; nothing is merged
 ```
 
-Settings files and `.env` are never restored; the result lists them as skipped.
+The settings saved on the **Settings** page (`config/overrides.json`) come back with the restore, readable by
+the owner only, and the settings are reloaded; if they cannot be used (for example a key this version does not
+know), the current file is kept and the result lists it as skipped. A backup without that file (older backups)
+leaves the current settings alone. The other settings files and `.env` are never restored; the result lists
+them as skipped.
 
 ## Moving old data to the new layout (`ssc migrate`)
 

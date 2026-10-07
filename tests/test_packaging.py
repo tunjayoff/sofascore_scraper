@@ -127,7 +127,9 @@ def test_compose_keeps_every_image_volume_in_a_named_volume():
     """
     İmajın VOLUME dizinleri (log dosyası dahil) her serviste adlandırılmış volume'da durur, anonim volume'da
     değil. Canlı servis tarayıcı profilini ve log klasörünü sunucuyla paylaşmaz (Chromium profil başına tek süreç
-    açar; iki süreç tek log dosyasını döndürmemeli).
+    açar; iki süreç tek log dosyasını döndürmemeli). Canlı sayfaların profili (`/app/browser-profile-live`,
+    imajın VOLUME'u değildir) de canlı serviste kendi volume'unda durur: çözülmüş challenge konteyner
+    yenilenince kaybolmaz (FX-22).
     """
     compose = _compose()
     declared = set(re.findall(r"^  ([a-z][a-z0-9-]*):\s*$", compose.split("\nvolumes:\n", 1)[1], flags=re.M))
@@ -137,10 +139,11 @@ def test_compose_keeps_every_image_volume_in_a_named_volume():
     assert sorted(image_volumes) == ["/app/browser-profile", "/app/config", "/app/data", "/app/logs"]
     used = set()
     per_service = {}
+    extra = {"sofascore-scraper": [], "sofascore-watch": ["/app/browser-profile-live"]}
     for name, text in _services(compose).items():
         mounts = {path: volume for volume, path in
                   re.findall(r"^\s*-\s*([a-z][a-z0-9-]*):(/app/[a-z-]+)\b", text, flags=re.M)}
-        assert sorted(mounts) == sorted(image_volumes), name
+        assert sorted(mounts) == sorted(image_volumes + extra[name]), name
         per_service[name] = mounts
         used |= set(mounts.values())
     assert used == declared
@@ -148,6 +151,7 @@ def test_compose_keeps_every_image_volume_in_a_named_volume():
     assert web["/app/data"] == watch["/app/data"] and web["/app/config"] == watch["/app/config"]
     assert web["/app/browser-profile"] != watch["/app/browser-profile"]
     assert web["/app/logs"] != watch["/app/logs"]
+    assert watch["/app/browser-profile-live"] not in web.values()
 
 
 def test_image_uses_the_new_setting_name_for_the_browser_profile_and_serve_by_default():
@@ -232,3 +236,29 @@ def test_entrypoint_passes_everything_else_to_main_py(tmp_path: Path) -> None:
     assert started["argv"] == ["main.py", "watch", "--source", "poll"] and started["hosts"] is None
 
 
+@pytest.mark.skipif(shutil.which("flock") is None, reason="flock yok")
+def test_entrypoint_clears_a_stale_chromium_lock_of_the_live_profile_for_watch(tmp_path: Path) -> None:
+    """
+    Compose örneği canlı sayfaların profilini (<profil>-live) bir volume'da tutar: yenilenen konteynerde orada da
+    eski konteynerin bayat SingletonLock'u kalır ve Chromium açılmaz. `watch` iki profilin de bayat kilidini
+    siler; başka komutlar canlı profile dokunmaz.
+    """
+    if os.name == "nt":
+        pytest.skip("needs a POSIX sh")
+    profile = tmp_path / "profile"
+    live = tmp_path / "profile-live"
+    env = {"SOFASCORE_CLIENT__BROWSER_PROFILE": str(profile)}
+
+    def stale() -> None:
+        for directory in (profile, live):
+            directory.mkdir(exist_ok=True)
+            (directory / "SingletonLock").unlink(missing_ok=True)
+            os.symlink("old-container-1234", directory / "SingletonLock")
+
+    stale()
+    _entrypoint(tmp_path, "sync", env=env)
+    assert not (profile / "SingletonLock").is_symlink() and (live / "SingletonLock").is_symlink()
+
+    stale()
+    _entrypoint(tmp_path, "watch", env=env)
+    assert not (profile / "SingletonLock").is_symlink() and not (live / "SingletonLock").is_symlink()

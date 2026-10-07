@@ -5,9 +5,11 @@ Ayar yükleyici: katmanları birleştirip bir `Settings` üretir ve her değerin
 Katmanlar, zayıftan güçlüye:
 
     default    koddaki varsayılanlar
-    dotenv     `.env` dosyasından gelen bugünkü adlar (DATA_DIR, MAX_CONCURRENT...). `.env` bugün web
-               arayüzünün yazdığı dosyadır; bu yüzden yapılandırma dosyasının ALTINDA durur.
-    overrides  CONFIG_DIR/overrides.json (arayüzün yazacağı dosya; bugün hiçbir şey yazmıyor)
+    dotenv     `.env` dosyasından gelen bugünkü adlar (DATA_DIR, MAX_CONCURRENT...). `.env` 2.x'in web
+               arayüzünün yazdığı dosyadır (eski `POST /api/settings` hâlâ yazar); bu yüzden yapılandırma
+               dosyasının ALTINDA durur.
+    overrides  CONFIG_DIR/overrides.json (Ayarlar sayfasının, `PATCH /api/v1/settings`in yazdığı dosya;
+               yazarı src/config/overrides.py)
     file       sofascore.toml
     env        süreç ortamı: bugünkü adlar, sonra SOFASCORE_<BÖLÜM>__<ANAHTAR> (ikisi de verilmişse yenisi kazanır)
     flag       komut satırı (çağıran `flags` ile verir)

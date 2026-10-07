@@ -488,7 +488,17 @@ def join_job_threads(before: Collection[threading.Thread] = (), timeout: float =
     deadline = time.monotonic() + timeout
     started = [thread for thread in job_threads() if thread not in before]
     for thread in started:
+        # `threading.enumerate()` başlatılmakta olan thread'i de döndürür: `start()` çağrılmış ama thread henüz
+        # koşmaya başlamamıştır (ör. iş thread'inin `JobManager.run` içinde başlattığı `job-ticker-…`). Böyle bir
+        # thread'e `join()` RuntimeError verir ("cannot join thread before it is started"). Onu başlatan
+        # `Thread.start()` bu olay kurulana kadar döndüğünden olay kısa sürede kurulur; önce onu, sonra bitişi
+        # bekleriz. `_started` CPython'un `Thread`'inde 3.10'dan beri vardır (genel bir karşılığı yoktur)
+        if not thread._started.wait(max(0.0, deadline - time.monotonic())):  # type: ignore[attr-defined]
+            continue
         thread.join(max(0.0, deadline - time.monotonic()))
+    never_started = sorted(
+        thread.name for thread in started if not thread._started.is_set())  # type: ignore[attr-defined]
+    assert not never_started, f"job threads still not started after {timeout} s: {never_started}"
     alive = sorted(thread.name for thread in started if thread.is_alive())
     assert not alive, f"job threads still running after {timeout} s: {alive}"
 

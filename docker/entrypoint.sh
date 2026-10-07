@@ -33,17 +33,27 @@ LOOPBACK_HOSTS="localhost,127.0.0.1,[::1]"
 #   - alınabildiyse profili kullanan başka canlı konteyner yoktur → Chromium kilidi bayattır, silinir;
 #   - alınamadıysa profil kullanımdadır → dokunulmaz, tarayıcı açılmayacağı için uyarı yazılır.
 # fd 9 exec ile Python sürecine geçer; kilit konteyner yaşadığı sürece tutulur.
+# `watch` canlı sayfalar için ikinci bir profil açar (<profil>-live, karar D10). Compose örneği onu da bir
+# volume'da tutar; aynı bayat kilit orada da kalır, aynı kuralla (fd 8) açılır.
+unlock_stale_dir() {
+    # $1: profil dizini, $2: kilidi tutacak dosya tanımlayıcısı (8 ya da 9)
+    mkdir -p "$1" 2>/dev/null || return 0
+    [ -w "$1" ] || return 0
+    eval "exec $2>\"\$1/.container.lock\"" || return 0
+    if flock -n "$2"; then
+        rm -f "$1/SingletonLock" "$1/SingletonCookie" "$1/SingletonSocket"
+    else
+        echo "sofascore-entrypoint: WARNING: $1 is in use by another container;" \
+            "the browser cannot start in this one (stop the other container first)." >&2
+    fi
+}
+
 unlock_stale_profile() {
     profile="${SOFASCORE_CLIENT__BROWSER_PROFILE:-${SOFASCORE_BROWSER_PROFILE:-}}"
     [ -n "$profile" ] || return 0
-    mkdir -p "$profile" 2>/dev/null || return 0
-    [ -w "$profile" ] || return 0
-    exec 9>"$profile/.container.lock" || return 0
-    if flock -n 9; then
-        rm -f "$profile/SingletonLock" "$profile/SingletonCookie" "$profile/SingletonSocket"
-    else
-        echo "sofascore-entrypoint: WARNING: $profile is in use by another container;" \
-            "the browser cannot start in this one (stop the other container first)." >&2
+    unlock_stale_dir "$profile" 9
+    if [ "${1:-}" = "watch" ]; then
+        unlock_stale_dir "${profile%/}-live" 8
     fi
 }
 
@@ -73,7 +83,7 @@ allowed_hosts_given() {
 case "${1:-serve}" in
     # Tarayıcıya ihtiyaç duymayan sorgular profile dokunmaz
     --version | --help | -h | version) ;;
-    *) unlock_stale_profile ;;
+    *) unlock_stale_profile "${1:-serve}" ;;
 esac
 
 if [ "$#" -eq 0 ] || [ "$1" = "serve" ] || [ "$1" = "web" ]; then

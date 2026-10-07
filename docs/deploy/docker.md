@@ -66,8 +66,8 @@ own, as the Compose example does.
 ## The live service in a container
 
 The Compose example has a second service, `sofascore-watch`, that runs `ssc watch` and starts only with
-`--profile live`. It shares the data and config volumes with the server, has a browser profile and a log
-volume of its own, no published port and no health check. Read [`watch.md`](watch.md) first:
+`--profile live`. It shares the data and config volumes with the server, has a browser profile, a live
+browser profile and a log volume of its own, no published port and no health check. Read [`watch.md`](watch.md) first:
 
 - **Memory.** The default source, `page`, keeps one browser page per watched sport open: about 1.8 to 2.6 GB
   per sport. Set `mem_limit` above the peak (about 2.6 GB per sport; three sports about 8 GB), and a larger
@@ -76,8 +76,21 @@ volume of its own, no published port and no health check. Read [`watch.md`](watc
   credential outside the site's client, may break without notice when the credential or the server changes,
   may get your IP address blocked, and is a terms-of-use grey area that you choose knowingly. It is never
   chosen for you.
-- The live source's browser profile (`/app/browser-profile-live`) is inside the container, not on a volume: a
-  recreated container solves the challenge again. Mount a volume there to keep it.
+- The live source's browser profile (`/app/browser-profile-live`, the `page` and `direct` sources) is on a
+  volume of its own in the Compose example (`watch-browser-profile-live`), so a recreated container does not
+  solve the challenge again. With `docker run`, mount one there too
+  (`-v sofascore-watch-live:/app/browser-profile-live`); without it the profile lives in the container.
+
+```yaml
+  sofascore-watch:
+    # ...
+    volumes:
+      - data:/app/data
+      - config:/app/config
+      - watch-browser-profile:/app/browser-profile
+      - watch-browser-profile-live:/app/browser-profile-live
+      - watch-logs:/app/logs
+```
 
 The two containers can run at the same time on the same data volume: only `watch` runs the live service, and
 whichever of the two holds the `sinks` lock delivers the configured sinks.

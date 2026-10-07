@@ -90,10 +90,10 @@ def fsync_dir(directory: PathLike) -> None:
 # mkstemp'in bayrakları, okuma dışında: yalnızca yeni dosya (O_EXCL), bağ izlenmez, Windows'ta ikili kip
 _TMP_OPEN_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
 
-def _open_store_tmp(directory: str, name: str) -> Tuple[int, str]:
+def _open_store_tmp(directory: str, name: str, mode: int = STORE_FILE_MODE) -> Tuple[int, str]:
     """
     Store katmanının geçici dosyası: mkstemp ile aynı ad biçimi (`.<ad>.<rastgele>.tmp`), ama
-    STORE_FILE_MODE ile açılır ve izni çekirdek umask'e göre belirler (karar S12).
+    STORE_FILE_MODE (ya da verilen `mode`) ile açılır ve izni çekirdek umask'e göre belirler (karar S12).
 
     umask burada okunmaz: os.umask değeri yalnızca değiştirerek döndürür, bu da o anda başka bir iş
     parçacığının açtığı dosyanın iznini bozar. İzin açılışta verilir; sonradan chmod yapılmaz.
@@ -101,17 +101,17 @@ def _open_store_tmp(directory: str, name: str) -> Tuple[int, str]:
     for _ in range(TMP_NAME_ATTEMPTS):
         tmp = os.path.join(directory, f".{name}.{uuid.uuid4().hex[:8]}.tmp")
         try:
-            return os.open(tmp, _TMP_OPEN_FLAGS, STORE_FILE_MODE), tmp
+            return os.open(tmp, _TMP_OPEN_FLAGS, mode), tmp
         except FileExistsError:
             continue  # ad dolu: var olan dosyaya dokunulmadı (O_EXCL), başka adla dene
     raise FileExistsError(errno.EEXIST, "Kullanılmayan geçici dosya adı bulunamadı", directory)
 
 
-def _atomic_write(path: PathLike, data: bytes, *, durable: bool) -> None:
+def _atomic_write(path: PathLike, data: bytes, *, durable: bool, mode: int = STORE_FILE_MODE) -> None:
     target = os.fspath(path)
     directory = os.path.dirname(os.path.abspath(target))
     os.makedirs(directory, exist_ok=True)
-    fd, tmp = _open_store_tmp(directory, os.path.basename(target))
+    fd, tmp = _open_store_tmp(directory, os.path.basename(target), mode)
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
@@ -150,15 +150,17 @@ def read_bytes(path: PathLike) -> bytes:
         raise _store_error(e, path, reading=True) from e
 
 
-def write_bytes(path: PathLike, data: bytes, *, durable: Optional[bool] = None) -> None:
+def write_bytes(path: PathLike, data: bytes, *, durable: Optional[bool] = None,
+                mode: int = STORE_FILE_MODE) -> None:
     """
     Atomik yazma. durable=None → STORE_DURABILITY ortam değişkeni karar verir.
 
     Dosyanın izni sürecin umask'ine uyar (karar S12), hedef daha önce başka bir izinle var olsa bile:
-    yerine konan dosya yeni dosyadır.
+    yerine konan dosya yeni dosyadır. `mode` umask'ten önceki izindir: 0o600 dosyayı yalnızca sahibinin
+    okuyabileceği biçimde yaratır (gizli değer taşıyan ayar dosyası; Windows'ta etkisizdir).
     """
     try:
-        _atomic_write(path, data, durable=durability_full() if durable is None else durable)
+        _atomic_write(path, data, durable=durability_full() if durable is None else durable, mode=mode)
     except OSError as e:
         raise _store_error(e, path) from e
 

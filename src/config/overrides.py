@@ -160,5 +160,36 @@ def write_overrides(changes: Mapping[str, Any]) -> loader.LoadedSettings:
             raise
 
 
-__all__ = ["SLICES_PREFIX", "checked_slice_override", "checked_value", "merged", "overrides_path", "read_document",
-           "split_key", "write_overrides"]
+def current_bytes(path: Optional[Path] = None) -> Optional[bytes]:
+    """Dosyanın bugünkü baytları (geri almak için); dosya yoksa None. Okunamazsa ConfigError."""
+    target = path or overrides_path()
+    try:
+        return target.read_bytes() if target.is_file() else None
+    except OSError as e:
+        raise ConfigError(f"{target}: cannot read the overrides file: {e}") from e
+
+
+def reload_or_put_back(before: Optional[bytes], path: Optional[Path] = None) -> Optional[str]:
+    """
+    Dosyayı başka biri değiştirdikten sonra (yedekten geri yükleme, FX-22) ayarları yeniden yükler. Yeni
+    belgeyle ayarlar kurulamazsa dosya `before`a döner (None: silinir), önceki ayarlar yürürlükte kalır ve
+    hatanın türü döner; kurulursa None. Hata iletisi değer taşıyabileceği için döndürülmez.
+    """
+    target = path or overrides_path()
+    try:
+        loader.reload()
+        return None
+    except Exception as e:
+        error = e.__class__.__name__
+    try:
+        _restore(target, before)
+        if before is not None:
+            restrict_permissions(str(target), PRIVATE_FILE_MODE)
+        loader.reload()
+    except Exception:  # önceki ayarlar zaten yürürlükte; asıl hata döner
+        pass
+    return error
+
+
+__all__ = ["SLICES_PREFIX", "checked_slice_override", "checked_value", "current_bytes", "merged", "overrides_path",
+           "read_document", "reload_or_put_back", "split_key", "write_overrides"]

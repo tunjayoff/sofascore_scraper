@@ -36,7 +36,7 @@ def test_help_page_is_bilingual_and_says_how_to_get_the_ui():
     assert html.count("npm run build") == 2  # nasıl derlenir: iki dilde
     assert html.count("scripts/start_web.py") == 2  # başlatıcı kendisi derler
     assert html.count(RELEASES_URL) == 2  # derlenmiş arayüz nereden alınır
-    assert html.count("20.19") == 2 and html.count("--doctor") == 2
+    assert html.count("20.19") == 2 and html.count("ssc doctor") == 2  # komut satırı: terminal menüsü yok (P26)
     assert 'href="/docs"' in html and 'href="/health"' in html  # API hâlâ çalışıyor
 
 
