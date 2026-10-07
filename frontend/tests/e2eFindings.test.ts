@@ -15,6 +15,7 @@ import JobDetailScreen from '@/screens/jobs/JobDetailScreen.vue'
 import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
 import ExportsScreen from '@/screens/exports/ExportsScreen.vue'
 import HealthScreen from '@/screens/HealthScreen.vue'
+import { everyText } from '@/screens/jobs/jobText'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
@@ -526,5 +527,41 @@ describe('F15: Health names the running job', () => {
     expect(link.attributes('href')).toBe('/jobs/01M4BVXYZ')
     expect(link.attributes('title')).toBe('01M4BVXYZ')
     expect(link.classes()).not.toContain('u-mono')
+  })
+})
+
+describe('F37: scheduler intervals in words', () => {
+  it('"20 dakikada bir", "günde bir"; "every 20 minutes", "once a day"; odd values as written', () => {
+    setLocale('tr')
+    expect(everyText('20m')).toBe('20 dakikada bir')
+    expect(everyText('1d')).toBe('günde bir')
+    expect(everyText('1m')).toBe('dakikada bir')
+    expect(everyText('6h')).toBe('6 saatte bir')
+    expect(everyText('1h')).toBe('saatte bir')
+    expect(everyText('2d')).toBe('2 günde bir')
+    expect(everyText('90m')).toBe('90 dakikada bir')
+    expect(everyText('1.5h')).toBe('90 dakikada bir')
+    expect(everyText('120m')).toBe('2 saatte bir')
+    expect(everyText('30s')).toBe('30 saniyede bir')
+    expect(everyText('weekly')).toBe('her weekly')
+    setLocale('en')
+    expect(everyText('20m')).toBe('every 20 minutes')
+    expect(everyText('1d')).toBe('once a day')
+    expect(everyText('1h')).toBe('every hour')
+    expect(everyText('6h')).toBe('every 6 hours')
+    expect(everyText('0.5s')).toBe('every 0.5s')
+  })
+
+  it('Health lists the scheduler’s tasks with the interval in words', async () => {
+    setLocale('tr')
+    const run = (index: number, run: string, every: string) => ({ index, run, every, cron: null, options: {}, next_run_at_utc: '2026-10-07T20:00:00Z', last_run_at_utc: null, last_job_id: null, last_result: null })
+    mockFetch({
+      'GET /api/v1/status': { data: status({ capabilities: { parquet: false, sse: true, scheduler: true }, schedule: { enabled: true, next_runs: [run(0, 'refresh', '20m'), run(1, 'backup', '1d')] } }) },
+      'GET /api/v1/tournaments': page([]),
+    })
+    const { w } = await mountScreen(HealthScreen, '/system/health')
+    wrappers.push(w)
+    await flush()
+    expect(w.findAll('[data-testid="task-every"]').map((x) => x.text())).toEqual(['20 dakikada bir', 'günde bir'])
   })
 })

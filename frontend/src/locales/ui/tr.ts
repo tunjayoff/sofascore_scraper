@@ -657,6 +657,12 @@ const tr: typeof en = {
     schedulerOff: 'Kapalı. Sunucudaki sofascore.toml içinde açılır ([schedule] enabled).',
     nextRuns: 'Sonraki çalışmalar',
     every: 'her {every}',
+    everyUnit: {
+      s: 'saniyede bir | {n} saniyede bir',
+      m: 'dakikada bir | {n} dakikada bir',
+      h: 'saatte bir | {n} saatte bir',
+      d: 'günde bir | {n} günde bir',
+    },
     nextRun: 'sonraki:',
     noTasks: 'Tanımlı görev yok (sofascore.toml içinde [[schedule.task]]).',
     lastResult: {

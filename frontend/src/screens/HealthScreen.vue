@@ -20,7 +20,7 @@ import { sportName } from '@/app/sports'
 import { liveState } from '@/ui/status'
 import { failureText } from '@/screens/jobs/eventText'
 import { loadTournaments } from '@/screens/events/eventText'
-import { jobKindText, jobTarget, leagueName } from '@/screens/jobs/jobText'
+import { everyText, jobKindText, jobTarget, leagueName } from '@/screens/jobs/jobText'
 import type { ScheduledRun } from '@/api/v1/schema'
 import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
 
@@ -270,7 +270,8 @@ onMounted(() => {
         <ul v-if="s.schedule?.next_runs?.length" class="m-0 p-0 list-none flex flex-col gap-2" data-testid="scheduler-runs" :aria-label="t('ui.health.nextRuns')">
           <li v-for="r in s.schedule.next_runs" :key="r.index" class="flex flex-wrap items-baseline gap-x-3 gap-y-1" :data-task="r.index">
             <span class="font-semibold">{{ taskText(r) }}</span>
-            <span class="u-small u-muted u-mono">{{ r.every ? t('ui.health.every', { every: r.every }) : r.cron }}</span>
+            <span v-if="r.every" class="u-small u-muted" data-testid="task-every">{{ everyText(r.every) }}</span>
+            <span v-else class="u-small u-muted u-mono">{{ r.cron }}</span>
             <span class="u-small">{{ t('ui.health.nextRun') }} <TimeText :value="r.next_run_at_utc" relative /></span>
             <span v-if="r.last_result && r.last_result !== 'started'" class="u-small" style="color: var(--warn-fg)">{{ t(`ui.health.lastResult.${r.last_result}`) }}</span>
           </li>

@@ -160,7 +160,8 @@ describe('Health', () => {
     const runs = card.findAll('[data-task]')
     expect(runs).toHaveLength(3)
     expect(runs[0].text()).toContain(`${t('ui.job.kind.sync')} · Premier League`)
-    expect(runs[0].text()).toContain(t('ui.health.every', { every: '6h' }))
+    // the interval in words (FX-24 F37), was "every 6h"
+    expect(runs[0].text()).toContain('every 6 hours')
     expect(runs[1].text()).toContain('0 3 * * *')
     expect(runs[1].text()).toContain(t('ui.health.lastResult.skipped_busy'))
     expect(runs[2].text()).toContain(t('ui.job.kind.pruneHistory'))

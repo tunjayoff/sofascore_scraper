@@ -655,6 +655,12 @@ const en = {
     schedulerOff: 'Off. It is turned on in sofascore.toml ([schedule] enabled) on the server.',
     nextRuns: 'Next runs',
     every: 'every {every}',
+    everyUnit: {
+      s: 'every second | every {n} seconds',
+      m: 'every minute | every {n} minutes',
+      h: 'every hour | every {n} hours',
+      d: 'once a day | every {n} days',
+    },
     nextRun: 'next:',
     noTasks: 'No task is set up ([[schedule.task]] in sofascore.toml).',
     lastResult: {
