@@ -60,6 +60,18 @@ the connection state and the readable export names (FX-19) are described as buil
 uses `/api/v1`. References marked `b6caf2f` are to `origin/main` at that commit. Section 11 lists the
 corrections (items 102 to 117).
 
+Revised a seventh time on 2026-10-07 after FX-21 (#164), FX-22 (#165), FX-20 (#167) and REN-1 (#168). The
+search as the user types and the suggestions from stored data, the recorded spec of a download job with
+the body's fields and the names of its follows (FX-20), the settings saved in the web app in a backup and a
+restore (FX-22), the P28 models in schema v1 (FX-21) and the package name (REN-1) are described as built:
+sections 2.2, 2.7, 4.1 and 6. Since REN-1 the import package is `sofascore_scraper`, and paths of the
+package are written with the new name throughout. A `file:line` reference keeps the line it had at the
+commit its revision names, when the file was still under `src/`; REN-1 rewrote module paths in place and
+kept every file's line count, so the rename itself moved no line. Paths of files removed before the rename
+(`src/web/routes/`, `src/ui/`, `src/web/fetch_job.py`, `src/SofaScoreUi.py`, `src/fsutil.py`)
+keep the old form. References marked `6f79344` are to `origin/main` at that commit. Section
+11 lists the corrections (items 118 to 122).
+
 Conventions used here: "event" is a SofaScore match; "slice" is one data type of an owner entity
 (event, season, team, player); "face" is one of Python library, CLI, HTTP API.
 The CLI executable is written `ssc` below (final name: decision D2).
@@ -1356,7 +1368,19 @@ def sink_states(store, specs: Sequence[SinkSpec], *, now=None) -> list[SinkState
   `BackupNotFound` to `not_found`, `BackupInvalid` to `invalid_request` and `RestoreRefused` to
   `confirmation_required` with `details.occupied`. It takes the `maintenance` lease itself unless this
   process holds it; a dry run takes no lease and writes nothing, and its `RestoreReport` has `occupied`,
-  `replaced`, `restored`, `skipped` and counts. Settings files and `.env` are never restored. `prune` keeps
+  `replaced`, `restored`, `skipped` and counts. Settings files and `.env` are never restored, with one
+  exception since FX-22 (#165): the Settings page's `CONFIG_DIR/overrides.json`. `create` passes it to the
+  Store for the scopes `all`, `state` and `config` (member `config/overrides.json`, archive 0600, because it
+  can hold the proxy password), and `restore` passes its place: the service takes the Settings file's lock
+  (`config_files.file_lock` on `overrides.json`, the one `PATCH /api/v1/settings` takes), keeps the current
+  bytes, lets the Store restore the member in the same step as the data (0600, atomic, rolled back with the
+  rest), and then reloads the settings (`config.overrides.reload_or_put_back`). When the restored document
+  cannot be loaded, the previous file is put back, the previous settings stay in force, and the report
+  lists the member under `skipped` instead of `restored`; its content and the loader's message are never
+  logged (only the error's type). An archive without the member leaves the current settings alone. The
+  reload is per process: `ssc backup restore` while a server runs reloads the CLI process only; the server
+  reads the restored file at its next reload (a settings write, or a restart). The rule for the archive is
+  `01-storage.md` 9.1 and 9.2. `prune` keeps
   everything by default and nothing calls it: there is no `ssc backup prune`. The design's `dest` and
   `handle` arguments are not built, and there is no `path_of` on the service: the download route asks the
   Store (`Store.backup.path_of`). `BackupInfo` has a `format` field read from the zip (1 for 2.x and ST-19
@@ -1442,8 +1466,25 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   was 502). The tournament hit of `/search/all` is assumed to have the shape of the tournament search
   (experimental; the live validation checks it). The route keeps the path `/tournaments/search` and the
   component name `TournamentHit`, because the frontend imports it; a neutral `/search` could replace both
-  in P30. One request searches the chosen kinds; the web editor searches one kind at a time (FX-14b), and a
-  search across kinds as the user types is FX-20's.
+  in P30. One request searches the chosen kinds. Since FX-20 (#167) the web editor and Ctrl K ask for all
+  three kinds at once (`kinds: [tournament, team, player]`, so `/search/all` upstream), as the user types:
+  the follows are filtered in the browser with no request, stored tournaments and teams come from
+  `QueryService.suggest` (`GET /api/v1/catalog/suggest`, no SofaScore request, debounced 120 ms in the
+  browser), and from 2 characters, 350 ms after the last key, one SofaScore search runs. The service keeps
+  each answer, a 404 included, for 10 minutes (`SEARCH_CACHE_SECONDS = 600`, at most 256 texts,
+  `SEARCH_CACHE_SIZE`; case and spaces ignored; refusals and errors are not kept), so the same text again
+  sends nothing. The route is `async` and runs the search under a cancel check tied to the client's
+  connection (`run_while_connected`): when the browser aborts the fetch, a request that still waits for
+  its turn in the request budget is never sent and gives its turn back, and the route answers 499 (not in
+  the OpenAPI document); a request already sent cannot be stopped, and its answer is kept. The browser
+  keeps answers while the page is open (a module-level map of up to 100 texts; a reload clears it, and the
+  server's cache answers after it).
+- **Suggestions from stored data (FX-20).** `QueryService.suggest(text, sport=, limit=8)` returns the
+  stored tournaments and teams (competitors) whose name contains the text, in the shape of a search hit
+  (`kind` `tournament` or `team`): names that start with the text first, then names with a word that starts
+  with it, then the others, followed ones first within each; at most 20. Route: `GET
+  /api/v1/catalog/suggest?q=&sport=&limit=` (`suggestCatalog`, read-only: it reads the catalog and the
+  follows table only). Case and accents are ignored.
 - **The sync reads the follows table (FX-13).** `sync_targets(ctx)` (`sofascore_scraper/services/sync.py:168-190`) reads
   the enabled tournament follows of every origin (`sync_tournaments`) after refreshing the mirror of
   `leagues.txt`, and each follow is downloaded with its season choice (`all`, `current`, `last:N`, ids); a
@@ -1489,8 +1530,8 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   payload of a slice without history, and maps them to the schema's `Odds` records; it reads the season
   slices and the standings rows. `ExportService` has two more normalized datasets, `odds` (one row per
   outcome per snapshot) and `standings` (the seasons of the matched events), reachable from `ssc export
-  --dataset` and the v1 export job. Their models are in `models.PENDING_MODELS`, not in `MODELS`
-  (`04-schema-v1.md` section 4, FX-21).
+  --dataset` and the v1 export job. Their models are in `MODELS` since FX-21 (#164), and `Odds`,
+  `OddsLine` and `StandingsRow` in `RECORDS` (`04-schema-v1.md` section 4, "Odds and standings").
 - **Counts and the selection (P27, FX-13).** `StatusService.season_counts` (FX-13, `sofascore_scraper/services/status.py:458`)
   gives per season `events`, `finished`, `details`, `complete`, `completion_rate`, `missing` per slice and
   the schedule's `fetched_at`. It and `summary`'s per-tournament coverage count the missing slices with
@@ -2291,7 +2332,13 @@ registers itself, so a PR that adds a command adds a file and does not edit a sh
 
 As built so far (P18, PR #65; `sofascore_scraper/cli/` at `f286723`). The entry point is `python -m sofascore_scraper.cli.main <command>`,
 or `ssc <command>` after `pip install -e .`; only an editable install is supported, because the version, the
-locale files and the web UI build are read from the project folder. `main.py` is untouched until P19. The
+locale files and the web UI build are read from the project folder. Since REN-1 (#168) the module is
+`sofascore_scraper.cli.main` (`ssc = "sofascore_scraper.cli.main:main"`). The wheel that `python -m build`
+makes holds the 152 modules and the entry point, but not the Store's `.sql` files
+(`store/schema/catalog.sql`, `store/migrations/state/*.sql`), the locales or `frontend/dist`, and
+`sofascore_scraper/version.py` reads `pyproject.toml` next to the package: a non-editable install does not
+work, and whether 3.0.0 is published as a package is the owner's question (`03-implementation-plan.md`
+sections 14 and 18). `main.py` is untouched until P19. The
 commands that exist are `version`, `doctor`, `describe`, `config show|validate|init|path`, `diagnostics`
 and, since P22 (PR #73), `events`, and since P23 (PR #91), `watch`.
 
@@ -2423,7 +2470,8 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   Settings). Details in 4.6.
 - `version` prints the application version, the CLI envelope and config schema versions, the data schema
   version and the Store's layout, catalog and state versions; `describe schemas` includes the JSON Schema
-  of the normalized records (P19). The P28 models are not in it yet (`models.PENDING_MODELS`; FX-21).
+  of the normalized records (P19), with the five P28 models since FX-21 (#164; `Odds`, `OddsLine` and
+  `StandingsRow` among `data.records`).
 - `doctor` has a `config` check since FX-15 (`check_config`, `sofascore_scraper/doctor.py:597-634` at `b6caf2f`): it finds the file the
   app would read (`--config`, `SOFASCORE_CONFIG`, `./sofascore.toml`, `CONFIG_DIR/sofascore.toml`), loads
   it with the loader inside the check (the doctor stays stdlib-only at import) and probes the
@@ -3065,16 +3113,22 @@ As built at `b3cb819` (P19 #119, P25 #125):
   anywhere, and the proxy snippets are untested. The attempt limit behind a proxy is in section 6.
 - **Docker** (decision D17). The image's default command is `serve` (`CMD ["serve"]`), and the entrypoint
   runs `python -m sofascore_scraper.cli.main serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000}` for no arguments,
-  `serve …` or the old `web`. Other arguments go to `python main.py "$@"`, not to `ssc` as this section said:
-  the image has no `ssc` console script (no `pip install -e`), and `main.py` both dispatches commands and
-  keeps the old flags for one release; in 3.1 the fallback becomes `python -m sofascore_scraper.cli.main "$@"`. D17 said
+  `serve …` or the old `web`. Other arguments go to `python main.py "$@"`, not to `ssc` as this section said,
+  because `main.py` both dispatches commands and keeps the old flags for one release; in 3.1 the fallback
+  becomes `python -m sofascore_scraper.cli.main "$@"`. Until REN-1 the image had no `ssc` console script;
+  since REN-1 (#168) it runs `pip install --no-deps -e .` after copying the code (editable, because the
+  version, the locales and the web build are read from `/app`), so `docker exec <container> ssc status`
+  works; the entrypoint is unchanged. D17 said
   only that the Compose example sets the allowed hosts. As built the entrypoint also exports the loopback
   names (`SOFASCORE_SERVER__ALLOWED_HOSTS=localhost,127.0.0.1,[::1]`) when no allow-list is set anywhere
   (neither variable, no `ALLOWED_HOSTS` line in the env file, no config file found), so a plain `docker run`
   keeps working; a config file disables that default. The Compose example adds an opt-in `ssc watch`
   service (`profiles: ["live"]`). The image creates `/app/browser-profile-live` for the app user, because
   `ssc watch` uses `<profile>-live` and `/app` belongs to root (not a volume; 8.4 and D10 did not mention
-  Docker). The image was not built or smoke-tested: `release.yml` builds it only on a tag, so the
+  Docker). Since FX-22 (#165) the Compose `sofascore-watch` service mounts the volume
+  `watch-browser-profile-live` there, and the entrypoint clears a stale Chromium lock of that profile for
+  `watch` under the same rule as the main profile, so a recreated container neither solves the challenge
+  again nor fails to open its browser (exit 21). The image was not built or smoke-tested: `release.yml` builds it only on a tag, so the
   Dockerfile and `docker/smoke-test.sh` are checked in the live validation run before the release.
 - **Launchers.** `scripts/start_web.py` starts `python -m sofascore_scraper.cli.main serve --host 127.0.0.1`, and the
   `.sh`, `.bat`, `.command` and `.desktop` launchers go through it.
@@ -3472,7 +3526,8 @@ paragraph describes the foundation.
 |---|---|---|
 | `/sports`, `/sports/{slug}` | GET | `QueryService.sports` (registry) |
 | `/tournaments`, `/tournaments/{id}`, `/tournaments/{id}/seasons` | GET | query |
-| `/tournaments/search`, body `{q, sport, kinds}` | POST (calls SofaScore; the first version said GET, which #43's rule forbids) | `FollowsService.search` (tournaments, teams, players; FX-19) |
+| `/tournaments/search`, body `{q, sport, kinds}` | POST (calls SofaScore; the first version said GET, which #43's rule forbids) | `FollowsService.search` (tournaments, teams, players; FX-19); since FX-20 `async`, a 10-minute server cache and a cancel check tied to the connection (499 when the client left) |
+| `/catalog/suggest?q=&sport=&limit=` | GET (no SofaScore request) | `QueryService.suggest`: stored tournaments and teams for the type-ahead (FX-20) |
 | `/seasons/{id}`, `/seasons/{id}/slices`, `/seasons/{id}/slices/{key}`, `/seasons/{id}/standings` | GET | query, `OwnerDataService` (P28) |
 | `/events?sport=&tournament=&season=&from=&to=&status=&participant=&has=` | GET | query |
 | `/events/{id}`, `/events/{id}/slices`, `/events/{id}/slices/{key}`, `/events/{id}/odds`, `/events/{id}/odds/{key}` | GET | query, `OwnerDataService` (P28) |
@@ -3700,7 +3755,10 @@ names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRe
 - **Search (FX-19).** `POST /tournaments/search` takes `kinds` (`tournament`, `team`, `player`; 1 to 3,
   default `["tournament"]`). `TournamentHit` adds `kind`, `country {code, name}` and a player's `team {id,
   name}`; `category` stays required and holds only `country_code` for a team or a player; `followed` is per
-  kind. A 404 from SofaScore is `[]` (it was 502).
+  kind. A 404 from SofaScore is `[]` (it was 502). FX-20 (#167): the answer of a text is kept for 10
+  minutes, and a client that closes the connection before the upstream request was sent gets 499 (the
+  request is not sent; not in the OpenAPI document). New `GET /catalog/suggest` (2.7, "Suggestions from
+  stored data").
 - **Jobs (FX-13, FX-19).** `sync`: `follows` (`tournament|team|player|event:<id>`, at most 200), `only:
   "seasons"` (season lists only; G15); `fetch`: `event_ids` (at most 500; events whose tournament is unknown
   or not followed, grouped per tournament from the catalog; G16); `refresh`: `event_ids` (only those events'
@@ -3719,9 +3777,20 @@ names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRe
   (G24; `sync_season_list`, `sync_schedule`, `sync_follow_listing`, `sync_follow_details`, `sync_extras`,
   `fetch_zero_matches` and others). `GET /jobs` takes `origin` (repeatable; G14) and `target`
   (`tournament:`, `event:`, `team:`, `player:`; G12): a job matches when its spec names it; a job over every
-  follow names none. The job record has no follow or target name (FX-20), and the recorded spec is the
-  service's `SyncSpec`, not the request body: `only: "seasons"` is recorded as `mode: "seasons"`, and a
-  fetch by `event_ids` as `mode: "details"` with per-tournament selections plus `event_ids`.
+  follow names none. Since FX-20 (#167) the recorded spec of a download job has the fields of the request
+  body, not the service's `SyncSpec` (`sofascore_scraper/services/job_spec.py`, `record` and `body`):
+  `sync` and `fetch` record `{league_id, selections: [{league_id, season_ids, match_ids}], follows, only,
+  event_ids}`, where `only` is `seasons`, `events` (`ssc sync --only events`; the API calls that job a
+  `fetch`) or null, and `refresh` records `{league_id, event_ids}`. A job by `event_ids` also keeps the
+  per-tournament `selections` the server sorted the matches into (league 0 for an event that is not
+  stored), so that `target=tournament:` still finds a download of that league's matches (G12). There is no
+  `mode`. The optional `names` (`{"team:42": "Arsenal", "tournament:17": "Premier League"}`) holds the
+  names of the follows and leagues when the job starts (a league `clear` records the league's name too), so
+  every screen names the job without a request, also after the follow was removed or the league's data
+  cleared; a body that starts the same job again does not carry it. Records written before FX-20 (`mode`,
+  per-tournament selections plus `event_ids`) are converted on read: `GET /jobs` always returns the body
+  shape, the scheduler compares its own earlier runs in that shape, and "Run again" of an `ssc sync --only
+  events` job starts a `fetch`. The legacy job card payload still shows `mode`.
 - **Read routes (FX-13, P28).** `/tournaments/{id}/seasons?include=counts` (G17) gives each season with
   `counts {events, finished, details, complete, completion_rate, missing, schedule_fetched_at_utc}`; the
   age of the tournament's own season list (the `seasons` slice's `fetched_at`) is in no route. `/changes`
@@ -4390,6 +4459,10 @@ into FX-14a and FX-14b, both merged (`05-web-ui.md`). In progress: FX-20 (type-a
 across kinds, job names, small UI gaps). To do: FX-21 (the P28 models in schema v1), REN-1, FX-16 after the
 live validation, and P30 after 3.0.0.
 
+State at `6f79344` (2026-10-07): FX-21 (#164), FX-22 (#165, a new fix item from the audit of the user
+documents, #163), FX-20 (#167) and REN-1 (#168) are merged. To do: FX-16 after the live validation, and P30
+after 3.0.0; `03-implementation-plan.md` section 18 has what remains before the tag.
+
 ## 10. Testing strategy
 
 - A fake SofaScore transport (`tests/fakes/sofascore.py`, G-01) serves canned payloads, records every request
@@ -4987,6 +5060,29 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
     and the menu-only fetcher methods, and 4.1 had no doctor check of the config file. Built: all removed;
     the doctor's `config` check with five codes; `config init --from-legacy` without `ConfigManager`;
     pandas is no longer installed and the `parquet` extra needs `pyarrow>=16` (2.7, 4.1; FX-15, PR #155).
+
+Corrections after FX-20 to REN-1 (2026-10-07, the seventh revision):
+
+118. **Search as the user types.** 2.7 and 6 described one search per button press and one kind at a time
+     in the editor, and said the search across kinds as the user types was still to come. Built: the
+     editor and Ctrl K search all three kinds while the user types; `GET /catalog/suggest` gives stored
+     tournaments and teams without a SofaScore request; `POST /tournaments/search` keeps each answer for
+     10 minutes on the server and does not send a request whose client has left (499). The brief said
+     "answers are cached per query for the session": the browser keeps them for the page (a reload clears
+     them), and the server's cache answers after a reload (2.7, 6; FX-20, PR #167).
+119. **The recorded spec of a download job.** 6 said that the job record has no target name and records
+     the service's `SyncSpec` (`mode`), not the request body. Built: the body's fields (`only`,
+     `event_ids`) and `names`; a job by `event_ids` keeps its per-tournament `selections` for the `target`
+     filter; older records are converted on read (6; FX-20, PR #167).
+120. **The settings saved in the web app come back with a restore.** 2.7 said settings files and `.env`
+     are never restored. Built: `config/overrides.json` is in `all`, `state` and `config` backups and is
+     restored under the Settings file lock, with a reload and a rollback; the reload is per process (2.7;
+     FX-22, PR #165).
+121. **The P28 models are in schema v1.** 2.7 and 4.1 said they wait in `models.PENDING_MODELS`; FX-21
+     moved them into `MODELS` and three of them into `RECORDS` (PR #164).
+122. **The package name.** 2.2 said `src/` stays the import package during the build-out; REN-1 renamed it
+     to `sofascore_scraper`, retargeted the console script and put `ssc` into the Docker image (2.2; PR
+     #168). Paths of this document follow; see the header for line references.
 
 ---
 

@@ -62,6 +62,15 @@ checks, the purge, the restore step that keeps the job record and the prune call
 section 12 lists the corrections, from item 128 on. References marked `b6caf2f` are to `origin/main` at
 that commit.
 
+Revised a seventh time on 2026-10-07 after FX-22 #165 (the settings saved on the Settings page,
+`config/overrides.json`, go into a backup and come back with a restore; 9.1 and 9.2) and REN-1 #168 (the
+import package `src` is now `sofascore_scraper`). Paths of the package are written with the new name
+throughout. A `file:line` reference keeps the line it had at the commit its revision names (`3ae2599`,
+`b3cb819`, `b6caf2f`, …), when the file was still under `src/`; REN-1 rewrote module paths in place
+and kept every file's line count, so the rename itself moved no line. Paths of files removed before the rename (`src/fsutil.py`,
+`src/ui/`, `src/web/routes/`, `src/web/fetch_job.py`, `src/SofaScoreUi.py`) keep the old form. References
+marked `6f79344` are to `origin/main` at that commit. Section 12 lists the corrections from item 137 on.
+
 Terms used throughout:
 
 - **payload**: one SofaScore JSON response, stored as a file.
@@ -4167,6 +4176,14 @@ partial scopes (`config`, `seasons`, `matches`, `match_details`; `BACKUP_SCOPES`
 at `b6caf2f`) are deprecated in 3.0.0 and removed with the legacy aliases in P30 (decision of 2026-10-03);
 `all`, `state` and `data` stay.
 
+Since FX-22 (#165, `1c20fb9`) the settings saved on the web app's Settings page go into the archive too.
+`BackupManager.create(..., overrides_file=)` adds `CONFIG_DIR/overrides.json` as the member
+`config/overrides.json` in the scopes that take config files (`all`, `state` and `config`; `CONFIG_SCOPES`),
+when the caller passes it and the file exists; `BackupService.create` and therefore `ssc backup create` and
+the v1 backup job always pass it. The file can hold the proxy address with its password, so such an
+archive is created 0600 from the start, as one with `.env` is; its name does not change (only `.env` adds
+`_with_env`). `data` never takes it. Archives made before FX-22 have no such member.
+
 ### 9.2 Restore
 
 `BackupManager.restore` needs the `maintenance` lease.
@@ -4212,7 +4229,21 @@ NAME [--force] [--dry-run] [--yes]`):
 - **Step 4.** On success the catalog is rebuilt in place (the internal path `Store.clear` uses) and
   `catalog.verify()` runs; staging and trash are then removed. There is no `include_catalog`: a
   `catalog.db` member is accepted and skipped.
-- **Config files and `.env`** are never restored; they are listed in `RestoreReport.skipped`.
+- **Config files and `.env`** are never restored; they are listed in `RestoreReport.skipped`. One exception
+  since FX-22 (#165): `config/overrides.json`, the settings saved on the Settings page, which would
+  otherwise be lost with a restore. It is restored only when the caller passes its place
+  (`restore(..., overrides_file=)`) and the archive has the member: it is written last in step 3, atomically
+  and with mode 0600, and a failure of any step puts the previous file back (or removes it when there was
+  none) with the rest of the rollback. A member that is not a JSON object, is larger than 1 MB or cannot be
+  read is not restored (`skipped`, a warning without the content). An archive without the member (every
+  archive older than FX-22, and every `data` archive) leaves the current file alone. The content is never
+  logged. `BackupService.restore` holds the Settings file's lock (`config_files.file_lock` on
+  `overrides.json`, the lock `PATCH /api/v1/settings` takes) around the whole restore, then reloads the
+  settings; when the restored document cannot be loaded (for example a key this version does not know), it
+  puts the previous file back, the previous settings stay in force, and the report moves the member from
+  `restored` to `skipped`. The reload is per process: `ssc backup restore` while `ssc serve` runs reloads
+  the settings of the CLI process only, and the server sees the restored file at its next reload (`02-services.md`
+  2.7).
 - **`dry_run`** takes no lease, writes nothing and reports `restored`, `replaced`, `occupied`, `skipped` and
   `counts`.
 - **Format 1** (2.x and ST-19 zips, without `backup.json`): the members `<one root>/<seasons|matches|
@@ -4981,6 +5012,17 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
      and event follows download their matches (2.3, FX-19); `Migrator.last_run()` feeds the status pages
      (3.3, FX-13); the four old backup scope names are deprecated (9.1, decision of 2026-10-03); the
      `parquet` extra needs pyarrow 16 and CI installs it (4.5, FX-15, FX-17).
+137. **The Settings page's settings in a backup.** The document said that config files and `.env` are never
+     restored, and the backup took only the files the caller named (`leagues.txt`, `league_sports.json`,
+     the active `sofascore.toml`), so the settings saved in the web app were lost with a restore. Since
+     FX-22 `config/overrides.json` goes into `all`, `state` and `config` archives (0600) and comes back with
+     the restore, under the Settings file lock, with a reload and a rollback to the previous file when it
+     cannot be loaded; the other config files and `.env` are still never restored. Sections 9.1, 9.2 (FX-22
+     #165).
+138. **The package name.** `src/` is `sofascore_scraper/` since REN-1; the paths of this document follow
+     (header). The Store's modules, its public names and the boundary rules are unchanged; the boundary
+     tables of `tests/test_store_boundary.py` (`FS_ALLOWLIST`, `NAMED_EXCEPTIONS`) are keyed by the new
+     paths (REN-1 #168).
 
 ---
 
