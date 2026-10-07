@@ -35,6 +35,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from sofascore_scraper import bridge_health, throttle
+from sofascore_scraper.client import profile_lock
 from sofascore_scraper.client.context import FetchCancelled, raise_if_cancelled
 from sofascore_scraper.private_files import make_private_dir
 from sofascore_scraper.logger import get_logger
@@ -246,6 +247,8 @@ class BrowserBridge:
         self._solve_wait: Optional[_SlotWait] = None
         self._launch_failed_at: float = 0.0
         self._solve_failed_at: float = 0.0
+        # Profil başka bir süreçteyse (ör. `ssc serve`) bu sürecin geçici profili; köprü kapanınca silinir
+        self._launch_dir: Optional[str] = None
         # Profil SofaScore cookie'lerini (çözülmüş challenge) taşır: yalnızca sahibine açık (0700)
         make_private_dir(self.profile_dir)
 
@@ -271,14 +274,14 @@ class BrowserBridge:
                     bridge_health.record_failure(bridge_health.KIND_BROWSER,
                                                  "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
                 raise RuntimeError(
-                    "BrowserBridge başlatılamadı (yakın zamanda denendi). "
-                    "Nedenini görmek için: `python main.py --doctor` "
-                    "(tarayıcı kurulumu: `python -m patchright install chromium --no-shell`)"
+                    "The browser bridge could not start (tried recently). "
+                    "Run `ssc doctor` to see why "
+                    "(browser install: `python -m patchright install chromium --no-shell`)"
                 )
             # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
             await self.close()
             try:
-                await self._launch()
+                await self._launch_in_free_profile()
             except BaseException as e:
                 # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
                 self._launch_failed_at = time.time()
@@ -288,6 +291,34 @@ class BrowserBridge:
                 raise
             self._launch_failed_at = 0.0
 
+    def _use_secondary_profile(self, owner: profile_lock.ProfileOwner) -> None:
+        """Profil başka bir süreçte: bu süreç kardeş geçici profille açar (sofascore_scraper/client/profile_lock.py)."""
+        try:
+            self._launch_dir = profile_lock.secondary_profile(self.profile_dir)
+        except OSError as e:
+            raise RuntimeError(f"The browser profile {self.profile_dir} is in use by {owner.describe()} and no "
+                               f"temporary profile could be created ({e})") from e
+        logger.info("Browser profile %s is in use by %s; this process uses a temporary profile: %s",
+                    self.profile_dir, owner.describe(), self._launch_dir)
+
+    async def _launch_in_free_profile(self) -> None:
+        """
+        Tarayıcıyı boş bir profille açar. Profil başka bir canlı süreçteyse (`ssc serve` ile yan yana bir CLI
+        komutu) geçici kardeş profil kullanılır; kilit denetimiyle başlatma arasında başka süreç profili alırsa
+        Chromium'un kilit hatası görülür ve bir kez geçici profille yeniden denenir.
+        """
+        owner = profile_lock.profile_owner(self.profile_dir)
+        if owner is not None:
+            self._use_secondary_profile(owner)
+        try:
+            await self._launch()
+        except Exception as e:
+            if self._launch_dir is not None or not profile_lock.is_lock_error(e):
+                raise
+            await self.close()
+            self._use_secondary_profile(profile_lock.profile_owner(self.profile_dir) or profile_lock.ProfileOwner())
+            await self._launch()
+
     async def _launch(self) -> None:
         from scrapling.fetchers import AsyncStealthySession
 
@@ -296,7 +327,7 @@ class BrowserBridge:
         self.session = AsyncStealthySession(
             headless=headless,
             solve_cloudflare=True,
-            user_data_dir=self.profile_dir,
+            user_data_dir=self._launch_dir or self.profile_dir,
             proxy=_proxy_settings(),
             block_webrtc=True,
             timeout=60000,
@@ -514,6 +545,9 @@ class BrowserBridge:
                 pass
         self.session = None
         self.context = None
+        if getattr(self, "_launch_dir", None) is not None:
+            profile_lock.remove_secondary(self._launch_dir)
+            self._launch_dir = None
 
 
 # Senkron / Genel Kullanım Fonksiyonları
