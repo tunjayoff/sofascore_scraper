@@ -247,7 +247,8 @@ describe('dialogs', () => {
     await w.setProps({ busy: true })
     await w.find('[role="dialog"]').trigger('keydown', { key: 'Escape' })
     expect(w.emitted('close')).toHaveLength(1)
-    expect(await axeViolations(w.element)).toEqual([])
+    // the dialog's root is a Teleport (FX-24): its first node is the Teleport's anchor, not an element
+    expect(await axeViolations(w.find('.u-overlay').element)).toEqual([])
     w.unmount()
     wrappers = wrappers.filter((x) => x !== w)
     expect(document.activeElement).toBe(outside)
