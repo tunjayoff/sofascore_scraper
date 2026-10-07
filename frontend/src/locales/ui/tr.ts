@@ -500,6 +500,7 @@ const tr: typeof en = {
       sync_details_selected: 'Seçilen {count} maçın ayrıntıları indiriliyor…',
       sync_breaker_stopped: 'İndirme durdu ({what}): {reason}.',
       sync_extras: 'Bahis oranları ve maç dışı veriler: {stored} kaydedildi, {failed} başarısız.',
+      sync_extras_kinds: 'Kaydedilenler: {saved}. SofaScore’da olmayanlar: {unavailable}.',
       sync_follow_listing: '{follow} için maç listesi okunuyor…',
       sync_follow_listing_failed: '{follow} için maç listesi tam okunamadı ({reason}).',
       sync_follow_details: 'Takım, oyuncu ve maç takiplerinden {count} maç indiriliyor…',

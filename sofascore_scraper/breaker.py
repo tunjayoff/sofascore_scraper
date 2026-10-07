@@ -196,8 +196,8 @@ class CircuitBreaker:
             summary = ", ".join(f"{n}x {k}" for k, n in self._counts.most_common())
             attempts, failures = self.attempts, self.failures
         logger.warning(
-            f"Devre kesici açıldı ({cause}): {attempts} istekten {failures} başarısız ({summary}). "
-            "Bu iş SofaScore'a yeni istek göndermeyecek."
+            f"Circuit breaker opened ({cause}): {failures} of {attempts} requests failed ({summary}). "
+            "This job sends no more requests to SofaScore."
         )
 
     def _trip_cause(self, kind: str) -> Optional[str]:

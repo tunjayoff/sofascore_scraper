@@ -280,7 +280,7 @@ def test_unusable_directory_falls_back_to_in_process_pacing(tmp_path, caplog):
     with caplog.at_level("WARNING"):
         assert [t.reserve(), t.reserve(), t.reserve()] == [0.0, 1.0, 2.0]  # süreç içi aralık korunur
     assert t.shared_error
-    assert caplog.text.count("kullanılamıyor") == 1  # her istekte değil, bir kez
+    assert caplog.text.count("is unavailable") == 1  # her istekte değil, bir kez
 
 
 def test_held_lock_does_not_deadlock(tmp_path, monkeypatch):

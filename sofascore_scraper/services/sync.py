@@ -295,6 +295,26 @@ class DetachedHandle:
         pass
 
 
+def extras_kinds(summary: Any) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    """
+    Maç dışı veriler aşamasının (P28) veri türleri: (en az bir sahipte kaydedilenler, hiçbir sahipte
+    kaydedilmeyip SofaScore'un "veri yok" dediği türler), dilim anahtarlarıyla (bahis oranlarının alt anahtarı
+    olmadan), ilk görülme sırasıyla. Başarısız istekler ikisine de girmez (onları `sync_extras` sayar).
+    """
+    from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK
+
+    saved: Dict[str, None] = {}
+    unavailable: Dict[str, None] = {}
+    for result in getattr(summary, "results", None) or ():
+        for label, outcome in (getattr(result, "slices", None) or {}).items():
+            key = str(label).split("/", 1)[0]
+            if outcome.status == SLICE_OK and outcome.data is not None:
+                saved[key] = None
+            elif outcome.status == SLICE_EMPTY:
+                unavailable[key] = None
+    return tuple(saved), tuple(key for key in unavailable if key not in saved)
+
+
 def _follows_of(spec: SyncSpec) -> Tuple[str, ...]:
     return tuple(getattr(spec, "follows", ()) or ())
 
@@ -843,6 +863,13 @@ class _SyncRun:
         if summary is not None and summary.total:
             self.log(f"Odds and non-match data: {summary.ok} stored, {summary.failed} failed.", "sync_extras",
                      stored=int(summary.ok), failed=int(summary.failed))
+            saved, unavailable = extras_kinds(summary)
+            if saved or unavailable:
+                # Hangi veri türleri kaydedildi, hangileri SofaScore'da yok (FX-23, F18: tek maçlık kupanın puan
+                # durumu yok; "1 kaydedildi" bunu söylemiyordu)
+                self.log(f"Saved: {', '.join(saved) or 'none'}; not available on SofaScore: "
+                         f"{', '.join(unavailable) or 'none'}.", "sync_extras_kinds",
+                         saved=list(saved), unavailable=list(unavailable))
             if summary.breaker:
                 self.report_breaker(summary.breaker, "odds and non-match data")
 

@@ -27,8 +27,8 @@
    "main.py flags are deprecated and will be removed; this run is: ssc watch --source poll --stdout --sport football --event 9300001 --hours 1e-09",
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO sofascore_scraper.services.live.supervisor: Live service started: source poll, sports football",
    "LOG INFO sofascore_scraper.services.live.supervisor: Live service stopped after 1 round(s), 2 request(s), 2 event(s)",
    "Live watching stopped: 1 round(s), 2 request(s), 2 new event(s), 0 finished match(es) stored."
@@ -84,8 +84,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc watch --source poll --stdout --sport football --event 9300001",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO sofascore_scraper.services.live.supervisor: Live service started: source poll, sports football",
    "LOG INFO sofascore_scraper.services.live.supervisor: All watched events have finished",
    "LOG INFO sofascore_scraper.services.live.supervisor: Live service stopped after 1 round(s), 2 request(s), 1 event(s)",

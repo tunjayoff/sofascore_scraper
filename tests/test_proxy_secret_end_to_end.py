@@ -167,7 +167,7 @@ def test_proxy_password_saved_in_settings_never_reaches_logs_or_diagnostics(app_
     # Sınama boş değil: ilgili satırlar log'da, maskelenmiş halleriyle
     log_text = outputs["log file sofascore_scraper.log"]
     assert "PROXY_URL=***" in log_text
-    assert "Proxy/Bağlantı hatası" in log_text or "İstek hatası" in log_text
+    assert "Proxy or connection error" in log_text or "Request error" in log_text
     assert f"***@{HOST}" in log_text
     assert f"***@{HOST}" in outputs["web bundle log_tail.txt"]
     for name in ("GET /api/diagnostics", "web bundle diagnostics.json", "cli bundle diagnostics.json"):

@@ -40,7 +40,7 @@ def _token_from_settings() -> str:
 
 if 0 < len(_token_from_settings()) < security.MIN_TOKEN_LENGTH:
     logger.warning(
-        f"{security.TOKEN_ENV} çok kısa, tahmin edilebilir: en az {security.MIN_TOKEN_LENGTH} rastgele karakter kullanın."
+        f"{security.TOKEN_ENV} is short and guessable: use at least {security.MIN_TOKEN_LENGTH} random characters."
     )
 
 app = FastAPI(
@@ -58,7 +58,7 @@ FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 # (bkz. security.allowed_hosts_for_bind).
 ALLOWED_HOSTS = security.allowed_hosts()
 if "*" in ALLOWED_HOSTS:
-    logger.warning("Host izin listesi kapalı (*): her Host başlığına yanıt veriliyor, DNS rebinding koruması yok.")
+    logger.warning("The Host allow list is off (*): every Host header is answered, no DNS rebinding protection.")
 
 
 LOGIN_PATH = "/api/auth/login"
@@ -235,8 +235,8 @@ if _assets_dir.is_dir():
 # aşağıdaki genel rota sunar (StaticFiles, var olmayan klasörle her istekte 500 verirdi).
 if not (FRONTEND_DIST / "index.html").is_file():
     logger.warning(
-        "Web arayüzü derlenmemiş (frontend/dist yok): / adresinde yardım sayfası gösterilecek. "
-        "Derlemek için: cd frontend && npm install && npm run build"
+        "The web UI is not built (no frontend/dist): / shows a help page. "
+        "To build it: cd frontend && npm install && npm run build"
     )
 
 

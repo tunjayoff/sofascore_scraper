@@ -274,7 +274,7 @@ def test_new_sports_are_no_longer_unsupported(caplog):
         extract_scores(_load("rugby/A_finished-100-ended__16237238"), "rugby")
         extract_scores(_load("volleyball/A_finished-100-ended__16506696"), "volleyball")
         extract_scores(_load("rugby/A_finished-100-ended__16237238"), "waterpolo")
-    assert caplog.text.count("desteklenmeyen spor") == 1 and "'waterpolo'" in caplog.text
+    assert caplog.text.count("unsupported sport") == 1 and "'waterpolo'" in caplog.text
 
 
 # --- set tabanlı sporlar (plan maddesi SP-2; research/all_sports örnekleri) ---------------------------------

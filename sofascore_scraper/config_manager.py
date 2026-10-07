@@ -130,7 +130,7 @@ class ConfigManager:
         # Ligleri yükle
         self._load_leagues()
 
-        logger.info(f"Yapılandırma yöneticisi başlatıldı: {len(self.leagues)} lig yüklendi ({self.league_config_path})")
+        logger.info(f"Configuration manager started: {len(self.leagues)} leagues loaded ({self.league_config_path})")
 
         # Başlatma tamamlandı
         self._initialized = True
@@ -166,9 +166,9 @@ class ConfigManager:
             else:
                 text = "# League configuration file\n# Format: League Name: ID\n#\n# Premier League: 17\n"
             atomic_write_text(self.league_config_path, text)
-            logger.info(f"Örnek lig yapılandırma dosyası oluşturuldu: {self.league_config_path}")
+            logger.info(f"Example league file created: {self.league_config_path}")
         except OSError as e:
-            logger.error(f"Örnek lig yapılandırma dosyası oluşturulamadı: {str(e)}")
+            logger.error(f"The example league file could not be created: {str(e)}")
             raise
 
     def _load_leagues(self) -> None:
@@ -187,9 +187,9 @@ class ConfigManager:
             self._load_leagues_from_text()
             self._mirror_follows()
 
-            logger.info(f"{len(self.leagues)} lig yapılandırması yüklendi")
+            logger.info(f"{len(self.leagues)} leagues loaded")
         except Exception as e:
-            error_msg = f"Lig yapılandırması yüklenirken hata: {str(e)}"
+            error_msg = f"The league configuration could not be loaded: {str(e)}"
             logger.error(error_msg)
             raise ConfigError(error_msg) from e
 
@@ -214,7 +214,7 @@ class ConfigManager:
         """Ligleri metin dosyasından yükler."""
         self._leagues_mtime = self._league_file_mtime()
         if not os.path.exists(self.league_config_path):
-            logger.warning(f"Lig yapılandırma dosyası bulunamadı: {self.league_config_path}")
+            logger.warning(f"League file not found: {self.league_config_path}")
             return
 
         try:
@@ -229,22 +229,22 @@ class ConfigManager:
                 try:
                     league_name, league_id = self._parse_league_line(line)
                 except ValueError:
-                    logger.warning(f"Geçersiz lig satırı atlandı: {line}")
+                    logger.warning(f"Invalid league line skipped: {line}")
                     continue
                 if not league_name:
-                    logger.warning(f"Adsız lig satırı atlandı: {line}")
+                    logger.warning(f"League line without a name skipped: {line}")
                     continue
                 if league_id in self.leagues:
                     logger.warning(
-                        f"Yinelenen lig ID {league_id}: '{self.leagues[league_id]}' yerine '{league_name}' kullanılıyor"
+                        f"Duplicate league id {league_id}: '{league_name}' is used instead of '{self.leagues[league_id]}'"
                     )
                     self.leagues_by_name.pop(self.leagues[league_id], None)
                 self.leagues[league_id] = league_name
                 self.leagues_by_name[league_name] = league_id
 
-            logger.debug(f"Metin dosyasından {len(self.leagues)} lig yüklendi")
+            logger.debug(f"{len(self.leagues)} leagues loaded from the text file")
         except Exception as e:
-            logger.error(f"Metin dosyasından ligler yüklenirken hata: {str(e)}")
+            logger.error(f"The leagues could not be loaded from the text file: {str(e)}")
 
     def _refresh_if_changed(self, mirror: bool = True) -> bool:
         """
@@ -559,13 +559,13 @@ class ConfigManager:
                 apply_log_level()
 
             # Debug için ligleri logla
-            logger.debug(f"Yapılandırma yeniden yüklendi: {len(self.leagues)} lig bulundu")
+            logger.debug(f"Configuration reloaded: {len(self.leagues)} leagues")
             for league_id, league_name in self.leagues.items():
-                logger.debug(f"Yüklendi: {league_name} (ID: {league_id})")
+                logger.debug(f"Loaded: {league_name} (id {league_id})")
 
             return True
         except Exception as e:
-            logger.error(f"Yapılandırma yeniden yüklenemedi: {str(e)}")
+            logger.error(f"The configuration could not be reloaded: {str(e)}")
             return False
 
     def add_league(self, league_name: str, league_id: int) -> bool:
@@ -581,7 +581,7 @@ class ConfigManager:
         """
         league_name = league_name.strip()
         if not league_name or any(c in league_name for c in "\r\n\x00"):
-            logger.warning(f"Geçersiz lig adı reddedildi: {league_name!r}")
+            logger.warning(f"Invalid league name refused: {league_name!r}")
             return False
         changed = False
         try:
@@ -589,10 +589,10 @@ class ConfigManager:
                 # Kilit altında diskteki güncel hali oku: başka süreç arada eklemiş olabilir
                 changed = self._refresh_if_changed(mirror=False)
                 if league_id in self.leagues:
-                    logger.warning(f"Lig ID zaten var: {league_id}")
+                    logger.warning(f"League id already present: {league_id}")
                     return False
                 if league_name in self.leagues_by_name:
-                    logger.warning(f"Lig adı zaten var: {league_name}")
+                    logger.warning(f"League name already present: {league_name}")
                     return False
 
                 try:
@@ -608,10 +608,10 @@ class ConfigManager:
                 self.leagues_by_name[league_name] = league_id
                 self._leagues_mtime = self._league_file_mtime()
                 changed = True
-            logger.info(f"Lig eklendi: {league_name} (ID: {league_id})")
+            logger.info(f"League added: {league_name} (id {league_id})")
             return True
         except Exception as e:
-            logger.error(f"Lig eklenirken hata: {str(e)}")
+            logger.error(f"The league could not be added: {str(e)}")
             return False
         finally:
             if changed:
@@ -633,7 +633,7 @@ class ConfigManager:
             with file_lock(self.league_config_path):
                 changed = self._refresh_if_changed(mirror=False)
                 if league_id not in self.leagues:
-                    logger.warning(f"Kaldırılacak lig bulunamadı: {league_id}")
+                    logger.warning(f"League to remove not found: {league_id}")
                     return False
                 league_name = self.leagues[league_id]
 
@@ -655,10 +655,10 @@ class ConfigManager:
                 self.leagues_by_name.pop(league_name, None)
                 self._leagues_mtime = self._league_file_mtime()
                 changed = True
-            logger.info(f"Lig kaldırıldı: {league_name} (ID: {league_id})")
+            logger.info(f"League removed: {league_name} (id {league_id})")
             return True
         except Exception as e:
-            logger.error(f"Lig kaldırılırken hata: {str(e)}")
+            logger.error(f"The league could not be removed: {str(e)}")
             return False
         finally:
             if changed:
@@ -677,7 +677,7 @@ class ConfigManager:
         """
         if any(c in value for c in "\r\n\x00"):
             # .env satır tabanlı: yeni satır başka bir değişken enjekte eder
-            logger.error(f"Çevre değişkeni reddedildi (kontrol karakteri): {key}")
+            logger.error(f"Environment variable refused (control character): {key}")
             return False
         try:
             os.environ[key] = value
@@ -693,10 +693,10 @@ class ConfigManager:
             if key in _LOG_LEVEL_KEYS:
                 # Seviye yeniden başlatmayı beklemeden uygulanır
                 apply_log_level()
-            logger.info(f"Çevre değişkeni güncellendi: {key}={mask_secret(key, value)}")
+            logger.info(f"Environment variable updated: {key}={mask_secret(key, value)}")
             return True
         except Exception as e:
-            logger.error(f"Çevre değişkeni güncellenirken hata: {str(e)}")
+            logger.error(f"The environment variable could not be updated: {str(e)}")
             return False
 
 

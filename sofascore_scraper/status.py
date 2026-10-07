@@ -99,9 +99,9 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
                 by_desc = _BY_DESCRIPTION.get(str(status.get("description") or "").strip().lower())
                 if by_desc in (StatusClass.COMPLETED, StatusClass.DECIDED_WITHOUT_PLAY):
                     return by_desc
-            logger.warning(f"Bilinmeyen finished kodu: {status} (event {(event or {}).get('id')})")
+            logger.warning(f"Unknown finished code: {status} (event {(event or {}).get('id')})")
             return StatusClass.UNKNOWN
-        logger.warning(f"Bilinmeyen status type: {status} (event {(event or {}).get('id')})")
+        logger.warning(f"Unknown status type: {status} (event {(event or {}).get('id')})")
         return StatusClass.UNKNOWN
 
     if code is not None:
@@ -109,7 +109,7 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
     else:
         result = _BY_DESCRIPTION.get(str(status.get("description") or "").strip().lower(), StatusClass.UNKNOWN)
     if result is StatusClass.UNKNOWN:
-        logger.warning(f"Sınıflandırılamayan status: {status} (event {(event or {}).get('id')})")
+        logger.warning(f"Status could not be classified: {status} (event {(event or {}).get('id')})")
     return result
 
 
@@ -360,7 +360,7 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
         ft90 = _pair(home, away, "normaltime")
         display = _pair(home, away, "display")
         if code == 100 and display is not None and ft90 is not None and display != ft90:
-            logger.warning(f"Futbol {event.get('id')}: code 100 ama display {display} != normaltime {ft90}")
+            logger.warning(f"Football {event.get('id')}: code 100 but display {display} != normaltime {ft90}")
         return FootballScores(
             **common,
             ht=_pair(home, away, "period1"),
@@ -457,7 +457,7 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             final_round=final_round if isinstance(final_round, int) and not isinstance(final_round, bool) else None,
         )
 
-    logger.warning(f"extract_scores: desteklenmeyen spor {sport!r} (event {event.get('id')})")
+    logger.warning(f"extract_scores: unsupported sport {sport!r} (event {event.get('id')})")
     return ScoreSheet(**common)
 
 

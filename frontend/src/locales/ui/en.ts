@@ -498,6 +498,7 @@ const en = {
       sync_details_selected: 'Downloading the details of {count} chosen matches…',
       sync_breaker_stopped: 'Stopped downloading {what}: {reason}.',
       sync_extras: 'Odds and non-match data: {stored} stored, {failed} failed.',
+      sync_extras_kinds: 'Saved: {saved}. Not available on SofaScore: {unavailable}.',
       sync_follow_listing: 'Reading the match list of {follow}…',
       sync_follow_listing_failed: 'The match list of {follow} could not be read completely ({reason}).',
       sync_follow_details: 'Downloading {count} matches of team, player and match follows…',

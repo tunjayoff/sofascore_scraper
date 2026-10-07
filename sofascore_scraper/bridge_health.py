@@ -165,26 +165,26 @@ class BridgeHealth:
         if previous is None or snap is None:
             return
         err = snap["last_error"] or {}
-        cause = f"son hata: {err.get('kind')}: {err.get('detail')}"
+        cause = f"last error: {err.get('kind')}: {err.get('detail')}"
         browser = err.get("kind") == KIND_BROWSER
         if snap["state"] == OK:
-            logger.info(f"SofaScore istekleri yeniden başarılı (köprü durumu: {previous} → ok).")
+            logger.info(f"SofaScore requests succeed again (bridge state: {previous} → ok).")
         elif snap["state"] == DEGRADED:
-            subject = "Tarayıcı köprüsü çalışmıyor" if browser else "SofaScore istekleri reddediyor"
+            subject = "The browser bridge does not work" if browser else "SofaScore is refusing requests"
             logger.warning(
-                f"{subject}: art arda {snap['consecutive_failures']} istek başarısız ({cause}). "
-                f"Köprü durumu: {previous} → degraded."
+                f"{subject}: {snap['consecutive_failures']} requests failed in a row ({cause}). "
+                f"Bridge state: {previous} → degraded."
             )
         else:
-            subject = "Tarayıcı köprüsü çalışmıyor" if browser else "SofaScore bizi engelliyor"
+            subject = "The browser bridge does not work" if browser else "SofaScore is blocking us"
             advice = (
-                "Tarayıcı kurulumunu denetleyin: `python main.py --doctor`."
+                "Check the browser install: `ssc doctor`."
                 if browser
-                else "Bir süre bekleyin; istek hızını düşürmek (REQUEST_RATE_LIMIT) yardımcı olabilir."
+                else "Wait a while; a lower request rate (REQUEST_RATE_LIMIT) may help."
             )
             logger.warning(
-                f"{subject}: art arda {snap['consecutive_failures']} istek başarısız, {snap['failing_since']} "
-                f"tarihinden beri başarılı istek yok ({cause}). Köprü durumu: {previous} → blocked. {advice}"
+                f"{subject}: {snap['consecutive_failures']} requests failed in a row, none succeeded since "
+                f"{snap['failing_since']} ({cause}). Bridge state: {previous} → blocked. {advice}"
             )
         for fn in list(self._listeners):
             try:

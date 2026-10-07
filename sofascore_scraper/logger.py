@@ -390,6 +390,24 @@ def setup_logger(level: Optional[int] = None, force: bool = False) -> None:
         attach_file_handler(name)
 
 
+def adopt_library_logger(name: str) -> int:
+    """
+    Kendi konsol handler'ını kuran bir kütüphanenin logger'ı (Scrapling, içe aktarılırken "scrapling"e
+    "[zaman] INFO: ..." biçimli bir StreamHandler ekler) uygulamanın handler'larıyla yazar: kütüphanenin
+    handler'ları kaldırılır, kayıtlar kök logger'a iletilir. Böylece her satır bir kez ve uygulamanın biçiminde
+    görünür (FX-23, bulgu F3). Kaldırılan handler sayısını döndürür; uygulamanın dosya handler'ına dokunulmaz.
+    """
+    target = logging.getLogger(name)
+    removed = 0
+    for handler in list(target.handlers):
+        if handler is _file_handler:
+            continue
+        target.removeHandler(handler)
+        removed += 1
+    target.propagate = True
+    return removed
+
+
 def attach_file_handler(logger_name: str) -> bool:
     """
     Kök logger'a iletmeyen (propagate=False) bir logger'ın kayıtlarını da dosyaya yazar.

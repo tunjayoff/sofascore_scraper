@@ -908,7 +908,9 @@ def test_bridge_errors_point_at_the_doctor_not_at_playwright():
     solver = (REPO / "sofascore_scraper" / "client" / "bridge.py").read_text(encoding="utf-8")  # köprü P24 ile taşındı
     health = (REPO / "sofascore_scraper" / "bridge_health.py").read_text(encoding="utf-8")
     assert "playwright install" not in solver and "playwright install" not in health
-    assert "--doctor" in solver and "--doctor" in health
+    # FX-23 (F34): İngilizce ve bugünkü komut, `python main.py --doctor` değil
+    assert "ssc doctor" in solver and "ssc doctor" in health
+    assert "main.py --doctor" not in solver and "main.py --doctor" not in health
 
 
 def test_node_version_is_none_when_node_is_not_installed(monkeypatch):

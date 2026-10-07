@@ -99,7 +99,7 @@ def ensure_directory(directory_path: Union[str, Path]) -> bool:
         path.mkdir(parents=True, exist_ok=True)
         return True
     except Exception as e:
-        logger.error(f"Dizin oluşturma hatası ({directory_path}): {str(e)}")
+        logger.error(f"Could not create the directory {directory_path}: {str(e)}")
         return False
 
 

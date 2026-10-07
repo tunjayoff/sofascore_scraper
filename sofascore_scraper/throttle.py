@@ -135,7 +135,7 @@ def configured_rate() -> float:
     if not math.isfinite(rate):
         if _warned_invalid_rate != raw:
             _warned_invalid_rate = raw
-            logger.warning(f"{ENV_RATE} geçersiz ({raw!r}), varsayılan {DEFAULT_RATE_LIMIT:g} kullanılacak.")
+            logger.warning(f"{ENV_RATE} is not valid ({raw!r}); the default {DEFAULT_RATE_LIMIT:g} is used.")
         return DEFAULT_RATE_LIMIT
     return max(0.0, rate)
 
@@ -513,7 +513,7 @@ class RequestThrottle:
             result, state = step(self._read(state_path))
             self._write(state_path, state)
         if self._shared_failed_at is not None:
-            logger.info(f"Ortak istek bütçesi ({self.name}) yeniden kullanılıyor.")
+            logger.info(f"Shared request budget ({self.name}) is used again.")
         self._shared_failed_at, self.shared_error = None, None
         self._local = state  # dosya kaybolursa süreç içi sayaç kaldığı yerden sürsün
         return result
@@ -546,8 +546,8 @@ class RequestThrottle:
                 except (OSError, TimeoutError) as e:
                     if self._shared_failed_at is None:
                         logger.warning(
-                            f"Ortak istek bütçesi ({self.name}) kullanılamıyor: {e}. Bu süreç kendi "
-                            f"sayacıyla devam ediyor; {int(_SHARED_RETRY_AFTER_SECONDS)} sn sonra yeniden denenecek."
+                            f"Shared request budget ({self.name}) is unavailable: {e}. This process goes on "
+                            f"with its own counter; retrying the file in {int(_SHARED_RETRY_AFTER_SECONDS)} s."
                         )
                     self._shared_failed_at, self.shared_error = time.monotonic(), str(e)
             if not in_file:

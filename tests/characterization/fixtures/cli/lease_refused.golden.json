@@ -10,8 +10,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 0 provisional records..."
   ],
   "stdout": [
@@ -34,8 +34,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc export",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
   ],
   "stdout": [
@@ -56,8 +56,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync --recheck-unavailable all",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "A job is already running: A job is already running on this data directory.",
    "Held by process <pid> on <host> (job) since <time>"
   ],
@@ -74,8 +74,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "A job is already running: A job is already running on this data directory.",
    "Held by process <pid> on <host> (job) since <time>"
   ],
@@ -92,8 +92,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "A job is already running: A job is already running on this data directory.",
    "Held by process <pid> on <host> (job) since <time>"
   ],
@@ -115,8 +115,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "A job is already running: A job is already running on this data directory.",
    "Held by process <pid> on <host> (job) since <time>"
   ],
@@ -138,8 +138,8 @@
   "sleeps": {},
   "stderr": [
    "main.py bayrakları kullanımdan kalkıyor ve kaldırılacak; bu çalıştırmanın karşılığı: ssc sync",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "Bir iş zaten çalışıyor: A job is already running on this data directory.",
    "Tutan süreç: <pid>, makine: <host> (job); başlangıç: <time>"
   ],

@@ -107,8 +107,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: The season list of league 17 is up to date; it is not read again.",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Listing: Season list of league 17 is fresh; not requested",
@@ -147,8 +147,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc sync",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: The season list of league 17 is up to date; it is not read again.",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Listing: Season list of league 17 is fresh; not requested",

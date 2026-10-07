@@ -23,8 +23,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 1 provisional records...",
    "LOG INFO MatchDataFetcher: Refreshing 1 matches",
    {
@@ -71,8 +71,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc --ignore-breaker refresh",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
    "LOG INFO MatchDataFetcher: Refreshing 3 matches",
    {
@@ -86,15 +86,15 @@
      "LOG WARNING FetchPipeline: Refresh of match 9100001: /event could not be fetched",
      "LOG WARNING FetchPipeline: Refresh of match 9100003: /event could not be fetched",
      "LOG WARNING FetchPipeline: Refresh of match 9100010: /event could not be fetched",
-     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
-     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100003",
-     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
-     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
-     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100003",
-     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
-     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
-     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100003",
-     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010"
+     "LOG WARNING Utils: 403 Forbidden (attempt 1/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (attempt 1/3): https://www.sofascore.com/api/v1/event/9100003",
+     "LOG WARNING Utils: 403 Forbidden (attempt 1/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (attempt 2/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (attempt 2/3): https://www.sofascore.com/api/v1/event/9100003",
+     "LOG WARNING Utils: 403 Forbidden (attempt 2/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (attempt 3/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (attempt 3/3): https://www.sofascore.com/api/v1/event/9100003",
+     "LOG WARNING Utils: 403 Forbidden (attempt 3/3): https://www.sofascore.com/api/v1/event/9100010"
     ]
    }
   ],
@@ -117,8 +117,8 @@
   "sleeps": {},
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 0 provisional records..."
   ],
   "stdout": [
@@ -155,8 +155,8 @@
   },
   "stderr": [
    "main.py flags are deprecated and will be removed; this run is: ssc refresh",
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO ConfigManager: 1 leagues loaded",
+   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
    "LOG INFO MatchDataFetcher: Refreshing 3 matches",
    {
@@ -164,17 +164,17 @@
    },
    {
     "concurrent": [
-     "LOG WARNING Breaker: Devre kesici açıldı (art arda 2 başarısız istek): 2 istekten 2 başarısız (2x 403). Bu iş SofaScore'a yeni istek göndermeyecek.",
+     "LOG WARNING Breaker: Circuit breaker opened (art arda 2 başarısız istek): 2 of 2 requests failed (2x 403). This job sends no more requests to SofaScore.",
      "LOG WARNING FetchPipeline: Event request for match 9100001 failed (403)",
      "LOG WARNING FetchPipeline: Event request for match 9100010 failed (403)",
      "LOG WARNING FetchPipeline: Refresh of match 9100001: /event could not be fetched",
      "LOG WARNING FetchPipeline: Refresh of match 9100010: /event could not be fetched",
-     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
-     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
-     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
-     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
-     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
-     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010"
+     "LOG WARNING Utils: 403 Forbidden (attempt 1/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (attempt 1/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (attempt 2/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (attempt 2/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (attempt 3/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (attempt 3/3): https://www.sofascore.com/api/v1/event/9100010"
     ]
    },
    "LOG WARNING MatchDataFetcher: Too many failed requests; the refresh stopped, 1 matches were not tried",
