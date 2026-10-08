@@ -10,8 +10,6 @@ import type { Event, EventListItem, Season, SliceSummary, TournamentRecord } fro
 const t = (key: string, args?: Record<string, unknown>) => i18n.global.t(key, args ?? {})
 const te = (key: string) => i18n.global.te(key, 'en')
 
-type AnyEvent = Pick<Event, 'participants' | 'score' | 'status'>
-
 export function homeName(e: Pick<Event, 'participants'>) {
   return e.participants.home?.name ?? t('ui.eventDetail.side.home')
 }
@@ -22,34 +20,8 @@ export function eventTitle(e: Pick<Event, 'participants'>) {
   return `${homeName(e)} – ${awayName(e)}`
 }
 
-/** The headline score: "2 – 1"; tennis and the other set sports add the sets ("6-4 3-6 7-5"). */
-export function scoreText(e: AnyEvent): string {
-  const s = e.score
-  if (s.home == null && s.away == null) return '—'
-  const head = `${s.home ?? '–'} – ${s.away ?? '–'}`
-  if (s.family === 'sets' && s.sets.length && (s.format === 'games' || s.format === 'points' || s.format === 'legs'))
-    return s.sets.map((x) => `${x.home ?? '–'}-${x.away ?? '–'}`).join(' ')
-  return head
-}
-
-/** A second line under the score: half time, overtime, penalties, a set count, an aggregate. */
-export function scoreDetail(e: Pick<Event, 'score' | 'aggregate'>): string[] {
-  const s = e.score
-  const out: string[] = []
-  const pair = (p: { home: number | null; away: number | null } | null) => (p ? `${p.home ?? '–'} – ${p.away ?? '–'}` : null)
-  if (s.family === 'football') {
-    if (s.half_time) out.push(t('ui.eventDetail.score.ht', { score: pair(s.half_time) }))
-    if (s.after_extra_time) out.push(t('ui.eventDetail.score.aet', { score: pair(s.after_extra_time) }))
-    if (s.penalties) out.push(t('ui.eventDetail.score.pens', { score: pair(s.penalties) }))
-  } else if (s.family === 'periods') {
-    if (s.periods.length) out.push(s.periods.map((p) => `${p.home ?? '–'}-${p.away ?? '–'}`).join(' · '))
-    if (s.overtime) out.push(t('ui.eventDetail.score.ot', { score: pair(s.overtime) }))
-  } else if (s.family === 'sets') {
-    if (s.sets_won) out.push(t('ui.eventDetail.score.sets', { score: pair(s.sets_won) }))
-  }
-  if (e.aggregate) out.push(t('ui.eventDetail.score.agg', { score: pair(e.aggregate) }))
-  return out
-}
+// Skorun metni spora göre ayrı modülde (FX-26); eski içe aktarmalar buradan devam eder
+export { scoreDetail, scoreText } from './scoreText'
 
 export function sliceLabel(key: string): string {
   const k = `ui.slice.${key}`

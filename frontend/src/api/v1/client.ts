@@ -236,6 +236,9 @@ export const v1 = {
     request<Op<'listEvents'>['response']>('GET', '/api/v1/events', { query, signal }),
   event: (id: number, signal?: AbortSignal): Promise<Data<'getEvent'>> =>
     request<Op<'getEvent'>['response']>('GET', `/api/v1/events/${id}`, { signal }).then((r) => r.data),
+  /** What the stored event payload says beyond the record: result note, series, venue, referee (FX-26). */
+  eventExtra: (id: number, signal?: AbortSignal): Promise<Data<'getEventExtra'>> =>
+    request<Op<'getEventExtra'>['response']>('GET', `/api/v1/events/${id}/extra`, { signal }).then((r) => r.data),
   eventSlices: (id: number, signal?: AbortSignal): Promise<Data<'listEventSlices'>> =>
     request<Op<'listEventSlices'>['response']>('GET', `/api/v1/events/${id}/slices`, { signal }).then((r) => r.data),
   /** One slice with its stored payload. */

@@ -495,8 +495,10 @@ describe('Event detail', () => {
     ]),
     'GET /api/v1/events/9100003/odds': list([]),
     'GET /api/v1/changes': page([change()]),
+    // FX-26: saha ve hakem ham olay yükünden değil, başlık bilgilerinin rotasından okunur
+    'GET /api/v1/events/9100003/extra': { data: { note: null, series: null, venue: 'Stamford Bridge', referee: 'M. Oliver' } },
     'GET /api/v1/events/9100003/raw': () =>
-      new Response(JSON.stringify({ event: { id: 9100003, venue: { name: 'Stamford Bridge' }, referee: { name: 'M. Oliver' } } }), {
+      new Response(JSON.stringify({ id: 9100003, venue: { name: 'Stamford Bridge' }, referee: { name: 'M. Oliver' } }), {
         headers: { 'Content-Type': 'application/json', ETag: '"3fa9c0ffee11223344"', 'X-Sofascore-Fetched-At': '2026-10-03T02:01:10Z' },
       }),
     'GET /api/v1/events/9100003/slices/statistics': { data: slice('statistics', { payload: STATS }) },
@@ -505,7 +507,7 @@ describe('Event detail', () => {
     ...over,
   })
 
-  it('shows the header, the facts and the overview with venue and referee from the raw event', async () => {
+  it('shows the header, the facts and the overview with venue and referee of the stored payload', async () => {
     mockFetch(routes())
     ;({ w } = await mountScreen(EventDetailScreen, '/events/9100003', '/events/:id'))
     await flush()
