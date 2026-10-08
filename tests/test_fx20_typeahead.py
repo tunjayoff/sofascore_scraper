@@ -3,7 +3,8 @@ Yazarken öneri (plan maddesi FX-20): katalogdan ad önerisi ve SofaScore aramas
 
   * `GET /api/v1/catalog/suggest`: adında metin geçen kayıtlı turnuvalar ve takımlar, arama sonucunun biçiminde;
     SofaScore'a istek gitmez; adı metinle başlayanlar önce, sonra bir sözcüğü metinle başlayanlar, sonra öteki;
-    her birinde takip edilenler önce;
+    her birinde takip edilenler önce; adı ya da bir sözcüğü metinle başlayan varsa metnin yalnızca sözcük
+    ortasında geçtiği adlar gösterilmez (FX-28, M23);
   * `POST /api/v1/tournaments/search`: yanıt sunucuda 10 dakika saklanır (aynı metin, büyük-küçük harf ve boşluk
     farkı önemsiz, istek atmaz); hatalı yanıt saklanmaz; istek ortak bütçeden sıra alır (sofascore_scraper/throttle.py);
   * istemci bağlantıyı keserse henüz gönderilmemiş istek gönderilmez (bütçede sıra beklerken kesilen istek sırasını
@@ -33,6 +34,7 @@ from sofascore_scraper.client import transport
 from sofascore_scraper.client.context import FetchCancelled
 from sofascore_scraper.config import loader
 from sofascore_scraper.services import follows as follows_module
+from sofascore_scraper.services import query as query_module
 from sofascore_scraper.store import FollowSpec, Store, open_store
 from sofascore_scraper.web.api.v1 import tournaments as tournaments_routes
 from sofascore_scraper.web.app import app
@@ -93,15 +95,15 @@ def search(q: str, **body: Any) -> Any:
 
 def test_the_catalog_suggests_tournaments_and_teams_without_a_request(canonical: Store) -> None:
     with FakeSofaScore.from_file(WORLD) as world:
-        hits = data(client.get("/api/v1/catalog/suggest", params={"q": "la"}))
+        hits = data(client.get("/api/v1/catalog/suggest", params={"q": "ma"}))
         assert world.paths() == []
-    # adı "la" ile başlayan önce, sonra adında geçenler (ada göre)
-    assert [(h["kind"], h["name"]) for h in hits][:4] == [
-        ("tournament", "LaLiga"), ("team", "Aston Villa"), ("team", "Atlanta Hawks"), ("team", "Crystal Palace")]
-    laliga = hits[0]
-    assert (laliga["id"], laliga["sport"], laliga["followed"]) == (LALIGA, "football", False)
-    assert all(h["kind"] in ("tournament", "team") for h in hits)
-    assert len(hits) <= 8
+    # adı "ma" ile başlayanlar önce, sonra bir sözcüğü "ma" ile başlayanlar (ada göre)
+    assert [(h["kind"], h["name"]) for h in hits] == [
+        ("team", "Mallorca"), ("team", "Manchester City"), ("team", "Manchester United"),
+        ("team", "Dallas Mavericks"), ("team", "Orlando Magic"), ("team", "Real Madrid")]
+    laliga = data(client.get("/api/v1/catalog/suggest", params={"q": "laliga"}))[0]
+    assert (laliga["kind"], laliga["id"], laliga["sport"], laliga["followed"]) == (
+        "tournament", LALIGA, "football", False)
 
 
 def test_a_word_start_and_a_follow_come_first(canonical: Store) -> None:
@@ -109,12 +111,56 @@ def test_a_word_start_and_a_follow_come_first(canonical: Store) -> None:
     assert [h["name"] for h in by_word] == ["Atlanta Hawks"]
     villa = data(client.get("/api/v1/catalog/suggest", params={"q": "villa"}))
     assert [h["name"] for h in villa] == ["Villarreal", "Aston Villa"]  # adın başı, sonra bir sözcüğün başı
-    hits = data(client.get("/api/v1/catalog/suggest", params={"q": "la"}))
-    palace = next(h for h in hits if h["name"] == "Crystal Palace")
-    canonical.follows.add(FollowSpec(kind="team", entity_id=palace["id"], name="Crystal Palace"), origin="api")
-    hits = data(client.get("/api/v1/catalog/suggest", params={"q": "la"}))
-    assert hits[0]["name"] == "LaLiga"  # adı metinle başlayan, takip edilenden önce
-    assert (hits[1]["name"], hits[1]["followed"]) == ("Crystal Palace", True)
+    united = data(client.get("/api/v1/catalog/suggest", params={"q": "united"}))
+    assert [h["name"] for h in united] == ["Leeds United", "Manchester United", "Newcastle United", "West Ham United"]
+    west_ham = united[-1]
+    canonical.follows.add(FollowSpec(kind="team", entity_id=west_ham["id"], name="West Ham United"), origin="api")
+    united = data(client.get("/api/v1/catalog/suggest", params={"q": "united"}))
+    assert (united[0]["name"], united[0]["followed"]) == ("West Ham United", True)  # aynı yerde takip edilen önce
+    # adı metinle başlayan, sözcüğü metinle başlayan takip edilenden önce
+    assert [h["name"] for h in data(client.get("/api/v1/catalog/suggest", params={"q": "ham"}))] == [
+        "West Ham United"]
+    assert data(client.get("/api/v1/catalog/suggest", params={"q": "man"}))[0]["name"] == "Manchester City"
+
+
+def test_mid_word_names_only_when_no_word_starts_with_the_text(canonical: Store) -> None:
+    # FX-28 (M23): "la" yalnızca LaLiga'yı önerir; Atlanta Hawks, Crystal Palace, Dallas… sözcük ortasında geçer
+    assert [(h["kind"], h["name"]) for h in data(client.get("/api/v1/catalog/suggest", params={"q": "la"}))] == [
+        ("tournament", "LaLiga")]
+    # hiçbir ad ya da sözcük "on" ile başlamıyor: sözcük ortasında geçenler gösterilir, takip edilen önce
+    on = data(client.get("/api/v1/catalog/suggest", params={"q": "on", "limit": 20}))
+    assert {"Boston Celtics", "Everton", "Southampton"} <= {h["name"] for h in on}
+    everton = next(h for h in on if h["name"] == "Everton")
+    canonical.follows.add(FollowSpec(kind="team", entity_id=everton["id"], name="Everton"), origin="api")
+    assert data(client.get("/api/v1/catalog/suggest", params={"q": "on"}))[0]["name"] == "Everton"
+
+
+def test_word_starts_are_found_past_a_pool_full_of_mid_word_names(canonical: Store,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    # ada göre sıralı aday havuzu "Holger Rune" ile dolsa da sözcüğü "un" ile başlayan "Leeds United" bulunur
+    monkeypatch.setattr(query_module, "_SUGGEST_POOL", 1)
+    assert [h["name"] for h in data(client.get("/api/v1/catalog/suggest", params={"q": "un"}))] == ["Leeds United"]
+    assert [h["name"] for h in data(client.get("/api/v1/catalog/suggest", params={"q": "une"}))] == ["Holger Rune"]
+
+
+@pytest.mark.parametrize("name, wanted, place", [
+    ("laliga", "la", 0), ("los angeles lakers", "la", 1), ("bodo/glimt", "glimt", 1), ("al-ahli", "ahli", 1),
+    ("brighton & hove albion", "albion", 1), ("st. pauli", "pauli", 1), ("alanyaspor", "la", 2),
+    ("atalanta", "la", 2), ("arsenal", "zz", 2),
+])
+def test_the_place_of_a_name(name: str, wanted: str, place: int) -> None:
+    assert query_module._match_place(name, wanted) == place
+
+
+def test_the_store_lists_names_by_word_start(canonical: Store) -> None:
+    assert [row.name for row in canonical.entities.participants(text="la", word_start=True)] == []
+    assert [row.name for row in canonical.entities.participants(text="Hove", word_start=True)] == [
+        "Brighton & Hove Albion"]
+    assert [row.name for row in canonical.entities.participants(text="zeballos", word_start=True)] == [
+        "Granollers M / Zeballos H"]
+    assert [row.name for row in canonical.entities.tournaments(text="men", word_start=True)] == ["Wimbledon, Men"]
+    assert [row.name for row in canonical.entities.tournaments(text="liga", word_start=True)] == []
+    assert [row.name for row in canonical.entities.tournaments(text="liga")] == ["LaLiga"]
 
 
 def test_suggestions_by_sport_case_accents_and_limit(canonical: Store) -> None:

@@ -6,11 +6,11 @@ class EntityStore:
     def slices(self, ref: Ref) -> List[SliceInfo]
     def slice(self, ref: Ref, key: str, sub: str = '') -> SliceInfo
     def tournament(self, tournament_id: int) -> Optional[TournamentRow]
-    def tournaments(self, *, sport: Optional[str] = None, text: Optional[str] = None, limit: int = 100) -> List[TournamentRow]
+    def tournaments(self, *, sport: Optional[str] = None, text: Optional[str] = None, limit: int = 100, word_start: bool = False) -> List[TournamentRow]
     def tournaments_with_slice(self, key: str, *, layout_name: Optional[str] = None) -> List[int]
     def seasons(self, tournament_id: int) -> List[SeasonRow]
     def season(self, season_id: int) -> Optional[SeasonRow]
-    def participants(self, *, text: Optional[str] = None, sport: Optional[str] = None, ids: Sequence[int] = (), limit: int = 50) -> List[ParticipantRow]
+    def participants(self, *, text: Optional[str] = None, sport: Optional[str] = None, ids: Sequence[int] = (), limit: int = 50, word_start: bool = False) -> List[ParticipantRow]
     def sport_of_tournament(self, tournament_id: int) -> Optional[str]
     def category(self, category_id: int) -> Optional[CategoryRow]
     def categories(self, *, sport: Optional[str] = None, ids: Sequence[int] = (), limit: int = 100) -> List[CategoryRow]

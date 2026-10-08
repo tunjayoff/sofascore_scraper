@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VueWrapper } from '@vue/test-utils'
 import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
 import { resetSports } from '@/app/sports'
-import { REMOTE_DELAY } from '@/app/suggest'
+import { fold, matchPlace, MAX_LOCAL, rankLocal, REMOTE_DELAY } from '@/app/suggest'
 import { hitPlace } from '@/screens/follows/followText'
 import { i18n, setLocale } from '@/i18n'
 import { callsTo, flush, json, mockFetch } from './helpers'
@@ -262,5 +262,50 @@ describe('suggestions while typing', () => {
     expect(hitPlace(england)).toBe('İngiltere')
     expect(hitPlace({ category: { name: 'World' }, country: null })).toBe('Dünya')
     setLocale('en')
+  })
+})
+
+/**
+ * FX-28 (M23): the local names by word start. "la" listed Los Angeles Lakers, Alanya Belediye, Alanyaspor,
+ * Atalanta … before SofaScore's hits, and LaLiga was never in view.
+ */
+describe('local suggestions by word start', () => {
+  const team = (id: number, name: string, sportSlug = 'football') => follow({ id: `team:${id}`, kind: 'team', entity_id: id, name, sport: sportSlug })
+
+  it('word starts first, mid-word names left out, at most five, then SofaScore', async () => {
+    routes({
+      'GET /api/v1/follows': list([team(1, 'Atalanta'), team(2, 'Alanyaspor'), team(3, 'Los Angeles Lakers', 'basketball'), team(2699, 'Lazio'), team(9, 'Lamia')]),
+      'GET /api/v1/catalog/suggest': list([hit('team', 6577, 'Las Palmas'), hit('team', 7, 'Lanús'), hit('team', 10, 'Atlético Lanús'), hit('team', 5, 'Alanya Belediye')]),
+    })
+    const input = await open()
+    await input.setValue('la')
+    await vi.advanceTimersByTimeAsync(1000)
+    const shown = w.findAll('[role="option"]').map((o) => o.attributes('data-hit'))
+    // names that start with "la" (follows first), then a word that does; five; then SofaScore's LaLiga …
+    expect(shown).toEqual(['team:9', 'team:2699', 'team:6577', 'team:7', 'team:3', 'tournament:8', 'tournament:34', 'player:1402912'])
+    expect(shown).not.toContain('team:1') // Atalanta: "la" only inside a word
+    expect(shown).not.toContain('team:5') // Alanya Belediye
+  })
+
+  it('mid-word names when no name or word starts with the text', async () => {
+    routes({ 'GET /api/v1/follows': list([team(1, 'Atalanta'), team(2, 'Alanyaspor')]), 'GET /api/v1/catalog/suggest': list([]) })
+    const input = await open()
+    await input.setValue('lan')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(w.findAll('[role="option"]').map((o) => o.attributes('data-hit'))).toEqual(['team:2', 'team:1'])
+  })
+
+  it('folds accents and the Turkish dotted and dotless i', () => {
+    expect(fold('İSTANBUL')).toBe('istanbul')
+    expect(fold('Kasımpaşa')).toBe('kasimpasa')
+    expect(fold('  Bodø/Glimt ')).toBe('bodo/glimt')
+    expect(matchPlace(fold('Başakşehir'), fold('BAŞAK'))).toBe(0)
+    expect(matchPlace(fold('İstanbul Başakşehir'), fold('basak'))).toBe(1)
+    expect(matchPlace(fold('Bodø/Glimt'), fold('glimt'))).toBe(1)
+    expect(matchPlace(fold('Al-Ahli'), fold('ahli'))).toBe(1)
+    expect(matchPlace(fold('Atalanta'), fold('la'))).toBe(2)
+    expect(matchPlace(fold('Arsenal'), fold('zz'))).toBe(-1)
+    expect(rankLocal(['Atalanta', 'Alanyaspor', 'Los Angeles Lakers', 'LaLiga'], (x) => x, 'LA')).toEqual(['LaLiga', 'Los Angeles Lakers'])
+    expect(rankLocal(['a1', 'a2', 'a3', 'a4', 'a5', 'a6'], (x) => x, 'a')).toHaveLength(MAX_LOCAL)
   })
 })

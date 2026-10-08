@@ -189,18 +189,42 @@ describe('keyboard', () => {
     expect(w.text()).toContain(t('ui.palette.note'))
   })
 
+  const tour = (id: number, name: string) => ({ kind: 'tournament', id, name, sport: 'football', category: {}, followed: false })
+  const followOf = (kind: string, id: number, name: string) => ({ id: `${kind}:${id}`, kind, entity_id: id, name, sport: 'football', seasons: 'current', live: false, enabled: true, origin: 'api', position: 0, writable: [] })
+
+  it('the quick search ranks follows and stored tournaments by word start, at most five (FX-28)', async () => {
+    await app('/', {
+      'GET /api/v1/follows': { data: [followOf('team', 1, 'Atalanta'), followOf('team', 2, 'Alanyaspor'), followOf('team', 3, 'Los Angeles Lakers'), followOf('team', 4, 'Lazio')], page: { limit: 0 } },
+      'GET /api/v1/catalog/suggest': { data: [tour(8, 'LaLiga'), tour(9, 'La Liga 2'), tour(10, 'Liga Profesional de Fútbol'), tour(11, 'Lamia Cup'), tour(12, 'Atalanta Cup')], page: { limit: 20 } },
+    })
+    key('k', { ctrlKey: true })
+    await flush()
+    await w.find('input[role="combobox"]').setValue('LA')
+    await new Promise((r) => setTimeout(r, 260))
+    await flush()
+    const names = w.findAll('[role="option"]').map((o) => o.find('.truncate').text())
+    expect(names[0]).toBe(t('ui.nav.settings')) // its word "language"
+    // follows first within a place, names that start with the text before a word that does; mid-word ones out
+    expect(names.slice(1, 6)).toEqual(['Lazio', 'LaLiga', 'La Liga 2', 'Lamia Cup', 'Los Angeles Lakers'])
+    expect(names).not.toContain('Atalanta')
+    expect(names).not.toContain('Alanyaspor')
+    expect(names).not.toContain('Atalanta Cup')
+    expect(names.at(-1)).toBe(t('ui.palette.searchSofascore', { q: 'LA' }))
+  })
+
   it('the quick search finds follows by name and stored tournaments of the catalog at once', async () => {
     const f = await app('/', {
       'GET /api/v1/follows': { data: [{ id: 'tournament:17', kind: 'tournament', entity_id: 17, name: 'Premier League', sport: 'football', seasons: 'current', live: false, enabled: true, origin: 'api', position: 0, writable: [] }], page: { limit: 0 } },
-      'GET /api/v1/tournaments': { data: [{ id: 17, name: 'Premier League', sport: 'football', category_id: 1, slug: 'pl' }, { id: 8, name: 'LaLiga', sport: 'football', category_id: 2, slug: 'laliga' }], page: { limit: 6 } },
+      'GET /api/v1/catalog/suggest': { data: [tour(17, 'Premier League'), tour(8, 'LaLiga'), { ...tour(42, 'Ligue Team'), kind: 'team' }], page: { limit: 20 } },
     })
     key('k', { ctrlKey: true })
     await flush()
     await w.find('input[role="combobox"]').setValue('lig')
     await new Promise((r) => setTimeout(r, 260))
     await flush()
-    // (the catalog is also read once without a text, for the leagues' names of the jobs)
-    expect(callsTo(f, 'GET /api/v1/tournaments').map(([u]) => new URL(String(u), 'http://x').searchParams.get('q'))).toContain('lig')
+    // the catalog's suggestions (FX-28), its tournaments only
+    expect(callsTo(f, 'GET /api/v1/catalog/suggest').map(([u]) => new URL(String(u), 'http://x').searchParams.get('q'))).toContain('lig')
+    expect(w.findAll('[role="option"]').some((o) => o.text().includes('Ligue Team'))).toBe(false)
     const options = w.findAll('[role="option"]').map((o) => o.text())
     expect(options).toEqual(expect.arrayContaining([expect.stringContaining('LaLiga')]))
     await w.find('input[role="combobox"]').setValue('premier')

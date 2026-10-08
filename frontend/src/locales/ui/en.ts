@@ -1311,6 +1311,7 @@ const en = {
   corrections: {
     description: 'Scores and results SofaScore changed after they were stored.',
     score: 'Score',
+    noScore: 'no score',
     status: 'Status',
     more: '+{n} fields',
     regressedOnly: 'Status regressed only',
@@ -1830,7 +1831,7 @@ const en = {
       proxy: 'The password is never shown; Replace sets a new address.',
     },
     fetch: {
-      only_finished: 'When on, a league download fetches the details of finished matches only; future fixtures stay as listed rows. The match counts on Overview and the old /api match lists also count only finished matches (or matches with details). It does not change the Matches screen (every status shows there; filter by status) nor team, player and single-match follows.',
+      only_finished: 'When on, a league download fetches the details of finished matches only; future fixtures stay as listed rows. The match counts on Overview and the old /api match lists also count only finished matches (or matches with details). It does not change the Matches screen (its Played / Upcoming / All switch and the status filter choose what shows) nor team, player and single-match follows.',
     },
     defaults: {
       slices: 'Data types or groups, separated by commas. “core” is the core match data: the match, statistics, line-ups, incidents and the rest; odds are a group of their own (“odds”).',

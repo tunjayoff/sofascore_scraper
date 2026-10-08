@@ -213,6 +213,25 @@ describe('Overview', () => {
     expect(card.find('a[href="/corrections"]').exists()).toBe(true)
   })
 
+  it('a change from an unknown score reads "no score → 4-3" in both languages (FX-28, M22)', async () => {
+    const unknown = change({ seq: 3, fields: [{ path: 'homeScore.current', old: null, new: 4 }, { path: 'awayScore.current', old: null, new: 3 }] })
+    mockFetch(
+      base({
+        'GET /api/v1/changes': { data: [unknown], page: { limit: 5, next_cursor: null } },
+        'GET /api/v1/events/9100003': { data: event() },
+      }),
+    )
+    ;({ w } = await mountScreen(OverviewScreen, '/'))
+    await flush()
+    await flush()
+    const card = () => w.find('[data-testid="recent-corrections"]').text()
+    expect(card()).toContain(`${t('ui.corrections.score')}no score → 4-3`)
+    expect(card()).not.toContain('–-–')
+    setLocale('tr')
+    await flush()
+    expect(card()).toContain('Skorskor yok → 4-3')
+  })
+
   it('the tiles count matches, details, follows and the disk', async () => {
     mockFetch(base())
     ;({ w } = await mountScreen(OverviewScreen, '/'))
