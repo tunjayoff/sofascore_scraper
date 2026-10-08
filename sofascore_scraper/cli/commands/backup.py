@@ -31,8 +31,7 @@ from sofascore_scraper.cli.commands import CliWarning, CommandResult, Invocation
 from sofascore_scraper.cli.output import Translator
 from sofascore_scraper.errors import UsageError
 
-SCOPES = ("all", "state", "data", "config", "seasons", "matches", "match_details")
-LOCKED_SCOPES = tuple(scope for scope in SCOPES if scope != "config")  # `writer` kilidi altında yazılır
+SCOPES = ("all", "state", "data")  # 2.x'in config, seasons, matches ve match_details kapsamları 3.1'de kalktı
 
 group("backup", help="ssc_help_cmd_backup")
 
@@ -84,10 +83,7 @@ def backup_create(inv: Invocation) -> CommandResult:
     store = _store()
     scope = inv.args.scope
     service = BackupService(store)
-    if scope in LOCKED_SCOPES:
-        with store.lease("writer", purpose="op:backup"):
-            info = service.create(scope, config_files=_config_files(), include_secrets=inv.args.include_secrets)
-    else:
+    with store.lease("writer", purpose="op:backup"):  # her kapsam veri ya da state.db yazar
         info = service.create(scope, config_files=_config_files(), include_secrets=inv.args.include_secrets)
     warnings: List[CliWarning] = []
     if info.with_env:

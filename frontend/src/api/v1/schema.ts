@@ -49,7 +49,7 @@ export interface AuthState {
 }
 
 export interface BackupJobSpec {
-  scope?: "all" | "state" | "data" | "config" | "seasons" | "matches" | "match_details"
+  scope?: "all" | "state" | "data"
   /** Also `.env` (it can hold secrets); the file name says so. */
   include_env?: boolean
 }
@@ -62,7 +62,7 @@ export interface BackupListResponse {
 /** A backup zip in the data directory's `backups/`. */
 export interface BackupRecord {
   name: string
-  /** all, state, data, config, seasons, matches or match_details. */
+  /** all, state or data; a backup taken before 3.1 can also say config, seasons, matches or match_details. */
   scope: string
   /** The time in the file name, as UTC. */
   created_at_utc?: string | null

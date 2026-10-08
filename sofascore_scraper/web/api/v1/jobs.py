@@ -272,7 +272,7 @@ class StartExportJob(BaseModel):
 class BackupJobSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    scope: Literal["all", "state", "data", "config", "seasons", "matches", "match_details"] = "all"
+    scope: Literal["all", "state", "data"] = "all"
     include_env: bool = Field(default=False, description="Also `.env` (it can hold secrets); the file name says so.")
 
 

@@ -216,7 +216,7 @@
     "ssc_help_cmd_backup_list": "backups klasöründeki yedekleri listele, en yeni önce",
     "ssc_help_cmd_backup_verify": "bir yedeği oku ve denetle (sorun varsa çıkış kodu 1)",
     "ssc_help_cmd_backup_restore": "backups klasöründeki bir yedeği veri klasörüne geri yükle (2.x sürümünün yedekleri de)",
-    "ssc_help_backup_scope": "pakete girecek olan: all (varsayılan), state (takipler, iş geçmişi, olay günlüğü), data (maç dosyaları ve değişiklik günlüğü), config (yalnızca ayar dosyaları) ya da eski klasörlerden biri: seasons, matches, match_details",
+    "ssc_help_backup_scope": "pakete girecek olan: all (varsayılan), state (takipler, iş geçmişi, olay günlüğü) ya da data (maç dosyaları ve değişiklik günlüğü)",
     "ssc_help_backup_include_secrets": ".env dosyasını da yedeğe koy (proxy parolasını ve belirteçleri taşıyabilir; dosya adı o zaman _with_env içerir ve yalnızca sen okuyabilirsin)",
     "ssc_help_backup_name": "yedeğin backups klasöründeki dosya adı (bkz. backup list)",
     "ssc_help_backup_force": "veri klasörü boş değil: içindeki veriyi önce çöpe taşı ve yerine koy (geri yükleme hiçbir zaman birleştirmez)",

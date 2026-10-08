@@ -42,7 +42,8 @@ logger = get_logger("BackupService")
 # Yedekteki ayar belgesinin üye adı (sofascore_scraper/store/backup.py OVERRIDES_MEMBER; rapor bu adla söyler)
 OVERRIDES_MEMBER = "config/overrides.json"
 
-BackupScope = Literal["all", "state", "data", "config", "seasons", "matches", "match_details"]
+# 2.x'in dört kapsamı (`config`, `seasons`, `matches`, `match_details`) 3.1'de kalktı (plan maddesi P30)
+BackupScope = Literal["all", "state", "data"]
 
 
 class BackupService:

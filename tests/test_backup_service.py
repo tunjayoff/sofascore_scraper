@@ -31,7 +31,7 @@ from sofascore_scraper.web import deps, league_sports
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "backup" / "members.json"
 REGEN = os.getenv("REGEN_BACKUP_GOLDEN") == "1"
-SCOPES = ("all", "config", "seasons", "matches", "match_details")
+SCOPES = ("all", "state", "data")
 NAME_RE = r"backup_{scope}{env}_\d{{8}}_\d{{6}}\.zip"
 ENV_TEXT = "PROXY_URL=http://example.invalid:1\n"
 
@@ -90,7 +90,7 @@ def _all_members(root: Path, monkeypatch: pytest.MonkeyPatch) -> Dict[str, List[
             for include_env in (False, True):
                 made = _create(scope, include_env)
                 path = os.path.join(fixture.data_dir, "backups", made.name)
-                with_env = include_env and scope in ("all", "config")
+                with_env = include_env and scope in ("all", "state")
                 assert re.fullmatch(NAME_RE.format(scope=scope, env="_with_env" if with_env else ""), made.name)
                 found[f"{name}/{scope}{'/env' if include_env else ''}"] = _members(path)
                 os.remove(path)
@@ -109,7 +109,7 @@ def test_the_backup_members_equal_the_golden(configured: Path, monkeypatch: pyte
 def test_a_backup_with_env_is_private(configured: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fixture = sf.build_fixture("canonical", configured / "data")
     _use_data_dir(monkeypatch, fixture.data_dir)
-    made = _create("config", True)
+    made = _create("state", True)
     path = fixture.data_dir / "backups" / made.name
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     with zipfile.ZipFile(path) as zf:
@@ -126,15 +126,16 @@ def test_the_service_writes_through_the_store_and_lists_newest_first(configured:
     leagues = str(configured / "config" / "leagues.txt")
     assert service.list() == []  # backups/ henüz yok
 
-    older = store.backup.create("seasons", now=datetime(2026, 1, 2, 3, 4, 5))
-    newer = service.create("config", config_files=(leagues, str(configured / "missing.json")), include_secrets=True)
+    older = store.backup.create("data", now=datetime(2026, 1, 2, 3, 4, 5))
+    newer = service.create("state", config_files=(leagues, str(configured / "missing.json")), include_secrets=True)
 
-    assert older.name == "backup_seasons_20260102_030405.zip" and older.created_at == "2026-01-02T03:04:05"
-    assert (older.scope, older.with_env) == ("seasons", False)
-    assert newer.scope == "config" and newer.with_env and newer.name.startswith("backup_config_with_env_")
+    assert older.name == "backup_data_20260102_030405.zip" and older.created_at == "2026-01-02T03:04:05"
+    assert (older.scope, older.with_env) == ("data", False)
+    assert newer.scope == "state" and newer.with_env and newer.name.startswith("backup_state_with_env_")
     assert newer.size == os.path.getsize(newer.path) and os.path.dirname(newer.path) == store.backup.directory
     with zipfile.ZipFile(newer.path) as zf:
-        assert sorted(zf.namelist()) == ["backup.json", "config/.env", "config/leagues.txt"]  # olmayan atlanır
+        configs = sorted(n for n in zf.namelist() if n.startswith("config/"))
+    assert configs == ["config/.env", "config/leagues.txt"]  # olmayan atlanır
     (fixture.data_dir / "backups" / "notes.txt").write_text("not a backup", encoding="utf-8")
     assert [info.name for info in service.list()] == [newer.name, older.name]
 
@@ -146,7 +147,7 @@ def test_secrets_stay_out_unless_asked(configured: Path) -> None:
     with zipfile.ZipFile(info.path) as zf:
         assert ".env" not in zf.namelist()
     # .env yalnızca ayar kapsamlarında pakete girer
-    data_only = open_store(fixture.data_dir).backup.create("matches", env_file=os.environ["SOFASCORE_ENV_FILE"])
+    data_only = open_store(fixture.data_dir).backup.create("data", env_file=os.environ["SOFASCORE_ENV_FILE"])
     assert not data_only.with_env
 
 
@@ -167,8 +168,9 @@ def test_a_failed_backup_leaves_no_partial_archive(configured: Path, monkeypatch
         store.backup.create("all")
     assert caught.value.errno == 28 and caught.value.fatal
     assert list((fixture.data_dir / "backups").iterdir()) == []
-    with pytest.raises(ValueError):
-        store.backup.create("everything")
+    for retired in ("everything", "config", "seasons", "matches", "match_details"):  # 2.x'in kapsamları 3.1'de kalktı
+        with pytest.raises(ValueError):
+            store.backup.create(retired)
 
 
 # --- MaintenanceService.clear ---------------------------------------------------------------------------

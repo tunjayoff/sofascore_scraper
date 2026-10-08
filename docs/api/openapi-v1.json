@@ -4845,11 +4845,7 @@
             "enum": [
               "all",
               "state",
-              "data",
-              "config",
-              "seasons",
-              "matches",
-              "match_details"
+              "data"
             ],
             "title": "Scope",
             "default": "all"
@@ -4894,7 +4890,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "description": "all, state, data, config, seasons, matches or match_details."
+            "description": "all, state or data; a backup taken before 3.1 can also say config, seasons, matches or match_details."
           },
           "created_at_utc": {
             "anyOf": [

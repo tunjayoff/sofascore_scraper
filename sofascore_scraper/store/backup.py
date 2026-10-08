@@ -7,22 +7,20 @@ pakete giriyorsa adı bunu söyler ve dosya yalnızca sahibince okunur (0600). `
 kaydedilen ayarlar; proxy adresi parola taşıyabilir) pakete giriyorsa dosya yine 0600'dür, adı değişmez.
 Üye adları veri dizinine göredir ("/" ayırıcılı):
 
-    üye                                        all  state  data  config  seasons  matches  match_details
-    backup.json (biçim, sürümler, sayımlar)    +    +      +     +       +        +        +
-    .meta/schema.json                          +    +      +             +        +        +
+    üye                                        all  state  data
+    backup.json (biçim, sürümler, sayımlar)    +    +      +
+    .meta/schema.json                          +    +      +
     .meta/state.db (SQLite yedekleme API'si)   +    +
-    v3/**                                      +           +             (1)      (2)      v3/events/**
+    v3/**                                      +           +
     changes/**, score_changes.jsonl            +           +
-    seasons/, matches/, match_details/         +           +             seasons/ matches/ match_details/
-    config/<ad> (verilen ayar dosyaları)       +    +            +
-    config/overrides.json (verildiyse)         +    +            +
-    config/.env (yalnızca istenirse)           +    +            +
+    seasons/, matches/, match_details/         +           +
+    config/<ad> (verilen ayar dosyaları)       +    +
+    config/overrides.json (verildiyse)         +    +
+    config/.env (yalnızca istenirse)           +    +
 
-    (1) v3/tournaments altında turnuvaların `seasons/` dışında kalanı (sezon listeleri)
-    (2) v3/tournaments/*/seasons/** (program sayfaları)
-
-`state` ve `data` tasarımın kapsamlarıdır; `config`, `seasons`, `matches` ve `match_details` bugünkü web
-API'sinin kapsamlarıdır ve aynı adlarla kalır. state.db, WAL kipinde olduğu için dosya kopyalanarak değil
+`all`, `state` ve `data` tasarımın kapsamlarıdır. 2.x web API'sinin dört kapsamı (`config`, `seasons`, `matches`,
+`match_details`) 3.0.0'da kullanımdan kaldırıldı ve 3.1'de kalktı (plan maddesi P30); o adlarla alınmış eski
+yedekler yine listelenir, doğrulanır ve geri yüklenir. state.db, WAL kipinde olduğu için dosya kopyalanarak değil
 SQLite'ın çevrimiçi yedekleme API'siyle `.meta/tmp` altına alınır; kopyadaki kilit sahibi satırları
 (`leases`) silinir, çünkü onları tutan süreçler geri yüklemede yoktur. Sonu `.gz` olan üyeler (yükler,
 geçmiş dosyaları) zaten sıkıştırılmıştır ve yeniden sıkıştırılmadan (`ZIP_STORED`) saklanır, ötekiler
@@ -76,9 +74,10 @@ FORMAT = 2  # bu kodun yazdığı yedek biçimi
 LEGACY_FORMAT = 1  # `backup.json` taşımayan zip: 2.x ve ST-19
 MANIFEST_MEMBER = "backup.json"
 
-# Kapsamlar: tasarımın üçü (`all`, `state`, `data`) ve bugünkü web API'sinin dördü
-BACKUP_SCOPES: Tuple[str, ...] = ("all", "state", "data", "config", "seasons", "matches", "match_details")
-CONFIG_SCOPES: Tuple[str, ...] = ("all", "state", "config")  # verilen ayar dosyaları (ve istenirse .env) girer
+# Kapsamlar: tasarımın üçü. 2.x'in dört kapsamı (`config`, `seasons`, `matches`, `match_details`) 3.1'de kalktı;
+# eski adlı yedeklerin dosya adları `_NAME_RE` ile yine tanınır (listeleme, doğrulama, geri yükleme)
+BACKUP_SCOPES: Tuple[str, ...] = ("all", "state", "data")
+CONFIG_SCOPES: Tuple[str, ...] = ("all", "state")  # verilen ayar dosyaları (ve istenirse .env) girer
 STATE_SCOPES: Tuple[str, ...] = ("all", "state")  # .meta/state.db girer
 LEGACY_TREES: Tuple[str, ...] = ("seasons", "matches", "match_details")  # zip'e giriş sırası
 LEGACY_CHANGES = "score_changes.jsonl"
@@ -449,7 +448,7 @@ class BackupManager:
         """
         Yedeği biçim 2'de yazar ve bilgisini döndürür (modül belgesindeki tablo).
 
-        config_files  kapsam `all`, `state` ya da `config` ise `config/<dosya adı>` olarak eklenecek ayar
+        config_files  kapsam `all` ya da `state` ise `config/<dosya adı>` olarak eklenecek ayar
                       dosyaları (verildiği sırayla; olmayan atlanır)
         env_file      verilirse, kapsam `all`, `state` ya da `config` ise ve dosya varsa `config/.env` olarak
                       eklenir; dosya adı `_with_env` taşır ve izni 0600 olur
@@ -492,10 +491,9 @@ class BackupManager:
                     copy = os.path.join(staging, "state.db")
                     state_schema = self._snapshot_state(copy, counts, job_id=job_id)
                     zf.write(copy, STATE_MEMBER)
-                if scope != "config":
-                    schema = layout.resolve(data_dir, layout.SCHEMA_FILE)
-                    if os.path.isfile(schema):
-                        zf.write(schema, SCHEMA_MEMBER)
+                schema = layout.resolve(data_dir, layout.SCHEMA_FILE)
+                if os.path.isfile(schema):
+                    zf.write(schema, SCHEMA_MEMBER)
                 members: List[str] = []
                 for file_path, member in self._data_files(scope):
                     compress = zipfile.ZIP_STORED if member.endswith(_STORED_SUFFIX) else zipfile.ZIP_DEFLATED
@@ -561,22 +559,10 @@ class BackupManager:
 
     def _data_files(self, scope: str) -> Iterator[Tuple[str, str]]:
         """Kapsamın veri dosyaları: (gerçek yol, üye adı); ağaç sırası belirlidir (adlara göre sıralı)."""
-        if scope in ("all", "data"):
-            roots = [layout.V3_DIR, layout.CHANGES_DIR, *LEGACY_TREES, LEGACY_CHANGES]
-        elif scope == "match_details":
-            roots = [layout.EVENTS_DIR, "match_details"]
-        elif scope in ("matches", "seasons"):
-            roots = [layout.TOURNAMENTS_DIR, scope]
-        else:
+        if scope not in ("all", "data"):
             return
-        for root in roots:
-            for file_path, member in self._walk(root):
-                if member.startswith(layout.TOURNAMENTS_DIR + "/") and scope in ("matches", "seasons"):
-                    # v3/tournaments/<id>/seasons/** program sayfalarıdır, geri kalanı sezon listeleri
-                    schedule = member.split("/")[3:4] == ["seasons"]
-                    if schedule != (scope == "matches"):
-                        continue
-                yield file_path, member
+        for root in (layout.V3_DIR, layout.CHANGES_DIR, *LEGACY_TREES, LEGACY_CHANGES):
+            yield from self._walk(root)
 
     def _walk(self, rel: str) -> Iterator[Tuple[str, str]]:
         """`rel` altındaki dosyalar (ya da `rel` bir dosyaysa kendisi); sembolik bağlar ve yarım geçici dosyalar atlanır."""

@@ -216,7 +216,7 @@
     "ssc_help_cmd_backup_list": "list the backups in the backups folder, newest first",
     "ssc_help_cmd_backup_verify": "read a backup and check it (exit code 1 if it has problems)",
     "ssc_help_cmd_backup_restore": "restore a backup from the backups folder into the data folder (also backups of version 2.x)",
-    "ssc_help_backup_scope": "what goes in: all (default), state (follows, job history, event log), data (match files and change log), config (settings files only), or one old folder: seasons, matches, match_details",
+    "ssc_help_backup_scope": "what goes in: all (default), state (follows, job history, event log) or data (match files and change log)",
     "ssc_help_backup_include_secrets": "also put the .env file in the backup (it can hold the proxy password and tokens; the file name then says _with_env and only you can read it)",
     "ssc_help_backup_name": "the file name of the backup in the backups folder (see: backup list)",
     "ssc_help_backup_force": "the data folder is not empty: move its data to the trash first and replace it (a restore never merges)",

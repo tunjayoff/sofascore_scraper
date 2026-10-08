@@ -179,10 +179,6 @@ def test_the_archive_holds_state_v3_legacy_trees_and_both_change_logs(tmp_path: 
 @pytest.mark.parametrize("scope, present, absent", [
     ("state", (".meta/state.db", "config/leagues.txt"), ("v3/", "match_details/", "changes/")),
     ("data", ("v3/events/", "match_details/", "changes/", "score_changes.jsonl"), (".meta/state.db", "config/")),
-    ("config", ("config/leagues.txt",), (".meta/", "v3/", "match_details/")),
-    ("match_details", ("v3/events/", "match_details/"), ("v3/tournaments/", "matches/", ".meta/state.db")),
-    ("matches", ("matches/", "v3/tournaments/17/seasons/"), ("v3/events/", "seasons/", "config/")),
-    ("seasons", ("seasons/", "v3/tournaments/17/seasons.json.gz"), ("v3/tournaments/17/seasons/", "matches/")),
 ])
 def test_each_scope_takes_its_members(tmp_path: Path, scope: str, present: Tuple[str, ...],
                                       absent: Tuple[str, ...]) -> None:
@@ -492,7 +488,7 @@ def test_a_backup_taken_while_a_watcher_writes_restores_to_a_directory_that_pass
 
 def test_prune_keeps_everything_by_default_and_removes_by_count_or_age(tmp_path: Path) -> None:
     store = open_store(tmp_path / "data")
-    made = [store.backup.create("config", now=datetime(2026, 9, day, 12, 0, 0)) for day in (1, 10, 20, 30)]
+    made = [store.backup.create("state", now=datetime(2026, 9, day, 12, 0, 0)) for day in (1, 10, 20, 30)]
     assert store.backup.prune() == [] and len(store.backup.list()) == 4
 
     assert [i.name for i in store.backup.prune(keep=3)] == [made[0].name]
@@ -602,10 +598,11 @@ def test_backup_create_takes_the_writer_lease_and_includes_secrets_only_on_reque
     data_dir = configured / "data"
     store = open_store(data_dir)
     with store.lease("writer", purpose="sync"):
-        busy = cli("backup", "create", "--data-dir", data_dir, "--json")
-        assert busy.exit_code == 6 and busy.error["code"] == "job_running"
-        config_only = cli("backup", "create", "--scope", "config", "--data-dir", data_dir, "--json")
-        assert config_only.exit_code == 0 and config_only.data["scope"] == "config"
+        for scope in ("all", "state", "data"):  # her kapsam veri ya da state.db yazar: hepsi kilidi bekler
+            busy = cli("backup", "create", "--scope", scope, "--data-dir", data_dir, "--json")
+            assert busy.exit_code == 6 and busy.error["code"] == "job_running"
+    retired = cli("backup", "create", "--scope", "config", "--data-dir", data_dir, "--json")
+    assert retired.exit_code == 2  # 2.x'in kapsamları 3.1'de kalktı
     secret = cli("backup", "create", "--scope", "state", "--include-secrets", "--data-dir", data_dir, "--json")
     assert secret.exit_code == 0 and secret.data["with_env"]
     assert [w["code"] for w in secret.json["warnings"]] == ["backup_with_secrets"]

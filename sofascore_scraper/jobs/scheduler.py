@@ -290,7 +290,7 @@ def _sync_plan(mode: str) -> Callable[[Mapping[str, Any], ContextFactory], TaskP
     return plan
 
 
-BACKUP_SCOPES: Tuple[str, ...] = ("all", "state", "data", "config", "seasons", "matches", "match_details")
+BACKUP_SCOPES: Tuple[str, ...] = ("all", "state", "data")  # 2.x'in dört kapsamı 3.1'de kalktı (P30)
 
 
 def _backup_config_files() -> List[str]:
