@@ -525,6 +525,26 @@ def test_a_new_live_follow_is_picked_up_while_running(store: Store) -> None:
     assert report.sports == ("football", "tennis") and "/sport/tennis/events/live" in api.calls
 
 
+def test_a_sport_filter_on_the_follows_holds_when_the_scope_is_read_again(store: Store) -> None:
+    """V6: `--sport` süzgeci servisin ilk okumasında ve her yeniden okumada uygulanır; diğer sporlar izlenmez."""
+    store.follows.add(FollowSpec(kind="tournament", entity_id=17, name="PL", sport="football", live=True))
+    store.follows.add(FollowSpec(kind="event", entity_id=600, name="match", sport="tennis", live=True))
+    store.follows.add(FollowSpec(kind="team", entity_id=42, name="A team", sport="basketball", live=True))
+    scope = scope_from_follows(store.follows.list(enabled=True), ["Football", "tennis"])
+    assert [s.sport for s in scope.sports] == ["football", "tennis"] and scope.only_sports == ("football", "tennis")
+    api = FakeApi({"football": [], "tennis": [], "basketball": [], "ice-hockey": []})
+    clock = Clock(1_790_000_000.0)
+
+    def follow_more(n: int) -> None:
+        if n == 1:
+            store.follows.add(FollowSpec(kind="tournament", entity_id=5, name="NHL", sport="ice-hockey", live=True))
+            clock.now += supervisor.SCOPE_RELOAD_SECONDS
+
+    report = service(store, api, clock, scope).run(Stop(clock, rounds=3, on_wait=follow_more))
+    assert report.sports == ("football", "tennis")
+    assert not any(c.startswith(("/sport/basketball", "/sport/ice-hockey")) for c in api.calls)
+
+
 FB_NOT_STARTED = "football/A_notstarted-0-not-started__17184998"
 
 
@@ -726,6 +746,23 @@ def test_watch_uses_the_page_source_by_default_and_warns_when_direct_is_chosen(c
     codes = [w["code"] for w in run.json["warnings"]]
     assert codes == ["live_direct_source"] and run.data["source"] == "direct"
     assert "terms-of-use grey area" in run.json["warnings"][0]["message"]
+
+
+def test_watch_opens_live_pages_only_for_the_chosen_sports(cli: CliRunner, data_dir: Path, fake_service: FakeApi,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """V6: `--sport football --sport tennis` takip edilen öteki sporlara ne sayfa açar ne liste ister."""
+    store = open_store(data_dir)
+    for kind, eid, sport in (("tournament", 17, "football"), ("event", 600, "tennis"), ("team", 42, "basketball"),
+                             ("tournament", 5, "ice-hockey")):
+        store.follows.add(FollowSpec(kind=kind, entity_id=eid, name=f"{kind} {eid}", sport=sport, live=True))
+    opener = IdleOpener()
+    monkeypatch.setitem(watch_command.SERVICE_OPTIONS, "page_opener", opener)
+    run = cli("watch", "--data-dir", data_dir, "--sport", "football", "--sport", "tennis", "--source", "page",
+              "--json")
+    assert run.exit_code == 0, run.stderr
+    assert run.data["sports"] == ["football", "tennis"]
+    assert sorted(opener.opened) == ["football", "tennis"]
+    assert not any(c.startswith(("/sport/basketball", "/sport/ice-hockey")) for c in fake_service.calls)
 
 
 def test_watch_refuses_a_scope_it_cannot_use(cli: CliRunner, data_dir: Path, fake_service: FakeApi) -> None:

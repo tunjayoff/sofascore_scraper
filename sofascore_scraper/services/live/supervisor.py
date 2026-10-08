@@ -223,11 +223,16 @@ class SportScope:
 
 @dataclass(frozen=True)
 class LiveScope:
-    """Servisin kapsamı: spor başına bir SportScope. `from_follows`: takiplerden okundu (yeniden okunur)."""
+    """
+    Servisin kapsamı: spor başına bir SportScope. `from_follows`: takiplerden okundu (yeniden okunur).
+    `only_sports`: takiplerin yalnızca bu sporları izlenir (`ssc watch --sport`); boşsa hepsi. Yeniden okumada
+    da uygulanır, yoksa ilk okumadan sonra bütün takip edilen sporlar geri gelir (V6).
+    """
 
     sports: Tuple[SportScope, ...] = ()
     from_follows: bool = False
     skipped: Tuple[str, ...] = ()  # izlenemeyen takipler ("player:123"): kullanıcıya söylenir
+    only_sports: Tuple[str, ...] = ()
 
     @property
     def empty(self) -> bool:
@@ -244,29 +249,33 @@ def explicit_scope(sports: Iterable[str], *, event_ids: Iterable[int] = (),
     return LiveScope(sports=tuple(SportScope(sport, events, tournaments) for sport in dict.fromkeys(sports)))
 
 
-def scope_from_follows(follows: Iterable[Any]) -> LiveScope:
+def scope_from_follows(follows: Iterable[Any], sports: Iterable[str] = ()) -> LiveScope:
     """
     `live=true` ve etkin takiplerden kapsam: turnuva → o sporun turnuvası, maç → maç id'si, takım → canlı
     listede o takımın maçları. Oyuncu takibi canlı listeden izlenemez: atlanır ve `skipped`'te söylenir.
-    Sporu belirtilmemiş takip futbol sayılır (yapılandırmanın varsayılanı).
+    Sporu belirtilmemiş takip futbol sayılır (yapılandırmanın varsayılanı). `sports` verilirse yalnızca o
+    sporların takipleri alınır; süzgeç kapsamda kalır ve her yeniden okumada yine uygulanır.
     """
+    only = tuple(dict.fromkeys(s.strip().lower() for s in sports if s and s.strip()))
     by_sport: Dict[str, Dict[str, Set[int]]] = {}
     skipped: List[str] = []
     for follow in follows:
         if not getattr(follow, "live", False) or not getattr(follow, "enabled", True):
             continue
         sport = (getattr(follow, "sport", None) or DEFAULT_SPORT).lower()
+        if only and sport not in only:
+            continue
         kind = getattr(follow, "kind", "")
         bucket = by_sport.setdefault(sport, {"event": set(), "tournament": set(), "team": set()})
         if kind in bucket:
             bucket[kind].add(int(follow.entity_id))
         else:
             skipped.append(f"{kind}:{follow.entity_id}")
-    sports = tuple(
+    chosen = tuple(
         SportScope(sport, frozenset(b["event"]), frozenset(b["tournament"]), frozenset(b["team"]))
         for sport, b in sorted(by_sport.items()) if b["event"] or b["tournament"] or b["team"]
     )
-    return LiveScope(sports=sports, from_follows=True, skipped=tuple(skipped))
+    return LiveScope(sports=chosen, from_follows=True, skipped=tuple(skipped), only_sports=only)
 
 
 # --- spor başına izleyici --------------------------------------------------------------------------
@@ -445,7 +454,8 @@ class LiveService:
     def _read_scope(self) -> LiveScope:
         if self._scope is not None and not self._scope.from_follows:
             return self._scope
-        return scope_from_follows(self._store.follows.list(enabled=True))
+        only = self._scope.only_sports if self._scope is not None else ()
+        return scope_from_follows(self._store.follows.list(enabled=True), only)
 
     def _apply_scope(self, scope: LiveScope) -> None:
         for sport_scope in scope.sports:
