@@ -1,0 +1,104 @@
+{
+ "event": {
+  "tournament": {
+   "id": 91878,
+   "name": "Modus Super Series",
+   "slug": "modus-super-series",
+   "category": {
+    "id": 104,
+    "name": "International",
+    "slug": "international",
+    "flag": "international",
+    "sport": {
+     "id": 22,
+     "slug": "darts",
+     "name": "Darts"
+    }
+   },
+   "uniqueTournament": {
+    "id": 16756,
+    "name": "Modus Super Series",
+    "slug": "modus-super-series",
+    "category": {
+     "id": 104,
+     "name": "International",
+     "slug": "international",
+     "flag": "international",
+     "sport": {
+      "id": 22,
+      "slug": "darts",
+      "name": "Darts"
+     }
+    }
+   }
+  },
+  "season": {
+   "id": 89749,
+   "name": "Modus Super Series 2026",
+   "year": "2026"
+  },
+  "homeTeam": {
+   "id": 469085,
+   "name": "Alex Spellman",
+   "slug": "spellman-alex",
+   "shortName": "Spellman A.",
+   "nameCode": "SPE",
+   "gender": "M",
+   "national": false,
+   "type": 1,
+   "sport": {
+    "id": 22,
+    "slug": "darts",
+    "name": "Darts"
+   },
+   "country": {
+    "alpha2": "US",
+    "name": "USA"
+   }
+  },
+  "awayTeam": {
+   "id": 386661,
+   "name": "Heneghan C.",
+   "slug": "heneghan-conor",
+   "shortName": "Heneghan C.",
+   "nameCode": "HEN",
+   "gender": "M",
+   "national": false,
+   "type": 1,
+   "sport": {
+    "id": 22,
+    "slug": "darts",
+    "name": "Darts"
+   },
+   "country": {
+    "alpha2": "IE",
+    "name": "Ireland"
+   }
+  },
+  "id": 17236047,
+  "slug": "alex-spellman-heneghan",
+  "customId": "lIedsKGMd",
+  "startTimestamp": 1791288540,
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+   "current": 4,
+   "display": 4,
+   "normaltime": 4
+  },
+  "awayScore": {
+   "current": 0,
+   "display": 0,
+   "normaltime": 0
+  },
+  "bestOfSets": 1,
+  "bestOfLegs": 7,
+  "time": {
+   "currentPeriodStartTimestamp": 1791289206
+  }
+ }
+}

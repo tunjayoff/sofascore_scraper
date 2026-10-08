@@ -20,7 +20,7 @@ import { num, pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
 import { noteFollowNames } from '@/screens/jobs/jobText'
 import FollowActions from './FollowActions.vue'
-import { followCoverage, type FollowCoverage } from './followCoverage'
+import { followCoverage, leagueCoverage, type FollowCoverage } from './followCoverage'
 import { FOLLOW_KINDS, dataText, followPath, hasOdds, lastSyncOf, seasonsText } from './followText'
 
 /**
@@ -100,9 +100,8 @@ let countCtl: AbortController | null = null
 function loadCounts() {
   countCtl?.abort()
   const ctl = (countCtl = new AbortController())
-  const onlyFinished = status.status?.summary?.only_finished ?? true
   for (const row of rows.value.filter((x) => x.kind === 'team' || x.kind === 'event'))
-    followCoverage(row, onlyFinished, ctl.signal)
+    followCoverage(row, ctl.signal)
       .then((c) => {
         if (c && ctl === countCtl) counted.value = new Map(counted.value).set(row.id, c)
       })
@@ -110,7 +109,10 @@ function loadCounts() {
 }
 /** "Matches with details" of a row: a league's from the data summary, a team's or a match's counted here. */
 function coverageOf(row: FollowRecord): { coverage: number; details: number; matches: number } | null {
-  if (row.kind === 'tournament') return coverage.value.get(row.entity_id) ?? null
+  if (row.kind === 'tournament') {
+    const found = coverage.value.get(row.entity_id)
+    return found ? leagueCoverage(found) : null
+  }
   return counted.value.get(row.id) ?? null
 }
 

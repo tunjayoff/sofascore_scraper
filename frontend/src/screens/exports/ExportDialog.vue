@@ -9,7 +9,7 @@ import type { ExportFilter, ExportJobSpec, FollowRecord, Job, TournamentRecord }
 import { useStatusStore } from '@/app/statusStore'
 import { loadSports, sportName, sports } from '@/app/sports'
 import { startJob } from '@/screens/jobs/startJob'
-import { num } from '@/ui/time'
+import { dayText, num } from '@/ui/time'
 
 /**
  * New export (6.10; FX-14b): what the API writes (SC-2, P28). Three kinds:
@@ -25,7 +25,7 @@ import { num } from '@/ui/time'
  * Added players cannot be chosen: neither the filter nor the event list knows the matches of a player.
  */
 const emit = defineEmits<{ close: []; started: [Job] }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const status = useStatusStore()
 const uid = useId()
 
@@ -255,11 +255,13 @@ onMounted(() => {
         <div v-if="!legacy" class="grid gap-3 sm:grid-cols-2">
           <label class="flex flex-col">
             <span class="u-small">{{ changes ? t('ui.exports.dialog.recordedFrom') : t('ui.exports.dialog.from') }}</span>
-            <input v-model="from" type="date" class="u-field" :aria-invalid="!rangeOk" />
+            <input v-model="from" type="date" class="u-field" :lang="locale" :aria-invalid="!rangeOk" />
+            <span v-if="from" class="u-small u-muted" data-testid="date-hint-from">{{ dayText(from) }}</span>
           </label>
           <label class="flex flex-col">
             <span class="u-small">{{ changes ? t('ui.exports.dialog.recordedTo') : t('ui.exports.dialog.to') }}</span>
-            <input v-model="to" type="date" class="u-field" :aria-invalid="!rangeOk" />
+            <input v-model="to" type="date" class="u-field" :lang="locale" :aria-invalid="!rangeOk" />
+            <span v-if="to" class="u-small u-muted" data-testid="date-hint-to">{{ dayText(to) }}</span>
           </label>
         </div>
         <p v-if="seasonIds === null || typedEventIds === null" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ t('ui.exports.dialog.badIds') }}</p>

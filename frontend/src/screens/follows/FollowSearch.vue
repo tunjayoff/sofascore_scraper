@@ -12,7 +12,8 @@ import { hitPlace, hitTraits, kindIcon, playerTeam } from './followText'
 /**
  * The follow editor's search (6.3 step 1; FX-20): a combobox that suggests while typing, like the site.
  * Follows and stored names show at once, SofaScore's leagues, teams and players after a short pause
- * (`useSuggest`), all in one list grouped by kind with sport, country and "already added". Arrow keys move,
+ * (`useSuggest`), all in one list in SofaScore's relevance order (local names on top), each row with its kind
+ * (League, Team, Player), sport, country and "already added" (FX-26, M17). Arrow keys move,
  * Enter picks (or, with nothing chosen, searches at once), Esc closes the list. Picking emits `pick`; the
  * editor fills step 1 with it. `search(q)` runs the search at once (the quick search's `?q=`).
  */
@@ -28,7 +29,7 @@ const open = ref(false)
 const active = ref(-1)
 const input = ref<HTMLInputElement | null>(null)
 
-const expanded = computed(() => open.value && s.groups.value.length > 0)
+const expanded = computed(() => open.value && s.flat.value.length > 0)
 const optionId = (item: Suggestion) => `${uid}-opt-${item.key.replace(':', '-')}`
 const activeItem = computed(() => (active.value >= 0 ? s.flat.value[active.value] : undefined))
 const text = computed(() => normalize(query.value))
@@ -151,18 +152,15 @@ const sourceText = (item: Suggestion) => (item.source === 'catalog' ? t('ui.sugg
       :aria-busy="s.pending.value"
       data-testid="editor-hits"
     >
-      <li v-for="g in s.groups.value" :key="g.kind" role="none">
-        <div role="group" :aria-labelledby="`${uid}-g-${g.kind}`" :data-group="g.kind">
-        <div :id="`${uid}-g-${g.kind}`" role="presentation" class="u-suggest-group">{{ t(`ui.suggest.group.${g.kind}`) }}</div>
-        <ul role="none" class="m-0 p-0 list-none">
           <li
-            v-for="item in g.items"
+            v-for="item in s.flat.value"
             :id="optionId(item)"
             :key="item.key"
             role="option"
             class="u-suggest-option"
             :aria-selected="activeItem?.key === item.key"
             :data-hit="item.key"
+            :data-hit-kind="item.group"
             :data-source="item.source"
             :data-picked="picked === item.key || undefined"
             @mousedown.prevent
@@ -179,11 +177,9 @@ const sourceText = (item: Suggestion) => (item.source === 'catalog' ? t('ui.sugg
               <span v-if="item.twin" class="u-small u-muted u-mono" :title="t('ui.suggest.sameName')" data-testid="hit-number">{{ t('ui.suggest.number', { id: item.hit.id }) }}</span>
               <span v-if="sourceText(item)" class="u-small u-muted">· {{ sourceText(item) }}</span>
             </span>
+            <span class="u-suggest-kind" data-testid="hit-kind">{{ t(`ui.suggest.group.${item.group}`) }}</span>
             <UiBadge v-if="item.followed" tone="ok" icon="check">{{ t('ui.followEditor.alreadyFollowed') }}</UiBadge>
           </li>
-        </ul>
-        </div>
-      </li>
     </ul>
     <FormError v-if="s.error.value" :error="s.error.value" />
     <p class="m-0 u-small u-muted flex items-center gap-2"><UiIcon name="external" :size="14" />{{ t('ui.suggest.note') }}</p>
@@ -201,12 +197,13 @@ const sourceText = (item: Suggestion) => (item.source === 'catalog' ? t('ui.sugg
   border-radius: var(--r-control);
   background: var(--surface);
 }
-.u-suggest-group {
-  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+/* her satırın türü (Lig, Takım, Oyuncu): sonuçlar türe göre gruplanmaz, SofaScore'un sırasıyla gelir (FX-26) */
+.u-suggest-kind {
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 .u-suggest-option {

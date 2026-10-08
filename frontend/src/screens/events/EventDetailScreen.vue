@@ -18,18 +18,19 @@ import SidePanel from '@/ui/SidePanel.vue'
 import ConfirmDialog from '@/ui/ConfirmDialog.vue'
 import DataTable, { type Column } from '@/ui/DataTable.vue'
 import { v1, V1Error } from '@/api/v1/client'
-import type { Change, Event, Slice } from '@/api/v1/schema'
+import type { Change, Event, EventExtra, Slice } from '@/api/v1/schema'
 import { copyText } from '@/ui/focus'
 import { toast } from '@/ui/toast'
 import { useStatusStore } from '@/app/statusStore'
 import { sportName } from '@/app/sports'
 import { startJob, waitForJob } from '@/screens/jobs/startJob'
-import { MORE_FOLLOW_KINDS } from '@/screens/follows/followText'
+import { MORE_FOLLOW_KINDS, followName } from '@/screens/follows/followText'
 import SliceTab from './SliceTab.vue'
 import RawPayload from './RawPayload.vue'
 import ChangeFields from './ChangeFields.vue'
 import OddsView from './OddsView.vue'
-import { awayName, eventTitle, fetchSelections, homeName, loadSeasons, loadTournaments, scoreDetail, scoreText, seasonName, sliceLabel, tournamentName } from './eventText'
+import { awayName, eventTitle, fetchSelections, homeName, loadSeasons, loadTournaments, roundName, seasonName, sliceLabel, tournamentName } from './eventText'
+import { aggregateScored, lineScore, scoreDetail, scoreText } from './scoreText'
 
 /**
  * Event detail (6.6): everything stored about one match. The header with the score and the status, the
@@ -38,7 +39,9 @@ import { awayName, eventTitle, fetchSelections, homeName, loadSeasons, loadTourn
  * every slice with its state (Data), the corrections recorded for it and, when an odds slice exists, the
  * odds. Every stored payload opens in the raw view, a side panel (decision 7). "Fetch again" re-reads the
  * event as a `fetch` job. The team names lead to Matches filtered by that team; the status is shown in
- * words, SofaScore's own values only under "Details" (FX-14a).
+ * words, SofaScore's own values only under "Details" (FX-14a). The score follows the sport (scoreText.ts,
+ * FX-26): cricket's wickets and overs with SofaScore's note, baseball's line score and series, legs, frames or
+ * maps under a count, a fight's winner and method; venue, referee, note and series come from `/extra`.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -47,13 +50,14 @@ const status = useStatusStore()
 
 const id = computed(() => Number(route.params.id))
 const event = ref<Event | null>(null)
+/** Header facts of the stored payload (note, series, venue, referee; FX-26); null until read or when it failed. */
+const extra = ref<EventExtra | null>(null)
 const slices = ref<Slice[]>([])
 const loading = ref(true)
 const error = ref<unknown>(null)
 const odds = ref<Slice[]>([])
 const changes = ref<Change[] | null>(null)
 const changesError = ref<unknown>(null)
-const venue = ref<{ venue: string | null; referee: string | null } | null>(null)
 const raw = ref<{ key: string; sub: string | null } | null>(null)
 const fetching = ref(false)
 const fetchBusy = ref(false)
@@ -89,6 +93,9 @@ async function load() {
     const [e, s] = await Promise.all([v1.event(id.value), v1.eventSlices(id.value).catch(() => [] as Slice[])])
     event.value = e
     slices.value = s
+    v1.eventExtra(id.value)
+      .then((x) => (extra.value = x))
+      .catch(() => (extra.value = null))
     if (e.tournament_id) void loadSeasons(e.tournament_id).catch(() => {})
     v1.eventOdds(id.value)
       .then((o) => (odds.value = o))
@@ -111,17 +118,48 @@ function loadChanges() {
     .catch((e) => (changesError.value = e))
 }
 
-/** Venue and referee are not in the normalized record; they are read from the stored event payload. */
-async function loadVenue() {
-  if (venue.value || listingOnly.value) return
-  try {
-    const r = await v1.raw(id.value, 'event')
-    const ev = (JSON.parse(r.text)?.event ?? {}) as { venue?: { name?: string; stadium?: { name?: string } }; referee?: { name?: string } }
-    venue.value = { venue: ev.venue?.name ?? ev.venue?.stadium?.name ?? null, referee: ev.referee?.name ?? null }
-  } catch {
-    venue.value = { venue: null, referee: null }
-  }
-}
+/**
+ * A provisional result (FX-26, M6): its badge is not in the header any more (next to "Ended" it read as an
+ * uncertain result); the facts say why it is provisional and until when. A finished match counts as
+ * provisional while it was last read within `refresh.window_hours` of its start (Settings › Requests); the
+ * first update after that window reads it once more and it becomes final.
+ */
+const windowHours = ref<number | null>(null)
+let windowAsked = false
+watch(
+  () => event.value?.quality.settlement,
+  (s) => {
+    if (s !== 'provisional' || windowAsked) return
+    windowAsked = true
+    v1.settings()
+      .then((doc) => {
+        const v = doc.settings.find((x) => x.key === 'refresh.window_hours')?.value
+        windowHours.value = typeof v === 'number' && v > 0 ? v : null
+      })
+      .catch(() => {})
+  },
+)
+const finalAfter = computed(() => {
+  const start = event.value?.start_utc ? Date.parse(event.value.start_utc) : NaN
+  return windowHours.value && Number.isFinite(start) ? new Date(start + windowHours.value * 3600_000).toISOString() : null
+})
+
+/** Baseball's inning-by-inning line (R, H, E); null for every other sport. */
+const innings = computed(() => (event.value ? lineScore(event.value.score) : null))
+/**
+ * The aggregate of a two-legged tie: its score, or, when SofaScore gives only who went through (a cup match
+ * decided some other way), that side; null without an aggregate (FX-26).
+ */
+const aggregate = computed(() => {
+  const e = event.value
+  const a = e?.aggregate
+  if (!e || !a) return null
+  if (aggregateScored(a)) return { score: `${a.home ?? '–'} – ${a.away ?? '–'}`, through: null }
+  const through = a.winner === 'home' ? homeName(e) : a.winner === 'away' ? awayName(e) : null
+  return through ? { score: null, through } : null
+})
+/** The lines under the score, with the series of the stored payload. */
+const detailLines = computed(() => (event.value ? scoreDetail({ ...event.value, extra: extra.value }) : []))
 
 const facts = computed(() => {
   const e = event.value
@@ -130,7 +168,7 @@ const facts = computed(() => {
     { key: 'id', label: t('ui.eventDetail.fact.id'), value: String(e.id), mono: true },
     { key: 'sport', label: t('ui.eventDetail.fact.sport'), value: sportName(e.sport) },
     { key: 'status', label: t('ui.eventDetail.fact.status') },
-    { key: 'settlement', label: t('ui.eventDetail.fact.settlement'), value: t(`ui.eventDetail.settled.${e.quality.settlement}`) },
+    { key: 'settlement', label: t('ui.eventDetail.fact.settlement') },
     { key: 'observed', label: t('ui.eventDetail.fact.observed') },
     { key: 'changed', label: t('ui.eventDetail.fact.changed') },
     { key: 'source', label: t('ui.eventDetail.fact.source'), value: t(`ui.eventDetail.source.${e.quality.source}`) },
@@ -144,7 +182,7 @@ const where = computed(() => {
   return [
     e.tournament_id ? tournamentName(e.tournament_id) : (e.stage?.name ?? null),
     e.season_id ? seasonName(e.season_id) : null,
-    e.round?.name ?? (e.round?.number != null ? t('ui.eventDetail.round', { n: e.round.number }) : null),
+    roundName(e.round),
   ].filter(Boolean) as string[]
 })
 
@@ -171,11 +209,11 @@ const followLinks = computed(() => {
   if (!e || !MORE_FOLLOW_KINDS) return {}
   const sport = e.sport ?? undefined
   const out: Record<string, { label: string; to: { path: string; query: Record<string, string | undefined> } }> = {
-    'follow-match': { label: t('ui.eventDetail.followIt'), to: { path: '/follows/new', query: { kind: 'event', id: String(e.id), name: eventTitle(e), sport } } },
+    'follow-match': { label: t('ui.eventDetail.followIt'), to: { path: '/follows/new', query: { kind: 'event', id: String(e.id), name: followName(eventTitle(e), 'event'), sport } } },
   }
   for (const side of ['home', 'away'] as const) {
     const p = e.participants[side]
-    if (p?.id && p.name) out[`follow-${side}`] = { label: t('ui.eventDetail.followTeam', { name: p.name }), to: { path: '/follows/new', query: { kind: 'team', id: String(p.id), name: p.name, sport } } }
+    if (p?.id && p.name) out[`follow-${side}`] = { label: t('ui.eventDetail.followTeam', { name: p.name }), to: { path: '/follows/new', query: { kind: 'team', id: String(p.id), name: followName(p.name, 'team'), sport } } }
   }
   return out
 })
@@ -232,12 +270,9 @@ const sliceColumns = computed<Column<Slice>[]>(() => [
 const missingSlices = computed(() => slices.value.filter((s) => s.state === 'error' || s.state === 'not_requested').length)
 
 watch(id, () => {
-  venue.value = null
+  extra.value = null
   changes.value = null
   void load()
-})
-watch([tab, event], () => {
-  if (tab.value === 'overview' && event.value) void loadVenue()
 })
 onMounted(() => {
   void loadTournaments()
@@ -295,10 +330,28 @@ onMounted(() => {
           >
           <span v-else class="u-h2">{{ awayName(event) }}</span>
         </div>
-        <p v-if="scoreDetail(event).length" class="m-0 u-small u-muted">{{ scoreDetail(event).join(' · ') }}</p>
+        <p v-if="detailLines.length" class="m-0 u-small u-muted" data-testid="score-detail">{{ detailLines.join(' · ') }}</p>
+        <p v-if="extra?.note" class="m-0 u-small" lang="en" data-testid="score-note">{{ extra.note }}</p>
+        <div v-if="innings" class="u-table-scroll max-w-full" data-testid="line-score">
+          <table class="u-table u-line-score">
+            <caption class="u-sr">{{ t('ui.eventDetail.lineScore') }}</caption>
+            <thead>
+              <tr>
+                <th scope="col"><span class="u-sr">{{ t('ui.eventDetail.lineScore') }}</span></th>
+                <th v-for="(c, ci) in innings.columns" :key="ci" scope="col" class="text-right" :class="{ 'u-line-total': ci >= innings.columns.length - 3 }">{{ c }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in [{ name: homeName(event), cells: innings.home }, { name: awayName(event), cells: innings.away }]" :key="row.name">
+                <th scope="row" class="text-left">{{ row.name }}</th>
+                <td v-for="(c, ci) in row.cells" :key="ci" class="text-right u-num" :class="{ 'u-line-total': ci >= row.cells.length - 3 }">{{ c }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="m-0 u-small u-muted">{{ t('ui.eventDetail.lineScoreHelp') }}</p>
+        </div>
         <p class="m-0 flex flex-wrap items-center justify-center gap-2">
           <StatusBadge kind="event" :value="event.status.class" />
-          <UiBadge v-if="event.quality.settlement === 'provisional'" tone="info" icon="clock">{{ t('ui.status.settlement.provisional') }}</UiBadge>
           <UiBadge v-if="event.quality.stale" tone="warn" icon="alert">{{ t('ui.status.quality.stale') }}</UiBadge>
           <UiBadge v-if="event.quality.status_regressed" tone="warn" icon="alert">{{ t('ui.status.quality.regressed') }}</UiBadge>
         </p>
@@ -329,17 +382,21 @@ onMounted(() => {
                   <dt>{{ t('ui.eventDetail.fact.winner') }}</dt>
                   <dd>{{ event.winner === 'draw' ? t('ui.eventDetail.draw') : event.winner === 'home' ? homeName(event) : awayName(event) }}</dd>
                 </template>
-                <template v-if="event.aggregate">
+                <template v-if="aggregate?.score">
                   <dt>{{ t('ui.eventDetail.fact.aggregate') }}</dt>
-                  <dd class="u-num">{{ event.aggregate.home ?? '–' }} – {{ event.aggregate.away ?? '–' }}</dd>
+                  <dd class="u-num">{{ aggregate.score }}</dd>
                 </template>
-                <template v-if="venue?.venue">
+                <template v-else-if="aggregate?.through">
+                  <dt>{{ t('ui.eventDetail.through') }}</dt>
+                  <dd data-testid="aggregate-through">{{ aggregate.through }}</dd>
+                </template>
+                <template v-if="extra?.venue">
                   <dt>{{ t('ui.eventDetail.fact.venue') }}</dt>
-                  <dd>{{ venue.venue }}</dd>
+                  <dd>{{ extra.venue }}</dd>
                 </template>
-                <template v-if="venue?.referee">
+                <template v-if="extra?.referee">
                   <dt>{{ t('ui.eventDetail.fact.referee') }}</dt>
-                  <dd>{{ venue.referee }}</dd>
+                  <dd>{{ extra.referee }}</dd>
                 </template>
               </dl>
             </div>
@@ -393,7 +450,7 @@ onMounted(() => {
             </div>
 
             <div v-else-if="tab === 'odds'" class="flex flex-col gap-6" data-testid="event-odds">
-              <OddsView :event-id="id" :slices="odds" />
+              <OddsView :event-id="id" :slices="odds" :sport="event.sport" />
               <section class="flex flex-col gap-2" data-testid="odds-raw">
                 <h2 class="u-h3">{{ t('ui.odds.raw') }}</h2>
                 <p class="m-0 u-small u-muted">{{ t('ui.odds.rawNote') }}</p>
@@ -419,6 +476,15 @@ onMounted(() => {
                   <summary>{{ t('ui.eventDetail.statusDetails') }}</summary>
                   <span>{{ t('ui.eventDetail.statusRaw') }}: </span><span class="u-mono" lang="en">{{ statusRaw }}</span>
                 </details>
+              </span>
+            </template>
+            <template #value-settlement>
+              <span class="flex flex-col gap-1" data-testid="settlement">
+                <span>{{ t(`ui.eventDetail.settled.${event.quality.settlement}`) }}</span>
+                <span v-if="event.quality.settlement === 'provisional'" class="u-small u-muted" data-testid="settlement-why">
+                  {{ windowHours ? t('ui.eventDetail.provisionalWhy', { h: windowHours }) : t('ui.eventDetail.provisionalWhyPlain') }}
+                  <template v-if="finalAfter"> {{ t('ui.eventDetail.provisionalUntil') }} <TimeText :value="finalAfter" />.</template>
+                </span>
               </span>
             </template>
             <template #value-observed><TimeText :value="event.quality.observed_at_utc" /></template>
@@ -459,6 +525,32 @@ onMounted(() => {
 </template>
 
 <style>
+/* beyzbolun devre devre skoru: küçük bir tablo, satır başlıkları takım adı (büyük harf ve zemin olmadan) */
+.u-table.u-line-score {
+  width: auto;
+  margin: 0 auto;
+}
+.u-table.u-line-score th,
+.u-table.u-line-score td {
+  height: auto;
+  padding: var(--sp-1) var(--sp-2);
+  white-space: nowrap;
+}
+.u-table.u-line-score tbody th {
+  background: none;
+  border-top: 1px solid var(--line);
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.u-table.u-line-score tbody tr:hover {
+  background: none;
+}
+.u-line-score .u-line-total {
+  font-weight: 600;
+}
 .u-app a.u-team-link {
   color: var(--text);
   text-decoration: underline;

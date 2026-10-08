@@ -319,6 +319,25 @@ export interface Event {
   quality: Quality
 }
 
+/**
+ * What SofaScore says about an event beyond the schema v1 Event, read from its stored event payload: the match
+ * page's header and overview show it (FX-26). Every field is null when the payload does not give it.
+ */
+export interface EventExtra {
+  /** SofaScore's note on the result, as given (in English), for example `India beat West Indies by 8 wickets` (cricket). */
+  note?: string | null
+  /** Games each side has won so far in the best-of series the event belongs to (a baseball postseason series), this event's home side as `home`. */
+  series?: ScorePair | null
+  /** Name of the venue, as given. */
+  venue?: string | null
+  /** Name of the referee, as given. */
+  referee?: string | null
+}
+
+export interface EventExtraResponse {
+  data: EventExtra
+}
+
 /** An event (schema v1 Event); with `include=slices_summary` also the summary of its slices. */
 export interface EventListItem {
   /** SofaScore's event id. */
@@ -1004,14 +1023,16 @@ export interface SeasonCounts {
   finished: number
   /** Events with a stored event payload. */
   details: number
-  /** Events with details and no missing slice. */
+  /** Finished events with details and no missing slice. */
   complete: number
-  /** complete / details in percent, two decimals; 0 without details. */
+  /** complete / finished_details in percent, two decimals; 0 without finished events with details. An event not played yet cannot miss its statistics or line-ups: it is not counted (FX-26). */
   completion_rate: number
-  /** Slice to the number of events with details that miss it. */
+  /** Slice to the number of finished events with details that miss it. */
   missing: Record<string, number>
   /** When the newest page of the season's schedule was fetched; null: never. */
   schedule_fetched_at_utc?: string | null
+  /** Finished events with a stored event payload. */
+  finished_details?: number
 }
 
 /** A season (schema v1 Season); with `include=counts` also its counts. */
@@ -1574,6 +1595,8 @@ export interface TournamentSummary {
   coverage: number
   /** Newest change of a stored payload. */
   last_update_utc?: string | null
+  /** Finished events with a stored event payload. A follow's coverage is finished_details / finished: an event not played yet is not missing (FX-26). */
+  finished_details?: number
 }
 
 /** Every operation of the document by its operationId. */
@@ -1802,6 +1825,15 @@ export interface Operations {
     query: {}
     body: never
     response: EventResponse
+  }
+  /** Get the header facts of an event */
+  "getEventExtra": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}/extra"
+    params: { event_id: number }
+    query: {}
+    body: never
+    response: EventExtraResponse
   }
   /** List the slices of an event */
   "listEventSlices": {

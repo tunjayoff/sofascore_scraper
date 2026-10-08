@@ -63,7 +63,10 @@ SEARCH_CACHE_SIZE = 256
 SEARCH_KINDS: Tuple[str, ...] = (TOURNAMENT, "team", "player")
 _FOLLOW_ID = re.compile(r"^(tournament|team|player|event):([1-9][0-9]{0,18})$")
 _LAST_N = re.compile(r"^last:[1-9][0-9]{0,3}$")
+# Lig adı leagues.txt satırına (`Ad: ID`) ve 2.x dizin adlarına girer: yol ayırıcısı olamaz. Takım, oyuncu ve maç
+# takiplerinin adı yalnızca takip tablosundadır; tenis, badminton ve padelde çiftler "A / B - C / D" adını taşır (FX-26)
 _NAME_FORBIDDEN = re.compile(r"[\r\n:/\\\x00]")
+_ENTITY_NAME_FORBIDDEN = re.compile(r"[\r\n:\\\x00]")
 MAX_NAME = 80
 
 Seasons = Union[str, Sequence[int]]
@@ -183,12 +186,20 @@ def writable_fields(origin: str) -> Tuple[str, ...]:
     return WRITABLE.get(origin, ())
 
 
-def check_name(name: str) -> str:
-    """leagues.txt satırı `Ad: ID`'dir ve ad dizin adına dönüşür: yeni satır, `:` ve yol ayırıcı olamaz."""
+def check_name(name: str, kind: str = TOURNAMENT) -> str:
+    """
+    Takibin adı, 1-80 karakter, satır sonu, `:` ve `\\` olmadan. Lig (turnuva) takibinde `/` da olamaz: leagues.txt
+    satırı `Ad: ID`'dir ve ad 2.x dizin adına dönüşür. Takım, oyuncu ve maç takibinin adı yalnızca takip
+    tablosunda durur ve hiçbir yolda kullanılmaz: çift maçların adı ("A / B - C / D") olduğu gibi kalır (FX-26).
+    """
     text = (name or "").strip()
-    if not text or text.strip(".") == "" or len(text) > MAX_NAME or _NAME_FORBIDDEN.search(text):
-        raise UsageError("The follow name is not valid: 1 to 80 characters, no line break, ':', '/' or '\\'.",
-                         {"field": "name"})
+    forbidden = _NAME_FORBIDDEN if kind == TOURNAMENT else _ENTITY_NAME_FORBIDDEN
+    if not text or text.strip(".") == "" or len(text) > MAX_NAME or forbidden.search(text):
+        if kind == TOURNAMENT:
+            message = "The follow name is not valid: 1 to 80 characters, no line break, ':', '/' or '\\'."
+        else:
+            message = "The follow name is not valid: 1 to 80 characters, no line break, ':' or '\\'."
+        raise UsageError(message, {"field": "name"})
     return text
 
 
@@ -298,7 +309,7 @@ class FollowsService:
 
         if new.kind not in KINDS:
             raise UsageError("Unknown follow kind.", {"field": "kind", "kind": new.kind})
-        name = check_name(new.name)
+        name = check_name(new.name, new.kind)
         sport = check_sport(new.sport)
         seasons = check_seasons(new.seasons)
         slices = check_slices(new.slices)
@@ -332,7 +343,7 @@ class FollowsService:
         values: Dict[str, Any] = {}
         for field, value in changes.items():
             if field == "name":
-                values[field] = check_name(value)
+                values[field] = check_name(value, kind)
             elif field == "sport":
                 values[field] = check_sport(value)
             elif field == "seasons":
@@ -586,6 +597,21 @@ def _sport_of(*holders: Mapping[str, Any]) -> Optional[str]:
     return None
 
 
+def _entity_sport(item: Mapping[str, Any], entity: Mapping[str, Any], team: Mapping[str, Any]) -> Optional[str]:
+    """
+    Takım ya da oyuncu sonucunun sporu (FX-26, canlı doğrulama M16: "Benoit Sinner" sporsuz göründü). Önce varlığın
+    ve oyuncunun takımının `sport`'u; yoksa SofaScore'un başka alanları: kategorinin sporu, ana turnuvanın
+    kategorisinin sporu, sonucun kendi `sport`'u. Hiçbirinde yoksa None (ön yüz sporu yazmaz).
+    """
+    holders: List[Mapping[str, Any]] = [entity, team]
+    for owner in (entity, team):
+        holders.append(_mapping(owner.get("category")))
+        holders.append(_mapping(_mapping(owner.get("primaryUniqueTournament")).get("category")))
+        holders.append(_mapping(_mapping(owner.get("tournament")).get("category")))
+    holders.append(item)
+    return _sport_of(*holders)
+
+
 def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Optional[SearchHit]:
     """
     Bir arama sonucu → SearchHit; tanınmayan biçim ya da tür None. typed: `/search/all`'ın sonucu (`type` alanı
@@ -614,7 +640,7 @@ def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Op
     team = _mapping(entity.get("team")) if kind == "player" else {}
     national = entity.get("national")
     return SearchHit(
-        id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_sport_of(entity, team),
+        id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_entity_sport(item, entity, team),
         category_id=None, category_name=None, category_slug=None, country_code=_text(country.get("alpha2")),
         followed=(kind, entity_id) in followed, kind=kind, country_name=_text(country.get("name")),
         team_id=_number(team.get("id")), team_name=_text(team.get("name")),

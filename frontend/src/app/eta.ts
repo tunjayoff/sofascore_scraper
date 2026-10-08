@@ -1,15 +1,16 @@
 import { ref } from 'vue'
 
 /**
- * The time a running download still needs (FX-24 F17). The server's estimate (`progress.eta_seconds`) is the
+ * The time a running download still needs (FX-24 F17). The server's estimate (`progress.eta_seconds`) was the
  * phase's average pace since it began: the first matches of a phase often go faster than the rest (a match
  * already stored is passed over, the request budget starts full), so at a low request rate it was about
- * twice too optimistic in the end-to-end test (33 of 70 matches: "1 min 11 s left"; it took 2.5 min).
+ * twice too optimistic in the end-to-end test (33 of 70 matches: "1 min 11 s left"; it took 2.5 min). Since
+ * FX-26 (M14) the server takes the longest of that average, the pace of the last minutes and, for team, player
+ * and match follows, the requests still to send at the job's measured request rate.
  *
- * The UI therefore also measures the pace of the last minutes itself, from the progress it reads (`/status`
- * every 15 s on Overview, every event on Job detail), and shows the longer of the two estimates. The job does
- * not report how many requests it sent (no request counter in its progress), so the pace is in matches, not in
- * requests per second times requests per match.
+ * The UI also measures the pace of the last minutes itself, from the progress it reads (`/status` every 15 s
+ * on Overview, every event on Job detail), and shows the longer of the two estimates: one rule on both sides,
+ * so the shown time never drops below the server's.
  */
 
 /** The pace is measured over this much of the recent past. */

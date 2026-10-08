@@ -1,0 +1,108 @@
+{
+ "event": {
+  "tournament": {
+   "id": 156879,
+   "name": "Copa Argentina Futsal Femenina - Playoff",
+   "slug": "copa-argentina-futsal-femenina",
+   "category": {
+    "id": 1253,
+    "name": "Argentina",
+    "slug": "argentina",
+    "flag": "argentina",
+    "alpha2": "AR",
+    "sport": {
+     "id": 29,
+     "slug": "futsal",
+     "name": "Futsal"
+    }
+   },
+   "uniqueTournament": {
+    "id": 27735,
+    "name": "Copa Argentina Futsal Femenina",
+    "slug": "copa-argentina-futsal-femenina",
+    "category": {
+     "id": 1253,
+     "name": "Argentina",
+     "slug": "argentina",
+     "flag": "argentina",
+     "alpha2": "AR",
+     "sport": {
+      "id": 29,
+      "slug": "futsal",
+      "name": "Futsal"
+     }
+    }
+   }
+  },
+  "season": {
+   "id": 93628,
+   "name": "Copa Argentina Futsal Femenina 2026",
+   "year": "2026"
+  },
+  "homeTeam": {
+   "id": 1082385,
+   "name": "Boca Juniors",
+   "slug": "boca-juniors",
+   "shortName": "Boca Juniors",
+   "nameCode": "BJU",
+   "gender": "F",
+   "national": false,
+   "type": 0,
+   "sport": {
+    "id": 29,
+    "slug": "futsal",
+    "name": "Futsal"
+   },
+   "country": {
+    "alpha2": "AR",
+    "name": "Argentina"
+   }
+  },
+  "awayTeam": {
+   "id": 413005,
+   "name": "Secla Futsal",
+   "slug": "secla-futsal-f",
+   "shortName": "Secla",
+   "nameCode": "SFU",
+   "gender": "F",
+   "national": false,
+   "type": 0,
+   "sport": {
+    "id": 29,
+    "slug": "futsal",
+    "name": "Futsal"
+   },
+   "country": {
+    "alpha2": "AR",
+    "name": "Argentina"
+   }
+  },
+  "id": 17256669,
+  "slug": "boca-juniors-secla-futsal",
+  "customId": "fkpdsKXHi",
+  "startTimestamp": 1791414000,
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 1,
+  "aggregatedWinnerCode": 1,
+  "homeScore": {
+   "current": 1,
+   "display": 1
+  },
+  "awayScore": {
+   "current": 0,
+   "display": 0
+  },
+  "roundInfo": {
+   "round": 27,
+   "name": "Quarterfinals",
+   "slug": "quarterfinals",
+   "cupRoundType": 4
+  },
+  "defaultPeriodCount": 2,
+  "time": {}
+ }
+}

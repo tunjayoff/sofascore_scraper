@@ -62,7 +62,7 @@ describe('teams and players by name', () => {
     await flush()
     expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
     expect(body(f, 'POST /api/v1/tournaments/search')).toEqual({ q: 'arsenal', sport: null, kinds: ['tournament', 'team', 'player'] })
-    expect(w.find('[data-group="team"] [data-hit="team:42"]').exists()).toBe(true)
+    expect(w.find('[data-hit="team:42"][data-hit-kind="team"]').exists()).toBe(true)
     // the one hit is chosen: its kind, number, name and sport come along
     const picked = w.find('[data-testid="editor-picked"]')
     expect(picked.attributes('data-hit')).toBe('team:42')
@@ -99,7 +99,7 @@ describe('teams and players by name', () => {
     await w.find('[data-testid="editor-search"]').trigger('submit')
     await flush()
     expect(body(f, 'POST /api/v1/tournaments/search').kinds).toEqual(['tournament', 'team', 'player'])
-    const hit = w.find('[data-group="player"] [data-hit="player:7"]')
+    const hit = w.find('[data-hit="player:7"][data-hit-kind="player"]')
     expect(hit.find('[data-testid="hit-team"]').text()).toBe(t('ui.followEditor.playsFor', { team: 'Arsenal' }))
     expect(hit.text()).toContain(t('ui.followEditor.alreadyFollowed'))
     expect(w.find('[data-testid="editor-picked"]').exists()).toBe(false)

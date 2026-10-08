@@ -1,0 +1,104 @@
+{
+ "event": {
+  "tournament": {
+   "id": 131718,
+   "name": "ESL Pro League Group Stage",
+   "slug": "esl-pro-league-group-stage",
+   "category": {
+    "id": 1572,
+    "name": "Counter Strike",
+    "slug": "csgo",
+    "flag": "counter-strike",
+    "sport": {
+     "id": 72,
+     "slug": "esports",
+     "name": "E-sports"
+    }
+   },
+   "uniqueTournament": {
+    "id": 16925,
+    "name": "ESL Pro League",
+    "slug": "esl-pro-league",
+    "category": {
+     "id": 1572,
+     "name": "Counter Strike",
+     "slug": "csgo",
+     "flag": "counter-strike",
+     "sport": {
+      "id": 72,
+      "slug": "esports",
+      "name": "E-sports"
+     }
+    }
+   }
+  },
+  "season": {
+   "id": 104235,
+   "name": "Season 24 2026",
+   "year": "2026"
+  },
+  "homeTeam": {
+   "id": 364397,
+   "name": "G2",
+   "slug": "g2",
+   "shortName": "G2",
+   "nameCode": "G2",
+   "gender": "M",
+   "national": false,
+   "type": 0,
+   "sport": {
+    "id": 72,
+    "slug": "esports",
+    "name": "E-sports"
+   },
+   "country": {
+    "alpha2": "DE",
+    "name": "Germany"
+   }
+  },
+  "awayTeam": {
+   "id": 493034,
+   "name": "PARIVISION",
+   "slug": "parivision",
+   "nameCode": "PRV",
+   "national": false,
+   "type": 0,
+   "sport": {
+    "id": 72,
+    "slug": "esports",
+    "name": "E-sports"
+   },
+   "country": {
+    "alpha2": "RU",
+    "name": "Russia"
+   }
+  },
+  "id": 17264020,
+  "slug": "parivision-g2",
+  "customId": "XMVcsJkXd",
+  "startTimestamp": 1791288000,
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+   "current": 1,
+   "display": 1,
+   "period1": 7,
+   "period2": 13,
+   "period3": 11
+  },
+  "awayScore": {
+   "current": 2,
+   "display": 2,
+   "period1": 13,
+   "period2": 9,
+   "period3": 13
+  },
+  "bestOf": 3,
+  "time": {},
+  "eventType": "best_of"
+ }
+}

@@ -15,8 +15,10 @@ import { isIndividual } from '@/app/sports'
  *     is kept for this page (`remoteCache`, case and spaces ignored), and the server keeps it 10 minutes, so
  *     a text typed again costs nothing. The server counts each request in the shared budget.
  *
- * The result is one list grouped by kind (leagues, teams, players), local names first; a name found twice is
- * shown once. "Already added" is read from the follows, so a kept answer is never stale about it.
+ * The result is one list: the local names first (follows, then stored names), then SofaScore's hits in its own
+ * order, which is its relevance across kinds (FX-26, M17: grouped by kind, "sinner" showed six e-sports and
+ * football teams before Jannik Sinner); each row names its kind. A name found twice is shown once. "Already
+ * added" is read from the follows, so a kept answer is never stale about it.
  */
 
 export type SuggestKind = 'tournament' | 'team' | 'player'
@@ -27,8 +29,8 @@ export const MIN_CHARS = 2
 export const REMOTE_DELAY = 350
 /** Milliseconds without typing before the stored catalog is asked (this server only). */
 export const LOCAL_DELAY = 120
-/** At most this many names per kind. */
-export const PER_KIND = 6
+/** At most this many suggestions are shown. */
+export const MAX_SHOWN = 15
 const CACHE_SIZE = 100
 
 export type SuggestSource = 'follow' | 'catalog' | 'sofascore'
@@ -36,7 +38,7 @@ export type Suggestion = {
   /** `<kind>:<id>`, the follow id it would get. */
   key: string
   kind: SuggestKind
-  /** The group it is shown in: a "team" of a sport of one against one is a player (FX-24 F31). */
+  /** The kind it is shown as: a "team" of a sport of one against one is a player (FX-24 F31). */
   group: SuggestKind
   hit: TournamentHit
   followed: boolean
@@ -47,7 +49,6 @@ export type Suggestion = {
    */
   twin: boolean
 }
-export type SuggestGroup = { kind: SuggestKind; items: Suggestion[] }
 
 /**
  * The kind a hit is shown as: SofaScore lists the players of tennis, darts, MMA … as teams (`team`), so such
@@ -361,13 +362,10 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
     return markTwins(found, (x) => `${x.group}|${x.hit.sport ?? ''}|${fold(x.hit.name)}`, (a, b) => traitsApart(a.hit, b.hit))
   })
 
-  const groups = computed<SuggestGroup[]>(() =>
-    SUGGEST_KINDS.map((kind) => ({ kind, items: items.value.filter((s) => s.group === kind).slice(0, PER_KIND) })).filter((g) => g.items.length),
-  )
-  /** The suggestions in the order they are shown (for the arrow keys). */
-  const flat = computed(() => groups.value.flatMap((g) => g.items))
+  /** The suggestions in the order they are shown: local first, then SofaScore's relevance order (the arrow keys walk it). */
+  const flat = computed(() => items.value.slice(0, MAX_SHOWN))
   /** SofaScore answered for the text as it is now (the list is final). */
   const current = computed(() => !!remoteFor.value && fold(remoteFor.value) === fold(query.value))
 
-  return { catalog, remote, remoteFor, pending, loading, error, items, groups, flat, current, searchNow, reset }
+  return { catalog, remote, remoteFor, pending, loading, error, items, flat, current, searchNow, reset }
 }

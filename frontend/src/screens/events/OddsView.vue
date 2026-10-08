@@ -8,16 +8,18 @@ import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1 } from '@/api/v1/client'
 import type { Odds, OddsChoice, OddsMarket, Slice } from '@/api/v1/schema'
-import { choiceName, decimalText, marketName, periodName } from './oddsText'
+import { choiceName, decimalText, groupName, marketName, periodName } from './oddsText'
 import { sliceLabel } from './eventText'
 
 /**
  * The odds of a match in a table (6.6; FX-24 F11): the normalized odds of P28 (`GET /events/{id}/odds/{key}`,
  * the latest read of each provider), one block per market with its outcomes, the price as a decimal and as
  * SofaScore's fraction, the opening price and the direction of the last change. The featured markets and
- * all markets are SofaScore's two odds lists; the one that is stored is shown, the featured one first.
+ * all markets are SofaScore's two odds lists; the one that is stored is shown, the featured one first. A
+ * market's group is a line under its name when it says whether a draw is an outcome; a period "Extra time" is
+ * left out for a sport without extra time (FX-26, M20).
  */
-const props = defineProps<{ eventId: number; slices: Slice[] }>()
+const props = defineProps<{ eventId: number; slices: Slice[]; sport?: string | null }>()
 const { t } = useI18n()
 
 /** The odds lists that have a normalized form, in the order they are offered. */
@@ -92,10 +94,11 @@ const changeText = (c: OddsChoice) => t(`ui.odds.change.${c.change === 1 ? 'up' 
       <div v-for="(m, mi) in marketsOf(o)" :key="mi" class="u-odds-market" data-testid="odds-market">
         <h3 class="u-h3 flex flex-wrap items-center gap-2">
           <span :lang="marketName(m.name) === m.name ? 'en' : undefined">{{ marketTitle(m) }}</span>
-          <span v-if="m.period && periodName(m.period)" class="u-small u-muted font-normal">{{ periodName(m.period) }}</span>
+          <span v-if="periodName(m.period, sport)" class="u-small u-muted font-normal" data-testid="odds-period">{{ periodName(m.period, sport) }}</span>
           <UiBadge v-if="m.suspended" tone="warn" icon="pause">{{ t('ui.odds.suspended') }}</UiBadge>
           <UiBadge v-if="m.is_live" tone="info">{{ t('ui.odds.live') }}</UiBadge>
         </h3>
+        <p v-if="groupName(m.group, m.name)" class="m-0 u-small u-muted" data-testid="odds-group">{{ groupName(m.group, m.name) }}</p>
         <div class="u-table-scroll">
           <table class="u-table u-odds-table">
             <caption class="u-sr">{{ marketTitle(m) }}</caption>

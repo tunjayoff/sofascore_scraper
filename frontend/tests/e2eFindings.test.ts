@@ -188,11 +188,11 @@ describe('F12, F31, F32: search hits in the reader’s words', () => {
     await w.find('[data-testid="editor-search"]').trigger('submit')
     await flush()
     expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
-    // no "Teams" group: the tennis player is with the players, with the player icon
-    expect(w.find('[data-group="team"]').exists()).toBe(false)
-    const players = w.find('[data-group="player"]')
-    expect(players.findAll('[role="option"]').map((o) => o.attributes('data-hit'))).toEqual(['team:412345', 'player:70996', 'player:99001'])
-    expect(w.find('[data-group="tournament"] [data-hit="tournament:384"]').text()).toContain('Güney Amerika')
+    // no row is a "Team": the tennis player is a player, with the player icon (FX-26: one list, a kind per row)
+    expect(w.find('[data-hit-kind="team"]').exists()).toBe(false)
+    expect(w.findAll('[data-hit-kind="player"]').map((o) => o.attributes('data-hit'))).toEqual(['team:412345', 'player:70996', 'player:99001'])
+    expect(w.find('[data-hit="team:412345"] [data-testid="hit-kind"]').text()).toBe('Oyuncu')
+    expect(w.find('[data-hit="tournament:384"][data-hit-kind="tournament"]').text()).toContain('Güney Amerika')
     // “No team” is not a team
     expect(w.find('[data-hit="player:99001"]').text()).not.toContain('No team')
     expect(w.find('[data-hit="player:99001"] [data-testid="hit-team"]').exists()).toBe(false)

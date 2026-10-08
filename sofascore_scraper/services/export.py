@@ -45,7 +45,7 @@ import types
 import typing
 from dataclasses import dataclass, field
 from typing import (TYPE_CHECKING, Any, BinaryIO, Callable, Dict, IO, Iterable, Iterator, List, Mapping, Optional,
-                    Sequence, Tuple, Type, Union)
+                    Sequence, Set, Tuple, Type, Union)
 
 from sofascore_scraper.errors import NotFoundError, NotSupportedError, UsageError
 from sofascore_scraper.logger import get_logger
@@ -99,8 +99,9 @@ class ExportResult:
     """
     Yazılan dışa aktarma: satır ve sütunlar, UTF-8 bayt sayısı, dosyaya yazıldıysa yolu.
 
-    Veri kümelerinde ayrıca: events (ham dışa aktarmada en az bir yükü yazılan maç sayısı; normalleştirilmişte
-    0), skipped (ham dışa aktarmada okunamayıp atlanan yükler, `ExportSkip`), schema_version (normalleştirilmiş
+    Veri kümelerinde ayrıca: events (dosyanın kapsadığı farklı maç sayısı: ham dışa aktarmada en az bir yükü yazılan
+    maç, normalleştirilmişte kayıtların maçı, yani `events` kümesinde satır sayısı, dilim, değişiklik ve oranlarda
+    farklı maç; puan durumu maça bağlı değildir, 0; FX-26, canlı doğrulama M18), skipped (ham dışa aktarmada okunamayıp atlanan yükler, `ExportSkip`), schema_version (normalleştirilmiş
     kayıtların şema sürümü; ham ve geniş CSV için None). Ham dışa aktarmada `rows` yazılan yük sayısıdır ve
     `columns` boştur.
     """
@@ -112,6 +113,23 @@ class ExportResult:
     events: int = 0
     skipped: Tuple[Any, ...] = ()
     schema_version: Optional[int] = None
+
+
+def _counting_events(dataset: str, records: Iterable[Dict[str, Any]], seen: Set[int]) -> Iterator[Dict[str, Any]]:
+    """
+    Kayıtları olduğu gibi verir ve maçlarını `seen`'e ekler: `events` kümesinde `id`, dilimlerde sahibi maç olanın
+    `owner_id`'si, değişiklik ve oranlarda `event_id`.
+    """
+    for record in records:
+        if dataset == DATASET_EVENTS:
+            value = record.get("id")
+        elif dataset == DATASET_SLICES:
+            value = record.get("owner_id") if record.get("owner_kind") == "event" else None
+        else:
+            value = record.get("event_id")
+        if isinstance(value, int) and not isinstance(value, bool):
+            seen.add(value)
+        yield record
 
 
 @dataclass(frozen=True)
@@ -306,7 +324,9 @@ class ExportService:
         from sofascore_scraper.schema import SCHEMA_VERSION
 
         columns = dataset_columns(spec.dataset, spec.format)
-        records = (record.to_dict() for record in self.records(spec.dataset, spec.filter))
+        events: Set[int] = set()
+        records = _counting_events(spec.dataset, (record.to_dict() for record in self.records(spec.dataset, spec.filter)),
+                                   events)
         if spec.format == "jsonl":
             rows: Iterable[Mapping[str, Any]] = records  # kayıt olduğu gibi, iç içe (sözleşmenin JSON'u)
         else:
@@ -323,7 +343,8 @@ class ExportService:
             raise
         logger.info("Dataset %s exported as %s: %d rows, %d bytes", spec.dataset, spec.format, report.items,
                     report.bytes)
-        return ExportResult(report.items, columns, report.bytes, report.dest or None, schema_version=SCHEMA_VERSION)
+        return ExportResult(report.items, columns, report.bytes, report.dest or None, events=len(events),
+                            schema_version=SCHEMA_VERSION)
 
     def records(self, dataset: str, flt: Optional["DatasetFilter"] = None) -> Iterator["Model"]:
         """

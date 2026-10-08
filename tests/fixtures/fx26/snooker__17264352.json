@@ -1,0 +1,100 @@
+{
+ "event": {
+  "tournament": {
+   "id": 173461,
+   "name": "Snooker 900",
+   "slug": "snooker-900",
+   "category": {
+    "id": 55,
+    "name": "International",
+    "slug": "international",
+    "flag": "international",
+    "sport": {
+     "id": 19,
+     "slug": "snooker",
+     "name": "Snooker"
+    }
+   },
+   "uniqueTournament": {
+    "id": 32050,
+    "name": "Snooker 900",
+    "slug": "snooker-900",
+    "category": {
+     "id": 55,
+     "name": "International",
+     "slug": "international",
+     "flag": "international",
+     "sport": {
+      "id": 19,
+      "slug": "snooker",
+      "name": "Snooker"
+     }
+    }
+   }
+  },
+  "season": {
+   "id": 88811,
+   "name": "Snooker 900 2026",
+   "year": "2026"
+  },
+  "homeTeam": {
+   "id": 25063,
+   "name": "White J.",
+   "slug": "white-jimmy",
+   "shortName": "White J.",
+   "nameCode": "WHI",
+   "gender": "M",
+   "national": false,
+   "type": 1,
+   "sport": {
+    "id": 19,
+    "slug": "snooker",
+    "name": "Snooker"
+   },
+   "country": {
+    "alpha2": "EN",
+    "name": "England"
+   }
+  },
+  "awayTeam": {
+   "id": 102683,
+   "name": "Evans R.",
+   "slug": "evans-reanne",
+   "shortName": "Evans R.",
+   "nameCode": "EVA",
+   "gender": "M",
+   "national": false,
+   "type": 1,
+   "sport": {
+    "id": 19,
+    "slug": "snooker",
+    "name": "Snooker"
+   },
+   "country": {
+    "alpha2": "EN",
+    "name": "England"
+   }
+  },
+  "id": 17264352,
+  "slug": "evans-white",
+  "customId": "nbksIdQ",
+  "startTimestamp": 1791288000,
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+   "current": 1,
+   "display": 1,
+   "normaltime": 1
+  },
+  "awayScore": {
+   "current": 3,
+   "display": 3,
+   "normaltime": 3
+  },
+  "time": {}
+ }
+}

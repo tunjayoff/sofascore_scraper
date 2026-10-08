@@ -205,6 +205,7 @@ READ_ONLY_GETS = {
     "/api/v1/diagnostics/bundle",
     "/api/v1/events",
     "/api/v1/events/1",
+    "/api/v1/events/1/extra",  # FX-26: saklanan olay yükünden başlık bilgileri
     "/api/v1/events/1/odds",
     "/api/v1/events/1/odds/statistics",
     "/api/v1/events/1/raw",
@@ -264,6 +265,7 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
         path: _CATALOG_ON_FIRST_READ
         for path in (
             "/api/v1/changes", "/api/v1/events", "/api/v1/events/1", "/api/v1/events/1/odds", "/api/v1/events/1/raw",
+            "/api/v1/events/1/extra",  # FX-26
             "/api/v1/events/1/slices", "/api/v1/events/1/slices/statistics",
             "/api/v1/events/1/slices/statistics/raw", "/api/v1/seasons/1", "/api/v1/seasons/1/slices/statistics",
             "/api/v1/events/1/odds/statistics", "/api/v1/seasons/1/slices", "/api/v1/seasons/1/standings",  # P28

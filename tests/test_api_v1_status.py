@@ -213,7 +213,7 @@ def test_status_lists_followed_tournaments_without_matches(canonical: sf.LegacyF
     assert by_id[424242] == {
         "tournament_id": 424242, "name": "Nowhere League", "followed": True, "matches": 0, "details": 0,
         "events": 0, "finished": 0, "seasons": 0, "seasons_with_events": 0, "coverage": 0.0,
-        "last_update_utc": None,
+        "last_update_utc": None, "finished_details": 0,  # FX-26: bitmiş ve detaylı maçlar, takiplerin kapsamı
     }
 
 

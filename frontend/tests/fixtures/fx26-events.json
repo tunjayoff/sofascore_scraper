@@ -1,0 +1,611 @@
+{
+ "baseball__17199139": {
+  "data": {
+   "id": 17199139,
+   "sport": "baseball",
+   "category_id": 1374,
+   "tournament_id": 11205,
+   "season_id": 84695,
+   "stage": {
+    "id": 108845,
+    "name": "MLB Postseason"
+   },
+   "round": null,
+   "start_utc": "2026-10-06T22:00:00Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 3656,
+     "name": "Atlanta Braves"
+    },
+    "away": {
+     "id": 3638,
+     "name": "Los Angeles Dodgers"
+    }
+   },
+   "score": {
+    "family": "innings",
+    "home": 1,
+    "away": 3,
+    "innings": [
+     {
+      "number": 1,
+      "home": 0,
+      "away": 0
+     },
+     {
+      "number": 2,
+      "home": 0,
+      "away": 0
+     },
+     {
+      "number": 3,
+      "home": 0,
+      "away": 0
+     },
+     {
+      "number": 4,
+      "home": 0,
+      "away": 3
+     },
+     {
+      "number": 5,
+      "home": 1,
+      "away": 0
+     },
+     {
+      "number": 6,
+      "home": 0,
+      "away": 0
+     },
+     {
+      "number": 7,
+      "home": 0,
+      "away": 0
+     },
+     {
+      "number": 8,
+      "home": 0,
+      "away": 0
+     },
+     {
+      "number": 9,
+      "home": 0,
+      "away": 0
+     }
+    ],
+    "regulation": {
+     "home": 1,
+     "away": 3
+    },
+    "extra_innings": null,
+    "hits": {
+     "home": 5,
+     "away": 8
+    },
+    "errors": {
+     "home": 2,
+     "away": 0
+    }
+   },
+   "winner": "away",
+   "aggregate": null,
+   "slug": "atlanta-braves-los-angeles-dodgers",
+   "custom_id": "Nxbsgyb",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": null,
+   "series": {
+    "home": 1,
+    "away": 2
+   },
+   "venue": null,
+   "referee": null
+  }
+ },
+ "cricket__15884177": {
+  "data": {
+   "id": 15884177,
+   "sport": "cricket",
+   "category_id": 1343,
+   "tournament_id": 11191,
+   "season_id": 77257,
+   "stage": {
+    "id": 179155,
+    "name": "West Indies in India, 5 T20I Series"
+   },
+   "round": null,
+   "start_utc": "2026-10-06T13:30:00Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 187765,
+     "name": "India"
+    },
+    "away": {
+     "id": 187760,
+     "name": "West Indies"
+    }
+   },
+   "score": {
+    "family": "cricket",
+    "home": 172,
+    "away": 171,
+    "innings": [
+     {
+      "side": "home",
+      "number": 1,
+      "runs": 172,
+      "wickets": 2,
+      "overs": 14.4
+     },
+     {
+      "side": "away",
+      "number": 1,
+      "runs": 171,
+      "wickets": 10,
+      "overs": 19.1
+     }
+    ]
+   },
+   "winner": "home",
+   "aggregate": null,
+   "slug": "india-west-indies",
+   "custom_id": "kfAbspfAb",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": "India beat West Indies by 8 wickets",
+   "series": null,
+   "venue": null,
+   "referee": null
+  }
+ },
+ "darts__17236047": {
+  "data": {
+   "id": 17236047,
+   "sport": "darts",
+   "category_id": 104,
+   "tournament_id": 16756,
+   "season_id": 89749,
+   "stage": {
+    "id": 91878,
+    "name": "Modus Super Series"
+   },
+   "round": null,
+   "start_utc": "2026-10-06T12:09:00Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 469085,
+     "name": "Alex Spellman"
+    },
+    "away": {
+     "id": 386661,
+     "name": "Heneghan C."
+    }
+   },
+   "score": {
+    "family": "sets",
+    "home": 4,
+    "away": 0,
+    "format": "legs",
+    "sets_won": {
+     "home": 4,
+     "away": 0
+    },
+    "sets": [],
+    "match_tiebreak": false
+   },
+   "winner": "home",
+   "aggregate": null,
+   "slug": "alex-spellman-heneghan",
+   "custom_id": "lIedsKGMd",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": null,
+   "series": null,
+   "venue": null,
+   "referee": null
+  }
+ },
+ "esports__17264020": {
+  "data": {
+   "id": 17264020,
+   "sport": "esports",
+   "category_id": 1572,
+   "tournament_id": 16925,
+   "season_id": 104235,
+   "stage": {
+    "id": 131718,
+    "name": "ESL Pro League Group Stage"
+   },
+   "round": null,
+   "start_utc": "2026-10-06T12:00:00Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 364397,
+     "name": "G2"
+    },
+    "away": {
+     "id": 493034,
+     "name": "PARIVISION"
+    }
+   },
+   "score": {
+    "family": "sets",
+    "home": 1,
+    "away": 2,
+    "format": "games_won",
+    "sets_won": {
+     "home": 1,
+     "away": 2
+    },
+    "sets": [],
+    "match_tiebreak": false
+   },
+   "winner": "away",
+   "aggregate": null,
+   "slug": "parivision-g2",
+   "custom_id": "XMVcsJkXd",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": null,
+   "series": null,
+   "venue": null,
+   "referee": null
+  }
+ },
+ "futsal__17256669": {
+  "data": {
+   "id": 17256669,
+   "sport": "futsal",
+   "category_id": 1253,
+   "tournament_id": 27735,
+   "season_id": 93628,
+   "stage": {
+    "id": 156879,
+    "name": "Copa Argentina Futsal Femenina - Playoff"
+   },
+   "round": {
+    "number": 27,
+    "name": "Quarterfinals",
+    "slug": "quarterfinals"
+   },
+   "start_utc": "2026-10-07T23:00:00Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 1082385,
+     "name": "Boca Juniors"
+    },
+    "away": {
+     "id": 413005,
+     "name": "Secla Futsal"
+    }
+   },
+   "score": {
+    "family": "periods",
+    "home": 1,
+    "away": 0,
+    "format": null,
+    "periods": [],
+    "regulation": null,
+    "overtime": null,
+    "final": {
+     "home": 1,
+     "away": 0
+    },
+    "penalties": null
+   },
+   "winner": "home",
+   "aggregate": {
+    "home": null,
+    "away": null,
+    "winner": "home"
+   },
+   "slug": "boca-juniors-secla-futsal",
+   "custom_id": "fkpdsKXHi",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": null,
+   "series": null,
+   "venue": null,
+   "referee": null
+  }
+ },
+ "mma__17057712": {
+  "data": {
+   "id": 17057712,
+   "sport": "mma",
+   "category_id": 1708,
+   "tournament_id": 20264,
+   "season_id": 102258,
+   "stage": {
+    "id": 197783,
+    "name": "Contender Series 2026: Week 9"
+   },
+   "round": null,
+   "start_utc": "2026-10-06T23:19:25Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 1275452,
+     "name": "Summer Onley"
+    },
+    "away": {
+     "id": 1149047,
+     "name": "Alivia  Bierley"
+    }
+   },
+   "score": {
+    "family": "fight",
+    "home": null,
+    "away": null,
+    "method": "UD",
+    "final_round": 3
+   },
+   "winner": "away",
+   "aggregate": null,
+   "slug": "summer-onley-alivia-bierley",
+   "custom_id": "XFjjscjkk",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": null,
+   "series": null,
+   "venue": null,
+   "referee": null
+  }
+ },
+ "snooker__17264352": {
+  "data": {
+   "id": 17264352,
+   "sport": "snooker",
+   "category_id": 55,
+   "tournament_id": 32050,
+   "season_id": 88811,
+   "stage": {
+    "id": 173461,
+    "name": "Snooker 900"
+   },
+   "round": null,
+   "start_utc": "2026-10-06T12:00:00Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 25063,
+     "name": "White J."
+    },
+    "away": {
+     "id": 102683,
+     "name": "Evans R."
+    }
+   },
+   "score": {
+    "family": "sets",
+    "home": 1,
+    "away": 3,
+    "format": "frames",
+    "sets_won": {
+     "home": 1,
+     "away": 3
+    },
+    "sets": [],
+    "match_tiebreak": false
+   },
+   "winner": "away",
+   "aggregate": null,
+   "slug": "evans-white",
+   "custom_id": "nbksIdQ",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": null,
+   "series": null,
+   "venue": null,
+   "referee": null
+  }
+ },
+ "tennis__16385361": {
+  "data": {
+   "id": 16385361,
+   "sport": "tennis",
+   "category_id": 3,
+   "tournament_id": 2361,
+   "season_id": 85943,
+   "stage": {
+    "id": 189477,
+    "name": "Wimbledon, London, Great Britain"
+   },
+   "round": {
+    "number": 29,
+    "name": "Final",
+    "slug": "final"
+   },
+   "start_utc": "2026-07-12T15:05:00Z",
+   "status": {
+    "type": "finished",
+    "code": 100,
+    "description": "Ended",
+    "class": "completed"
+   },
+   "participants": {
+    "home": {
+     "id": 206570,
+     "name": "Jannik Sinner"
+    },
+    "away": {
+     "id": 57163,
+     "name": "Alexander Zverev"
+    }
+   },
+   "score": {
+    "family": "sets",
+    "home": 3,
+    "away": 1,
+    "format": "games",
+    "sets_won": {
+     "home": 3,
+     "away": 1
+    },
+    "sets": [
+     {
+      "number": 1,
+      "home": 6,
+      "away": 7,
+      "tiebreak": {
+       "home": 7,
+       "away": 9
+      }
+     },
+     {
+      "number": 2,
+      "home": 7,
+      "away": 6,
+      "tiebreak": {
+       "home": 7,
+       "away": 2
+      }
+     },
+     {
+      "number": 3,
+      "home": 6,
+      "away": 3,
+      "tiebreak": null
+     },
+     {
+      "number": 4,
+      "home": 6,
+      "away": 4,
+      "tiebreak": null
+     }
+    ],
+    "match_tiebreak": false
+   },
+   "winner": "home",
+   "aggregate": null,
+   "slug": "jannik-sinner-alexander-zverev",
+   "custom_id": "nTxsvGHb",
+   "quality": {
+    "source": "event",
+    "observed_at_utc": "2026-10-08T06:15:08Z",
+    "change_ts": null,
+    "settlement": "final",
+    "provisional": false,
+    "tier_hint": null,
+    "stale": false,
+    "status_regressed": false
+   }
+  },
+  "extra": {
+   "note": null,
+   "series": null,
+   "venue": null,
+   "referee": null
+  }
+ }
+}

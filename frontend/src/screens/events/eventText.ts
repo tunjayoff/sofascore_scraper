@@ -10,8 +10,6 @@ import type { Event, EventListItem, Season, SliceSummary, TournamentRecord } fro
 const t = (key: string, args?: Record<string, unknown>) => i18n.global.t(key, args ?? {})
 const te = (key: string) => i18n.global.te(key, 'en')
 
-type AnyEvent = Pick<Event, 'participants' | 'score' | 'status'>
-
 export function homeName(e: Pick<Event, 'participants'>) {
   return e.participants.home?.name ?? t('ui.eventDetail.side.home')
 }
@@ -22,33 +20,45 @@ export function eventTitle(e: Pick<Event, 'participants'>) {
   return `${homeName(e)} – ${awayName(e)}`
 }
 
-/** The headline score: "2 – 1"; tennis and the other set sports add the sets ("6-4 3-6 7-5"). */
-export function scoreText(e: AnyEvent): string {
-  const s = e.score
-  if (s.home == null && s.away == null) return '—'
-  const head = `${s.home ?? '–'} – ${s.away ?? '–'}`
-  if (s.family === 'sets' && s.sets.length && (s.format === 'games' || s.format === 'points' || s.format === 'legs'))
-    return s.sets.map((x) => `${x.home ?? '–'}-${x.away ?? '–'}`).join(' ')
-  return head
-}
+// Skorun metni spora göre ayrı modülde (FX-26); eski içe aktarmalar buradan devam eder
+export { scoreDetail, scoreText } from './scoreText'
 
-/** A second line under the score: half time, overtime, penalties, a set count, an aggregate. */
-export function scoreDetail(e: Pick<Event, 'score' | 'aggregate'>): string[] {
-  const s = e.score
-  const out: string[] = []
-  const pair = (p: { home: number | null; away: number | null } | null) => (p ? `${p.home ?? '–'} – ${p.away ?? '–'}` : null)
-  if (s.family === 'football') {
-    if (s.half_time) out.push(t('ui.eventDetail.score.ht', { score: pair(s.half_time) }))
-    if (s.after_extra_time) out.push(t('ui.eventDetail.score.aet', { score: pair(s.after_extra_time) }))
-    if (s.penalties) out.push(t('ui.eventDetail.score.pens', { score: pair(s.penalties) }))
-  } else if (s.family === 'periods') {
-    if (s.periods.length) out.push(s.periods.map((p) => `${p.home ?? '–'}-${p.away ?? '–'}`).join(' · '))
-    if (s.overtime) out.push(t('ui.eventDetail.score.ot', { score: pair(s.overtime) }))
-  } else if (s.family === 'sets') {
-    if (s.sets_won) out.push(t('ui.eventDetail.score.sets', { score: pair(s.sets_won) }))
+/**
+ * SofaScore's round names ("Quarterfinals", "Round of 128", "Qualification Round 1") are English; the common
+ * ones are named in the reader's language (FX-26, M5), any other as SofaScore gives it. A round without a name
+ * is "Round 5" by its number.
+ */
+const ROUND_PATTERNS: [RegExp, string, ((m: RegExpMatchArray) => Record<string, unknown>)?][] = [
+  [/^finals?$/, 'final'],
+  [/^semi[- ]?finals?$/, 'semifinal'],
+  [/^quarter[- ]?finals?$/, 'quarterfinal'],
+  [/^round of (\d+)$/, 'roundOf', (m) => ({ n: Number(m[1]) })],
+  [/^last (\d+)$/, 'roundOf', (m) => ({ n: Number(m[1]) })],
+  [/^1\/(\d+)[- ]?finals?$/, 'roundOf', (m) => ({ n: Number(m[1]) * 2 })],
+  [/^(?:qualification|qualifying)(?: round)? (\d+)$/, 'qualification', (m) => ({ n: Number(m[1]) })],
+  [/^(?:qualification|qualifying)(?: round)? final$/, 'qualificationFinal'],
+  [/^(?:qualification|qualifying|qualifiers?)$/, 'qualifying'],
+  [/^group stage$/, 'groupStage'],
+  [/^group ([a-z0-9]{1,2})$/, 'group', (m) => ({ g: m[1].toUpperCase() })],
+  [/^round (\d+)$/, 'nth', (m) => ({ n: Number(m[1]) })],
+  [/^(\d+)(?:st|nd|rd|th) round$/, 'nth', (m) => ({ n: Number(m[1]) })],
+  [/^play-?offs?$/, 'playoff'],
+  [/^play-?in$/, 'playIn'],
+  [/^(?:3rd|third) place(?: final| match| play-?off)?$|^match for (?:3rd|third) place$/, 'third'],
+  [/^preliminary round$/, 'preliminary'],
+  [/^regular season$/, 'regularSeason'],
+]
+
+export function roundName(round: { name?: string | null; number?: number | null } | null | undefined): string | null {
+  if (!round) return null
+  const name = round.name?.trim()
+  if (!name) return round.number != null ? t('ui.eventDetail.round', { n: round.number }) : null
+  const key = name.toLowerCase().replace(/\s+/g, ' ')
+  for (const [re, code, args] of ROUND_PATTERNS) {
+    const m = key.match(re)
+    if (m) return t(`ui.roundName.${code}`, args ? args(m) : {})
   }
-  if (e.aggregate) out.push(t('ui.eventDetail.score.agg', { score: pair(e.aggregate) }))
-  return out
+  return name
 }
 
 export function sliceLabel(key: string): string {
@@ -62,8 +72,12 @@ export function summaryText(s: SliceSummary | null | undefined): string | null {
   return `${s.ok + s.empty}/${s.selected}`
 }
 
-/** True when a selected slice is not stored yet or failed (the event needs "Fetch missing data"). */
-export function needsData(e: Pick<EventListItem, 'slices_summary' | 'quality'>): boolean {
+/**
+ * True when a selected slice is not stored yet or failed (the event needs "Fetch missing data"). A match not
+ * played yet misses nothing: its statistics and line-ups come after it (FX-26, M12b).
+ */
+export function needsData(e: Pick<EventListItem, 'slices_summary' | 'quality' | 'status'>): boolean {
+  if (e.status.class === 'not_started' && e.quality.source === 'event') return false
   if (e.quality.source === 'listing') return true
   const s = e.slices_summary
   return !!s && (s.error > 0 || s.ok + s.empty < s.selected)
