@@ -1279,7 +1279,7 @@ const en = {
     season_odds: 'Season odds (champion, relegation)',
     team_rankings: 'Tennis player’s rankings (ATP, WTA)',
     player_statistics: 'Player statistics',
-    rankings: 'Rankings',
+    rankings: 'Tennis rankings (ATP, WTA)',
   },
   raw: {
     title: 'Original data · {key}',

@@ -1281,7 +1281,7 @@ const tr: typeof en = {
     season_odds: 'Sezon oranları (şampiyonluk, düşme)',
     team_rankings: 'Tenisçinin sıralaması (ATP, WTA)',
     player_statistics: 'Oyuncu istatistikleri',
-    rankings: 'Sıralamalar',
+    rankings: 'Tenis sıralamaları (ATP, WTA)',
   },
   raw: {
     title: 'SofaScore yanıtı · {key}',

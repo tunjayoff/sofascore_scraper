@@ -601,8 +601,9 @@ OWNER_SLICES: Tuple[SliceSpec, ...] = (
     # Oyuncunun sezon istatistikleri; yalnızca katalogda (örnek yok). Sahibi takip edilen oyunculardır
     SliceSpec("player_statistics", "/player/{player_id}/statistics/seasons", owner="player", group="players",
               default_enabled=False, required=False, max_age=timedelta(days=1), experimental=True),
-    # Sporun sıralama listesi; alt anahtar sıralama türü (5: ATP, sitenin ATP sayfası). Gövdesinin örneği yok
-    SliceSpec("rankings", "/rankings/{sub}", owner="sport", subs=("5",), group="rankings",
+    # Sporun sıralama listesi; alt anahtar sıralama türü: 5 ATP, 6 WTA (canlı doğrulama 2026-10-08: /rankings/5
+    # Sinner'le, /rankings/6 Rybakina ile başlıyor; FX-27 V8). Gövdesinin kaydedilmiş örneği yok
+    SliceSpec("rankings", "/rankings/{sub}", owner="sport", subs=("5", "6"), group="rankings",
               sports=frozenset({"tennis"}), default_enabled=False, required=False, max_age=timedelta(days=1),
               body_key="rankings", experimental=True),
 )
