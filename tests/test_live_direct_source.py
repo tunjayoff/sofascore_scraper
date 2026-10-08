@@ -628,8 +628,15 @@ class CredentialBridge:
         self.page = CredentialPage(sockets or [])
         self.routes: List[Any] = []
         self.closed = False
-        self.context = type("Ctx", (), {"route": self._route, "new_page": self._new_page})()
+        self.unrouted: List[str] = []
+        self.context = type("Ctx", (), {"route": self._route, "new_page": self._new_page,
+                                        "unroute_all": self._unroute_all})()
         CredentialBridge.made.append(self)
+
+    async def _unroute_all(self, behavior: Optional[str] = None) -> None:
+        # V9: kurallar sayfa kapanmadan kaldırılır; sürmekte olan istekler asılı görev bırakmaz
+        assert not self.page.closed and not self.closed
+        self.unrouted.append(str(behavior))
 
     async def ensure_ready(self) -> None:
         pass
@@ -673,6 +680,7 @@ def test_the_browser_reader_takes_the_connect_frame_of_the_page_s_own_connection
     assert b.profile_dir == str(tmp_path / "chrome-live") and b.home_url == "https://www.sofascore.com/robots.txt"
     assert b.page.visits == ["https://www.sofascore.com/tr/football"] and b.page.closed and b.closed
     assert len(b.routes) == 1 and fake_value("page") not in redact.redact_text(fake_value("page"))
+    assert b.unrouted == ["ignoreErrors"]
 
 
 def test_the_browser_reader_gives_up_when_the_page_opens_no_push_connection(
@@ -683,6 +691,38 @@ def test_the_browser_reader_gives_up_when_the_page_opens_no_push_connection(
     with pytest.raises(CredentialUnavailable):
         reader.read("football")
     assert CredentialBridge.made[0].page.closed and CredentialBridge.made[0].closed
+    assert CredentialBridge.made[0].unrouted == ["ignoreErrors"]
+
+
+def test_a_credential_page_request_that_fails_while_closing_is_handed_back(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """V9: CONNECT okunup sayfa kapanırken başarısız olan istek Playwright'a geri verilir (görev asılı kalmaz)."""
+    import asyncio
+    from types import SimpleNamespace
+
+    class PendingRoute:
+        def __init__(self, url: str, kind: str) -> None:
+            self.request = SimpleNamespace(url=url, resource_type=kind)
+            self.handled: "asyncio.Future[bool]" = asyncio.get_running_loop().create_future()
+
+        async def abort(self, reason: str = "") -> None:
+            raise RuntimeError("Target page, context or browser has been closed")
+
+        async def continue_(self) -> None:
+            raise RuntimeError("Target page, context or browser has been closed")
+
+        async def fallback(self) -> None:
+            self.handled.set_result(False)
+
+    reader = ds.BrowserCredentialReader(profile_dir=str(tmp_path / "p"))
+
+    async def on_route(url: str, kind: str) -> bool:
+        route = PendingRoute(url, kind)
+        await reader._route(route)
+        return await asyncio.wait_for(route.handled, 1.0)
+
+    assert asyncio.run(on_route("https://www.google-analytics.com/collect", "fetch")) is False
+    assert asyncio.run(on_route("https://www.sofascore.com/football", "document")) is False
 
 
 # --- servis -----------------------------------------------------------------------------------------------
