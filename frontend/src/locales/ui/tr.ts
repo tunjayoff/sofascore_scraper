@@ -256,9 +256,9 @@ const tr: typeof en = {
     none: 'Hiçbir şey bulunamadı. Yazımı denetleyin ya da aşağıya SofaScore numarasını girin.',
     count: 'Öneri sayısı: {n}',
     group: {
-      tournament: 'Ligler',
-      team: 'Takımlar',
-      player: 'Oyuncular',
+      tournament: 'Lig',
+      team: 'Takım',
+      player: 'Oyuncu',
     },
     stored: 'kayıtlı verinizde',
     note: 'Yazdıkça önce takipleriniz ve kayıtlı adlar, kısa bir duraklamadan sonra SofaScore’un sonuçları gelir. Aynı metin ikinci kez istek göndermez.',

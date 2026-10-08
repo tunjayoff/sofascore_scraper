@@ -254,9 +254,9 @@ const en = {
     none: 'Nothing found. Check the spelling, or enter the SofaScore number below.',
     count: 'Suggestions: {n}',
     group: {
-      tournament: 'Leagues',
-      team: 'Teams',
-      player: 'Players',
+      tournament: 'League',
+      team: 'Team',
+      player: 'Player',
     },
     stored: 'in your data',
     note: 'As you type, your follows and stored names come first, SofaScore’s results after a short pause. The same text again sends no request.',
