@@ -450,7 +450,7 @@ onMounted(() => {
             </div>
 
             <div v-else-if="tab === 'odds'" class="flex flex-col gap-6" data-testid="event-odds">
-              <OddsView :event-id="id" :slices="odds" />
+              <OddsView :event-id="id" :slices="odds" :sport="event.sport" />
               <section class="flex flex-col gap-2" data-testid="odds-raw">
                 <h2 class="u-h3">{{ t('ui.odds.raw') }}</h2>
                 <p class="m-0 u-small u-muted">{{ t('ui.odds.rawNote') }}</p>

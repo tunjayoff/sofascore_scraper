@@ -181,6 +181,58 @@ describe('the match header of every sport', () => {
   })
 })
 
+describe('odds in the reader’s language (M20)', () => {
+  // the markets of the Wimbledon final's odds as SofaScore names them (end-to-end test, 2026-10-08)
+  const choice = (name: string, decimal: number) => ({ name, fractional: null, decimal, initial_fractional: null, initial_decimal: null, change: 0, winning: null })
+  const market = (name: string, group: string, period: string, line: string | null, names: string[]) => ({
+    market_id: 1, name, group, period, choice_group: line, label: null, is_live: false, suspended: false, choices: names.map((n, i) => choice(n, 1.5 + i)),
+  })
+  const tennis = [
+    market('Full time', 'Home/Away', 'Match', null, ['1', '2']),
+    market('Total games won', 'Total sets/games', 'Extra time', '37.5', ['Over', 'Under']),
+    market('First set winner', 'Home/Away', '1st set', null, ['1', '2']),
+  ]
+
+  async function openOdds(sport: string, markets: unknown[]) {
+    const e = { ...ev('tennis__16385361'), sport }
+    mockFetch({
+      'GET /api/v1/sports': { data: [], page: { limit: 0, next_cursor: null } },
+      'GET /api/v1/tournaments': page([]),
+      [`GET /api/v1/tournaments/${e.tournament_id}/seasons`]: { data: [], page: { limit: 0, next_cursor: null } },
+      [`GET /api/v1/events/${e.id}`]: { data: e },
+      [`GET /api/v1/events/${e.id}/extra`]: { data: { note: null, series: null, venue: null, referee: null } },
+      [`GET /api/v1/events/${e.id}/slices`]: { data: [], page: { limit: 0, next_cursor: null } },
+      [`GET /api/v1/events/${e.id}/odds`]: { data: [{ key: 'odds_all', sub: '1', state: 'ok', has_payload: true }], page: { limit: 0, next_cursor: null } },
+      [`GET /api/v1/events/${e.id}/odds/odds_all`]: { data: [{ event_id: e.id, key: 'odds_all', provider_id: 1, fetched_at_utc: null, markets }], page: { limit: 0, next_cursor: null } },
+      'GET /api/v1/changes': page([]),
+      'GET /api/v1/status': { data: status() },
+    })
+    ;({ w } = await mountScreen(EventDetailScreen, `/events/${e.id}?tab=odds`, '/events/:id'))
+    await flush()
+    await flush()
+    return w.findAll('[data-testid="odds-market"]')
+  }
+
+  it('tennis: market names and groups in Turkish; no "Extra time" for a sport without it', async () => {
+    setLocale('tr')
+    const markets = await openOdds('tennis', tennis)
+    expect(markets.map((m) => m.find('h3 span').text())).toEqual(['Maç sonucu', 'Toplam oyun 37.5', 'İlk seti kazanan'])
+    expect(markets[0].find('[data-testid="odds-group"]').text()).toBe('İki sonuçlu')
+    expect(markets[1].find('[data-testid="odds-group"]').exists()).toBe(false)
+    expect(markets[1].find('[data-testid="odds-period"]').exists()).toBe(false)
+    expect(markets[2].find('[data-testid="odds-period"]').text()).toBe('İlk set')
+    expect(w.text()).not.toContain('Extra time')
+    expect(w.text()).not.toContain('Uzatma')
+    expect(markets[1].find('h3 span').attributes('lang')).toBeUndefined()
+  })
+
+  it('football: the extra-time period and the three-way group are shown', async () => {
+    const markets = await openOdds('football', [market('Full time', '1X2', 'Extra time', null, ['1', 'X', '2'])])
+    expect(markets[0].find('[data-testid="odds-period"]').text()).toBe('Extra time')
+    expect(markets[0].find('[data-testid="odds-group"]').text()).toBe('Three-way (1X2)')
+  })
+})
+
 describe('round names and the provisional result (M5, M6)', () => {
   it('common round names in the reader’s language; others as SofaScore gives them', () => {
     const names = ['Final', 'Semifinals', 'Quarterfinals', 'Round of 128', 'Round of 32', 'Qualification Round 1', 'Group stage', 'Group B', '1/8 finals', 'Play-offs', 'Kicker Cup R2']
