@@ -12,8 +12,10 @@ that day after batches eight to ten, marks its references `9b03c64`, a fifth, on
 eleven to nineteen, marks its references `b3cb819`, and a sixth, on 2026-10-06 after P27 to FX-19 and the
 newcomer pass of the web UI (pull requests #134 to #161), marks its references `b6caf2f`. A seventh, on
 2026-10-07 after FX-20, FX-21, FX-22 and REN-1 (pull requests #163 to #168), marks its references `6f79344`,
-and an eighth, on 2026-10-08 after the end-to-end test against the real site and its fixes FX-23 to FX-25
-(pull requests #170 to #172), marks its references `48e4c4c`.
+an eighth, on 2026-10-08 after the end-to-end test against the real site and its fixes FX-23 to FX-25
+(pull requests #170 to #172), marks its references `48e4c4c`, and a ninth, later that day after the live
+validation against the real site, its fixes FX-26 and FX-27, and FX-16 (pull requests #174 to #176), marks
+its references `43ecdfc`.
 Since REN-1 the import package is `sofascore_scraper` (it was `src`): the documents write its paths with
 the new name, and a `file:line` reference keeps the line it had at the commit its revision names (the rename
 moved no line). Paths of files removed before the rename keep the old `src/` form. Where a section
@@ -27,7 +29,7 @@ pull request.
 | [00-platform.md](00-platform.md) | The owner's platform design in English: decisions (with their state and the decisions taken after the draft), layers, schema v1, storage, API v1, CLI, sinks, live, security, waves. Its last section lists where the detailed designs differ from the draft | you want the goal and the fixed requirements |
 | [01-storage.md](01-storage.md) | The Store: what is on disk today and who touches it, the v3 layout, compression measurements, the catalog and state databases with their DDL, both layouts read side by side, `migrate`, leases and the write protocol, backup and restore | you work on anything under `DATA_DIR` |
 | [02-services.md](02-services.md) | The service layer and the faces: what `match_data_fetcher.py` does today, the client, the one pipeline, jobs across processes, the CLI contract, sinks and webhooks, API v1 resources, the live service, removal of the terminal UI | you work on fetching, jobs, the CLI, the API or live |
-| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 94 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; what remains before the 3.0.0 release (section 18) | you are about to start or review a pull request, or you want to know how far the release is |
+| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 97 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; what remains before the 3.0.0 release (section 18) | you are about to start or review a pull request, or you want to know how far the release is |
 | [04-schema-v1.md](04-schema-v1.md) | The normalized schema v1, the public data contract, field by field: every record the platform gives out (Sport, Category, Tournament, Season, Participant, Event with its score by score family, Slice, Change, LiveEvent) with type, unit, null rule, source in SofaScore's payload and meaning; the odds and standings records of P28 (`Odds`, `OddsLine`, `StandingsRow`, in the generated contract since FX-21); the versioning rule; what "raw" means; the 28 decisions taken while it was written. Approved on 2026-10-02 | you consume the platform's data, or you work on the API, the exports, the sinks or a new sport |
 | [05-web-ui.md](05-web-ui.md) | The screens of the web UI, designed from scratch on API v1 (plan item FE-1): users, information architecture, design system, every screen with its routes and fields and states, the routes still missing with their owners, and the decisions taken. Approved by the owner on 2026-10-02 with all 22 decisions; built by FE-2 (#107, #132, #133), then reworked after a first-time-user review (FX-14a #154, FX-14b #161; the classic views removed) and given the search as the user types (FX-20 #167); its last section says what changed while it was built, with the words as built | you work on the frontend |
 
@@ -70,10 +72,20 @@ pull request.
 
 ## Status
 
-As of 2026-10-08, after the eighth revision (details and pull request numbers in the "Status" section at the
+As of 2026-10-08, after the ninth revision (details and pull request numbers in the "Status" section at the
 top of `03`; what remains before the release in its section 18):
 
-- Merged: 92 of the 94 items. Since the seventh revision: the orchestrator's end-to-end test of every
+- Merged: 95 of the 97 items; FX-28 is in progress. Since the eighth revision: the live validation against
+  the real site (Talimat 07), run by the orchestrator on 2026-10-08: the Docker image (built and
+  smoke-tested), a pass over the web UI with one finished match of each of 20 sports, live matches of 13
+  sports, both push sources (`direct` approved by the owner and tried for five minutes), odds, follows and
+  the type-ahead; its fix items FX-26 (the score of every sport on the match page, coverage over finished
+  matches only, one suggestion list in SofaScore's order, "/" in the names of team, player and match
+  follows, the server's time left, English client errors, a route `/events/{id}/extra`) and FX-27 (`ssc
+  watch --sport`, live codes without a type, a closing browser without pending handlers, a no-data answer of
+  an unfinished match, the WTA rankings, `winning_odds`); and FX-16, the owner's decision on the detail
+  slices of football, basketball and tennis. FX-28 (three small points of the web UI) is in progress.
+  Since the seventh revision: the orchestrator's end-to-end test of every
   feature through the web UI against the real site (2026-10-07, re-tested on 2026-10-08) and its three fix
   items: FX-24 (the web UI: dialogs, search hits, a follow's page, the Odds tab as a table, the export
   filter, Health, Settings), FX-23 (a football match that went straight to penalties no longer gets an
@@ -96,10 +108,11 @@ top of `03`; what remains before the release in its section 18):
   all 21 sports; every match status stored; user-selectable slices, odds and non-match data; team, player
   and single-match follows; the normalized exports; the optional in-app scheduler; the new web UI, designed
   (`05`) and built from scratch and reworked after a first-time-user review; and the fix items.
-- Still to do before 3.0.0 (section 18 of `03`): the live validation (Talimat 07), by the orchestrator from
-  its own session on 2026-10-08 from 20:00 to 23:00 Turkish time, and the fixes it finds; FX-16 (the detail
-  slices of football, basketball and tennis after it); the Docker image build and smoke test; README screenshots from real data; the version bump to 3.0.0 (`pyproject.toml`
-  still says 2.0.0, and the web UI shows v2.0.0); the changelog close; and the tag, which is the owner's.
+- Still to do before 3.0.0 (section 18 of `03`): FX-28; the release pull request (the version bump to 3.0.0,
+  since `pyproject.toml` still says 2.0.0 and the web UI shows v2.0.0; the changelog close with the entries
+  of #161 to #176 and FX-28; the README with screenshots of real data, without the "in preparation" note,
+  and with the rule that a score change of a set sport is a set won; a few stale comments); the Docker
+  smoke test on its commit (an image of `137cabe` passed on 2026-10-08); and the tag, which is the owner's.
   P30 follows in 3.1.
 - What a user can see: everything a download writes is in the new layout (`v3/`, 8.4 times smaller on the
   owner's data) and the old folders are read in place; `ssc` covers every task of the former terminal menu
@@ -122,7 +135,10 @@ top of `03`; what remains before the release in its section 18):
   orchestrator's end-to-end test through the web UI before the live validation, and the repository's new
   description and topics; on 2026-10-08 the owner's: the coder session has ended and every remaining step,
   the live validation included, runs from the orchestrator's session, and 3.0.0 is not published to PyPI
-  (the tag, the GitHub Release and the Docker image; installation from source). Waiting for the owner: the
-  approval of the `direct` step in the validation session, the three slice proposals of #121 (after the
-  validation; FX-16), whether the type-ahead list stays grouped by kind, and the tag. After 3.0.0: P30 and
-  the small items of section 18 of `03`.
+  (the tag, the GitHub Release and the Docker image; installation from source); later on 2026-10-08 the
+  owner's: the `direct` step approved in the validation's session (run for five minutes; it worked and
+  wrote no credential anywhere) and the three slice proposals of #121 applied (FX-16); the orchestrator's,
+  reversible: one type-ahead list in SofaScore's order instead of groups by kind (FX-26), a no-data answer
+  of an unfinished match kept as an uncounted `empty` (FX-27), and score changes of set sports kept as sets
+  won. Waiting for the owner: the tag; optional, whether the type-ahead list goes back to groups by kind.
+  After 3.0.0: P30 and the small items of section 18 of `03`.
