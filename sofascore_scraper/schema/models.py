@@ -247,7 +247,9 @@ class FootballScore(Model):
     regulation: Optional[ScorePair] = spec("Goals after 90 minutes.", unit="goals", source="`normaltime`")
     after_extra_time: Optional[ScorePair] = spec(
         "Goals after extra time (cumulative, without the shoot-out). Null unless the match went to extra time.",
-        unit="goals", source="`display`, only when `status.code` is 110 or 120")
+        unit="goals",
+        source="`display`, only when `status.code` is 110, or 120 when SofaScore sends `overtime`, `extra1` or "
+               "`extra2`")
     penalties: Optional[ScorePair] = spec("Goals of the penalty shoot-out alone.", unit="goals",
                                           source="`penalties`")
 
