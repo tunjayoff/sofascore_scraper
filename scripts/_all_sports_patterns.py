@@ -15,15 +15,16 @@ SOFA_HOST = re.compile(r"(^|\.)sofascore\.(com|app|net|io)$")
 _SPORT_SEG = re.compile(r"/(" + "|".join(re.escape(s) for s in sorted(SPORT_SLUGS, key=len, reverse=True)) + r")(?=/|$)")
 
 
-def api_pattern(url: str) -> str:
+def api_pattern(url: str, sofa_host: "re.Pattern[str]" = SOFA_HOST) -> str:
     """
     www.sofascore.com/api/v1/event/123/statistics → /event/{id}/statistics. Tarih → {date}, yıl-ay → {month}, sayı → {id},
     spor slug'ı → {sport}, iki büyük harfli ülke kodu → {cc}, maçın customId'si → {customId}. Başka SofaScore alan adları ve /api/v1 dışı
-    yollar alan adıyla; üçüncü taraf yalnızca alan adı + ilk yol parçasıyla yazılır.
+    yollar alan adıyla; üçüncü taraf yalnızca alan adı + ilk yol parçasıyla yazılır. `sofa_host`: SofaScore sayılan alan
+    adları (testler sahte bir alan adı verir).
     """
     u = urlparse(url)
     host = u.hostname or ""
-    if not SOFA_HOST.search(host):
+    if not sofa_host.search(host):
         return f"{host}/{u.path.strip('/').split('/')[0]}"
     path = re.sub(r"^/_next/data/[^/]+/", "/_next/data/{build}/", u.path)
     path = re.sub(r"/\d{4}-\d{2}-\d{2}", "/{date}", path)
