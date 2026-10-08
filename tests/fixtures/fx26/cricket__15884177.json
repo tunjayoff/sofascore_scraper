@@ -1,0 +1,119 @@
+{
+ "event": {
+  "tournament": {
+   "id": 179155,
+   "name": "West Indies in India, 5 T20I Series",
+   "slug": "west-indies-in-india-5-t20i-series",
+   "category": {
+    "id": 1343,
+    "name": "World",
+    "slug": "world",
+    "flag": "international",
+    "sport": {
+     "id": 62,
+     "slug": "cricket",
+     "name": "Cricket"
+    }
+   },
+   "uniqueTournament": {
+    "id": 11191,
+    "name": "T20 International",
+    "slug": "t20-international",
+    "category": {
+     "id": 1343,
+     "name": "World",
+     "slug": "world",
+     "flag": "international",
+     "sport": {
+      "id": 62,
+      "slug": "cricket",
+      "name": "Cricket"
+     }
+    }
+   }
+  },
+  "season": {
+   "id": 77257,
+   "name": "2026",
+   "year": "2026"
+  },
+  "homeTeam": {
+   "id": 187765,
+   "name": "India",
+   "slug": "india",
+   "shortName": "IND",
+   "nameCode": "IND",
+   "gender": "M",
+   "national": true,
+   "type": 0,
+   "sport": {
+    "id": 62,
+    "slug": "cricket",
+    "name": "Cricket"
+   },
+   "country": {
+    "alpha2": "IN",
+    "name": "India"
+   }
+  },
+  "awayTeam": {
+   "id": 187760,
+   "name": "West Indies",
+   "slug": "west-indies",
+   "shortName": "WI",
+   "nameCode": "WIN",
+   "gender": "M",
+   "national": true,
+   "type": 0,
+   "sport": {
+    "id": 62,
+    "slug": "cricket",
+    "name": "Cricket"
+   }
+  },
+  "id": 15884177,
+  "slug": "india-west-indies",
+  "customId": "kfAbspfAb",
+  "startTimestamp": 1791293400,
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+   "current": 172,
+   "display": 172,
+   "innings": {
+    "inning1": {
+     "score": 172,
+     "wickets": 2,
+     "overs": 14.4,
+     "runRate": 11.73,
+     "targetRunRate": 8.6
+    }
+   }
+  },
+  "awayScore": {
+   "current": 171,
+   "display": 171,
+   "innings": {
+    "inning1": {
+     "score": 171,
+     "wickets": 10,
+     "overs": 19.1,
+     "runRate": 8.92
+    }
+   }
+  },
+  "note": "India beat West Indies by 8 wickets",
+  "periods": {
+   "current": "Match",
+   "inning1": "1st Inning",
+   "inning2": "2nd Inning",
+   "inning3": "3rd Inning",
+   "inning4": "4th Inning"
+  },
+  "time": {}
+ }
+}

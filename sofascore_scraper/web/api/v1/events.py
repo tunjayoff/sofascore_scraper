@@ -4,6 +4,8 @@ docs/design/04-schema-v1.md bölüm 7; docs/design/05-web-ui.md 7.2 ve 7.3: G6, 
 
     GET /api/v1/events                                  süzgeçli, sıralı, imleçle sayfalanan maç listesi
     GET /api/v1/events/{event_id}                       tek maç
+    GET /api/v1/events/{event_id}/extra                 yükün başlık bilgileri: sonuç notu, seri skoru, saha, hakem
+                                                        (FX-26)
     GET /api/v1/events/{event_id}/slices                maçın dilimleri (yük olmadan)
     GET /api/v1/events/{event_id}/slices/{key}          tek dilim, saklanan yüküyle
     GET /api/v1/events/{event_id}/raw                   olay yükü, olduğu gibi
@@ -85,6 +87,28 @@ class EventListResponse(BaseModel):
 
 class EventResponse(BaseModel):
     data: records.Event  # type: ignore[valid-type]
+
+
+class EventExtra(BaseModel):
+    """
+    What SofaScore says about an event beyond the schema v1 Event, read from its stored event payload: the match
+    page's header and overview show it (FX-26). Every field is null when the payload does not give it.
+    """
+
+    note: Optional[str] = Field(
+        default=None, description="SofaScore's note on the result, as given (in English), for example `India beat "
+                                  "West Indies by 8 wickets` (cricket).",
+    )
+    series: Optional[records.mirror(schema_models.ScorePair)] = Field(  # type: ignore[valid-type]
+        default=None, description="Games each side has won so far in the best-of series the event belongs to (a "
+                                  "baseball postseason series), this event's home side as `home`.",
+    )
+    venue: Optional[str] = Field(default=None, description="Name of the venue, as given.")
+    referee: Optional[str] = Field(default=None, description="Name of the referee, as given.")
+
+
+class EventExtraResponse(BaseModel):
+    data: EventExtra
 
 
 class SliceListResponse(BaseModel):
@@ -281,6 +305,30 @@ def get_event(event_id: Annotated[int, Path(ge=1)]) -> EventResponse:
     if event is None:
         raise _event_not_found(event_id)
     return EventResponse(data=records.as_json(event))
+
+
+@router.get(
+    "/events/{event_id}/extra",
+    response_model=EventExtraResponse,
+    operation_id="getEventExtra",
+    summary="Get the header facts of an event",
+    responses=error_responses("not_found"),
+)
+def get_event_extra(event_id: Annotated[int, Path(ge=1)]) -> EventExtraResponse:
+    """
+    What the stored event payload says beyond the Event record: SofaScore's result note, the series score, the
+    venue and the referee (FX-26). Every field is null when no event payload is stored (a match known from a
+    schedule only). 404 for an unknown event.
+    """
+    query = _query()
+    if query.event(event_id) is None:
+        raise _event_not_found(event_id)
+    found = query.event_extra(event_id)
+    if found is None:
+        return EventExtraResponse(data=EventExtra())
+    series = None if found.series is None else {"home": found.series[0], "away": found.series[1]}
+    return EventExtraResponse(data=EventExtra(note=found.note, series=series, venue=found.venue,
+                                              referee=found.referee))
 
 
 @router.get(

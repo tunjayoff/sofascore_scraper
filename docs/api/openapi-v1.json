@@ -2409,6 +2409,80 @@
         }
       }
     },
+    "/api/v1/events/{event_id}/extra": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get the header facts of an event",
+        "description": "What the stored event payload says beyond the Event record: SofaScore's result note, the series score, the\nvenue and the referee (FX-26). Every field is null when no event payload is stored (a match known from a\nschedule only). 404 for an unknown event.",
+        "operationId": "getEventExtra",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventExtraResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/events/{event_id}/slices": {
       "get": {
         "tags": [
@@ -5980,6 +6054,72 @@
         ],
         "title": "Event",
         "description": "A match."
+      },
+      "EventExtra": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "SofaScore's note on the result, as given (in English), for example `India beat West Indies by 8 wickets` (cricket)."
+          },
+          "series": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Games each side has won so far in the best-of series the event belongs to (a baseball postseason series), this event's home side as `home`."
+          },
+          "venue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue",
+            "description": "Name of the venue, as given."
+          },
+          "referee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referee",
+            "description": "Name of the referee, as given."
+          }
+        },
+        "type": "object",
+        "title": "EventExtra",
+        "description": "What SofaScore says about an event beyond the schema v1 Event, read from its stored event payload: the match\npage's header and overview show it (FX-26). Every field is null when the payload does not give it."
+      },
+      "EventExtraResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EventExtra"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "EventExtraResponse"
       },
       "EventListItem": {
         "properties": {

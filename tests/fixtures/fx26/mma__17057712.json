@@ -1,0 +1,104 @@
+{
+ "event": {
+  "tournament": {
+   "id": 197783,
+   "name": "Contender Series 2026: Week 9",
+   "slug": "contender-series-2026-week-9",
+   "category": {
+    "id": 1708,
+    "name": "World",
+    "slug": "world",
+    "flag": "international",
+    "sport": {
+     "id": 76,
+     "slug": "mma",
+     "name": "Mixed Martial Arts"
+    }
+   },
+   "uniqueTournament": {
+    "id": 20264,
+    "name": "Dana White's Contender Series",
+    "slug": "dana-whites-contender-series",
+    "category": {
+     "id": 1708,
+     "name": "World",
+     "slug": "world",
+     "flag": "international",
+     "sport": {
+      "id": 76,
+      "slug": "mma",
+      "name": "Mixed Martial Arts"
+     }
+    }
+   }
+  },
+  "season": {
+   "id": 102258,
+   "name": "Contender Series 2026: Week 9",
+   "year": "2026"
+  },
+  "homeTeam": {
+   "id": 1275452,
+   "name": "Summer Onley",
+   "slug": "summer-onley",
+   "shortName": "S. Onley",
+   "nameCode": "ONL",
+   "gender": "F",
+   "national": false,
+   "type": 1,
+   "sport": {
+    "id": 76,
+    "slug": "mma",
+    "name": "Mixed Martial Arts"
+   },
+   "country": {
+    "alpha2": "EN",
+    "name": "England"
+   }
+  },
+  "awayTeam": {
+   "id": 1149047,
+   "name": "Alivia  Bierley",
+   "slug": "alivia-bierley",
+   "shortName": "A. Bierley",
+   "nameCode": "BIE",
+   "gender": "F",
+   "national": false,
+   "type": 1,
+   "sport": {
+    "id": 76,
+    "slug": "mma",
+    "name": "Mixed Martial Arts"
+   },
+   "country": {
+    "alpha2": "US",
+    "name": "USA"
+   }
+  },
+  "id": 17057712,
+  "slug": "summer-onley-alivia-bierley",
+  "customId": "XFjjscjkk",
+  "startTimestamp": 1791328765,
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {},
+  "awayScore": {},
+  "winType": "UD",
+  "finalRound": 3,
+  "defaultPeriodCount": 5,
+  "time": {
+   "period1": 300,
+   "period2": 300,
+   "period3": 300,
+   "played": 900,
+   "totalPeriodCount": 3
+  },
+  "weightClass": "bantam",
+  "fightType": "maincard",
+  "gender": "F"
+ }
+}

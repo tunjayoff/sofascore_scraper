@@ -254,6 +254,24 @@ class EventPage:
 
 
 @dataclass(frozen=True)
+class EventExtra:
+    """
+    Şema v1 kaydında olmayan, maç sayfasının başlığında gösterilen bilgiler; saklanan olay yükünden (FX-26).
+
+    note     SofaScore'un sonuç notu, verdiği gibi (İngilizce): "India beat West Indies by 8 wickets" (kriket)
+    series   maçın ait olduğu "best of" serisinde iki tarafın o ana kadar kazandığı maçlar (beyzbol play-off'u,
+             `homeScore.series` / `awayScore.series`); bu maçın ev sahibi önce. Seri yoksa None.
+    venue    sahanın adı (`venue.name`, yoksa `venue.stadium.name`)
+    referee  hakemin adı (`referee.name`)
+    """
+
+    note: Optional[str] = None
+    series: Optional[Tuple[int, int]] = None
+    venue: Optional[str] = None
+    referee: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class RawPayload:
     """
     Saklanan bir SofaScore yükü, olduğu gibi (sıkıştırması açılmış JSON baytları). sha256: baytların özeti
@@ -539,6 +557,20 @@ class QueryService:
             return None
         row = self._store.events.get(event_id)
         return None if row is None else schema.event_from_row(row, refresh_window_s=refresh_window_seconds())
+
+    def event_extra(self, event_id: int) -> Optional[EventExtra]:
+        """
+        Maçın şema v1 dışındaki başlık bilgileri (`EventExtra`), saklanan olay yükünden. Yük yoksa, okunamıyorsa
+        ya da hiçbiri yoksa None.
+        """
+        if not _valid_id(event_id):
+            return None
+        try:
+            payload = self._store.events.payload(event_id, EVENT_KEY)
+        except (PayloadMissing, PayloadCorrupt, StoreError) as e:
+            logger.warning("Event %s: the stored event payload is unreadable: %s", event_id, e)
+            return None
+        return event_extra_of(payload)
 
     def event_slices(self, event_id: int) -> Optional[List["schema.Slice"]]:
         """
@@ -1005,8 +1037,36 @@ def _legacy_row(row: "EventRow", names: _Names) -> Dict[str, Any]:
     }
 
 
+def event_extra_of(payload: Any) -> Optional[EventExtra]:
+    """
+    Olay yükünden (`/event/{id}` yanıtının `event` nesnesi ya da yanıtın kendisi) `EventExtra`; hiçbir bilgi
+    yoksa None. Not boş olmayan bir metindir; seri iki tarafta da tam sayı olmalıdır.
+    """
+    event = payload.get("event", payload) if isinstance(payload, Mapping) else None
+    if not isinstance(event, Mapping):
+        return None
+    note = _name(event.get("note"))
+    home, away = event.get("homeScore"), event.get("awayScore")
+    pair = (home.get("series") if isinstance(home, Mapping) else None,
+            away.get("series") if isinstance(away, Mapping) else None)
+    series = (int(pair[0]), int(pair[1])) if all(
+        isinstance(x, int) and not isinstance(x, bool) and x >= 0 for x in pair) else None
+    venue_of = event.get("venue") if isinstance(event.get("venue"), Mapping) else {}
+    stadium = venue_of.get("stadium") if isinstance(venue_of.get("stadium"), Mapping) else {}
+    venue = _name(venue_of.get("name")) or _name(stadium.get("name"))
+    referee_of = event.get("referee") if isinstance(event.get("referee"), Mapping) else {}
+    referee = _name(referee_of.get("name"))
+    if note is None and series is None and venue is None and referee is None:
+        return None
+    return EventExtra(note=note, series=series, venue=venue, referee=referee)
+
+
+def _name(value: Any) -> Optional[str]:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
 __all__ = ["CHANGE_ORDERS", "CatalogNotCurrent", "ChangePage", "DEFAULT_EMPTY_THRESHOLD", "EVENT_KEY", "EventFilter",
-           "EventPage", "LEGACY_EVENT_KEY", "LEGACY_LIST_COLUMNS", "LegacyMatchPage", "NEED_FULL", "NEED_NONE",
+           "EventExtra", "EventPage", "LEGACY_EVENT_KEY", "LEGACY_LIST_COLUMNS", "LegacyMatchPage", "NEED_FULL", "NEED_NONE",
            "NEED_REFILL", "NEED_REFRESH", "QueryService", "RawPayload", "RefreshPolicy", "SliceSummary",
-           "Suggestion", "TournamentEntry", "V1_SORTS", "legacy_detail_keys", "refresh_window_seconds",
+           "Suggestion", "TournamentEntry", "V1_SORTS", "event_extra_of", "legacy_detail_keys", "refresh_window_seconds",
            "required_detail_keys"]
