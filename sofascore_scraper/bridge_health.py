@@ -263,10 +263,15 @@ class ConnectionState:
         # Son bağlantı denetimi (`POST /status/check`): (an, yanıt aldı mı, neden)
         self.last_check: Optional[Tuple[float, bool, Optional[str]]] = None
 
-    def record_check(self, ok: bool, reason: Optional[str] = None) -> None:
-        """Bağlantı denetiminin sonucu: arayüz onu sekme başına hatırlamak zorunda kalmasın (FX-19)."""
+    def record_check(self, ok: bool, reason: Optional[str] = None) -> float:
+        """
+        Bağlantı denetiminin sonucu: arayüz onu sekme başına hatırlamak zorunda kalmasın (FX-19). Denetimin anını
+        döndürür: yanıttaki `checked_at_utc` ile `/status`taki `last_check.at` aynı saat okumasıdır (FX-30).
+        """
         with self._lock:
-            self.last_check = (self._clock(), bool(ok), None if ok else reason)
+            at = self._clock()
+            self.last_check = (at, bool(ok), None if ok else reason)
+            return at
 
     def times(self) -> Tuple[Optional[float], Optional[float]]:
         """(son yanıt, son başarısızlık), epoch saniye."""
@@ -324,9 +329,9 @@ def connection() -> Dict[str, Any]:
     return _connection.snapshot()
 
 
-def record_check(ok: bool, reason: Optional[str] = None) -> None:
-    """Bağlantı denetiminin sonucu (`POST /status/check`; FX-19)."""
-    _connection.record_check(ok, reason)
+def record_check(ok: bool, reason: Optional[str] = None) -> float:
+    """Bağlantı denetiminin sonucu (`POST /status/check`; FX-19); denetimin anını döndürür (epoch saniye)."""
+    return _connection.record_check(ok, reason)
 
 
 def public_snapshot() -> BridgeHealthSnapshot:
@@ -377,11 +382,11 @@ def remove_on_health_change(fn: HealthChangeCallback) -> None:
     _health.remove_on_health_change(fn)
 
 
-def reset() -> None:
-    """Durumu sıfırlar (testler): köprü ve bağlantı."""
+def reset(clock: Callable[[], float] = time.time) -> None:
+    """Durumu sıfırlar (testler): köprü ve bağlantı. `clock`: ikisinin de saati (testler zamanı dondurur; FX-30)."""
     global _health, _connection
-    _health = BridgeHealth()
-    _connection = ConnectionState()
+    _health = BridgeHealth(clock=clock)
+    _connection = ConnectionState(clock=clock)
 
 
 # --- CLI ------------------------------------------------------------------------------------
