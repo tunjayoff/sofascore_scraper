@@ -1023,14 +1023,16 @@ export interface SeasonCounts {
   finished: number
   /** Events with a stored event payload. */
   details: number
-  /** Events with details and no missing slice. */
+  /** Finished events with details and no missing slice. */
   complete: number
-  /** complete / details in percent, two decimals; 0 without details. */
+  /** complete / finished_details in percent, two decimals; 0 without finished events with details. An event not played yet cannot miss its statistics or line-ups: it is not counted (FX-26). */
   completion_rate: number
-  /** Slice to the number of events with details that miss it. */
+  /** Slice to the number of finished events with details that miss it. */
   missing: Record<string, number>
   /** When the newest page of the season's schedule was fetched; null: never. */
   schedule_fetched_at_utc?: string | null
+  /** Finished events with a stored event payload. */
+  finished_details?: number
 }
 
 /** A season (schema v1 Season); with `include=counts` also its counts. */
@@ -1593,6 +1595,8 @@ export interface TournamentSummary {
   coverage: number
   /** Newest change of a stored payload. */
   last_update_utc?: string | null
+  /** Finished events with a stored event payload. A follow's coverage is finished_details / finished: an event not played yet is not missing (FX-26). */
+  finished_details?: number
 }
 
 /** Every operation of the document by its operationId. */

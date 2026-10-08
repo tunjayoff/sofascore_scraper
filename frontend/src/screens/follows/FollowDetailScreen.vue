@@ -27,7 +27,7 @@ import MoveFollow from './MoveFollow.vue'
 import SlicePicker from './SlicePicker.vue'
 import { dataText, hasOdds, hitPlace, hitTraits, lastSyncOf, lockReason, placeName, seasonsText, syncIncludes } from './followText'
 import { seenTeam } from '@/app/suggest'
-import { followCoverage, type FollowCoverage } from './followCoverage'
+import { followCoverage, leagueCoverage, type FollowCoverage } from './followCoverage'
 
 /**
  * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its downloads.
@@ -73,14 +73,14 @@ function setTab(k: Tab) {
 }
 
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
-const leagueCoverage = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
-/** A team's or a match's matches with details, counted from its stored matches (FX-24 F23). */
+const leagueRow = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
+/** A team's or a match's finished matches with details, counted from its stored matches (FX-24 F23, FX-26). */
 const counted = ref<FollowCoverage | null>(null)
-const coverage = computed(() => (isTournament.value ? leagueCoverage.value : counted.value))
+const coverage = computed(() => (isTournament.value ? (leagueRow.value ? leagueCoverage(leagueRow.value) : null) : counted.value))
 function loadCount() {
   const f = follow.value
   if (!f || (f.kind !== 'team' && f.kind !== 'event')) return
-  followCoverage(f, status.status?.summary?.only_finished ?? true)
+  followCoverage(f)
     .then((c) => (counted.value = c))
     .catch(() => {})
 }
@@ -296,7 +296,7 @@ onMounted(() => void load())
                     </span>
                     <span v-if="s.counts" class="u-small u-muted u-num inline-flex flex-wrap items-center gap-x-3" data-testid="season-counts">
                       <span>{{ t('ui.followDetail.seasonCounts', { events: num(s.counts.events), finished: num(s.counts.finished), details: num(s.counts.details) }) }}</span>
-                      <span v-if="s.counts.details" class="inline-flex items-center gap-2" :title="t('ui.followDetail.completeHelp')" data-testid="season-complete"
+                      <span v-if="s.counts.finished_details ?? s.counts.details" class="inline-flex items-center gap-2" :title="t('ui.followDetail.completeHelp')" data-testid="season-complete"
                         ><span class="u-minibar" aria-hidden="true"><span :style="{ width: `${s.counts.completion_rate}%` }"></span></span
                         >{{ t('ui.followDetail.complete', { pct: pct(s.counts.completion_rate) }) }}</span
                       >
@@ -356,7 +356,8 @@ onMounted(() => void load())
               <span v-else>—</span>
             </template>
             <template #value-coverage>
-              <span v-if="coverage" class="inline-flex flex-wrap items-center gap-2 u-num">
+              <span v-if="coverage && !coverage.matches" class="u-muted" data-testid="coverage-none">{{ t('ui.followDetail.noFinished') }}</span>
+              <span v-else-if="coverage" class="inline-flex flex-wrap items-center gap-2 u-num" data-testid="coverage">
                 <span class="u-minibar" aria-hidden="true"><span :style="{ width: `${coverage.coverage}%` }"></span></span>
                 {{ pct(coverage.coverage) }} · {{ t('ui.followDetail.coverageText', { details: num(coverage.details), matches: num(coverage.matches) }) }}
               </span>

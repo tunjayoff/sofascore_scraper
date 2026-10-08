@@ -86,12 +86,16 @@ class SeasonCounts(BaseModel):
     events: int = Field(description="Every stored event of the season, unfinished schedule rows included.")
     finished: int = Field(description="Events that ended (completed or decided without play).")
     details: int = Field(description="Events with a stored event payload.")
-    complete: int = Field(description="Events with details and no missing slice.")
-    completion_rate: float = Field(description="complete / details in percent, two decimals; 0 without details.")
-    missing: Dict[str, int] = Field(description="Slice to the number of events with details that miss it.")
+    complete: int = Field(description="Finished events with details and no missing slice.")
+    completion_rate: float = Field(
+        description="complete / finished_details in percent, two decimals; 0 without finished events with details. "
+                    "An event not played yet cannot miss its statistics or line-ups: it is not counted (FX-26).",
+    )
+    missing: Dict[str, int] = Field(description="Slice to the number of finished events with details that miss it.")
     schedule_fetched_at_utc: Optional[str] = Field(
         default=None, description="When the newest page of the season's schedule was fetched; null: never.",
     )
+    finished_details: int = Field(default=0, description="Finished events with a stored event payload.")
 
 
 class SeasonEntry(records.Season):  # type: ignore[misc,valid-type]
@@ -418,7 +422,7 @@ def list_tournament_seasons(
             body["counts"] = SeasonCounts(
                 events=counts.events, finished=counts.finished, details=counts.details, complete=counts.complete,
                 completion_rate=counts.completion_rate, missing=dict(counts.missing),
-                schedule_fetched_at_utc=utc_text(counts.schedule_fetched_at),
+                schedule_fetched_at_utc=utc_text(counts.schedule_fetched_at), finished_details=counts.finished_details,
             )
         elif found:
             body["counts"] = SeasonCounts(events=0, finished=0, details=0, complete=0, completion_rate=0.0, missing={})

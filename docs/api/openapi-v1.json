@@ -9346,12 +9346,12 @@
           "complete": {
             "type": "integer",
             "title": "Complete",
-            "description": "Events with details and no missing slice."
+            "description": "Finished events with details and no missing slice."
           },
           "completion_rate": {
             "type": "number",
             "title": "Completion Rate",
-            "description": "complete / details in percent, two decimals; 0 without details."
+            "description": "complete / finished_details in percent, two decimals; 0 without finished events with details. An event not played yet cannot miss its statistics or line-ups: it is not counted (FX-26)."
           },
           "missing": {
             "additionalProperties": {
@@ -9359,7 +9359,7 @@
             },
             "type": "object",
             "title": "Missing",
-            "description": "Slice to the number of events with details that miss it."
+            "description": "Slice to the number of finished events with details that miss it."
           },
           "schedule_fetched_at_utc": {
             "anyOf": [
@@ -9372,6 +9372,12 @@
             ],
             "title": "Schedule Fetched At Utc",
             "description": "When the newest page of the season's schedule was fetched; null: never."
+          },
+          "finished_details": {
+            "type": "integer",
+            "title": "Finished Details",
+            "description": "Finished events with a stored event payload.",
+            "default": 0
           }
         },
         "type": "object",
@@ -11641,6 +11647,12 @@
             ],
             "title": "Last Update Utc",
             "description": "Newest change of a stored payload."
+          },
+          "finished_details": {
+            "type": "integer",
+            "title": "Finished Details",
+            "description": "Finished events with a stored event payload. A follow's coverage is finished_details / finished: an event not played yet is not missing (FX-26).",
+            "default": 0
           }
         },
         "type": "object",

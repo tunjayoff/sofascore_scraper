@@ -32,6 +32,9 @@ değişiklikler (CSV dışa aktarımı, yedekler, elle silinen dosyalar) en geç
 Kapsam (coverage) kuralları:
 
   * Yalnızca `/event/{id}` yükü saklanan maçlar sayılır (`details`); yalnızca bir listeden bilinen maç girmez.
+    Takiplerin sayfalarındaki tamlık (`season_counts`, `TournamentCounts.finished_details`) ise yalnızca bitmiş
+    maçları sayar: henüz oynanmamış maçın istatistiği, kadrosu olamaz, gelecek fikstür "eksik" değildir (FX-26,
+    canlı doğrulama M12). Lig, takım, oyuncu ve maç takipleri ön yüzde aynı kuralla sayılır.
     Terminal menüsünün eski dosya raporu (`generate_file_report`, FX-15'te kalktı) `basic.json`'ı olmayan bir dizini de maç
     sayıyordu ve yalnızca `match_details/<lig>/season_*/` altındaki dizinlere bakıyordu; düz, `_no_tournament/`
     ve v3 düzenindeki kayıtlar da artık sayılır.
@@ -97,6 +100,7 @@ class TournamentCounts:
     events: int = 0  # katalogdaki bütün satırlar (henüz bitmemiş program satırları dahil)
     finished: int = 0
     seasons: int = 0
+    finished_details: int = 0  # bitmiş maçlardan `/event/{id}` yükü saklananlar (FX-26: takiplerin ortak kuralı)
     seasons_with_events: int = 0
     last_update: Optional[int] = None
 
@@ -257,8 +261,9 @@ class SeasonCounts:
     events       katalogdaki bütün maçlar (bitmemiş program satırları dahil)
     finished     bitmiş olanlar (completed, decided_without_play)
     details      `/event/{id}` yükü saklananlar
-    complete     detayı saklanıp eksik dilimi olmayanlar (kapsam kuralları modül belgesinde)
-    missing      dilim → o dilimi eksik olan maç sayısı (tablo sırasıyla)
+    finished_details  bitmiş olup `/event/{id}` yükü saklananlar; tamlık bunlardan sayılır (FX-26)
+    complete     bitmiş, detayı saklanıp eksik dilimi olmayanlar (kapsam kuralları modül belgesinde)
+    missing      dilim → o dilimi eksik olan bitmiş maç sayısı (tablo sırasıyla)
     schedule_fetched_at  sezon programının en yeni sayfasının alındığı an (epoch saniye); program yoksa None
     """
 
@@ -269,11 +274,12 @@ class SeasonCounts:
     complete: int = 0
     missing: Mapping[str, int] = field(default_factory=dict)
     schedule_fetched_at: Optional[float] = None
+    finished_details: int = 0
 
     @property
     def completion_rate(self) -> float:
-        """Detayı saklanan maçlardan tam olanların yüzdesi, iki ondalık."""
-        return _rate(self.complete, self.details)
+        """Detayı saklanan bitmiş maçlardan tam olanların yüzdesi, iki ondalık (FX-26)."""
+        return _rate(self.complete, self.finished_details)
 
 
 class _Tally:
@@ -387,13 +393,15 @@ class StatusService:
         totals: List[TournamentSummary] = store.events.summary() if table_rows else []
 
         known: Dict[Optional[int], TournamentSummary] = {row.tournament_id: row for row in totals}
-        matches = self._match_counts(totals, finished_only)
+        unfinished = self._unfinished_details(totals)
+        matches = self._match_counts(totals, finished_only, unfinished)
         listed, season_total = self._season_counts(table_rows, known, requested)
 
         wanted: List[Optional[int]] = [row.tournament_id for row in totals]
         wanted += [tid for tid in requested if tid not in known]
         tournaments = tuple(
-            self._counts(tid, known.get(tid), matches.get(tid, 0), listed.get(tid, 0)) for tid in wanted)
+            self._counts(tid, known.get(tid), matches.get(tid, 0), listed.get(tid, 0), unfinished.get(tid, 0))
+            for tid in wanted)
 
         newest = max((row.updated_at for row in totals if row.updated_at is not None), default=None)
         fingerprint: Fingerprint = (tuple(sorted((str(k), int(v)) for k, v in table_rows.items())), newest)
@@ -476,10 +484,12 @@ class StatusService:
             row = state.event
             counts = events.setdefault(row.season_id, [0, 0, 0])
             seasons.setdefault(row.season_id, {})
+            finished = row.status_class in _FINISHED
             counts[0] += 1
-            counts[1] += 1 if row.status_class in _FINISHED else 0
+            counts[1] += 1 if finished else 0
             if row.has_event_payload:
                 counts[2] += 1
+            if row.has_event_payload and finished:
                 tallies.setdefault(row.season_id, _Tally()).add(
                     planning.unresolved_slice_keys(state, threshold=threshold))
         out: List[SeasonCounts] = []
@@ -493,7 +503,7 @@ class StatusService:
             tally = tallies.get(season_id, _Tally())
             out.append(SeasonCounts(
                 season_id=season_id, events=number[0], finished=number[1], details=number[2],
-                complete=tally.complete,
+                finished_details=tally.matches, complete=tally.complete,
                 missing=dict(sorted(tally.missing.items(), key=lambda item: _slice_rank(item[0]))),
                 schedule_fetched_at=fetched,
             ))
@@ -503,7 +513,7 @@ class StatusService:
 
     @staticmethod
     def _counts(tournament_id: Optional[int], row: Optional[TournamentSummary], matches: int,
-                listed: int) -> TournamentCounts:
+                listed: int, unfinished_details: int = 0) -> TournamentCounts:
         if row is None:
             return TournamentCounts(tournament_id, seasons=listed)
         return TournamentCounts(
@@ -515,21 +525,31 @@ class StatusService:
             seasons=listed,
             seasons_with_events=row.seasons,
             last_update=row.updated_at if row.with_payload else None,
+            # Özet ve bitmemiş maçların geçişi ayrı anlık görüntülerden okur: sayı sınırlarını aşmasın
+            finished_details=max(0, min(row.finished, row.with_payload - unfinished_details)),
         )
 
-    def _match_counts(self, totals: List[TournamentSummary], finished_only: bool) -> Dict[Optional[int], int]:
+    def _unfinished_details(self, totals: List[TournamentSummary]) -> Dict[Optional[int], int]:
         """
-        Turnuva başına `matches`. Ayar kapalıyken bütün maçlar; açıkken bitmiş olanlar ve, bitmemiş olduğu
-        halde detayı indirilmiş olanlar. İkinciler katalogdan tek geçişte okunur ve turnuvalarına dağıtılır
-        (turnuvasız maçlar dahil); böyle bir maçı olabilecek turnuva yoksa hiç sorulmaz. Sayıları azdır:
-        ayar açıkken bitmemiş bir maçın detayı ancak tek maç indirmesiyle ya da ayar kapalıyken yazılır.
+        Turnuva başına bitmemiş olduğu halde detayı indirilmiş maç sayısı. Katalogdan tek geçişte okunur ve
+        turnuvalarına dağıtılır (turnuvasız maçlar dahil); böyle bir maçı olabilecek turnuva yoksa hiç sorulmaz.
         """
-        if not finished_only:
-            return {row.tournament_id: row.events for row in totals}
         unfinished: Dict[Optional[int], int] = {}
         if any(row.with_payload and row.events > row.finished for row in totals):
             for event in self._store.events.iter(EventQuery(status_classes=_NOT_FINISHED, has_details=True)):
                 unfinished[event.tournament_id] = unfinished.get(event.tournament_id, 0) + 1
+        return unfinished
+
+    @staticmethod
+    def _match_counts(totals: List[TournamentSummary], finished_only: bool,
+                      unfinished: Mapping[Optional[int], int]) -> Dict[Optional[int], int]:
+        """
+        Turnuva başına `matches`. Ayar kapalıyken bütün maçlar; açıkken bitmiş olanlar ve, bitmemiş olduğu
+        halde detayı indirilmiş olanlar (`unfinished`). Sayıları azdır: ayar açıkken bitmemiş bir maçın detayı
+        ancak tek maç indirmesiyle, takım ya da maç takibiyle ya da ayar kapalıyken yazılır.
+        """
+        if not finished_only:
+            return {row.tournament_id: row.events for row in totals}
         # Özet ve bu geçiş ayrı anlık görüntülerden okur; arada yazan olduysa sayı turnuvanın sınırını aşmasın
         return {row.tournament_id: row.finished + min(unfinished.get(row.tournament_id, 0), row.events - row.finished)
                 for row in totals}

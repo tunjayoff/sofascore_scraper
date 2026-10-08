@@ -4,13 +4,15 @@ import SettingsScreen from '@/screens/settings/SettingsScreen.vue'
 import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
 import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
 import { followName } from '@/screens/follows/followText'
+import FollowDetailScreen from '@/screens/follows/FollowDetailScreen.vue'
+import { followCoverage, leagueCoverage } from '@/screens/follows/followCoverage'
 import { resetSports } from '@/app/sports'
-import { resetNames } from '@/screens/events/eventText'
+import { needsData, resetNames } from '@/screens/events/eventText'
 import { authNeeded } from '@/lib/auth'
 import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import { flush, mockFetch } from './helpers'
-import { axeViolations, event, mountScreen, setting, settingsDoc, sportWithOdds, status } from './v1'
+import { axeViolations, event, follow, mountScreen, setting, settingsDoc, sportWithOdds, status } from './v1'
 
 /**
  * FX-26: the findings of the live validation of 2026-10-08 outside the match header (M1 to M4, M12 to M17;
@@ -78,6 +80,64 @@ describe('follow names with "/" (M4)', () => {
     ;({ w } = await mountScreen(FollowEditorScreen, `/follows/new?kind=tournament&id=2391&name=${encodeURIComponent('ATP/WTA United Cup')}&sport=tennis`, '/follows/new'))
     await flush()
     expect((w.find('[data-testid="editor-name"]').element as HTMLInputElement).value).toBe('ATP – WTA United Cup')
+  })
+})
+
+describe('coverage counts finished matches only, for every kind of follow (M12, M12b)', () => {
+  const ev = (id: number, cls: string, source: 'event' | 'listing') =>
+    event({ id, status: { type: cls === 'completed' ? 'finished' : 'notstarted', code: cls === 'completed' ? 100 : 0, description: '', class: cls as never }, quality: { ...event().quality, source } })
+  // like the Celtics' page: two played matches with details, one played without, three fixtures already read
+  const TEAM = [ev(1, 'completed', 'event'), ev(2, 'completed', 'event'), ev(3, 'completed', 'listing'), ev(4, 'not_started', 'event'), ev(5, 'not_started', 'event'), ev(6, 'not_started', 'listing')]
+
+  it('a team: upcoming fixtures are neither covered nor missing', async () => {
+    mockFetch({ 'GET /api/v1/events': list(TEAM) })
+    expect(await followCoverage({ kind: 'team', entity_id: 3422 })).toEqual({ matches: 3, details: 2, coverage: 66.7, more: false })
+  })
+
+  it('a single match not played yet has no finished match; a played one is covered', async () => {
+    mockFetch({ 'GET /api/v1/events/7': { data: ev(7, 'not_started', 'event') }, 'GET /api/v1/events/8': { data: ev(8, 'completed', 'event') } })
+    expect(await followCoverage({ kind: 'event', entity_id: 7 })).toEqual({ matches: 0, details: 0, coverage: 0, more: false })
+    expect(await followCoverage({ kind: 'event', entity_id: 8 })).toEqual({ matches: 1, details: 1, coverage: 100, more: false })
+  })
+
+  it('a league: finished_details of finished matches (EHF: 29 finished, 43 detailed of which 14 upcoming)', () => {
+    expect(leagueCoverage({ finished: 29, finished_details: 29, matches: 43, details: 43, coverage: 100 })).toEqual({ matches: 29, details: 29, coverage: 100, more: false })
+    expect(leagueCoverage({ finished: 29, finished_details: 20, matches: 43, details: 34, coverage: 79.1 }).coverage).toBe(69)
+    // an older server without the field: its own numbers
+    expect(leagueCoverage({ finished: 29, matches: 43, details: 43, coverage: 100 } as never)).toEqual({ matches: 43, details: 43, coverage: 100, more: false })
+  })
+
+  it('a team’s page: the rule in the facts, "not played" in its list; a match not played yet says so', async () => {
+    mockFetch({
+      'GET /api/v1/sports': list([]),
+      'GET /api/v1/tournaments': list([]),
+      'GET /api/v1/follows/team:3422': { data: follow({ id: 'team:3422', kind: 'team', entity_id: 3422, name: 'Boston Celtics', sport: 'basketball' }) },
+      'GET /api/v1/jobs': list([]),
+      'GET /api/v1/events': list(TEAM),
+      'GET /api/v1/status': { data: status() },
+    })
+    ;({ w } = await mountScreen(FollowDetailScreen, '/follows/team/3422', '/follows/:kind/:id'))
+    await flush()
+    await flush()
+    expect(w.find('[data-testid="coverage"]').text()).toContain(t('ui.followDetail.coverageText', { details: '2', matches: '3' }))
+    expect(w.findAll('[data-testid="not-played"]').length).toBeGreaterThan(0)
+    w.unmount()
+    mockFetch({
+      'GET /api/v1/sports': list([]),
+      'GET /api/v1/follows/event:7': { data: follow({ id: 'event:7', kind: 'event', entity_id: 7, name: 'A – B' }) },
+      'GET /api/v1/jobs': list([]),
+      'GET /api/v1/events/7': { data: ev(7, 'not_started', 'event') },
+      'GET /api/v1/status': { data: status() },
+    })
+    ;({ w } = await mountScreen(FollowDetailScreen, '/follows/event/7', '/follows/:kind/:id'))
+    await flush()
+    await flush()
+    expect(w.find('[data-testid="coverage-none"]').text()).toBe(t('ui.followDetail.noFinished'))
+  })
+
+  it('a match not played yet needs no "Fetch missing data"', () => {
+    expect(needsData(ev(4, 'not_started', 'event'))).toBe(false)
+    expect(needsData({ ...ev(3, 'completed', 'listing') })).toBe(true)
   })
 })
 

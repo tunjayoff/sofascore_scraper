@@ -159,6 +159,10 @@ class TournamentSummary(BaseModel):
     seasons_with_events: int
     coverage: float = Field(description="details / matches in percent, one decimal; 0 without matches.")
     last_update_utc: Optional[str] = Field(default=None, description="Newest change of a stored payload.")
+    finished_details: int = Field(
+        default=0, description="Finished events with a stored event payload. A follow's coverage is "
+                               "finished_details / finished: an event not played yet is not missing (FX-26).",
+    )
 
 
 class DiskSummary(BaseModel):
@@ -547,6 +551,7 @@ def data_summary(store: "Store", followed: Mapping[int, str]) -> DataSummary:
                 matches=t.matches, details=t.details, events=t.events, finished=t.finished,
                 seasons=t.seasons, seasons_with_events=t.seasons_with_events, coverage=t.coverage,
                 last_update_utc=utc_text(t.last_update) if t.last_update is not None else None,
+                finished_details=t.finished_details,
             )
             for t in data.tournaments
         ],

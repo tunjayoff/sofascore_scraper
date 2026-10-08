@@ -72,8 +72,12 @@ export function summaryText(s: SliceSummary | null | undefined): string | null {
   return `${s.ok + s.empty}/${s.selected}`
 }
 
-/** True when a selected slice is not stored yet or failed (the event needs "Fetch missing data"). */
-export function needsData(e: Pick<EventListItem, 'slices_summary' | 'quality'>): boolean {
+/**
+ * True when a selected slice is not stored yet or failed (the event needs "Fetch missing data"). A match not
+ * played yet misses nothing: its statistics and line-ups come after it (FX-26, M12b).
+ */
+export function needsData(e: Pick<EventListItem, 'slices_summary' | 'quality' | 'status'>): boolean {
+  if (e.status.class === 'not_started' && e.quality.source === 'event') return false
   if (e.quality.source === 'listing') return true
   const s = e.slices_summary
   return !!s && (s.error > 0 || s.ok + s.empty < s.selected)

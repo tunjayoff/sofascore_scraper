@@ -301,6 +301,7 @@ defineExpose({ reload: list.load })
       <template #cell-data="{ row }">
         <span class="u-num inline-flex items-center gap-1" :title="row.slices_summary ? t('ui.events.dataTitle', { ok: row.slices_summary.ok, empty: row.slices_summary.empty, error: row.slices_summary.error, selected: row.slices_summary.selected }) : undefined">
           <template v-if="row.quality.source === 'listing'"><span class="u-muted">{{ t('ui.events.listingOnly') }}</span></template>
+          <template v-else-if="row.status.class === 'not_started'"><span class="u-muted" data-testid="not-played">{{ t('ui.events.notPlayed') }}</span></template>
           <template v-else>{{ summaryText(row.slices_summary) ?? '—' }}</template>
           <span v-if="row.slices_summary?.error" role="img" style="color: var(--warn-fg)" :aria-label="t('ui.events.failedSlices', { n: row.slices_summary.error })"><UiIcon name="alert" :size="14" /></span>
         </span>
