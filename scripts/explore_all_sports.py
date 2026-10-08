@@ -21,9 +21,17 @@ player, tournament, search, ...; hangi sayfanın/sekmenin hangi isteği tetikled
     fill   {selector, text, sport, page_type, ...}     bir alana yazar (arama), sonra bekler
     links  {pattern?}                                  sayfadaki <a href> listesi (regex süzgeçli)
     text   {limit?}                                    görünen metin (sekme adlarını sayfadan okumak için)
+    probe  {hold?}                                     kesici öz denetimi (bütçe harcamaz, ağa çıkmaz; aşağıda)
     stats  {} / quit {}
 Her gezinti komutu, o adımda ilk kez görülen pattern'leri (`new_patterns`) döndürür: keşifte derinleşme
-ölçütü "yeni pattern çıkıyor mu".
+ölçütü "yeni pattern çıkıyor mu". Adım sayaçları da döner: `page_requests` (gönderilen), `step_gone` (sırada
+beklerken sayfası değiştiği için ölen, gönderilmeyen) ve `step_intercept_errors` (yanıtlanamayan); ikincisi 0
+değilse adım bozuktur.
+
+Öz denetim (`probe`, `serve` açılışta da bir kez çalıştırır ve sonucu "ready" satırına yazar): sayfadan
+`https://explorer-probe.invalid/` adresine bir fetch atılır; kesici onu `hold` sn (varsayılan 2) tutar ve yerelde
+yanıtlar. `.invalid` hiçbir zaman çözülmez: kesici çalışmasa bile istek makineden çıkmaz. `ok: false` ise kesici
+bekletilen isteği yanıtlayamıyor demektir; bütçe harcanmadan durulur.
 
 Kurallar (talimat):
   - API keşfi pasif: sayfanın attığı tüm XHR/fetch/EventSource/WebSocket trafiği (response, requestfailed,
@@ -38,6 +46,17 @@ Kurallar (talimat):
     saniyede yüzlerce Route yaratınca kilitte sıra bekleyen Route'lar toplanıyor, istek ne gönderiliyor ne
     kaydediliyordu ("The object has been collected to prevent unbounded heap growth"). Bekleyen CDP isteği
     yalnızca bir kimlik dizgisidir: toplanacak bir nesne yoktur.
+    FX-29b: sayfa sırada istek varken yeni bir belgeye geçerse (SofaScore `/football/...` adresini ~0,8 sn sonra
+    istemci tarafında `/tr/football/...` adresine yeniden yükler) eski belgenin bekleyen istekleri Chromium'da
+    sessizce ölür: sayfaya da Network olaylarına da hata düşmez, sonradan verilen continueRequest "Invalid
+    InterceptionId" ile döner, istek hiç gönderilmez. Eskiden her ölü istek yine de sırasını (1 sn) yiyordu ve
+    yeni belgenin istekleri adım bitene kadar onların arkasında kalıp düşürülüyordu (2026-10-09 canlı: 1 gönderim,
+    29 hata). Şimdi sıradaki isteğin Chromium'da hâlâ durduğu sıra alınmadan hemen önce ve sıradan sonra yan
+    etkisiz bir çağrıyla (Fetch.getResponseBody: canlı istekte "Can only get response body...", ölüde "Invalid
+    InterceptionId") denetlenir; ölü istek "gone" sayılır, sıra almaz, yanıtlanmaz. Nedeni olaylardan yazılır
+    (Page.frameNavigated ile yeni loaderId, çerçevenin kalkması, Network.loadingFailed). Chromium aynı isteği
+    yeniden durdurursa (aynı networkId) sırası korunur, bir kez gönderilir. Adım bittiğinde sıradakiler de sıra
+    almadan düşürülür.
   - Sayfa gezintisi/tıklama ≥ 5 sn arayla. Görseller ağa gitmeden 1x1 boş GIF ile yanıtlanır (hata alan görsel
     yeniden denemesiyle istek seli yaratmasın), medya ve font istekleri iptal edilir.
   - Bütçe (koşu başına): varsayılan 5.000 API isteği ya da 6 saat; aşılınca API istekleri iptal edilir.
@@ -51,6 +70,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import datetime as dt
 import glob
 import json
@@ -58,8 +78,9 @@ import os
 import re
 import sys
 import time
+from collections import OrderedDict
 from typing import Any, Coroutine, Dict, List, Optional, Pattern
-from urllib.parse import quote, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 os.environ.setdefault("LOG_LEVEL", "WARNING")
 os.environ.setdefault(
@@ -91,8 +112,40 @@ REDACTED = "<redacted>"
 CONNECT_SECRET_KEYS = ("auth_token", "jwt", "sig", "nkey", "pass", "user", "token")
 INFO_SECRET_KEYS = ("client_ip",)
 
-# Kesicinin kararları: gönder (sayılmaz), gönder (API, sayıldı), boş görsel, iptal (engel), iptal (boşta)
-SEND, SEND_API, BLANK, BLOCK, DROP = "send", "send-api", "blank", "block", "drop"
+# Kesicinin kararları: gönder (sayılmaz), gönder (API, sayıldı), boş görsel, iptal (engel), iptal (boşta),
+# yanıtlanmaz (istek beklerken öldü), öz denetim (yerelde yanıtlanır)
+SEND, SEND_API, BLANK, BLOCK, DROP, GONE, PROBE = "send", "send-api", "blank", "block", "drop", "gone", "probe"
+# Öz denetim isteğinin adresi: .invalid hiçbir zaman çözülmez (RFC 6761), kesici çalışmasa da istek makineden çıkmaz
+PROBE_HOST = "explorer-probe.invalid"
+PROBE_JS = """async (url) => {
+    try {
+        const r = await fetch(url, {cache: "no-store"});
+        return "ok:" + await r.text();
+    } catch (e) {
+        return "error:" + e;
+    }
+}"""
+# Yanıt satırı için ham başlık ve gövde okumasının süre sınırı (sn)
+RESPONSE_READ_TIMEOUT = 15.0
+# Network.requestWillBeSent'ten (çerçeve, belge) bilgisi tutulan, henüz durdurulmamış istek sayısı üst sınırı
+ORIGINS_KEPT = 2000
+
+
+class Held:
+    """Sıra bekleyen SofaScore isteği. Chromium aynı isteği yeniden durdurursa `rid` en yeni kimliktir."""
+
+    __slots__ = ("cdp", "rid", "url", "network_id", "frame_id", "loader_id", "paused_at", "gone")
+
+    def __init__(self, cdp: Any, rid: str, url: str, network_id: Optional[str], frame_id: Optional[str],
+                 loader_id: Optional[str]) -> None:
+        self.cdp = cdp
+        self.rid = rid
+        self.url = url
+        self.network_id = network_id
+        self.frame_id = frame_id
+        self.loader_id = loader_id
+        self.paused_at = time.time()
+        self.gone: Optional[str] = None  # olayların bildirdiği ölüm nedeni; karar _alive denetimidir
 
 
 def utc_now() -> str:
@@ -266,6 +319,16 @@ class Explorer:
         self.blocked = 0
         self.idle_dropped = 0
         self.intercept_errors = 0
+        self.gone = 0  # sıra beklerken ölen (sayfası değişen ya da sayfada iptal edilen) istekler: gönderilmedi
+        self.restarts = 0  # Chromium'un aynı isteği yeniden durdurması (aynı networkId): sırası korundu
+        # Sıra bekleyen istekler (networkId → Held); çerçevelerin güncel belgesi (frameId → loaderId); yerine
+        # yenisi gelmiş belgeler (loaderId); henüz durdurulmamış isteklerin (çerçeve, belge) bilgisi
+        self._waiting: Dict[str, Held] = {}
+        self._documents: Dict[str, str] = {}
+        self._replaced: "OrderedDict[str, None]" = OrderedDict()
+        self._origins: "OrderedDict[str, tuple]" = OrderedDict()
+        self._probes: Dict[int, Dict[str, Any]] = {}
+        self._step_base = (0, 0, 0)
         self.started = time.time()
         self.last_nav = 0.0
         self.last_api = 0.0
@@ -358,6 +421,8 @@ class Explorer:
             "blocked": self.blocked,
             "idle_dropped": self.idle_dropped,
             "intercept_errors": self.intercept_errors,
+            "gone": self.gone,
+            "restarts": self.restarts,
             "elapsed_min": round((time.time() - self.started) / 60, 1),
             "over_budget": self.over_budget(),
         }
@@ -382,28 +447,134 @@ class Explorer:
     async def intercept(self, page: Any) -> None:
         """
         Sayfanın görsel/medya/font ve XHR/fetch/EventSource isteklerini CDP Fetch alanında durdurur; her biri
-        on_paused'da tam bir kez yanıtlanır (devam, boş görsel ya da iptal). Network.enable yalnızca service
-        worker'ı atlamak için gerekir (setBypassServiceWorker onsuz etkisizdir); tamponları küçük tutulur.
+        on_paused'da en fazla bir kez yanıtlanır (devam, boş görsel ya da iptal; beklerken ölen istek yanıtlanmaz).
+        Network.enable service worker'ı atlamak (setBypassServiceWorker onsuz etkisizdir) ve sıradaki isteğin
+        hangi belgeden geldiğini (loaderId) ya da sayfada iptal edildiğini görmek için; Page.enable belge
+        değişimini (frameNavigated) görmek için. Tamponlar küçük tutulur.
         """
         cdp = await page.context.new_cdp_session(page)
         cdp.on("Fetch.requestPaused", lambda ev: self._spawn(self.on_paused(cdp, ev)))
+        cdp.on("Network.requestWillBeSent", self.on_request_will_be_sent)
+        cdp.on("Network.loadingFailed", self.on_loading_failed)
+        cdp.on("Page.frameNavigated", self.on_frame_navigated)
+        cdp.on("Page.frameDetached", self.on_frame_detached)
         await cdp.send("Network.enable", {"maxTotalBufferSize": 1_000_000, "maxResourceBufferSize": 100_000})
         await cdp.send("Network.setBypassServiceWorker", {"bypass": True})
+        await cdp.send("Page.enable")
         await cdp.send("Fetch.enable", {"patterns": [
             {"urlPattern": "*", "resourceType": t, "requestStage": "Request"} for t in CDP_TYPES
         ]})
         self.cdp = cdp
 
-    async def _take_slot(self) -> None:
-        async with self._slot_lock:
-            await asyncio.to_thread(rc._wait_rate_slot)
+    # Sıradaki isteğin yaşamı. Chromium, belgesi değişen (yeni belge, kalkan çerçeve) isteği sessizce bırakır:
+    # ne sayfaya ne Network olaylarına hata düşer, continueRequest yalnızca "Invalid InterceptionId" döner. Karar
+    # sıra alınmadan hemen önce ve sıradan sonra verilir (_alive): ölü istek sıra almaz, yanıtlanmaz, gönderilmez.
+    # Olaylar (belge değişimi, çerçevenin kalkması, sayfanın iptali) yalnızca ölümün nedenini kaydetmek içindir.
 
-    async def gate(self, url: str, resource_type: str) -> str:
+    def _is_api(self, url: str, resource_type: str) -> bool:
+        return resource_type in TRAFFIC_TYPES and bool(self.sofa_host.search(urlparse(url).hostname or ""))
+
+    def on_request_will_be_sent(self, ev: Dict[str, Any]) -> None:
+        if CDP_TYPES.get(ev.get("type") or "") not in TRAFFIC_TYPES:
+            return  # görsel seli vb.: tutulmaz
+        nid = ev.get("requestId")
+        origin = (ev.get("frameId"), ev.get("loaderId"))
+        held = self._waiting.get(nid) if nid else None
+        if held is not None:
+            held.frame_id, held.loader_id = origin
+            self._check_document(held)
+        elif nid and ev.get("redirectResponse") is None:
+            self._origins[nid] = origin
+            while len(self._origins) > ORIGINS_KEPT:
+                self._origins.popitem(last=False)
+
+    def on_loading_failed(self, ev: Dict[str, Any]) -> None:
+        nid = ev.get("requestId")
+        self._origins.pop(nid, None)
+        held = self._waiting.get(nid) if nid else None
+        if held is not None:  # sayfa isteği sıradayken iptal etti
+            reason = ev.get("errorText") or "failed"
+            if ev.get("blockedReason"):
+                reason += f" ({ev['blockedReason']})"
+            self._mark_gone(held, f"failed while queued: {reason}")
+
+    def on_frame_navigated(self, ev: Dict[str, Any]) -> None:
+        frame = ev.get("frame") or {}
+        fid, lid = frame.get("id"), frame.get("loaderId")
+        if not fid or not lid:
+            return
+        old = self._documents.get(fid)
+        self._documents[fid] = lid
+        if old and old != lid:
+            self._replaced[old] = None
+            while len(self._replaced) > ORIGINS_KEPT:
+                self._replaced.popitem(last=False)
+            for held in list(self._waiting.values()):
+                self._check_document(held)
+
+    def on_frame_detached(self, ev: Dict[str, Any]) -> None:
+        fid = ev.get("frameId")
+        self._documents.pop(fid, None)
+        for held in list(self._waiting.values()):
+            if held.frame_id == fid:
+                self._mark_gone(held, "its frame was detached")
+
+    def _check_document(self, held: Held) -> None:
+        # Yalnızca yerine yenisi gelmiş belge "eski"dir: henüz frameNavigated'ı işlenmemiş yeni belgenin isteği
+        # (sıralama yarışı) bilinmeyen loaderId taşır ve beklemeye devam eder
+        if held.loader_id and held.loader_id in self._replaced:
+            self._mark_gone(held, "the page loaded a new document")
+
+    def _mark_gone(self, held: Held, reason: str) -> None:
+        if held.gone is None:
+            held.gone = reason
+
+    @staticmethod
+    async def _alive(cdp: Any, rid: str) -> bool:
+        """
+        Bekletilen istek Chromium'da hâlâ duruyor mu? Request aşamasındaki canlı istekte Fetch.getResponseBody yan
+        etkisiz bir hata verir ("Can only get response body on HeadersReceived pattern matched requests"), ölmüş
+        istekte "Invalid InterceptionId". Başka her durumda canlı sayılır (gönderim denenir, eski davranış).
+        """
+        try:
+            await cdp.send("Fetch.getResponseBody", {"requestId": rid})
+        except Exception as e:
+            return "Invalid InterceptionId" not in str(e)
+        return True
+
+    def _log_gone(self, held: Held, slot_used: bool) -> None:
+        self.gone += 1
+        self._append("pages.jsonl", {"ts": round(time.time(), 3), "op": "request-gone", "url": self._safe(held.url)[:200],
+                                     "reason": held.gone, "waited_s": round(time.time() - held.paused_at, 2),
+                                     "slot_used": slot_used})
+
+    async def _take_slot(self, held: Optional[Held] = None) -> str:
+        """
+        Kilitten sıra alır (bu süreçteki istekler FIFO): "slot". Sırası gelen istek bu arada öldüyse ("gone") ya da
+        komut bittiyse ("idle") sıra alınmaz: ölü ya da düşürülecek istek kimsenin aralığını yemez. Sıra beklenirken
+        ölen istek "gone-after-slot" (sıra kullanıldı, istek gönderilmez).
+        """
+        async with self._slot_lock:
+            if held is not None:
+                if not await self._alive(held.cdp, held.rid):
+                    self._mark_gone(held, "dropped by Chromium before its turn")
+                    return "gone"
+                if not self.active:
+                    return "idle"
+            await asyncio.to_thread(rc._wait_rate_slot)
+        if held is not None and not await self._alive(held.cdp, held.rid):
+            self._mark_gone(held, "dropped by Chromium while it waited for its slot")
+            return "gone-after-slot"
+        return "slot"
+
+    async def gate(self, url: str, resource_type: str, held: Optional[Held] = None) -> str:
         """Durdurulan isteğin kararı. SofaScore API isteği ancak kilitten sıra alınca ve sayılınca gönderilir."""
         if resource_type in BLOCKED_TYPES:
             self.blocked += 1
             return BLANK if resource_type == "image" else BLOCK
         host = urlparse(url).hostname or ""
+        if host == PROBE_HOST:
+            return PROBE
         if resource_type not in TRAFFIC_TYPES or not self.sofa_host.search(host):
             return SEND
         # Komutlar arasında sayfa kendi kendine sorgulamaya devam eder (canlı yenileme, tembel yükleme):
@@ -414,8 +585,11 @@ class Explorer:
         if self.over_budget():
             self.blocked += 1
             return BLOCK
-        await self._take_slot()
-        if not self.active:  # sıra beklerken komut bitti: gönderme
+        took = await self._take_slot(held)
+        if took in ("gone", "gone-after-slot"):  # sıra beklerken sayfası değişti ya da sayfa iptal etti: gönderilmez
+            self._log_gone(held, slot_used=took == "gone-after-slot")
+            return GONE
+        if took != "slot" or not self.active:  # sıra beklerken komut bitti: gönderme
             self.idle_dropped += 1
             return DROP
         if self.over_budget():  # sırada bekleyenler bütçeyi aşmasın
@@ -432,11 +606,38 @@ class Explorer:
         rid = ev["requestId"]
         url = (ev.get("request") or {}).get("url") or ""
         resource_type = CDP_TYPES.get(ev.get("resourceType") or "", "other")
+        nid = ev.get("networkId")
+        waiting = self._waiting.get(nid) if nid else None
+        if waiting is not None:
+            # Chromium sıradaki isteği yeniden durdurdu (aynı istek, yeni kimlik; eskisi geçersiz): sırası korunur,
+            # sırası gelince en yeni kimlik yanıtlanır; ikinci bir sıra ya da sayım yok
+            waiting.rid = rid
+            self.restarts += 1
+            return
+        held = None
+        if not ev.get("redirectedRequestId") and self._is_api(url, resource_type):
+            # networkId'siz istek de olur (sayfanın denetçisi görmemiş: kapanan belgenin son istekleri gibi);
+            # canlılık denetimi onun için de yapılır, yalnızca yeniden durdurma eşleştirmesi networkId ister
+            frame_id, loader_id = self._origins.pop(nid, (ev.get("frameId"), None)) if nid else (ev.get("frameId"), None)
+            held = Held(cdp, rid, url, nid, frame_id or ev.get("frameId"), loader_id)
+            if nid:
+                self._waiting[nid] = held
+            self._check_document(held)
         try:
-            verdict = await self.gate(url, resource_type)
+            verdict = await self.gate(url, resource_type, held)
         except Exception as e:  # karar verilemedi (kilit dosyası vb.): istek gönderilmez
             verdict = BLOCK
             self._intercept_error(url, "gate", e)
+        finally:
+            if held is not None and nid and self._waiting.get(nid) is held:
+                del self._waiting[nid]
+        if verdict == GONE:
+            return
+        if held is not None:
+            rid = held.rid
+        if verdict == PROBE:
+            await self._answer_probe(cdp, rid, url)
+            return
         try:
             if verdict in (SEND, SEND_API):
                 await cdp.send("Fetch.continueRequest", {"requestId": rid})
@@ -449,9 +650,37 @@ class Explorer:
             else:
                 await cdp.send("Fetch.failRequest", {"requestId": rid, "errorReason": "BlockedByClient"})
         except Exception as e:  # istek bu arada iptal edildi (sayfa değişti) ya da oturum kapandı
+            if held is not None and verdict in (DROP, BLOCK) and "Invalid InterceptionId" in str(e):
+                # Zaten gönderilmeyecek istek o arada ölmüş: kesici hatası değil
+                self._mark_gone(held, "dropped by Chromium before it was answered")
+                self._log_gone(held, slot_used=False)
+                return
             if verdict == SEND_API:
                 self.api_count -= 1  # gönderilemedi: bütçeden düşülür (sıra yine de kullanıldı)
             self._intercept_error(url, verdict, e)
+
+    async def _answer_probe(self, cdp: Any, rid: str, url: str) -> None:
+        """Öz denetim isteği: `hold` sn tutulur, yerelde yanıtlanır (ağa gitmez, sayılmaz, adımdan bağımsız)."""
+        try:
+            n = int((parse_qs(urlparse(url).query).get("n") or ["0"])[0])
+        except ValueError:
+            n = 0
+        state = self._probes.setdefault(n, {"hold": 0.0})
+        state["paused"] = True
+        await asyncio.sleep(float(state.get("hold") or 0.0))
+        state["held_s"] = round(float(state.get("hold") or 0.0), 2)
+        try:
+            await cdp.send("Fetch.fulfillRequest", {
+                "requestId": rid, "responseCode": 200,
+                "body": base64.b64encode(json.dumps({"probe": n}).encode()).decode(),
+                "responseHeaders": [{"name": "Content-Type", "value": "application/json"},
+                                    {"name": "Access-Control-Allow-Origin", "value": "*"},
+                                    {"name": "Cache-Control", "value": "no-store"}],
+            })
+            state["answered"] = True
+        except Exception as e:
+            state["answered"] = False
+            state["error"] = f"{e.__class__.__name__}: {str(e)[:200]}"
 
     def _intercept_error(self, url: str, stage: str, e: Exception) -> None:
         self.intercept_errors += 1
@@ -525,12 +754,14 @@ class Explorer:
         body: Any = None
         body_error: Optional[str] = None
         if sofa:
+            # Okumalar süre sınırlıdır: sayfa yanıt gelirken başka belgeye geçerse gövde/ham başlık hiç gelmeyebilir
+            # ve bekleyen okuma satırı sonsuza dek yazdırmazdı
             try:
-                headers = await resp.all_headers()
+                headers = await asyncio.wait_for(resp.all_headers(), RESPONSE_READ_TIMEOUT)
             except Exception:
                 pass
             try:
-                body = json.loads(await resp.body())
+                body = json.loads(await asyncio.wait_for(resp.body(), RESPONSE_READ_TIMEOUT))
             except ValueError:  # JSON değil
                 body = None
             except Exception as e:
@@ -696,10 +927,16 @@ class Explorer:
         self.sport = cmd.get("sport") or self.sport
         self.page_type = cmd.get("page_type") or self.page_type
         self.new_patterns = []
+        self._step_base = (self.api_count, self.gone, self.intercept_errors)
+
+    def _step(self) -> Dict[str, int]:
+        """Bu adımın sayaçları: gönderilen, sıra beklerken ölen (gönderilmeyen), yanıtlanamayan istekler."""
+        sent, gone, errors = self._step_base
+        return {"page_requests": self.api_count - sent, "step_gone": self.gone - gone,
+                "step_intercept_errors": self.intercept_errors - errors}
 
     async def goto(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
         self._begin(cmd)
-        before = self.api_count
         await self._gap()
         self.page_url = cmd["url"]
         t0 = time.time()
@@ -718,7 +955,7 @@ class Explorer:
                                          "solved": bool(token)})
             await asyncio.sleep(PAGE_GAP)
         res = {"url": self._safe(self.page.url), "title": await self.page.title(),
-               "page_requests": self.api_count - before, "seconds": round(time.time() - t0, 1), "error": err,
+               **self._step(), "seconds": round(time.time() - t0, 1), "error": err,
                "new_patterns": list(self.new_patterns), **self.stats()}
         self._append("pages.jsonl", {"ts": round(t0, 3), "op": "goto", "sport": self.sport,
                                      "page_type": self.page_type, "requested": cmd["url"], **res})
@@ -727,7 +964,6 @@ class Explorer:
 
     async def click(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
         self._begin(cmd)
-        before = self.api_count
         await self._gap()
         t0 = time.time()
         err = None
@@ -745,7 +981,7 @@ class Explorer:
             err = str(e)[:300]
         if err is None:  # tıklanamadıysa beklemek yalnızca sayfanın arka plan isteklerine bütçe harcar
             await self._settle(float(cmd.get("settle", 6)), float(cmd.get("dwell", 60)))
-        res = {"url": self._safe(self.page.url), "page_requests": self.api_count - before,
+        res = {"url": self._safe(self.page.url), **self._step(),
                "seconds": round(time.time() - t0, 1), "error": err, "new_patterns": list(self.new_patterns),
                **self.stats()}
         self._append("pages.jsonl", {"ts": round(t0, 3), "op": "click", "sport": self.sport,
@@ -755,7 +991,6 @@ class Explorer:
 
     async def fill(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
         self._begin(cmd)
-        before = self.api_count
         await self._gap()
         t0 = time.time()
         err = None
@@ -766,13 +1001,36 @@ class Explorer:
         except Exception as e:
             err = str(e)[:300]
         await self._settle(float(cmd.get("settle", 6)), float(cmd.get("dwell", 60)))
-        res = {"url": self._safe(self.page.url), "page_requests": self.api_count - before,
+        res = {"url": self._safe(self.page.url), **self._step(),
                "seconds": round(time.time() - t0, 1), "error": err, "new_patterns": list(self.new_patterns),
                **self.stats()}
         self._append("pages.jsonl", {"ts": round(t0, 3), "op": "fill", "sport": self.sport,
                                      "page_type": self.page_type, "target": cmd["selector"], "text": cmd["text"], **res})
         self._save_state()
         return res
+
+    async def probe(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Kesici öz denetimi: sayfa `https://explorer-probe.invalid/` adresine fetch atar; kesici onu `hold` sn tutar
+        ve yerelde yanıtlar. Bütçe harcamaz, adımdan bağımsızdır; `.invalid` çözülmediği için istek makineden çıkmaz.
+        `ok`: istek durduruldu, bekletildi, yanıtlandı ve sayfa yanıtı okudu.
+        """
+        hold = max(0.0, min(float(cmd.get("hold", 2.0)), 30.0))
+        n = max(self._probes, default=0) + 1
+        state = self._probes[n] = {"hold": hold}
+        url = f"https://{PROBE_HOST}/probe?n={n}"
+        t0 = time.time()
+        try:
+            seen = await asyncio.wait_for(self.page.evaluate(PROBE_JS, url), hold + 15)
+        except Exception as e:
+            seen = f"evaluate failed: {e.__class__.__name__}: {str(e)[:200]}"
+        expected = "ok:" + json.dumps({"probe": n})
+        res = {"ok": bool(state.get("paused")) and state.get("answered") is True and seen == expected,
+               "paused": bool(state.get("paused")), "answered": state.get("answered"), "held_s": state.get("held_s"),
+               "error": state.get("error"), "page_saw": str(seen)[:200], "seconds": round(time.time() - t0, 1),
+               "page": self._safe(self.page.url)}
+        self._append("pages.jsonl", {"ts": round(t0, 3), "op": "probe", **res})
+        return {**res, **self.stats()}
 
     async def links(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
         anchors = await self.page.evaluate(
@@ -828,7 +1086,12 @@ class Explorer:
 async def serve(ctl: str, ex: Explorer) -> None:
     os.makedirs(ctl, exist_ok=True)
     await ex.start()
-    print("ready", utc_now(), ex.stats(), flush=True)
+    # Öz denetim: kesici bekletilen isteği yanıtlayabiliyor mu (bütçe harcamaz, ağa çıkmaz)
+    check = await ex.probe({"hold": 1.0})
+    self_check = {k: check[k] for k in ("ok", "paused", "answered", "error", "page_saw")}
+    print("ready", utc_now(), {**ex.stats(), "self_check": self_check}, flush=True)
+    if not check["ok"]:
+        print("warning: the interception self-check failed; do not spend budget before `probe` passes", flush=True)
     while True:
         cmds = sorted(glob.glob(os.path.join(ctl, "cmd_*.json")))
         if not cmds:
@@ -842,7 +1105,7 @@ async def serve(ctl: str, ex: Explorer) -> None:
         try:
             if op == "quit":
                 res: Dict[str, Any] = {"ok": True, **ex.stats()}
-            elif op in ("goto", "click", "fill", "links", "text", "pages", "tabs", "listen"):
+            elif op in ("goto", "click", "fill", "links", "text", "pages", "tabs", "listen", "probe"):
                 res = await getattr(ex, op)(cmd)
             elif op == "stats":
                 res = ex.stats()

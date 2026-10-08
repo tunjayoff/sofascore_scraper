@@ -8,6 +8,12 @@ görsellerin yeniden deneme seli saniyede yüzlerce Route yaratınca sırada bek
 gönderiliyor ne kaydediliyordu. Düzeltme: istekler keşif sayfasının CDP oturumunda (Fetch alanı) durdurulur;
 bekleyen istek yalnızca bir kimlik dizgisidir.
 
+FX-29b (2026-10-09 canlı doğrulama): SofaScore `/football/match/...` belgesini ~0,8 sn sonra istemci tarafında
+`/tr/football/match/...` belgesine yeniden yükler. Eski belgenin sırada bekleyen istekleri Chromium'da sessizce ölür
+(ne sayfaya ne patchright'a hata düşer); her biri yine de 1 sn sıra yiyip continueRequest'te "Invalid InterceptionId"
+alıyordu, yeni belgenin istekleri adım bitene kadar arkada kalıyordu (1 gönderim, 29 hata). Düzeltme: sıra alınmadan
+önce ve sonra isteğin canlılığı yan etkisiz bir çağrıyla (Fetch.getResponseBody) denetlenir; ölü istek sıra almaz.
+
 İki katman:
   - Tarayıcısız birim testleri (her CI işinde): kesicinin kararları, her durdurulan isteğin tam bir kez yanıtlanması,
     kilit aralığı, bütçe, koşu başına bütçe (--new-run), yanıt kaydının sağlamlığı ve maskeleme.
@@ -17,6 +23,7 @@ bekleyen istek yalnızca bir kimlik dizgisidir.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import os
 import re
@@ -57,11 +64,16 @@ CLIENT_IP = "203.0.113.77"
 
 
 class FakeCDP:
-    """CDP oturumu: gönderilen komutları kaydeder; `fail_ids` için continueRequest hata verir (iptal edilmiş istek)."""
+    """
+    CDP oturumu: gönderilen komutları kaydeder. `fail_ids`: continueRequest hata verir (iptal edilmiş istek).
+    `dead`: Chromium'un sessizce bıraktığı istekler (her Fetch çağrısı "Invalid InterceptionId"); canlı istekte
+    getResponseBody, Chromium gibi Request aşamasında yan etkisiz bir hata verir.
+    """
 
     def __init__(self, fail_ids=()):
         self.sent = []
         self.fail_ids = set(fail_ids)
+        self.dead = set()
         self.handlers = {}
 
     def on(self, event, handler):
@@ -70,15 +82,21 @@ class FakeCDP:
     async def send(self, method, params=None):
         params = params or {}
         self.sent.append((time.monotonic(), method, params))
-        if method == "Fetch.continueRequest" and params.get("requestId") in self.fail_ids:
+        rid = params.get("requestId")
+        if method.startswith("Fetch.") and rid in self.dead:
+            raise RuntimeError(f"Protocol error ({method}): Invalid InterceptionId.")
+        if method == "Fetch.getResponseBody":
+            raise RuntimeError("Protocol error (Fetch.getResponseBody): Can only get response body on "
+                               "HeadersReceived pattern matched requests.")
+        if method == "Fetch.continueRequest" and rid in self.fail_ids:
             raise RuntimeError("Protocol error (Fetch.continueRequest): Invalid InterceptionId.")
         return {}
 
     def answers(self):
-        """requestId → [yanıt yöntemleri]."""
+        """requestId → [yanıt yöntemleri] (canlılık denetimi yanıt değildir)."""
         out = {}
         for _, method, params in self.sent:
-            if method.startswith("Fetch.") and "requestId" in params:
+            if method.startswith("Fetch.") and method != "Fetch.getResponseBody" and "requestId" in params:
                 out.setdefault(params["requestId"], []).append(method)
         return out
 
@@ -143,8 +161,13 @@ def make_explorer(tmp_path, **kw):
     return ex_mod.Explorer(str(tmp_path / "out"), **kw)
 
 
-def paused(rid, url, resource_type="Fetch"):
-    return {"requestId": rid, "request": {"url": url, "method": "GET"}, "resourceType": resource_type}
+def paused(rid, url, resource_type="Fetch", network_id=None, frame_id=None):
+    ev = {"requestId": rid, "request": {"url": url, "method": "GET"}, "resourceType": resource_type}
+    if network_id:
+        ev["networkId"] = network_id
+    if frame_id:
+        ev["frameId"] = frame_id
+    return ev
 
 
 def read_rows(path):
@@ -230,8 +253,9 @@ async def test_request_queued_when_the_step_ends_is_dropped(tmp_path, rate_file,
     ex.active = True
     release = asyncio.Event()
 
-    async def slow_slot():
+    async def slow_slot(*args):
         await release.wait()
+        return "slot"
 
     monkeypatch.setattr(ex, "_take_slot", slow_slot)
     cdp = FakeCDP()
@@ -260,6 +284,177 @@ async def test_request_cancelled_while_queued_is_logged_and_not_counted(tmp_path
     assert len(rows) == 1 and rows[0]["url"].endswith("/api/v1/event/1") and "InterceptionId" in rows[0]["error"]
 
 
+# --- FX-29b: sıra beklerken ölen istek sıra almaz, yanıtlanmaz, gönderilmez ----------------------------------------
+
+def _recorded_slots(monkeypatch, gap):
+    """Kilitten alınan her sıranın anı (sıra = gerçekten beklenen MIN_REQUEST_GAP)."""
+    monkeypatch.setattr(rc, "MIN_REQUEST_GAP", gap)
+    slots = []
+    real = rc._wait_rate_slot
+
+    def recorded():
+        real()
+        slots.append(time.monotonic())
+
+    monkeypatch.setattr(rc, "_wait_rate_slot", recorded)
+    return slots
+
+
+def _sent_by_page(ex, cdp, rid, url, network_id, loader_id, frame_id="main"):
+    """Sayfanın isteği: önce Network.requestWillBeSent (belgesiyle), sonra Fetch.requestPaused."""
+    ex.on_request_will_be_sent({"requestId": network_id, "type": "Fetch", "frameId": frame_id, "loaderId": loader_id,
+                                "request": {"url": url}})
+    return asyncio.ensure_future(ex.on_paused(cdp, paused(rid, url, network_id=network_id, frame_id=frame_id)))
+
+
+@pytest.mark.asyncio
+async def test_requests_of_a_replaced_document_take_no_slot_and_are_never_sent(tmp_path, rate_file, monkeypatch):
+    """
+    Canlı koşul (2026-10-09): SofaScore `/football/match/...` adresini ~0,8 sn sonra `/tr/football/match/...`
+    belgesine yeniden yükler. Eski belgenin sıradaki istekleri Chromium'da sessizce ölür; eskiden her biri yine de
+    1 sn sıra yiyip continueRequest'te "Invalid InterceptionId" ile düşüyor, yeni belgenin istekleri onların
+    arkasında adım bitene kadar bekliyordu. Şimdi belge değişince sıra almadan bırakılırlar.
+    """
+    slots = _recorded_slots(monkeypatch, 0.3)
+    ex = make_explorer(tmp_path)
+    ex.active = True
+    cdp = FakeCDP()
+    ex.on_frame_navigated({"frame": {"id": "main", "loaderId": "doc1"}})
+    old = [_sent_by_page(ex, cdp, f"old-{i}", f"https://www.fakescore.test/api/v1/event/{i}/lineups", f"n{i}", "doc1")
+           for i in range(5)]
+    await asyncio.sleep(0.1)  # ilki gönderildi, ikincisi kilitte sıra bekliyor
+    cdp.dead.update(f"old-{i}" for i in range(1, 5))  # Chromium eski belgenin bekleyen isteklerini bıraktı
+    ex.on_frame_navigated({"frame": {"id": "main", "loaderId": "doc2"}})  # sayfa yeni belgeye geçti
+    new = [_sent_by_page(ex, cdp, f"new-{i}", f"https://www.fakescore.test/api/v1/event/{i}/statistics", f"m{i}", "doc2")
+           for i in range(2)]
+    await asyncio.gather(*old, *new)
+
+    answers = cdp.answers()
+    assert answers["old-0"] == ["Fetch.continueRequest"]
+    assert not [rid for rid in answers if rid.startswith("old-") and rid != "old-0"]  # ölüler yanıtlanmaz
+    assert answers["new-0"] == answers["new-1"] == ["Fetch.continueRequest"]
+    assert ex.api_count == 3 and ex.gone == 4 and ex.intercept_errors == 0
+    assert len(slots) <= 3 + 1  # en fazla bir sıra (o an kilitte bekleyen) boşa gider
+    gone = [r for r in read_rows(tmp_path / "out" / "pages.jsonl") if r["op"] == "request-gone"]
+    assert len(gone) == 4 and all(r["reason"] == "the page loaded a new document" for r in gone)
+    assert sum(r["slot_used"] for r in gone) <= 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("network_id", ["n1", None])
+async def test_request_dropped_without_any_event_is_found_before_its_slot(tmp_path, rate_file, monkeypatch, network_id):
+    """
+    Canlıda eski belgenin kapanırken attığı isteklerin Network olayı hiç gelmez (belgesi, çoğu zaman networkId'si de
+    bilinmez). Karar olaylara değil, sıra alınmadan hemen önceki canlılık denetimine (Fetch.getResponseBody) dayanır.
+    """
+    slots = _recorded_slots(monkeypatch, 0.2)
+    ex = make_explorer(tmp_path)
+    ex.active = True
+    cdp = FakeCDP()
+    first = asyncio.ensure_future(ex.on_paused(cdp, paused("r0", "https://www.fakescore.test/api/v1/event/0",
+                                                           network_id="n0")))
+    await asyncio.sleep(0.02)
+    cdp.dead.add("r1")
+    await asyncio.gather(first, ex.on_paused(cdp, paused("r1", "https://www.fakescore.test/api/v1/odds/providers/XX/web",
+                                                         network_id=network_id)))
+    assert cdp.answers() == {"r0": ["Fetch.continueRequest"]}
+    assert (ex.api_count, ex.gone, ex.intercept_errors, len(slots)) == (1, 1, 0, 1)
+    row = [r for r in read_rows(tmp_path / "out" / "pages.jsonl") if r["op"] == "request-gone"][0]
+    assert row["reason"] == "dropped by Chromium before its turn" and row["slot_used"] is False
+
+
+@pytest.mark.asyncio
+async def test_request_dropped_while_waiting_for_its_slot_is_not_sent(tmp_path, rate_file, monkeypatch):
+    """Sıra beklenirken ölen istek: sıra kullanılmış olur ama continueRequest denenmez, hata sayılmaz."""
+    _recorded_slots(monkeypatch, 0.3)
+    ex = make_explorer(tmp_path)
+    ex.active = True
+    cdp = FakeCDP()
+    tasks = [asyncio.ensure_future(ex.on_paused(cdp, paused(f"r{i}", f"https://www.fakescore.test/api/v1/event/{i}",
+                                                            network_id=f"n{i}"))) for i in range(2)]
+    await asyncio.sleep(0.1)  # r1 kilitte, sırasını bekliyor
+    cdp.dead.add("r1")
+    await asyncio.gather(*tasks)
+    assert cdp.answers() == {"r0": ["Fetch.continueRequest"]}
+    assert (ex.api_count, ex.gone, ex.intercept_errors) == (1, 1, 0)
+    row = [r for r in read_rows(tmp_path / "out" / "pages.jsonl") if r["op"] == "request-gone"][0]
+    assert row["reason"] == "dropped by Chromium while it waited for its slot" and row["slot_used"] is True
+
+
+@pytest.mark.asyncio
+async def test_request_cancelled_by_the_page_while_queued_takes_no_slot(tmp_path, rate_file, monkeypatch):
+    slots = _recorded_slots(monkeypatch, 0.2)
+    ex = make_explorer(tmp_path)
+    ex.active = True
+    cdp = FakeCDP()
+    tasks = [_sent_by_page(ex, cdp, f"r{i}", f"https://www.fakescore.test/api/v1/event/{i}", f"n{i}", "doc1")
+             for i in range(3)]
+    await asyncio.sleep(0.05)
+    cdp.dead.add("r2")
+    ex.on_loading_failed({"requestId": "n2", "errorText": "net::ERR_ABORTED", "canceled": True})
+    await asyncio.gather(*tasks)
+    assert set(cdp.answers()) == {"r0", "r1"}
+    assert (ex.api_count, ex.gone, ex.intercept_errors, len(slots)) == (2, 1, 0, 2)
+    row = [r for r in read_rows(tmp_path / "out" / "pages.jsonl") if r["op"] == "request-gone"][0]
+    assert row["reason"] == "failed while queued: net::ERR_ABORTED" and row["slot_used"] is False
+
+
+@pytest.mark.asyncio
+async def test_request_paused_again_by_chromium_keeps_its_place_and_is_sent_once(tmp_path, rate_file, monkeypatch):
+    """Chromium aynı isteği (aynı networkId) yeni kimlikle yeniden durdurursa eski kimlik geçersizdir: yenisi bir kez."""
+    _recorded_slots(monkeypatch, 0.2)
+    ex = make_explorer(tmp_path)
+    ex.active = True
+    cdp = FakeCDP()
+    url = "https://www.fakescore.test/api/v1/event/7"
+    tasks = [_sent_by_page(ex, cdp, "other", "https://www.fakescore.test/api/v1/event/6", "n6", "doc1"),
+             _sent_by_page(ex, cdp, "first-try", url, "n7", "doc1")]
+    await asyncio.sleep(0.05)
+    cdp.dead.add("first-try")  # eski kimlik geçersiz
+    await ex.on_paused(cdp, paused("second-try", url, network_id="n7", frame_id="main"))
+    await asyncio.gather(*tasks)
+    assert cdp.answers() == {"other": ["Fetch.continueRequest"], "second-try": ["Fetch.continueRequest"]}
+    assert (ex.api_count, ex.restarts, ex.intercept_errors) == (2, 1, 0)
+
+
+@pytest.mark.asyncio
+async def test_queued_requests_are_dropped_without_a_slot_when_the_step_ends(tmp_path, rate_file, monkeypatch):
+    slots = _recorded_slots(monkeypatch, 0.2)
+    ex = make_explorer(tmp_path)
+    ex.active = True
+    cdp = FakeCDP()
+    tasks = [_sent_by_page(ex, cdp, f"r{i}", f"https://www.fakescore.test/api/v1/event/{i}", f"n{i}", "doc1")
+             for i in range(4)]
+    await asyncio.sleep(0.05)
+    ex.active = False  # komut bitti: sıradakiler hemen, sıra almadan düşer
+    await asyncio.gather(*tasks)
+    answers = cdp.answers()
+    assert answers["r0"] == ["Fetch.continueRequest"]
+    assert sum(1 for rid in ("r1", "r2", "r3") if answers.get(rid) == ["Fetch.failRequest"]) == 3
+    assert ex.idle_dropped == 3 and len(slots) <= 2
+
+
+@pytest.mark.asyncio
+async def test_probe_is_held_and_answered_locally_without_budget(tmp_path, rate_file):
+    """Öz denetim: .invalid adresine giden fetch tutulur ve yerelde yanıtlanır; boştayken de, sayılmadan."""
+    ex = make_explorer(tmp_path)
+    cdp = FakeCDP()
+
+    async def evaluate(js, url):
+        await ex.on_paused(cdp, paused("probe-1", url))
+        body = [p["body"] for _, m, p in cdp.sent if m == "Fetch.fulfillRequest"][-1]
+        return "ok:" + base64.b64decode(body).decode()
+
+    ex.page = type("P", (), {"url": "https://www.fakescore.test/football", "evaluate": staticmethod(evaluate)})()
+    res = await ex.probe({"hold": 0.2})
+    assert res["ok"] is True and res["paused"] and res["answered"] and res["held_s"] == 0.2
+    assert cdp.answers() == {"probe-1": ["Fetch.fulfillRequest"]}
+    headers = {h["name"]: h["value"] for h in cdp.sent[-1][2]["responseHeaders"]}
+    assert headers["Access-Control-Allow-Origin"] == "*"
+    assert (ex.api_count, ex.idle_dropped, ex.blocked) == (0, 0, 0)
+    assert [r for r in read_rows(tmp_path / "out" / "pages.jsonl") if r["op"] == "probe"][0]["ok"] is True
+
+
 @pytest.mark.asyncio
 async def test_start_intercepts_through_cdp_not_context_route(tmp_path, rate_file, monkeypatch):
     """Kesici CDP Fetch'tir: Route nesnesi yaratılmaz (toplanacak nesne yok); service worker atlanır."""
@@ -273,11 +468,12 @@ async def test_start_intercepts_through_cdp_not_context_route(tmp_path, rate_fil
     await ex.start()
 
     methods = [m for _, m, _ in bridge.context.cdp.sent]
-    assert methods == ["Network.enable", "Network.setBypassServiceWorker", "Fetch.enable"]
+    assert methods == ["Network.enable", "Network.setBypassServiceWorker", "Page.enable", "Fetch.enable"]
     patterns = bridge.context.cdp.sent[-1][2]["patterns"]
     assert {p["resourceType"] for p in patterns} == {"Image", "Media", "Font", "XHR", "Fetch", "EventSource"}
     assert all(p["requestStage"] == "Request" for p in patterns)
-    assert "Fetch.requestPaused" in bridge.context.cdp.handlers
+    assert {"Fetch.requestPaused", "Network.requestWillBeSent", "Network.loadingFailed", "Page.frameNavigated",
+            "Page.frameDetached"} <= set(bridge.context.cdp.handlers)
     assert {"response", "requestfailed", "page"} <= set(bridge.context.handlers)
     assert getattr(extra, "closed", False)  # kesicisiz sayfa kalmaz
     assert cs.HOME_URL == "http://quiet.fakescore.test/robots.txt"  # açılış API çağırmayan sayfaya
@@ -685,3 +881,127 @@ async def test_explorer_records_every_request_under_an_image_flood(tmp_path, rat
     assert "page-marker" not in all_output(out)
     assert not [r for r in read_rows(out / "pages.jsonl") if r["op"] in ("route-error", "intercept-error")]
     assert elapsed < 80
+
+
+# --- FX-29b: gerçek tarayıcı, sayfa sırada istek varken yeni belgeye geçiyor ------------------------------------
+
+N_OLD, N_NEW = 8, 4
+REDIRECT_PAGE = """<!doctype html><html><head><title>%(doc)s</title></head><body><script>
+for (let i = 0; i < %(n)d; i++) fetch('/api/v1/event/%(doc)s/' + i).then(r => r.text()).catch(() => null);
+%(redirect)s
+</script></body></html>"""
+
+
+class _RedirectSite(BaseHTTPRequestHandler):
+    """
+    SofaScore'un canlıda yaptığının küçük kopyası: `/football/match` belgesi API isteklerini atar, ~0,3 sn sonra
+    istemci tarafında `/tr/football/match` belgesine yeniden yüklenir; yeni belge kendi isteklerini atar.
+    """
+
+    protocol_version = "HTTP/1.1"
+    hits: list = []
+    lock = threading.Lock()
+
+    def log_message(self, *args):
+        pass
+
+    def do_CONNECT(self):
+        with self.lock:
+            self.hits.append((time.monotonic(), "CONNECT", self.path))
+        self.send_response(403)
+        self.send_header("Content-Length", "0")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+
+    def do_GET(self):
+        parts = urlsplit(self.path)
+        host, path = parts.hostname or "", parts.path
+        with self.lock:
+            self.hits.append((time.monotonic(), host, path))
+        if path == "/football/match":
+            body = REDIRECT_PAGE % {"doc": "old", "n": N_OLD,
+                                    "redirect": "setTimeout(() => location.replace('/tr/football/match'), 300);"}
+            ctype = "text/html; charset=utf-8"
+        elif path == "/tr/football/match":
+            body, ctype = REDIRECT_PAGE % {"doc": "new", "n": N_NEW, "redirect": ""}, "text/html; charset=utf-8"
+        elif path.startswith("/api/"):
+            body, ctype = json.dumps({"event": {"id": 1}, "path": path}), "application/json"
+        else:
+            body, ctype = "User-agent: *", "text/plain"
+        raw = body.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        try:
+            self.wfile.write(raw)
+        except OSError:
+            pass
+
+
+@pytest.mark.browser
+@pytest.mark.asyncio
+async def test_page_reloading_into_a_new_document_does_not_starve_its_requests(tmp_path, rate_file, monkeypatch):
+    """
+    FX-29b canlı koşulu (2026-10-09, `goto` → istemci tarafı `/tr/` yeniden yüklemesi): eski belgenin sıradaki
+    istekleri Chromium'da sessizce ölür (ne sayfaya ne patchright'a hata düşer). Önceki sürüm her birine 1 sıra
+    harcayıp continueRequest'te "Invalid InterceptionId" alıyordu; yeni belgenin istekleri arkada kalıyordu.
+    Beklenen: ölüler sıra almaz, hiçbiri ağa gitmez, yeni belgenin her isteği bir kez gider ve kaydedilir.
+    """
+    patchright = pytest.importorskip("patchright.async_api")
+    slots = _recorded_slots(monkeypatch, 0.5)
+    monkeypatch.setattr(ex_mod, "PAGE_GAP", 0.0)
+    cs = ex_mod.cs
+    monkeypatch.setattr(cs, "HOME_URL", cs.HOME_URL)
+    monkeypatch.setattr(cs, "CAPTCHA_URL", cs.CAPTCHA_URL)
+
+    _RedirectSite.hits = []
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _RedirectSite)
+    server.daemon_threads = True
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    out = tmp_path / "out"
+    try:
+        async with patchright.async_playwright() as p:
+            browser = await p.chromium.launch(headless=True, channel="chromium",
+                                              proxy={"server": f"http://127.0.0.1:{server.server_address[1]}"})
+            try:
+                context = await browser.new_context()
+                await context.add_init_script("window.__probe = 1")
+                page = await context.new_page()
+                await page.goto("http://www.fakescore.test/robots.txt")
+                ex = ex_mod.Explorer(str(out), sofa_host=FAKE_HOST, bridge=_PlaywrightBridge(context, page),
+                                     quiet_url="http://www.fakescore.test/robots.txt")
+                await ex.start()
+                probe = await ex.probe({"hold": 1.0})  # öz denetim: bekletilen istek yerelde yanıtlanır
+                res = await ex.goto({"url": "http://www.fakescore.test/football/match", "sport": "football",
+                                     "page_type": "event", "settle": 2, "dwell": 30})
+                ex.active = False
+                await asyncio.sleep(0.5)
+                await asyncio.gather(*list(ex._tasks))
+            finally:
+                await browser.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+
+    assert probe["ok"] is True and probe["held_s"] == 1.0, probe
+    assert res["url"] == "http://www.fakescore.test/tr/football/match", res
+    hits = list(_RedirectSite.hits)
+    assert not [h for h in hits if "explorer-probe" in str(h[1]) + str(h[2])]  # öz denetim ağa çıkmadı
+    old_hits = [path for _, _, path in hits if path.startswith("/api/v1/event/old/")]
+    new_hits = [path for _, _, path in hits if path.startswith("/api/v1/event/new/")]
+    assert sorted(new_hits) == sorted(f"/api/v1/event/new/{i}" for i in range(N_NEW))  # her biri bir kez
+    assert len(set(old_hits)) == len(old_hits) and len(old_hits) < N_OLD  # ölüler gönderilmedi
+    assert ex.intercept_errors == 0 and res["step_intercept_errors"] == 0, res
+    assert res["page_requests"] == ex.api_count == len(old_hits) + N_NEW  # sayılan = giden
+    assert res["step_gone"] == ex.gone == N_OLD - len(old_hits), res
+    assert len(slots) <= ex.api_count + 1  # ölülere sıra harcanmadı (en fazla o an kilitte bekleyen)
+    rows = read_rows(out / "requests.jsonl")
+    new_rows = [r for r in rows if "/api/v1/event/new/" in r["url"]]
+    assert sorted(r["url"] for r in new_rows) == sorted(
+        f"http://www.fakescore.test/api/v1/event/new/{i}" for i in range(N_NEW))
+    assert all(r["status"] == 200 and r["response_keys"] == ["event", "path"] for r in new_rows), new_rows
+    gone = [r for r in read_rows(out / "pages.jsonl") if r["op"] == "request-gone"]
+    assert len(gone) == ex.gone and all("/api/v1/event/old/" in r["url"] for r in gone)
