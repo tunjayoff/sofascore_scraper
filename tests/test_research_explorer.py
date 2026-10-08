@@ -808,7 +808,10 @@ async def test_explorer_records_every_request_under_an_image_flood(tmp_path, rat
 
     def recorded_slot():
         wait_slot()
-        slots.append(time.monotonic())
+        # Sıranın anı kilit dosyasına yazılan zamandır (aralık ona göre beklenir); dönüşten sonra okunan saat, görsel
+        # seli altında iş parçacığı gecikmesiyle kayabilir. Bu süreçte sıralar tek tek alınır: dosya bu sıranındır.
+        with open(rc._RATE_FILE, encoding="utf-8") as f:
+            slots.append(float(f.read().strip()))
 
     monkeypatch.setattr(rc, "_wait_rate_slot", recorded_slot)
     cs = ex_mod.cs
