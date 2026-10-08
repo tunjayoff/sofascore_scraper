@@ -834,6 +834,7 @@ def start_tournament_clear(tournament_id: int, *, season_id: Optional[int] = Non
     spec: Dict[str, Any] = _with_names(
         ClearJobSpec(confirm=True, tournament_id=tournament_id, season_id=season_id).model_dump())
     manager = deps.job_manager()
+    _wait_for_finished_exports()  # bitmiş görünen dışa aktarma `maintenance`ı paylaşımlı tutuyor olabilir
     job = manager.start(JobKind.CLEAR, spec, origin=local_origin("api"), lease=MAINTENANCE_LEASE,
                         lease_purpose=JobKind.CLEAR.value)
     if before is not None:
@@ -857,17 +858,49 @@ def start_tournament_clear(tournament_id: int, *, season_id: Optional[int] = Non
     return found if found is not None else job
 
 
+# Bu süreçte iş deposu açık olan dışa aktarmalar: iş kimliği → depo kapanınca (kilit bırakılmış) kurulan olay.
+# Bir dışa aktarmanın satırı bitmiş görünür, ama `export` kilidini (ve paylaşımlı `maintenance`ı) bitiş bloğunun
+# sonunda bırakır (`JobStore._job_finishing`: `job.finished` akış olayı ve bitmiş işin geri okunması da blokta).
+# Web'in deposunda yeni iş bu bloğu bekler; dışa aktarmanın deposu ayrı olduğu için burada beklenir.
+_EXPORTS_OPEN: Dict[str, threading.Event] = {}
+_EXPORTS_OPEN_LOCK = threading.Lock()
+# Bitmiş görünen bir dışa aktarmanın kilidi bırakması için en çok bu kadar beklenir (JobStore'un bitiş bekleyişi gibi)
+EXPORT_RELEASE_WAIT_SECONDS = 30.0
+
+
+def _wait_for_finished_exports() -> None:
+    """
+    Bu süreçte satırı bitmiş ama kilidini henüz bırakmamış dışa aktarmaları bekler (en çok
+    EXPORT_RELEASE_WAIT_SECONDS). İşin bittiğini gören istemci yeni bir dışa aktarma ya da bakım işi başlatınca
+    bu işin kilidi yüzünden 409 almamalı. Hâlâ çalışan dışa aktarma beklenmez: o 409 gerçektir.
+    """
+    with _EXPORTS_OPEN_LOCK:
+        open_exports = list(_EXPORTS_OPEN.items())
+    if not open_exports:
+        return
+    manager = deps.job_manager()
+    for job_id, closed in open_exports:
+        if closed.is_set():
+            continue
+        job = manager.get(job_id)
+        if job is not None and job.finished_at and not closed.wait(EXPORT_RELEASE_WAIT_SECONDS):
+            logger.warning("Export job %s is finished but still holds its lease after %.0f s",
+                           job_id, EXPORT_RELEASE_WAIT_SECONDS)
+
+
 def _start_export(spec: Dict[str, Any], run: Any) -> JobSnapshot:
     """
     Dışa aktarma işini indirmeden bağımsız başlatır (FX-23, F14). Bir iş deposu aynı anda tek iş çalıştırır ve
     web'in deposundaki iş (indirme) `writer` kilidini tutar; dışa aktarma veriyi yalnızca okuduğu için kendi iş
     deposunda (aynı state.db, ayrı yansı) `export` kilidiyle çalışır. Depo iş bitince kapatılır. Kilit başka
-    bir dışa aktarmadaysa ya da bir bakım işi (`maintenance`) sürüyorsa 409 `data_operation_running`.
+    bir dışa aktarmadaysa ya da bir bakım işi (`maintenance`) sürüyorsa 409 `data_operation_running`; bitmiş
+    görünen bir dışa aktarmanın kilidi önce beklenir (`_wait_for_finished_exports`).
     İptal ve okuma her iş gibi web'in iş yöneticisinden geçer (satırdaki iptal bayrağı).
     """
     from sofascore_scraper.jobs.manager import JobManager, local_origin
     from sofascore_scraper.store import DataOperationRunningError, JobRunningError, JobStore
 
+    _wait_for_finished_exports()
     jobs = JobStore(deps.job_store().db_path)
     manager = JobManager(jobs)
     try:
@@ -879,6 +912,9 @@ def _start_export(spec: Dict[str, Any], run: Any) -> JobSnapshot:
     except BaseException:
         jobs.close()
         raise
+    closed = threading.Event()
+    with _EXPORTS_OPEN_LOCK:
+        _EXPORTS_OPEN[job.id] = closed
 
     def target() -> None:
         try:
@@ -886,7 +922,12 @@ def _start_export(spec: Dict[str, Any], run: Any) -> JobSnapshot:
         except BaseException as e:  # arka plan thread'i: hata iş kaydındadır
             logger.error("Background job %s failed: %s", job.id, type(e).__name__)
         finally:
-            jobs.close()
+            try:
+                jobs.close()
+            finally:
+                with _EXPORTS_OPEN_LOCK:
+                    _EXPORTS_OPEN.pop(job.id, None)
+                closed.set()
 
     threading.Thread(target=target, name="job-export", daemon=True).start()
     return job
@@ -934,6 +975,8 @@ def _start_data_job(body: Any) -> JobSnapshot:
                     code="confirmation_required")
             lease = MAINTENANCE_LEASE
         run = _restore_body(spec)
+    if lease == MAINTENANCE_LEASE:
+        _wait_for_finished_exports()  # bitmiş görünen dışa aktarma `maintenance`ı paylaşımlı tutuyor olabilir
     return deps.job_manager().submit(
         kind, spec, run, origin=local_origin("api"), background=True, lease=lease,
         lease_purpose=kind.value if lease is not None else None, on_change=deps.refresh_job_mirror,

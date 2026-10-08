@@ -15,6 +15,7 @@ from __future__ import annotations
 import io
 import json
 import re
+import threading
 import time
 import zipfile
 from pathlib import Path
@@ -235,6 +236,45 @@ def test_an_export_waits_for_maintenance_and_for_another_export(jobs: JobStore, 
     with store.lease("export", purpose="export"):
         error(client.post("/api/v1/jobs", json=body), 409, "data_operation_running")
     assert data(client.get("/api/v1/jobs")) == []  # reddedilen istek iş kaydı bırakmaz
+
+
+@pytest.mark.parametrize("following", [
+    {"kind": "export", "spec": {"profile": "legacy-wide-csv"}},
+    {"kind": "rebuild", "spec": {"mode": "recreate"}},
+], ids=["export", "maintenance"])
+def test_a_finished_export_does_not_refuse_the_next_job(jobs: JobStore, monkeypatch: pytest.MonkeyPatch,
+                                                        following: Dict[str, Any]) -> None:
+    """
+    Bir dışa aktarmanın satırı bitmiş görünür (`finished_at`), ama `export` kilidini (ve paylaşımlı `maintenance`ı)
+    bitiş bloğunun sonunda bırakır (`JobStore._job_finishing`: `job.finished` akış olayı ve geri okuma). Yükteki
+    CI'da bu arada başlatılan dışa aktarma 409 `data_operation_running` alıyordu (test_the_export_list_pages).
+    İşin bittiğini gören istemci 409 almaz: sonraki dışa aktarma ya da bakım işi o kilidin bırakılmasını bekler.
+    """
+    from sofascore_scraper.jobs import manager as manager_module
+
+    in_finish, release = threading.Event(), threading.Event()
+    announce = manager_module.JobManager._announce
+
+    def slow_finish(self: Any, type: str, payload: Any) -> None:
+        if type == manager_module.STREAM_JOB_FINISHED and not in_finish.is_set():
+            in_finish.set()
+            release.wait(30)  # bitiş bloğunu yükteki gibi uzatır; kilit bu sürede tutulur
+        announce(self, type, payload)
+
+    monkeypatch.setattr(manager_module.JobManager, "_announce", slow_finish)
+    first = start({"kind": "export", "spec": {"profile": "legacy-wide-csv"}})
+    assert in_finish.wait(30)
+    assert data(client.get(f"/api/v1/jobs/{first['id']}"))["finished_at"]  # istemci işi bitmiş görür
+    opener = threading.Timer(0.5, release.set)
+    opener.start()
+    try:
+        second = start(following)  # FX-23'ten bu düzeltmeye kadar: 409 data_operation_running
+        assert release.is_set()  # ikinci iş, ilkinin bitiş bloğu bitene kadar bekledi
+    finally:
+        opener.cancel()
+        release.set()
+    assert ended(first["id"])["state"] == "succeeded"
+    assert ended(second["id"])["state"] == "succeeded"
 
 
 def test_a_backup_job_records_itself_as_finished_in_the_archive(jobs: JobStore, store: Store,

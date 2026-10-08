@@ -1261,6 +1261,10 @@ These keep working in 3.0.0 and are removed in 3.1:
   counts towards completeness once the match has finished (#175).
 - `winning_odds`: an answer with one null side is data; an answer with both sides null is
   "no data". The data type is no longer experimental (#175).
+- An export, a clear (also removing a follow with its data), a restore or a catalog rebuild
+  started right after an export finished no longer answers 409 `data_operation_running`: the
+  finished export let go of the data folder a moment after its end was recorded, and the new job
+  now waits for that instead of being refused.
 
 ### Removed
 
