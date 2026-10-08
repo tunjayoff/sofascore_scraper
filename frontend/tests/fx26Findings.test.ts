@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { VueWrapper } from '@vue/test-utils'
 import SettingsScreen from '@/screens/settings/SettingsScreen.vue'
+import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
+import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
+import { followName } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
 import { resetNames } from '@/screens/events/eventText'
 import { authNeeded } from '@/lib/auth'
 import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import { flush, mockFetch } from './helpers'
-import { axeViolations, mountScreen, setting, settingsDoc, sportWithOdds, status } from './v1'
+import { axeViolations, event, mountScreen, setting, settingsDoc, sportWithOdds, status } from './v1'
 
 /**
  * FX-26: the findings of the live validation of 2026-10-08 outside the match header (M1 to M4, M12 to M17;
@@ -26,6 +29,57 @@ beforeEach(() => {
   resetNames()
 })
 afterEach(() => w?.unmount())
+
+describe('follow names with "/" (M4)', () => {
+  const DOUBLES = 'L. Andersson / O. Andersson – M. Nilsson / K. Berg'
+
+  it('a match’s or a team’s name keeps its "/"; a league’s loses it; ":" and line breaks never pass', () => {
+    expect(followName(DOUBLES, 'event')).toBe(DOUBLES)
+    expect(followName('Andersson / Andersson', 'team')).toBe('Andersson / Andersson')
+    expect(followName('ATP/WTA Cup', 'tournament')).toBe('ATP – WTA Cup')
+    expect(followName('Liga: Apertura\nPlay-offs', 'tournament')).toBe('Liga – Apertura Play-offs')
+    expect(followName('A\\B:', 'team')).toBe('A – B')
+    expect(followName('x'.repeat(90), 'player')).toHaveLength(80)
+  })
+
+  it('"Follow this match" on a doubles match opens the editor with a name the server accepts', async () => {
+    const padel = event({
+      id: 17260001,
+      sport: 'padel',
+      participants: { home: { id: 1, name: 'L. Andersson / O. Andersson', slug: null, short_name: null, country_code: null }, away: { id: 2, name: 'M. Nilsson / K. Berg', slug: null, short_name: null, country_code: null } },
+    })
+    mockFetch({
+      'GET /api/v1/sports': list([]),
+      'GET /api/v1/events/17260001': { data: padel },
+      'GET /api/v1/events/17260001/extra': { data: { note: null, series: null, venue: null, referee: null } },
+      'GET /api/v1/events/17260001/slices': list([]),
+      'GET /api/v1/events/17260001/odds': list([]),
+      'GET /api/v1/changes': list([]),
+      'GET /api/v1/tournaments': list([]),
+      'GET /api/v1/tournaments/17/seasons': list([]),
+    })
+    let router
+    ;({ w, router } = await mountScreen(EventDetailScreen, '/events/17260001', '/events/:id'))
+    await flush()
+    await w.find('button[aria-haspopup="menu"]').trigger('click')
+    await w.find('[data-key="follow-match"]').trigger('click')
+    await flush()
+    expect(router.currentRoute.value.query).toEqual({ kind: 'event', id: '17260001', name: DOUBLES, sport: 'padel' })
+  })
+
+  it('the editor keeps a match’s "/" and cleans a league name it fills in', async () => {
+    const routes = { 'GET /api/v1/sports': list([sportWithOdds('padel'), sportWithOdds('tennis')]), 'GET /api/v1/status': { data: status() }, 'GET /api/v1/follows': list([]) }
+    mockFetch(routes)
+    ;({ w } = await mountScreen(FollowEditorScreen, `/follows/new?kind=event&id=17260001&name=${encodeURIComponent(DOUBLES)}&sport=padel`, '/follows/new'))
+    await flush()
+    expect((w.find('[data-testid="editor-name"]').element as HTMLInputElement).value).toBe(DOUBLES)
+    w.unmount()
+    mockFetch(routes)
+    ;({ w } = await mountScreen(FollowEditorScreen, `/follows/new?kind=tournament&id=2391&name=${encodeURIComponent('ATP/WTA United Cup')}&sport=tennis`, '/follows/new'))
+    await flush()
+    expect((w.find('[data-testid="editor-name"]').element as HTMLInputElement).value).toBe('ATP – WTA United Cup')
+  })
+})
 
 describe('Settings › Data texts (M1, M2, M3)', () => {
   const tennis = () => {

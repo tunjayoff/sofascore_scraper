@@ -23,7 +23,7 @@ import MoveFollow from './MoveFollow.vue'
 import HelpTip from '@/ui/HelpTip.vue'
 import { noteFollowAdded } from '@/app/suggest'
 import FollowSearch from './FollowSearch.vue'
-import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, dataText, followKindReady, followPath, hitPlace, hitTraits, lockReason, playerTeam, seasonsText, type FollowKind } from './followText'
+import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, dataText, followKindReady, followName, followPath, hitPlace, hitTraits, lockReason, playerTeam, seasonsText, type FollowKind } from './followText'
 
 /**
  * The follow editor (6.3), "Add a league or team". A new follow in four steps:
@@ -90,7 +90,7 @@ function pick(hit: TournamentHit) {
   kind.value = k
   picked.value = hit
   entityId.value = String(hit.id)
-  name.value = hit.name
+  name.value = followName(hit.name, k)
   // the hit's sport comes along: a team or a player without one would not know its data types (FX-19)
   if (hit.sport) sport.value = hit.sport
   // Next is the only step left (FX-14a); the kind watcher has run by then
@@ -248,7 +248,7 @@ onMounted(() => {
     const k = text(route.query.kind)
     if ((FOLLOW_KINDS as readonly string[]).includes(k) && followKindReady(k as FollowKind)) kind.value = k as FollowKind
     if (text(route.query.id)) entityId.value = text(route.query.id)
-    if (text(route.query.name)) name.value = text(route.query.name)
+    if (text(route.query.name)) name.value = followName(text(route.query.name), kind.value)
     if (text(route.query.sport)) sport.value = text(route.query.sport)
     // from the quick search: the text is searched at once (free when the quick search already asked it)
     const q = text(route.query.q)

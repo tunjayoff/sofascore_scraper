@@ -20,6 +20,27 @@ export function followKindReady(kind: FollowKind): boolean {
   return kind === 'tournament' || MORE_FOLLOW_KINDS
 }
 
+/** The server's longest follow name. */
+export const MAX_FOLLOW_NAME = 80
+
+/**
+ * A name the server accepts for a follow of this kind (FX-26, M4): no line break, ':' or '\\', and for a league
+ * no '/' either (its name goes into config/leagues.txt and the 2.x folder names). A team's, a player's or a
+ * match's name keeps its '/': doubles in tennis, padel and badminton are "A / B – C / D". Used where the editor
+ * fills the name itself (a picked hit, "Follow this match"); what the user types is sent as typed.
+ */
+export function followName(name: string, kind: string): string {
+  const forbidden = kind === 'tournament' ? /\s*[:/\\]+\s*/g : /\s*[:\\]+\s*/g
+  return name
+    .replace(/[\r\n]+/g, ' ')
+    .replace(forbidden, ' – ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s–]+|[\s–]+$/g, '')
+    .trim()
+    .slice(0, MAX_FOLLOW_NAME)
+    .trim()
+}
+
 export function followPath(f: Pick<FollowRecord, 'kind' | 'entity_id'>) {
   return `/follows/${f.kind}/${f.entity_id}`
 }

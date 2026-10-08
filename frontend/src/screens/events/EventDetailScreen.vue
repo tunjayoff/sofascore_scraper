@@ -24,7 +24,7 @@ import { toast } from '@/ui/toast'
 import { useStatusStore } from '@/app/statusStore'
 import { sportName } from '@/app/sports'
 import { startJob, waitForJob } from '@/screens/jobs/startJob'
-import { MORE_FOLLOW_KINDS } from '@/screens/follows/followText'
+import { MORE_FOLLOW_KINDS, followName } from '@/screens/follows/followText'
 import SliceTab from './SliceTab.vue'
 import RawPayload from './RawPayload.vue'
 import ChangeFields from './ChangeFields.vue'
@@ -209,11 +209,11 @@ const followLinks = computed(() => {
   if (!e || !MORE_FOLLOW_KINDS) return {}
   const sport = e.sport ?? undefined
   const out: Record<string, { label: string; to: { path: string; query: Record<string, string | undefined> } }> = {
-    'follow-match': { label: t('ui.eventDetail.followIt'), to: { path: '/follows/new', query: { kind: 'event', id: String(e.id), name: eventTitle(e), sport } } },
+    'follow-match': { label: t('ui.eventDetail.followIt'), to: { path: '/follows/new', query: { kind: 'event', id: String(e.id), name: followName(eventTitle(e), 'event'), sport } } },
   }
   for (const side of ['home', 'away'] as const) {
     const p = e.participants[side]
-    if (p?.id && p.name) out[`follow-${side}`] = { label: t('ui.eventDetail.followTeam', { name: p.name }), to: { path: '/follows/new', query: { kind: 'team', id: String(p.id), name: p.name, sport } } }
+    if (p?.id && p.name) out[`follow-${side}`] = { label: t('ui.eventDetail.followTeam', { name: p.name }), to: { path: '/follows/new', query: { kind: 'team', id: String(p.id), name: followName(p.name, 'team'), sport } } }
   }
   return out
 })
