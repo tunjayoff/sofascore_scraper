@@ -107,8 +107,8 @@ _DATE_SLACK = 86400  # saniye: yerel saatin yaz saati geçişlerine karşı aral
 def legacy_detail_keys() -> Tuple[str, ...]:
     """
     Eski maç detayı yanıtındaki dilimler, yanıttaki sırayla: dilim tablosunun spora bağlı olmayan `required`
-    satırları (sofascore_scraper/sports.py, DETAIL_SLICES). İsteğe bağlı dilimler (ör. tenisin `point_by_point`'i) ve spora
-    özel dilimler (ör. kriketin `innings`'i) eski yanıtta yoktur.
+    satırları (sofascore_scraper/sports.py, DETAIL_SLICES); bir sporda tamlığa girmeyen `pregame_form` de bunlardandır.
+    Spora özel dilimler (ör. tenisin ve dartın `point_by_point`'i, kriketin `innings`'i) eski yanıtta yoktur.
     """
     return tuple(detail.key for detail in DETAIL_SLICES if detail.required and detail.sports is None)
 

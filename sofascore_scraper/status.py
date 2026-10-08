@@ -34,11 +34,12 @@ _WITHOUT_PLAY_CODES = frozenset({91, 92})
 # burada yalnızca tipi olmayan yükte fark eder. SP-3'te görülenler de öyle: 21 (kriket 1. innings), 28 / 29
 # (beyzbol 8. / 9. inning), 1001 / 1002 (e-spor 1. / 2. oyun) ve 141 (kriket "End of day 1"). Görülmeyen ara
 # kodlar (23-27 gibi) eklenmedi: tipi olmayan yükte UNKNOWN kalırlar.
-# Canlı doğrulamada (2026-10-08, FX-27 V4) görülenler: 1 / 2 / 3 (buz hokeyi 1.-3. periyot; başka hiçbir sporda
-# bu kodlar görülmedi, hepsi oyun içi olduğundan spora göre ayırmak gerekmez), 22 (kriket "2nd Inning"),
+# Canlı doğrulamada (2026-10-08, FX-27 V4) canlı görülenler: 1 / 2 / 3 (buz hokeyi 1.-3. periyot; başka hiçbir
+# sporda bu kodlar görülmedi, hepsi oyun içi olduğundan spora göre ayırmak gerekmez), 22 (kriket "2nd Inning"),
 # 42 (futbol "2nd extra"), 58 (MMA "Awaiting announcement", tipi inprogress) ve 1003 (e-spor "Third game").
-# E-spor oyunları 1001-1005 kapalı bir dizi (en çok beş oyunluk seri): 1004 / 1005 de eklendi. Push karesi
-# yalnızca kodu taşıyabilir (tip düşer), bu kodlar o yolda "Status could not be classified" uyarısı veriyordu.
+# Görülmeden eklenenler: 1004 / 1005 (e-spor 4. / 5. oyun), çünkü e-spor oyunları 1001-1005 kapalı bir dizidir
+# (en çok beş oyunluk seri). Push karesi yalnızca kodu taşıyabilir (tip düşer); bu kodlar o yolda "Status could
+# not be classified" uyarısı veriyordu. docs/status-matrix/README.md aynı listeyi taşır.
 _LIVE_CODES = frozenset({1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 28, 29, 30, 31, 42, 58, 141,
                          1001, 1002, 1003, 1004, 1005})
 _VOID_CODES = frozenset({60, 70, 80, 81, 90})

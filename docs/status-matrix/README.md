@@ -114,6 +114,20 @@ Görülen kodlar ve sporları (bir kod birden çok sporda görüldüyse descript
 | 110 | AET | ✓ | ✓ | |
 | 120 | AP | ✓ | | |
 
+Bu tablo ilk ölçümün üç sporudur. Sonra görülen canlı kodlar (`sofascore_scraper/status.py` `_LIVE_CODES`
+aynı listeyi taşır):
+
+- SP-2 ve SP-3 (`docs/all-sports/README.md`): 11 / 12 (4. / 5. set; masa tenisi, voleybol), 21 (kriket
+  1. innings), 28 / 29 (beyzbol 8. / 9. inning), 1001 / 1002 (e-spor 1. / 2. oyun) ve 141 (`willcontinue`,
+  kriket "End of day 1").
+- Canlı doğrulama (2026-10-08, FX-27): 1 / 2 / 3 (buz hokeyi 1.–3. periyot; başka sporda görülmedi), 22
+  (kriket "2nd Inning"), 42 (futbol "2nd extra"), 58 (MMA "Awaiting announcement", tipi `inprogress`) ve
+  1003 (e-spor "Third game"). Push karesi tipi düşürüp yalnızca kodu taşıyabildiği için bu kodlar tipsiz
+  yükte de canlı sayılır.
+- Görülmeden eklenenler: 1004 / 1005 (e-spor 4. / 5. oyun), çünkü en çok beş oyunluk bir seride 1001–1005
+  kapalı bir dizidir. Görülmeyen öteki ara kodlar (23–27, 41 gibi) eklenmedi: tipi olmayan yükte `unknown`
+  kalırlar.
+
 ---
 
 ## Edge case tablosu
