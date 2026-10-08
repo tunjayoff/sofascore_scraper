@@ -44,10 +44,20 @@ catalog, so `DERIVE_VERSION` went from 5 to 6 (`sofascore_scraper/store/derive.p
 by the old rule is rebuilt from the stored files when it is first opened; export files written before are not
 rewritten (export again). The example Event below (event 16950622, status 120 without extra-time keys) is
 such a match and now has `after_extra_time: null`. The `Source` column of the generated `FootballScore`
-table still says "only when `status.code` is 110 or 120", because it is printed from
-`sofascore_scraper/schema/models.py`, which FX-23 left unchanged so that the table and the code stay equal; the
-prose under the table gives the rule, and the next item that edits the models (FX-16) corrects the text in
-both places (`REGEN_SCHEMA_DOC=1`; `03-implementation-plan.md` section 16).
+table said "only when `status.code` is 110 or 120" at `48e4c4c`, because it is printed from
+`sofascore_scraper/schema/models.py`, which FX-23 left unchanged so that the table and the code stayed equal.
+FX-16 (#176) wrote the rule into the models and regenerated the table (`REGEN_SCHEMA_DOC=1`): the column now
+says "`display`, only when `status.code` is 110, or 120 when SofaScore sends `overtime`, `extra1` or
+`extra2`".
+
+Revised on 2026-10-08 (the ninth revision, checked against `origin/main` at `43ecdfc`), after the live
+validation against the real SofaScore. No definition of version 1 changed, so `schema_version` stays 1, and
+no derived value changed, so `DERIVE_VERSION` stays 6. FX-16 (#176) applied the owner's decision on the detail
+slices of football, basketball and tennis (section 5) and the `Source` text above. FX-27 (#175) kept the
+meaning of `live.score_changed` after the validation found no event for games won inside a tennis set
+(finding V7): for set sports the headline score is the sets won ("LiveEvent data"). FX-26 (#174) added
+`GET /api/v1/events/{event_id}/extra`, which serves a few values of the stored event payload that version 1
+does not map; it is part of API v1, not a record of this schema (section 7).
 
 ## 1. What the schema is, and what it is not
 
@@ -535,7 +545,8 @@ Since FX-23 (#171, 2026-10-07) `after_extra_time` has a value only when extra ti
 status 110, and for status 120 only when SofaScore sends one of `overtime`, `extra1` or `extra2` (a match
 whose extra time ended 0–0 still sends them). A cup final that goes from 90 minutes straight to penalties
 (the UEFA Super Cup 2025, event 13960989: `normaltime` 2–2, `penalties` 4–3, no extra-time key) has
-`after_extra_time` null. The `Source` text of the table above predates this rule (see the header).
+`after_extra_time` null. The `Source` text of the table above states this rule since FX-16 (#176; see the
+header).
 
 Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2`) and of extra time alone
 (`overtime`).
@@ -920,6 +931,11 @@ this table is the contract for `data`:
 
 A `live.status_changed` is emitted only when a previous class is known, so `from` is never null. A
 `live.score_changed` is emitted only while the event was live in the previous observation and stays live.
+It follows the headline score of [Score](#score): for the `sets` family that is the sets won (or the frames,
+legs or games won for the formats without sets), so a game or a point won inside a set is not a
+`live.score_changed`, while the `score` field of every live event carries the score of each set. The live
+validation of 2026-10-08 saw no event in five minutes of a live tennis set (finding V7); FX-27 (#175) kept the
+rule, and `ssc watch --help` states it.
 The same transition is stored once: the stream log keeps one event per stream and `dedup_key` (an append
 with a key that the stream already holds stores nothing), and the key is
 `<id>:<type>:<from>><to>:<change_ts>` for the two change types (`-` for a missing `change_ts`) and
@@ -1125,8 +1141,15 @@ Everything that is not listed here is the same for every sport.
 | `start_utc` | kick-off | tip-off | the planned time on the order of play; the first point can be hours later |
 | `decided_without_play` | not seen | walkover (code 91) | walkover (91), retired (92) |
 | in-progress codes | 6, 7, 31 | 13–16, 30 | 8, 9, 10 |
-| extra slice | | | `point_by_point` |
+| detail slices (PR #121, FX-16) | the six common slices; `pregame_form` optional | as football | `statistics`, `team_streaks`, `h2h`, `point_by_point`; `pregame_form` optional; no `lineups`, `incidents` |
 | `quality.tier_hint` | true for 12 of 48 samples | true for 25 of 54 samples | false for all 52 samples |
+
+The detail slices of the three sports follow the owner's decision of 2026-10-08 (FX-16, PR #176): an
+optional slice is requested but does not count for completeness, and a slice listed after "no" is not
+requested. The live validation of 2026-10-08 saw more live codes than the in-progress row above, in these
+and in ten more sports, each classified live through `status.type`; `03-implementation-plan.md` section 14
+lists them, and FX-27 (PR #175) added to the code table those that a payload without a type would have left
+unknown.
 
 The eighteen sports added by SP-1 (PR #112), SP-2 (PR #115) and SP-3 (PR #118) rest on the research
 recordings of `docs/all-sports/README.md`: status examples, compact event records and one match page per
@@ -1196,6 +1219,11 @@ What a raw request returns:
   the same key fetched a year apart can differ in structure. `schema_version` says nothing about raw data.
 - **Raw is the only place** for everything this schema does not map: translations, team colours, venue,
   referee, the live clock, the current tennis point, player details, and every slice's content.
+- **One exception for the web UI** (FX-26, PR #174): `GET /api/v1/events/{event_id}/extra` reads four of
+  these values out of the stored event payload, SofaScore's result `note` (for example cricket's "India beat
+  West Indies by 8 wickets"), the `series` score of a play-off series, the `venue` and the `referee`, each
+  null when the payload does not give it. It is a route of API v1 with its own model (`EventExtra`), not a
+  record of this schema, and `schema_version` does not cover it.
 
 ## 8. Implementation and tests
 

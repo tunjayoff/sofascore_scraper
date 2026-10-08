@@ -80,6 +80,15 @@ archive was taken (9.1, 9.2); the catalog's derived values are at `DERIVE_VERSIO
 is removed after use (2.1). References marked `48e4c4c` are to `origin/main` at that commit. Section 12
 lists the corrections from item 139 on.
 
+Revised a ninth time on 2026-10-08 after the live validation against the real SofaScore (the orchestrator's,
+2026-10-08) and its fix items FX-26 #174, FX-27 #175 and FX-16 #176. No Store module changed. What changed
+around the Store: for an unfinished event the pipeline now passes a body-less "no data" answer to `put`
+uncounted, so the slice has a row in state `empty` (2.3, 8.1); `FETCH_ONLY_FINISHED` still decides which
+matches of a league download get their details, which 8.1 called redundant (8.1); the frozen 2.x writer of
+the twin tests differs from `put` for slices that do not count in a sport (2.3); `DERIVE_VERSION` stays 6
+(7.2). References marked `43ecdfc` are to `origin/main` at that commit. Section 12 lists the corrections
+from item 144 on.
+
 Terms used throughout:
 
 - **payload**: one SofaScore JSON response, stored as a file.
@@ -635,7 +644,9 @@ it. Where the numbered rules below say less, or something else:
 - **States.** A 404 for a slice that is `ok` with a payload leaves it `ok` and counts the answer; an error
   on an `ok` slice records the error mark and leaves it `ok`. An uncounted `empty` without data still
   creates a slice row (state `empty`, count 0, a previous error cleared); today's writer records nothing for
-  a slice outside the required set or for an unfinished event, so ST-21 leaves those outcomes out. `ok` is
+  a slice outside the required set or for an unfinished event, so ST-21 leaves those outcomes out (since
+  FX-27, #175, the pipeline passes an unfinished event's body-less "no data" answers uncounted, so they open
+  that row; 8.1). `ok` is
   what the caller passes, not what the presence rule says: the caller passes `empty` with data for a 200
   body without content. `failed` with reason `breaker` is treated as `skipped`, because today's callers
   report the open breaker that way (P13 switches them).
@@ -741,6 +752,13 @@ Callers keep today's marker rules by what they pass. Today slice markers are upd
 finished (`sofascore_scraper/match_data_fetcher.py:1228-1229`) and only for `required` slices (`:684`); a caller reproduces
 that with `count_empties=False` (or the set of required keys) and by leaving failed outcomes of an unfinished
 event out of the call.
+
+The frozen 2.x writer of the twin tests (`tests/legacy_writer.py`) reproduces those rules: it writes empty and
+error markers only for the slices that count in the match's sport, while `put` records them for every
+requested slice. Since #121 the two differ for every slice in a sport's `optional_in`; FX-16 (#176) found it
+when the random outcome sequences of `tests/test_store_put.py` met football's `pregame_form`, which no longer
+counts, and the test now samples only the slices that count. Not a defect: `put` keeps more, and
+completeness ignores those rows.
 
 Slice state as stored and as reported:
 
@@ -3858,6 +3876,11 @@ stored data is corrected without a command (`tests/test_score_rederive.py` opens
 the stale value). Export files written before are not rewritten; the user exports again. The bump changed
 one row of the derive and catalog goldens (event 16950622). The next bump is 7.
 
+At `43ecdfc` it is still 6. FX-16 (#176) changed the slice rows of football, basketball and tennis and only
+the `Source` text of `FootballScore.after_extra_time` in the schema models; `store/derive.py` does not read
+the slice table, and no derived value changed. FX-26 (#174) and FX-27 (#175) changed none either. The next
+bump is still 7.
+
 ### 7.3 State db
 
 `sofascore_scraper/store/migrations/state/NNNN_<name>.sql`, applied in order on open under the `maintenance` lease:
@@ -3958,6 +3981,22 @@ once but mirrored (2.3).
   list a match" answer. A round without matches is never stored (`SAVE_EMPTY_ROUNDS` is retired, a
   constant `False`). `FETCH_ONLY_FINISHED` now applies only when data is read; `QueryService.detail_candidates`
   still applies it, which is redundant for planning and harmless. What the planner downloads is in 8.3.
+  Corrected on 2026-10-08 (the ninth revision; FX-26, #174, finding M3 of the live validation): it is not
+  redundant. A league download takes its candidates from `detail_candidates` through
+  `MatchDataFetcher.collect_detail_match_ids` (`sofascore_scraper/services/sync.py:935`,
+  `sofascore_scraper/match_data_fetcher.py:846-847` at `43ecdfc`), so with the setting on, the default,
+  only finished matches (and those with details or of unknown status) of a followed league get their
+  details; unfinished ones are stored from the listings only. Team, player and match follows are not
+  affected. The setting's description says so since FX-26 (`02-services.md` 2.1).
+- Since FX-27 (#175, finding V5 of the live validation) a slice of an unfinished event that SofaScore
+  answered with "no data" (a 404 without a body) is passed to `put` too, uncounted, so it opens a slice row
+  in state `empty` with counter 0 (2.3, rule 3); before, the pipeline passed only answers with a body, and
+  the slice had no row and was reported as `not_requested` although it had been asked. A failed request is
+  still not written, and only answers with a body are stored as payloads
+  (`sofascore_scraper/services/pipeline.py:448-454` at `43ecdfc`). Such a slice stays missing for the
+  planner (its counter is 0), and completeness counts it as resolved only once a post-match answer has
+  counted it (`planning._counted_empty`). The legacy writer `MatchDataFetcher._slice_outcomes` keeps the old
+  rule; it is not on the pipeline's path and goes in P30.
 - Round files already contain every status today, because they are written unfiltered
   (`sofascore_scraper/match_fetcher.py:471`). Indexing them gives the catalog its first fixtures: locally 628 events that
   have no detail directory (311 not started, 315 completed, 2 void).
@@ -5103,6 +5142,23 @@ Corrections after the end-to-end test and FX-23 to FX-25 (2026-10-08, the eighth
      went straight to penalties is null (`04-schema-v1.md`), and a catalog written at version 5 is
      re-derived from the files on its first open; export files written before are not rewritten. Section
      7.2 (FX-23 #171).
+
+Corrections after the live validation and FX-26, FX-27 and FX-16 (2026-10-08, the ninth revision; checked
+at `43ecdfc`):
+
+144. **"No data" of an unfinished event has a row.** Sections 2.3 and 8.1 said that an unfinished event is
+     stored with the slices that came back with a body, so a 404 left no row and the slice was reported
+     `not_requested`. Since FX-27 the pipeline passes it to `put` uncounted (state `empty`, counter 0); it
+     stays missing for the planner and resolves completeness only once counted. Sections 2.3, 8.1 (FX-27
+     #175).
+145. **`FETCH_ONLY_FINISHED` is not redundant for downloads.** Section 8.1 called its use in
+     `QueryService.detail_candidates` redundant for planning; a league download takes its matches from
+     there, so the setting decides which of them get details. Section 8.1 (FX-26 #174).
+146. **The frozen writer and `put` differ for slices that do not count.** `tests/legacy_writer.py` writes
+     markers only for slices that count in the match's sport, `put` for every requested slice; harmless,
+     found by FX-16. Section 2.3 (FX-16 #176).
+147. **`DERIVE_VERSION` stays 6.** FX-16 changed slice rows and a `Source` text, no derived value; the next
+     bump is still 7. Section 7.2 (FX-16 #176).
 
 ---
 

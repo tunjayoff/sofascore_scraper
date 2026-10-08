@@ -63,6 +63,11 @@ Yeniden üretmek için: `python scripts/analyze_all_sports.py all` (ağ isteği 
    `status.code` yok; `finished` stage'ler ve tipi boş sezon stage'leri **UNKNOWN**.
 4. **`extract_scores` yalnızca futbol, basketbol ve tenisi destekliyor.** Diğer 20 spor için "desteklenmeyen spor"
    uyarısıyla boş bir `ScoreSheet` dönüyor. Çoğunun skor yapısı ise mevcut sınıflardan biriyle aynı biçimde.
+
+   *Bugün (SP-1, SP-2, SP-3; PR #112, #115, #118):* 2 ile 4 arasındaki maddeler eskidi. Kriketin `willcontinue`
+   durumu canlı sayılır (UNKNOWN değil); `extract_scores` kayıt defterindeki 21 sporun hepsinin skorunu çıkarır;
+   kodu olmayan stage modeli desteklenmez. Canlı doğrulama (08.10.2026) 13 sporda canlı kodları gördü; tipi
+   gelmeyen yükler için eksik kodları FX-27 (PR #175) ekledi.
 5. **Push kanalı var.** SofaScore'un push sunucusu, kimlik doğrulamalı bir **NATS** sunucusu. Maç bitişi
    (`status.type: finished`), SofaScore'un kendi değişiklik anından **medyan 0,5–1,2 sn** sonra geliyor
    (36 kare; küçük örneklem). Polling ile daha önce ölçülen bitiş gecikmesi medyan 19 sn (futbol) ve 48 sn (tenis) idi.
@@ -89,21 +94,21 @@ bazında sıklığı: `docs/all-sports/summary.json` → `score_structure`.
 | tennis | 436 / 33 | 219 / 98 | event | `period1–5`, `periodNTieBreak`, `point`, `current` | 0 | — | (destekleniyor) |
 | american-football | — / — | 113 / 75 | event | `period1–4, normaltime, overtime, current` | 0 | — | **A** |
 | aussie-rules | 1 / 0 | 33 / 31 | event | `period1–4, normaltime, current` | 0 | — | **A** |
-| ice-hockey | 55 / 3 | 44 / 6 | event | `period1–3, normaltime, overtime, current` | 0 | — | **A** (az örnek) |
-| handball | 45 / 2 | 82 / 29 | event | `period1–2, normaltime, current` (+`overtime`, `penalties`, `aggregated`) | 0 | — | **A** |
+| ice-hockey | 55 / 3 | 44 / 6 | event | `period1–3, normaltime, overtime, current` | 0 | — | **A** (az örnek; SofaScore'daki ve kayıt defterindeki adı `Hockey`) |
+| handball | 45 / 2 | 82 / 29 | event | `period1–2, normaltime, current` (+`overtime`, `penalties`, `aggregated`); atışlarla biten maçta `current` ve `display` atış gollerini de içerir (SP-1) | 0 | — | **A** |
 | rugby | 21 / 0 | 47 / 21 | event | `period1–2, normaltime, current` | 0 | — | **A** |
 | futsal | 50 / 1 | 26 / 16 | event | `current, display`; bazı turnuvalarda `period1–2, normaltime` | 0 | — | **A** |
 | minifootball | 87 / 0 | 8 / 1 | event | `period1–2, normaltime, current` | 0 | — | **A** (1 bitmiş) |
 | floorball | 4 / 0 | 7 / 4 | event | `period1–3, normaltime, current` | 0 | — | **A** (az örnek) |
 | volleyball | 21 / 0 | 81 / 19 | event | `current` = set; `period1–5` = setteki sayı | 0 | — | **A** |
-| badminton | 112 / 6 | 145 / 75 | event | `current` = oyun; `period1–3` = sayı | 0 | — | **A** |
+| badminton | 112 / 6 | 145 / 75 | event | `current` = kazanılan set (ilk yazımda "oyun"; SP-2 düzeltti); `period1–3` = setteki sayı | 0 | — | **A** |
 | table-tennis | 1231 / 16 | 149 / 68 | event | `current` = set; `period1–5` = sayı | 0 | 11, 12 | **A** |
 | padel | 46 / 0 | 48 / 14 | event | tenisle aynı: `period1–3`, `periodNTieBreak` | 0 | — | **A** |
-| snooker | 8 / 3 | 9 / 4 | event | `current` = frame; `period1` = `current`'a eşit | 0 | — | **A** (az örnek) |
+| snooker | 8 / 3 | 9 / 4 | event | `current` = frame; `period1` = `current`'a eşit (SP-2: 8 örneğin hepsinde) | 0 | — | **A** (az örnek) |
 | darts | 24 / 1 | 50 / 9 | event | turnuvaya göre: setler (`period1–3` = leg) ya da yalnız leg | 0 | — | **B** |
 | baseball | 12 / 1 | 506 / 482 | event | `innings{inningN{run,hits,errors}}`; bazı liglerde `period1–9` | 0 | 28, 29 | **B** |
 | cricket | 12 / 1 | 17 / 5 | event | `innings{inningN{score,wickets,overs,runRate}}` | **5/17** | 21, 141 | **B** |
-| esports | 75 / 7 | 7 / 1 | event + oyun alt olayları | maç: `display`; oyun: `period1–2` = yarı | 0 | 1001, 1002 | **B** |
+| esports | 75 / 7 | 7 / 1 | event + oyun alt olayları | maç: `current`, `display` ve `period1–5` (SP-3; ilk yazımda yalnız `display`); "`period1–2` = yarı" `/esports-games`'in oyun nesnelerini anlatır | 0 | 1001, 1002 | **B** |
 | mma | — / — | 50 / 26 | event | **skor yok**; sonuç `winnerCode`, `winType`, `finalRound` | 0 | — | **B** |
 | motorsport | — / — | 42 stage | **stage** | skor yok; sıralama `standings/competitor` | **28/42** | (kod yok) | **C** |
 | cycling | — / — | 20 stage | **stage** | skor yok; etaplar `substages` | **16/20** | (kod yok) | **C** |
@@ -121,7 +126,8 @@ bazında sıklığı: `docs/all-sports/summary.json` → `score_structure`.
   - **Set tabanlı** (tenis gibi; `current` = kazanılan set/oyun, `periodN` = o setteki sayı): voleybol,
     badminton, masa tenisi, padel.
   - **Snooker:** `current` = frame, `period1` her iki örnekte `current`'a eşit
-    (`research/all_sports/events/snooker.jsonl`, id 17218595 ve 17220088).
+    (`research/all_sports/events/snooker.jsonl`, id 17218595 ve 17220088). SP-2 (PR #115) 8 örneğin hepsinde
+    aynısını gördü; `period1` yalnızca `current`'ı tekrarlar.
 - Örnekler:
   - Amerikan futbolu uzatması `110 AET` + `overtime`:
     `research/all_sports/status_examples/american-football/event_finished-110-aet__*.json`.
@@ -142,7 +148,9 @@ bazında sıklığı: `docs/all-sports/summary.json` → `score_structure`.
   - Canlı kodlar 28/29 ("8th/9th Inning") bilinen kümede yok; tip sayesinde LIVE.
 - **Dart:** aynı sporda iki biçim. `current`'ın birimi (set mi leg mi) turnuvaya göre değişiyor; olayın
   `bestOfSets` / `bestOfLegs` alanlarına bakan bir mantık gerekiyor
-  (`research/all_sports/samples/darts/event-id__1.json`: `bestOfSets: 5`).
+  (`research/all_sports/samples/darts/event-id__1.json`: `bestOfSets: 5`). Yapılan (SP-3): yalnızca
+  `bestOfSets` belirler; pozitifse set, değilse yalnız leg. `bestOfSets: 1` olan bir maç (17236047) bugün leg
+  olarak eşlenir; kuralın değişmesi 3.0.0 sonrasına kaldı.
 - **E-spor:**
   - Maç düzeyinde kodlar 1001/1002 ("First game"/"Second game").
   - Her oyun (harita) kendi `status`, `winnerCode` ve yarı skorlarına sahip bir alt nesne:
@@ -366,7 +374,8 @@ Etiket yararlılık yargısıdır; gerekçesi `reason` sütununda, dayanağı ya
 
 PR #121'den beri her spor, SofaScore'un kendi maç sayfasının o sporda istediği detay dilimlerini ister. Önceden
 her spor aynı altı ortak dilimi zorunlu olarak alıyordu. İki spora özgü dilim eklendi: kriket `innings` ve dart
-`point_by_point`. Futbol, basketbol ve tenis değişmedi.
+`point_by_point`. Futbol, basketbol ve tenis #121'de değişmedi; sahibin 08.10.2026 kararıyla FX-16 (PR #176)
+değiştirdi (aşağıda, "Karar").
 
 - **Kaynak:** bu keşfin kaydı (`research/all_sports/`), yeni istek atılmadı. `tests/sport_evidence.py`
   tabloyu `requests.jsonl` ve `events/*.jsonl`'dan türetir: yalnızca maç sayfalarının istekleri, bahis hariç,
@@ -398,9 +407,9 @@ sayfa `/event/{id}`'yi hiç istememiş.
 
 | Spor | Maç sayfaları (olay, durum) | statistics | team-streaks | pregame-form | h2h | lineups | incidents | spora özgü |
 |---|---|---|---|---|---|---|---|---|
-| football | 17118211 F, 17167343 F, 17212341 L | F200 L200 **R** | F200 L200 **R** | F404 L404 **R**¹ | F200 L200 **R** | F200 L404 **R** | F200 L200 **R** | — |
-| basketball | 17186711 F | F200 **R** | F200 **R** | F404 **R**¹ | F200 **R** | F200 **R** | F200 **R** | — |
-| tennis | 17204708 F, 17206248 L | F200 L200 **R** | F200 **R** | F404 L404 **R**¹ | F200 **R** | — **R**¹ | — **R**¹ | point-by-point F200 L200 *o*¹ |
+| football | 17118211 F, 17167343 F, 17212341 L | F200 L200 **R** | F200 L200 **R** | F404 L404 *o*¹ | F200 L200 **R** | F200 L404 **R** | F200 L200 **R** | — |
+| basketball | 17186711 F | F200 **R** | F200 **R** | F404 *o*¹ | F200 **R** | F200 **R** | F200 **R** | — |
+| tennis | 17204708 F, 17206248 L | F200 L200 **R** | F200 **R** | F404 L404 *o*¹ | F200 **R** | — ✗¹ | — ✗¹ | point-by-point F200 L200 **R**¹ |
 | american-football | 16183693 F, her istek 403 | F403 **R** | — **R** | F403 **R** | — **R** | F403 **R** | F403 **R** | — |
 | aussie-rules | yok | — **R** | — **R** | — **R** | — **R** | — **R** | — **R** | — |
 | ice-hockey | 16532341 F | F200 **R** | — **R** | F404 *o* | — **R** | F200 **R** | F200 **R** | — |
@@ -420,7 +429,8 @@ sayfa `/event/{id}`'yi hiç istememiş.
 | darts | 17099318 F | F200 **R** | — **R** | F404 *o* | — **R** | — ✗ | — ✗ | point-by-point F200 **R** (yeni) |
 | mma | 16822910 F | F200 **R** | F200 **R** | F200 **R** | — **R** | — ✗ | — ✗ | — |
 
-¹ Kanıt öteki yönü gösteriyor; davranış golden'lar sabitlediği için korundu (aşağıda, öneriler).
+¹ #121'de kanıt öteki yönü gösteriyordu ve davranış golden'lar sabitlediği için korunmuştu; sahibin 08.10.2026
+kararıyla FX-16 (PR #176) kanıta uydurdu (aşağıda, "Karar").
 
 **Bitmiş maç başına istek, önce → sonra.** İlk çekim 1 `/event` artı dilim başına bir istek. Önceden 404 veren
 zorunlu bir dilim bir tamamlama turu daha açıyordu (1 + hâlâ `ok` olmayan her dilim). Sayım tablodaki yanıtları
@@ -437,24 +447,43 @@ varsayar: sitenin hiç istemediği dilim 404, kanıtı olmayan dilim veri döner
 | futsal | 11 → 7 | statistics, lineups ve pregame_form isteğe bağlı |
 | ice-hockey | 9 → 7 | pregame_form isteğe bağlı |
 | minifootball | 9 → 7 | lineups isteğe bağlı |
-| diğer 12 kayıtlı spor | değişmedi | — |
+| football (FX-16) | 9 → 7 | pregame_form isteğe bağlı |
+| basketball (FX-16) | 9 → 7 | pregame_form isteğe bağlı |
+| tennis (FX-16) | 12 → 6 | lineups ve incidents istenmiyor; pregame_form isteğe bağlı; `point_by_point` zorunlu |
+| diğer 9 kayıtlı spor | değişmedi | — |
 
-**Öneriler, canlı doğrulamayı bekliyor.** Futbol, basketbol ve tenis golden'larla sabit; bunlar ayrı bir karar
-ister ve projenin sonundaki canlı doğrulama koşusundan (Talimat 07) sonra karara bağlanır:
-- `pregame_form` üçünde de isteğe bağlı olsun: kayıttaki her bitmiş futbol, basketbol ve tenis maçında, canlı
-  futbol ve tenis maçında da 404 verdi.
-- Tenis `lineups` ve `incidents` istenmesin: iki tam tenis sayfası da (bir bitmiş, bir canlı) bunları istemedi.
-- Tenis `point_by_point` zorunlu olsun: bitmiş maçta da canlı maçta da veriyle döndü.
+**Karar (sahip, 08.10.2026; FX-16, PR #176).** Futbol, basketbol ve tenis için #121'in üç önerisi canlı
+doğrulamadan (Talimat 07) sonra olduğu gibi uygulandı:
+- `pregame_form` üçünde de isteğe bağlı: istenir ama tamlık hesabına girmez. Kayıttaki her bitmiş futbol,
+  basketbol ve tenis maçında, canlı futbol ve tenis maçında da 404 verdi.
+- Tenis `lineups` ve `incidents` istenmez: iki tam tenis sayfası da (bir bitmiş, bir canlı) bunları istemedi.
+- Tenis `point_by_point` zorunlu: bitmiş maçta da canlı maçta da veriyle döndü.
 
-`tests/test_sport_slices.py` içindeki `PROPOSALS` bu yargıları sabitler; kanıt değişirse test kırılır.
+`tests/test_sport_slices.py` içindeki `DECIDED` (önceden `PROPOSALS`) bu altı hücreyi sabitler ve kanıtın
+yargısıyla karşılaştırır. Kararın ek kanıtı uygulamanın kendisinden gelir: canlı doğrulamada her spordan bir
+bitmiş maç (07.10.2026, 20 spor) ve bir canlı maç (08.10.2026, 13 spor) bütün dilimleriyle tek maç takibi olarak
+indirildi; tablolar `tests/fixtures/sport_slices/slice-matrix-finished.txt` ve `slice-matrix-live.txt`
+(maç kimliği yok). Tenis `point_by_point` ikisinde de veriyle döndü; tenis `lineups` ve `incidents` bitmiş
+maçta veri vermedi, canlı maçta gövdesiz kaldı; `pregame_form` bitmiş basketbol ve tenis maçında veri vermedi,
+canlı basketbol maçında ve iki futbol maçında verdi (kayıttaki futbol sayfalarının hepsi 404: güvenilir değil,
+bu yüzden isteğe bağlı). `test_the_app_side_evidence_backs_the_decision` bu gözlemleri tablolardan denetler.
+Uygulama tarafı tablolar yalnızca istenen bir dilimin veri getirip getirmediğini söyler, sitenin sayfasının
+hangi uç noktaları istediğini söylemez; `not_in` buna dayandığı için öteki sporların satırları değişmedi.
+Bitmiş tabloda ragbi, florbol, voleybol ve mini futbol maçlarında (birer alt lig maçı) `statistics`, `lineups`
+ve `incidents` çoğunlukla veri vermedi; bu sporlarda her bitmiş maç bir doğrulama turu daha açar. Değişip
+değişmeyeceği 3.0.0 sonrası sahibin kararıdır (`docs/design/03-implementation-plan.md` bölüm 13).
 
 **Kanıtı yetmeyen spora özgü uç noktalar:** beyzbol `/at-bats` (yalnızca bir başlamamış maçta 200), beyzbol
 `/umpires`, `/weather`, `/comments` (yalnızca 404), tenis `/tennis-power` (canlı sayfada istendi ama script
 isteği attı, yanıt yok). **Hiç kanıt yok:** american-football (her istek 403), aussie-rules, badminton,
 table-tennis, rugby ve minifootball (yarım sayfalar) ve yalnızca başlamamış maçı olan sporlar. Canlı doğrulama
 koşusu spor başına bir bitmiş ve bir canlı maç sayfası açıp hangi detay uç noktalarının istendiğini ve
-durumlarını kaydedecek, `tests/fixtures/sport_slices/evidence.json`'u yeniden üretecek; kayıt defteri o zaman
-spor başına tek sayfadan fazlasına dayanır.
+durumlarını kaydedecek, `tests/fixtures/sport_slices/evidence.json`'u yeniden üretecekti. 08.10.2026'da bu
+yapılamadı: `scripts/explore_all_sports.py` maç sayfalarının hiçbir SofaScore isteğini kaydetmedi, çünkü
+`page.route` işleyicisi bugünkü patchright ile bozuluyor ("Route.abort: The object has been collected …",
+bulgu V3). `evidence.json` olduğu gibi kaldı; kanıt yukarıdaki uygulama tarafı tablolardan geldi. Araç
+onarılınca (3.0.0 sonrası) dosya `python tests/sport_evidence.py` ile yeniden üretilir; `DECIDED` ve bu tablo
+yeni yargıları o zaman denetler.
 
 ---
 
@@ -481,7 +510,8 @@ spor başına tek sayfadan fazlasına dayanır.
 - `sport.{sport}` konusu o sporun **bütün** olay değişikliklerini mi taşıyor, yoksa yalnız ekrandaki
   turnuvalarınkini mi? 10 dk'da futbolda 60, tenis 402, masa tenisi 546 mesaj (`research/all_sports/pages.jsonl`, `op = listen`).
 - Sportradar widget'ı hangi sporların ve turnuvaların canlı sayfasında açılıyor? Yalnız 3 canlı sayfa açıldı.
-- Snooker `period1`'in anlamı (iki örnekte `current`'a eşit) belirsiz.
+- Snooker `period1`'in anlamı (iki örnekte `current`'a eşit) belirsiz. *Yanıtlandı (SP-2):* 8 örneğin hepsinde
+  `current`'ı tekrarlar.
 - `/token/captcha` ne zaman çağrılıyor? Challenge sonrası görüldü; gövde maskelendi.
 
 ---

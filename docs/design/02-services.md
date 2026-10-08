@@ -83,6 +83,21 @@ creation of `config/leagues.txt` and the removed lock file of a settings file (4
 messages and logs (2.4, 2.6, 4.6, 6) and the new job-log codes (2.7) are described as built. References
 marked `48e4c4c` are to `origin/main` at that commit. Section 11 lists the corrections from item 123 on.
 
+Revised a ninth time on 2026-10-08 after the live validation against the real SofaScore (the orchestrator's,
+2026-10-08: a morning pass over the web UI with one finished match of each sport, and an evening pass with
+live matches, both push sources and the CLI next to `ssc serve`) and its fix items FX-26 (#174, the
+display of every sport and the morning's findings), FX-27 (#175, the evening's findings) and FX-16 (#176,
+the owner's decision on the detail slices of football, basketball and tennis). The route
+`GET /events/{id}/extra` (6), completeness and coverage over finished matches only (2.7), the server's time
+left of a job (2.8), "/" in the names of team, player and match follows (2.7), what `fetch.only_finished`
+decides (2.1), the `events` count of a normalized export (2.7), the English client exceptions (2.6),
+the `--sport` filter of `ssc watch` and the closing of a live browser (4.1, 8.1, 8.2), the live status codes
+without a type (8.1), the uncounted `empty` row of an unfinished match (3.2, 3.3), the shape and the body
+rule of `winning_odds`, the WTA list of `rankings` and the three slice rows of FX-16 (3.1), and what
+`live.score_changed` means for a set sport (5.1) are described as built, and the live validation's results
+are recorded where the design waited for them (2.7, 3.1, 4.6, 6, 8.1 to 8.4, 8.6, 10, 12). References marked
+`43ecdfc` are to `origin/main` at that commit. Section 11 lists the corrections from item 135 on.
+
 Conventions used here: "event" is a SofaScore match; "slice" is one data type of an owner entity
 (event, season, team, player); "face" is one of Python library, CLI, HTTP API.
 The CLI executable is written `ssc` below (final name: decision D2).
@@ -358,7 +373,14 @@ and tests patch `legacy.build_context` and `sofascore_scraper.services.export.ex
    at once and the downloads only after a restart. P30 switches the read to `fetch.only_finished` of the
    Settings. Since ST-27 (#129) the setting no longer changes what is stored: matches of every status are
    stored and details are fetched once a match has finished, so the setting applies at read time only (the
-   legacy lists and the dashboard), and the restart no longer matters for it.
+   legacy lists and the dashboard), and the restart no longer matters for it. Corrected by FX-26 (#174;
+   `43ecdfc`): it also decides what a league download fetches. `SyncService._details` takes its matches from
+   `MatchDataFetcher.collect_detail_match_ids` (`sofascore_scraper/services/sync.py:935`,
+   `sofascore_scraper/match_data_fetcher.py:846-847`), which calls `QueryService.detail_candidates` with
+   `only_finished_setting()`, so with the setting on (the default) only the finished matches of a followed
+   league, those with stored details and those of unknown status get their details. Team, player and match
+   follows, the v1 event list and the Matches screen are not affected. Its description in
+   `sofascore_scraper/config/settings.py:159-163` and the Settings page say so since FX-26.
 4. Domain modules (`sports`, `status`, `refresh`, `slices`, `schema`) are pure and import nothing above them.
    As built (SC-1, PR #72): `sofascore_scraper/schema` imports `sofascore_scraper.sports`, `sofascore_scraper.status` and `sofascore_scraper.refresh` at run time
    and names the Store's row classes only under `TYPE_CHECKING` (`sofascore_scraper/schema/mappers.py:53-54` at
@@ -964,7 +986,10 @@ table above, row by row.
   by the code itself stay Turkish (`catalog.py`, `derive.py`, `indexer.py`, `sqlite.py`); v1 turns them into
   `internal` without the text, and `tests/test_store_messages_english.py` lists them by name. The issue
   texts of verify and of the scans (`ssc verify`, rebuild reports) are not exception messages and are still
-  Turkish (`03-implementation-plan.md` section 16).
+  Turkish (`03-implementation-plan.md` section 16). The client's exceptions followed with FX-26 (PR #174;
+  finding V2 of the live validation, "Not found: … (Durum Kodu: 404)" in a log): the texts and defaults of
+  `sofascore_scraper/exceptions.py` are English (`APIError` adds " (status code 404)", `:29-33` at
+  `43ecdfc`), and `tests/test_exception_messages_english.py` scans the module for Turkish literals.
 - The module imports only the standard library and `sofascore_scraper/exceptions.py`, so `version` and `doctor` run
   before the packages are installed; it recognises the Store's classes through `sys.modules`.
 - HTTP statuses as used by API v1 (P20, PR #74; `sofascore_scraper/web/errors.py:137-144` at `e0bae0c`).
@@ -1534,9 +1559,11 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   At most 20 hits in SofaScore's order, each typed by `kind`, with its sport, its country, a player's team
   and `followed` per kind; fewer than 2 characters is `invalid_request`. A 404 answer is an empty list (it
   was 502). The tournament hit of `/search/all` is assumed to have the shape of the tournament search
-  (experimental; the live validation checks it). The route keeps the path `/tournaments/search` and the
-  component name `TournamentHit`, because the frontend imports it; a neutral `/search` could replace both
-  in P30. One request searches the chosen kinds. Since FX-20 (#167) the web editor and Ctrl K ask for all
+  (experimental; the live validation checks it; it did: "la" listed the UEFA Champions League, the FIFA
+  World Cup and LaLiga among its hits, and the EHF Champions League was followed from a hit). The route
+  keeps the path `/tournaments/search` and the component name `TournamentHit`, because the frontend imports
+  it; a neutral `/search` could replace both in P30. One request searches the chosen kinds. Since FX-20
+  (#167) the web editor and Ctrl K ask for all
   three kinds at once (`kinds: [tournament, team, player]`, so `/search/all` upstream), as the user types:
   the follows are filtered in the browser with no request, stored tournaments and teams come from
   `QueryService.suggest` (`GET /api/v1/catalog/suggest`, no SofaScore request, debounced 120 ms in the
@@ -1555,7 +1582,24 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   national team); both are null for tournaments, players and the stored-name suggestions of `suggest`, and
   neither is stored in the catalog (that would need a catalog schema change). The web UI shows them since
   FX-25 (#172) to tell same-named teams apart (`05-web-ui.md` 6.2). `FollowRecord` has neither, and there is
-  no team record route (`03-implementation-plan.md` section 16, after 3.0).
+  no team record route (`03-implementation-plan.md` section 16, after 3.0). Since FX-26 (PR #174; finding
+  M16 of the live validation, a tennis player's hit without a sport) a team or player hit takes its sport
+  also from the entity's or its team's `category.sport`, `primaryUniqueTournament.category.sport` and
+  `tournament.category.sport`, and last from the result's own `sport` (`_entity_sport`,
+  `sofascore_scraper/services/follows.py:600-612` at `43ecdfc`); without any the hit has no sport and still
+  works. Where SofaScore puts that player's sport is not known (no stored answer), so these are guesses that
+  harm nothing. The live validation measured the search on the real site: "la" gave 20 hits in 0.44 s
+  (Messi, Juventus, Lamine Yamal, the UEFA Champions League, the FIFA World Cup, LaLiga sixth), "ba" 20 and
+  "fe" 19; the same text again took 0.0 s (the server's cache), "la l" to "la liga" put LaLiga first, and
+  each settled text sent one SofaScore request. Whether an aborted fetch closes the connection in time
+  behind a reverse proxy was not checked.
+- **Follow names (FX-26, PR #174).** A follow's name is 1 to 80 characters without a line break, ":" or
+  "\\"; a league's name also refuses "/", because it is a `config/leagues.txt` line (`Name: ID`) and
+  becomes a 2.x folder name. The names of team, player and match follows live only in the follows table and
+  never become a path, so `check_name(name, kind)` (`sofascore_scraper/services/follows.py:189-205` at
+  `43ecdfc`) allows "/" for them: a doubles match of tennis, padel or badminton ("L. Andersson / O.
+  Andersson - …") is followed under its own name (finding M4 of the live validation). The error text names
+  the rule of the kind.
 - **Suggestions from stored data (FX-20).** `QueryService.suggest(text, sport=, limit=8)` returns the
   stored tournaments and teams (competitors) whose name contains the text, in the shape of a search hit
   (`kind` `tournament` or `team`): names that start with the text first, then names with a word that starts
@@ -1633,6 +1677,29 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   stays missing for the planner until a second answer confirms it (3.2). A slice whose last request failed,
   and every slice of a match that has not finished, still counts as missing. The planner is unchanged
   (3.2), so completeness and the planner's need can differ for such a slice until the confirming request.
+  As built since FX-26 (PR #174; `43ecdfc`; findings M12 and M12b of the live validation): completeness
+  counts finished matches only, for every kind of follow. The EHF Champions League showed "67 %" after its
+  first download because 14 matches with a stored `/event` had not been played yet, and a team's page and
+  a league's page counted their fixtures by different rules. `SeasonCounts` and the per-tournament
+  `TournamentCounts` gained `finished_details` (finished matches with a stored `/event` payload;
+  `sofascore_scraper/services/status.py:94-103`, `:256-282`), `complete` and `missing` are tallied over those,
+  and `completion_rate` is `complete / finished_details`; `/status` gives `finished_details` per tournament
+  from the pass over the unfinished events with details that `_match_counts` already made
+  (`_unfinished_details`, `:532`). The web UI counts a team's and a match's coverage the same way from their
+  stored finished matches, and a fixture is "not played", not missing (`05-web-ui.md` 6.4, 6.5).
+  `StatusService.coverage()` (`CoverageReport`, no UI or CLI consumer; its tests pin the planner's rule) is
+  unchanged.
+  As built since FX-27 (PR #175; finding V5): an `empty` slice resolves completeness only when its answer was
+  counted (`empty_count + unverified_empty_count > 0`, `_counted_empty`,
+  `sofascore_scraper/services/planning.py:390-392` at `43ecdfc`). A "no data" answer taken while the match
+  was on opens an uncounted `empty` row (3.3), so after the end the slice stays unresolved until the first
+  post-match answer counts it; FX-23's case, a finished match whose answers are all counted, is unchanged.
+- **The `events` of an export (FX-26, PR #174; finding M18).** An export result's `events` is the number of
+  distinct matches the file covers: for a raw export the matches with at least one payload written (as
+  before), for a normalized export the matches of its records (`events`: the rows; `slices`: the owners of
+  kind `event`; `changes` and `odds`: `event_id`; `standings`: 0, not tied to a match;
+  `_counting_events`, `sofascore_scraper/services/export.py:118-133` at `43ecdfc`). It was 0 for every
+  normalized export (846 rows, `events: 0` in the validation). The wide CSV is unchanged.
 - **Removed by FX-15.** `SyncSpec.export`, `export_all_csv`, `QueryService.detail_needs` and `refresh_due`
   (only tests called them), `league_sports.resolve_all`, and the `MatchDataFetcher`, `MatchFetcher` and
   `SeasonFetcher` methods only the terminal menu used: `MatchFetcher` is `list_schedule` plus the static
@@ -1861,6 +1928,20 @@ Mechanics:
   `Job.progress` is the live value for a job of this process; for a job of another process it is that job's
   last `progress` event, which lags by up to one ticker round (1 s). `events(follow=True)` yields new events
   until the job ends, also for a job of another process.
+- **Time left (FX-26, PR #174; finding M14 of the live validation).** `JobProgress.eta_seconds`, which the
+  row and `progress.eta_seconds` of the API carry, is the longest of three estimates
+  (`sofascore_scraper/jobs/progress.py:208-245` at `43ecdfc`): the phase's average pace since its start
+  times the matches left (the old rule); the pace of the last three minutes (`ETA_WINDOW`, 180 s), because the first
+  matches of a phase often go fast (stored matches are skipped, the budget starts full); and, when the job
+  planned its matches by cost class and reports each finished match's requests, the requests still to send
+  divided by the job's measured request rate. The classes are `event_only` (an upcoming fixture of a team,
+  player or match follow, whose `/event` alone is read) and the planner's needs `full`, `refill` and
+  `refresh` (`_cost_class`, `_requests_of`, `sofascore_scraper/services/sync.py:318-333`); a class with no
+  finished match yet is costed at the dearest class measured. The validation's Celtics download said 69 s
+  at 31 of 128 matches, because its first matches were one-request fixtures and the remaining 97 needed
+  about 9 requests each; it took about 7 minutes at 2 requests per second. The web UI already showed the
+  longer of the server's estimate and its own (`05-web-ui.md` 6.9); the CLI and other clients get the
+  corrected value now.
 - **Stream events.** `job.started` and `job.finished` are appended to the `job` stream for sinks (section
   5), with source `job`: `job.started` has the data {job_id, kind, origin}, `job.finished` {job_id, kind,
   state, counts, error_code}, where `counts` are `details_done`, `details_total`, `failed_count`,
@@ -2090,7 +2171,7 @@ above differs:
   drop a common slice; with the new keyword `exclusive=True` a sport's own entry replaces `""`, and
   `required_detail_keys()` lists every registered sport in full. Which sport requests what, and on how little evidence (one match page per sport), is the section
   "Maç detay dilimleri, spor başına" of `docs/all-sports/README.md`; the proposals for football, basketball
-  and tennis wait for the live validation run (section 11).
+  and tennis waited for the live validation run (section 11) and are applied since FX-16 (below).
 
 As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`sofascore_scraper/sports.py` and
 `sofascore_scraper/services/planning.py` at `b6caf2f`). Where the text above differs:
@@ -2127,7 +2208,8 @@ As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`
   selected" of 3.2 can become real.
 - **Odds (P28).** `ODDS_SLICES` (`sofascore_scraper/sports.py:556-570`): `odds_featured`, `odds_all`, `odds_changes` and
   `winning_odds`, owner `event`, group `odds`, `subs="provider"`, `keep_history=True`, `max_age` 30 minutes,
-  `default_enabled=False`, `required=False`; `winning_odds` is `experimental` (its only sample is a 404). The
+  `default_enabled=False`, `required=False`; `winning_odds` is `experimental` (its only sample is a 404;
+  no longer since FX-27, below). The
   sub is `[client] odds_provider` (default 1; `DEFAULT_ODDS_PROVIDER`, `:385`). "Pre-match odds are refetched
   on each sync until kick-off" is built with a window: a not-started event's odds are read only within 7 days
   before kick-off (`PREMATCH_WINDOW_S`, `sofascore_scraper/services/planning.py:402`) when never read or older than
@@ -2140,13 +2222,72 @@ As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`
   `required=False`, each with a `max_age`: season `standings` (subs `total` and `home`; there is no `away`,
   which the catalog does not have), `season_info`, `cuptrees`, `top_players` and `top_teams` (football),
   `season_odds` (football, provider sub, history, experimental); team `team_rankings` (tennis); player
-  `player_statistics` (experimental); sport `rankings` (sub `5`, the ATP list; tennis; experimental). The
+  `player_statistics` (experimental); sport `rankings` (sub `5`, the ATP list; tennis; experimental; `6`, the
+  WTA list, since FX-27). The
   design's `players` (owner team) and the `squads` group's slices are not built: the catalog has no such
   endpoint. `SliceSpec` gained `body_key` (the top-level key that must be non-empty for "data") and
   `experimental`, and the methods `sub_keys(provider)` and `format_path`. New groups `season`, `leaders` and
   `players` (`:382-383`); `standings` and `rankings` are both a group and a key, and naming either selects
   both. Which sports each owner slice exists in, the shapes of the experimental ones and which provider ids
   answer without a login wait for the live validation.
+
+As built after the live validation of 2026-10-08, by FX-27 (PR #175) and FX-16 (PR #176)
+(`sofascore_scraper/sports.py` and `sofascore_scraper/services/pipeline.py` at `43ecdfc`). Where the text
+above differs:
+
+- **The three proposals of #121 are applied** (FX-16, the owner's decision of 2026-10-08; `DETAIL_SLICES`,
+  `sofascore_scraper/sports.py:506-542`). `pregame_form` is requested in football, basketball and tennis
+  but no longer counts for completeness (`optional_in` gains the three); tennis no longer requests `lineups`
+  or `incidents` (`not_in` gains tennis); tennis `point_by_point` counts (it lost `optional_in`), so it
+  counts in tennis and darts. Tennis has five event slices (it had seven). Per finished match, with the
+  answers the evidence records, football and basketball go from 1 + 6 requests plus one confirmation round
+  for `pregame_form` to 1 + 6, and tennis from 1 + 7 plus a round for `pregame_form`, `lineups` and
+  `incidents` to 1 + 5 (worked out from the rules, not measured). `GET /api/sports`, `/api/v1/sports` and
+  `ssc describe slices` show the new rows. No slice key, status code or derived value changed, so
+  `DERIVE_VERSION` stays 6 (`store/derive.py` does not read the slice table).
+- **The evidence.** `tests/fixtures/sport_slices/evidence.json` was not regenerated: the page-traffic tool
+  `scripts/explore_all_sports.py` recorded no SofaScore request on the validation's match pages (its
+  `page.route` handler fails with "the object has been collected" under the current patchright, finding V3;
+  a repair after 3.0.0). The validation gathered the evidence through the application instead: one
+  single-match follow per sport with every slice selected, one finished match of 2026-10-07 for 20 sports
+  (Aussie rules had none that day) and one live match on 2026-10-08 for 13 sports. The two tables are in
+  `tests/fixtures/sport_slices/slice-matrix-finished.txt` and `slice-matrix-live.txt`, and
+  `tests/test_sport_slices.py` checks the decision against them (`DECIDED` replaces `PROPOSALS`). They show
+  tennis `point_by_point` with data on both matches, tennis `lineups` and `incidents` without, and
+  `pregame_form` with data in football, without in finished basketball and tennis. They say only whether a
+  requested slice brought data, not which endpoints the site's page asks for, which is what `not_in` rests
+  on, so no other sport's row changed. In rugby, floorball, volleyball and minifootball most of
+  `statistics`, `lineups` and `incidents` had no data on lower-tier matches; those sports still count the six
+  common slices, so each finished match of theirs gets one confirmation round (an open point for the owner,
+  `03-implementation-plan.md` sections 13 and 16).
+- **`legacy_detail_keys()`** (`sofascore_scraper/services/query.py:107-113`) lists the slices that are
+  required and not sport-specific. Tennis `point_by_point`, now counting, is sport-specific, so the legacy
+  detail answer (`GET /api/matches/{id}`, `MatchDataFetcher._load_match_data_from_dir`) does not carry it,
+  as darts' did not since #121; the 2.x layout is unchanged on purpose.
+- **`winning_odds` is no longer experimental** (FX-27). Its shape was seen live (Süper Lig, provider 1):
+  `{"home": null | {"fractionalValue", "expected", "actual", "id"}, "away": …}`, one side often null. It has
+  a body rule of its own, `sided_body_state` (`sofascore_scraper/services/pipeline.py:650-662`): data when
+  one side is a non-empty object, "no data" when both sides are null, absent or empty, unreadable when the
+  body is not an object or a side is neither null nor an object. Before, any non-empty object counted as
+  data, so `{"home": null, "away": null}` was stored as `ok`. It stays a raw slice: the normalized odds
+  dataset and mapper cover `odds_all` and `odds_featured` only (`mappers.ODDS_KEYS`). The fixture
+  `tests/fixtures/p28/winning_odds.json` has the seen shape with illustrative numbers.
+- **`rankings` has the subs `5` (ATP) and `6` (WTA)** (FX-27, finding V8; `:609-613`): on the real site
+  `/rankings/5` starts with Jannik Sinner and `/rankings/6` with Elena Rybakina (`/rankings/type/5|6`
+  exist too, with another shape). It stays `experimental` (no recorded body). Subs are not shown in
+  `/api/v1/sports`, `describe` or the OpenAPI document.
+- **What the live validation answered for P28's open points.** Odds without a login: providers 1 and 5
+  answer `/event/{id}/odds/{provider}/featured` with data on a live football match; 2, 3, 4, 6, 7, 8, 10
+  and 15 answer 404, so the default 1 stands. Live football, basketball, tennis, handball and e-sports
+  matches had odds (provider 1); live ice hockey, futsal, minifootball, volleyball, badminton, table
+  tennis, cricket and MMA matches had none. Odds payloads carry a `liveStreamUrl` key, a third-party
+  address: committed fixtures leave it out. `season_odds` (`/odds/season/{id}/provider/1/all`) answered
+  with one market, "To Win Outright"; `player_statistics` with `uniqueTournamentSeasons` and `typesMap`;
+  standings `total` and `home` both with data. `season_odds` and `player_statistics` stay experimental
+  (no recorded body in the fixtures). Not answered: in which sports each owner slice exists beyond these
+  samples.
+- **Phases are still unchanged.** The validation read finished and live matches only, so which slices exist
+  before kick-off is still open, and `SliceSpec.phases` keeps all three phases (after 3.0.0).
 
 ### 3.2 Planning
 
@@ -2193,6 +2334,19 @@ are tried once more"); it was kept. Completeness no longer follows this rule for
 counts such a slice as resolved at once (`unresolved_slice_keys`, 2.7). Waiting a minimum time before the
 confirming request would save the request after a quick resume; it would change those goldens and is left
 for after 3.0 (`03-implementation-plan.md` section 16).
+
+As built since FX-27 (PR #175; finding V5 of the live validation): "recorded but do not count" now holds for
+a body-less answer too. Until then the pipeline stored, for a match that had not finished, only the answers
+with a body, so a slice that SofaScore answered with 404 during the match left no row, and the Data tab and
+`/events/{id}/slices` reported it as `not_requested` although it had been asked (the statistics of a live
+Botola Pro match at half time, the line-ups of an ice-hockey match in a pause). Now that answer opens an
+uncounted `empty` row (state `empty`, counter 0), which the Store already defined (`01-storage.md` 2.3). The
+planner's rule is unchanged: `slice_missing` is "not `ok` and fewer counted empties than the threshold", so
+the slice stays missing and is asked again; the timed odds rule looks only at payloads, so pre-match odds
+that answered 404 are still asked at every sync inside the window, as before. Completeness counts such an
+`empty` as resolved only once a post-match answer has counted it (2.7). The legacy writer
+`MatchDataFetcher._slice_outcomes` (`sofascore_scraper/match_data_fetcher.py:486`) keeps the old rule; it is
+not on the pipeline's path, and it goes with the fetcher faces in P30.
 
 As built (P12, PR #106; P13, PR #113; ST-27, PR #129; `sofascore_scraper/services/planning.py` at `b3cb819`):
 
@@ -2333,8 +2487,11 @@ and season downloads, matches picked by id, the single-match fetch, refills and 
   fresh `/event` the pipeline applies the sport and phase filter again.
 - Since ST-27 the pipeline has no finished filter: an unfinished event that the planner hands over is stored
   with its `/event` payload and the slices that came back with a body, and its empty answers are not
-  counted. The `only_finished` keyword is accepted and ignored, and `skipped/not_due` is no longer produced:
-  the finished-only rule lives in the planner (3.2), and `FETCH_ONLY_FINISHED` filters only what is read.
+  counted (since FX-27, PR #175, a body-less "no data" answer opens an uncounted `empty` row, 3.2;
+  `sofascore_scraper/services/pipeline.py:448-454` at `43ecdfc`; a failed request is still not written).
+  The `only_finished` keyword is accepted and ignored, and `skipped/not_due` is no longer produced: the
+  finished-only rule lives in the planner (3.2), and `FETCH_ONLY_FINISHED` filters only what is read (and,
+  through `detail_candidates`, which league matches get details; 2.1).
 - `change.recorded` is appended to the `change` stream by downloads and refreshes since P13 (before, only
   by the live service).
 - Listing items (P14): `planning.season_list_item(tid)` and `schedule_item(tid, sid)`. The pipeline hands
@@ -2524,6 +2681,15 @@ and, since P22 (PR #73), `events`, and since P23 (PR #91), `watch`.
   `live_source_unavailable`, and `--source direct` adds the warning `live_direct_source`. `--stdout` prints
   the new events as envelope lines (5.1) and the summary goes to stderr; it is a usage error with `--json`.
   SIGTERM stops it like Ctrl+C. The command hosts the sink dispatcher (8.4).
+  As built since FX-27 (PR #175; finding V6 of the live validation): `--sport` alone narrows the follows,
+  and the narrowing holds for the whole run. Before, the command filtered only the scope it built, while the
+  service read the follows again at its start and every 60 s and rebuilt the full scope, so
+  `ssc watch --sport football --sport tennis --sport basketball` watched all 13 followed sports and the `page`
+  source opened 13 browser pages. The command now hands its `--sport` list to `scope_from_follows(follows,
+  sports=)`, which keeps it in `LiveScope.only_sports`, and the service's re-read passes it on
+  (`sofascore_scraper/services/live/supervisor.py:225-278`, `:454-457` at `43ecdfc`;
+  `sofascore_scraper/cli/commands/watch.py:94-102`). `ssc watch --help` has a description (`ssc_desc_watch`)
+  that says which score changes are events: for a set sport a won set, not a game or a point (5.1).
 
 As built at `b3cb819`: every command of the table exists, from P19 (#119: `sync`, `fetch`, `refresh`,
 `export`, `status`, `jobs`, `follows`, `data`), ST-23 (#110: `migrate`, `catalog`), ST-24 (#109: `backup`),
@@ -3274,6 +3440,13 @@ As built at `b3cb819` (P19 #119, P25 #125):
   `watch` under the same rule as the main profile, so a recreated container neither solves the challenge
   again nor fails to open its browser (exit 21). The image was not built or smoke-tested: `release.yml` builds it only on a tag, so the
   Dockerfile and `docker/smoke-test.sh` are checked in the live validation run before the release.
+  Built and smoke-tested on 2026-10-08 (the morning of the live validation), from `137cabe`, as a local image
+  of 1.77 GB: `docker/smoke-test.sh` passed offline (`--version`, `--help`, `serve --help`,
+  `version --json`, `serve` with the HEALTHCHECK healthy as uid 1000, `/health`, the web app's index, the
+  Host check, a headless Chromium start), `ssc` is on the PATH of the image, and no local configuration went
+  into it (`.dockerignore` keeps only `leagues.example.txt`). Not done: the recreate of
+  `docker compose --profile live`. The image of the release commit is smoke-tested again before the tag
+  (`03-implementation-plan.md` section 18).
 - **Launchers.** `scripts/start_web.py` starts `python -m sofascore_scraper.cli.main serve --host 127.0.0.1`, and the
   `.sh`, `.bat`, `.command` and `.desktop` launchers go through it.
 
@@ -3399,6 +3572,14 @@ the alias's own stdout lines and `watch_events.jsonl`. The `data` per type (also
 | `change.recorded` | `change_seq`, the sequence of the change-log row it announces |
 | `system.blocked` | `source`, `retry_in_s`, `reason` |
 | `system.recovered` | `source`, `blocked_for_s` |
+
+`live.score_changed` follows the headline score (`score_key`: `homeScore.display`, else `current`). For a
+set sport (tennis, table tennis, volleyball, badminton, padel) that is the sets won, so a game or a point
+inside a set is not an event; the `score` field of every live event carries all set scores. The live
+validation saw no tennis event in about 5 minutes of a live third set and asked whether game changes should
+be events (finding V7). FX-27 (PR #175) kept the rule as designed (also `04-schema-v1.md`, "LiveEvent data")
+and wrote it into `ssc watch --help`; a test checks that a game change in tennis and in table tennis emits
+nothing and a won set emits `live.score_changed`.
 
 Every live event carries a `dedup_key`, so the same transition is stored once:
 `<id>:<type>:<from>><to>:<change_ts>` for `status_changed` and `score_changed`, with `-` for a missing
@@ -3675,6 +3856,7 @@ paragraph describes the foundation.
 | `/seasons/{id}`, `/seasons/{id}/slices`, `/seasons/{id}/slices/{key}`, `/seasons/{id}/standings` | GET | query, `OwnerDataService` (P28) |
 | `/events?sport=&tournament=&season=&from=&to=&status=&participant=&has=` | GET | query |
 | `/events/{id}`, `/events/{id}/slices`, `/events/{id}/slices/{key}`, `/events/{id}/odds`, `/events/{id}/odds/{key}` | GET | query, `OwnerDataService` (P28) |
+| `/events/{id}/extra` | GET | `QueryService.event_extra` (FX-26): SofaScore's result note, the series score, the venue and the referee from the stored event payload; every field null without a payload, 404 for an unknown event |
 | `/events/{id}/raw`, `/events/{id}/slices/{key}/raw` (no `?raw=1` form) | GET | `QueryService.raw`: the stored SofaScore payload (same values and key order as the response; see `01-storage.md` 4.1), with `ETag` (the payload's sha256) and `X-Sofascore-Fetched-At` |
 | `/changes?since=` | GET | query (change log by its own `seq`) |
 | `/follows`, `/follows/{id}` | GET, POST, PATCH, DELETE | follows |
@@ -3942,7 +4124,8 @@ names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRe
   shape, the scheduler compares its own earlier runs in that shape, and "Run again" of an `ssc sync --only
   events` job starts a `fetch`. The legacy job card payload still shows `mode`.
 - **Read routes (FX-13, P28).** `/tournaments/{id}/seasons?include=counts` (G17) gives each season with
-  `counts {events, finished, details, complete, completion_rate, missing, schedule_fetched_at_utc}`; the
+  `counts {events, finished, details, complete, completion_rate, missing, schedule_fetched_at_utc}` (and
+  `finished_details` since FX-26, which `complete`, `missing` and `completion_rate` count over; 2.7); the
   age of the tournament's own season list (the `seasons` slice's `fetched_at`) is in no route. `/changes`
   takes `sport` and `regressed`, and `include=names` adds `home_name` and `away_name` (G19); without it a
   change is exactly the schema record, as the `changes` export writes it. `/events/{id}/odds` lists every
@@ -3969,6 +4152,32 @@ names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRe
 - **The legacy routes** are unchanged; no web screen calls them since FX-14b removed the classic views, and
   P30 removes them. The legacy single-match fetch (`sofascore_scraper/web/api/legacy.py`) still asks only `writer_busy()`;
   its v1 face is the `fetch` job with `event_ids`, which runs under the writer lease.
+
+As built at `43ecdfc` (FX-26, #174; the live validation of 2026-10-08). `docs/api/openapi-v1.json` and
+`frontend/src/api/v1/schema.ts` were regenerated with additions only:
+
+- **`GET /events/{event_id}/extra`** (`getEventExtra`, `sofascore_scraper/web/api/v1/events.py:310-333`)
+  answers `EventExtraResponse {data: EventExtra {note, series: {home, away} | null, venue, referee}}` from
+  the stored event payload (`QueryService.event_extra` and `event_extra_of`,
+  `sofascore_scraper/services/query.py:561-573`, `:1040-1064`): SofaScore's result note (cricket's "India
+  beat West Indies by 8 wickets"), the series score of a play-off (`homeScore.series`, `awayScore.series`),
+  the venue and the referee. None of them is in schema v1 (`04-schema-v1.md` section 7: raw is the place
+  for venue and referee). Every field is null without a payload (a match known from a schedule only), and an
+  unknown event is 404. It is a route of its own and not a field of `Event`, because the single-resource
+  envelope is `{"data"}` only (`tests/test_openapi_snapshot.py`) and a field there would have replaced the
+  `Event` component by a flattened copy. The web UI read venue and referee from the raw route and expected
+  an `{"event": …}` wrapper that the raw route does not return (its unit test mocked the wrapper), so the
+  overview never showed them with real data; it reads them from `/extra` now (`05-web-ui.md` 6.6).
+- **`finished_details`** in `/status` (`summary.tournaments[]`) and in the season counts of
+  `/tournaments/{id}/seasons?include=counts`; `completion_rate` is `complete / finished_details` (2.7).
+- **Follow names.** `POST` and `PATCH /follows` accept "/" in the name of a team, player or event follow;
+  a league's name still refuses it (`invalid_request` with `details.field = "name"`; 2.7).
+- **`GET /exports`** and the export job's result: `events` counts the matches of a normalized export (2.7).
+- **What the live validation saw of the routes.** `/status` before any request had `connection.state`
+  `never_tried`; after requests that went through the browser it was `ok` with `last_success_at` set and the
+  bridge `ok`, because a curl 403 that the browser then answered is not a failure (FX-19, confirmed). A
+  download of 132 matches on the browser path (curl blocked for 600 s) was cancelled through
+  `POST /jobs/{id}/cancel` and was `cancelled` 0.6 s later (FX-18, confirmed with a real browser).
 
 ### 6.1 Existing `/api` routes
 
@@ -4325,6 +4534,23 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   on the command line are always read. The end-to-end test found `ssc watch` reading a match months ahead at
   every start (event 16483843, May 2027) and running into 403s (finding F35). There was no configured near
   window to reuse, so the 6 h are a constant, not a setting.
+  As built since FX-27 (PR #175; `43ecdfc`): a scope read from follows keeps the `--sport` narrowing of the
+  command across every re-read (`LiveScope.only_sports`; 4.1, finding V6). The live validation's `direct`
+  run saw the 6 h window work ("Not reading 1 followed event(s) at start", event 16483843).
+- **Status codes on the live path (FX-27, PR #175; finding V4).** The live validation recorded the live
+  status codes of 13 sports on 2026-10-08 (football 6, 7, 20, 31, 42; basketball 13, 14, 16, 30, 31; tennis
+  8 to 10; ice hockey 1, 2, 3, 30; handball 6, 7; futsal and minifootball 7; volleyball 9, 10; badminton 8,
+  9; table tennis 8 to 12; cricket 22 "2nd Inning"; e-sports 1001 "First game" and 1003 "Third game"; MMA 58
+  "Awaiting announcement", type `inprogress`). With `status.type` every one is classified live. Without the
+  type, the code-only fallback did not know 1, 2, 3, 22, 42, 58 and 1003, and a push frame carries only the
+  changed code, so the merge logged "Status could not be classified: {'code': 2}". `_LIVE_CODES` gains 1, 2,
+  3, 22, 42, 58 and 1003 to 1005 (`sofascore_scraper/status.py:42-43` at `43ecdfc`; 1004 and 1005 unseen, an
+  e-sports series has at most five games; 23 to 27 and 41 stay out because they were not seen). The probe of
+  a bare frame code in `push_source.merge_frame` calls the new `status.classify_code()` (`:84-91`), which
+  does not log; the classification of the merged event still logs a truly unknown status. The 34 (sport,
+  code, description, type) rows are a fixture, `tests/fixtures/live_validation/live-statuses-2026-10-08.json`
+  (no match ids). An MMA event of July 2024 still "in progress" on SofaScore became `live.stuck` as
+  designed.
 
 ### 8.2 The sources
 
@@ -4402,6 +4628,27 @@ value) becomes `poll` inside the service, never `direct`; the flag and the envir
   `max_pages=2` limits `context.new_page()` for several sport pages, and whether `HOME_URL/{sport}` is the
   right page for sports other than football, tennis and basketball. These are steps of the live validation
   run.
+- **Checked against the real site** (the live validation, 2026-10-08, 19:56 to 20:03 Turkish time, with
+  `ssc serve` running). `ssc watch --source page` on the followed live matches opened its sport pages in
+  about 40 s and their push connections in about 2 minutes (polling led until then), then delivered real
+  events: six score changes of a handball match, basketball points, a volleyball set, a minifootball goal
+  and that match's finish (status live to completed, provisional, one finished match stored); 71 requests
+  in 17 rounds. So the abort rules keep the site's push code working, several sport pages open in one
+  browser, and `HOME_URL/{sport}` serves the sports it was tried on. The page source runs next to
+  `ssc serve`, with its own live profile; the empty result of the end-to-end test's re-test on 2026-10-07 was
+  a quiet match. Still not checked: hours of running, quiet hours, and the sports that had no live match that
+  evening.
+- **Closing a page or the browser (FX-27, PR #175; finding V9).** The `direct` run logged twelve
+  "Task was destroyed but it is pending!" errors for patchright's `BrowserContext._on_route`. The route
+  handlers of the page source and of the credential reader swallowed every error of `route.continue_()` and
+  `route.abort()`; when one fails because the page or the browser is closing, Playwright does not mark the
+  route handled, its task waits for ever and is collected with that error. As built: a failed
+  continue or abort is handed back with `route.fallback()` (`release_route`,
+  `sofascore_scraper/services/live/push_source.py:509-518` at `43ecdfc`), and before the credential page or
+  the live browser closes, `stop_routing` calls `context.unroute_all(behavior="ignoreErrors")` (`:522-535`;
+  `direct_source.py:261`, `push_source.py:703`). A single sport page that closes keeps the context's rules,
+  because the other pages need them. `"wait"` was not chosen, because a handler waiting for a budget slot
+  would hold up the close. A guard test checks that patchright still offers both calls.
 
 ### 8.3 The `direct` source: opt-in, and what the user is told
 
@@ -4478,6 +4725,17 @@ As built (P31, PR #101; `sofascore_scraper/services/live/direct_source.py:71-96`
   options hold over hours, the real credential reader in Chromium, several subjects on one connection, and
   how often the credential rotates. The tests run against an in-process fake NATS-over-WebSocket server and
   credential-free recorded frames; the `direct` step of the live validation run needs the owner's approval.
+- **Checked against the real server, once** (the live validation; the owner approved one 5-minute trial in
+  the orchestrator's session at 20:07 on 2026-10-08). `ssc watch --source direct` ran from 20:20:50 to
+  20:25:57. The four warnings were printed as designed, by the CLI and by the service. The credential was
+  read in the live profile's browser, and the push connection opened in 6 s with 13 subjects on one
+  connection (the `page` source took about 2 minutes); the server accepted this client (standard-library TLS,
+  `Origin`, no User-Agent). Through it came five score changes of a handball match and three of a
+  basketball match, while polling filled in the status of badminton and tennis matches and the scores of
+  ice-hockey, handball and basketball matches; two finished matches were stored, with 58 requests in 16
+  rounds. No user, password, `CONNECT` or token text was in the stream log's NDJSON, the watch log or the
+  application log. The run showed V9 (above, fixed by FX-27). Still not measured: runs of hours, how often
+  the credential rotates, and whether the server keeps accepting the client.
 
 ### 8.4 Hosting
 
@@ -4499,7 +4757,10 @@ As built (P31, PR #101; `sofascore_scraper/services/live/direct_source.py:71-96`
   `ssc watch` and a CLI download next to `ssc serve` can solve a challenge; before, they failed after three
   403s with the profile locked (findings F34, F36). The re-test ran `ssc watch --source page` next to
   `ssc serve`: the push connection opened, but a live U16 friendly gave no event in 5 minutes, so the event
-  flow next to a server is left to the live validation (`03-implementation-plan.md` section 18).
+  flow next to a server is left to the live validation (`03-implementation-plan.md` section 18). The live
+  validation of 2026-10-08 settled it: with `ssc serve` running, `ssc watch --source page` delivered real
+  events (8.2), and `ssc export` (standings as SQLite, odds as JSONL to stdout) and `ssc backup create` ran
+  next to the server too.
 - The legacy `main.py --watch` alias runs `ssc watch --source poll`, so that existing cron and systemd setups
   keep polling and do not start a browser (decision D18). Not yet as built: after P23 (PR #91) the alias
   still runs `MatchWatcher` under `watcher:<sport>`, because `main.py` was not P23's file. `sofascore_scraper/watcher.py`
@@ -4569,6 +4830,10 @@ then the `direct` source with its warnings and opt-in tests; P19 and P21 deliver
 alias mapping. Still open: `live.detail_slices` and `detail_interval_seconds`, the SIGHUP reload, a watchdog
 for a page that never opens a push connection, and every check against the real site and push server (the
 live validation run, done once at the end of the project; its `direct` step needs the owner's approval).
+The live validation ran on 2026-10-08 (8.2, 8.3): both push sources delivered real events, `page` also next
+to `ssc serve`, and FX-27 (PR #175) fixed what it found (the `--sport` filter, the route handlers at a
+close, the status codes without a type). Still open after 3.0.0: `live.detail_slices` and
+`detail_interval_seconds`, the SIGHUP reload, the page watchdog, and runs of hours.
 
 ---
 
@@ -4631,6 +4896,11 @@ State at `48e4c4c` (2026-10-08): the orchestrator's end-to-end test against the 
 per second, 2026-10-07 and 2026-10-08) is done, and its three fix items FX-24 (#170), FX-23 (#171) and
 FX-25 (#172) are merged. To do: the live validation, FX-16 after it, the release, and P30 after 3.0.0;
 `03-implementation-plan.md` section 18 has what remains before the tag.
+
+State at `43ecdfc` (2026-10-08): the live validation against the real SofaScore is done (the orchestrator's,
+on 2026-10-08), and FX-26 (#174), FX-27 (#175) and FX-16 (#176) are merged. In progress: FX-28 (small fixes
+of the web UI). To do: the release pull request, and P30 after 3.0.0; `03-implementation-plan.md` section
+18 has what remains before the tag.
 
 ## 10. Testing strategy
 
@@ -4705,7 +4975,13 @@ FX-25 (#172) are merged. To do: the live validation, FX-16 after it, the release
   process. Nothing of this ran against SofaScore, and Windows and macOS ran in CI only (best-effort
   platforms; a pull request is merged on a green Linux CI plus a local full-suite run). The end-to-end check
   of `ssc sync`, `export`, `backup` and `serve` and of the Docker image against the real site is part of the
-  live validation at the end of the project.
+  live validation at the end of the project. Done on 2026-10-08 by the orchestrator, at 2 requests per
+  second: league, team, player and single-match follows downloaded through the web UI (the Boston Celtics,
+  128 matches in 8.5 minutes; Jannik Sinner, 69 matches in 6.4 minutes; the EHF Champions League, 72
+  matches), a normalized events export as Parquet across 21 sports (846 rows) while a download ran, CLI
+  exports and a backup next to `ssc serve`, both push sources, and the Docker image built and smoke-tested
+  (4.6). Its findings became FX-26, FX-27 and FX-16 (and FX-28, in progress). The fixes themselves were
+  tested offline only.
 
 ---
 
@@ -5301,6 +5577,54 @@ changed only the web UI (`05-web-ui.md`); the items below come from FX-23 (#171)
      for status 110, or 120 with `overtime`, `extra1` or `extra2`; `DERIVE_VERSION` 6 rebuilds a catalog of
      the old rule on its first open (2.5; `04-schema-v1.md`).
 
+Corrections after the live validation and FX-26, FX-27 and FX-16 (2026-10-08, the ninth revision; checked at
+`43ecdfc`):
+
+135. **`fetch.only_finished` decides what a league download fetches.** 2.1 said that since ST-27 the setting
+     applies at read time only. Built and kept: a league download takes its matches from
+     `QueryService.detail_candidates` with the setting, so with it on only finished matches (and those with
+     details or of unknown status) get their details; team, player and match follows are not affected
+     (2.1; FX-26 corrected the texts, `01-storage.md` 8.1).
+136. **Completeness counts finished matches only.** 2.7 counted every match with details. Built:
+     `finished_details` in `SeasonCounts`, `TournamentCounts` and `/status`, `completion_rate = complete /
+     finished_details`, one rule for every kind of follow; `coverage()` unchanged (2.7, 6; FX-26).
+137. **`GET /events/{id}/extra`.** The route table had no place for the note, the series score, the venue
+     and the referee of a match. Built: a route of its own from the stored event payload (6; FX-26).
+138. **The time left of a job.** 2.8 did not say how `eta_seconds` is estimated. Built: the longest of the
+     phase's pace, the last three minutes' pace and the requests still to send by cost class at the job's
+     request rate (2.8; FX-26).
+139. **Follow names, export `events`, search-hit sports, client exceptions.** 2.7 had one name rule for every
+     kind, an export's `events` 0 for normalized datasets, a hit's sport only from the entity, and 2.6
+     Turkish texts in `sofascore_scraper/exceptions.py`. Built: "/" allowed for team, player and match
+     follows; `events` counts the matches; more places for the sport; English client exceptions (2.6, 2.7;
+     FX-26).
+140. **`ssc watch --sport` and the re-read of the follows.** 4.1 and 8.1 said `--sport` narrows the follows;
+     the 60 s re-read dropped the narrowing. Built: `LiveScope.only_sports`, kept on every re-read (4.1, 8.1;
+     FX-27).
+141. **Closing a live browser.** 8.2 and 8.3 did not say what happens to the request rules when a page or the
+     credential browser closes. Built: `route.fallback()` for a failed continue or abort, and
+     `unroute_all(behavior="ignoreErrors")` before a close (8.2; FX-27).
+142. **Live status codes without a type.** 8.1 relied on `status.type`; a push frame carries only the code.
+     Built: codes 1 to 3, 22, 42, 58 and 1003 to 1005 are live by code, and the frame probe uses
+     `classify_code()` without a warning (8.1; FX-27).
+143. **A "no data" answer of an unfinished match.** 3.2 and 3.3 said only answers with a body are stored for
+     an unfinished match, so such a slice showed `not_requested`. Built: an uncounted `empty` row; it
+     resolves completeness only once counted (2.7, 3.2, 3.3; FX-27).
+144. **`winning_odds` and `rankings`.** 3.1 had `winning_odds` experimental with any non-empty body as data,
+     and `rankings` with the ATP list only. Built: `winning_odds` with its seen shape and the rule
+     `sided_body_state`, not experimental; `rankings` subs `5` and `6` (3.1; FX-27).
+145. **`live.score_changed` of a set sport.** 5.1 did not say that the headline score of a set sport is the
+     sets won, so games and points are not events. Kept as designed and written into `ssc watch --help` (4.1,
+     5.1; FX-27).
+146. **The detail slices of football, basketball and tennis.** 3.1 kept them unchanged until the live
+     validation. Built: `pregame_form` optional in the three, tennis without `lineups` and `incidents`, tennis
+     `point_by_point` counting; the evidence is the application's own (two matrices), because the research
+     tool is broken (3.1; FX-16).
+147. **The live validation's results.** 2.7, 3.1, 4.6, 8.2 to 8.4, 8.6, 10 and 12 waited for checks against
+     the real site: the search, the odds providers and owner slices, the Docker image, both push sources
+     next to a server, the stop on the browser path, the connection state. Recorded as checked, with what is
+     still open (each section).
+
 ---
 
 ## 12. Risks
@@ -5331,7 +5655,14 @@ changed only the web UI (`05-web-ui.md`); the items below come from FX-23 (#171)
 - Both push sources depend on undocumented behaviour of SofaScore's page and server (subjects, frame format,
   the 30-minute reconnect, whether `sport.{sport}` carries all events at all hours). It can change without
   notice; polling stays a complete fallback, but live latency would silently degrade from about 1 s to the poll
-  interval. `system.live_source_changed` events and `ssc status` make the degradation visible.
+  interval. `system.live_source_changed` events and `ssc status` make the degradation visible. The live
+  validation of 2026-10-08 found both sources working on that evening (8.2, 8.3), which says nothing about
+  next month. One undocumented route had already changed: the sport-level
+  `/sport/{slug}/scheduled-events/{date}` answers 404 now (the site uses
+  `/sport/{slug}/scheduled-tournaments/{date}/page/1` and `/unique-tournament/{id}/scheduled-events/{date}`);
+  the application does not use it (finding V1), but the research tool `scripts/explore_all_sports.py` no
+  longer records page traffic under the current patchright (finding V3), so the next such change will be
+  found by the application, not by research, until that tool is repaired (after 3.0.0).
 - The `direct` source uses the site's own client credential outside the site's client. The credential can
   change, the server can start refusing non-browser clients, the IP address can be blocked, and the use is a
   terms-of-use grey area. It is opt-in for those reasons; the risk the design must prevent is enabling it by
@@ -5395,7 +5726,8 @@ changed only the web UI (`05-web-ui.md`); the items below come from FX-23 (#171)
   (#156) makes team, player and match follows download as well.
 - An image that was never built. The Docker image of P25 (entrypoint, `CMD`, the live profile directory)
   is tested only as a script; `release.yml` builds it on a tag. The live validation run builds and
-  smoke-tests it before the release.
+  smoke-tests it before the release. Done on 2026-10-08 from `137cabe` (4.6); what is left is the smoke
+  test of the release commit and a recreate of the Compose `live` profile.
 - Restore only from the command line. The API checks a restore but does not run it (2.8); a user of the web
   UI must run `ssc backup restore` on the server. Moving the data folder is a manual step since the menu is
   gone (7.3), and the Store is not closed before the data folder is changed or removed, which matters on
