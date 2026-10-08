@@ -29,6 +29,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
+import sync_fakes
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
 from sofascore_scraper.client import Client, endpoints
@@ -55,6 +56,7 @@ cli = skeleton.cli  # komut satırı fikstürü
 @pytest.fixture(autouse=True)
 def _settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     pin_default_settings(monkeypatch)
+    sync_fakes.install(monkeypatch)  # sahte bağlamın listeleri ve detay aşaması (tests/sync_fakes.py)
     loader.reset()
     yield
     monkeypatch.undo()
@@ -121,8 +123,8 @@ class Handle:
 def context(store: Store) -> SimpleNamespace:
     config = FakeConfig()
     config.get_max_concurrent = lambda: 1  # type: ignore[attr-defined]
-    return SimpleNamespace(config=config, data_dir=str(store.data_dir), store=store, season_fetcher=FakeSeasons(),
-                           match_fetcher=FakeSchedule(), match_data_fetcher=FakeDetails())
+    return SimpleNamespace(config=config, data_dir=str(store.data_dir), store=store, seasons=FakeSeasons(),
+                           schedule=FakeSchedule(), details=FakeDetails())
 
 
 def run(store: Store, spec: SyncSpec, **handle_options: Any) -> Any:

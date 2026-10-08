@@ -39,8 +39,9 @@ import legacy_writer
 import store_fixtures as sf
 import test_store_query_plans as plans
 from sofascore_scraper import refresh
-from sofascore_scraper.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher
-from sofascore_scraper.services.query import legacy_detail_keys, required_detail_keys
+from detail_fetch import LEGACY_DETAIL_KEYS, Details
+from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS, DetailPhase
+from sofascore_scraper.services.query import required_detail_keys
 from sofascore_scraper.slices import match_detail_slice_present
 from sofascore_scraper.sports import event_sport_slug, slices_for
 from sofascore_scraper.store import (
@@ -181,8 +182,9 @@ def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(time, "time", lambda: float(NOW))
 
 
-def fetcher_of(data_dir: Path) -> MatchDataFetcher:
-    return MatchDataFetcher(config_manager=MagicMock(), data_dir=str(data_dir))
+def fetcher_of(data_dir: Path) -> DetailPhase:
+    """Veri dizininin detay aşaması (eşitleme işinin planı: ihtiyaçlar, yenilenecekler)."""
+    return DetailPhase(open_store(data_dir), MagicMock())
 
 
 def ids(rows: Sequence[Any]) -> List[int]:
@@ -979,8 +981,9 @@ def test_missing_required_per_sport(canon: Store) -> None:
     assert all(row.missing_keys == () and not row.has_event_payload for row in nothing.values())
 
 
-def _file_needs(fetcher: MatchDataFetcher, event_ids: Sequence[int]) -> Dict[int, str]:
-    return {event_id: fetcher._needs_detail_fetch(str(event_id)) for event_id in event_ids}
+def _file_needs(fetcher: DetailPhase, event_ids: Sequence[int]) -> Dict[int, str]:
+    needs = fetcher.needs([str(event_id) for event_id in event_ids])
+    return {event_id: needs[str(event_id)] for event_id in event_ids}
 
 
 def _deferred(store: Store, needs: Dict[int, str]) -> Set[int]:
@@ -1018,17 +1021,18 @@ def _deferred(store: Store, needs: Dict[int, str]) -> Set[int]:
     return found
 
 
-def _file_missing_keys(fetcher: MatchDataFetcher, event_id: int) -> Tuple[str, ...]:
+def _file_missing_keys(fetcher: DetailPhase, event_id: int) -> Tuple[str, ...]:
     """Dosya tabanlı kural (eski yazıcının `_expected_slices`i, tests/legacy_writer.py): beklenen dilimlerden verisi olmayanlar."""
-    found = fetcher._find_match_path(str(event_id))
+    stored = Details(store=fetcher.store)
+    found = stored.location(str(event_id))
     assert found is not None
     directory = found[2]
-    data = fetcher._load_match_data_from_dir(directory, str(event_id))
+    data = stored.stored(str(event_id))
     sport = event_sport_slug(data["basic"]) or ""
     expected = legacy_writer.expected_slices(directory, sport, UNAVAILABLE_AFTER_ATTEMPTS)
-    # Eski yanıt spora özel dilimleri taşımaz (`legacy_detail_keys`); FX-16'dan beri tamlığa giren tenisin
+    # Eski yanıt spora özel dilimleri taşımaz (`LEGACY_DETAIL_KEYS`); FX-16'dan beri tamlığa giren tenisin
     # point_by_point'i dosyasından okunur
-    for key in set(expected) - set(legacy_detail_keys()):
+    for key in set(expected) - set(LEGACY_DETAIL_KEYS):
         path = Path(directory) / f"{key}.json"
         if path.is_file():
             data[key] = json.loads(path.read_bytes())
@@ -1125,29 +1129,29 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
     def differences(found: List[str], expected: List[str]) -> Set[str]:
         return set(found) ^ set(expected)
 
-    known = differences(catalog(), fetcher.refresh_due_ids())
+    known = differences(catalog(), fetcher.refresh_due())
     assert known == set()
     if name == "legacy":
-        assert str(LIV) in fetcher.refresh_due_ids()
+        assert str(LIV) in fetcher.refresh_due()
     for league_id in fx.leagues:
         scoped = catalog(scope=Scope(tournament_ids=[league_id]))
-        assert differences(scoped, fetcher.refresh_due_ids(league_id)) <= known
+        assert differences(scoped, fetcher.refresh_due(league_id)) <= known
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_LEGACY", "true")
-        legacy_only = differences(catalog(include_unobserved=True), fetcher.refresh_due_ids())
+        legacy_only = differences(catalog(include_unobserved=True), fetcher.refresh_due())
         # düz dizinler (biri yalnızca birleşik dosya): RD-3'e kadar ağaç gezintisi bunlara ulaşmıyordu
         assert legacy_only == set()
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_WINDOW_HOURS", "0")
         assert [] == store.events.refresh_candidates(now=NOW, window_s=0, min_interval_s=MIN_INTERVAL_S)
         # ST-27: politika kapalıyken de bayat kayıt yenilenir (listeden gelen düzeltme, pencereye bağlı değil)
-        assert fetcher.refresh_due_ids() == [str(event_id) for event_id in store.events.stale()]
+        assert fetcher.refresh_due() == [str(event_id) for event_id in store.events.stale()]
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_MIN_INTERVAL_HOURS", "0")
         found = [str(i) for i in store.events.refresh_candidates(now=NOW, window_s=WINDOW_S, min_interval_s=0,
                                                                  status_classes=SETTLED)
                  if i not in refill] + [str(i) for i in store.events.stale()]
-        assert differences(found, fetcher.refresh_due_ids()) == known
+        assert differences(found, fetcher.refresh_due()) == known
 
 
 IN_PROGRESS = "football/A_inprogress-7-2nd-half__17018572"
@@ -1233,7 +1237,7 @@ def test_needs_from_the_catalog_equal_the_file_based_ones_for_random_states(
     # ST-27: bayat kayıtlar da yenilenir (deferred içindeki `refresh` kararları)
     assert sorted([event_id for event_id in candidates if event_id not in refill | deferred]
                   + [event_id for event_id in deferred if needs[event_id] == "refresh"]) == sorted(
-        int(mid) for mid in fetcher.refresh_due_ids())
+        int(mid) for mid in fetcher.refresh_due())
     assert sorted(event_id for event_id, need in needs.items() if need == "refresh" and event_id not in deferred) \
         == [event_id for event_id in candidates if event_id not in refill | deferred]
 

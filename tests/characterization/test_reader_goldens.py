@@ -1,5 +1,5 @@
 """
-Karakterizasyon: MatchDataFetcher okuyucularının bugünkü çıktısı (plan maddesi G-02).
+Karakterizasyon: maç detayı planlayıcılarının bugünkü çıktısı (plan maddesi G-02).
 
 `tests/store_fixtures.py`'nin kurduğu her veri dizini için şu okuyucuların çıktısı `tests/golden/readers/`
 altında `<dizin>.<okuyucu>.json` olarak durur:
@@ -7,7 +7,9 @@ altında `<dizin>.<okuyucu>.json` olarak durur:
   fetcher                _needs_detail_fetch, refresh_due_ids, collect_detail_match_ids, pending_detail_ids
   reset_markers          reset_unavailable_markers ve ardından işaret dosyaları
 
-2.x'in `/api` okuyucularının goldenları (`api_*`) yollarla birlikte 3.1'de kalktı (P30).
+Anahtarlar 2.x'in MatchDataFetcher yöntemlerinin adlarıdır; yöntemler 3.1'de kalktı (P30) ve aynı çıktıyı bugün
+detay aşaması verir (sofascore_scraper/services/detail_phase.py: `needs`, `refresh_due`, `candidates`, `pending`,
+`reset_markers`). 2.x'in `/api` okuyucularının goldenları (`api_*`) yollarla birlikte kalktı.
 
 Okuyucuları kataloğa taşıyan plan maddeleri (RD-1 … RD-5, EX-1, P21) bu dosyaları değiştirmeden geçmeli ya da
 her farkı tek tek açıklamalıdır. Davranış bilerek değiştirildiyse dosyalar şöyle yeniden üretilir:
@@ -40,7 +42,8 @@ import detail_records
 import legacy_writer
 import store_fixtures as sf
 from sofascore_scraper.config_manager import ConfigManager
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.services.detail_phase import DetailPhase
+from sofascore_scraper.store import open_store
 
 GOLDEN_DIR = Path(__file__).resolve().parent.parent / "golden" / "readers"
 REGENERATE = os.getenv("REGEN_READER_GOLDENS") == "1"
@@ -51,8 +54,9 @@ MAX_RECORD_KEYS = 32  # bundan az anahtarlı düz sözlük tek satırda kalır
 UNKNOWN_LEAGUE = 999
 UNKNOWN_ID = 1
 
-def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    return MatchDataFetcher(config_manager=ConfigManager(), data_dir=str(data_dir))
+def _fetcher(data_dir: Path) -> DetailPhase:
+    """Bir işin detay aşaması (ihtiyaç önbelleği boş başlar)."""
+    return DetailPhase(open_store(str(data_dir)), ConfigManager())
 
 
 # --- altın dosya biçimi ----------------------------------------------------------------------
@@ -222,63 +226,78 @@ def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(time, "time", lambda: float(sf.FIXTURE_NOW))
 
 
-# --- MatchDataFetcher okuyucuları ---------------------------------------------------------------
+# --- detay aşamasının okuyucuları ---------------------------------------------------------------
 
 
-def _needs(fetcher: MatchDataFetcher, ids: Sequence[int]) -> Dict[str, str]:
-    return {str(event_id): fetcher._needs_detail_fetch(str(event_id)) for event_id in ids}
+def _needs(data_dir: Path, ids: Sequence[int]) -> Dict[str, str]:
+    """Maçların ihtiyacı, önbelleği boş bir aşamadan (2.x'te `_needs_detail_fetch`, önbelleksiz)."""
+    return _fetcher(data_dir).needs([str(event_id) for event_id in ids])
+
+
+def _candidates_of_newest(data_dir: Path, league_id: int) -> Any:
+    """Ligin yalnızca en yeni sezonunun adayları (2.x'te `collect_detail_match_ids(..., max_seasons=1)`)."""
+    from sofascore_scraper.services.query import QueryService
+    from sofascore_scraper.services.status import only_finished_setting
+
+    service = QueryService(open_store(str(data_dir)))
+    service.require_current()
+    found = service.detail_candidates(league_id, only_finished=only_finished_setting(), max_seasons=1)
+    if league_id not in found:
+        return None
+    return list(dict.fromkeys(str(event_id) for event_ids in found.values() for event_id in event_ids))
 
 
 def test_fetcher_readers(fx: sf.LegacyFixture, frozen_clock: None, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Planlayıcılar katalogdan okur (RD-3): sıralar belirlidir. `collect_detail_match_ids()` ligleri kimlik sırasıyla,
+    Planlayıcılar katalogdan okur (RD-3): sıralar belirlidir. Adaylar (`candidates()`) ligleri kimlik sırasıyla,
     bir ligin sezonlarını kimlik büyükten küçüğe, sezon içini başlangıç zamanıyla verir; lig vermeyen çağrının
     sonucu goldena eski anahtarıyla, sıralanarak yazılır.
     """
     fetcher = _fetcher(fx.data_dir)
     ids = fx.event_ids + [UNKNOWN_ID]
     leagues = list(fx.leagues)
-    golden: Dict[str, Any] = {"_needs_detail_fetch": _needs(fetcher, ids)}
+    golden: Dict[str, Any] = {"_needs_detail_fetch": _needs(fx.data_dir, ids)}
 
-    golden["refresh_due_ids()"] = fetcher.refresh_due_ids()
+    golden["refresh_due_ids()"] = fetcher.refresh_due()
     for league_id in leagues:
-        golden[f"refresh_due_ids(league_id={league_id})"] = fetcher.refresh_due_ids(league_id)
+        golden[f"refresh_due_ids(league_id={league_id})"] = fetcher.refresh_due(league_id)
 
     default = golden["_needs_detail_fetch"]
     for setting in ("REFRESH_LEGACY=true", "REFRESH_WINDOW_HOURS=0", "REFRESH_MIN_INTERVAL_HOURS=0"):
         with monkeypatch.context() as patch:
             patch.setenv(*setting.split("="))
-            changed = {event_id: need for event_id, need in _needs(fetcher, ids).items() if need != default[event_id]}
+            changed = {event_id: need for event_id, need in _needs(fx.data_dir, ids).items()
+                       if need != default[event_id]}
             golden[setting] = {
                 "_needs_detail_fetch (only where it differs from the default)": changed,
-                "refresh_due_ids()": fetcher.refresh_due_ids(),
+                "refresh_due_ids()": fetcher.refresh_due(),
             }
 
-    collected = fetcher.collect_detail_match_ids()
+    collected = fetcher.candidates()
     golden["collect_detail_match_ids() sorted"] = None if collected is None else sorted(collected, key=int)
     for league_id in leagues + [UNKNOWN_LEAGUE]:
         key = f"collect_detail_match_ids(league_id='{league_id}'"
-        golden[f"{key})"] = fetcher.collect_detail_match_ids(league_id=str(league_id))
-        golden[f"{key}, max_seasons=1)"] = fetcher.collect_detail_match_ids(league_id=str(league_id), max_seasons=1)
+        golden[f"{key})"] = fetcher.candidates(league_id)
+        golden[f"{key}, max_seasons=1)"] = _candidates_of_newest(fx.data_dir, league_id)
         for season_id in [sid for lid, sid in fx.listed if lid == league_id]:
-            golden[f"{key}, only_season_ids=[{season_id}])"] = fetcher.collect_detail_match_ids(
-                league_id=str(league_id), only_season_ids=[season_id]
+            golden[f"{key}, only_season_ids=[{season_id}])"] = fetcher.candidates(
+                league_id, only_season_ids=[season_id]
             )
 
-    golden["pending_detail_ids(all ids ascending)"] = fetcher.pending_detail_ids([str(i) for i in ids])
+    golden["pending_detail_ids(all ids ascending)"] = _fetcher(fx.data_dir).pending([str(i) for i in ids])
     check_golden(fx.name, "fetcher", golden)
 
 
 def test_needs_are_the_same_with_the_job_cache(fx: sf.LegacyFixture, frozen_clock: None) -> None:
     """
-    İş önbelleği (`begin_job_cache`) aynı kararları verir, iki yerde duran maçta da: iki yol da katalogdan okur ve
-    olay yükü en yeni olan kopyayı seçer (RD-3; eskiden önbellek dizini önce listelenen kopyayı tutuyordu).
+    İşin ihtiyaç önbelleği aynı kararları verir, iki yerde duran maçta da: iki yol da katalogdan okur ve olay
+    yükü en yeni olan kopyayı seçer (RD-3; eskiden önbellek dizini önce listelenen kopyayı tutuyordu).
     """
     ids = fx.event_ids + [UNKNOWN_ID]
-    plain = _needs(_fetcher(fx.data_dir), ids)
+    plain = {str(event_id): _fetcher(fx.data_dir).needs([str(event_id)])[str(event_id)] for event_id in ids}
     cached = _fetcher(fx.data_dir)
-    cached.begin_job_cache()
-    assert _needs(cached, ids) == plain
+    assert cached.needs([str(event_id) for event_id in ids]) == plain
+    assert cached.needs([str(event_id) for event_id in ids]) == plain  # ikinci okuma önbellekten
 
 
 def _marker_files(fixture: sf.LegacyFixture) -> Dict[str, Dict[str, Any]]:
@@ -297,7 +316,7 @@ def _marker_files(fixture: sf.LegacyFixture) -> Dict[str, Dict[str, Any]]:
 def test_reset_unavailable_markers(fx: sf.LegacyFixture, frozen_clock: None, tmp_path: Path) -> None:
     """Her çağrı taze bir kopyada: dönen sayaçlar, kalan işaret dosyaları ve değişen `_needs_detail_fetch`."""
     ids = fx.event_ids
-    before = {"markers": _marker_files(fx), "_needs_detail_fetch": _needs(_fetcher(fx.data_dir), ids)}
+    before = {"markers": _marker_files(fx), "_needs_detail_fetch": _needs(fx.data_dir, ids)}
     golden: Dict[str, Any] = {"before": before}
     calls: List[Dict[str, Any]] = [{}, {"include_confirmed": True}]
     calls += [{"league_id": league_id} for league_id in fx.leagues]
@@ -305,11 +324,11 @@ def test_reset_unavailable_markers(fx: sf.LegacyFixture, frozen_clock: None, tmp
         copy = sf.build_fixture(fx.name, tmp_path / f"copy{n}")
         fetcher = _fetcher(copy.data_dir)
         label = ", ".join(f"{k}={v}" for k, v in kwargs.items())
-        first = fetcher.reset_unavailable_markers(**kwargs)
+        first = fetcher.reset_markers(**kwargs)
         entry: Dict[str, Any] = {"result": first, "markers": _marker_files(copy)}
         if first["matches"]:
-            entry["_needs_detail_fetch"] = _needs(fetcher, ids)
-        entry["second_call"] = fetcher.reset_unavailable_markers(**kwargs)
+            entry["_needs_detail_fetch"] = _needs(copy.data_dir, ids)
+        entry["second_call"] = fetcher.reset_markers(**kwargs)
         golden[f"reset_unavailable_markers({label})"] = entry
     check_golden(fx.name, "reset_markers", golden)
 
@@ -440,7 +459,7 @@ def test_fidelity_detail_directories(tmp_path: Path) -> None:
 
 def test_fidelity_marker_files(tmp_path: Path) -> None:
     """_unavailable.json ve _slice_status.json: eski yazıcının ürettiği biçim fabrikanınkiyle aynı (zaman hariç)."""
-    from sofascore_scraper.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SliceOutcome
+    from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SliceOutcome
 
     basic = sf.basic_payload(sf.PL_BHA)
     data = {"basic": basic, **{key: sf.slice_payload(key, basic) for key in sf.REQUIRED_SLICES if key != "lineups"}}
@@ -466,7 +485,8 @@ def test_fidelity_marker_files(tmp_path: Path) -> None:
 
 def test_fidelity_slices_and_names() -> None:
     """Dilim listesi, "veri var mı" denetimleri, dizin adları ve gözlem kaydı kodla aynı."""
-    from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, NO_TOURNAMENT_DIR
+    from detail_fetch import LEGACY_DETAIL_KEYS as DETAIL_SLICE_KEYS
+    from legacy_writer import NO_TOURNAMENT_DIR
     from sofascore_scraper.slices import match_detail_slice_present
     from sofascore_scraper.sports import slices_for
     from sofascore_scraper.status import observation_record

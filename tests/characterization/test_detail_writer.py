@@ -33,7 +33,8 @@ import sofascore_scraper.utils as utils
 import store_dump
 from characterization import WORLD, assert_golden, pin_default_settings
 from fakes.sofascore import FakeSofaScore
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.services.detail_phase import DetailPhase
+from detail_fetch import Details
 
 LEAGUE = 17
 NO_TOURNAMENT = 9400001  # turnuvası (uniqueTournament) olmayan maç: dünyada yok, test ekler
@@ -54,11 +55,12 @@ def fake() -> Iterator[FakeSofaScore]:
         yield world
 
 
-def _fetcher(data_dir: Path) -> MatchDataFetcher:
+def _details(data_dir: Path) -> DetailPhase:
+    """Veri dizininin detay aşaması (eşitleme işinin kurduğu gibi)."""
+    from sofascore_scraper.store import open_store
     from sofascore_scraper.web.deps import config_manager as _web_config
-    config_manager = _web_config()
 
-    return MatchDataFetcher(config_manager, data_dir=str(data_dir))
+    return DetailPhase(open_store(str(data_dir)), _web_config())
 
 
 def _normal(dump: Dict[str, Any]) -> Dict[str, Any]:
@@ -105,7 +107,8 @@ def test_detail_writers_leave_the_recorded_logical_dump(
         fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     data_dir = tmp_path / "data"
     monkeypatch.setenv("DATA_DIR", str(data_dir))
-    md = _fetcher(data_dir)
+    md = _details(data_dir)
+    single = Details(data_dir)
     _add_no_tournament_event(fake)
     steps: Dict[str, Any] = {}
 
@@ -118,25 +121,25 @@ def test_detail_writers_leave_the_recorded_logical_dump(
     #    boş (pregame-form 404, kadro boş gövde), tenis maçında zorunlu olmayan dilim de istenir
     fake.fail("/event/9100003/statistics", 500)
     fake.fail("/event/9100010/lineups", 429)
-    done = md.fetch_detail_ids([9100001, 9100002, 9100003, NOT_STARTED, 9100010, TENNIS, NO_TOURNAMENT])
+    done = md.fetch([9100001, 9100002, 9100003, NOT_STARTED, 9100010, TENNIS, NO_TOURNAMENT])
     record("async_batch", {"success": done})
 
     # 1b. "yalnızca bitmiş maçlar" kapalı: oynanan maç da yazılır (işaretsiz)
     fake.clear_faults()
     monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)
-    done = md.fetch_detail_ids([LIVE])
+    done = md.fetch([LIVE])
     monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", True)
     record("async_unfinished", {"success": done})
 
     # 2. sıralı tek maç: kayıtlı bir maçın üzerine ve oynanan maç (yazılmaz)
-    fetched = {str(event_id): md.fetch_match_data(event_id) is not None for event_id in (9100001, LIVE)}
+    fetched = {str(event_id): single.fetch(event_id) is not None for event_id in (9100001, LIVE)}
     record("single_fetch", fetched)
 
     # 3. eksik dilimler: sıralı yol (9100003 istatistik, 9100010 kadro, 9100002 ikinci kez boş), sonra paralel
     #    yol 9100002 için üçüncü kez (iki boş yanıttan sonra beklenmez: istek yok)
-    results = md.fetch_matches_batch([9100003, 9100010, 9100002])
-    record("refill_sequential", sorted(results))
-    done = md.fetch_detail_ids([9100002, 9100003])
+    stored = md.fetch_selected([9100003, 9100010, 9100002])
+    record("refill_sequential", {"stored": stored})
+    done = md.fetch([9100002, 9100003])
     record("refill_async", {"success": done})
 
     # 4. yenileme: pencere açık, alt sınır kapalı; 9100010 skor düzeltmesi, 9100003 iptal, 9100001 aynı
@@ -144,18 +147,15 @@ def test_detail_writers_leave_the_recorded_logical_dump(
     monkeypatch.setenv("REFRESH_MIN_INTERVAL_HOURS", "0")
     _change_score(fake, 9100010, home=3)
     _cancel(fake, 9100003)
-    md.begin_job_cache()
-    try:
-        due = md.refresh_due_ids(league_id=LEAGUE)
-        stats = md.refresh_matches([mid for mid in due if mid in ("9100001", "9100003", "9100010")])
-    finally:
-        md.end_job_cache()
+    md = _details(data_dir)  # yeni iş: ihtiyaç önbelleği boş
+    due = md.refresh_due(LEAGUE)
+    stats = md.refresh([mid for mid in due if mid in ("9100001", "9100003", "9100010")])
     record("refresh", {"due": due, "stats": stats})
     monkeypatch.delenv("REFRESH_WINDOW_HOURS")
     monkeypatch.delenv("REFRESH_MIN_INTERVAL_HOURS")
 
     # 5. işaretlerin yeniden denetimi: varsayılan (doğrulanmış sayımlar kalır), sonra hepsi
-    record("reset_default", md.reset_unavailable_markers(league_id=LEAGUE))
-    record("reset_all", md.reset_unavailable_markers(league_id=LEAGUE, include_confirmed=True))
+    record("reset_default", md.reset_markers(LEAGUE))
+    record("reset_all", md.reset_markers(LEAGUE, include_confirmed=True))
 
     assert_golden("detail_writer", {"steps": steps})

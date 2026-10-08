@@ -37,7 +37,7 @@ from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List
 
 from sofascore_scraper import refresh
 from sofascore_scraper.logger import get_logger
-from sofascore_scraper.sports import DETAIL_SLICES, slices_for, sport_slugs
+from sofascore_scraper.sports import slices_for, sport_slugs
 from sofascore_scraper.status import StatusClass
 from sofascore_scraper.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreError
 
@@ -48,7 +48,6 @@ if TYPE_CHECKING:
 logger = get_logger("QueryService")
 
 EVENT_KEY = "event"  # `/event/{id}` yükünün depodaki dilim anahtarı
-LEGACY_EVENT_KEY = "basic"  # aynı yükün eski yanıtlardaki (ve basic.json'daki) adı
 # SQLite'ın saklayabildiği kimlik aralığı: dışındaki bir sayı hiçbir maçın kimliği olamaz
 _ID_RANGE = (-(2 ** 63), 2 ** 63 - 1)
 
@@ -56,23 +55,14 @@ FINISHED_CLASSES: Tuple[str, ...] = (StatusClass.COMPLETED.value, StatusClass.DE
 _LISTING_SOURCE = "listing"  # `events.row_source`: maç yalnızca bir listeden biliniyor
 
 
-def legacy_detail_keys() -> Tuple[str, ...]:
-    """
-    Eski maç detayı yanıtındaki dilimler, yanıttaki sırayla: dilim tablosunun spora bağlı olmayan `required`
-    satırları (sofascore_scraper/sports.py, DETAIL_SLICES); bir sporda tamlığa girmeyen `pregame_form` de bunlardandır.
-    Spora özel dilimler (ör. tenisin ve dartın `point_by_point`'i, kriketin `innings`'i) eski yanıtta yoktur.
-    """
-    return tuple(detail.key for detail in DETAIL_SLICES if detail.required and detail.sports is None)
-
-
 # -- indirme planı (RD-3) -------------------------------------------------------------------------------
 
-# Bir maçın ihtiyacı (sofascore_scraper/match_data_fetcher.py `_needs_detail_fetch`'in dönüş değerleri)
+# Bir maçın ihtiyacı (2.x'te MatchDataFetcher `_needs_detail_fetch`'in dönüş değerleri)
 NEED_FULL = "full"  # kayıt yok ya da olay yükü yok: baştan indirilir
 NEED_REFILL = "refill"  # olay yükü var, beklenen dilimlerden en az biri eksik
 NEED_REFRESH = "refresh"  # dilimler tam ama kayıt geçici ve yenileme zamanı geldi (sofascore_scraper/refresh.py)
 NEED_NONE = "none"  # tamam
-# Bu kadar kesin "veri yok" yanıtından sonra dilim o maçta artık beklenmez (sofascore_scraper/match_data_fetcher.py
+# Bu kadar kesin "veri yok" yanıtından sonra dilim o maçta artık beklenmez (services/detail_phase.py
 # UNAVAILABLE_AFTER_ATTEMPTS ile aynı değer; çağıran kendi değerini verebilir)
 DEFAULT_EMPTY_THRESHOLD = 2
 _ID_CHUNK = 500  # bir sorgunun kapsamına yazılan en çok kimlik
@@ -290,29 +280,6 @@ class QueryService:
 
     def __init__(self, store: "Store") -> None:
         self._store = store
-
-    def match_detail_legacy(self, event_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Bir maçın saklanan detayı, `GET /api/matches/{id}` yanıtının biçiminde: önce `basic` (`/event/{id}`
-        yükü), ardından yükü olan her `required` dilim, dilim tablosunun sırasıyla. İçeriği JSON `null` olan
-        dilim dosyası anahtarıyla ve None değeriyle yer alır (bugünkü gibi).
-
-        Maç bilinmiyorsa ya da olay yükü yoksa (yalnızca bir program sayfasından bilinen maç) None döner.
-        Depolama hatası (G/Ç, izin) StoreError olarak çağırana çıkar.
-        """
-        if isinstance(event_id, bool) or not isinstance(event_id, int):
-            raise ValueError(f"event_id: expected an integer, got {event_id!r}")
-        if not _ID_RANGE[0] <= event_id <= _ID_RANGE[1]:
-            return None
-        keys = legacy_detail_keys()
-        found = self._payloads(event_id, (EVENT_KEY, *keys))
-        if EVENT_KEY not in found:
-            return None
-        detail: Dict[str, Any] = {LEGACY_EVENT_KEY: found[EVENT_KEY]}
-        for key in keys:
-            if key in found:
-                detail[key] = found[key]
-        return detail
 
     # -- indirme planı (RD-3) ------------------------------------------------------------------------
 
@@ -711,25 +678,6 @@ class QueryService:
         return ChangePage(tuple(schema.change_from_row(row) for row in page),
                           str(page[-1].seq) if more and page else None)
 
-    def _payloads(self, event_id: int, keys: Iterable[str]) -> Dict[str, Any]:
-        """
-        Maçın istenen dilimlerinden yükü olanlar (anahtar → yük). Katalog "yük var" derken dosya okunamıyorsa
-        (katalog güncellendikten sonra silinmiş ya da bozulmuş: bir sonraki açılış uzlaştırır) dilimler tek
-        tek okunur ve okunamayan dilim yok sayılır: bir dilimin dosyası bütün maçı okunmaz yapmaz.
-        """
-        wanted = tuple(keys)
-        try:
-            return self._store.events.payloads(event_id, wanted)
-        except (PayloadMissing, PayloadCorrupt):
-            pass
-        found: Dict[str, Any] = {}
-        for key in wanted:
-            try:
-                found.update(self._store.events.payloads(event_id, (key,)))
-            except (PayloadMissing, PayloadCorrupt) as e:
-                logger.warning("Event %s: the stored %s payload is unreadable and is left out: %s", event_id, key, e)
-        return found
-
 
 def _fold(text: str) -> str:
     """Ad karşılaştırması: büyük-küçük harf ve aksan ayrımı yok (kataloğun `name_folded` kuralına yakın)."""
@@ -821,7 +769,7 @@ def _name(value: Any) -> Optional[str]:
 
 
 __all__ = ["CHANGE_ORDERS", "CatalogNotCurrent", "ChangePage", "DEFAULT_EMPTY_THRESHOLD", "EVENT_KEY", "EventFilter",
-           "EventExtra", "EventPage", "LEGACY_EVENT_KEY", "NEED_FULL", "NEED_NONE",
+           "EventExtra", "EventPage", "NEED_FULL", "NEED_NONE",
            "NEED_REFILL", "NEED_REFRESH", "QueryService", "RawPayload", "RefreshPolicy", "SliceSummary",
-           "Suggestion", "TournamentEntry", "V1_SORTS", "event_extra_of", "legacy_detail_keys", "refresh_window_seconds",
+           "Suggestion", "TournamentEntry", "V1_SORTS", "event_extra_of", "refresh_window_seconds",
            "required_detail_keys"]

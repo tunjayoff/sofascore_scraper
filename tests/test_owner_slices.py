@@ -294,14 +294,17 @@ def test_a_sync_runs_the_selected_extras_after_the_details(fake: FakeSofaScore, 
 
     from sofascore_scraper.config_manager import ConfigManager
     from sofascore_scraper.services.sync import SyncService, SyncSpec
+    import sync_fakes
     from test_sync_service import FakeDetails, RecordingHandle
+
+    sync_fakes.install(monkeypatch)
 
     download(store, SEASON_EVENTS + [9100010])
     season_routes(fake)
     config = ConfigManager()
     monkeypatch.setattr(config, "get_leagues", lambda: {LEAGUE: "Premier League"})
-    ctx = SimpleNamespace(config=config, data_dir=str(store.data_dir), store=store, season_fetcher=None,
-                          match_fetcher=None, match_data_fetcher=FakeDetails())
+    ctx = SimpleNamespace(config=config, data_dir=str(store.data_dir), store=store, seasons=None,
+                          schedule=None, details=FakeDetails())
     spec = SyncSpec(mode="details", league_id=LEAGUE)
 
     # Varsayılan yapılandırma: P28 aşaması hiçbir şey istemez

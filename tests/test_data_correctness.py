@@ -5,18 +5,18 @@ import asyncio
 import json
 import os
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
 from catalog_index import LISTING_SCHEDULES, index_listings
 from schedule_runner import inline, legacy_get
-from sofascore_scraper.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
-                                    SliceOutcome)
-from sofascore_scraper.match_fetcher import MatchFetcher
+from detail_fetch import Details
 from sofascore_scraper.services import listing
+from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS
+from sofascore_scraper.services.pipeline import is_finished
 from sofascore_scraper.services.status import StatusService
-from sofascore_scraper.slices import SLICE_OK, Outcome
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, Outcome, SliceOutcome
 from sofascore_scraper.store import Ref, league_dir_name, open_store
 
 
@@ -62,7 +62,7 @@ def test_incomplete_round_is_refetched_after_ttl(tmp_path):
     data = {"events": [_event(1), _event(2, "notstarted", "Not started", 0)]}
     _store_round(tmp_path, data, complete=False)
     assert f.cached_round(17, SEASON, "round_1") is not None
-    _store_round(tmp_path, data, complete=False, age_seconds=MatchFetcher.ROUND_CACHE_TTL_SECONDS + 60)
+    _store_round(tmp_path, data, complete=False, age_seconds=listing.ROUND_CACHE_TTL_SECONDS + 60)
     assert f.cached_round(17, SEASON, "round_1") is None
 
 
@@ -100,13 +100,13 @@ def test_round_saves_raw_payload_and_returns_only_finished(tmp_path):
     {"type": "finished", "description": "Ended", "code": 100},
 ])
 def test_finished_includes_extra_time_and_penalties(status):
-    assert MatchFetcher._is_finished_event({"status": status})
+    assert is_finished({"status": status})
 
 
 # --- maç detayları ------------------------------------------------------------------
 
-def _detail_fetcher(tmp_path) -> MatchDataFetcher:
-    return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+def _detail_fetcher(tmp_path) -> Details:
+    return Details(tmp_path)
 
 
 def _basic(mid=42, sport="tennis", desc="Ended"):
@@ -133,11 +133,11 @@ def test_slice_confirmed_empty_twice_is_no_longer_expected(tmp_path):
     f = _detail_fetcher(tmp_path)
     data = _partial_match()
     confirmed = {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404) for key in _EMPTY_SLICES}
-    f._save_match_data("42", data, confirmed)
-    assert f._needs_detail_fetch("42") == "refill"
+    f.save("42", data, confirmed)
+    assert f.need("42") == "refill"
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS - 1):
-        f._save_match_data("42", data, confirmed)
-    assert f._needs_detail_fetch("42") == "none"
+        f.save("42", data, confirmed)
+    assert f.need("42") == "none"
 
 
 @pytest.mark.parametrize("outcomes", [
@@ -148,8 +148,8 @@ def test_slice_missing_without_a_definitive_answer_stays_expected(tmp_path, outc
     """Eski kural her boş dilimi sayıyordu; başarısız istek kaç kez olursa olsun "yok" sayılmaz."""
     f = _detail_fetcher(tmp_path)
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS + 3):
-        f._save_match_data("42", _partial_match(), outcomes)
-    assert f._needs_detail_fetch("42") == "refill"
+        f.save("42", _partial_match(), outcomes)
+    assert f.need("42") == "refill"
 
 
 def test_sync_fetch_accepts_aet(tmp_path):
@@ -159,7 +159,7 @@ def test_sync_fetch_accepts_aet(tmp_path):
     fake = FakeSofaScore()  # P13: tek maç da boru hattından; dilimler 404
     fake.add_event(_basic(sport="football", desc="AET"))
     with fake:
-        assert f.fetch_match_data(42) is not None
+        assert f.fetch(42) is not None
 
 
 # --- kapsam raporu (P15: katalogdan, dosya yazılmaz) -------------------------------------------------
@@ -172,10 +172,10 @@ def _files(root) -> set:
 def test_coverage_report_counts_the_slices_the_writer_marked_and_writes_nothing(tmp_path, capsys):
     """Terminal menüsünün dosya raporu (FX-15'te kalktı) yerine: kapsam raporu katalogdan gelir, dosya yazılmaz."""
     f = _detail_fetcher(tmp_path)
-    f._save_match_data("42", _partial_match(), {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
+    f.save("42", _partial_match(), {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
                                                  for key in _EMPTY_SLICES})
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):  # istatistik yeterince kez kesin "yok": artık eksik sayılmaz
-        f._save_match_data("43", {**_partial_match(), "basic": _basic(43), "statistics": None},
+        f.save("43", {**_partial_match(), "basic": _basic(43), "statistics": None},
                            {"statistics": SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)})
     capsys.readouterr()
     before = _files(tmp_path)

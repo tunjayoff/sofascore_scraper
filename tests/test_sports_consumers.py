@@ -7,7 +7,8 @@ import pytest
 
 from sofascore_scraper import sports
 from sofascore_scraper.services.live import reducer
-from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, MatchDataFetcher
+from detail_fetch import LEGACY_DETAIL_KEYS, Details
+from sofascore_scraper.services.detail_phase import DetailPhase
 from sofascore_scraper.sports import DetailSlice
 from sofascore_scraper.status import BasketballScores, FootballScores, ScoreSheet, TennisScores, extract_scores
 from sofascore_scraper.web import league_sports
@@ -93,12 +94,11 @@ def test_stuck_threshold_comes_from_the_registry(tmp_path, sport, hours, expecte
 
 # --- indirici: dilimler tablodan --------------------------------------------------------
 
-def test_fetcher_constants_derive_from_the_slice_table():
+def test_the_legacy_detail_keys_derive_from_the_slice_table():
     # spora bağlı olmayan `required` dilimler: spora özel dilimler (dartın point_by_point'i, kriketin innings'i)
     # eski düzenin dosya listesine girmez
-    assert DETAIL_SLICE_KEYS == tuple(s.key for s in sports.DETAIL_SLICES
-                                      if s.required and s.sports is None) == COMMON_KEYS
-    assert REQUIRED_FILES == ["basic.json"] + [f"{k}.json" for k in COMMON_KEYS]
+    assert LEGACY_DETAIL_KEYS == tuple(s.key for s in sports.DETAIL_SLICES
+                                       if s.required and s.sports is None) == COMMON_KEYS
 
 
 def _basic(sport: str) -> dict:
@@ -128,16 +128,17 @@ def _api(sport: str, calls: list):
     async def session():
         yield MagicMock()
 
-    with patch("sofascore_scraper.utils.make_api_request_async", new=fake), patch("sofascore_scraper.utils.create_session_async", session):
+    with patch("sofascore_scraper.client.transport.make_api_request_async", new=fake), \
+            patch("sofascore_scraper.client.transport.create_session_async", session):
         yield
 
 
 def _batch_urls(tmp_path, sport: str) -> list:
     """Toplu indirmenin bir maç için istediği yollar: önce /event/42 (""), sonra dilimler (eşzamanlı: sıralı)."""
-    f = MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+    f = DetailPhase(Details(tmp_path).store, MagicMock())
     calls: list = []
     with _api(sport, calls):
-        f.fetch_matches_batch(["42"])
+        f.fetch_selected(["42"])
     return calls[:1] + sorted(calls[1:])
 
 
@@ -149,9 +150,9 @@ def test_disabled_slice_is_neither_requested_nor_expected(tmp_path, monkeypatch)
     assert "lineups" not in [s.key for s in sports.slices_for("football")]
     assert _batch_urls(tmp_path, "football") == ["", "/h2h", "/incidents", "/pregame-form", "/statistics",
                                                   "/team-streaks"]
-    f = MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+    f = Details(tmp_path)
     # FX-16: futbolda pregame_form istenir ama beklenmez
-    assert f._expected_slice_keys(42, "football") == ["statistics", "team_streaks", "h2h", "incidents"]
+    assert f.expected_keys(42, "football") == ["statistics", "team_streaks", "h2h", "incidents"]
 
 
 def test_sport_specific_required_slice_is_fetched_by_every_path(tmp_path, monkeypatch):
@@ -163,15 +164,15 @@ def test_sport_specific_required_slice_is_fetched_by_every_path(tmp_path, monkey
     assert "/innings" not in _batch_urls(tmp_path / "b", "football")
 
     for sport, wanted in (("basketball", True), ("football", False)):
-        f = MatchDataFetcher(MagicMock(), data_dir=str(tmp_path / f"single-{sport}"))
+        f = Details(tmp_path / f"single-{sport}")
         calls: list = []
         with _api(sport, calls):
-            data = f.fetch_match_data("42")
+            data = f.fetch("42")
         assert ("/innings" in calls) is wanted
         assert ("innings" in data) is wanted
-        assert ("innings" in f._expected_slice_keys(42, sport)) is wanted
+        assert ("innings" in f.expected_keys(42, sport)) is wanted
 
         calls.clear()
         with _api(sport, calls):
-            f.refill_missing_match_slices("42")
+            f.refill("42")
         assert ("/innings" in calls) is wanted

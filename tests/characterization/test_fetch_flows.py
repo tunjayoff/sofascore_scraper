@@ -39,7 +39,7 @@ from web_job import run_sync_job
 from sofascore_scraper.web import deps
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.services.detail_phase import DetailPhase
 
 LEAGUE = 17
 SEASON_WEEKS = 61627  # haftalık turlar
@@ -85,11 +85,12 @@ def run_job(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     return lambda **payload: run_sync_job(store, payload)
 
 
-def _fetcher(data_dir: Path) -> MatchDataFetcher:
+def _details(data_dir: Path) -> DetailPhase:
+    """Veri dizininin detay aşaması (eşitleme işinin kurduğu gibi)."""
+    from sofascore_scraper.store import open_store
     from sofascore_scraper.web.deps import config_manager as _web_config
-    config_manager = _web_config()
 
-    return MatchDataFetcher(config_manager, data_dir=str(data_dir))
+    return DetailPhase(open_store(str(data_dir)), _web_config())
 
 
 def _make_provisional(data_dir: Path, fake: FakeSofaScore, event_id: int) -> None:
@@ -261,9 +262,9 @@ def test_fake_leaves_storage_waits_real(fake: FakeSofaScore) -> None:
     yeniden deneme): beklemesi atlanmaz ve kaydedilmez. Diğer uygulama modüllerininki atlanır.
     """
     started = time.monotonic()
-    _sleep_as("sofascore_scraper.match_data_fetcher", 30.0)
+    _sleep_as("sofascore_scraper.services.detail_phase", 30.0)
     assert time.monotonic() - started < 2
-    assert [(s.source, s.seconds) for s in fake.sleeps] == [("sofascore_scraper.match_data_fetcher", 30.0)]
+    assert [(s.source, s.seconds) for s in fake.sleeps] == [("sofascore_scraper.services.detail_phase", 30.0)]
 
     fake.reset_log()
     started = time.monotonic()
@@ -473,25 +474,22 @@ def test_web_job_runs_are_idempotent(fake: FakeSofaScore, run_job: RunJob, data_
 
 def test_refresh_only(fake: FakeSofaScore, data_dir: Path) -> None:
     """
-    main.py --refresh-only'nin sırası: yenilenecekleri bul, her biri için yalnızca /event iste.
+    Yalnızca yenilemenin sırası (2.x'te main.py --refresh-only): yenilenecekleri bul, her biri için yalnızca /event iste.
     Maçlar arasında sabit bekleme yok (eski 1 sn, PR #33'te kalktı): `pause_seconds` boş. Kalan tek
     bekleme istek katmanınındır: yanıt alınan her istekten sonraki WAIT_TIME ve, açıksa, ortak istek
     bütçesinin sırası (sofascore_scraper/throttle.py; testlerde kapalı: tests/conftest.py).
     """
-    md = _fetcher(data_dir)
-    md.fetch_matches_batch([9100001, 9100003, 9100010])
+    details = _details(data_dir)
+    details.fetch_selected([9100001, 9100003, 9100010])
     for event_id in (9100001, 9100003, 9100010):
         _make_provisional(data_dir, fake, event_id)
     _change_score(fake, 9100003, home=2)  # skor düzeltildi
     fake.remove("/event/9100010")  # artık 404
     fake.reset_log()
 
-    md.begin_job_cache()
-    try:
-        ids = md.refresh_due_ids(league_id=None)
-        stats = md.refresh_matches(ids)
-    finally:
-        md.end_job_cache()
+    details = _details(data_dir)  # yeni iş: ihtiyaç önbelleği boş
+    ids = details.refresh_due(None)
+    stats = details.refresh(ids)
 
     request_waits = fake.slept(REQUEST_LAYER)
     assert all(0.2 <= seconds <= 0.7 for seconds in request_waits)  # WAIT_TIME_MIN + [0, WAIT_TIME_MAX]
@@ -500,7 +498,7 @@ def test_refresh_only(fake: FakeSofaScore, data_dir: Path) -> None:
         "due_ids": ids,
         "stats": stats,
         "requests": fake.canonical_log(),
-        "pause_seconds": fake.slept("sofascore_scraper.match_data_fetcher"),
+        "pause_seconds": fake.slept("sofascore_scraper.services.detail_phase"),
         "request_layer_waits": len(request_waits),
         "files": {
             path: content
@@ -519,12 +517,12 @@ def test_recheck_unavailable(fake: FakeSofaScore, run_job: RunJob, data_dir: Pat
     run_job(mode="details", league_id=LEAGUE)  # 9100002'nin iki dilimi ikinci kez boş: kesin "yok"
     # Eski sürümden kalma kayıt: 9100001 eski düzende, statistics dilimi doğrulanmadan "yok" sayılmış
     _as_legacy_record(data_dir, 9100001, drop=("statistics",), unavailable={"statistics": 2})
-    md = _fetcher(data_dir)
+    details = _details(data_dir)
     result: Dict[str, Any] = {"markers_before": _markers(data_dir)}
 
     fake.reset_log()
-    result["default"] = md.reset_unavailable_markers(league_id=LEAGUE)
-    result["default_again"] = md.reset_unavailable_markers(league_id=LEAGUE)
+    result["default"] = details.reset_markers(LEAGUE)
+    result["default_again"] = details.reset_markers(LEAGUE)
     result["markers_after_default"] = _markers(data_dir)
     assert fake.requests == []
 
@@ -532,7 +530,7 @@ def test_recheck_unavailable(fake: FakeSofaScore, run_job: RunJob, data_dir: Pat
     result["requests_after_default"] = fake.canonical_log()
 
     fake.reset_log()
-    result["all"] = md.reset_unavailable_markers(league_id=LEAGUE, include_confirmed=True)
+    result["all"] = details.reset_markers(LEAGUE, include_confirmed=True)
     result["markers_after_all"] = _markers(data_dir)
     assert fake.requests == []
 

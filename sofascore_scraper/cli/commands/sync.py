@@ -520,6 +520,7 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
     kuralıdır (sofascore_scraper/services/listing.py); maçların ihtiyacı planlamanınkidir (sofascore_scraper/services/planning.py).
     """
     from sofascore_scraper.services import listing
+    from sofascore_scraper.services import sync as sync_service
     from sofascore_scraper.services.sync import pick_seasons, sync_targets
 
     store = ctx.store
@@ -551,7 +552,7 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
                 lists["season_lists"] += 1
                 list_requests += 1
             wanted = [sid for s in spec.selections if s.league_id == lid for sid in s.season_ids]
-            known = [int(s["id"]) for s in ctx.season_fetcher.get_seasons_for_league(lid) if s.get("id") is not None]
+            known = [int(s["id"]) for s in sync_service.stored_seasons(ctx, lid) if s.get("id") is not None]
             if by_follow and lid in targets:
                 known = pick_seasons(known, targets[lid].seasons)  # takibin sezon seçimi (sync'in kuralı)
             seasons_of[lid] = wanted or known

@@ -2,8 +2,8 @@
 Kayıt hataları ve maçın yeri: yazılamayan maç "indirildi" sayılmaz.
 
 Sabitlenen kurallar:
-  - _save_match_data hatayı yutmaz, StorageError fırlatır (Store'un hatası, StoreError, bir StorageError'dır).
-    Maç başarısız olarak bildirilir (failed_callback); neden kalıcıysa (disk/kota dolu, izin yok, salt okunur)
+  - Yazma hatayı yutmaz, StorageError fırlatır (Store'un hatası, StoreError, bir StorageError'dır).
+    Maç başarısız olarak bildirilir (detay aşamasının `failed` geri çağrısı); neden kalıcıysa (disk/kota dolu, izin yok, salt okunur)
     iş durur ve kullanıcıya yolu ve nedeni söyleyen bir mesaj verilir.
   - Maçlar Store'a, v3 düzenine yazılır (`v3/events/.../<id>`, plan maddesi ST-21): yerleri kimlikten türer,
     uniqueTournament.id'si olmayan maç da aynı yere gider. Eski düzende duran kayıt taşınmaz: ilk yazmada
@@ -14,7 +14,6 @@ sahtesiyle üretilir.
 """
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import errno
 import json
@@ -25,11 +24,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.match_data_fetcher as mdf
 import sofascore_scraper.utils as utils
+from detail_fetch import Details
 from sofascore_scraper.web import deps
 from sofascore_scraper.exceptions import StorageError
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.services.detail_phase import DetailPhase
 from sofascore_scraper.store import files as store_files
 from sofascore_scraper.store import layout
 from sofascore_scraper.store import open_store
@@ -55,13 +54,18 @@ def _basic(mid: str = MID, unique_tournament: bool = True, sport: str = "footbal
     }
 
 
-def _fetcher(tmp_path) -> MatchDataFetcher:
+def _fetcher(tmp_path) -> Details:
+    return Details(tmp_path)
+
+
+def _phase(f: Details) -> DetailPhase:
+    """Bir işin detay aşaması: maçlar sırayla, devre kesici eşikleri yüksek."""
     cfg = MagicMock()
     cfg.get_rate_limit_threshold_consecutive.return_value = 1000
     cfg.get_rate_limit_threshold_ratio.return_value = 2.0
     cfg.get_server_error_threshold_consecutive.return_value = 1000
     cfg.get_max_concurrent.return_value = 1
-    return MatchDataFetcher(cfg, data_dir=str(tmp_path))
+    return DetailPhase(f.store, cfg)
 
 
 # --- kayıt hataları ------------------------------------------------------------------------
@@ -89,7 +93,7 @@ def _failing_writer(code: int, only_for: Optional[int] = None):
     return write
 
 
-def _stored(f: MatchDataFetcher, mid: Any) -> bool:
+def _stored(f: Details, mid: Any) -> bool:
     """Maçın olay yükü saklanıyor mu (Store)."""
     row = open_store(f.data_dir).events.get(int(mid))
     return row is not None and row.has_event_payload
@@ -113,13 +117,11 @@ def _event_calls(fake) -> List[str]:
     return [r.path for r in fake.requests if r.path.startswith("/event/") and r.path.count("/") == 2]
 
 
-def _run_batch(f: MatchDataFetcher, ids: List[str], writer, failed: List[str]) -> List[str]:
-    """fetch_matches_batch_async'i sahte SofaScore'la çalıştırır; istenen /event yollarını döndürür."""
+def _run_batch(phase: DetailPhase, ids: List[str], writer, failed: List[str]) -> List[str]:
+    """Seçilen maçları (DetailPhase.fetch_selected) sahte SofaScore'la çalıştırır; istenen /event yollarını döndürür."""
     with _world(ids) as fake, patch.object(store_files, "write_bytes", side_effect=writer):
         try:
-            f.last_results = asyncio.run(
-                f.fetch_matches_batch_async(ids, max_concurrent=1, failed_callback=failed.append)
-            )
+            phase.fetch_selected(ids, failed=failed.append)
         finally:
             calls = _event_calls(fake)
     return calls
@@ -129,7 +131,7 @@ def test_save_raises_storage_error_instead_of_swallowing(tmp_path):
     f = _fetcher(tmp_path)
     with patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.EIO)):
         with pytest.raises(StorageError) as info:
-            f._save_match_data(MID, {"basic": _basic()})
+            f.save(MID, {"basic": _basic()})
     assert info.value.errno == errno.EIO and not info.value.fatal
     assert str(tmp_path) in (info.value.path or "")  # hatanın yolu veri dizininde (hazırlık dizini)
     assert not _stored(f, MID)  # yarım bir kayıt kalmadı
@@ -144,15 +146,15 @@ def test_storage_error_fatality(code, fatal):
 
 def test_async_save_failure_reports_the_match_as_failed_and_continues(tmp_path):
     f = _fetcher(tmp_path)
+    phase = _phase(f)
     failed: List[str] = []
     # Yalnızca 101 numaralı maçın dizinine yazılamıyor (maça özgü, kalıcı olmayan hata)
-    calls = _run_batch(f, ["101", "102"], _failing_writer(errno.EIO, only_for=101), failed)
+    calls = _run_batch(phase, ["101", "102"], _failing_writer(errno.EIO, only_for=101), failed)
 
-    assert failed == ["101"]
-    assert list(f.last_results) == ["102"]  # yazılamayan maç "indirildi" sayılmadı
+    assert failed == ["101"]  # yazılamayan maç "indirildi" sayılmadı
     assert calls.count("/event/101") == 1  # yeniden istemek kaydı düzeltmez: yeniden denenmedi
-    assert f.rate_limit_breaker_triggered is False  # depolama hatası istek hatası değildir
-    assert f.last_status_counts == {}
+    assert phase.breaker_tripped is False  # depolama hatası istek hatası değildir
+    assert phase.status_counts == {}
     assert _stored(f, 102) and not _stored(f, 101)
 
 
@@ -161,7 +163,7 @@ def test_async_enospc_aborts_the_batch(tmp_path):
     failed: List[str] = []
     ids = [str(n) for n in range(101, 111)]
     with pytest.raises(StorageError) as info:
-        _run_batch(f, ids, _failing_writer(errno.ENOSPC), failed)
+        _run_batch(_phase(f), ids, _failing_writer(errno.ENOSPC), failed)
 
     assert info.value.fatal and info.value.errno == errno.ENOSPC
     assert failed == ["101"]
@@ -174,8 +176,8 @@ def test_picked_matches_save_failure_reports_the_match_as_failed_and_continues(t
 
     with _world(["101", "102"]), \
             patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.EIO, only_for=101)):
-        results = f.fetch_matches_batch(["101", "102"], failed_callback=failed.append)
-    assert failed == ["101"] and list(results) == ["102"]
+        stored = _phase(f).fetch_selected(["101", "102"], failed=failed.append)
+    assert failed == ["101"] and stored == 1 and _stored(f, 102)
 
 
 def test_picked_matches_enospc_aborts_the_batch(tmp_path):
@@ -185,7 +187,7 @@ def test_picked_matches_enospc_aborts_the_batch(tmp_path):
     with _world(["101", "102", "103"]) as fake, \
             patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.ENOSPC)):
         with pytest.raises(StorageError):
-            f.fetch_matches_batch(["101", "102", "103"], failed_callback=failed.append)
+            _phase(f).fetch_selected(["101", "102", "103"], failed=failed.append)
         requested = _event_calls(fake)
     assert failed == ["101"]
     assert requested == ["/event/101"]  # iş durdu: sonraki maç istenmedi
@@ -193,20 +195,20 @@ def test_picked_matches_enospc_aborts_the_batch(tmp_path):
 
 def test_refresh_write_failure_is_a_storage_error(tmp_path):
     f = _fetcher(tmp_path)
-    f._save_match_data(MID, {"basic": _basic()})
+    f.save(MID, {"basic": _basic()})
     with _world([MID]), patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.ENOSPC)):
         with pytest.raises(StorageError) as info:
-            f.refresh_match(MID)
+            f.refresh(MID)
     assert info.value.fatal
 
 
-def test_fetch_detail_ids_lets_fatal_storage_errors_through(tmp_path):
+def test_the_detail_phase_lets_fatal_storage_errors_through(tmp_path):
     """Detay aşaması (SyncService) hatayı yutmaz: disk dolu ise çağıran bunu görmeli."""
-    f = _fetcher(tmp_path)
+    phase = _phase(_fetcher(tmp_path))
     boom = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), str(tmp_path))
-    with patch.object(f, "_run_batch", side_effect=boom):
+    with patch.object(phase, "_run", side_effect=boom):
         with pytest.raises(StorageError):
-            f.fetch_detail_ids(["1"])
+            phase.fetch(["1"])
 
 
 def test_cli_sync_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, capsys, restore_cli_process):
@@ -220,8 +222,8 @@ def test_cli_sync_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, cap
     monkeypatch.setattr("sys.argv", [
         "main.py", "--data-dir", str(tmp_path), "sync", "--only", "events", "--tournament", "17",
     ])
-    # `sync` SyncService'i çağırır (P10): detay aşamasının ilk indirici çağrısı collect_detail_match_ids'tir
-    with patch.object(MatchDataFetcher, "collect_detail_match_ids", side_effect=boom), \
+    # `sync` SyncService'i çağırır (P10): detay aşamasının ilk çağrısı adayların okunmasıdır
+    with patch.object(DetailPhase, "candidates", side_effect=boom), \
             patch.object(utils.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
         assert cli.main() == 5  # P19: depolama hatası 5 (önce 1)
     err = capsys.readouterr().err
@@ -234,7 +236,7 @@ def test_cli_sync_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, cap
 def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    from sofascore_scraper.services import context
+    from sofascore_scraper.services import context, sync
     from sofascore_scraper.store import JobStore
     from web_job import run_sync_job
 
@@ -243,31 +245,27 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
     monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League"})
     class FullDisk:
-        rate_limit_breaker_triggered = False
-        last_status_counts: Dict[str, int] = {}
+        """Detay aşamasının sahtesi: ilk maç yazılamıyor, disk dolu."""
+        breaker_tripped = False
+        status_counts: Dict[str, int] = {}
         refresh_listener = None
 
-        def begin_job_cache(self):
-            pass
-
-        def end_job_cache(self):
-            pass
-
-        def collect_detail_match_ids(self, league_id=None, max_seasons=0, only_season_ids=None):
+        def candidates(self, league_id=None, *, only_season_ids=None):
             return ["a", "b"]
 
-        def pending_detail_ids(self, ids):
+        def pending(self, ids):
             return list(ids)
 
-        def fetch_detail_ids(self, ids, progress_callback=None, should_cancel=None, failed_callback=None):
-            failed_callback("a")
+        def fetch(self, ids, *, progress=None, cancelled=None, failed=None):
+            failed("a")
             raise StorageError.from_exception(
                 OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/match_details/17_PL/season_x/a"
             )
 
     # Servis bağlamının (ServiceContext) yerini tutar
-    ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=FullDisk())
+    ctx = SimpleNamespace(config=deps.config_manager())
     monkeypatch.setattr(context, "build_context", lambda config_manager: ctx)
+    monkeypatch.setattr(sync, "detail_phase", lambda _ctx: FullDisk())
     final = run_sync_job(store, {"mode": "details", "league_id": 17})
 
     assert final["status"] == "Failed"
@@ -282,45 +280,42 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
 
 # --- maçın yeri: v3, kimlikten (uniqueTournament.id'si olmasa da) ------------------------------------
 
-def _v3_dir(f: MatchDataFetcher, mid: Any) -> Path:
+def _v3_dir(f: Details, mid: Any) -> Path:
     return Path(f.data_dir, *layout.event_dir(int(mid)).split("/"))
 
 
-@pytest.mark.parametrize("event_id", [0, 4242, 999_999, 1_000_000, 16_837_335, 2 ** 40 + 7])
-def test_the_fetchers_v3_directory_is_the_layouts(tmp_path, event_id):
-    """`_find_match_path` v3 dizinini Store'un alt modülünü içe aktarmadan kurar: kural layout'unkiyle aynı."""
-    assert mdf._v3_event_dir(str(tmp_path), event_id) == str(Path(tmp_path, *layout.event_dir(event_id).split("/")))
+def _legacy_root(f: Details) -> Path:
+    return Path(f.data_dir, "match_details")
 
 
 def test_match_without_unique_tournament_is_stored_by_its_id(tmp_path):
     f = _fetcher(tmp_path)
-    f._save_match_data(MID, {"basic": _basic(unique_tournament=False, sport="esports")})
+    f.save(MID, {"basic": _basic(unique_tournament=False, sport="esports")})
 
     assert (_v3_dir(f, MID) / "event.json.gz").is_file()
-    assert [p.name for p in Path(f.match_details_dir).iterdir() if p.name != "processed"] == []  # eski düzene yazılmaz
+    assert not _legacy_root(f).exists()  # eski düzene yazılmaz
 
 
 def test_a_match_without_unique_tournament_is_found_by_readers(tmp_path):
     f = _fetcher(tmp_path)
-    f._save_match_data(MID, {"basic": _basic(unique_tournament=False, sport="esports")})
+    f.save(MID, {"basic": _basic(unique_tournament=False, sport="esports")})
     expected = str(_v3_dir(f, MID))
 
-    assert f._find_match_path(MID) == (None, None, expected)
-    assert f._build_match_index()[MID] == (None, None, expected)
-    assert f._compute_detail_need(MID) == "refill"  # kaydı okunuyor: eksik dilimleri tamamlanabilir
+    assert f.location(MID) == (None, None, expected)
+    assert f.need(MID) == "refill"  # kaydı okunuyor: eksik dilimleri tamamlanabilir
 
 
 def test_existing_record_without_unique_tournament_is_not_moved(tmp_path):
     """Eski sürümün ada göre dizinindeki kayıt v3'e yükseltilir; eski dizine dokunulmaz (karar 4)."""
     f = _fetcher(tmp_path)
-    old_dir = Path(f.match_details_dir) / "Cup" / "season_Cup_26" / MID  # eski sürümün ada göre dizini
+    old_dir = _legacy_root(f) / "Cup" / "season_Cup_26" / MID  # eski sürümün ada göre dizini
     old_dir.mkdir(parents=True)
     (old_dir / "basic.json").write_text(json.dumps(_basic(unique_tournament=False)), encoding="utf-8")
     before = {p.name: p.read_bytes() for p in old_dir.iterdir()}
 
-    f._save_match_data(MID, {"basic": _basic(unique_tournament=False), "h2h": H2H})
+    f.save(MID, {"basic": _basic(unique_tournament=False), "h2h": H2H})
     assert {p.name: p.read_bytes() for p in old_dir.iterdir()} == before
-    assert not (Path(f.match_details_dir) / "_no_tournament").exists()
+    assert not (_legacy_root(f) / "_no_tournament").exists()
     store = open_store(f.data_dir)
     row = store.events.get(int(MID))
     assert (row.layout, row.legacy_path) == ("v3", f"match_details/Cup/season_Cup_26/{MID}")
@@ -329,6 +324,6 @@ def test_existing_record_without_unique_tournament_is_not_moved(tmp_path):
 
 def test_match_with_unique_tournament_is_stored_by_its_id_too(tmp_path):
     f = _fetcher(tmp_path)
-    f._save_match_data(MID, {"basic": _basic()})
+    f.save(MID, {"basic": _basic()})
     assert (_v3_dir(f, MID) / "event.json.gz").is_file()
-    assert not (Path(f.match_details_dir) / "77_Cup").exists()
+    assert not (_legacy_root(f) / "77_Cup").exists()

@@ -18,8 +18,10 @@ import pytest
 
 import legacy_writer
 import store_dump
-from sofascore_scraper.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE,
-                                    MatchDataFetcher, SliceOutcome)
+from detail_fetch import LEGACY_DETAIL_KEYS, Details
+from legacy_writer import UNAVAILABLE_FILE
+from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS, DetailPhase
+from sofascore_scraper.slices import SLICE_EMPTY, SliceOutcome
 from sofascore_scraper.refresh import SCORE_CHANGES_FILE, diff_basic
 from sofascore_scraper.sports import event_sport_slug, slices_for
 from sofascore_scraper.status import OBSERVATION_KEY
@@ -66,15 +68,20 @@ def _api(fake: Any) -> List[str]:
     return [r.path for r in fake.requests if r.path != SITE_ROOT]
 
 
-def _fetcher(tmp_path) -> MatchDataFetcher:
-    return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+def _fetcher(tmp_path) -> Details:
+    return Details(tmp_path)
 
 
-def _store(f: MatchDataFetcher, basic: dict, observed_after_start_h=None) -> Path:
+def _phase(f: Details) -> DetailPhase:
+    """Bir işin detay aşaması (eşitleme işinin yolu; ihtiyaç önbelleği boş başlar)."""
+    return DetailPhase(f.store, MagicMock())
+
+
+def _store(f: Details, basic: dict, observed_after_start_h=None) -> Path:
     """
     Dilimleri tam sayılan (hepsi 'yok' işaretli) bir kayıt; kaydın dizinini döndürür.
 
-    Gözlem anı verilirse kayıt indiricinin yazıcısıyla Store'a (v3) yazılır: gözlem o an, her `required` dilim
+    Gözlem anı verilirse kayıt Store'a (v3) yazılır: gözlem o an, her `required` dilim
     iki kez 404 almış. Verilmezse önceki bir sürümün yazdığı gözlemsiz eski kayıt kurulur (eski düzen,
     `_unavailable.json` doğrulanmamış sayımlarla).
     """
@@ -82,7 +89,7 @@ def _store(f: MatchDataFetcher, basic: dict, observed_after_start_h=None) -> Pat
     if observed_after_start_h is None:
         match_dir = Path(legacy_writer.save_legacy(f.data_dir, mid, {"basic": basic}))
         (match_dir / UNAVAILABLE_FILE).write_text(
-            json.dumps({k: UNAVAILABLE_AFTER_ATTEMPTS for k in DETAIL_SLICE_KEYS}))
+            json.dumps({k: UNAVAILABLE_AFTER_ATTEMPTS for k in LEGACY_DETAIL_KEYS}))
         return match_dir
     keys = [d.key for d in slices_for(event_sport_slug(basic), required_only=True)]
     data = {"basic": basic, **dict.fromkeys(keys), OBSERVATION_KEY: {
@@ -91,16 +98,16 @@ def _store(f: MatchDataFetcher, basic: dict, observed_after_start_h=None) -> Pat
     }}
     outcomes = {k: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404) for k in keys}
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):
-        f._save_match_data(mid, data, outcomes)
-    return Path(f._find_match_path(mid)[2])
+        f.save(mid, data, outcomes)
+    return Path(f.location(mid)[2])
 
 
-def _rows(f: MatchDataFetcher) -> list:
+def _rows(f: Details) -> list:
     """Değişiklik günlüğünün satırları (Store, iki düzen birlikte), sıra numarasıyla sıralı."""
     return [dict(change.row) for change in open_store(f.data_dir).changes.list()]
 
 
-def _row(f: MatchDataFetcher, mid: str = MID):
+def _row(f: Details, mid: str = MID):
     return open_store(f.data_dir).events.get(int(mid))
 
 
@@ -109,33 +116,33 @@ def _row(f: MatchDataFetcher, mid: str = MID):
 def test_need_without_observation_is_none(tmp_path):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"))
-    assert f._compute_detail_need(MID) == "none"
+    assert f.need(MID) == "none"
 
 
 def test_need_within_window_is_refresh(tmp_path):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
-    assert f._compute_detail_need(MID) == "refresh"
+    assert f.need(MID) == "refresh"
 
 
 def test_need_after_window_is_none(tmp_path):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=72.5)
-    assert f._compute_detail_need(MID) == "none"
+    assert f.need(MID) == "none"
 
 
 def test_need_with_policy_off_is_none(tmp_path, monkeypatch):
     monkeypatch.setenv("REFRESH_WINDOW_HOURS", "0")
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
-    assert f._compute_detail_need(MID) == "none"
+    assert f.need(MID) == "none"
 
 
 def test_window_is_configurable(tmp_path, monkeypatch):
     monkeypatch.setenv("REFRESH_WINDOW_HOURS", "6")
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=7)
-    assert f._compute_detail_need(MID) == "none"
+    assert f.need(MID) == "none"
 
 
 @pytest.mark.parametrize("hours_since_observed,min_interval,expected", [
@@ -152,14 +159,14 @@ def test_min_interval_between_refreshes(tmp_path, monkeypatch, hours_since_obser
     now = dt.datetime.now(dt.timezone.utc).timestamp()
     basic["startTimestamp"] = int(now - 10 * 3600)  # pencere açık: başlangıçtan 10 sa
     _store(f, basic, observed_after_start_h=10 - hours_since_observed)
-    assert f._compute_detail_need(MID) == expected
+    assert f.need(MID) == expected
 
 
 def test_missing_slices_still_come_before_refresh(tmp_path):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
-    assert f.reset_unavailable_markers(include_confirmed=True)["matches"] == 1  # dilimler yeniden beklenir
-    assert f._compute_detail_need(MID) == "refill"
+    assert _phase(f).reset_markers(include_confirmed=True)["matches"] == 1  # dilimler yeniden beklenir
+    assert f.need(MID) == "refill"
 
 
 # --- yenileme ---------------------------------------------------------------------------
@@ -173,7 +180,7 @@ def test_changed_penalties_are_logged_with_old_and_new(tmp_path):
     new["changes"] = {"changes": ["awayScore.penalties"], "changeTimestamp": old["changes"]["changeTimestamp"] + 600}
 
     with _serving(new) as fake:
-        data = f.refresh_match(MID)
+        data = f.refresh(MID)
     assert _api(fake) == [f"/event/{MID}"]  # yalnızca /event, dilim yok
 
     rows = _rows(f)
@@ -205,14 +212,13 @@ def test_unchanged_refresh_only_updates_observation(tmp_path):
     payload_mtime = (match_dir / "event.json.gz").stat().st_mtime_ns
 
     with _serving(copy.deepcopy(old)):
-        f.refresh_match(MID)
+        f.refresh(MID)
 
     assert _rows(f) == []
     assert (match_dir / "event.json.gz").stat().st_mtime_ns == payload_mtime  # yük aynı: dosya yazılmadı
     assert _row(f).observed_at > before.observed_at
     # Pencere artık kapandı (şimdi ≥ başlangıç + 72 sa): kayıt kesin
-    f.end_job_cache()
-    assert f._compute_detail_need(MID) == "none"
+    assert f.need(MID) == "none"
 
 
 def test_status_regression_is_flagged_not_deleted(tmp_path):
@@ -223,7 +229,7 @@ def test_status_regression_is_flagged_not_deleted(tmp_path):
     new["id"] = old["id"]
 
     with _serving(new):
-        data = f.refresh_match(str(old["id"]))
+        data = f.refresh(str(old["id"]))
 
     row = _rows(f)[0]
     assert row["status_regressed"] is True
@@ -239,7 +245,7 @@ def test_failed_fetch_leaves_record_untouched(tmp_path):
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
     before = _row(f)
     with _serving(None):
-        assert f.refresh_match(MID) is None
+        assert f.refresh(MID) is None
     assert _row(f) == before
 
 
@@ -258,7 +264,7 @@ def test_a_record_of_the_old_layout_is_promoted_by_its_refresh_and_its_folder_is
     before = store_dump.dump(tmp_path)["events"][MID]
 
     with _serving(new):
-        assert f.refresh_match(MID) is not None
+        assert f.refresh(MID) is not None
 
     assert {p.name: p.read_bytes() for p in match_dir.iterdir()} == files_before
     row = _row(f)
@@ -292,9 +298,9 @@ def test_legacy_record_is_untouched_without_flag(tmp_path):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"))
     with _serving() as fake:
-        assert f.fetch_matches_batch([MID]) == {}
+        assert _phase(f).fetch_selected([MID]) == 0
     assert fake.requests == []
-    assert f.refresh_due_ids() == []
+    assert _phase(f).refresh_due() == []
 
 
 def test_legacy_record_refreshes_once_with_flag(tmp_path, monkeypatch):
@@ -302,22 +308,21 @@ def test_legacy_record_refreshes_once_with_flag(tmp_path, monkeypatch):
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
     _store(f, old)
-    assert f.refresh_due_ids() == [MID]
+    assert _phase(f).refresh_due() == [MID]
     with _serving(copy.deepcopy(old)):
-        stats = f.refresh_matches([MID])
+        stats = _phase(f).refresh([MID])
     assert stats == {"refreshed": 1, "changed": 0, "failed": 0}
     # observation yazıldı ve pencere çoktan kapalı: bir daha yenilenmez
-    f.end_job_cache()
-    assert f._compute_detail_need(MID) == "none"
+    assert f.need(MID) == "none"
 
 
 def test_batch_refreshes_after_new_matches_and_counts_separately(tmp_path):
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
     _store(f, old, observed_after_start_h=2)
-    assert f.pending_detail_ids([MID, "999"]) == ["999", MID]
+    assert _phase(f).pending([MID, "999"]) == ["999", MID]
     with _serving(old) as fake:  # 999 SofaScore'da yok: tam çekim denenir ve başarısız olur
-        f.fetch_matches_batch([MID, "999"])
+        _phase(f).fetch_selected([MID, "999"])
     assert _api(fake) == ["/event/999", f"/event/{MID}"]  # önce yeni maç, sonra yenileme
 
 
@@ -331,11 +336,11 @@ def test_no_fixed_pauses_between_matches(tmp_path):
     _store(f, old, observed_after_start_h=2)
     others = [dict(copy.deepcopy(old), id=mid) for mid in (997, 998, 999)]
     with _serving(old, *others) as fake:
-        assert len(f.fetch_matches_batch(["997", "998", "999"])) == 3
-        assert f.refresh_matches([MID, MID, MID])["refreshed"] == 3
-        assert f.fetch_detail_ids([str(n) for n in range(1, 251)]) == 0  # 250 maç, hepsi 404: tek oturum
+        assert _phase(f).fetch_selected(["997", "998", "999"]) == 3
+        assert _phase(f).refresh([MID, MID, MID])["refreshed"] == 3
+        assert _phase(f).fetch([str(n) for n in range(1, 251)]) == 0  # 250 maç, hepsi 404: tek oturum
         assert len(fake.sessions) == 3
-    assert fake.slept("sofascore_scraper.match_data_fetcher") == [] and fake.slept("sofascore_scraper.services.pipeline") == []
+    assert fake.slept("sofascore_scraper.services.detail_phase") == [] and fake.slept("sofascore_scraper.services.pipeline") == []
 
 
 def test_job_progress_counts_refreshes():
@@ -353,9 +358,10 @@ def test_refresh_listener_is_called(tmp_path):
     old = _fixture("football/F2_penalties__16950622")
     _store(f, old, observed_after_start_h=2)
     calls = []
-    f.refresh_listener = lambda mid, changed: calls.append((mid, changed))
+    phase = _phase(f)
+    phase.refresh_listener = lambda mid, changed: calls.append((mid, changed))
     with _serving(copy.deepcopy(old)):
-        f.refresh_match(MID)
+        phase.refresh([MID])
     assert calls == [(MID, False)]
 
 

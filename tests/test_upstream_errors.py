@@ -15,9 +15,7 @@ from unittest.mock import patch
 import pytest
 
 from sofascore_scraper.client import bridge as cs
-import sofascore_scraper.season_fetcher as season_fetcher_mod
 import sofascore_scraper.utils as utils
-from conftest import DATA_DIR, LEAGUE_ID, SEASON_ID, SEASON_NAME
 from sofascore_scraper import bridge_health
 from sofascore_scraper.exceptions import (
     APIError,
@@ -26,13 +24,10 @@ from sofascore_scraper.exceptions import (
     RateLimitError,
     ResourceNotFoundError,
 )
-from sofascore_scraper.season_fetcher import SeasonFetcher
-from sofascore_scraper.web import deps
 from sofascore_scraper.web import upstream
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
 CHALLENGE = '{"error":{"code":403,"reason":"challenge"}}'
-SEEDED_SEASONS = [{"id": SEASON_ID, "name": SEASON_NAME, "year": "26/27"}]
 
 
 class Resp:
@@ -145,16 +140,3 @@ def test_a_403_is_a_browser_problem_only_when_the_browser_failed_during_this_req
     assert upstream.reason_for(blocked, before) == "browser"
     # Eski bir tarayıcı hatası, bu istekte yeni bir şey olmadıysa nedeni değiştirmez
     assert upstream.reason_for(blocked, bridge_health.snapshot()) == "blocked"
-
-
-# --- sezon listesi ---------------------------------------------------------------
-
-def test_the_checked_season_fetch_raises_the_typed_error_and_returns_the_list():
-    """`fetch_seasons_checked` (web'in "sezonları yenile" uç noktası) başarısızlığı boş listeyle gizlemez."""
-    fetcher = SeasonFetcher(deps.config_manager(), DATA_DIR)
-    with patch.object(season_fetcher_mod, "make_api_request", side_effect=APIError("HTTP 403", status_code=403)):
-        with pytest.raises(APIError):
-            fetcher.fetch_seasons_checked(LEAGUE_ID)
-    with patch.object(season_fetcher_mod, "make_api_request", return_value={"seasons": SEEDED_SEASONS}) as req:
-        assert fetcher.fetch_seasons_checked(LEAGUE_ID) == SEEDED_SEASONS
-    assert req.call_args.kwargs == {"max_retries": None, "raise_errors": True}  # yapılandırılan deneme sayısı

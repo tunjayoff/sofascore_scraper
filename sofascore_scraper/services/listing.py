@@ -13,7 +13,7 @@ Sonuç tiplidir (`ListingResult`): `ok`, `failed` (neden: istek katmanının ned
 "storage") ya da `skipped` (devre kesici açık, ya da liste taze: `fresh`). Çekilemeyen bir sezon listesi ya da tur
 "sezon yok" / "maç yok" gibi görünmez: başarısız bir iş birimidir.
 
-Kurallar (eski sofascore_scraper/season_fetcher.py ve sofascore_scraper/match_fetcher.py'den taşındı; davranış aynı):
+Kurallar (2.x'in season_fetcher.py ve match_fetcher.py modüllerinden taşındı; davranış aynı):
 
   * Tur sayfası olduğu gibi saklanır, meta'sında `complete` (her maçı bitmiş ya da iptal mi) vardır. Tamamlanmış
     tur bir daha istenmez; tamamlanmamış tur ROUND_CACHE_TTL_SECONDS dolunca yeniden istenir. `complete`'i
@@ -34,8 +34,8 @@ her çalıştırmada bir kez istenir (turlar istenmez).
 
 Yürütme: liste birimleri getirme boru hattında (sofascore_scraper/services/pipeline.py) yürür: çalıştırma başına tek ısıtılmış
 oturum, depoya her erişim (okuma da) yazıcı thread'inde. `ListingFetcher` boru hattının liste işleyicisidir;
-`ListingService` onu tek bir çağrıyla çalıştıran yüzdür (sofascore_scraper/season_fetcher.py ve sofascore_scraper/match_fetcher.py'nin
-sarmalayıcıları onu kullanır). `ScheduleLister` programın kendisidir ve istek ile yazmayı dışarıdan alır, böylece
+`ListingService` onu tek bir çağrıyla çalıştıran yüzdür (eşitleme servisi onu kullanır:
+sofascore_scraper/services/sync.py `list_seasons`, `list_schedule`). `ScheduleLister` programın kendisidir ve istek ile yazmayı dışarıdan alır, böylece
 eski çağıranların istek yolu (sofascore_scraper.utils.make_api_request_async) da aynı kuralları kullanır.
 
 `enqueue_events=True` ile bir program, listede bitmiş görünen ve katalogda eksik olan maçlar için maç iş birimleri

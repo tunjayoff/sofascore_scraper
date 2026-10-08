@@ -26,6 +26,8 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import conftest
 import pytest
+
+import sync_fakes
 from fastapi.testclient import TestClient
 
 from sofascore_scraper import sports
@@ -409,30 +411,27 @@ def test_a_body_that_raises_fails_the_job_with_the_code_of_the_error(store: JobS
 class _Details:
     """SyncService'in detay aşamasının sahtesi (tests/test_job_manager.py'deki ile aynı yüz)."""
 
-    rate_limit_breaker_triggered = False
-    last_status_counts: Dict[str, int] = {}
+    breaker_tripped = False
+    status_counts: Dict[str, int] = {}
     refresh_listener = None
     breaker_on: Optional[str] = None
     failing: List[str] = []
 
-    def begin_job_cache(self) -> None: ...
-    def end_job_cache(self) -> None: ...
-
-    def collect_detail_match_ids(self, league_id: Any = None, max_seasons: int = 0, only_season_ids: Any = None) -> List[str]:
+    def candidates(self, league_id: Any = None, *, only_season_ids: Any = None) -> List[str]:
         return ["a", "b", "c"]
 
-    def pending_detail_ids(self, ids: List[str]) -> List[str]:
+    def pending(self, ids: List[str]) -> List[str]:
         return list(ids)
 
-    def fetch_detail_ids(self, ids: List[str], progress_callback: Any = None, should_cancel: Any = None,
-                         failed_callback: Any = None) -> int:
+    def fetch(self, ids: List[str], *, progress: Any = None, cancelled: Any = None,
+              failed: Any = None) -> int:
         for n, match_id in enumerate(ids, start=1):
             if match_id in self.failing:
-                failed_callback(match_id)
-            progress_callback(n, len(ids), "")
+                failed(match_id)
+            progress(n, len(ids), "")
         if self.breaker_on:
-            self.rate_limit_breaker_triggered = True
-            self.last_status_counts = {self.breaker_on: 9}
+            self.breaker_tripped = True
+            self.status_counts = {self.breaker_on: 9}
         return len(ids)
 
 
@@ -440,7 +439,8 @@ class _Details:
 def service(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> _Details:
     """Gerçek iş gövdesi (`_run_sync`), sahte bir servis bağlamıyla: istek atılmaz, dosya yazılmaz."""
     details = _Details()
-    ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
+    ctx = SimpleNamespace(config=deps.config_manager(), details=details)
+    sync_fakes.install(monkeypatch)
     monkeypatch.setattr("sofascore_scraper.services.context.build_context", lambda config_manager: ctx)
     return details
 

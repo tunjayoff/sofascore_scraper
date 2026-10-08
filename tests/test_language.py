@@ -252,7 +252,7 @@ def test_cli_locale_files_have_the_same_keys_and_placeholders():
 def test_keys_used_by_the_cli_and_the_launcher_exist():
     en = _locale("en")
     used = set()
-    for name in ("sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/bridge_health.py", "sofascore_scraper/match_fetcher.py"):
+    for name in ("sofascore_scraper/bridge_health.py",):  # 2.x'in indiricileri P30'da kalktı
         used |= set(re.findall(r"""\bt\(\s*['"]([a-z0-9_]+)['"]""", (REPO / name).read_text(encoding="utf-8")))
     launcher = (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
     used |= {"launcher_" + key for key in re.findall(r'_t\(\s*"([a-z_]+)"', launcher)}

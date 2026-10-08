@@ -15,7 +15,6 @@
     "version": "Version:",
     "description": "Description:",
     "libraries": "Libraries:",
-    "total_seasons": "Total Seasons:",
     "check_log_for_details": "Please check the log file for details: {path}",
     "check_console_for_details": "File logging is off (LOG_TO_FILE=false); the details are in the output above.",
     "diagnostics_written": "Diagnostics bundle written: {path}",

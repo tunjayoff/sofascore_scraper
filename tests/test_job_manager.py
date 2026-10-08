@@ -27,6 +27,8 @@ from typing import Any, Dict, Iterator, List, Optional
 import conftest
 import pytest
 
+import sync_fakes
+
 from sofascore_scraper.web import deps
 from sofascore_scraper import bridge_health
 from sofascore_scraper.exceptions import StorageError
@@ -1063,34 +1065,32 @@ def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
 
     class Details:
-        rate_limit_breaker_triggered = False
-        last_status_counts: Dict[str, int] = {}
+        breaker_tripped = False
+        status_counts: Dict[str, int] = {}
         refresh_listener = None
         breaker_on: Optional[str] = None
         failing: List[str] = []
 
-        def begin_job_cache(self) -> None: ...
-        def end_job_cache(self) -> None: ...
-
-        def collect_detail_match_ids(self, league_id: Any = None, max_seasons: int = 0, only_season_ids: Any = None) -> List[str]:
+        def candidates(self, league_id: Any = None, *, only_season_ids: Any = None) -> List[str]:
             return ["a", "b", "c"]
 
-        def pending_detail_ids(self, ids: List[str]) -> List[str]:
+        def pending(self, ids: List[str]) -> List[str]:
             return list(ids)
 
-        def fetch_detail_ids(self, ids: List[str], progress_callback: Any = None, should_cancel: Any = None,
-                             failed_callback: Any = None) -> int:
+        def fetch(self, ids: List[str], *, progress: Any = None, cancelled: Any = None,
+                  failed: Any = None) -> int:
             for n, match_id in enumerate(ids, start=1):
                 if match_id in self.failing:
-                    failed_callback(match_id)
-                progress_callback(n, len(ids), "")
+                    failed(match_id)
+                progress(n, len(ids), "")
             if self.breaker_on:
-                self.rate_limit_breaker_triggered = True
-                self.last_status_counts = {self.breaker_on: 9}
+                self.breaker_tripped = True
+                self.status_counts = {self.breaker_on: 9}
             return len(ids)
 
     details = Details()
-    ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
+    ctx = SimpleNamespace(config=deps.config_manager(), details=details)
+    sync_fakes.install(monkeypatch)
     monkeypatch.setattr(context, "build_context", lambda config_manager: ctx)
     manager = JobManager(jobs)
 
@@ -1141,7 +1141,7 @@ def test_web_job_that_cannot_write_fails_with_the_storage_code(web: Any, monkeyp
     def full_disk(ids: List[str], **kwargs: Any) -> int:
         raise StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/match_details/17")
 
-    monkeypatch.setattr(web.details, "fetch_detail_ids", full_disk)
+    monkeypatch.setattr(web.details, "fetch", full_disk)
     job = web.run(mode="details", league_id=17)
 
     assert job.state is JobState.FAILED and job.error.code == "storage_error"
@@ -1173,13 +1173,18 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
         # Depo açılamazsa iş yine çalışır
         class NoStore:
             def __init__(self, ctx: Any) -> None:
-                self.config, self.match_data_fetcher = ctx.config, ctx.match_data_fetcher
+                # Detay aşaması deposunu kendisi açar (bağlamın deposu açılamasa da iş çalışır)
+                self.config = ctx.config
+                self.details = DetailPhase(open_store(str(data_dir)), ctx.config)
 
             @property
             def store(self) -> Any:
                 raise StoreError("state.db bu koddan yeni")
 
+        from sofascore_scraper.services.detail_phase import DetailPhase
+
         real = context.build_context
+        sync_fakes.install(monkeypatch)
         monkeypatch.setattr(context, "build_context", lambda config_manager: NoStore(real(config_manager)))
         run_sync_job(jobs, {"mode": "details", "league_id": 17})
         assert jobs.snapshot()["status"] == "Completed"

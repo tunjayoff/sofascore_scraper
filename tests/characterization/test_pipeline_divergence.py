@@ -5,7 +5,9 @@ Eski iki detay hattının ayrıştığı yerler: docs/design/02-services.md, bö
   eski sync hat:  MatchDataFetcher.fetch_matches_batch, fetch_match_data, refill_missing_match_slices
                   (kimliğiyle seçilen maçlar, tek maç uç noktası, async hattın içinden refill/refresh)
 
-G-01 bu testlerde iki hattın farklı davranışını sabitlemişti. P13'ten beri iki giriş noktası da aynı boru hattına
+2.x'in MatchDataFetcher'ı 3.1'de kalktı (P30): lig planı bugün DetailPhase.fetch, seçilen maçlar
+DetailPhase.fetch_selected (sofascore_scraper/services/detail_phase.py), tek maç ve refill testlerin yolu
+(tests/detail_fetch.py). G-01 bu testlerde iki hattın farklı davranışını sabitlemişti. P13'ten beri iki giriş noktası da aynı boru hattına
 (sofascore_scraper/services/pipeline.py) gider; her test, eski farkın yerine iki yolun artık AYNI davrandığını ve bu davranışın
 ne olduğunu sabitler (değişiklikler P13'ün PR metninde satır satır anılır). Satır 13 ve 14, FX-5'in bulduğu iki
 farktır (boş sayılan "falsy" gövde, 404'ün iki nedeni).
@@ -14,7 +16,6 @@ Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; iste
 """
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Sequence
@@ -27,7 +28,9 @@ from characterization import WORLD, pin_default_settings
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper import throttle
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from detail_fetch import Details
+from sofascore_scraper.services.detail_phase import DetailPhase
+from sofascore_scraper.store import open_store
 
 FINISHED = 9100001  # futbol, bitti, altı dilimi de var
 FINISHED_2 = 9100003
@@ -35,7 +38,7 @@ NOT_STARTED = 9100004
 LIVE = 9300001  # futbol, oynanıyor; statistics, lineups, incidents var
 TENNIS = 9200001  # bitti; statistics, h2h, point-by-point var
 SLICES = ["statistics", "team-streaks", "pregame-form", "h2h", "lineups", "incidents"]  # futbolun dilimleri, tablo sırasıyla
-FETCHER_PAUSES = "sofascore_scraper.match_data_fetcher"  # bu modülün time.sleep / asyncio.sleep beklemeleri
+FETCHER_PAUSES = "sofascore_scraper.services.detail_phase"  # detay aşamasının time.sleep / asyncio.sleep beklemeleri
 PIPELINE_PAUSES = "sofascore_scraper.services.pipeline"  # boru hattının beklemeleri (yalnızca meşgul depoda)
 BUDGET_WARM_UP = "sofascore_scraper.throttle"  # oturum ısınmasının bütçe sırası (diğer isteklerinki istek katmanındadır)
 
@@ -82,24 +85,32 @@ def request_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[
     throttle.reset_for_tests()
 
 
-def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from sofascore_scraper.web.deps import config_manager as _web_config
-    config_manager = _web_config()
+class _Phase(DetailPhase):
+    """Veri dizininin detay aşaması; tek maç yolları ve dizin testlere `single` / `data_dir` olarak açık."""
 
-    return MatchDataFetcher(config_manager, data_dir=str(data_dir))
+    def __init__(self, data_dir: Path) -> None:
+        from sofascore_scraper.web.deps import config_manager as _web_config
+
+        super().__init__(open_store(str(data_dir)), _web_config())
+        self.data_dir = str(data_dir)
+        self.single = Details(store=self.store)
 
 
-def _run_plan(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
-    """Eski async hattın giriş noktası (web işinin lig planı); başarısız sayılan maçları döndürür."""
+def _fetcher(data_dir: Path) -> _Phase:
+    return _Phase(data_dir)
+
+
+def _run_plan(md: _Phase, ids: Sequence[int]) -> List[str]:
+    """Eski async hattın giriş noktası (web işinin lig planı: DetailPhase.fetch); başarısız sayılan maçları döndürür."""
     failed: List[str] = []
-    md.fetch_detail_ids([str(i) for i in ids], failed_callback=failed.append)
+    md.fetch([str(i) for i in ids], failed=failed.append)
     return failed
 
 
-def _run_picked(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
-    """Eski sync hattın giriş noktası (web işinin seçili maçları); başarısız sayılan maçları döndürür."""
+def _run_picked(md: _Phase, ids: Sequence[int]) -> List[str]:
+    """Eski sync hattın giriş noktası (seçili maçlar: DetailPhase.fetch_selected); başarısız sayılan maçları döndürür."""
     failed: List[str] = []
-    md.fetch_matches_batch(list(ids), failed_callback=failed.append)
+    md.fetch_selected(list(ids), failed=failed.append)
     return failed
 
 
@@ -111,17 +122,17 @@ def _api_paths(fake: FakeSofaScore) -> List[str]:
     return [r.path for r in fake.requests if r.path != SITE_ROOT]
 
 
-def _stored(md: MatchDataFetcher, event_id: int) -> Dict[str, Any]:
+def _stored(md: _Phase, event_id: int) -> Dict[str, Any]:
     """Kaydın hali, eski düzen dizininin dosyaları biçiminde (tests/detail_records.py `legacy_view`); kayıt yoksa {}."""
     return detail_records.legacy_view(md.data_dir, event_id)
 
 
-def _manifest(md: MatchDataFetcher, event_id: int) -> Dict[str, Any]:
+def _manifest(md: _Phase, event_id: int) -> Dict[str, Any]:
     path = detail_records.record_dir(md.data_dir, event_id) / "manifest.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _store_then_make_partial(fake: FakeSofaScore, md: MatchDataFetcher) -> None:
+def _store_then_make_partial(fake: FakeSofaScore, md: _Phase) -> None:
     """Diskte FINISHED'in bir dilimi eksik kaydı (ihtiyaç: refill), SofaScore'da ise maç artık "oynanıyor"."""
     assert _run_picked(md, [FINISHED]) == []
     detail_records.drop_slices(md.data_dir, FINISHED, "h2h")
@@ -135,7 +146,7 @@ def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     """Her giriş noktası aynı boru hattına gider: ısıtılmış bir oturumla, eşzamanlı istekler (`async`)."""
     md = _fetcher(data_dir)
 
-    md.fetch_detail_ids([str(FINISHED)])  # web işi, lig/sezon planı (fetch_job.py)
+    md.fetch([str(FINISHED)])  # web işi, lig/sezon planı
     assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 1
 
     # CLI ve web işi, takip edilen ligler: listelerden toplanan maçlar (SyncService'in detay aşaması)
@@ -143,14 +154,14 @@ def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     summary.parent.mkdir(parents=True)
     summary.write_text(f"match_id\n{FINISHED_2}\n", encoding="utf-8")
     fake.reset_log()
-    assert md.fetch_detail_ids(md.pending_detail_ids(md.collect_detail_match_ids("17") or [])) == 1
+    assert md.fetch(md.pending(md.candidates(17) or [])) == 1
     assert {r.via for r in fake.requests} == {"async"}
 
     # Kimliğiyle seçilen maçlar ve tek maçın eski yüzü: aynı yol, her biri kendi oturumuyla (2.x'in tek maç uç
     # noktası 3.1'de kalktı; v1'deki karşılığı `event_ids`li `fetch` işidir)
     fake.reset_log()
-    md.fetch_matches_batch([9100002])
-    assert md.fetch_match_data(TENNIS) is not None
+    md.fetch_selected([9100002])
+    assert md.single.fetch(TENNIS) is not None
     assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 2
 
     # Eksik dilim (refill) de aynı oturumda tamamlanır: başka bir thread'e geçilmez
@@ -215,7 +226,7 @@ def test_row04_event_failure(fake: FakeSofaScore, tmp_path: Path) -> None:
         assert _api_paths(fake) == [f"/event/{FINISHED}"] * 3
         assert fake.slept(REQUEST_LAYER) == [3.0, 6.0]
         assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
-        assert md.last_status_counts.get("5xx") == 1
+        assert md.status_counts.get("5xx") == 1
 
 
 def test_row05_slice_retries(fake: FakeSofaScore, tmp_path: Path) -> None:
@@ -268,12 +279,12 @@ def test_row07_pacing(fake: FakeSofaScore, tmp_path: Path, request_budget: Calla
     assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
 
     fake.reset_log()
-    md.fetch_detail_ids(unknown)
+    md.fetch(unknown)
     assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
     assert len(fake.sessions) == 1  # batch yok: çalıştırma başına bir oturum
 
     fake.reset_log()
-    asyncio.run(md.fetch_matches_batch_async(unknown))
+    md.fetch_selected(unknown)
     assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
     assert len(fake.sessions) == 1
     assert fake.slept(BUDGET_WARM_UP) == []  # kapalı bütçe kimseyi bekletmez
@@ -324,7 +335,7 @@ def test_row09_refill_of_a_match_that_is_no_longer_finished(fake: FakeSofaScore,
     for md in (in_plan, in_picked):  # yeni hali saklanır; maç açık kayıttır
         stored = _stored(md, FINISHED)
         assert stored["basic.json"]["status"]["type"] == "inprogress" and "h2h.json" in stored
-        assert md._needs_detail_fetch(str(FINISHED)) == "none"
+        assert md.single.need(str(FINISHED)) == "none"
 
 
 def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
@@ -358,7 +369,7 @@ def test_row11_not_finished_outcome(fake: FakeSofaScore, tmp_path: Path) -> None
         assert stored["basic.json"]["status"]["type"] == "notstarted"
         assert "_unavailable.json" not in stored and "_slice_status.json" not in stored
     # Sayımlar yapılan istekleri anlatır: ön maç evresinde olmayan dilimlerin 404'leri (iki yolda aynı)
-    assert in_plan.last_status_counts == in_picked.last_status_counts == {"404": len(pre_match)}
+    assert in_plan.status_counts == in_picked.status_counts == {"404": len(pre_match)}
 
 
 def test_row12_slice_markers(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

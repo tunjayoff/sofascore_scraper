@@ -229,9 +229,10 @@ def test_the_web_face_imports_only_services_and_the_listed_modules():
 
 
 def test_the_web_face_has_no_terminal_ui_and_no_writer():
-    """Web yüzü terminal menüsünü ve indiricileri doğrudan içe aktarmaz: servisler üzerinden çalışır."""
+    """Web yüzü terminal menüsünü, detay aşamasını ve boru hattını doğrudan içe aktarmaz: servisler üzerinden çalışır."""
     found = face_imports(WEB_DIR, ROOT)
-    for layer in ("sofascore_scraper.SofaScoreUi", "sofascore_scraper.ui", "sofascore_scraper.match_data_fetcher", "sofascore_scraper.match_fetcher", "sofascore_scraper.season_fetcher"):
+    for layer in ("sofascore_scraper.SofaScoreUi", "sofascore_scraper.ui", "sofascore_scraper.services.detail_phase",
+                  "sofascore_scraper.services.pipeline"):
         assert layer not in found, (layer, found.get(layer))
 
 

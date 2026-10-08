@@ -312,12 +312,13 @@ def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
     from sofascore_scraper.web.deps import config_manager as _web_config
     config_manager = _web_config()
 
-    from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+    from sofascore_scraper.services.detail_phase import DetailPhase
+    from sofascore_scraper.store import open_store
 
     fake, data_dir = world
     policy = RefreshPolicy.current()
-    md = MatchDataFetcher(config_manager, data_dir=str(data_dir))
-    md.fetch_matches_batch(list(WORLD_IDS))
+    md = DetailPhase(open_store(str(data_dir)), config_manager)
+    md.fetch_selected(list(WORLD_IDS))
     after_one_run = _world_needs(data_dir, policy)
     assert after_one_run == {
         9100001: NEED_NONE,  # tam
@@ -332,7 +333,7 @@ def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
     # servis güncel tutar)
     assert after_one_run[9100004] == NEED_NONE and after_one_run[9300001] == NEED_NONE
 
-    md.fetch_matches_batch([9100002, 9200001])  # ikinci "veri yok": o dilimler artık beklenmez
+    md.fetch_selected([9100002, 9200001])  # ikinci "veri yok": o dilimler artık beklenmez
     detail_records.drop_slices(data_dir, 9100001, "statistics")
     start = fake.event(9100010)["startTimestamp"]
     detail_records.set_observed_at(data_dir, 9100010, dt.datetime.fromtimestamp(start + 2 * 3600, dt.timezone.utc))
@@ -346,8 +347,9 @@ def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
         9300001: NEED_NONE,
     }
     assert [row.id for row in planning.refresh_due_events(open_store(data_dir), RefreshPolicy.current())] == [9100010]
-    assert md.refresh_due_ids() == ["9100010"]
-    assert md.pending_detail_ids([str(i) for i in WORLD_IDS]) == ["9100001", "9100010"]
+    md = DetailPhase(open_store(str(data_dir)), config_manager)  # yeni iş: ihtiyaç önbelleği boş
+    assert md.refresh_due() == ["9100010"]
+    assert md.pending([str(i) for i in WORLD_IDS]) == ["9100001", "9100010"]
 
 
 def test_identifiers_that_are_not_event_ids_are_left_out(tmp_path: Path) -> None:

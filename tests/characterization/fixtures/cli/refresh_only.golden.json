@@ -134,7 +134,7 @@
   "LOG INFO ConfigManager: 1 leagues loaded",
   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
   "LOG INFO SyncService: Refreshing 3 provisional records...",
-  "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+  "LOG INFO Details: Refreshing 3 matches",
   {
    "concurrent": []
   },

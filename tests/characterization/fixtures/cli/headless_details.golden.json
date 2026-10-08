@@ -373,11 +373,11 @@
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for all leagues",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (4 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
-   "LOG INFO MatchDataFetcher: Refreshing 1 provisional records",
+   "LOG INFO Details: Details will be fetched for 4 matches",
+   "LOG INFO Details: Refreshing 1 provisional records",
    {
     "concurrent": []
    },
@@ -389,7 +389,7 @@
      "LOG INFO FetchPipeline: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully"
+   "LOG INFO Details: Done: 4/4 matches (100.0%) processed successfully"
   ],
   "stdout": [
    "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."
@@ -415,11 +415,11 @@
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for league 17",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for league 17",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league 17 (4 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
-   "LOG INFO MatchDataFetcher: Refreshing 1 provisional records",
+   "LOG INFO Details: Details will be fetched for 4 matches",
+   "LOG INFO Details: Refreshing 1 provisional records",
    {
     "concurrent": []
    },
@@ -431,7 +431,7 @@
      "LOG INFO FetchPipeline: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully"
+   "LOG INFO Details: Done: 4/4 matches (100.0%) processed successfully"
   ],
   "stdout": [
    "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."

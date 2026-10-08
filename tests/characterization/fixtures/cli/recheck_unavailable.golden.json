@@ -186,10 +186,10 @@
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=True matches=1 slices=2 scanned=1",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for all leagues",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (2 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 2 matches",
+   "LOG INFO Details: Details will be fetched for 2 matches",
    {
     "concurrent": []
    },
@@ -199,7 +199,7 @@
      "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 2/2 matches (100.0%) processed successfully",
+   "LOG INFO Details: Done: 2/2 matches (100.0%) processed successfully",
    "Re-check: 2 \"slice not available\" markers reopened in 1 matches (1 matches with markers scanned). They will be requested again on the next download."
   ],
   "stdout": [
@@ -425,10 +425,10 @@
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for all leagues",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
+   "LOG INFO Details: Details will be fetched for 1 matches",
    {
     "concurrent": []
    },
@@ -437,7 +437,7 @@
      "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 1/1 matches (100.0%) processed successfully"
+   "LOG INFO Details: Done: 1/1 matches (100.0%) processed successfully"
   ],
   "stdout": [
    "Download finished. Matches that needed details: 1 (1 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."

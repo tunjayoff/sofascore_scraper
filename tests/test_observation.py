@@ -6,10 +6,10 @@ import datetime as dt
 import json
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
 
 import legacy_writer
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+import detail_fetch
+from detail_fetch import Details
 from sofascore_scraper.status import OBSERVATION_KEY, observation_record, read_observation
 from sofascore_scraper.store import open_store
 
@@ -22,8 +22,8 @@ def _event() -> dict:
     return event
 
 
-def _fetcher(tmp_path) -> MatchDataFetcher:
-    return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+def _fetcher(tmp_path) -> Details:
+    return Details(tmp_path)
 
 
 def _serving(event: dict) -> Any:
@@ -48,7 +48,7 @@ def test_fetch_saves_observation_with_the_match(tmp_path):
     f = _fetcher(tmp_path)
     event = _event()
     with _serving(event):
-        data = f.fetch_match_data(event["event_id"])
+        data = f.fetch(event["event_id"])
     assert data[OBSERVATION_KEY]["change_ts"] == event["changes"]["changeTimestamp"]
     assert data[OBSERVATION_KEY]["observed_at_utc"].endswith("+00:00")
 
@@ -57,29 +57,27 @@ def test_fetch_saves_observation_with_the_match(tmp_path):
     observed = dt.datetime.fromisoformat(data[OBSERVATION_KEY]["observed_at_utc"]).timestamp()
     assert row.observed_at == int(observed)  # katalog tam saniye tutar
     assert not list(Path(tmp_path).rglob(f"{OBSERVATION_KEY}.json"))  # eski düzene yazılmaz
-    loaded = f._load_match_data_from_dir("", str(event["event_id"]))
+    loaded = f.stored(str(event["event_id"]))
     assert read_observation(loaded) == data[OBSERVATION_KEY]
 
 
 def test_the_returned_observation_is_the_moment_the_store_keeps(tmp_path, monkeypatch):
     """
-    FX-15: dönen sözlüğün gözlem anı /event yanıtının alındığı andır, sonradan okunan saat değil. Eskiden şimdiki an
+    FX-15: dönen sözlüğün (boru hattı sonucunun eski biçimi) gözlem anı /event yanıtının alındığı andır, sonradan okunan saat değil. Eskiden şimdiki an
     okunuyordu ve yazmayla arasında saniye dönünce katalogdaki tam saniyeden bir fazla çıkıyordu (Windows CI).
     """
-    import sofascore_scraper.match_data_fetcher as mdf
-
     seen = []
-    real = mdf.observation_record
+    real = detail_fetch.observation_record
 
     def spy(event, observed_at=None):
         seen.append(observed_at)
         return real(event, observed_at)
 
-    monkeypatch.setattr(mdf, "observation_record", spy)
+    monkeypatch.setattr(detail_fetch, "observation_record", spy)
     f = _fetcher(tmp_path)
     event = _event()
     with _serving(event):
-        data = f.fetch_match_data(event["event_id"])
+        data = f.fetch(event["event_id"])
     (moment,) = seen
     assert moment is not None and moment.tzinfo is not None
     row = open_store(tmp_path).events.get(event["event_id"])
@@ -91,7 +89,7 @@ def test_old_records_without_observation_read_as_none(tmp_path):
     f = _fetcher(tmp_path)
     event = _event()
     legacy_writer.save_legacy(tmp_path, event["event_id"], {"basic": event})  # gözlemden önceki bir sürümün kaydı
-    loaded = f._load_match_data_from_dir("", str(event["event_id"]))
+    loaded = f.stored(str(event["event_id"]))
     assert "basic" in loaded
     assert read_observation(loaded) == {"observed_at_utc": None, "change_ts": None}
     assert read_observation(None) == {"observed_at_utc": None, "change_ts": None}

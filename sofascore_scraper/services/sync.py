@@ -6,8 +6,8 @@ maç detayları. Akış modül değişkenleri yerine bir iş tutamacıyla (JobHa
 ilerleme (JobProgress), iş günlüğü satırı. Tutamaç verilmezse iş kaydı olmadan çalışır.
 
 Listeler (sezon listesi, sezon programı) tipli iş birimleridir (sofascore_scraper/services/listing.py, plan maddesi P14): servis
-onları bağlamdaki SeasonFetcher / MatchFetcher sarmalayıcılarının `list_seasons` / `list_schedule` yüzüyle çalıştırır
-(getirme boru hattı: çalıştırma başına tek ısıtılmış oturum, yazıcı thread'i). Çekilemeyen bir sezon listesi ya da
+onları ListingService ile çalıştırır (`list_seasons`, `list_schedule`; getirme boru hattı: liste başına tek ısıtılmış
+oturum, yazıcı thread'i). Saklanan sezon listesi katalogdan okunur (`stored_seasons`, services/tournaments.py). Çekilemeyen bir sezon listesi ya da
 tur "sezon yok" / "maç yok" gibi görünmez: başarısız bir iş birimidir (`SyncResult.failed_listings`) ve iş
 `partial` biter. Taze bir liste (sezon listesi SEASON_LIST_TTL_SECONDS, program SCHEDULE_TTL_SECONDS içinde
 çekilmiş) yeniden istenmez.
@@ -32,9 +32,9 @@ aşamasının sonunda getirme boru hattıyla, takiplerin veri seçimiyle indiril
 ve iş `partial` biter.
 
 Maç detayları (detay aşaması, kimliğiyle seçilen maçlar, yalnızca yenileme) tek getirme boru hattıyla indirilir
-(sofascore_scraper/services/pipeline.py, plan maddesi P13). Servis ona bağlamdaki MatchDataFetcher'ın eski adlı giriş noktalarıyla
-(`fetch_detail_ids`, `fetch_matches_batch`, `refresh_matches`) ulaşır: bunlar yalnızca iş birimlerini kurar; çekici
-P15'te kalktığında çağrılar buraya taşınır. Bitmemiş maç atlanır ve başarısız sayılmaz.
+(sofascore_scraper/services/pipeline.py, plan maddesi P13). Planı ve indirmeyi işin DetailPhase'i yapar
+(sofascore_scraper/services/detail_phase.py: katalogdan plan, boru hattıyla indirme; 2.x'in MatchDataFetcher'ının yerine,
+P30). Bitmemiş maç olduğu haliyle saklanır ve başarısız sayılmaz.
 
 İşin sonunda CSV yazılmaz (karar D9, plan maddesi EX-1): dışa aktarma istendiğinde üretilir
 (sofascore_scraper/services/export.py; web'de dışa aktarma işi, komut satırında `ssc export`).
@@ -62,6 +62,7 @@ from sofascore_scraper.jobs.progress import JobProgress
 from sofascore_scraper.logger import get_logger
 from sofascore_scraper.services import follow_sync, listing
 from sofascore_scraper.services.context import ServiceContext
+from sofascore_scraper.services.detail_phase import DetailPhase
 
 logger = get_logger("SyncService")
 
@@ -193,7 +194,7 @@ def sync_targets(ctx: ServiceContext) -> Dict[int, SyncTarget]:
 @dataclass(frozen=True)
 class RefreshCounts:
     """
-    Yalnızca yenileme kipinin sayıları (MatchDataFetcher.refresh_matches'in döndürdükleri).
+    Yalnızca yenileme kipinin sayıları (DetailPhase.refresh'in döndürdükleri).
 
     due        yenilenmesi gereken kayıt (denenmeyenler dahil)
     refreshed  yeniden okunan kayıt
@@ -351,6 +352,72 @@ def _status_counts_reason(status_counts: Optional[Mapping[str, int]]) -> str:
     return relevant.most_common(1)[0][0] if relevant else "other"
 
 
+def detail_phase(ctx: ServiceContext) -> DetailPhase:
+    """İşin detay aşaması: bağlamın deposu ve yapılandırması (testler sahte bir aşama verir)."""
+    return DetailPhase(ctx.store, ctx.config)
+
+
+def list_seasons(ctx: ServiceContext, league_id: int, *, max_age: Optional[float]) -> "listing.ListingResult":
+    """
+    Ligin sezon listesi, getirme boru hattında: tipli sonuç (`ok`; `failed` ve nedeni; `skipped` / `breaker` ya da
+    `fresh`). max_age: saklanan liste bu kadar saniyeden gençse istenmez. Çekilen liste Store'a yazılır.
+    """
+    from sofascore_scraper.services.status import only_finished_setting
+
+    return listing.ListingService(ctx.store, only_finished=only_finished_setting()).season_list(
+        int(league_id), max_age=max_age)
+
+
+def stored_seasons(ctx: ServiceContext, league_id: int) -> List[Dict[str, Any]]:
+    """
+    Ligin saklanan sezon listesi (katalogdan; `tournaments.seasons_of`, ligin yapılandırmadaki adıyla), SofaScore'un
+    verdiği sırayla. Listesi yoksa ya da okunamıyorsa boş liste.
+    """
+    from sofascore_scraper.services import tournaments
+
+    try:
+        name = ctx.config.get_league_by_id(int(league_id))
+        seasons = tournaments.seasons_of(ctx.store, int(league_id), name=name if isinstance(name, str) else None)
+    except Exception as e:
+        logger.error("Stored season list of league %s could not be read: %s", league_id, e)
+        return []
+    if seasons is None:
+        logger.warning("No stored season list for league %s", league_id)
+        return []
+    return seasons
+
+
+def resolve_season_id(ctx: ServiceContext, league_id: int, requested_id: int) -> int:
+    """Eskimiş bir sezon kimliğini saklanan listedeki karşılığına çevirir (`listing.resolve_season_id`)."""
+    try:
+        requested_id, league_id = int(requested_id), int(league_id)
+    except (TypeError, ValueError):
+        return int(requested_id or 0)
+    seasons = stored_seasons(ctx, league_id)
+    return listing.resolve_season_id(seasons, requested_id, lambda: listing.preferred_season_id(seasons))
+
+
+def list_schedule(ctx: ServiceContext, league_id: int, season_id: int, *,
+                  max_age: Optional[float]) -> "listing.ListingResult":
+    """
+    Sezonun programı, getirme boru hattında: tipli sonuç. max_age: sezonun sayfaları bu kadar saniyeden gençse
+    (listing.schedule_is_fresh) hiç istek atılmaz ve sonuç `skipped` / `fresh` olur.
+    """
+    from sofascore_scraper.services.status import only_finished_setting
+
+    try:
+        concurrency = max(1, int(ctx.config.get_max_concurrent()))
+    except (TypeError, ValueError):
+        concurrency = 1
+    result = listing.ListingService(ctx.store, only_finished=only_finished_setting(),
+                                    concurrency=concurrency).schedule(int(league_id), int(season_id), max_age=max_age)
+    if result.chunks:
+        matches = sum(len(chunk.get("events") or []) for chunk in result.chunks)
+        logger.info(f"League {league_id}, season {season_id}: {len(result.chunks)} schedule pages, "
+                    f"{matches} matches listed")
+    return result
+
+
 class SyncService:
     """Sezon listeleri, maç listeleri, maç detayları ve CSV: tek bir iş olarak."""
 
@@ -395,6 +462,14 @@ class _SyncRun:
         self.empty_schedule = 0
         self.failed_listings: List[FailedListing] = []
         self._coded_log = _accepts_fields(job.log)
+        self._details: Optional[DetailPhase] = None
+
+    @property
+    def details(self) -> DetailPhase:
+        """İşin detay aşaması (ilk kullanımda kurulur: deposu açılır)."""
+        if self._details is None:
+            self._details = detail_phase(self.ctx)
+        return self._details
 
     # --- yardımcılar ---------------------------------------------------------------------------------
 
@@ -429,7 +504,7 @@ class _SyncRun:
         """İşin kesicisi açıldıysa onun nedeni; yoksa detay indiricinin kendi sayımı."""
         if self.breaker.tripped:
             return self.breaker.reason()
-        return _status_counts_reason(self.ctx.match_data_fetcher.last_status_counts)
+        return _status_counts_reason(self.details.status_counts)
 
     def result(self, *, cancelled: bool, refresh: Optional[RefreshCounts] = None) -> SyncResult:
         progress = self.tracker.result()
@@ -515,13 +590,13 @@ class _SyncRun:
 
         # 3. Maç detayları (devre önceki aşamalarda kesildiyse hiç başlamaz)
         if not cancelled() and not self.blocked("match details"):
-            md = self.ctx.match_data_fetcher
+            details = self.details
             # Geçici kayıtların yenilenmesi kartta ayrı sayılır (JobProgress.detail()["refreshed"])
-            md.refresh_listener = tracker.add_refreshed
+            details.refresh_listener = tracker.add_refreshed
             try:
-                self._details(detail_plan, explicit_match_ids)
+                self._detail_phase(detail_plan, explicit_match_ids)
             finally:
-                md.refresh_listener = None
+                details.refresh_listener = None
 
         # 3b. Takım, oyuncu ve maç takiplerinin maçları (FX-19)
         if others is not None and not cancelled() and not self.blocked("match details"):
@@ -540,27 +615,25 @@ class _SyncRun:
         """
         Yalnızca yenileme: yenilenmesi gereken kayıtlı maçlar bulunur ve her biri için yalnızca /event istenir.
 
-        Çağrı sırası `main.py --refresh-only`nin satır içi kodundan taşındı ve G-01 goldenıyla sabittir:
-        begin_job_cache → refresh_due_ids → refresh_matches → end_job_cache. Devre kesilirse kalan maçlar
-        denenmez (`RefreshCounts.skipped`); kalıcı depolama hatası StorageError olarak çağırana çıkar.
+        Çağrı sırası 2.x'in `main.py --refresh-only`sinin satır içi kodundan taşındı ve G-01 goldenıyla sabittir:
+        yenilenecekler (`refresh_due`) → yenileme. Devre kesilirse kalan maçlar denenmez (`RefreshCounts.skipped`);
+        kalıcı depolama hatası StorageError olarak çağırana çıkar.
         """
-        md = self.ctx.match_data_fetcher
+        details = self.details
         job, tracker = self.job, self.tracker
-        md.refresh_listener = tracker.add_refreshed
-        md.begin_job_cache()
+        details.refresh_listener = tracker.add_refreshed
         try:
             explicit = [str(mid) for s in self.spec.selections for mid in s.match_ids]
-            ids = list(dict.fromkeys(explicit)) if explicit else md.refresh_due_ids(league_id=self.spec.league_id)
+            ids = list(dict.fromkeys(explicit)) if explicit else details.refresh_due(self.spec.league_id)
             tracker.start_phase("details", len(ids))
             self.log(f"Refreshing {len(ids)} provisional records...", "sync_refreshing", count=len(ids))
-            stats = md.refresh_matches(
+            stats = details.refresh(
                 ids,
-                progress_callback=lambda done, _total, _msg: tracker.advance(done),
-                should_cancel=job.cancelled,
+                progress=lambda done, _total, _msg: tracker.advance(done),
+                cancelled=job.cancelled,
             )
         finally:
-            md.end_job_cache()
-            md.refresh_listener = None
+            details.refresh_listener = None
         if stats.get("breaker"):
             self.report_breaker(str(stats["breaker"]), "provisional records")
         counts = RefreshCounts(
@@ -613,7 +686,7 @@ class _SyncRun:
                          "sync_season_list_fresh", league_id=int(lid))
             else:
                 self.log(f"Refreshing season list for league {lid}...", "sync_season_list", league_id=int(lid))
-            self._listing(lambda _l=lid: ctx.season_fetcher.list_seasons(_l, max_age=max_age), "seasons", lid)
+            self._listing(lambda _l=lid: list_seasons(ctx, _l, max_age=max_age), "seasons", lid)
             tracker.advance(i + 1)
 
     def _fresh(self, rule: Callable[..., bool], *ids: int, max_age: float) -> bool:
@@ -642,7 +715,7 @@ class _SyncRun:
             return chosen
         resolved: List[int] = []
         for sid in chosen:
-            current = self.ctx.season_fetcher.resolve_season_id(lid, sid)
+            current = resolve_season_id(self.ctx, lid, sid)
             if current not in resolved:
                 resolved.append(current)
         return resolved
@@ -669,7 +742,7 @@ class _SyncRun:
         def season_names(lid: int) -> Dict[int, Optional[str]]:
             return {
                 int(s["id"]): s.get("name") or s.get("year")
-                for s in ctx.season_fetcher.get_seasons_for_league(lid)
+                for s in stored_seasons(ctx, lid)
                 if s.get("id") is not None
             }
 
@@ -677,7 +750,7 @@ class _SyncRun:
             for s in spec.selections:
                 names = season_names(s.league_id)
                 for sid in s.season_ids:
-                    resolved = ctx.season_fetcher.resolve_season_id(s.league_id, sid)
+                    resolved = resolve_season_id(ctx, s.league_id, sid)
                     if resolved != sid:
                         self.log(f"Season {sid} outdated → using {resolved} for league {s.league_id}",
                                  "sync_season_outdated", season_id=sid, resolved=resolved, league_id=s.league_id)
@@ -712,8 +785,8 @@ class _SyncRun:
             else:
                 self.log(f"Fetching matches: league {lid}, season {sid}", "sync_schedule", league_id=int(lid),
                          season_id=int(sid))
-            result = self._listing(lambda _l=lid, _s=sid: ctx.match_fetcher.list_schedule(
-                _l, _s, max_age=listing.SCHEDULE_TTL_SECONDS), "schedule", lid, sid)
+            result = self._listing(lambda _l=lid, _s=sid: list_schedule(
+                ctx, _l, _s, max_age=listing.SCHEDULE_TTL_SECONDS), "schedule", lid, sid)
             # Boş program: listelendi ama maç yok. Başarısız ya da devre kesici yüzünden yarım kalan program
             # "maç yok" sayılmaz
             if result is not None and (result.ok or result.fresh) and not result.has_matches:
@@ -893,9 +966,9 @@ class _SyncRun:
             if summary.breaker:
                 self.report_breaker(summary.breaker, "odds and non-match data")
 
-    def _details(self, detail_plan: DetailPlan, explicit_match_ids: List[int]) -> None:
+    def _detail_phase(self, detail_plan: DetailPlan, explicit_match_ids: List[int]) -> None:
         """Detay aşaması: önce tüm liglerde eksik maçları sayar, sonra tek bir sayaçla indirir."""
-        md = self.ctx.match_data_fetcher
+        details = self.details
         job, tracker = self.job, self.tracker
         cancelled = job.cancelled
         tracker.start_phase("details", 0)
@@ -914,51 +987,43 @@ class _SyncRun:
                     tracker.set_total(total)
                 tracker.advance(done)
 
-            md.fetch_matches_batch(
+            details.fetch_selected(
                 explicit_match_ids,
-                progress_callback=cb,
-                should_cancel=cancelled,
-                failed_callback=lambda mid: tracker.add_failed(mid, league_of.get(int(mid))),
+                progress=cb,
+                cancelled=cancelled,
+                failed=lambda mid: tracker.add_failed(mid, league_of.get(int(mid))),
             )
-            if getattr(md, "rate_limit_breaker_triggered", False):
+            if details.breaker_tripped:
                 self.report_breaker(self.details_breaker_reason(), "match details")
             return
 
-        md.begin_job_cache()
-        try:
-            self.log("Checking which matches need details...", "sync_details_checking")
-            work: List[Tuple[Optional[int], List[str]]] = []
-            for lid, only_sids in detail_plan.items():
-                if cancelled():
-                    return
-                ids = md.collect_detail_match_ids(
-                    league_id=str(lid) if lid is not None else None,
-                    max_seasons=0,
-                    only_season_ids=only_sids,
-                ) or []
-                pending = md.pending_detail_ids(ids)
-                if pending:
-                    work.append((lid, pending))
-            tracker.set_total(sum(len(p) for _, p in work))
+        self.log("Checking which matches need details...", "sync_details_checking")
+        work: List[Tuple[Optional[int], List[str]]] = []
+        for lid, only_sids in detail_plan.items():
+            if cancelled():
+                return
+            ids = details.candidates(lid, only_season_ids=only_sids) or []
+            pending = details.pending(ids)
+            if pending:
+                work.append((lid, pending))
+        tracker.set_total(sum(len(p) for _, p in work))
 
-            offset = 0
-            for lid, pending in work:
-                if cancelled():
-                    break
-                tracker.set_context(league_id=lid, league_name=self.lname(lid))
-                self.log(
-                    f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…",
-                    "sync_details", league_id=lid, count=len(pending),
-                )
-                md.fetch_detail_ids(
-                    pending,
-                    progress_callback=lambda done, _t, _m, _o=offset: tracker.advance(_o + done),
-                    should_cancel=cancelled,
-                    failed_callback=lambda mid, _l=lid: tracker.add_failed(mid, _l),
-                )
-                offset += len(pending)
-                if md.rate_limit_breaker_triggered:
-                    self.report_breaker(self.details_breaker_reason(), "match details")
-                    break
-        finally:
-            md.end_job_cache()
+        offset = 0
+        for lid, pending in work:
+            if cancelled():
+                break
+            tracker.set_context(league_id=lid, league_name=self.lname(lid))
+            self.log(
+                f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…",
+                "sync_details", league_id=lid, count=len(pending),
+            )
+            details.fetch(
+                pending,
+                progress=lambda done, _t, _m, _o=offset: tracker.advance(_o + done),
+                cancelled=cancelled,
+                failed=lambda mid, _l=lid: tracker.add_failed(mid, _l),
+            )
+            offset += len(pending)
+            if details.breaker_tripped:
+                self.report_breaker(self.details_breaker_reason(), "match details")
+                break

@@ -58,11 +58,12 @@ def run_once(matches: int, latency: float, sport: str, rate: str) -> Dict[str, f
         else:
             os.environ["REQUEST_RATE_LIMIT"] = rate
 
-        from sofascore_scraper.client import bridge as cs
-        import sofascore_scraper.utils as utils
         from sofascore_scraper import throttle
+        from sofascore_scraper.client import bridge as cs
+        from sofascore_scraper.client import transport
         from sofascore_scraper.config_manager import ConfigManager
-        from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+        from sofascore_scraper.services.detail_phase import DetailPhase
+        from sofascore_scraper.store import open_store
 
         throttle.reset_for_tests()
         stamps: List[float] = []
@@ -83,16 +84,16 @@ def run_once(matches: int, latency: float, sport: str, rate: str) -> Dict[str, f
             yield MagicMock()
 
         cm = ConfigManager()
-        fetcher = MatchDataFetcher(cm, data_dir=os.environ["DATA_DIR"])
-        utils._browser_first_until = time.monotonic() + 3600  # bugünkü gerçek yol: önce tarayıcı
+        phase = DetailPhase(open_store(os.environ["DATA_DIR"]), cm)
+        transport._browser_first_until = time.monotonic() + 3600  # bugünkü gerçek yol: önce tarayıcı
         ids = list(range(1, matches + 1))
         with patch.object(cs, "fetch_api_via_browser", fake_browser_fetch), \
-                patch.object(utils, "create_session_async", fake_session):
+                patch.object(transport, "create_session_async", fake_session):
             t0 = time.monotonic()
-            results = asyncio.run(fetcher.fetch_matches_batch_async(ids, max_concurrent=cm.get_max_concurrent()))
+            stored = phase.fetch_selected(ids)
             elapsed = time.monotonic() - t0
-        if len(results) != matches:
-            raise SystemExit(f"beklenen {matches} maç, alınan {len(results)}")
+        if stored != matches:
+            raise SystemExit(f"beklenen {matches} maç, alınan {stored}")
         # En yoğun 1 sn'lik pencere
         peak, j = 0, 0
         for i, s in enumerate(stamps):

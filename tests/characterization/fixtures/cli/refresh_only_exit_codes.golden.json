@@ -25,7 +25,7 @@
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 1 provisional records...",
-   "LOG INFO MatchDataFetcher: Refreshing 1 matches",
+   "LOG INFO Details: Refreshing 1 matches",
    {
     "concurrent": []
    },
@@ -72,7 +72,7 @@
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
-   "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+   "LOG INFO Details: Refreshing 3 matches",
    {
     "concurrent": []
    },
@@ -154,7 +154,7 @@
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
-   "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+   "LOG INFO Details: Refreshing 3 matches",
    {
     "concurrent": []
    },
@@ -173,7 +173,7 @@
      "LOG WARNING Utils: 403 Forbidden (attempt 3/3): https://www.sofascore.com/api/v1/event/9100010"
     ]
    },
-   "LOG WARNING MatchDataFetcher: Too many failed requests; the refresh stopped, 1 matches were not tried",
+   "LOG WARNING Details: Too many failed requests; the refresh stopped, 1 matches were not tried",
    "LOG INFO SyncService: Too many failed requests (403); stopped fetching provisional records.",
    "Refresh stopped: too many requests to SofaScore failed (403); 1 matches were not attempted. Wait a while and run it again."
   ],

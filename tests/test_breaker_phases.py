@@ -10,7 +10,6 @@ kesiciyi besleyen odur.
 """
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import copy
 import datetime as dt
@@ -24,8 +23,12 @@ import sofascore_scraper.utils as utils
 from sofascore_scraper.web import deps
 from web_job import run_sync_job
 from sofascore_scraper import breaker as request_breaker
-from sofascore_scraper.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
-                                    SliceOutcome)
+import sync_fakes
+from detail_fetch import LEGACY_DETAIL_KEYS as DETAIL_SLICE_KEYS
+from detail_fetch import Details
+from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS, DetailPhase
+from sofascore_scraper.slices import SLICE_EMPTY, SliceOutcome
+from sofascore_scraper.store import open_store
 from sofascore_scraper.status import OBSERVATION_KEY
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
@@ -82,19 +85,30 @@ def _basic(mid: int) -> dict:
     }
 
 
-def _fetcher(tmp_path, threshold: int = 3) -> MatchDataFetcher:
+class _Fetcher(Details):
+    """Tek maç yolları (tests/detail_fetch.py) ve aynı yapılandırmayla bir işin detay aşaması (`phase`)."""
+
+    def __init__(self, data_dir: Any, cfg: Any) -> None:
+        super().__init__(data_dir)
+        self.cfg = cfg
+
+    def phase(self) -> DetailPhase:
+        return DetailPhase(self.store, self.cfg)
+
+
+def _fetcher(tmp_path, threshold: int = 3) -> _Fetcher:
     cfg = MagicMock()
     cfg.get_rate_limit_threshold_consecutive.return_value = threshold
     cfg.get_rate_limit_threshold_ratio.return_value = 2.0  # oran kuralı kapalı
     cfg.get_server_error_threshold_consecutive.return_value = 1000
     cfg.get_max_concurrent.return_value = 1
-    return MatchDataFetcher(cfg, data_dir=str(tmp_path))
+    return _Fetcher(tmp_path, cfg)
 
 
-def _store_provisional(f: MatchDataFetcher, ids: List[int]) -> None:
+def _store_provisional(f: _Fetcher, ids: List[int]) -> None:
     """
     Dilimleri tam sayılan (her dilim iki kez 404 almış), yenileme penceresi açık kayıtlar: ihtiyaç "refresh".
-    İndiricinin yazıcısıyla Store'a yazılır (plan maddesi ST-21).
+    Store'a yazılır (plan maddesi ST-21).
     """
     observed = dt.datetime.fromtimestamp(START + 2 * 3600, dt.timezone.utc).isoformat(timespec="seconds")
     gone = {k: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404) for k in DETAIL_SLICE_KEYS}
@@ -105,8 +119,8 @@ def _store_provisional(f: MatchDataFetcher, ids: List[int]) -> None:
             OBSERVATION_KEY: {"observed_at_utc": observed, "change_ts": basic["changes"]["changeTimestamp"]},
         }
         for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):
-            f._save_match_data(str(mid), data, gone)
-    assert all(f._compute_detail_need(str(mid)) == "refresh" for mid in ids)
+            f.save(str(mid), data, gone)
+    assert all(f.need(str(mid)) == "refresh" for mid in ids)
 
 
 @contextlib.contextmanager
@@ -136,12 +150,13 @@ def test_breaker_trips_on_a_blocked_refresh_batch(tmp_path, blocked):
     _store_provisional(f, ids)
     failed: List[str] = []
 
+    phase = f.phase()
     with _request_layer():
-        results = asyncio.run(f.fetch_matches_batch_async(ids, max_concurrent=1, failed_callback=failed.append))
+        stored = phase.fetch_selected(ids, failed=failed.append)
 
-    assert results == {}
-    assert f.rate_limit_breaker_triggered is True
-    assert f.last_status_counts.get("403") == 3
+    assert stored == 0
+    assert phase.breaker_tripped is True
+    assert phase.status_counts.get("403") == 3
     assert _event_requests(blocked) == 3 * CFG["max_retries"]  # 3 maç × 3 deneme; kalan 17 maç için istek yok
     assert failed == ["1001", "1002"]  # devreyi kesen ve hiç denenmeyen maçlar "başarısız" sayılmaz
 
@@ -152,12 +167,13 @@ def test_refresh_only_loop_stops_when_the_breaker_trips(tmp_path, blocked):
     ids = [str(n) for n in range(3001, 3013)]
     _store_provisional(f, [int(i) for i in ids])
 
+    phase = f.phase()
     with _request_layer():
-        stats = f.refresh_matches(ids)
+        stats = phase.refresh(ids)
 
     assert stats == {"refreshed": 0, "changed": 0, "failed": 3, "breaker": "403", "skipped": 9}
     assert _event_requests(blocked) == 3 * CFG["max_retries"]
-    assert f.rate_limit_breaker_triggered is True
+    assert phase.breaker_tripped is True
     assert request_breaker.current() is None  # kesici çağrıyla birlikte kapandı
 
 
@@ -170,16 +186,16 @@ def test_refresh_only_loop_reports_no_breaker_when_requests_succeed(tmp_path):
     with FakeSofaScore() as fake, _request_layer():
         for mid in (3001, 3002):
             fake.add_event(copy.deepcopy(_basic(mid)))
-        stats = f.refresh_matches(["3001", "3002"])
+        stats = f.phase().refresh(["3001", "3002"])
     assert stats == {"refreshed": 2, "changed": 0, "failed": 0}
 
 
 def test_detail_batch_stops_when_the_breaker_trips(tmp_path, blocked):
-    f = _fetcher(tmp_path, threshold=3)
+    phase = _fetcher(tmp_path, threshold=3).phase()
     failed: List[str] = []
     with _request_layer():
-        results = f.fetch_matches_batch([str(n) for n in range(1, 11)], failed_callback=failed.append)
-    assert results == {} and f.rate_limit_breaker_triggered is True
+        stored = phase.fetch_selected([str(n) for n in range(1, 11)], failed=failed.append)
+    assert stored == 0 and phase.breaker_tripped is True
     assert _event_requests(blocked) == 3 * CFG["max_retries"]
     assert failed == ["1", "2"]  # devreyi kesen maç ve hiç denenmeyenler "başarısız" sayılmaz
 
@@ -207,26 +223,20 @@ class FakeDetails:
     """Detay aşaması: çağrılırsa kaydeder (devre önceki aşamada kesildiyse çağrılmamalı)."""
 
     def __init__(self) -> None:
-        self.rate_limit_breaker_triggered = False
-        self.last_status_counts: Dict[str, int] = {}
+        self.breaker_tripped = False
+        self.status_counts: Dict[str, int] = {}
         self.refresh_listener = None
         self.collected: List[Any] = []
         self.fetched: List[List[str]] = []
 
-    def begin_job_cache(self) -> None:
-        pass
-
-    def end_job_cache(self) -> None:
-        pass
-
-    def collect_detail_match_ids(self, league_id=None, max_seasons=0, only_season_ids=None):
+    def candidates(self, league_id=None, *, only_season_ids=None):
         self.collected.append(league_id)
         return ["m1", "m2"]
 
-    def pending_detail_ids(self, ids):
+    def pending(self, ids):
         return list(ids)
 
-    def fetch_detail_ids(self, ids, progress_callback=None, should_cancel=None, failed_callback=None):
+    def fetch(self, ids, *, progress=None, cancelled=None, failed=None):
         self.fetched.append(list(ids))
         return len(ids)
 
@@ -251,7 +261,7 @@ def _listing_faces(ui: Any) -> None:
     """
     from sofascore_scraper.services.listing import ListingResult
 
-    seasons, schedule = getattr(ui, "season_fetcher", None), getattr(ui, "match_fetcher", None)
+    seasons, schedule = getattr(ui, "seasons", None), getattr(ui, "schedule", None)
     if seasons is not None and not hasattr(seasons, "list_seasons"):
         seasons.list_seasons = lambda lid, max_age=None: ListingResult(
             "seasons", lid, seasons=seasons.fetch_seasons_for_league(lid))
@@ -264,6 +274,7 @@ def _run_job(context, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[s
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = deps.config_manager()
     _listing_faces(ui)
+    sync_fakes.install(monkeypatch)
     monkeypatch.setattr(context, "build_context", lambda config_manager: ui)
     with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
         final = run_sync_job(store, payload)
@@ -280,19 +291,18 @@ def test_breaker_trips_on_a_blocked_schedule_phase(job_env, monkeypatch):
 
     def fetch_schedule(lid, sid):
         schedule_calls.append(sid)
-        # Gerçek MatchFetcher gibi istek katmanından geçer; engelliyken veri gelmez
+        # Gerçek program listesi gibi istek katmanından geçer; engelliyken veri gelmez
         return bool(utils.make_api_request(f"/unique-tournament/{lid}/season/{sid}/rounds"))
 
     md = FakeDetails()
     ui = SimpleNamespace(
-        season_fetcher=SimpleNamespace(
+        seasons=SimpleNamespace(
             fetch_seasons_for_league=lambda lid: seasons,  # sezon listesi diskten/önceden: istek yok
             get_seasons_for_league=lambda lid: seasons,
             resolve_season_id=lambda lid, sid: sid,
         ),
-        match_fetcher=SimpleNamespace(fetch_matches_for_season=fetch_schedule),
-        match_data_fetcher=md,
-        export_all_to_csv=lambda: None,
+        schedule=SimpleNamespace(fetch_matches_for_season=fetch_schedule),
+        details=md,
     )
     final = _run_job(fj, store, monkeypatch, ui, {"mode": "full", "league_id": 17})
 
@@ -320,14 +330,13 @@ def test_breaker_trips_on_a_blocked_seasons_phase(job_env, monkeypatch):
 
     md = FakeDetails()
     ui = SimpleNamespace(
-        season_fetcher=SimpleNamespace(
+        seasons=SimpleNamespace(
             fetch_seasons_for_league=fetch_seasons,
             get_seasons_for_league=lambda lid: [{"id": lid * 10, "name": "S"}],
             resolve_season_id=lambda lid, sid: sid,
         ),
-        match_fetcher=SimpleNamespace(fetch_matches_for_season=lambda lid, sid: schedule_calls.append(sid) or True),
-        match_data_fetcher=md,
-        export_all_to_csv=lambda: None,
+        schedule=SimpleNamespace(fetch_matches_for_season=lambda lid, sid: schedule_calls.append(sid) or True),
+        details=md,
     )
     final = _run_job(fj, store, monkeypatch, ui, {"mode": "full"})
 
@@ -343,14 +352,13 @@ def test_job_with_working_requests_is_not_stopped(job_env, monkeypatch):
     seasons = [{"id": sid, "name": f"PL {sid}"} for sid in range(1, 6)]
     md = FakeDetails()
     ui = SimpleNamespace(
-        season_fetcher=SimpleNamespace(
+        seasons=SimpleNamespace(
             fetch_seasons_for_league=lambda lid: seasons,
             get_seasons_for_league=lambda lid: seasons,
             resolve_season_id=lambda lid, sid: sid,
         ),
-        match_fetcher=SimpleNamespace(fetch_matches_for_season=lambda lid, sid: True),
-        match_data_fetcher=md,
-        export_all_to_csv=lambda: None,
+        schedule=SimpleNamespace(fetch_matches_for_season=lambda lid, sid: True),
+        details=md,
     )
     final = _run_job(fj, store, monkeypatch, ui, {"mode": "full", "league_id": 17})
     assert final["status"] == "Completed" and not final.get("circuit_breaker_triggered")
@@ -361,8 +369,8 @@ def test_explicit_match_selection_reports_the_breaker(job_env, monkeypatch, tmp_
     """Seçili maçların indirme yolu (P13'ten beri lig planlarıyla aynı boru hattı) da kesiciye bakar ve karta bildirir."""
     fj, store = job_env
     monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League"})
-    md = MatchDataFetcher(deps.config_manager(), data_dir=str(tmp_path / "data"))
-    ui = SimpleNamespace(match_data_fetcher=md, export_all_to_csv=lambda: None)
+    md = DetailPhase(open_store(str(tmp_path / "data")), deps.config_manager())
+    ui = SimpleNamespace(details=md)
     payload = {"mode": "details", "selections": [{"league_id": 17, "match_ids": list(range(1, 11))}]}
     monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
     with blocked_world() as fake:

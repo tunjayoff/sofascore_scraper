@@ -1,8 +1,9 @@
 """
-Servis bağlamı (plan maddesi P15): `build_context` eski indiricileri kurmaz; ilk erişimde kurulurlar.
+Servis bağlamı: 2.x'in indiricileri (P15'ten beri bağlamın eski adlı yüzleri) 3.1'de kalktı (plan maddesi P30).
 
-Ağ yok. Diğer bağlam testleri tests/test_sync_service.py'dedir (veri dizinleri, dondurulmuşluk, takipler:
-tests/test_store_follows.py).
+Bağlam yalnızca yapılandırmayı, veri dizinini ve istemciyi taşır; detay aşaması her iş için ayrı kurulur
+(sofascore_scraper/services/sync.py `detail_phase`). Ağ yok. Diğer bağlam testleri tests/test_sync_service.py'dedir
+(veri dizinleri, dondurulmuşluk, takipler: tests/test_store_follows.py).
 """
 from __future__ import annotations
 
@@ -16,6 +17,8 @@ from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.services.context import ServiceContext, build_context
 
 ROOT = Path(__file__).resolve().parent.parent
+REMOVED_MODULES = ("sofascore_scraper.match_data_fetcher", "sofascore_scraper.match_fetcher",
+                   "sofascore_scraper.season_fetcher")
 
 
 @pytest.fixture
@@ -23,44 +26,30 @@ def ctx(tmp_path: Path) -> ServiceContext:
     return build_context(ConfigManager(), data_dir=str(tmp_path / "data"))
 
 
-def test_the_fetchers_are_built_on_first_use(ctx: ServiceContext, tmp_path: Path) -> None:
-    assert not {"season_fetcher", "match_fetcher", "match_data_fetcher"} & set(vars(ctx))
-    # MatchDataFetcher'ın kurucusu processed/ dizinini kurar: bağlam kurulurken kurulmaz
+def test_the_context_carries_no_fetcher(ctx: ServiceContext, tmp_path: Path) -> None:
+    for name in ("season_fetcher", "match_fetcher", "match_data_fetcher"):
+        assert not hasattr(ctx, name), name
+    # 2.x'in detay indiricisinin kurucusu processed/ dizinini kuruyordu: bugün hiçbir şey kurmaz
     assert not (tmp_path / "data" / "match_details" / "processed").exists()
 
-    details = ctx.match_data_fetcher
-    assert details is ctx.match_data_fetcher  # bağlamın ömrü boyunca aynı nesne
-    assert details.data_dir == ctx.data_dir and details.config_manager is ctx.config
-    assert (tmp_path / "data" / "match_details" / "processed").is_dir()
 
-    schedule = ctx.match_fetcher
-    assert schedule.season_fetcher is ctx.season_fetcher
-    assert schedule is ctx.match_fetcher and ctx.season_fetcher.data_dir == ctx.data_dir
+def test_each_run_has_its_own_detail_phase(ctx: ServiceContext) -> None:
+    from sofascore_scraper.services import sync
 
-
-def test_each_context_has_its_own_fetchers(tmp_path: Path) -> None:
-    config = ConfigManager()
-    first = build_context(config, data_dir=str(tmp_path))
-    second = build_context(config, data_dir=str(tmp_path))
-    assert first.match_data_fetcher is not second.match_data_fetcher
-    assert first.match_fetcher is not second.match_fetcher
+    first, second = sync.detail_phase(ctx), sync.detail_phase(ctx)
+    assert first is not second and first.store is second.store is ctx.store
+    assert first.config is ctx.config
 
 
 def test_the_context_stays_frozen(ctx: ServiceContext) -> None:
     import dataclasses
 
-    _ = ctx.season_fetcher
     with pytest.raises(dataclasses.FrozenInstanceError):
         ctx.data_dir = "elsewhere"  # type: ignore[misc]
     assert [f.name for f in dataclasses.fields(ctx)] == ["config", "data_dir", "client"]
 
 
-def test_importing_the_context_does_not_load_the_fetchers() -> None:
-    code = (
-        "import sys, sofascore_scraper.services.context\n"
-        "loaded = sorted(m for m in ('sofascore_scraper.match_data_fetcher', 'sofascore_scraper.match_fetcher', 'sofascore_scraper.season_fetcher')"
-        " if m in sys.modules)\n"
-        "print('LOADED=' + ','.join(loaded))\n"
-    )
-    out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
-    assert out.stdout.strip().splitlines()[-1] == "LOADED="
+@pytest.mark.parametrize("module", REMOVED_MODULES)
+def test_the_fetcher_modules_are_gone(module: str) -> None:
+    code = f"import importlib.util, sys\nsys.exit(0 if importlib.util.find_spec({module!r}) is None else 1)\n"
+    assert subprocess.run([sys.executable, "-c", code], cwd=ROOT).returncode == 0

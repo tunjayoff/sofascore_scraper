@@ -87,8 +87,8 @@ NAMED_EXCEPTIONS: Dict[Tuple[str, str], str] = {
     ("sofascore_scraper/services/context.py", "_ensure_directory"):
         "bağlam kurulurken veri dizini ve 2.x alt dizinleri var edilir (bugünkü davranış). P30'la gider.",
     ("sofascore_scraper/utils.py", "ensure_directory"):
-        "2.x indiricilerinin ve CSV dışa aktarmasının dizinleri var etmesi (sofascore_scraper/season_fetcher.py, "
-        "sofascore_scraper/match_fetcher.py, sofascore_scraper/match_data_fetcher.py, sofascore_scraper/cli/commands/export.py). P30'la gider.",
+        "CSV dışa aktarmasının çıktı dizinini var etmesi (sofascore_scraper/cli/commands/export.py; 2.x "
+        "indiricileri P30'da kalktı). P30'la gider.",
     ("sofascore_scraper/services/export.py", "_write_file"):
         "dışa aktarmanın kullanıcının seçtiği yoldaki çıktı dosyası (dosya sink'i gibi; yol veri dizininde "
         "de olabilir).",

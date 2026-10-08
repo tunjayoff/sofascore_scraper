@@ -36,10 +36,7 @@ from sofascore_scraper.client import (
     transport,
 )
 from sofascore_scraper.client.transport import RequestTrace
-from sofascore_scraper.config_manager import ConfigManager
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
-from sofascore_scraper.match_fetcher import MatchFetcher
-from sofascore_scraper.season_fetcher import SeasonFetcher
+from detail_fetch import Details
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
 from sofascore_scraper.sports import DETAIL_SLICES
 
@@ -691,15 +688,16 @@ def test_legacy_entry_points_fill_a_trace_when_given_one(fake: FakeSofaScore) ->
 
 # --- uç noktalar -------------------------------------------------------------------------------------
 
-def test_endpoints_build_the_paths_the_fetchers_build_today() -> None:
+def test_endpoints_build_the_paths_of_the_2x_fetchers() -> None:
     assert endpoints.event(123) == "/event/123"
     assert endpoints.live_events("football") == "/sport/football/events/live"
     assert endpoints.seasons(17) == "/unique-tournament/17/seasons"
     assert endpoints.rounds(17, 61627) == "/unique-tournament/17/season/61627/rounds"
     assert endpoints.season_events_page(17, 61627, "last", 0) == "/unique-tournament/17/season/61627/events/last/0"
     assert endpoints.season_events_page(17, 61627, "next", 3) == "/unique-tournament/17/season/61627/events/next/3"
-    for slug in (None, "final", "round-of-16"):
-        assert endpoints.round_events(17, 61627, 5, slug) == MatchFetcher.build_round_events_url(17, 61627, 5, slug)
+    assert endpoints.round_events(17, 61627, 5) == "/unique-tournament/17/season/61627/events/round/5"
+    assert endpoints.round_events(17, 61627, 5, "round-of-16") == \
+        "/unique-tournament/17/season/61627/events/round/5/slug/round-of-16"
     assert endpoints.round_events(17, 61627, 5, "final").endswith("/events/round/5/slug/final")
 
 
@@ -779,22 +777,15 @@ def sent_async_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
     return urls
 
 
-def _fetchers(tmp_path: Path) -> Any:
-    config = ConfigManager()
-    seasons = SeasonFetcher(config, str(tmp_path / "data"))
-    return seasons, MatchFetcher(config, seasons, str(tmp_path / "data")), MatchDataFetcher(config, str(tmp_path / "data"))
-
-
 def test_the_default_api_base_is_unchanged(tmp_path: Path, sent_urls: List[str],
                                            sent_async_urls: List[str]) -> None:
-    seasons, matches, details = _fetchers(tmp_path)
+    details = Details(tmp_path / "data")
 
     assert utils.API_BASE_URL == transport.base_url() == DEFAULT_BASE
-    assert {seasons.base_url, matches.base_url, details.base_url} == {DEFAULT_BASE}
 
-    seasons.fetch_seasons_checked(17)
+    Client().get_sync(endpoints.seasons(17))
     utils.make_api_request("/event/1/statistics")
-    details.fetch_match_data("1")
+    details.fetch("1")
 
     assert sent_urls == [
         f"{DEFAULT_BASE}/unique-tournament/17/seasons",
@@ -804,20 +795,18 @@ def test_the_default_api_base_is_unchanged(tmp_path: Path, sent_urls: List[str],
     assert all(url.startswith(f"{DEFAULT_BASE}/event/1") for url in sent_async_urls)
 
 
-def test_a_configured_api_base_reaches_every_fetcher(
+def test_a_configured_api_base_reaches_every_request(
     tmp_path: Path, sent_urls: List[str], sent_async_urls: List[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Eskiden yalnızca göreli yollar API_BASE_URL'i kullanıyordu; sezon ve detay istekleri sabit adrese gidiyordu."""
     monkeypatch.setattr(utils, "API_BASE_URL", OTHER_BASE)
-    seasons, matches, details = _fetchers(tmp_path)
+    details = Details(tmp_path / "data")
 
-    assert {seasons.base_url, matches.base_url, details.base_url} == {OTHER_BASE}
-
-    seasons.fetch_seasons_checked(17)
+    Client().get_sync(endpoints.seasons(17))
     utils.make_api_request("/event/1/h2h")
     Client().get_sync(endpoints.event(1))
     monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)  # EVENT'in durum kodu yok: dilimleri de istensin
-    details.fetch_match_data("1")  # maç detayları: boru hattının oturumu (/event ve dilimleri)
+    details.fetch("1")  # maç detayları: boru hattının oturumu (/event ve dilimleri)
 
     assert sent_urls == [
         f"{OTHER_BASE}/unique-tournament/17/seasons",

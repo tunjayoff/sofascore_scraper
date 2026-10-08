@@ -8,8 +8,8 @@ kurulsun diye) ve dosya şöyle yeniden üretilir:
     REGEN_DERIVE_GOLDEN=1 python -m pytest tests/test_store_derive.py
 
 Ağ yok. Bugünkü kurallarla karşılaştırma: classify_status / extract_scores (sofascore_scraper/status.py),
-`_tier_hint` (sofascore_scraper/refresh.py), SeasonFetcher._get_sortable_year_value ve özet CSV satırı
-(tests/store_fixtures.summary_row = MatchFetcher._save_season_summary).
+`_tier_hint` (sofascore_scraper/refresh.py), listing.sortable_year (2.x'te SeasonFetcher._get_sortable_year_value) ve
+özet CSV satırı (tests/store_fixtures.summary_row = 2.x'in MatchFetcher._save_season_summary).
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ import pytest
 
 import store_fixtures as sf
 from sofascore_scraper.refresh import _tier_hint
-from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.services.listing import sortable_year
 from sofascore_scraper.status import ScoreSheet, classify_status, extract_scores
 from sofascore_scraper.store import PayloadCorrupt, derive
 
@@ -332,7 +332,7 @@ def test_malformed_values_are_coerced_or_dropped():
 
 @pytest.mark.parametrize("name", sorted(EVENTS), ids=str)
 def test_legacy_summary_columns_can_be_rebuilt_from_the_row(name):
-    """Özet CSV'sinin sütunları (sofascore_scraper/match_fetcher.py:547-575) satırdan geri kurulabilmeli (bölüm 3.3, 8.2)."""
+    """Özet CSV'sinin sütunları (2.x'te sofascore_scraper/match_fetcher.py:547-575) satırdan geri kurulabilmeli (bölüm 3.3, 8.2)."""
     ev = EVENTS[name]
     event = sf.basic_payload(ev)
     row = derive.event_row(event, "event")
@@ -420,7 +420,7 @@ YEARS = ["24/25", "26/27", "99/00", "98/99", "00/01", "49/50", "50/51", "2024/20
 
 @pytest.mark.parametrize("year", YEARS, ids=repr)
 def test_season_sort_key_equals_todays_rule(year):
-    assert derive.season_sort_key(year) == SeasonFetcher._get_sortable_year_value(None, year)
+    assert derive.season_sort_key(year) == sortable_year(year)
 
 
 def test_season_sort_key_values():

@@ -15,7 +15,6 @@
     "version": "Versiyon:",
     "description": "Açıklama:",
     "libraries": "Kütüphaneler:",
-    "total_seasons": "Toplam Sezon:",
     "check_log_for_details": "Lütfen detaylar için log dosyasını kontrol edin: {path}",
     "check_console_for_details": "Dosyaya loglama kapalı (LOG_TO_FILE=false); ayrıntılar yukarıdaki çıktıda.",
     "diagnostics_written": "Tanılama paketi yazıldı: {path}",
