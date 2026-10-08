@@ -560,11 +560,11 @@ def _isolate_request_layer(request, monkeypatch):
     Her test temiz bir istek katmanıyla başlar: "önce tarayıcı" modu bir testten diğerine
     taşınmaz. `browser` işaretli olmayan testler gerçek bir tarayıcı başlatamaz.
     """
-    import sofascore_scraper.utils as utils
+    from sofascore_scraper.client import transport
     from sofascore_scraper.client import bridge as cs
     from sofascore_scraper import bridge_health
 
-    monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+    monkeypatch.setattr(transport, "_browser_first_until", 0.0)
     bridge_health.reset()  # köprü sağlık durumu da testten teste taşınmaz
     follows = sys.modules.get("sofascore_scraper.services.follows")
     if follows is not None:

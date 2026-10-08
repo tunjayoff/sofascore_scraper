@@ -7,7 +7,7 @@ maç programı aşamaları kesiciyi ne besliyor ne de ona bakıyordu: engellenmi
 maç için istek atılmaya (ve her biri yeniden deneme + geri çekilme yakmaya) devam ediliyordu.
 
 Şimdi iş başına tek bir kesici var:
-  - İstek katmanı (sofascore_scraper/utils.py: make_api_request / make_api_request_async) her isteğin SON halini
+  - İstek katmanı (sofascore_scraper/client/transport.py: make_api_request / make_api_request_async) her isteğin SON halini
     bildirir (yeniden denemeler bittikten sonra): başarı, 404 ya da başarısızlık türü.
   - Kesici açıkken istek katmanı yeni istek göndermez (CircuitOpenError); ortak istek bütçesinden
     (sofascore_scraper/throttle.py) sıra da ayrılmaz. Aşamalar (sezonlar, maç programı, detaylar, yenileme)

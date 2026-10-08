@@ -35,7 +35,7 @@ from starlette.routing import Route
 
 import conftest
 from sofascore_scraper.client import bridge as cs
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from sofascore_scraper import bridge_health, diagnostics, private_files, redact
 from sofascore_scraper.paths import env_file_path
 from sofascore_scraper.store import open_store
@@ -156,7 +156,7 @@ def test_origin_check_rejects_requests_triggered_by_another_site(headers):
 @pytest.mark.parametrize("method,path", UNSAFE_ROUTES, ids=[f"{m} {p}" for m, p in UNSAFE_ROUTES])
 def test_every_state_changing_route_is_behind_the_origin_check(method, path, monkeypatch):
     """Veri silme, yedek, ayar, iş başlatma, SofaScore'a istek: hiçbiri başka siteden tetiklenemez."""
-    monkeypatch.setattr(utils.cffi_requests, "get", lambda *a, **k: pytest.fail("a request was sent"))
+    monkeypatch.setattr(transport.cffi_requests, "get", lambda *a, **k: pytest.fail("a request was sent"))
     before = _tree_digest()
     for headers in ({"sec-fetch-site": "cross-site"}, {"origin": "https://evil.example"}):
         assert client.request(method, path, headers=headers).status_code == 403
@@ -298,7 +298,7 @@ def test_get_routes_are_the_reviewed_read_only_set():
 
 
 def test_no_get_route_writes_files_or_sends_requests(monkeypatch):
-    monkeypatch.setattr(utils.cffi_requests, "get", lambda *a, **k: pytest.fail("a GET route sent a request"))
+    monkeypatch.setattr(transport.cffi_requests, "get", lambda *a, **k: pytest.fail("a GET route sent a request"))
     # Kataloğu okuyan uç noktalar depoyu açar; ilk açılış `.meta/` altını kurar (GETS_THAT_MAY_WRITE_A_CACHE).
     # Ölçülen, veri dizini bir kez açıldıktan sonraki GET'lerdir: onlar hiçbir dosyayı ve satırı değiştirmez.
     open_store(conftest.DATA_DIR)
@@ -314,7 +314,7 @@ def test_remote_tournament_search_is_post_only(monkeypatch):
     """Her arama SofaScore'a canlı istek atar: GET olsaydı başka bir sitedeki <img> tetikleyebilirdi."""
     calls = []
     monkeypatch.setattr(
-        utils.cffi_requests, "get", lambda url, **k: calls.append(url) or (_ for _ in ()).throw(ConnectionError("offline"))
+        transport.cffi_requests, "get", lambda url, **k: calls.append(url) or (_ for _ in ()).throw(ConnectionError("offline"))
     )
     r = client.get("/api/v1/tournaments/search", params={"q": "premier"})
     assert r.status_code in (405, 422) and calls == []  # GET bir arama değildir: `/tournaments/{id}` sayı ister

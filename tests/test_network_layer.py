@@ -10,11 +10,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from sofascore_scraper.client import bridge as cs
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError
 from sofascore_scraper.services.detail_phase import DetailPhase
 from sofascore_scraper.store import open_store
-from sofascore_scraper.utils import FetchCancelled
+from sofascore_scraper.client.context import FetchCancelled
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
 
@@ -41,10 +41,10 @@ def _patched(sleeper="_asleep"):
     def fake_sleep(sec):
         sleeps.append(sec)
 
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_asleep", side_effect=fake_asleep), \
-            patch.object(utils, "_sleep", side_effect=fake_sleep):
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_asleep", side_effect=fake_asleep), \
+            patch.object(transport, "_sleep", side_effect=fake_sleep):
         yield sleeps
 
 
@@ -63,7 +63,7 @@ def _run(coro):
 def test_async_403_raises_after_last_attempt_without_final_sleep():
     session = _session(*[Resp(403, text="blocked")] * 3)
     with _patched() as sleeps, pytest.raises(APIError) as ei:
-        _run(utils.make_api_request_async(session, "/x"))
+        _run(transport.make_api_request_async(session, "/x"))
     assert ei.value.status_code == 403
     assert session.get.call_count == 3
     assert len(sleeps) == 2  # son denemeden sonra beklenmez
@@ -72,14 +72,14 @@ def test_async_403_raises_after_last_attempt_without_final_sleep():
 def test_async_429_raises_rate_limit_error():
     session = _session(*[Resp(429)] * 3)
     with _patched(), pytest.raises(RateLimitError) as ei:
-        _run(utils.make_api_request_async(session, "/x"))
+        _run(transport.make_api_request_async(session, "/x"))
     assert ei.value.status_code == 429
 
 
 def test_async_permanent_4xx_is_not_retried():
     session = _session(Resp(400))
     with _patched() as sleeps, pytest.raises(APIError) as ei:
-        _run(utils.make_api_request_async(session, "/x"))
+        _run(transport.make_api_request_async(session, "/x"))
     assert ei.value.status_code == 400
     assert session.get.call_count == 1 and sleeps == []
 
@@ -87,21 +87,21 @@ def test_async_permanent_4xx_is_not_retried():
 def test_async_5xx_retried_then_succeeds():
     session = _session(Resp(502), Resp(200, {"ok": 1}))
     with _patched():
-        assert _run(utils.make_api_request_async(session, "/x")) == {"ok": 1}
+        assert _run(transport.make_api_request_async(session, "/x")) == {"ok": 1}
 
 
 def test_async_network_error_raises_network_error():
     s = MagicMock()
     s.get = AsyncMock(side_effect=RuntimeError("curl: (7) Failed to connect"))
     with _patched(), pytest.raises(NetworkError):
-        _run(utils.make_api_request_async(s, "/x"))
+        _run(transport.make_api_request_async(s, "/x"))
 
 
 def test_async_sends_fresh_headers_per_request():
     session = _session(Resp(200, {}), Resp(200, {}))
-    with _patched(), patch.object(utils, "get_sofascore_hash", side_effect=["aaaaaa", "bbbbbb"]):
-        _run(utils.make_api_request_async(session, "/a"))
-        _run(utils.make_api_request_async(session, "/b"))
+    with _patched(), patch.object(transport, "get_sofascore_hash", side_effect=["aaaaaa", "bbbbbb"]):
+        _run(transport.make_api_request_async(session, "/a"))
+        _run(transport.make_api_request_async(session, "/b"))
     sent = [c.kwargs["headers"]["X-Requested-With"] for c in session.get.call_args_list]
     assert sent == ["aaaaaa", "bbbbbb"]
 
@@ -120,9 +120,9 @@ def test_async_requests_respect_max_concurrent():
     session.get = slow_get
 
     async def many():
-        await asyncio.gather(*[utils.make_api_request_async(session, f"/{i}") for i in range(12)])
+        await asyncio.gather(*[transport.make_api_request_async(session, f"/{i}") for i in range(12)])
 
-    with _patched(), patch.object(utils._cm, "get_max_concurrent", return_value=3):
+    with _patched(), patch.object(transport._cm, "get_max_concurrent", return_value=3):
         _run(many())
     assert state["peak"] == 3
 
@@ -130,14 +130,14 @@ def test_async_requests_respect_max_concurrent():
 # --- senkron istek ---------------------------------------------------------------
 
 def test_sync_403_returns_none_without_final_sleep():
-    with _patched() as sleeps, patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
-        assert utils.make_api_request("/x") is None
+    with _patched() as sleeps, patch.object(transport.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
+        assert transport.make_api_request("/x") is None
     assert get.call_count == 3 and len(sleeps) == 2
 
 
 def test_sync_permanent_4xx_not_retried():
-    with _patched() as sleeps, patch.object(utils.cffi_requests, "get", return_value=Resp(401)) as get:
-        assert utils.make_api_request("/x") is None
+    with _patched() as sleeps, patch.object(transport.cffi_requests, "get", return_value=Resp(401)) as get:
+        assert transport.make_api_request("/x") is None
     assert get.call_count == 1 and sleeps == []
 
 
@@ -349,11 +349,11 @@ def test_browser_first_mode_skips_curl(monkeypatch):
     """curl challenge'a takılıp tarayıcı başardıysa sonraki istek doğrudan tarayıcıya gider."""
     session = _session(Resp(403, text="challenge"))
     browser = AsyncMock(return_value={"ok": 1})
-    monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+    monkeypatch.setattr(transport, "_browser_first_until", 0.0)
     with _patched(), patch("sofascore_scraper.client.bridge.fetch_api_via_browser", browser):
-        assert _run(utils.make_api_request_async(session, "/a")) == {"ok": 1}
-        assert utils._browser_first()
-        assert _run(utils.make_api_request_async(session, "/b")) == {"ok": 1}
+        assert _run(transport.make_api_request_async(session, "/a")) == {"ok": 1}
+        assert transport._browser_first()
+        assert _run(transport.make_api_request_async(session, "/b")) == {"ok": 1}
     assert session.get.call_count == 1  # ikinci istek curl'e hiç gitmedi
     assert browser.await_count == 2
 

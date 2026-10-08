@@ -10,7 +10,7 @@ from sofascore_scraper.client.bridge import (
     apply_token_to_headers,
     fetch_api_via_browser,
 )
-from sofascore_scraper.utils import make_api_request, make_api_request_async
+from sofascore_scraper.client.transport import make_api_request, make_api_request_async
 
 
 def test_apply_token_to_headers_adds_cookie_and_header():
@@ -63,7 +63,7 @@ def test_make_api_request_falls_back_to_browser_bridge_on_challenge():
 
     expected_data = {"seasons": [{"id": 1, "name": "Test Season"}]}
 
-    with patch("sofascore_scraper.utils.cffi_requests.get", return_value=mock_response), \
+    with patch("sofascore_scraper.client.transport.cffi_requests.get", return_value=mock_response), \
          patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", return_value=expected_data):
         res = make_api_request("/unique-tournament/17/seasons")
         assert res == expected_data

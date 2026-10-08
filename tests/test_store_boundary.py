@@ -86,9 +86,9 @@ NAMED_EXCEPTIONS: Dict[Tuple[str, str], str] = {
         "uzlaştırma istemez. Bir Store yöntemine taşınabilir.",
     ("sofascore_scraper/services/context.py", "_ensure_directory"):
         "bağlam kurulurken veri dizini ve 2.x alt dizinleri var edilir (bugünkü davranış). P30'la gider.",
-    ("sofascore_scraper/utils.py", "ensure_directory"):
-        "CSV dışa aktarmasının çıktı dizinini var etmesi (sofascore_scraper/cli/commands/export.py; 2.x "
-        "indiricileri P30'da kalktı). P30'la gider.",
+    ("sofascore_scraper/cli/commands/export.py", "export"):
+        "`ssc export`'un varsayılan çıktı dizini (match_details/processed) yoksa kurulur (3.1'e kadar "
+        "sofascore_scraper/utils.py `ensure_directory`; P30). Dışa aktarma servisine taşınabilir.",
     ("sofascore_scraper/services/export.py", "_write_file"):
         "dışa aktarmanın kullanıcının seçtiği yoldaki çıktı dosyası (dosya sink'i gibi; yol veri dizininde "
         "de olabilir).",

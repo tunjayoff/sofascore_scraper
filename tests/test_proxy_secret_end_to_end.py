@@ -21,7 +21,7 @@ from urllib.parse import unquote
 import pytest
 from fastapi.testclient import TestClient
 
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from sofascore_scraper import diagnostics, redact
 from sofascore_scraper.config import active_settings
 from sofascore_scraper import logger as app_logger
@@ -98,7 +98,7 @@ def _failing_requests_through(proxy_url: str, extra: str = "") -> dict:
         seen.append(kwargs.get("proxies"))
         raise ConnectionError(f"curl: (56) CONNECT tunnel failed, response 407 via {proxy_url}{extra}")
 
-    with patch.object(utils, "_sleep"), patch.object(utils.cffi_requests, "get", side_effect=curl):
+    with patch.object(transport, "_sleep"), patch.object(transport.cffi_requests, "get", side_effect=curl):
         search = client.post("/api/v1/tournaments/search", json={"q": "premier"})
     # İstekler gerçekten kayıtlı proxy ile (parolası tam) gönderildi: maskelenen şey kullanılan değer
     assert seen and all(p == {"http": proxy_url, "https": proxy_url} for p in seen), seen

@@ -17,7 +17,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.utils as utils
 from characterization import pin_default_settings
 from fakes.sofascore import REQUEST_LAYER, REQUEST_LAYER_MODULES, SITE_ROOT, FakeResponse, FakeSofaScore
 from sofascore_scraper import breaker as request_breaker
@@ -51,97 +50,34 @@ def fake() -> Iterator[FakeSofaScore]:
         yield world
 
 
-# --- taşıma: sofascore_scraper/utils.py ince bir yeniden dışa aktarım ----------------------------------------------
-
-MOVED_TO_TRANSPORT = (
-    "make_api_request", "make_api_request_async", "_request_sync", "_request_async", "_request_semaphore",
-    "_request_semaphores", "create_session_async", "WarmableAsyncSession", "_warmup_session",
-    "get_request_headers", "get_sofascore_hash", "get_sofa_captcha_token", "_get_runtime_request_config",
-    "_get_proxy_config", "_parse_retry_after_seconds", "_sleep", "_asleep", "_throttle", "_athrottle",
-    "_browser_first", "_mark_browser_first", "_browser_result", "_is_transient_status", "_full_url", "_retry_wait",
-    "IMPERSONATE_PROFILES", "_ACCEPT_LANGUAGES", "BROWSER_FIRST_SECONDS", "API_BASE_URL", "JsonResponse",
-    "AsyncSession", "cffi_requests",
-)
-MOVED_TO_CONTEXT = (
-    "FetchCancelled", "_cancel_check", "set_cancel_check", "raise_if_cancelled", "_wait_notifier",
-    "set_wait_notifier", "_notify_wait",
-)
+# --- taşıma: 2.x'in sofascore_scraper/transport.py'si kalktı (P30) -------------------------------------------------
 
 
-@pytest.mark.parametrize("name", MOVED_TO_TRANSPORT)
-def test_utils_re_exports_the_transport_objects(name: str) -> None:
-    assert getattr(utils, name) is getattr(transport, name)
-
-
-@pytest.mark.parametrize("name", MOVED_TO_CONTEXT)
-def test_utils_re_exports_the_context_objects(name: str) -> None:
-    assert getattr(utils, name) is getattr(context, name)
-
-
-def test_utils_keeps_no_request_code_of_its_own() -> None:
-    """Gövde taşındı: sofascore_scraper/utils.py'de tanımlanan işlevler yalnızca istek katmanı dışındakilerdir."""
-    import inspect
-
-    defined_here = {
-        name for name, value in vars(utils).items()
-        if inspect.isfunction(value) and value.__module__ == "sofascore_scraper.utils" and not name.startswith("__")
-    }
-    assert defined_here == {"ensure_directory", "_forwarding_table"}
+def test_the_utils_module_is_gone() -> None:
+    """İstek katmanı P05'te sofascore_scraper/client'e taşındı; eski adları yeniden dışa aktaran utils 3.1'de kalktı."""
+    code = "import importlib.util, sys\nsys.exit(0 if importlib.util.find_spec('sofascore_scraper.utils') is None else 1)\n"
+    assert subprocess.run([sys.executable, "-c", code], cwd=Path(__file__).resolve().parent.parent).returncode == 0
 
 
 def test_the_fake_transport_patches_the_module_that_holds_the_body() -> None:
-    assert "sofascore_scraper.client.transport" in REQUEST_LAYER_MODULES
-
-
-def test_an_assignment_on_utils_reaches_the_moved_body(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`utils._sleep = sahte` eskiden gövdeyi etkilerdi; gövde taşındıktan sonra da etkilemeli."""
-    slept = []
-    monkeypatch.setattr(utils, "_sleep", slept.append)
-
-    assert transport._sleep == slept.append
-    transport._throttle()  # bütçe kapalı (REQUEST_RATE_LIMIT=0): beklemez, ama sahteyi görür
-    with patch.object(utils.throttle, "reserve", return_value=1.5):
-        transport._throttle()
-    assert slept == [1.5]
-
-    monkeypatch.undo()
-    assert transport._sleep is utils._sleep
-
-
-def test_mock_patch_on_utils_reaches_the_moved_body_and_is_undone() -> None:
-    original = transport._get_proxy_config
-    with patch.object(utils, "_get_proxy_config", return_value=(True, "socks5://127.0.0.1:1")):
-        assert transport._get_proxy_config() == (True, "socks5://127.0.0.1:1")
-    assert transport._get_proxy_config is original and utils._get_proxy_config is original
-
-    with patch("sofascore_scraper.utils.raise_if_cancelled") as fake_check:
-        transport._sleep(0)
-    assert fake_check.called
-    assert transport.raise_if_cancelled is context.raise_if_cancelled is utils.raise_if_cancelled
+    assert REQUEST_LAYER_MODULES == ("sofascore_scraper.client.transport",)
 
 
 def test_browser_first_state_has_a_single_owner(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`_browser_first_until` gövdede yeniden bağlanır: utils kopya tutmaz, okuma ve yazma sahibine gider."""
-    assert "_browser_first_until" not in vars(utils)
-    monkeypatch.setattr(utils, "_browser_first_until", 0.0)
-    assert not utils._browser_first()
+    """`_browser_first_until` gövdede yeniden bağlanır: okuma ve yazma tek sahibine gider."""
+    monkeypatch.setattr(transport, "_browser_first_until", 0.0)
+    assert not transport._browser_first()
 
     transport._mark_browser_first()
-    assert utils._browser_first() and utils._browser_first_until == transport._browser_first_until > 0
+    assert transport._browser_first() and transport._browser_first_until > 0
 
     monkeypatch.undo()
-    assert transport._browser_first_until == 0.0  # conftest her testten önce sıfırlar; geri alma da sahibine yazılır
+    assert transport._browser_first_until == 0.0  # conftest her testten önce sıfırlar
 
 
-def test_names_that_stayed_in_utils_are_not_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)
-    assert not hasattr(transport, "FETCH_ONLY_FINISHED") and not hasattr(context, "FETCH_ONLY_FINISHED")
-    assert not hasattr(utils, "no_such_name")
-
-
-def test_legacy_entry_points_still_run_the_real_request_layer(fake: FakeSofaScore) -> None:
-    assert utils.make_api_request("/event/1")["event"]["id"] == 1
-    assert utils.make_api_request("/event/2") is None
+def test_the_entry_points_run_the_real_request_layer(fake: FakeSofaScore) -> None:
+    assert transport.make_api_request("/event/1")["event"]["id"] == 1
+    assert transport.make_api_request("/event/2") is None
     assert [r.label for r in fake.requests] == ["sync /event/1 200", "sync /event/2 404"]
 
 
@@ -435,7 +371,7 @@ def test_the_base_url_is_applied_in_one_place() -> None:
 
 
 def test_default_settings_follow_the_configured_api_base_url() -> None:
-    assert ClientSettings.from_environment().base_url == transport.base_url() == utils.API_BASE_URL
+    assert ClientSettings.from_environment().base_url == transport.base_url() == transport.API_BASE_URL
     assert Client().url("/event/1") == transport.api_url("/event/1") == transport._full_url("/event/1")
 
 
@@ -541,7 +477,7 @@ def test_a_cancelled_job_raises_and_sends_nothing(fake: FakeSofaScore, client: C
             _get(client, "/event/1", how)
 
     assert fake.requests == [] and fake.sessions == []
-    assert Cancelled is FetchCancelled is utils.FetchCancelled
+    assert Cancelled is FetchCancelled is context.FetchCancelled
 
 
 @BOTH
@@ -674,12 +610,12 @@ def test_legacy_entry_points_fill_a_trace_when_given_one(fake: FakeSofaScore) ->
     sync_trace, async_trace, missing_trace = RequestTrace(), RequestTrace(), RequestTrace()
 
     async def run() -> Any:
-        async with utils.create_session_async() as session:
-            return await utils.make_api_request_async(session, "/event/1", timeout=3, trace=async_trace)
+        async with transport.create_session_async() as session:
+            return await transport.make_api_request_async(session, "/event/1", timeout=3, trace=async_trace)
 
-    assert utils.make_api_request("/event/1", trace=sync_trace)["event"]["id"] == 1
+    assert transport.make_api_request("/event/1", trace=sync_trace)["event"]["id"] == 1
     assert asyncio.run(run())["event"]["id"] == 1
-    assert utils.make_api_request("/event/404", trace=missing_trace) is None
+    assert transport.make_api_request("/event/404", trace=missing_trace) is None
 
     assert (sync_trace.via, sync_trace.http_status) == ("curl", 200)
     assert (async_trace.via, async_trace.http_status) == ("curl", 200)
@@ -751,7 +687,7 @@ def sent_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
         return FakeResponse(200, json.dumps({"seasons": [{"id": 1, "name": "24/25", "year": "24/25"}], "event": EVENT}))
 
     monkeypatch.setattr(transport.cffi_requests, "get", sync_get)
-    monkeypatch.setattr(utils, "_sleep", lambda seconds: None)
+    monkeypatch.setattr(transport, "_sleep", lambda seconds: None)
     return urls
 
 
@@ -773,7 +709,7 @@ def sent_async_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
         yield fake_session
 
     monkeypatch.setattr(transport, "create_session_async", session)
-    monkeypatch.setattr(utils, "_asleep", AsyncMock())
+    monkeypatch.setattr(transport, "_asleep", AsyncMock())
     return urls
 
 
@@ -781,10 +717,10 @@ def test_the_default_api_base_is_unchanged(tmp_path: Path, sent_urls: List[str],
                                            sent_async_urls: List[str]) -> None:
     details = Details(tmp_path / "data")
 
-    assert utils.API_BASE_URL == transport.base_url() == DEFAULT_BASE
+    assert transport.API_BASE_URL == transport.base_url() == DEFAULT_BASE
 
     Client().get_sync(endpoints.seasons(17))
-    utils.make_api_request("/event/1/statistics")
+    transport.make_api_request("/event/1/statistics")
     details.fetch("1")
 
     assert sent_urls == [
@@ -799,13 +735,12 @@ def test_a_configured_api_base_reaches_every_request(
     tmp_path: Path, sent_urls: List[str], sent_async_urls: List[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Eskiden yalnızca göreli yollar API_BASE_URL'i kullanıyordu; sezon ve detay istekleri sabit adrese gidiyordu."""
-    monkeypatch.setattr(utils, "API_BASE_URL", OTHER_BASE)
+    monkeypatch.setattr(transport, "API_BASE_URL", OTHER_BASE)
     details = Details(tmp_path / "data")
 
     Client().get_sync(endpoints.seasons(17))
-    utils.make_api_request("/event/1/h2h")
+    transport.make_api_request("/event/1/h2h")
     Client().get_sync(endpoints.event(1))
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)  # EVENT'in durum kodu yok: dilimleri de istensin
     details.fetch("1")  # maç detayları: boru hattının oturumu (/event ve dilimleri)
 
     assert sent_urls == [
@@ -818,9 +753,9 @@ def test_a_configured_api_base_reaches_every_request(
 
 
 def test_an_absolute_url_given_by_the_caller_is_sent_as_it_is(sent_urls: List[str], monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(utils, "API_BASE_URL", OTHER_BASE)
+    monkeypatch.setattr(transport, "API_BASE_URL", OTHER_BASE)
 
-    utils.make_api_request(f"{DEFAULT_BASE}/event/1")
+    transport.make_api_request(f"{DEFAULT_BASE}/event/1")
 
     assert sent_urls == [f"{DEFAULT_BASE}/event/1"]
 
@@ -830,20 +765,20 @@ def test_the_bridge_fallback_gets_the_full_address(
     fake: FakeSofaScore, monkeypatch: pytest.MonkeyPatch, base: str
 ) -> None:
     """Köprü göreli yolu kendi sabit köküyle tamamlar; ayarlı kök ona da ulaşsın diye tam adres verilir."""
-    monkeypatch.setattr(utils, "API_BASE_URL", base)
+    monkeypatch.setattr(transport, "API_BASE_URL", base)
     fake.fail("/event/*", 403, body=CHALLENGE_BODY)
     sync_bridge = MagicMock(return_value={"ok": 1})
     async_bridge = AsyncMock(return_value={"ok": 1})
 
     async def fetch_async(path: str) -> Any:
-        async with utils.create_session_async() as session:
-            return await utils.make_api_request_async(session, path)
+        async with transport.create_session_async() as session:
+            return await transport.make_api_request_async(session, path)
 
     with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", sync_bridge), \
             patch("sofascore_scraper.client.bridge.fetch_api_via_browser", async_bridge):
-        assert utils.make_api_request("/event/1") == {"ok": 1}  # 403 challenge → köprü
-        assert utils.make_api_request("/event/2") == {"ok": 1}  # "önce tarayıcı" modu
-        monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+        assert transport.make_api_request("/event/1") == {"ok": 1}  # 403 challenge → köprü
+        assert transport.make_api_request("/event/2") == {"ok": 1}  # "önce tarayıcı" modu
+        monkeypatch.setattr(transport, "_browser_first_until", 0.0)
         assert asyncio.run(fetch_async("/event/3")) == {"ok": 1}
         assert asyncio.run(fetch_async("/event/4")) == {"ok": 1}
 
@@ -911,15 +846,14 @@ def test_the_client_package_imports_neither_the_store_nor_a_face() -> None:
     assert problems == []
 
 
-@pytest.mark.parametrize("module", ["sofascore_scraper.client.transport", "sofascore_scraper.client.context", "sofascore_scraper.client.endpoints", "sofascore_scraper.utils"])
+@pytest.mark.parametrize("module", ["sofascore_scraper.client.transport", "sofascore_scraper.client.context",
+                                    "sofascore_scraper.client.endpoints", "sofascore_scraper.client"])
 def test_any_of_the_modules_can_be_the_first_one_imported(module: str) -> None:
-    """sofascore_scraper.utils ↔ sofascore_scraper.client arasında içe aktarma döngüsü yok: hangisi önce yüklenirse yüklensin çalışır."""
+    """sofascore_scraper.client'in modülleri arasında içe aktarma döngüsü yok: hangisi önce yüklenirse yüklensin çalışır."""
     code = (
         f"import {module}\n"
-        "import sofascore_scraper.utils as utils\n"
         "from sofascore_scraper.client import transport\n"
-        "assert utils.make_api_request is transport.make_api_request\n"
-        "assert type(utils).__name__ == '_UtilsModule'\n"
+        "assert transport.make_api_request is transport.make_api_request\n"
         "print('ok')\n"
     )
 

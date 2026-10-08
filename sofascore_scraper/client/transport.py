@@ -1,10 +1,9 @@
 """
 İstek katmanı: SofaScore'a giden her HTTP isteğinin gövdesi (curl_cffi taşıyıcısı ve tarayıcı köprüsüne düşüş).
 
-Buradaki her şey sofascore_scraper/utils.py'den taşındı (plan maddesi P05; docs/design/02-services.md 2.2 ve 2.4): yeniden
-deneme, geri çekilme, tipli hatalar, ortak istek bütçesi, "önce tarayıcı" modu, oturum ısınması. sofascore_scraper/utils.py
-aynı adları yeniden dışa aktarır ve kendisine yapılan atamaları buraya iletir; eski import'lar ve
-`utils._sleep = ...` biçimindeki yamalar çalışmaya devam eder.
+Buradaki her şey 2.x'in sofascore_scraper/utils.py'sinden taşındı (plan maddesi P05; docs/design/02-services.md 2.2 ve
+2.4): yeniden deneme, geri çekilme, tipli hatalar, ortak istek bütçesi, "önce tarayıcı" modu, oturum ısınması. Adları
+yeniden dışa aktaran utils 3.1'de kalktı (plan maddesi P30).
 
 İptal kontrolü ve bekleme bildirimi sofascore_scraper/client/context.py'dedir. Bu modül DATA_DIR altına hiçbir şey yazmaz.
 """

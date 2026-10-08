@@ -15,9 +15,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from sofascore_scraper.client import bridge as cs
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
+from sofascore_scraper.client import context as request_ctx
+from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper import throttle
-from sofascore_scraper.client import request_context, transport
+from sofascore_scraper.client import request_context
 from sofascore_scraper.throttle import RequestThrottle, Reservation, advance, put_back, take
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -680,8 +682,8 @@ def test_interrupted_block_gives_the_slot_back_and_a_finished_one_keeps_it(share
         pass  # bekleme bitti: istek gönderilecek, sıra kullanıldı
     dropped = throttle.reserve()
     assert 19.0 < dropped <= 20.0
-    with pytest.raises(utils.FetchCancelled), throttle.give_back_if_interrupted(dropped):
-        raise utils.FetchCancelled()
+    with pytest.raises(request_ctx.FetchCancelled), throttle.give_back_if_interrupted(dropped):
+        raise request_ctx.FetchCancelled()
     assert 19.0 < throttle.reserve() <= 20.0  # aynı an yeniden verildi
     assert kept.give_back() is True  # hâlâ beklenebilirdi: blok onu iade etmedi
 
@@ -765,11 +767,11 @@ def _reserve_counter(monkeypatch, delay=0.0):
 def test_sync_curl_request_takes_a_slot_per_attempt(monkeypatch):
     calls = _reserve_counter(monkeypatch, delay=0.3)
     sleeps = []
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_sleep", side_effect=sleeps.append), \
-            patch.object(utils.cffi_requests, "get", side_effect=[Resp(500), Resp(200, {"ok": 1})]) as get:
-        assert utils.make_api_request("/x") == {"ok": 1}
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_sleep", side_effect=sleeps.append), \
+            patch.object(transport.cffi_requests, "get", side_effect=[Resp(500), Resp(200, {"ok": 1})]) as get:
+        assert transport.make_api_request("/x") == {"ok": 1}
     assert get.call_count == 2 and len(calls) == 2  # yeniden deneme de bir istektir
     assert sleeps.count(0.3) == 2
 
@@ -778,26 +780,26 @@ def test_async_curl_request_takes_a_slot(monkeypatch):
     calls = _reserve_counter(monkeypatch)
     session = MagicMock()
     session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
-        assert asyncio.run(utils.make_api_request_async(session, "/x")) == {"ok": 1}
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
+        assert asyncio.run(transport.make_api_request_async(session, "/x")) == {"ok": 1}
     assert len(calls) == 1
 
 
 def test_throttle_wait_is_cancellable(monkeypatch):
     """Uzun bir bütçe beklemesi iptal edilen işi tutmaz ve istek hiç atılmaz."""
     _reserve_counter(monkeypatch, delay=60.0)
-    token = utils.set_cancel_check(lambda: True)
+    token = request_ctx.set_cancel_check(lambda: True)
     try:
-        with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-                patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-                patch.object(utils, "raise_if_cancelled", side_effect=[None, utils.FetchCancelled()]), \
-                patch.object(utils.cffi_requests, "get") as get, \
-                pytest.raises(utils.FetchCancelled):
-            utils.make_api_request("/x")
+        with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+                patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+                patch.object(request_ctx, "raise_if_cancelled", side_effect=[None, request_ctx.FetchCancelled()]), \
+                patch.object(transport.cffi_requests, "get") as get, \
+                pytest.raises(request_ctx.FetchCancelled):
+            transport.make_api_request("/x")
         assert get.call_count == 0
     finally:
-        utils._cancel_check.reset(token)
+        request_ctx._cancel_check.reset(token)
 
 
 def _bridge(evaluate):
@@ -824,13 +826,13 @@ def test_browser_first_request_passes_the_limiter_once(monkeypatch):
     """Önce-tarayıcı modunda istek curl'e uğramaz: bütçeden tek sıra alınır (köprünün içinde)."""
     calls = _reserve_counter(monkeypatch)
     bridge = _bridge(AsyncMock(return_value={"status": 200, "ok": True, "data": {"a": 1}, "text": None}))
-    monkeypatch.setattr(utils, "_browser_first_until", time.monotonic() + 60)
+    monkeypatch.setattr(transport, "_browser_first_until", time.monotonic() + 60)
     session = MagicMock()
     session.get = AsyncMock()
     with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
-        assert asyncio.run(utils.make_api_request_async(session, "/event/1")) == {"a": 1}
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
+        assert asyncio.run(transport.make_api_request_async(session, "/event/1")) == {"a": 1}
     assert session.get.await_count == 0 and len(calls) == 1
 
 
@@ -852,11 +854,11 @@ def test_real_limiter_spaces_bridge_requests_across_callers(shared_dir, monkeypa
         return 0.0  # ayırma gerçek, uyku yok
 
     monkeypatch.setattr(throttle, "reserve", spy)
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(200, {})):
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport.cffi_requests, "get", return_value=Resp(200, {})):
         asyncio.run(bridge.fetch_json("/event/1"))
-        utils.make_api_request("/event/2")
+        transport.make_api_request("/event/2")
         asyncio.run(bridge.fetch_json("/event/3"))
     assert delays[0] == 0.0
     assert 0.9 < delays[1] <= 1.0 and 1.9 < delays[2] <= 2.0  # 1 istek/sn: sıra sıra
@@ -987,11 +989,11 @@ def test_cancelled_sync_request_gives_its_slot_back(shared_dir, monkeypatch):
     answers = iter([False])  # deneme başındaki kontrol geçer, sıra beklenirken iptal gelir
 
     with request_context(cancel=lambda: next(answers, True)), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils.cffi_requests, "get") as get, \
-            pytest.raises(utils.FetchCancelled):
-        utils.make_api_request("/x")
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport.cffi_requests, "get") as get, \
+            pytest.raises(request_ctx.FetchCancelled):
+        transport.make_api_request("/x")
     assert get.call_count == 0
     assert 9.0 < throttle.reserve() <= 10.0  # iade olmasaydı ~20 sn
 
@@ -1014,17 +1016,17 @@ def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
 
     async def job():
         return await asyncio.gather(
-            *[utils.make_api_request_async(session, f"/event/{n}") for n in range(70)], stop(),
+            *[transport.make_api_request_async(session, f"/event/{n}") for n in range(70)], stop(),
             return_exceptions=True,
         )
 
     with request_context(cancel=lambda: bool(stopped)), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
         results = asyncio.run(job())
 
     assert session.get.await_count == 1  # durdurmadan sonra hiçbir istek gitmedi
-    assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
+    assert sum(isinstance(r, request_ctx.FetchCancelled) for r in results) == 69
     assert _queued_seconds() <= 1.0 + 1e-3  # yalnızca giden isteğin aralığı
     assert throttle.reserve() <= 1.0
 
@@ -1063,8 +1065,8 @@ def _stopped_job(request, count=70):
         return await asyncio.gather(*[request(n) for n in range(count)], stop(), return_exceptions=True)
 
     with request_context(cancel=lambda: bool(stopped)), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
         return asyncio.run(job())[:count]
 
 
@@ -1089,12 +1091,12 @@ def test_stopped_bulk_job_sends_nothing_however_slow_the_reservations_are(
         return real_reserve()
 
     monkeypatch.setattr(throttle, "reserve", slow_reserve)
-    results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"))
+    results = _stopped_job(lambda n: transport.make_api_request_async(session, f"/event/{n}"))
 
     assert session.get.await_count == 1
     # giden istek + durdurma anında semaforu tutup bütçedeki sırasını bekleyen REQUEST_SLOTS istek
     assert len(reservations) == 1 + request_slots
-    assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
+    assert sum(isinstance(r, request_ctx.FetchCancelled) for r in results) == 69
 
 
 def test_stop_reaches_requests_waiting_for_a_request_slot(monkeypatch, request_slots):
@@ -1112,13 +1114,13 @@ def test_stop_reaches_requests_waiting_for_a_request_slot(monkeypatch, request_s
 
     session = MagicMock()
     session.get = get
-    with patch.object(utils.breaker, "report_ok") as answered, \
-            patch.object(utils.breaker, "report_exception") as failed:
-        results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"))
+    with patch.object(request_breaker, "report_ok") as answered, \
+            patch.object(request_breaker, "report_exception") as failed:
+        results = _stopped_job(lambda n: transport.make_api_request_async(session, f"/event/{n}"))
 
     assert len(sent) == request_slots and len(reservations) == request_slots
     assert results[:request_slots] == [{"ok": 1}] * request_slots  # yanıtı gelmiş istek atılmaz
-    assert all(isinstance(r, utils.FetchCancelled) for r in results[request_slots:])
+    assert all(isinstance(r, request_ctx.FetchCancelled) for r in results[request_slots:])
     # durdurulan istek bir sonuç değildir: ağ hatasına çevrilmez, devre kesiciye bildirilmez
     assert answered.call_count == request_slots and failed.call_count == 0
 
@@ -1141,15 +1143,15 @@ def test_stop_reaches_browser_first_requests_waiting_for_a_request_slot(monkeypa
         return {"status": 200, "ok": True, "data": {"a": 1}, "text": None}
 
     bridge = _bridge(evaluate)
-    monkeypatch.setattr(utils, "_browser_first_until", time.monotonic() + 60)
+    monkeypatch.setattr(transport, "_browser_first_until", time.monotonic() + 60)
     session = MagicMock()
     session.get = AsyncMock()
     with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
-        results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"), count=30)
+        results = _stopped_job(lambda n: transport.make_api_request_async(session, f"/event/{n}"), count=30)
 
     assert len(evaluated) == 0 and len(reservations) == 0  # FX-18: eskiden request_slots
     assert session.get.await_count == 0
-    assert all(isinstance(r, utils.FetchCancelled) for r in results)
+    assert all(isinstance(r, request_ctx.FetchCancelled) for r in results)
 
 
 @pytest.mark.parametrize("sync", [True, False])
@@ -1172,7 +1174,7 @@ def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatc
     with request_context(cancel=lambda: time.monotonic() >= stop_at), \
             patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
         start = time.monotonic()
-        with pytest.raises(utils.FetchCancelled):
+        with pytest.raises(request_ctx.FetchCancelled):
             call()
         elapsed = time.monotonic() - start
     assert elapsed < 0.1 + cs._CANCEL_CHECK_SECONDS + 2.0  # + yavaş makine payı; 10 sn değil
@@ -1225,7 +1227,7 @@ def test_one_cancelled_job_does_not_stop_a_shared_solve(monkeypatch):
     bridge._solve_challenge = solve
     with request_context(cancel=lambda: True):
         assert cs._run_sync(bridge.solve_challenge(), 5.0) == "jwt"
-        with pytest.raises(utils.FetchCancelled):  # işin kendi isteği ise kesilir
+        with pytest.raises(request_ctx.FetchCancelled):  # işin kendi isteği ise kesilir
             cs._run_sync(cs._wait_for_slot(), 5.0)
 
 

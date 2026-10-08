@@ -260,11 +260,11 @@ def test_breaker_stops_remaining_leagues_and_is_reported(job_env, monkeypatch):
 
 def test_wait_notifier_reaches_the_card(job_env, monkeypatch):
     fj, store, _ = job_env
-    from sofascore_scraper import utils
+    from sofascore_scraper.client import context as request_ctx
 
     class WaitingMD(FakeMatchData):
         def fetch(self, ids, **kw):
-            utils._notify_wait("rate_limit", 30)
+            request_ctx._notify_wait("rate_limit", 30)
             return super().fetch(ids, **kw)
 
     md = WaitingMD({17: ["a"]}, failing=set())
@@ -280,4 +280,4 @@ def test_wait_notifier_reaches_the_card(job_env, monkeypatch):
     run(fj, store, monkeypatch, fake_ui(md, {}), {"mode": "details", "league_id": 17})
     assert seen and seen[0] == "rate_limit"
     # The notifier is per job: nothing is left behind for other requests
-    assert utils._wait_notifier.get() is None
+    assert request_ctx._wait_notifier.get() is None

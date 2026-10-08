@@ -1,9 +1,10 @@
 """404 must not be retried — blocks cancel and wastes minutes on missing slices."""
 from __future__ import annotations
 
+import time
 from unittest.mock import patch
 
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 
 
 def test_sync_request_does_not_retry_404():
@@ -21,10 +22,10 @@ def test_sync_request_does_not_retry_404():
         calls["n"] += 1
         return FakeResp()
 
-    with patch.object(utils.cffi_requests, "get", side_effect=fake_get), patch.object(
-        utils.time, "sleep"
+    with patch.object(transport.cffi_requests, "get", side_effect=fake_get), patch.object(
+        time, "sleep"
     ) as sleep:
-        out = utils.make_api_request("https://www.sofascore.com/api/v1/event/1/pregame-form")
+        out = transport.make_api_request("https://www.sofascore.com/api/v1/event/1/pregame-form")
         assert out is None
         assert calls["n"] == 1
         # No backoff sleeps for 404
@@ -49,14 +50,13 @@ def test_sync_request_retries_transient_5xx():
             return FakeResp(500)
         return FakeResp(200)
 
-    with patch.object(utils.cffi_requests, "get", side_effect=fake_get), patch.object(
-        utils, "_sleep"
-    ), patch.object(utils, "_get_runtime_request_config", return_value={
+    with patch.object(transport.cffi_requests, "get", side_effect=fake_get), patch.object(transport, "_sleep"
+    ), patch.object(transport, "_get_runtime_request_config", return_value={
         "max_retries": 3,
         "request_timeout": 5,
         "wait_time_min": 0,
         "wait_time_max": 0,
-    }), patch.object(utils, "_get_proxy_config", return_value=(False, None)):
-        out = utils.make_api_request("https://example.com/x")
+    }), patch.object(transport, "_get_proxy_config", return_value=(False, None)):
+        out = transport.make_api_request("https://example.com/x")
         assert out == {"ok": True}
         assert calls["n"] == 2

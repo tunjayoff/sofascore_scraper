@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from detail_fetch import Details
 from sofascore_scraper.web import deps
 from sofascore_scraper.exceptions import StorageError
@@ -224,7 +224,7 @@ def test_cli_sync_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, cap
     ])
     # `sync` SyncService'i çağırır (P10): detay aşamasının ilk çağrısı adayların okunmasıdır
     with patch.object(DetailPhase, "candidates", side_effect=boom), \
-            patch.object(utils.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
+            patch.object(transport.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
         assert cli.main() == 5  # P19: depolama hatası 5 (önce 1)
     err = capsys.readouterr().err
     assert "17_PL" in err and os.strerror(errno.ENOSPC) in err

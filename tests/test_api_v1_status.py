@@ -283,7 +283,7 @@ def upstream(monkeypatch: pytest.MonkeyPatch) -> List[Any]:
             raise outcome[0]
         return outcome[0]
 
-    monkeypatch.setattr("sofascore_scraper.utils.make_api_request", fake)
+    monkeypatch.setattr("sofascore_scraper.client.transport.make_api_request", fake)
     return [calls, outcome]
 
 

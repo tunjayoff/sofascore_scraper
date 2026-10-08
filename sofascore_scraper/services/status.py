@@ -85,7 +85,7 @@ _NOT_FINISHED: Tuple[str, ...] = tuple(member.value for member in StatusClass if
 def only_finished_setting() -> bool:
     """
     "Yalnızca bitmiş maçlar" ayarının o anki değeri. Yazıcılarla aynı kaynaktan ve aynı kuralla okunur
-    (sofascore_scraper/utils.py: FETCH_ONLY_FINISHED, varsayılan açık); çağrı anında okunur.
+    (FETCH_ONLY_FINISHED, varsayılan açık); çağrı anında okunur.
     """
     return os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true"
 

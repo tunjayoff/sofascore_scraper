@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 
 from sofascore_scraper.client import bridge as cs
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from sofascore_scraper import bridge_health
 from sofascore_scraper.exceptions import (
     APIError,
@@ -48,10 +48,10 @@ class Resp:
 def _curl(*responses, **kw):
     """curl katmanını sahteler: sırayla verilen yanıtlar (ya da fırlatılacak hatalar), uyku yok."""
     effect = kw.get("side_effect") or list(responses)
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_sleep"), \
-            patch.object(utils.cffi_requests, "get", side_effect=effect) as get:
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_sleep"), \
+            patch.object(transport.cffi_requests, "get", side_effect=effect) as get:
         yield get
 
 
@@ -59,12 +59,12 @@ def _curl(*responses, **kw):
 
 def test_sync_request_keeps_returning_none_by_default():
     with _curl(side_effect=lambda *a, **k: Resp(403, text="no")):
-        assert utils.make_api_request("/x") is None
+        assert transport.make_api_request("/x") is None
 
 
 def test_sync_request_raises_403_as_api_error_after_the_last_attempt():
     with _curl(side_effect=lambda *a, **k: Resp(403, text="no")) as get, pytest.raises(APIError) as ei:
-        utils.make_api_request("/x", raise_errors=True)
+        transport.make_api_request("/x", raise_errors=True)
     assert ei.value.status_code == 403
     assert get.call_count == 3  # yeniden denemeler aynı: yalnızca vazgeçme biçimi değişir
 
@@ -72,43 +72,43 @@ def test_sync_request_raises_403_as_api_error_after_the_last_attempt():
 @pytest.mark.parametrize("code", [429, 503])
 def test_sync_request_raises_rate_limit_error(code):
     with _curl(side_effect=lambda *a, **k: Resp(code)), pytest.raises(RateLimitError) as ei:
-        utils.make_api_request("/x", max_retries=1, raise_errors=True)
+        transport.make_api_request("/x", max_retries=1, raise_errors=True)
     assert ei.value.status_code == code
 
 
 def test_sync_request_raises_not_found_without_retrying():
     with _curl(Resp(404)) as get, pytest.raises(ResourceNotFoundError):
-        utils.make_api_request("/x", raise_errors=True)
+        transport.make_api_request("/x", raise_errors=True)
     assert get.call_count == 1
 
 
 def test_sync_request_raises_other_http_errors_with_their_status():
     with _curl(side_effect=lambda *a, **k: Resp(500)), pytest.raises(APIError) as ei:
-        utils.make_api_request("/x", max_retries=2, raise_errors=True)
+        transport.make_api_request("/x", max_retries=2, raise_errors=True)
     assert ei.value.status_code == 500 and not isinstance(ei.value, (RateLimitError, ResourceNotFoundError))
 
 
 def test_sync_request_raises_network_error_when_the_connection_fails():
     boom = ConnectionError("curl: (7) Failed to connect to www.sofascore.com port 443")
     with _curl(side_effect=boom) as get, pytest.raises(NetworkError):
-        utils.make_api_request("/x", raise_errors=True)
+        transport.make_api_request("/x", raise_errors=True)
     assert get.call_count == 3
 
 
 def test_sync_request_raises_parsing_error_for_a_body_that_is_not_json():
     with _curl(side_effect=lambda *a, **k: Resp(200, ValueError("no json"))), pytest.raises(DataParsingError):
-        utils.make_api_request("/x", max_retries=1, raise_errors=True)
+        transport.make_api_request("/x", max_retries=1, raise_errors=True)
 
 
 def test_sync_request_reports_a_404_seen_through_the_bridge_as_not_found():
     with _curl(Resp(403, text=CHALLENGE)), \
             patch.object(cs, "fetch_api_via_browser_sync", return_value={"__404__": True}), \
             pytest.raises(ResourceNotFoundError):
-        utils.make_api_request("/x", raise_errors=True)
+        transport.make_api_request("/x", raise_errors=True)
     # raise_errors olmadan eski sözleşme: None
     with _curl(Resp(403, text=CHALLENGE)), \
             patch.object(cs, "fetch_api_via_browser_sync", return_value={"__404__": True}):
-        assert utils.make_api_request("/x") is None
+        assert transport.make_api_request("/x") is None
 
 
 # --- nedenlerin sözlüğü ----------------------------------------------------------

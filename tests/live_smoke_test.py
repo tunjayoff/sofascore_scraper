@@ -2,7 +2,7 @@
 Canlı Sofascore API entegrasyon doğrulama testi.
 """
 
-from sofascore_scraper.utils import make_api_request
+from sofascore_scraper.client.transport import make_api_request
 
 def main():
     print("=" * 65)

@@ -222,10 +222,13 @@ def export(inv: Invocation) -> CommandResult:
 
                 raise StorageError.from_exception(e, target) from e
         else:
-            from sofascore_scraper.utils import ensure_directory
-
             directory = os.path.join(data_dir, *LEGACY_EXPORT_DIR)
-            ensure_directory(directory)
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except OSError as e:  # izin yok, dolu disk: depolama hatası (çıkış kodu 5)
+                from sofascore_scraper.exceptions import StorageError
+
+                raise StorageError.from_exception(e, directory) from e
             written = service.write_legacy_csv(directory, spec)
             if written is None:  # bu arada silindi
                 raise NotFoundError("there is no downloaded match to export", {"filters": _filters(args)})

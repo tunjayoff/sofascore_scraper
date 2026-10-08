@@ -35,8 +35,9 @@ her çalıştırmada bir kez istenir (turlar istenmez).
 Yürütme: liste birimleri getirme boru hattında (sofascore_scraper/services/pipeline.py) yürür: çalıştırma başına tek ısıtılmış
 oturum, depoya her erişim (okuma da) yazıcı thread'inde. `ListingFetcher` boru hattının liste işleyicisidir;
 `ListingService` onu tek bir çağrıyla çalıştıran yüzdür (eşitleme servisi onu kullanır:
-sofascore_scraper/services/sync.py `list_seasons`, `list_schedule`). `ScheduleLister` programın kendisidir ve istek ile yazmayı dışarıdan alır, böylece
-eski çağıranların istek yolu (sofascore_scraper.utils.make_api_request_async) da aynı kuralları kullanır.
+sofascore_scraper/services/sync.py `list_seasons`, `list_schedule`). `ScheduleLister` programın kendisidir ve istek
+ile yazmayı dışarıdan alır, böylece doğrudan istek yolu (sofascore_scraper.client.transport.make_api_request_async)
+da aynı kuralları kullanır.
 
 `enqueue_events=True` ile bir program, listede bitmiş görünen ve katalogda eksik olan maçlar için maç iş birimleri
 (`full` / `refill`) getirir (`ItemResult.follow_up`): boru hattı onları aynı çalıştırmada yürütür. Eşitleme

@@ -476,7 +476,7 @@ class FollowsService:
         from sofascore_scraper import bridge_health, throttle
         from sofascore_scraper.client import api_url
         from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError, SofaScoreScraperError
-        from sofascore_scraper.utils import make_api_request
+        from sofascore_scraper.client.transport import make_api_request
 
         before = bridge_health.snapshot()
         try:

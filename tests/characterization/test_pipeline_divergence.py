@@ -23,7 +23,7 @@ from typing import Any, Callable, Dict, Iterator, List, Sequence
 import pytest
 
 import detail_records
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
 from sofascore_scraper import breaker as request_breaker
@@ -200,7 +200,6 @@ def test_row03_unfinished_events(fake: FakeSofaScore, tmp_path: Path, monkeypatc
     da olsa iki yol da oynanan maçı gövdesi gelen dilimleriyle kaydeder (P13'te açıkken atlanıyordu).
     """
     for only_finished in (True, False):
-        monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", only_finished)
         in_plan = _fetcher(tmp_path / f"plan_{only_finished}")
         in_picked = _fetcher(tmp_path / f"picked_{only_finished}")
         for md in (in_plan, in_picked):
@@ -307,7 +306,7 @@ def test_row08_http_session(fake: FakeSofaScore, tmp_path: Path) -> None:
         fake.reset_log()
         assert run(_fetcher(tmp_path / name), [FINISHED]) == []
         sessions = fake.sessions
-        assert len(sessions) == 1 and sessions[0].impersonate in utils.IMPERSONATE_PROFILES
+        assert len(sessions) == 1 and sessions[0].impersonate in transport.IMPERSONATE_PROFILES
         assert fake.requests[0].path == SITE_ROOT
         assert {r.session for r in fake.requests} == {sessions[0].number}
         assert {r.impersonate for r in fake.requests} == {None}  # profil oturumdan gelir
@@ -391,7 +390,6 @@ def test_row12_slice_markers(fake: FakeSofaScore, tmp_path: Path, monkeypatch: p
         assert stored["point_by_point.json"] == {"pointByPoint": []}
 
     # Bitmemiş maç ("yalnızca bitmiş maçlar" kapalı): boş gelen dilimler işaretlenmez
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)
     for md, run in ((in_plan, _run_plan), (in_picked, _run_picked)):
         assert run(md, [LIVE]) == []
         stored = _stored(md, LIVE)

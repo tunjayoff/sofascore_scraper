@@ -82,7 +82,7 @@ def _data_dir() -> Iterator[str]:
 
 
 def _api(pages: Dict[str, Any], calls: List[str]) -> Any:
-    """Eski istek yolunun sahte hali (sofascore_scraper.utils.make_api_request_async; göreli yol): bilinmeyen yol 404."""
+    """Eski istek yolunun sahte hali (sofascore_scraper.client.transport.make_api_request_async; göreli yol): bilinmeyen yol 404."""
 
     async def fake_api(session: Any, url: str, max_retries: Optional[int] = None) -> Any:
         calls.append(url)

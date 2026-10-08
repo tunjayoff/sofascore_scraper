@@ -30,12 +30,10 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "LOG INFO ConfigManager: 1 leagues loaded",
-   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
   ],
   "stdout": [

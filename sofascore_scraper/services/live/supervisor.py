@@ -979,7 +979,7 @@ def _default_fetch(path: str) -> Optional[Dict[str, Any]]:
     """Gerçek istek: 404 → None; 429, 403 ve açık devre kesici → Blocked; başka hata olduğu gibi."""
     from sofascore_scraper.client import api_url
     from sofascore_scraper.exceptions import APIError, CircuitOpenError, RateLimitError, ResourceNotFoundError
-    from sofascore_scraper.utils import make_api_request
+    from sofascore_scraper.client.transport import make_api_request
 
     try:
         return make_api_request(api_url(path), raise_on_failure=True)

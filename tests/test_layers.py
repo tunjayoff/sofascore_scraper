@@ -189,8 +189,8 @@ WEB_ALSO_IMPORTS: Dict[str, str] = {
     "sofascore_scraper.exceptions": "istek katmanının tipli hataları (sofascore_scraper/web/upstream.py) ve StorageError",
     "sofascore_scraper.bridge_health": "SofaScore'a erişimin durumu (`/health`, `/status`, bağlantı denetimi)",
     "sofascore_scraper.throttle": "ortak istek bütçesinin durumu (`/health`, `/status`)",
-    "sofascore_scraper.client": "bağlantı denetimi tek istek atar (API kökü istemcinindir)",
-    "sofascore_scraper.utils": "bağlantı denetiminin istek işlevi (testler onu değiştirir)",
+    "sofascore_scraper.client": "bağlantı denetimi tek istek atar (API kökü ve istek işlevi istemcinindir; 3.1'e "
+                                "kadar istek işlevi sofascore_scraper.utils'ten geliyordu)",
     "sofascore_scraper.diagnostics": "log ve tanılama rotaları (servisi yok: sofascore_scraper/diagnostics.py)",
     "sofascore_scraper.config_manager": "web sürecinin yapılandırma yöneticisi (deps.config_manager; P30 Settings'e geçer)",
     "sofascore_scraper.paths": ".env yolu (uygulamanın başlangıcı)",

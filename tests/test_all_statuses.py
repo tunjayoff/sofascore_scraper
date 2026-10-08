@@ -24,7 +24,6 @@ import pytest
 import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from sofascore_scraper import utils
 from sofascore_scraper.services import planning
 from sofascore_scraper.services.listing import ListingService, ScheduleLister
 from sofascore_scraper.services.pipeline import FetchPipeline, PipelineSummary
@@ -156,7 +155,6 @@ def test_downloads_fetch_finished_matches_only_whatever_the_setting(
     indirilmez (maç bitince liste satırı değişir). Ayar kapalıyken de: ayar yalnızca okurken uygulanır.
     """
     monkeypatch.setenv("FETCH_ONLY_FINISHED", "true" if only_finished else "false")
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", only_finished)
     _list(store, ROUND_SEASON, only_finished=only_finished)
     _list(store, PAGED_SEASON, only_finished=only_finished)
     fake.reset_log()

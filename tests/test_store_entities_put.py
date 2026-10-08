@@ -390,7 +390,6 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
     eşittir; sezonun liste satırları eski sezon özeti CSV'sinin satırlarına eşittir. Özet dosyası yazılmaz.
     """
     filtered = all(listing.filtered for listing in listings)
-    monkeypatch.setattr("sofascore_scraper.utils.FETCH_ONLY_FINISHED", filtered)
     built = sf.build_fixture("canonical", tmp_path / "built")
     key = f"{league.id}/{season.id}"
     expected = store_dump.dump_legacy(built.data_dir)["schedules"][key]
@@ -412,7 +411,6 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
 
 
 def test_a_complete_round_is_not_fetched_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("sofascore_scraper.utils.FETCH_ONLY_FINISHED", True)
     data = tmp_path / "data"
     calls: List[str] = []
     api = _api(sf.PL, sf.PL_2627, sf.PL_ROUNDS)

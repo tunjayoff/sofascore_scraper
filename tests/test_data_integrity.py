@@ -30,7 +30,7 @@ import pytest
 
 import legacy_writer
 from catalog_index import index_event
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from sofascore_scraper.exceptions import APIError, DataParsingError, NetworkError, RateLimitError, ResourceNotFoundError
 from detail_fetch import LEGACY_DETAIL_KEYS, Details, SingleFetchReport
 from legacy_writer import UNAVAILABLE_FILE
@@ -146,10 +146,10 @@ def _request_layer():
     async def no_asleep(_sec):
         return None
 
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_asleep", side_effect=no_asleep), \
-            patch.object(utils, "_sleep", side_effect=lambda _sec: None):
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_asleep", side_effect=no_asleep), \
+            patch.object(transport, "_sleep", side_effect=lambda _sec: None):
         yield
 
 
@@ -204,15 +204,15 @@ def _session_of(fake_get: Any):
 @contextlib.contextmanager
 def _curl_layer(basic: dict, slices: Dict[str, Any], calls: List[str]):
     """Gerçek istek katmanı, sahte oturumla (`_curl`'ün yanıtları)."""
-    with _request_layer(), patch("sofascore_scraper.utils.create_session_async", _session_of(_curl(basic, slices, calls))):
+    with _request_layer(), patch("sofascore_scraper.client.transport.create_session_async", _session_of(_curl(basic, slices, calls))):
         yield
 
 
 def _fetch_async(f: _Fetcher, slices: Dict[str, Any], basic: dict | None = None) -> List[str]:
     """Maçın tam çekimi; dilim yanıtları istek katmanının yerine geçen sahteden (tipli hatalar olduğu gibi)."""
     calls: List[str] = []
-    with patch("sofascore_scraper.utils.make_api_request_async", new=_async_api(basic or _basic(), slices, calls)), \
-            patch("sofascore_scraper.utils.create_session_async", _session_of(lambda url, **kw: None)):
+    with patch("sofascore_scraper.client.transport.make_api_request_async", new=_async_api(basic or _basic(), slices, calls)), \
+            patch("sofascore_scraper.client.transport.create_session_async", _session_of(lambda url, **kw: None)):
         f.fetch(MID)
     return calls
 
@@ -320,7 +320,7 @@ def test_async_slice_failure_through_the_real_request_layer(tmp_path):
             return Resp(200, {"event": basic})
         return Resp(429) if key == "statistics" else Resp(200, PRESENT[key])
 
-    with _request_layer(), patch("sofascore_scraper.utils.create_session_async", _session_of(fake_get)):
+    with _request_layer(), patch("sofascore_scraper.client.transport.create_session_async", _session_of(fake_get)):
         data = f.fetch(MID)
     assert data["statistics"] is None
     assert _counts(f) == {}
@@ -337,7 +337,7 @@ def test_breaker_trips_on_blocked_slices_and_does_not_mark_them_unavailable(tmp_
         return Resp(200, {"event": _basic(mid)}) if url.endswith(f"/event/{mid}") else Resp(429)
 
     failed: List[str] = []
-    with _request_layer(), patch("sofascore_scraper.utils.create_session_async", _session_of(fake_get)):
+    with _request_layer(), patch("sofascore_scraper.client.transport.create_session_async", _session_of(fake_get)):
         phase = f.phase()
         stored = phase.fetch_selected(ids, failed=failed.append)
 
@@ -520,7 +520,7 @@ def test_recheck_cli_command_resets_and_exits_without_network(tmp_path, monkeypa
     _legacy_markers(match_dir, {"lineups": 2, "incidents": 1})
     monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.setattr("sys.argv", ["main.py", "--data-dir", str(tmp_path), "data", "recheck-unavailable"])
-    with patch.object(utils.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
+    with patch.object(transport.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
         assert cli.main() == 0
     assert _counts(f) == {}
     assert (match_dir / UNAVAILABLE_FILE).exists()  # eski dizine dokunulmaz: geçerli kopya artık v3'te

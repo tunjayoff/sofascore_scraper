@@ -316,12 +316,12 @@ def test_a_broken_sink_stops_the_command_before_the_job(cli: CliRunner, data_dir
 @pytest.fixture
 def no_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """Kuru çalıştırma hiçbir istek atmaz ve iş başlatmaz."""
-    from sofascore_scraper import utils
+    from sofascore_scraper.client import transport
 
     def refuse(*args: Any, **kwargs: Any) -> Any:
         raise AssertionError("a dry run must not send a request")
 
-    monkeypatch.setattr(utils.cffi_requests, "get", refuse)
+    monkeypatch.setattr(transport.cffi_requests, "get", refuse)
     monkeypatch.setattr(SyncService, "run", refuse)
     monkeypatch.setattr(JobManager, "start", refuse)
 

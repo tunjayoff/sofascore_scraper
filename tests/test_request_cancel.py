@@ -9,8 +9,9 @@ from unittest.mock import patch
 
 import pytest
 
-import sofascore_scraper.utils as utils
-from sofascore_scraper.utils import FetchCancelled, _asleep, _sleep, raise_if_cancelled, set_cancel_check
+from sofascore_scraper.client import transport
+from sofascore_scraper.client.transport import _asleep, _sleep
+from sofascore_scraper.client.context import FetchCancelled, raise_if_cancelled, set_cancel_check
 
 
 def _in_fresh_context(fn):
@@ -53,9 +54,9 @@ def test_async_sleep_ends_as_soon_as_cancelled():
 def test_no_request_is_sent_after_cancel():
     def body():
         set_cancel_check(lambda: True)
-        with patch.object(utils.cffi_requests, "get") as get:
+        with patch.object(transport.cffi_requests, "get") as get:
             with pytest.raises(FetchCancelled):
-                utils.make_api_request("https://www.sofascore.com/api/v1/event/1")
+                transport.make_api_request("https://www.sofascore.com/api/v1/event/1")
             get.assert_not_called()
 
     _in_fresh_context(body)
@@ -77,10 +78,10 @@ def test_403_backoff_is_cut_short_by_cancel():
 
     def body():
         set_cancel_check(lambda: flag["stop"])
-        with patch.object(utils.cffi_requests, "get", side_effect=fake_get) as get:
+        with patch.object(transport.cffi_requests, "get", side_effect=fake_get) as get:
             t0 = time.monotonic()
             with pytest.raises(FetchCancelled):
-                utils.make_api_request("https://www.sofascore.com/api/v1/event/1")
+                transport.make_api_request("https://www.sofascore.com/api/v1/event/1")
             assert get.call_count == 1
             return time.monotonic() - t0
 

@@ -1,7 +1,7 @@
 """
 Devre kesici (sofascore_scraper/breaker.py): kuralları, köprü sağlığıyla eşgüdümü ve istek katmanıyla bağı.
 
-İş başına tek kesici vardır; istek katmanı (sofascore_scraper/utils.py) her isteğin SON halini ona bildirir ve
+İş başına tek kesici vardır; istek katmanı (sofascore_scraper/client/transport.py) her isteğin SON halini ona bildirir ve
 kesici açıkken yeni istek göndermez. Aşamaların kesiciye bakışı tests/test_breaker_phases.py'de.
 
 Gerçek ağ yok: curl taşıyıcısı (cffi_requests.get / AsyncSession.get) sahte.
@@ -16,8 +16,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from sofascore_scraper import breaker as request_breaker
+from sofascore_scraper import throttle
 from sofascore_scraper import bridge_health
 from sofascore_scraper.breaker import CircuitBreaker
 from sofascore_scraper.exceptions import (APIError, CircuitOpenError, DataParsingError, NetworkError, RateLimitError,
@@ -44,10 +45,10 @@ def _request_layer():
     async def no_asleep(_sec):
         return None
 
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_asleep", side_effect=no_asleep), \
-            patch.object(utils, "_sleep", side_effect=lambda _sec: None):
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_asleep", side_effect=no_asleep), \
+            patch.object(transport, "_sleep", side_effect=lambda _sec: None):
         yield
 
 
@@ -237,15 +238,15 @@ def test_blocked_bridge_does_not_trip_on_other_failures(monkeypatch):
 
 def test_sync_request_reports_its_final_outcome():
     with _request_layer(), _active(_breaker(consecutive=100)) as b:
-        with patch.object(utils.cffi_requests, "get", return_value=Resp(200, {"ok": 1})):
-            assert utils.make_api_request("/a") == {"ok": 1}
+        with patch.object(transport.cffi_requests, "get", return_value=Resp(200, {"ok": 1})):
+            assert transport.make_api_request("/a") == {"ok": 1}
         assert (b.attempts, b.failures) == (1, 0)
-        with patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
-            assert utils.make_api_request("/b") is None
+        with patch.object(transport.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
+            assert transport.make_api_request("/b") is None
         # Üç deneme tek istek sayılır: kesici isteğin SON halini görür
         assert get.call_count == 3 and (b.attempts, b.failures) == (2, 1)
-        with patch.object(utils.cffi_requests, "get", return_value=Resp(404)):
-            assert utils.make_api_request("/c") is None
+        with patch.object(transport.cffi_requests, "get", return_value=Resp(404)):
+            assert transport.make_api_request("/c") is None
         assert (b.attempts, b.failures, b.consecutive_failures) == (3, 1, 0)
         assert b.counts() == {"403": 1, "404": 1}
 
@@ -257,33 +258,33 @@ def test_sync_request_reports_its_final_outcome():
     (Resp(500), APIError),
 ])
 def test_sync_request_can_raise_typed_errors(response, error):
-    with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=response):
+    with _request_layer(), patch.object(transport.cffi_requests, "get", return_value=response):
         with pytest.raises(error):
-            utils.make_api_request("/x", raise_on_failure=True)
-        assert utils.make_api_request("/x") is None  # varsayılan davranış değişmedi
+            transport.make_api_request("/x", raise_on_failure=True)
+        assert transport.make_api_request("/x") is None  # varsayılan davranış değişmedi
 
 
 def test_sync_request_raises_network_and_parsing_errors():
-    with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=RuntimeError("curl: (7) boom")):
+    with _request_layer(), patch.object(transport.cffi_requests, "get", side_effect=RuntimeError("curl: (7) boom")):
         with pytest.raises(NetworkError):
-            utils.make_api_request("/x", raise_on_failure=True)
+            transport.make_api_request("/x", raise_on_failure=True)
 
     bad = Resp(200)
     bad.json = MagicMock(side_effect=ValueError("Expecting value"))
-    with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=bad):
+    with _request_layer(), patch.object(transport.cffi_requests, "get", return_value=bad):
         with pytest.raises(DataParsingError):
-            utils.make_api_request("/x", raise_on_failure=True)
+            transport.make_api_request("/x", raise_on_failure=True)
 
 
 def test_open_breaker_sends_no_sync_request_and_reserves_no_budget():
     b = _breaker(consecutive=1)
     b.record("403")
     with _request_layer(), _active(b), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(200, {"ok": 1})) as get, \
-            patch.object(utils.throttle, "reserve", return_value=0.0) as reserve:
-        assert utils.make_api_request("/x") is None
+            patch.object(transport.cffi_requests, "get", return_value=Resp(200, {"ok": 1})) as get, \
+            patch.object(throttle, "reserve", return_value=0.0) as reserve:
+        assert transport.make_api_request("/x") is None
         with pytest.raises(CircuitOpenError):
-            utils.make_api_request("/x", raise_on_failure=True)
+            transport.make_api_request("/x", raise_on_failure=True)
     assert get.call_count == 0 and reserve.call_count == 0
 
 
@@ -294,8 +295,8 @@ def test_breaker_opening_mid_request_stops_the_retries():
         b.record("403")  # başka bir istek bu sırada devreyi kesti
         return Resp(403, text="no")
 
-    with _request_layer(), _active(b), patch.object(utils.cffi_requests, "get", side_effect=get) as mock:
-        assert utils.make_api_request("/x") is None
+    with _request_layer(), _active(b), patch.object(transport.cffi_requests, "get", side_effect=get) as mock:
+        assert transport.make_api_request("/x") is None
     assert mock.call_count == 1  # 3 deneme hakkı vardı; ikinci deneme gönderilmedi
 
 
@@ -305,11 +306,11 @@ def test_async_request_reports_its_final_outcome():
         with _active(b):
             session = MagicMock()
             session.get = AsyncMock(side_effect=[Resp(200, {"ok": 1}), Resp(429), Resp(404)])
-            assert await utils.make_api_request_async(session, "/a") == {"ok": 1}
+            assert await transport.make_api_request_async(session, "/a") == {"ok": 1}
             with pytest.raises(RateLimitError):
-                await utils.make_api_request_async(session, "/b", max_retries=1)
+                await transport.make_api_request_async(session, "/b", max_retries=1)
             with pytest.raises(ResourceNotFoundError):
-                await utils.make_api_request_async(session, "/c")
+                await transport.make_api_request_async(session, "/c")
         return b
 
     with _request_layer():
@@ -324,9 +325,9 @@ def test_open_breaker_sends_no_async_request():
         b.record("403")
         session = MagicMock()
         session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
-        with _active(b), patch.object(utils.throttle, "reserve", return_value=0.0) as reserve:
+        with _active(b), patch.object(throttle, "reserve", return_value=0.0) as reserve:
             with pytest.raises(CircuitOpenError):
-                await utils.make_api_request_async(session, "/x")
+                await transport.make_api_request_async(session, "/x")
         return session.get.await_count, reserve.call_count
 
     with _request_layer():
@@ -336,9 +337,9 @@ def test_open_breaker_sends_no_async_request():
 def test_requests_outside_a_job_are_not_counted():
     """Kesici işin bağlamındadır: tekil istekler (lig arama, tek maç çekme) onu görmez."""
     assert request_breaker.current() is None
-    with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")):
+    with _request_layer(), patch.object(transport.cffi_requests, "get", return_value=Resp(403, text="no")):
         for _ in range(30):
-            assert utils.make_api_request("/x") is None
+            assert transport.make_api_request("/x") is None
 
 
 def test_scope_reuses_the_job_breaker():

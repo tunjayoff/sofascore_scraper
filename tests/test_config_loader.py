@@ -1311,7 +1311,8 @@ def _run_python(code: str, tmp_path: Path, **env: str) -> subprocess.CompletedPr
 def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(tmp_path):
     """
     Uçtan uca, ayrı bir süreçte, main.py'nin içe aktarma sırasıyla (önce config_manager): dosya içe aktarma
-    sırasında okunur; bütçe ve yenileme modülleri ile sofascore_scraper/utils.py'nin içe aktarılırken donan sabitleri onu görür.
+    sırasında okunur; bütçe ve yenileme modülleri, sofascore_scraper/client/transport.py'nin içe aktarılırken donan
+    sabiti ve "yalnızca bitmiş maçlar" ayarı onu görür.
     """
     config = tmp_path / "my.toml"
     config.write_text(
@@ -1322,9 +1323,11 @@ def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(t
     code = (
         "import json, os\n"
         "import sofascore_scraper.config_manager as cm\n"
-        "from sofascore_scraper import refresh, throttle, utils\n"
+        "from sofascore_scraper import refresh, throttle\n"
+        "from sofascore_scraper.client import transport\n"
+        "from sofascore_scraper.services.status import only_finished_setting\n"
         "print(json.dumps([throttle.configured_rate(), refresh.refresh_window_hours(), os.environ['DATA_DIR'],"
-        " cm.ConfigManager().get_request_rate_limit(), utils.API_BASE_URL, utils.FETCH_ONLY_FINISHED]))\n"
+        " cm.ConfigManager().get_request_rate_limit(), transport.API_BASE_URL, only_finished_setting()]))\n"
     )
     done = _run_python(code, tmp_path, SOFASCORE_CONFIG=str(config))
     assert done.returncode == 0, done.stderr
@@ -1336,11 +1339,13 @@ def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(t
         "import json, os\n"
         "before = dict(os.environ)\n"
         "import sofascore_scraper.config_manager as cm\n"
-        "from sofascore_scraper import throttle, utils\n"
+        "from sofascore_scraper import throttle\n"
+        "from sofascore_scraper.client import transport\n"
+        "from sofascore_scraper.services.status import only_finished_setting\n"
         "names = set(os.environ) - set(before)\n"
         f"added = sorted(n for n in names if n.startswith('SOFASCORE_') or n in {sorted(loader.LEGACY_ENV_NAMES)!r})\n"
         "print(json.dumps([throttle.configured_rate(), added, cm.ConfigManager().get_data_dir(),"
-        " utils.API_BASE_URL, utils.FETCH_ONLY_FINISHED]))\n"
+        " transport.API_BASE_URL, only_finished_setting()]))\n"
     )
     done = _run_python(code, tmp_path, SOFASCORE_CONFIG="none")
     assert done.returncode == 0, done.stderr

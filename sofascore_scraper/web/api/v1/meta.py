@@ -659,7 +659,7 @@ def check_sofascore() -> StatusCheck:
     from sofascore_scraper import bridge_health
     from sofascore_scraper.client import api_url, endpoints
     from sofascore_scraper.exceptions import SofaScoreScraperError
-    from sofascore_scraper.utils import make_api_request
+    from sofascore_scraper.client.transport import make_api_request
     from sofascore_scraper.web import upstream
 
     before = bridge_health.snapshot()

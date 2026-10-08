@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from sofascore_scraper.web import deps
 from web_job import run_sync_job
 from sofascore_scraper import breaker as request_breaker
@@ -53,10 +53,10 @@ def _request_layer():
     async def no_asleep(_sec):
         return None
 
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_asleep", side_effect=no_asleep), \
-            patch.object(utils, "_sleep", side_effect=lambda _sec: None):
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_asleep", side_effect=no_asleep), \
+            patch.object(transport, "_sleep", side_effect=lambda _sec: None):
         yield
 
 
@@ -276,7 +276,7 @@ def _run_job(context, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[s
     _listing_faces(ui)
     sync_fakes.install(monkeypatch)
     monkeypatch.setattr(context, "build_context", lambda config_manager: ui)
-    with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
+    with _request_layer(), patch.object(transport.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
         final = run_sync_job(store, payload)
     final["_gets"] = get.call_count
     return final
@@ -292,7 +292,7 @@ def test_breaker_trips_on_a_blocked_schedule_phase(job_env, monkeypatch):
     def fetch_schedule(lid, sid):
         schedule_calls.append(sid)
         # Gerçek program listesi gibi istek katmanından geçer; engelliyken veri gelmez
-        return bool(utils.make_api_request(f"/unique-tournament/{lid}/season/{sid}/rounds"))
+        return bool(transport.make_api_request(f"/unique-tournament/{lid}/season/{sid}/rounds"))
 
     md = FakeDetails()
     ui = SimpleNamespace(
@@ -325,7 +325,7 @@ def test_breaker_trips_on_a_blocked_seasons_phase(job_env, monkeypatch):
 
     def fetch_seasons(lid):
         season_calls.append(lid)
-        utils.make_api_request(f"/unique-tournament/{lid}/seasons")
+        transport.make_api_request(f"/unique-tournament/{lid}/seasons")
         return []
 
     md = FakeDetails()

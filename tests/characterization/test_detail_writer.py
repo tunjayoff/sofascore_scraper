@@ -29,7 +29,6 @@ from typing import Any, Dict, Iterator
 
 import pytest
 
-import sofascore_scraper.utils as utils
 import store_dump
 from characterization import WORLD, assert_golden, pin_default_settings
 from fakes.sofascore import FakeSofaScore
@@ -126,9 +125,7 @@ def test_detail_writers_leave_the_recorded_logical_dump(
 
     # 1b. "yalnızca bitmiş maçlar" kapalı: oynanan maç da yazılır (işaretsiz)
     fake.clear_faults()
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)
     done = md.fetch([LIVE])
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", True)
     record("async_unfinished", {"success": done})
 
     # 2. sıralı tek maç: kayıtlı bir maçın üzerine ve oynanan maç (yazılmaz)

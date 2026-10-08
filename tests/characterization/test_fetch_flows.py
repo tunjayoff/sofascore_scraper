@@ -32,7 +32,7 @@ import pytest
 import detail_records
 from catalog_index import index_event
 import legacy_writer
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
 from web_job import run_sync_job
@@ -164,11 +164,11 @@ def _as_legacy_record(data_dir: Path, event_id: int, *, drop: Any = (), unavaila
 
 def test_fake_serves_canned_payloads_and_records_every_url_in_order(fake: FakeSofaScore) -> None:
     async def fetch_async() -> Any:
-        async with utils.create_session_async() as session:
-            return await utils.make_api_request_async(session, f"/unique-tournament/{LEAGUE}/seasons")
+        async with transport.create_session_async() as session:
+            return await transport.make_api_request_async(session, f"/unique-tournament/{LEAGUE}/seasons")
 
-    absolute = utils.make_api_request("https://www.sofascore.com/api/v1/event/9100001")
-    relative = utils.make_api_request("/event/9100001/h2h")
+    absolute = transport.make_api_request("https://www.sofascore.com/api/v1/event/9100001")
+    relative = transport.make_api_request("/event/9100001/h2h")
     seasons = asyncio.run(fetch_async())
 
     assert absolute["event"]["id"] == 9100001
@@ -188,9 +188,9 @@ def test_fake_serves_canned_payloads_and_records_every_url_in_order(fake: FakeSo
 
 
 def test_fake_answers_404_for_an_unknown_path(fake: FakeSofaScore) -> None:
-    assert utils.make_api_request("/event/1") is None
+    assert transport.make_api_request("/event/1") is None
     with pytest.raises(ResourceNotFoundError):
-        utils.make_api_request("/event/1", raise_on_failure=True)
+        transport.make_api_request("/event/1", raise_on_failure=True)
     assert fake.paths() == ["/event/1", "/event/1"]  # 404 yeniden denenmez
 
 
@@ -209,7 +209,7 @@ def test_fake_injects_http_errors_through_the_real_request_layer(
     started = time.monotonic()
 
     with pytest.raises(error) as raised:
-        utils.make_api_request("/event/9100001", raise_on_failure=True)
+        transport.make_api_request("/event/9100001", raise_on_failure=True)
 
     assert raised.value.status_code == status
     assert [r.outcome for r in fake.requests] == [str(status)] * 3  # MAX_RETRIES varsayılanı
@@ -220,7 +220,7 @@ def test_fake_injects_http_errors_through_the_real_request_layer(
 def test_fake_injects_a_fault_a_limited_number_of_times(fake: FakeSofaScore) -> None:
     fake.fail("/event/*/statistics", 502, times=1)
 
-    data = utils.make_api_request("/event/9100001/statistics")
+    data = transport.make_api_request("/event/9100001/statistics")
 
     assert data is not None and "statistics" in data
     assert [r.outcome for r in fake.requests] == ["502", "200"]
@@ -231,9 +231,9 @@ def test_fake_injects_timeouts_and_connection_errors(fake: FakeSofaScore) -> Non
     fake.disconnect("/event/9100002")
 
     with pytest.raises(NetworkError) as timed_out:
-        utils.make_api_request("/event/9100001", raise_on_failure=True)
+        transport.make_api_request("/event/9100001", raise_on_failure=True)
     with pytest.raises(NetworkError) as disconnected:
-        utils.make_api_request("/event/9100002", raise_on_failure=True)
+        transport.make_api_request("/event/9100002", raise_on_failure=True)
 
     assert request_breaker.failure_kind(timed_out.value) == "timeout"
     assert request_breaker.failure_kind(disconnected.value) == "network"
@@ -280,7 +280,7 @@ def test_fake_world_and_log_round_trip_through_json(tmp_path: Path) -> None:
     clone = FakeSofaScore.from_dict(json.loads(json.dumps(source.to_dict())))
 
     with clone:
-        data = utils.make_api_request("/event/9100001")
+        data = transport.make_api_request("/event/9100001")
     clone.save_log(tmp_path / "log.json")
     saved = json.loads((tmp_path / "log.json").read_text(encoding="utf-8"))
 
@@ -291,14 +291,14 @@ def test_fake_world_and_log_round_trip_through_json(tmp_path: Path) -> None:
 
 
 def test_fake_restores_the_transport_on_uninstall() -> None:
-    original_get, original_session = cffi_requests.get, utils.AsyncSession
-    original_sleeps = (utils._sleep, utils._asleep, time.sleep, asyncio.sleep)
+    original_get, original_session = cffi_requests.get, transport.AsyncSession
+    original_sleeps = (transport._sleep, transport._asleep, time.sleep, asyncio.sleep)
 
     with FakeSofaScore.from_file(WORLD):
         assert cffi_requests.get is not original_get
 
-    assert (cffi_requests.get, utils.AsyncSession) == (original_get, original_session)
-    assert (utils._sleep, utils._asleep, time.sleep, asyncio.sleep) == original_sleeps
+    assert (cffi_requests.get, transport.AsyncSession) == (original_get, original_session)
+    assert (transport._sleep, transport._asleep, time.sleep, asyncio.sleep) == original_sleeps
 
 
 # --- web işi ---------------------------------------------------------------------------------
