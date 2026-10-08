@@ -7,6 +7,12 @@ için tek süreçtir; Ctrl+C ya da SIGTERM ile durur.
     ssc watch --sport football --tournament 17     takipler yerine bu turnuvanın canlı maçları
     ssc watch --sport tennis --event 12345678      takipler yerine bu maç; bitince komut da biter
     ssc watch --stdout                             yeni olayları stdout'a da yaz (NDJSON, `sofascore.event/1`)
+    ssc watch --idle                               izlenecek takip yoksa da çalış; takipler 60 sn'de bir okunur
+
+  * İzlenecek bir şey yoksa (canlı takip yok, `--event` / `--tournament` verilmedi) komut kullanım hatasıyla
+    (çıkış kodu 2) çıkar. `--idle` ile çıkmaz: bir log satırı yazar ve servis takipleri her yeniden okuyuşunda
+    (SCOPE_RELOAD_SECONDS, 60 sn) bakar; `live = true` bir takip eklenince izlemeye başlar. Konteynerin ve
+    systemd biriminin servisi bunu kullanır: takip yokken yeniden başlatma döngüsüne girmez.
 
   * Aynı veri dizininde tek canlı servis çalışır: ikincisi ve eski `--watch` (`watcher:<spor>`) varken
     `instance_running` ile çıkar (çıkış kodu 6).
@@ -71,6 +77,7 @@ def _arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--source", choices=SOURCES, help=t("ssc_help_watch_source"))
     parser.add_argument("--stdout", action="store_true", help=t("ssc_help_watch_stdout"))
     parser.add_argument("--hours", type=_hours, metavar="H", help=t("ssc_help_watch_hours"))
+    parser.add_argument("--idle", action="store_true", help=t("ssc_help_watch_idle"))
 
 
 def _source_warnings(requested: str, from_flag: bool) -> List[CliWarning]:
@@ -116,7 +123,7 @@ def watch(inv: Invocation) -> CommandResult:
 
     from sofascore_scraper import sinks
     from sofascore_scraper.config import loader
-    from sofascore_scraper.services.live.supervisor import LiveService
+    from sofascore_scraper.services.live.supervisor import SCOPE_RELOAD_SECONDS, LiveService
     from sofascore_scraper.store import open_store
 
     settings = loader.active_settings()
@@ -131,8 +138,14 @@ def watch(inv: Invocation) -> CommandResult:
         logger.warning(message)
         warnings.append(CliWarning("live_follow_skipped", message, logged=True))
     if scope.empty:
-        raise UsageError("nothing to watch: follow something with live = true, or give --sport with --event or "
-                         "--tournament")
+        if not args.idle:
+            raise UsageError("nothing to watch: follow something with live = true, or give --sport with --event or "
+                             "--tournament")
+        # Kapsam takiplerden okundu (açık kapsam boş olamaz): servis onu SCOPE_RELOAD_SECONDS'ta bir yeniden okur
+        message = (f"nothing to watch yet: no follow has live = true; waiting (--idle), the follows are read again "
+                   f"every {SCOPE_RELOAD_SECONDS:.0f} s")
+        logger.warning(message)
+        warnings.append(CliWarning("live_nothing_to_watch", message, logged=True))
 
     dispatcher = sinks.dispatcher_for(store, settings.sinks)  # bozuk sink ayarı: config_invalid (çıkış kodu 2)
     service = LiveService(

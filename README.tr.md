@@ -204,7 +204,7 @@ ssc export --out matches.csv                               # 2.x'in geniş CSV's
 
 ## Canlı izleme
 
-`ssc watch` canlı servistir: canlı maçları izleyen ve değişikliklerini (`live.status_changed`, `live.score_changed`, `live.stuck`) olay günlüğüne ve yapılandırılmış hedeflere yazan, ön planda çalışan bir süreç. Web arayüzünün parçası değildir. Setlerle oynanan sporlarda (tenis, masa tenisi, voleybol, badminton, padel) bir `live.score_changed` kazanılan bir settir; set içindeki bir oyun ya da sayı değildir.
+`ssc watch` canlı servistir: canlı maçları izleyen ve değişikliklerini (`live.status_changed`, `live.score_changed`, `live.stuck`) olay günlüğüne ve yapılandırılmış hedeflere yazan, ön planda çalışan bir süreç. Web arayüzünün parçası değildir. Canlı olarak işaretli bir takip yoksa 2 koduyla çıkar; `ssc watch --idle` (Compose örneği ve systemd birimi bunu kullanır) bunun yerine bekler ve takipleri her 60 saniyede bir yeniden okur. Setlerle oynanan sporlarda (tenis, masa tenisi, voleybol, badminton, padel) bir `live.score_changed` kazanılan bir settir; set içindeki bir oyun ya da sayı değildir.
 
 ```bash
 ssc watch                                                    # canlı olarak işaretli takipler

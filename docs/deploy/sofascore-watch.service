@@ -27,7 +27,8 @@ EnvironmentFile=-/etc/sofascore/sofascore.env
 #   page   (default) one browser page per watched sport; about 1.8 to 2.6 GB of memory per sport
 #   poll   polling only, no browser
 #   direct an explicit opt-in with four warnings (watch.md); about 0.2 GB
-ExecStart=/opt/sofascore_scraper/.venv/bin/python -m sofascore_scraper.cli.main watch
+# --idle: with no follow marked live yet, wait and read the follows again every 60 s instead of exiting with 2
+ExecStart=/opt/sofascore_scraper/.venv/bin/python -m sofascore_scraper.cli.main watch --idle
 # SIGTERM: the service finishes its round, saves its state, drains the sinks for up to 10 s, exit code 0
 KillSignal=SIGTERM
 TimeoutStopSec=60

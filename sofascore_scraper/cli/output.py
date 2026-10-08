@@ -311,7 +311,10 @@ class Output:
         if isinstance(usage, str) and usage.strip():
             lines.append(usage.strip())
         if error.code == "invalid_request":
-            lines.append(self.t("ssc_hint_usage", prog=self.prog))
+            # `main.py` kullanımdan kalkan yüzdür (konteynerin giriş betiği de onu çalıştırır): ipucu `ssc`yi gösterir
+            from sofascore_scraper.cli import LEGACY_PROG, PROG
+
+            lines.append(self.t("ssc_hint_usage", prog=PROG if self.prog == LEGACY_PROG else self.prog))
         elif error.code == "config_invalid":
             lines.append(self.t("ssc_hint_config", prog=self.prog))
         return lines

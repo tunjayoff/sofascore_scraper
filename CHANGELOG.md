@@ -451,6 +451,12 @@ removes it.
   the referee from the stored event payload; `finished_details` in `/api/v1/status` and in the
   season counts (#174).
 - The tennis `rankings` data type reads the WTA list (`/rankings/6`) next to the ATP list (#175).
+- `ssc watch --idle`: with nothing to watch (no follow with `live = true`) it logs one line and
+  waits, reading the follows again every 60 seconds, instead of exiting with code 2. The Compose
+  example's `sofascore-watch` service and the systemd unit in `docs/deploy/` use it, so
+  `docker compose --profile live` without a live follow no longer restarts the container every few
+  seconds. Without `--idle` nothing changes. A usage error of `python main.py` (also inside the
+  Docker image, whose entrypoint runs it) now points to `ssc --help`.
 
 ### Changed
 

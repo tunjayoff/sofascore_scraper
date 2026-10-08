@@ -204,7 +204,7 @@ ssc export --out matches.csv                               # the 2.x wide CSV
 
 ## Live watching
 
-`ssc watch` is the live service: a foreground process that follows live matches and writes their changes (`live.status_changed`, `live.score_changed`, `live.stuck`) to the event log and to the configured sinks. It is not part of the web app. In set sports (tennis, table tennis, volleyball, badminton, padel) a `live.score_changed` is a set won, not a game or a point inside a set.
+`ssc watch` is the live service: a foreground process that follows live matches and writes their changes (`live.status_changed`, `live.score_changed`, `live.stuck`) to the event log and to the configured sinks. It is not part of the web app. With no follow marked live it exits with code 2; `ssc watch --idle` (used by the Compose example and the systemd unit) waits instead and reads the follows again every 60 seconds. In set sports (tennis, table tennis, volleyball, badminton, padel) a `live.score_changed` is a set won, not a game or a point inside a set.
 
 ```bash
 ssc watch                                                    # follows marked live
