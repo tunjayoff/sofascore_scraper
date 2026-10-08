@@ -4,8 +4,14 @@ Talimat 05: SofaScore'un tüm sporları için pasif keşif tarayıcısı.
 Tek bir BrowserBridge tarayıcısı açık kalır; komutlar bir kontrol klasöründen okunur, böylece
 keşif adım adım yönlendirilir (tarayıcı ve challenge çözümü her adımda yeniden açılmaz):
 
-    python scripts/explore_all_sports.py serve CTL_DIR          # tarayıcıyı açar, komut bekler
+    python scripts/explore_all_sports.py serve CTL_DIR [--new-run] [--max-requests N] [--max-hours H]
     python scripts/explore_all_sports.py send CTL_DIR '{"op": "goto", "url": "...", "sport": "..."}'
+
+Bütçe koşu (run) başınadır. `--new-run` yeni bir koşu açar (kimliği `--run-id` ya da UTC zaman damgası): sayaçlar
+sıfırdan başlar, önceki koşunun durumu `_state.json` içinde `previous_runs` altında saklanır; kayıt dosyaları
+(requests.jsonl, pages.jsonl, ws.jsonl, events/, samples/) silinmez, yeni her satır `run_id` taşır. `--new-run`
+olmadan son koşu sürdürülür (yarıda kalmış bir koşu); bütçesi bitmiş bir koşu sürdürülmek istenirse script
+tarayıcıyı açmadan çıkar.
 
 Komutlar (her biri `page_type` etiketi alır: home, sport, date, live, event, event-tab:<ad>, team,
 player, tournament, search, ...; hangi sayfanın/sekmenin hangi isteği tetiklediği buradan okunur):
@@ -20,20 +26,30 @@ Her gezinti komutu, o adımda ilk kez görülen pattern'leri (`new_patterns`) d�
 ölçütü "yeni pattern çıkıyor mu".
 
 Kurallar (talimat):
-  - API keşfi pasif: sayfanın attığı tüm XHR/fetch/EventSource/WebSocket trafiği (request, response,
-    requestfailed, websocket olayları; üçüncü taraf alan adları dahil) kaydedilir. Bu script kendisi
-    hiçbir API isteği atmaz; bilinen uç noktalar yalnızca sonradan karşılaştırma tabanıdır.
-  - SofaScore alan adlarına giden her XHR/fetch/EventSource isteği `page.route` içinde
-    scripts/_research_common.py kilit dosyasından sıra alır: diğer araştırma süreçleriyle birlikte
-    toplamda ≤ 1 istek/sn; bütçeye bunlar sayılır.
-  - Sayfa gezintisi/tıklama ≥ 5 sn arayla. Yalnızca görsel, medya ve font istekleri engellenir.
-  - Bütçe: 5.000 API isteği ya da 6 saat; aşılınca API istekleri iptal edilir.
+  - API keşfi pasif: sayfanın attığı tüm XHR/fetch/EventSource/WebSocket trafiği (response, requestfailed,
+    websocket olayları; üçüncü taraf alan adları dahil) kaydedilir. Bu script kendisi hiçbir API isteği atmaz;
+    bilinen uç noktalar yalnızca sonradan karşılaştırma tabanıdır.
+  - SofaScore alan adlarına giden her XHR/fetch/EventSource isteği keşif sayfasının CDP oturumunda (Fetch alanı)
+    durdurulur ve scripts/_research_common.py kilit dosyasından sıra alınca gönderilir: diğer araştırma
+    süreçleriyle birlikte toplamda ≤ 1 istek/sn; bütçeye bunlar sayılır. Service worker atlanır
+    (Network.setBypassServiceWorker): sayfanın her isteği ağa doğrudan, yani bu kesiciden geçer.
+    FX-29: önceden `context.route` kullanılıyordu. Playwright sürücüsü aynı türden 10.000'i aşan nesnenin en
+    eski 1.000'ini toplar (dispatcher.ts, maxDispatchersForBucket); engellenen görsellerin yeniden deneme seli
+    saniyede yüzlerce Route yaratınca kilitte sıra bekleyen Route'lar toplanıyor, istek ne gönderiliyor ne
+    kaydediliyordu ("The object has been collected to prevent unbounded heap growth"). Bekleyen CDP isteği
+    yalnızca bir kimlik dizgisidir: toplanacak bir nesne yoktur.
+  - Sayfa gezintisi/tıklama ≥ 5 sn arayla. Görseller ağa gitmeden 1x1 boş GIF ile yanıtlanır (hata alan görsel
+    yeniden denemesiyle istek seli yaratmasın), medya ve font istekleri iptal edilir.
+  - Bütçe (koşu başına): varsayılan 5.000 API isteği ya da 6 saat; aşılınca API istekleri iptal edilir.
   - Kullanıcı içeriği (yorum, oy, profil) sayfalarına gidilmez; WebSocket kareleri kısaltılarak saklanır.
+  - Maskeleme: NATS INFO karesindeki client_ip ve CONNECT'in kimlik alanları yazılmadan maskelenir; üçüncü taraf
+    adresleri (imzalı token taşıyabilir) yalnızca alan adı + ilk yol parçasıyla yazılır, gövdeleri saklanmaz.
 
-Çıktı: research/all_sports/ (requests.jsonl, samples/, events/, ws.jsonl, pages.jsonl).
+Çıktı: research/all_sports/ (requests.jsonl, samples/, events/, ws.jsonl, pages.jsonl, _state.json).
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
 import datetime as dt
 import glob
@@ -42,7 +58,7 @@ import os
 import re
 import sys
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Coroutine, Dict, List, Optional, Pattern
 from urllib.parse import quote, urlparse
 
 os.environ.setdefault("LOG_LEVEL", "WARNING")
@@ -66,6 +82,17 @@ FULL_SAMPLE_BYTES = 20_000
 QUIET_URL = "https://www.sofascore.com/robots.txt"
 BLOCKED_TYPES = ("image", "media", "font")
 TRAFFIC_TYPES = ("xhr", "fetch", "eventsource", "websocket")
+# Kesicinin durdurduğu CDP kaynak türleri → Playwright'ın resource_type adları. Belge, script, stil ve
+# WebSocket durdurulmaz (eski route da onları sıraya sokmuyordu).
+CDP_TYPES = {"Image": "image", "Media": "media", "Font": "font", "XHR": "xhr", "Fetch": "fetch",
+             "EventSource": "eventsource"}
+BLANK_GIF = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="  # 1x1 saydam GIF (base64)
+REDACTED = "<redacted>"
+CONNECT_SECRET_KEYS = ("auth_token", "jwt", "sig", "nkey", "pass", "user", "token")
+INFO_SECRET_KEYS = ("client_ip",)
+
+# Kesicinin kararları: gönder (sayılmaz), gönder (API, sayıldı), boş görsel, iptal (engel), iptal (boşta)
+SEND, SEND_API, BLANK, BLOCK, DROP = "send", "send-api", "blank", "block", "drop"
 
 
 def utc_now() -> str:
@@ -134,16 +161,32 @@ def compact_event(e: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _origin(req: Any) -> str:
-    """İsteği yapan: sayfa çerçevesinin URL'si ya da service worker."""
+def safe_url(url: str, sofa_host: Pattern[str] = SOFA_HOST) -> str:
+    """
+    Kayda yazılacak adres. SofaScore adresi olduğu gibi; üçüncü taraf adresi yalnızca şema + alan adı + ilk yol
+    parçası (Sportradar LMT gibi adresler imzalı token taşır; sorgu ve kalan yol yazılmaz). Alan adı olmayan
+    (data:, blob:, about:) adreslerden yalnızca şema.
+    """
+    u = urlparse(url or "")
+    host = u.hostname or ""
+    if not host:
+        return f"{u.scheme}:" if u.scheme else ""
+    if sofa_host.search(host):
+        return url
+    first = u.path.strip("/").split("/")[0]
+    return f"{u.scheme}://{host}/{first}"
+
+
+def _origin(req: Any, sofa_host: Pattern[str] = SOFA_HOST) -> str:
+    """İsteği yapan: sayfa çerçevesinin URL'si (üçüncü taraf çerçevede maskeli) ya da service worker."""
     try:
-        return req.frame.url[:200]
+        return safe_url(req.frame.url, sofa_host)[:200]
     except Exception:
         return "service-worker"
 
 
 def is_explorer_drop(failure: str) -> bool:
-    """Bu script'in route.abort'u: önceki sürüm varsayılan koddu (ERR_FAILED), şimdi ERR_BLOCKED_BY_CLIENT."""
+    """Bu script'in iptali: ilk sürüm varsayılan koddu (ERR_FAILED), sonra ERR_BLOCKED_BY_CLIENT (eski kayıtlar için)."""
     return "ERR_BLOCKED_BY_CLIENT" in failure or "ERR_FAILED" in failure
 
 
@@ -169,14 +212,60 @@ def nats_messages(raw: bytes):
             yield cmd, "", line
 
 
+def mask_info(body: str) -> str:
+    """NATS INFO gövdesi: istemcinin IP adresi (client_ip) maskelenir; çözülemeyen gövde hiç yazılmaz."""
+    try:
+        info = json.loads(body)
+    except ValueError:
+        return "<unparsed, redacted>"
+    if not isinstance(info, dict):
+        return "<unparsed, redacted>"
+    for k in INFO_SECRET_KEYS:
+        if k in info:
+            info[k] = REDACTED
+    return json.dumps(info)
+
+
+def mask_connect(line: str) -> str:
+    """NATS CONNECT satırı: kimlik alanları (kullanıcı, parola, token, imza) maskelenir."""
+    try:
+        opts = json.loads(line[len("CONNECT "):])
+    except ValueError:
+        return "CONNECT <unparsed, redacted>"
+    if not isinstance(opts, dict):
+        return "CONNECT <unparsed, redacted>"
+    for k in list(opts):
+        if k in CONNECT_SECRET_KEYS:
+            opts[k] = REDACTED
+    return "CONNECT " + json.dumps(opts)
+
+
 class Explorer:
-    def __init__(self) -> None:
-        self.bridge = cs.BrowserBridge.get_instance()
+    def __init__(self, out: str = OUT, *, new_run: bool = False, run_id: Optional[str] = None,
+                 max_requests: int = MAX_API_REQUESTS, max_seconds: float = MAX_SECONDS,
+                 sofa_host: Pattern[str] = SOFA_HOST, quiet_url: str = QUIET_URL, bridge: Any = None) -> None:
+        """
+        out          kayıt klasörü
+        new_run      yeni koşu: bütçe sıfırdan, önceki koşunun durumu previous_runs'a
+        run_id       yeni koşunun kimliği (yoksa UTC zaman damgası); sürdürülen koşuda verilirse onunla aynı olmalı
+        sofa_host    SofaScore sayılan alan adları (testler sahte alan adı verir)
+        quiet_url    köprünün açılışta ve captcha sonrasında açtığı, API çağırmayan sayfa
+        bridge       BrowserBridge (testler sahtesini verir)
+        """
+        self.out = out
+        self.bridge = bridge if bridge is not None else cs.BrowserBridge.get_instance()
+        self.sofa_host = sofa_host
+        self.quiet_url = quiet_url
+        self.max_requests = max_requests
+        self.max_seconds = max_seconds
         self.page: Any = None
+        self.cdp: Any = None
         self.sport = "unknown"
         self.page_url = ""
         self.api_count = 0
         self.blocked = 0
+        self.idle_dropped = 0
+        self.intercept_errors = 0
         self.started = time.time()
         self.last_nav = 0.0
         self.last_api = 0.0
@@ -185,52 +274,90 @@ class Explorer:
         self.ws_subjects: Dict[str, Dict[str, Any]] = {}
         self.page_type = ""
         self.active = False  # yalnızca bir komut sürerken SofaScore isteklerine izin verilir
-        self.idle_dropped = 0
         self.known: set = set()
         self.new_patterns: List[str] = []
-        os.makedirs(OUT, exist_ok=True)
-        self._load_state()
+        self.run_id: Optional[str] = None
+        self.previous_runs: List[Dict[str, Any]] = []
+        # Olay işleyicilerinden açılan görevler: döngü görevlere yalnızca zayıf başvuru tutar, burada güçlü tutulur
+        self._tasks: set = set()
+        # Bu süreçteki istekler kilit dosyasına teker teker gider (sıra FIFO, iş parçacığı havuzu dolmaz)
+        self._slot_lock = asyncio.Lock()
+        self._solving = False
+        os.makedirs(out, exist_ok=True)
+        self._load_state(new_run, run_id)
 
     # --- bütçe ---------------------------------------------------------------------------
 
-    def _load_state(self) -> None:
-        path = os.path.join(OUT, "_state.json")
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as f:
-                s = json.load(f)
-            self.started = s.get("started", self.started)
-            self.api_count = s.get("api_requests", 0)
-        req_log = os.path.join(OUT, "requests.jsonl")
+    def _state_path(self) -> str:
+        return os.path.join(self.out, "_state.json")
+
+    def _load_state(self, new_run: bool, run_id: Optional[str]) -> None:
+        prev: Dict[str, Any] = {}
+        if os.path.exists(self._state_path()):
+            with open(self._state_path(), encoding="utf-8") as f:
+                prev = json.load(f)
+        self.previous_runs = list(prev.pop("previous_runs", None) or [])
+        fresh = new_run or not prev
+        if fresh:
+            # Yeni koşu: önceki koşunun durumu olduğu gibi saklanır (2026-10-01 koşusunun kimliği yoktur)
+            if prev:
+                self.previous_runs.append(prev)
+            self.run_id = run_id or dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            if self.run_id in {r.get("run_id") for r in self.previous_runs}:
+                raise ValueError(f"run id {self.run_id!r} was used by an earlier run")
+            self.started = time.time()
+            self.api_count = 0
+        else:
+            self.run_id = prev.get("run_id")
+            if run_id is not None and run_id != self.run_id:
+                raise ValueError(f"the current run is {self.run_id!r}, not {run_id!r}; pass --new-run to start a run")
+            self.started = prev.get("started", self.started)
+            self.api_count = prev.get("api_requests", 0)
+        req_log = os.path.join(self.out, "requests.jsonl")
         logged = 0
         if os.path.exists(req_log):
             with open(req_log, encoding="utf-8") as f:
                 for line in f:
                     row = json.loads(line)
-                    if row.get("status") is None and is_explorer_drop(row.get("failure") or ""):
+                    # İlk sürümün kendi iptalleri ERR_FAILED ile yazılmıştı (run_id'siz satırlar); yeni satırlarda
+                    # ERR_FAILED gerçek bir ağ hatasıdır
+                    if row.get("status") is None and "run_id" not in row and is_explorer_drop(row.get("failure") or ""):
                         continue
-                    self.known.add(api_pattern(row["url"]))
-                    if SOFA_HOST.search(row.get("host") or urlparse(row["url"]).hostname or ""):
+                    self.known.add(api_pattern(row["url"], self.sofa_host))
+                    if row.get("run_id") != self.run_id:
+                        continue
+                    if self.sofa_host.search(row.get("host") or urlparse(row["url"]).hostname or ""):
                         logged += 1
-        # Bütçe: kayıtlı SofaScore satırları en az gönderilen istek kadardır (yarıda kalan komut durumu yazmamış olabilir)
+        # Bütçe: bu koşunun kayıtlı SofaScore satırları en az gönderilen istek kadardır (yarıda kalan komut durumu
+        # yazmamış olabilir)
         self.api_count = max(self.api_count, logged)
-        for p in glob.glob(os.path.join(OUT, "samples", "*", "*.json")):
+        for p in glob.glob(os.path.join(self.out, "samples", "*", "*.json")):
             key = os.path.basename(os.path.dirname(p)) + "|" + os.path.basename(p).rsplit("__", 1)[0]
             self.samples[key] = self.samples.get(key, 0) + 1
+        if fresh:  # yeni koşu hemen yazılır; sürdürülen koşunun durumu ilk komutta (bütçesi bitmişse hiç) yazılır
+            self._save_state()
 
     def _save_state(self) -> None:
-        rc.write_json(
-            os.path.join(OUT, "_state.json"),
-            {"started": self.started, "api_requests": self.api_count, "updated": utc_now()},
-        )
+        rc.write_json(self._state_path(), {
+            "run_id": self.run_id,
+            "started": self.started,
+            "api_requests": self.api_count,
+            "max_requests": self.max_requests,
+            "max_seconds": self.max_seconds,
+            "updated": utc_now(),
+            "previous_runs": self.previous_runs,
+        })
 
     def over_budget(self) -> bool:
-        return self.api_count >= MAX_API_REQUESTS or time.time() - self.started >= MAX_SECONDS
+        return self.api_count >= self.max_requests or time.time() - self.started >= self.max_seconds
 
     def stats(self) -> Dict[str, Any]:
         return {
+            "run_id": self.run_id,
             "api_requests": self.api_count,
             "blocked": self.blocked,
             "idle_dropped": self.idle_dropped,
+            "intercept_errors": self.intercept_errors,
             "elapsed_min": round((time.time() - self.started) / 60, 1),
             "over_budget": self.over_budget(),
         }
@@ -238,44 +365,126 @@ class Explorer:
     # --- kayıt -----------------------------------------------------------------------------
 
     def _append(self, name: str, row: Dict[str, Any]) -> None:
-        with open(os.path.join(OUT, name), "a", encoding="utf-8") as f:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        with open(os.path.join(self.out, name), "a", encoding="utf-8") as f:
+            f.write(json.dumps({**row, "run_id": self.run_id}, ensure_ascii=False) + "\n")
 
-    async def on_route(self, route: Any) -> None:
-        try:
-            await self._route(route)
-        except Exception as e:  # istek kilit beklerken iptal edildiyse (sayfa değişti) continue/abort hata verir
-            self._append("pages.jsonl", {"ts": round(time.time(), 3), "op": "route-error", "url": route.request.url[:200],
-                                         "error": str(e)[:200]})
+    def _safe(self, url: str) -> str:
+        return safe_url(url, self.sofa_host)
 
-    async def _route(self, route: Any) -> None:
-        req = route.request
-        host = urlparse(req.url).hostname or ""
-        if req.resource_type in BLOCKED_TYPES:
-            self.blocked += 1
-            await route.abort()
-            return
-        if req.resource_type in TRAFFIC_TYPES and SOFA_HOST.search(host):
-            # Komutlar arasında sayfa kendi kendine sorgulamaya devam eder (canlı yenileme, tembel yükleme):
-            # bu istekler gönderilmez; bütçe yalnızca yönlendirilen adımlara harcanır.
-            if not self.active:
-                self.idle_dropped += 1
-                await route.abort("blockedbyclient")
-                return
-            if self.over_budget():
-                self.blocked += 1
-                await route.abort("blockedbyclient")
-                return
+    def _spawn(self, coro: Coroutine[Any, Any, Any]) -> "asyncio.Future[Any]":
+        task = asyncio.ensure_future(coro)
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+        return task
+
+    # --- kesici (CDP Fetch) ------------------------------------------------------------------
+
+    async def intercept(self, page: Any) -> None:
+        """
+        Sayfanın görsel/medya/font ve XHR/fetch/EventSource isteklerini CDP Fetch alanında durdurur; her biri
+        on_paused'da tam bir kez yanıtlanır (devam, boş görsel ya da iptal). Network.enable yalnızca service
+        worker'ı atlamak için gerekir (setBypassServiceWorker onsuz etkisizdir); tamponları küçük tutulur.
+        """
+        cdp = await page.context.new_cdp_session(page)
+        cdp.on("Fetch.requestPaused", lambda ev: self._spawn(self.on_paused(cdp, ev)))
+        await cdp.send("Network.enable", {"maxTotalBufferSize": 1_000_000, "maxResourceBufferSize": 100_000})
+        await cdp.send("Network.setBypassServiceWorker", {"bypass": True})
+        await cdp.send("Fetch.enable", {"patterns": [
+            {"urlPattern": "*", "resourceType": t, "requestStage": "Request"} for t in CDP_TYPES
+        ]})
+        self.cdp = cdp
+
+    async def _take_slot(self) -> None:
+        async with self._slot_lock:
             await asyncio.to_thread(rc._wait_rate_slot)
-            if not self.active:  # sıra beklerken komut bitti: gönderme
-                self.idle_dropped += 1
-                await route.abort("blockedbyclient")
-                return
-            self.api_count += 1
-            self.last_api = time.time()
-            if self.api_count % 10 == 0:
-                self._save_state()
-        await route.continue_()
+
+    async def gate(self, url: str, resource_type: str) -> str:
+        """Durdurulan isteğin kararı. SofaScore API isteği ancak kilitten sıra alınca ve sayılınca gönderilir."""
+        if resource_type in BLOCKED_TYPES:
+            self.blocked += 1
+            return BLANK if resource_type == "image" else BLOCK
+        host = urlparse(url).hostname or ""
+        if resource_type not in TRAFFIC_TYPES or not self.sofa_host.search(host):
+            return SEND
+        # Komutlar arasında sayfa kendi kendine sorgulamaya devam eder (canlı yenileme, tembel yükleme):
+        # bu istekler gönderilmez; bütçe yalnızca yönlendirilen adımlara harcanır.
+        if not self.active:
+            self.idle_dropped += 1
+            return DROP
+        if self.over_budget():
+            self.blocked += 1
+            return BLOCK
+        await self._take_slot()
+        if not self.active:  # sıra beklerken komut bitti: gönderme
+            self.idle_dropped += 1
+            return DROP
+        if self.over_budget():  # sırada bekleyenler bütçeyi aşmasın
+            self.blocked += 1
+            return BLOCK
+        self.api_count += 1
+        self.last_api = time.time()
+        if self.api_count % 10 == 0:
+            self._save_state()
+        return SEND_API
+
+    async def on_paused(self, cdp: Any, ev: Dict[str, Any]) -> None:
+        """Fetch.requestPaused: karar verilir ve istek yanıtlanır. Hata da olsa istek askıda bırakılmaz."""
+        rid = ev["requestId"]
+        url = (ev.get("request") or {}).get("url") or ""
+        resource_type = CDP_TYPES.get(ev.get("resourceType") or "", "other")
+        try:
+            verdict = await self.gate(url, resource_type)
+        except Exception as e:  # karar verilemedi (kilit dosyası vb.): istek gönderilmez
+            verdict = BLOCK
+            self._intercept_error(url, "gate", e)
+        try:
+            if verdict in (SEND, SEND_API):
+                await cdp.send("Fetch.continueRequest", {"requestId": rid})
+            elif verdict == BLANK:
+                await cdp.send("Fetch.fulfillRequest", {
+                    "requestId": rid, "responseCode": 200, "body": BLANK_GIF,
+                    "responseHeaders": [{"name": "Content-Type", "value": "image/gif"},
+                                        {"name": "Cache-Control", "value": "no-store"}],
+                })
+            else:
+                await cdp.send("Fetch.failRequest", {"requestId": rid, "errorReason": "BlockedByClient"})
+        except Exception as e:  # istek bu arada iptal edildi (sayfa değişti) ya da oturum kapandı
+            if verdict == SEND_API:
+                self.api_count -= 1  # gönderilemedi: bütçeden düşülür (sıra yine de kullanıldı)
+            self._intercept_error(url, verdict, e)
+
+    def _intercept_error(self, url: str, stage: str, e: Exception) -> None:
+        self.intercept_errors += 1
+        self._append("pages.jsonl", {"ts": round(time.time(), 3), "op": "intercept-error", "stage": stage,
+                                     "url": self._safe(url)[:200], "error": f"{e.__class__.__name__}: {str(e)[:200]}"})
+
+    def on_page(self, pg: Any) -> None:
+        """Keşif sayfası dışında açılan sayfa (açılır pencere) kesicisizdir: kapatılır. Captcha çözümü hariç."""
+        if pg is self.page or self._solving:
+            return
+        self._spawn(self._close_page(pg, "close-popup"))
+
+    async def _close_page(self, pg: Any, op: str) -> None:
+        self._append("pages.jsonl", {"ts": round(time.time(), 3), "op": op, "url": self._safe(pg.url)})
+        try:
+            await pg.close()
+        except Exception:
+            pass
+
+    async def _solve_challenge(self) -> Optional[str]:
+        """
+        Captcha çözümü köprünün (Scrapling'in) kendi sayfasında olur; bu sayfada kesici yoktur. Çözümün tek
+        SofaScore isteği (/api/v1/token/captcha) için önce sıra alınır ve bütçeye sayılır; bitince bir sıra daha
+        alınır ki sonraki istek çözümden en az MIN_REQUEST_GAP sonra gitsin.
+        """
+        await self._take_slot()
+        self.api_count += 1
+        self._solving = True
+        try:
+            return await self.bridge._solve_on_captcha_page()
+        finally:
+            self._solving = False
+            await self._take_slot()
 
     def _note_pattern(self, pattern: str) -> None:
         if pattern not in self.known:
@@ -283,108 +492,135 @@ class Explorer:
             self.new_patterns.append(pattern)
 
     def on_request_failed(self, req: Any) -> None:
-        if req.resource_type not in TRAFFIC_TYPES or is_explorer_drop(str(req.failure or "")):
+        failure = str(req.failure or "")
+        if req.resource_type not in TRAFFIC_TYPES or "ERR_BLOCKED_BY_CLIENT" in failure:
             return  # bu script'in gönderilmeden iptal ettiği istek: trafik değil
-        pattern = api_pattern(req.url)
+        url = req.url
+        pattern = api_pattern(url, self.sofa_host)
         self._note_pattern(pattern)
         self._append("requests.jsonl", {
             "ts": round(time.time(), 3), "sport": self.sport, "page": self.page_url, "page_type": self.page_type,
-            "url": req.url, "host": urlparse(req.url).hostname, "method": req.method,
-            "resource_type": req.resource_type, "origin": _origin(req), "pattern": pattern, "status": None,
-            "failure": str(req.failure)[:200] if req.failure else None, "cache_control": None,
+            "url": self._safe(url), "host": urlparse(url).hostname, "method": req.method,
+            "resource_type": req.resource_type, "origin": _origin(req, self.sofa_host), "pattern": pattern,
+            "status": None, "failure": failure[:200] or None, "cache_control": None,
             "response_keys": [], "sample_file": None,
         })
 
     async def on_response(self, resp: Any) -> None:
+        """
+        Yanıt satırı her durumda yazılır: adres, kod ve başlıklar nesnenin ilk verisindedir; gövde okunamazsa
+        (nesne toplanmış, sayfa kapanmış) satır `body_error` ile yazılır. Gövde yalnızca SofaScore yanıtlarında okunur.
+        """
         req = resp.request
         if req.resource_type not in TRAFFIC_TYPES:
             return
         url = resp.url
-        if SOFA_HOST.search(urlparse(url).hostname or ""):
+        host = urlparse(url).hostname or ""
+        sofa = bool(self.sofa_host.search(host))
+        if sofa:
             self.last_api = time.time()
-        pattern = api_pattern(url)
+        pattern = api_pattern(url, self.sofa_host)
         self._note_pattern(pattern)
-        headers = await resp.all_headers() if hasattr(resp, "all_headers") else resp.headers
+        headers: Dict[str, str] = dict(resp.headers or {})
         body: Any = None
-        try:
-            body = json.loads(await resp.body())
-        except Exception:
-            body = None
+        body_error: Optional[str] = None
+        if sofa:
+            try:
+                headers = await resp.all_headers()
+            except Exception:
+                pass
+            try:
+                body = json.loads(await resp.body())
+            except ValueError:  # JSON değil
+                body = None
+            except Exception as e:
+                body_error = f"{e.__class__.__name__}: {str(e)[:160]}"
         sample_file = None
-        key = f"{self.sport}|{slug(pattern)}"
-        if body is not None and self.samples.get(key, 0) < SAMPLES_PER_PATTERN:
-            n = self.samples.get(key, 0) + 1
-            self.samples[key] = n
-            raw = json.dumps(body, ensure_ascii=False)
-            trimmed = len(raw.encode("utf-8")) > FULL_SAMPLE_BYTES
-            rel = os.path.join("samples", self.sport, f"{slug(pattern)}__{n}.json")
-            rc.write_json(
-                os.path.join(OUT, rel),
-                {
-                    "url": url,
-                    "status": resp.status,
-                    "fetched_at_utc": utc_now(),
-                    "page": self.page_url,
-                    "cache_control": headers.get("cache-control"),
-                    "trimmed": trimmed,
-                    "body": trim(body) if trimmed else body,
-                },
-            )
-            sample_file = f"research/all_sports/{rel}"
-        self._append(
-            "requests.jsonl",
-            {
-                "ts": round(time.time(), 3),
-                "sport": self.sport,
-                "page": self.page_url,
-                "page_type": self.page_type,
-                "url": url,
-                "host": urlparse(url).hostname,
-                "method": req.method,
-                "resource_type": req.resource_type,
-                "origin": _origin(req),
-                "pattern": pattern,
-                "status": resp.status,
-                "age": headers.get("age"),
-                "cache_control": headers.get("cache-control"),
-                "response_keys": response_keys(body),
-                "sample_file": sample_file,
-            },
-        )
+        try:
+            sample_file = self._sample(url, resp.status, headers, pattern, body)
+        except OSError as e:
+            body_error = body_error or f"sample: {e}"
+        row = {
+            "ts": round(time.time(), 3),
+            "sport": self.sport,
+            "page": self.page_url,
+            "page_type": self.page_type,
+            "url": self._safe(url),
+            "host": host,
+            "method": req.method,
+            "resource_type": req.resource_type,
+            "origin": _origin(req, self.sofa_host),
+            "pattern": pattern,
+            "status": resp.status,
+            "age": headers.get("age"),
+            "cache_control": headers.get("cache-control"),
+            "response_keys": response_keys(body),
+            "sample_file": sample_file,
+        }
+        if body_error:
+            row["body_error"] = body_error
+        self._append("requests.jsonl", row)
         if body is not None:
             found: List[Dict[str, Any]] = []
             find_events(body, found)
             if found:
-                os.makedirs(os.path.join(OUT, "events"), exist_ok=True)
-                with open(os.path.join(OUT, "events", f"{self.sport}.jsonl"), "a", encoding="utf-8") as f:
+                os.makedirs(os.path.join(self.out, "events"), exist_ok=True)
+                with open(os.path.join(self.out, "events", f"{self.sport}.jsonl"), "a", encoding="utf-8") as f:
                     for e in found:
                         row = compact_event(e)
                         row["source_pattern"] = pattern
                         row["seen_at"] = round(time.time())
+                        row["run_id"] = self.run_id
                         f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    def _sample(self, url: str, status: int, headers: Dict[str, str], pattern: str, body: Any) -> Optional[str]:
+        """Pattern başına en fazla SAMPLES_PER_PATTERN örnek (yalnızca SofaScore gövdeleri okunur)."""
+        key = f"{self.sport}|{slug(pattern)}"
+        if body is None or self.samples.get(key, 0) >= SAMPLES_PER_PATTERN:
+            return None
+        n = self.samples.get(key, 0) + 1
+        self.samples[key] = n
+        raw = json.dumps(body, ensure_ascii=False)
+        trimmed = len(raw.encode("utf-8")) > FULL_SAMPLE_BYTES
+        rel = os.path.join("samples", self.sport, f"{slug(pattern)}__{n}.json")
+        rc.write_json(
+            os.path.join(self.out, rel),
+            {
+                "url": url,
+                "status": status,
+                "fetched_at_utc": utc_now(),
+                "page": self.page_url,
+                "cache_control": headers.get("cache-control"),
+                "trimmed": trimmed,
+                "run_id": self.run_id,
+                "body": trim(body) if trimmed else body,
+            },
+        )
+        return os.path.relpath(os.path.join(self.out, rel), ROOT).replace(os.sep, "/")
 
     def on_websocket(self, ws: Any) -> None:
         """
-        Push kanalı (ws.sofascore.com:9222 NATS). Alınan: INFO (ilk), her konudan ilk 3 MSG ve `status.*`
-        taşıyan tüm MSG'ler; konu başına sayaç + anahtar kümesi ws_subjects.json'da. Gönderilen: SUB/UNSUB
-        hepsi; CONNECT'in kimlik alanları maskelenir (gizli bilgi saklanmaz).
+        Push kanalı (ws.sofascore.com:9222 NATS). Alınan: INFO (ilk, client_ip maskeli), her konudan ilk 3 MSG ve
+        `status.*` taşıyan tüm MSG'ler; konu başına sayaç + anahtar kümesi ws_subjects.json'da. Gönderilen: SUB/UNSUB
+        hepsi; CONNECT'in kimlik alanları maskelenir; PUB gövdeleri (analitik) saklanmaz.
         """
+        ws_url = self._safe(ws.url)
         opened = {"ts": round(time.time(), 3), "sport": self.sport, "page": self.page_url,
-                  "page_type": self.page_type, "url": ws.url}
+                  "page_type": self.page_type, "url": ws_url}
         self._append("ws.jsonl", {"kind": "open", **opened})
-        self._note_pattern("ws:" + api_pattern(ws.url))
-        self.ws_frames[ws.url] = 0
+        self._note_pattern("ws:" + api_pattern(ws.url, self.sofa_host))
+        self.ws_frames[ws_url] = 0
 
         def raw_of(payload: Any) -> bytes:
             return payload.encode("utf-8") if isinstance(payload, str) else bytes(payload)
 
         def received(payload: Any) -> None:
-            self.ws_frames[ws.url] = self.ws_frames.get(ws.url, 0) + 1
+            self.ws_frames[ws_url] = self.ws_frames.get(ws_url, 0) + 1
             for kind, subject, body in nats_messages(raw_of(payload)):
-                base = {"ts": round(time.time(), 3), "sport": self.sport, "page_type": self.page_type, "url": ws.url}
+                base = {"ts": round(time.time(), 3), "sport": self.sport, "page_type": self.page_type, "url": ws_url}
                 if kind == "INFO":
-                    if self.ws_frames[ws.url] <= 2:
-                        self._append("ws.jsonl", {"kind": "recv", "op": "INFO", **base, "body": body[:1500]})
+                    if self.ws_frames[ws_url] <= 2:
+                        self._append("ws.jsonl", {"kind": "recv", "op": "INFO", **base, "body": mask_info(body)[:1500]})
                     continue
                 if kind not in ("MSG", "HMSG"):
                     continue
@@ -408,20 +644,13 @@ class Explorer:
                 if not line.startswith(("SUB ", "UNSUB ", "CONNECT ", "PUB ", "HPUB ")):
                     continue
                 if line.startswith("CONNECT "):
-                    try:
-                        opts = json.loads(line[8:])
-                        for k in list(opts):
-                            if k in ("auth_token", "jwt", "sig", "nkey", "pass", "user", "token"):
-                                opts[k] = "<redacted>"
-                        line = "CONNECT " + json.dumps(opts)
-                    except ValueError:
-                        line = "CONNECT <unparsed, redacted>"
+                    line = mask_connect(line)
                 self._append("ws.jsonl", {"kind": "sent", "ts": round(time.time(), 3), "sport": self.sport,
                                           "page_type": self.page_type, "page": self.page_url, "line": line[:500]})
 
         def closed(_: Any = None) -> None:
-            self._append("ws.jsonl", {"kind": "close", "ts": round(time.time(), 3), "url": ws.url,
-                                      "frames": self.ws_frames.get(ws.url, 0)})
+            self._append("ws.jsonl", {"kind": "close", "ts": round(time.time(), 3), "url": ws_url,
+                                      "frames": self.ws_frames.get(ws_url, 0)})
 
         ws.on("framereceived", received)
         ws.on("framesent", sent)
@@ -430,23 +659,24 @@ class Explorer:
     # --- komutlar --------------------------------------------------------------------------
 
     async def start(self) -> None:
-        # Köprü açılışta ana sayfayı (ve captcha çözümünden sonra yönlendirmeyi) yükler; bu, route kurulmadan
+        # Köprü açılışta ana sayfayı (ve captcha çözümünden sonra yönlendirmeyi) yükler; bu, kesici kurulmadan
         # olur ve sitenin onlarca isteği kilitsiz ve sayılmadan gider. Bu süreçte iki adres de API çağırmayan
         # bir sayfaya çevrilir (sofascore_scraper/ değişmez; yalnızca bu sürecin modül değişkenleri).
-        cs.HOME_URL = QUIET_URL
-        cs.CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=" + quote(QUIET_URL, safe="")
+        cs.HOME_URL = self.quiet_url
+        cs.CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=" + quote(self.quiet_url, safe="")
         await self.bridge.ensure_ready()
         ctx = self.bridge.context
         self.page = self.bridge.page
-        # Bağlamda keşif sayfasından başka sayfa kalmasın (köprünün açılış sayfaları da trafik üretir)
+        # Bağlamda keşif sayfasından başka sayfa kalmasın (köprünün açılış sayfaları da trafik üretir; kesici
+        # yalnızca keşif sayfasındadır)
         for pg in list(ctx.pages):
             if pg is not self.page:
-                self._append("pages.jsonl", {"ts": round(time.time(), 3), "op": "close-extra-page", "url": pg.url})
-                await pg.close()
-        await ctx.route("**/*", self.on_route)
-        # Bağlam düzeyinde: service worker dahil bütün trafik; her satır isteği yapan çerçeveyi yazar
-        ctx.on("response", lambda r: asyncio.ensure_future(self.on_response(r)))
+                await self._close_page(pg, "close-extra-page")
+        await self.intercept(self.page)
+        # Bağlam düzeyinde kayıt: her satır isteği yapan çerçeveyi yazar
+        ctx.on("response", lambda r: self._spawn(self.on_response(r)))
         ctx.on("requestfailed", self.on_request_failed)
+        ctx.on("page", self.on_page)
         self.page.on("websocket", self.on_websocket)
 
     async def _gap(self) -> None:
@@ -483,13 +713,13 @@ class Explorer:
             if "captcha.html" not in self.page.url or attempt == 1:
                 break
             # Site API 403 alınca captcha.html'e yönlendirir: köprünün çözücüsü (Turnstile), sonra bir kez daha
-            token = await self.bridge._solve_on_captcha_page()
+            token = await self._solve_challenge()
             self._append("pages.jsonl", {"ts": round(time.time(), 3), "op": "challenge", "url": cmd["url"],
                                          "solved": bool(token)})
             await asyncio.sleep(PAGE_GAP)
-        res = {"url": self.page.url, "title": await self.page.title(), "page_requests": self.api_count - before,
-               "seconds": round(time.time() - t0, 1), "error": err, "new_patterns": list(self.new_patterns),
-               **self.stats()}
+        res = {"url": self._safe(self.page.url), "title": await self.page.title(),
+               "page_requests": self.api_count - before, "seconds": round(time.time() - t0, 1), "error": err,
+               "new_patterns": list(self.new_patterns), **self.stats()}
         self._append("pages.jsonl", {"ts": round(t0, 3), "op": "goto", "sport": self.sport,
                                      "page_type": self.page_type, "requested": cmd["url"], **res})
         self._save_state()
@@ -515,8 +745,9 @@ class Explorer:
             err = str(e)[:300]
         if err is None:  # tıklanamadıysa beklemek yalnızca sayfanın arka plan isteklerine bütçe harcar
             await self._settle(float(cmd.get("settle", 6)), float(cmd.get("dwell", 60)))
-        res = {"url": self.page.url, "page_requests": self.api_count - before, "seconds": round(time.time() - t0, 1),
-               "error": err, "new_patterns": list(self.new_patterns), **self.stats()}
+        res = {"url": self._safe(self.page.url), "page_requests": self.api_count - before,
+               "seconds": round(time.time() - t0, 1), "error": err, "new_patterns": list(self.new_patterns),
+               **self.stats()}
         self._append("pages.jsonl", {"ts": round(t0, 3), "op": "click", "sport": self.sport,
                                      "page_type": self.page_type, "target": cmd.get("text") or cmd.get("selector"), **res})
         self._save_state()
@@ -535,8 +766,9 @@ class Explorer:
         except Exception as e:
             err = str(e)[:300]
         await self._settle(float(cmd.get("settle", 6)), float(cmd.get("dwell", 60)))
-        res = {"url": self.page.url, "page_requests": self.api_count - before, "seconds": round(time.time() - t0, 1),
-               "error": err, "new_patterns": list(self.new_patterns), **self.stats()}
+        res = {"url": self._safe(self.page.url), "page_requests": self.api_count - before,
+               "seconds": round(time.time() - t0, 1), "error": err, "new_patterns": list(self.new_patterns),
+               **self.stats()}
         self._append("pages.jsonl", {"ts": round(t0, 3), "op": "fill", "sport": self.sport,
                                      "page_type": self.page_type, "target": cmd["selector"], "text": cmd["text"], **res})
         self._save_state()
@@ -580,19 +812,23 @@ class Explorer:
         return {"count": len(found), "tabs": found}
 
     async def pages(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
-        return {"pages": [pg.url for pg in self.bridge.context.pages]}
+        return {"pages": [self._safe(pg.url) for pg in self.bridge.context.pages]}
 
     async def text(self, cmd: Dict[str, Any]) -> Dict[str, Any]:
         """Görünen metin (sekme adlarını bulmak için), kısaltılmış."""
         body = await self.page.evaluate("() => document.body.innerText")
         return {"text": body[: int(cmd.get("limit", 3000))]}
 
+    def ws_subjects_path(self) -> str:
+        """Koşu başına ayrı dosya: yeni koşu önceki koşunun konu sayaçlarının üzerine yazmaz."""
+        name = "ws_subjects.json" if self.run_id is None else f"ws_subjects_{self.run_id}.json"
+        return os.path.join(self.out, name)
 
-async def serve(ctl: str) -> None:
+
+async def serve(ctl: str, ex: Explorer) -> None:
     os.makedirs(ctl, exist_ok=True)
-    ex = Explorer()
     await ex.start()
-    print("hazır", utc_now(), ex.stats(), flush=True)
+    print("ready", utc_now(), ex.stats(), flush=True)
     while True:
         cmds = sorted(glob.glob(os.path.join(ctl, "cmd_*.json")))
         if not cmds:
@@ -611,14 +847,15 @@ async def serve(ctl: str) -> None:
             elif op == "stats":
                 res = ex.stats()
             else:
-                res = {"error": f"bilinmeyen op {op}"}
+                res = {"error": f"unknown op {op}"}
         except Exception as e:
             res = {"error": f"{e.__class__.__name__}: {str(e)[:300]}"}
         ex.active = False
-        rc.write_json(os.path.join(OUT, "ws_subjects.json"), ex.ws_subjects)
+        rc.write_json(ex.ws_subjects_path(), ex.ws_subjects)
         rc.write_json(path.replace("cmd_", "res_"), res)
         if op == "quit":
             break
+    ex._save_state()
     await ex.bridge.close()
 
 
@@ -640,14 +877,48 @@ def send(ctl: str, raw: str, timeout: float = 900) -> None:
         print(f.read())
 
 
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="explore_all_sports.py", description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    p_serve = sub.add_parser("serve", help="open the browser and execute commands from CTL_DIR")
+    p_serve.add_argument("ctl", metavar="CTL_DIR")
+    p_serve.add_argument("--new-run", action="store_true",
+                         help="start a new run with a fresh budget; the previous run's state is kept in _state.json")
+    p_serve.add_argument("--run-id", default=None, help="id of the new run (default: UTC timestamp)")
+    p_serve.add_argument("--max-requests", type=int, default=MAX_API_REQUESTS,
+                         help=f"SofaScore API requests per run (default {MAX_API_REQUESTS})")
+    p_serve.add_argument("--max-hours", type=float, default=MAX_SECONDS / 3600,
+                         help=f"hours per run (default {MAX_SECONDS / 3600:g})")
+    p_serve.add_argument("--out", default=OUT, help="output folder (default research/all_sports)")
+    p_send = sub.add_parser("send", help="send one JSON command to a running serve and print its result")
+    p_send.add_argument("ctl", metavar="CTL_DIR")
+    p_send.add_argument("command", metavar="JSON")
+    p_send.add_argument("--timeout", type=float, default=900)
+    return parser
+
+
+def explorer_from_args(args: argparse.Namespace, bridge: Any = None) -> Explorer:
+    """serve'ün argümanlarından keşif nesnesi; bütçesi bitmiş koşu sürdürülmez (tarayıcı açılmadan çıkılır)."""
+    try:
+        ex = Explorer(args.out, new_run=args.new_run, run_id=args.run_id, max_requests=args.max_requests,
+                      max_seconds=args.max_hours * 3600, bridge=bridge)
+    except ValueError as e:
+        raise SystemExit(f"error: {e}") from None
+    if ex.over_budget():
+        raise SystemExit(
+            f"error: run {ex.run_id or '(2026-10-01, no id)'} has used its budget ({ex.api_count} API requests, "
+            f"{(time.time() - ex.started) / 3600:.1f} h of {args.max_hours:g} h); start a new run with --new-run"
+        )
+    return ex
+
+
 def main(argv: Optional[List[str]] = None) -> None:
-    argv = argv or sys.argv[1:]
-    if argv[0] == "serve":
-        asyncio.run(serve(argv[1]))
-    elif argv[0] == "send":
-        send(argv[1], argv[2])
+    args = _parser().parse_args(argv)
+    if args.cmd == "serve":
+        asyncio.run(serve(args.ctl, explorer_from_args(args)))
     else:
-        raise SystemExit(__doc__)
+        send(args.ctl, args.command, args.timeout)
 
 
 if __name__ == "__main__":
