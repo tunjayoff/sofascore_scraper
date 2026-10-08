@@ -1363,15 +1363,28 @@ def _participant_row(row: Sequence[Any]) -> ParticipantRow:
                           None if row[9] is None else bool(row[9]), row[10])
 
 
-def _name_filter(sport: Optional[str], text: Optional[str]) -> Tuple[List[str], List[Any]]:
-    """Turnuva ve yarışmacı listelerinin ortak süzgeçleri: spor ve adda geçen metin."""
+# Sözcük başı sayılan yerler (plan maddesi FX-28): adın başı ve bu işaretlerden sonrası ("bodo/glimt"te "glimt")
+_WORD_BREAKS = (" ", "-", "/", ".", "(", "'", "&", ",")
+
+
+def _name_filter(sport: Optional[str], text: Optional[str],
+                 word_start: bool = False) -> Tuple[List[str], List[Any]]:
+    """
+    Turnuva ve yarışmacı listelerinin ortak süzgeçleri: spor ve adda geçen metin. word_start: metin adın ya da
+    bir sözcüğünün başında geçmeli (adın ortasında geçmesi yetmez).
+    """
     conditions: List[str] = []
     params: List[Any] = []
     if sport is not None:
         conditions.append("sport = ?")
         params.append(sport)
     pattern = like_pattern(text) if text is not None else None
-    if pattern is not None:
+    if pattern is not None and word_start:
+        inner = pattern[1:-1]  # baştaki ve sondaki % atılır; kaçırılmış metin kalır
+        starts = [f"{inner}%"] + [f"%{mark}{inner}%" for mark in _WORD_BREAKS]
+        conditions.append("(" + " OR ".join([_NAME_LIKE] * len(starts)) + ")")
+        params.extend(starts)
+    elif pattern is not None:
         conditions.append(_NAME_LIKE)
         params.append(pattern)
     return conditions, params
@@ -1492,9 +1505,12 @@ class EntityStore:
         return _tournament_row(row) if row is not None else None
 
     def tournaments(self, *, sport: Optional[str] = None, text: Optional[str] = None,
-                    limit: int = 100) -> List[TournamentRow]:
-        """Turnuvalar, ada göre sıralı. text: adda geçen metin (büyük-küçük harf ve aksan ayrımı yok)."""
-        conditions, params = _name_filter(sport, text)
+                    limit: int = 100, word_start: bool = False) -> List[TournamentRow]:
+        """
+        Turnuvalar, ada göre sıralı. text: adda geçen metin (büyük-küçük harf ve aksan ayrımı yok); word_start
+        ile yalnızca adı ya da bir sözcüğü metinle başlayanlar.
+        """
+        conditions, params = _name_filter(sport, text, word_start)
         where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
         params.append(check_int(limit, "limit", minimum=1))
         with self._read() as conn:
@@ -1537,9 +1553,12 @@ class EntityStore:
         return _season_row(row) if row is not None else None
 
     def participants(self, *, text: Optional[str] = None, sport: Optional[str] = None, ids: Sequence[int] = (),
-                     limit: int = 50) -> List[ParticipantRow]:
-        """Yarışmacılar, ada göre sıralı. Süzgeçler birlikte uygulanır; text adda geçen metindir."""
-        conditions, params = _name_filter(sport, text)
+                     limit: int = 50, word_start: bool = False) -> List[ParticipantRow]:
+        """
+        Yarışmacılar, ada göre sıralı. Süzgeçler birlikte uygulanır; text adda geçen metindir, word_start ile
+        adın ya da bir sözcüğünün başında geçmelidir.
+        """
+        conditions, params = _name_filter(sport, text, word_start)
         listed = int_list(ids, "ids")
         if listed:
             conditions.append(f"id IN ({listed})")

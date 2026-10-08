@@ -40,10 +40,11 @@ import {
  * Filters, sort and the page are in the query string; the server filters and sorts. The Data column comes
  * from `include=slices_summary`. Selected events can be fetched: "Fetch missing data" sends only the
  * events with something missing, "Fetch again" all of them; both are `fetch` jobs by event id, one
- * selection per tournament. Without a status filter every status is shown, upcoming and in-progress
- * matches too (FX-14a); "All statuses" says so and brings it back. A team's or a player's list (`fixedParticipant`)
- * starts with the played matches, newest first, and switches to the upcoming ones, soonest first (`when`,
- * FX-26 M15); with `fixedSport` the sport filter is not offered (a team plays one sport).
+ * selection per tournament. Every list (the Matches screen, a league's and a team's or a player's) starts with
+ * the played matches, newest first, and switches to the upcoming ones, soonest first, or to every match (`when`,
+ * FX-26 M15 for a team, FX-28 M21 for all: a followed league's full fixture list put next May's matches first);
+ * a status filter replaces the switch's choice and "All statuses" is the "All" of the switch. With `fixedSport`
+ * the sport filter is not offered (a team plays one sport).
  */
 const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; fixedSport?: string | null; tableId?: string }>()
 const { t, locale } = useI18n()
@@ -52,10 +53,8 @@ const status = useStatusStore()
 
 const CLASSES = ['not_started', 'live', 'completed', 'decided_without_play', 'void', 'unknown'] as const
 type StatusClass = (typeof CLASSES)[number]
-/** Without a status filter in the address: every status (FX-14a; it was "finished only"). */
-const DEFAULT_CLASSES: StatusClass[] = []
 const SERVER_KEYS = ['sport', 'tournament', 'season', 'from', 'to', 'status', 'has', 'q', 'sort', 'when'] as const
-/** A team's or a player's list: played (newest first), upcoming (soonest first) or every match (FX-26, M15). */
+/** Played (newest first, the default), upcoming (soonest first) or every match (FX-26 M15, FX-28 M21). */
 const WHEN = ['played', 'upcoming', 'all'] as const
 type When = (typeof WHEN)[number]
 const WHEN_CLASSES: Record<When, StatusClass[]> = { played: ['live', 'completed', 'decided_without_play'], upcoming: ['not_started'], all: [] }
@@ -63,13 +62,15 @@ const WHEN_CLASSES: Record<When, StatusClass[]> = { played: ['live', 'completed'
 const f = computed(() => {
   const q = route.query
   const raw = queryList(q, 'status')
-  const classes: StatusClass[] = raw.includes('any') ? [] : raw.length ? (raw.filter((x) => (CLASSES as readonly string[]).includes(x)) as StatusClass[]) : DEFAULT_CLASSES
-  const when: When | null = props.fixedParticipant ? ((WHEN as readonly string[]).includes(queryText(q, 'when')) ? (queryText(q, 'when') as When) : 'played') : null
+  const classes: StatusClass[] = raw.includes('any') ? [] : (raw.filter((x) => (CLASSES as readonly string[]).includes(x)) as StatusClass[])
+  // adreste `when` yoksa oynananlar (FX-28): yalnızca `status=any` ile (eski bağlantılar) bütün maçlar
+  const whenText = queryText(q, 'when')
+  const when: When = (WHEN as readonly string[]).includes(whenText) ? (whenText as When) : raw.includes('any') ? 'all' : 'played'
   const sortText = queryText(q, 'sort')
   return {
     when,
     /** The status classes asked for: the filter's, else the switch's. */
-    asked: classes.length || !when ? classes : WHEN_CLASSES[when],
+    asked: classes.length ? classes : WHEN_CLASSES[when],
     sport: props.fixedSport ?? queryText(q, 'sport'),
     tournament: props.fixedTournament ?? queryIds(q, 'tournament')[0] ?? null,
     season: queryIds(q, 'season')[0] ?? null,
@@ -215,7 +216,7 @@ defineExpose({ reload: list.load })
 
 <template>
   <div>
-    <div v-if="f.when" class="u-seg mb-3" role="group" :aria-label="t('ui.events.when.label')" data-testid="events-when">
+    <div class="u-seg mb-3" role="group" :aria-label="t('ui.events.when.label')" data-testid="events-when">
       <button v-for="w in WHEN" :key="w" type="button" :aria-pressed="!f.classes.length && f.when === w" :data-when="w" @click="setWhen(w)">{{ t(`ui.events.when.${w}`) }}</button>
     </div>
     <FilterBar :active-count="chips.length" :chips="chips" @clear="clearFilters" @remove="removeFilter">
@@ -265,7 +266,7 @@ defineExpose({ reload: list.load })
       <div class="flex flex-col basis-full">
         <span id="events-status" class="u-label">{{ t('ui.events.col.status') }}</span>
         <div class="flex flex-wrap gap-2" role="group" aria-labelledby="events-status">
-          <button type="button" class="u-chip u-toggle-chip" :aria-pressed="!f.asked.length" data-class="all" @click="f.when ? setWhen('all') : list.setQuery({ status: null })">{{ t('ui.events.anyStatus') }}</button>
+          <button type="button" class="u-chip u-toggle-chip" :aria-pressed="!f.asked.length" data-class="all" @click="setWhen('all')">{{ t('ui.events.anyStatus') }}</button>
           <button v-for="c in CLASSES" :key="c" type="button" class="u-chip u-toggle-chip" :aria-pressed="f.asked.includes(c)" :data-class="c" @click="toggleClass(c)">
             {{ t(`ui.status.event.${c}`) }}
           </button>

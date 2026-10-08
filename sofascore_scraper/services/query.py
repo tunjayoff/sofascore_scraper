@@ -675,9 +675,11 @@ class QueryService:
     def suggest(self, text: str, *, sport: Optional[str] = None, limit: int = 8) -> List[Suggestion]:
         """
         Yazarken öneri (plan maddesi FX-20): adında `text` geçen turnuvalar ve yarışmacılar (takımlar), yalnızca
-        katalogdan; SofaScore'a istek atılmaz. Sıra: adı metinle başlayanlar, sonra bir sözcüğü metinle başlayanlar,
-        sonra adında geçenler; her birinin içinde takip edilenler önce, sonra ad (eşitlikte tür ve kimlik). Büyük-
-        küçük harf ve aksan ayrımı yoktur. En çok `limit` öneri.
+        katalogdan; SofaScore'a istek atılmaz. Sıra: adı metinle başlayanlar, sonra bir sözcüğü metinle başlayanlar
+        (boşluk, tire, eğik çizgi gibi bir işaretten sonra), sonra adında geçenler; her birinin içinde takip
+        edilenler önce, sonra ad (eşitlikte tür ve kimlik). Adı ya da bir sözcüğü metinle başlayan bir öneri
+        varsa metnin yalnızca bir sözcüğün ortasında geçtiği adlar hiç gösterilmez (FX-28, M23: "la" için Alanyaspor,
+        Atalanta…). Büyük-küçük harf ve aksan ayrımı yoktur. En çok `limit` öneri.
         """
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
             raise ValueError("limit must be positive")
@@ -686,35 +688,46 @@ class QueryService:
             return []
         follows = self._store.follows.list()
         followed = {(f.kind, f.entity_id) for f in follows}
-        found: List[Suggestion] = []
         categories: Dict[int, Any] = {}
-        for row in self._store.entities.tournaments(sport=sport, text=wanted, limit=_SUGGEST_POOL):
-            if not row.name:
-                continue
-            category = None
-            if row.category_id is not None:
-                if row.category_id not in categories:
-                    categories[row.category_id] = self._store.entities.category(row.category_id)
-                category = categories[row.category_id]
-            found.append(Suggestion(
-                kind="tournament", id=row.id, name=row.name, slug=row.slug, sport=row.sport,
-                country_code=category.alpha2 if category is not None else None,
-                category_id=row.category_id, category_name=category.name if category is not None else None,
-                category_slug=category.slug if category is not None else None,
-                followed=("tournament", row.id) in followed,
-            ))
-        for row in self._store.entities.participants(text=wanted, sport=sport, limit=_SUGGEST_POOL):
-            if not row.name:
-                continue
-            found.append(Suggestion(kind="team", id=row.id, name=row.name, slug=row.slug, sport=row.sport,
-                                    country_code=row.country, followed=("team", row.id) in followed))
+
+        def pool(word_start: bool) -> List[Suggestion]:
+            # Katalogdan aday adlar, türüne göre en çok _SUGGEST_POOL; word_start ile yalnızca sözcük başında geçenler
+            # (ada göre sıralı havuz, sözcük ortasında geçen çok adla dolup sözcük başı olanları dışarıda bırakmasın)
+            found: List[Suggestion] = []
+            for row in self._store.entities.tournaments(sport=sport, text=wanted, limit=_SUGGEST_POOL,
+                                                        word_start=word_start):
+                if not row.name:
+                    continue
+                category = None
+                if row.category_id is not None:
+                    if row.category_id not in categories:
+                        categories[row.category_id] = self._store.entities.category(row.category_id)
+                    category = categories[row.category_id]
+                found.append(Suggestion(
+                    kind="tournament", id=row.id, name=row.name, slug=row.slug, sport=row.sport,
+                    country_code=category.alpha2 if category is not None else None,
+                    category_id=row.category_id, category_name=category.name if category is not None else None,
+                    category_slug=category.slug if category is not None else None,
+                    followed=("tournament", row.id) in followed,
+                ))
+            for row in self._store.entities.participants(text=wanted, sport=sport, limit=_SUGGEST_POOL,
+                                                         word_start=word_start):
+                if not row.name:
+                    continue
+                found.append(Suggestion(kind="team", id=row.id, name=row.name, slug=row.slug, sport=row.sport,
+                                        country_code=row.country, followed=("team", row.id) in followed))
+            return found
 
         def rank(item: Suggestion) -> Tuple[int, int, str, str, int]:
             name = _suggest_key(item.name)
-            place = 0 if name.startswith(wanted) else 1 if f" {wanted}" in f" {name}" else 2
-            return place, 0 if item.followed else 1, name, item.kind, item.id
+            return _match_place(name, wanted), 0 if item.followed else 1, name, item.kind, item.id
 
-        return sorted(found, key=rank)[:limit]
+        ranked = sorted(pool(True), key=rank)
+        if not ranked or rank(ranked[0])[0] == 2:
+            ranked = sorted(pool(False), key=rank)
+        if ranked and rank(ranked[0])[0] < 2:
+            ranked = [item for item in ranked if rank(item)[0] < 2]
+        return ranked[:limit]
 
     def tournament(self, tournament_id: int) -> Optional[TournamentEntry]:
         """Turnuvanın kaydı ve kategorisi; katalogda yoksa None."""
@@ -870,6 +883,21 @@ _SUGGEST_FOLD = str.maketrans({"ı": "i", "ø": "o", "ł": "l", "đ": "d", "ð":
 def _suggest_key(text: str) -> str:
     """Önerilerin sıralamasında ad: katlanmış, boşluklar teke inmiş (katalogdaki aramayla aynı karşılaştırma)."""
     return " ".join(_fold(text).translate(_SUGGEST_FOLD).split())
+
+
+def _match_place(name: str, wanted: str) -> int:
+    """
+    Önerinin yeri (ikisi de `_suggest_key`ten geçmiş): 0 ad metinle başlıyor, 1 bir sözcüğü metinle başlıyor (harf
+    ya da rakam olmayan bir işaretten sonra), 2 metin yalnızca bir sözcüğün ortasında geçiyor (ya da hiç geçmiyor).
+    """
+    if name.startswith(wanted):
+        return 0
+    at = name.find(wanted, 1)
+    while at > 0:
+        if not name[at - 1].isalnum():
+            return 1
+        at = name.find(wanted, at + 1)
+    return 2
 
 
 def _slice_info(read: Callable[[], Any]) -> Any:

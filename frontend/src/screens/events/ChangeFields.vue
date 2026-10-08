@@ -6,12 +6,15 @@ import type { Change } from '@/api/v1/schema'
 
 /**
  * What a correction changed (6.7): the score fields in pairs ("2-1 → 2-2" for `homeScore.current` and
- * `awayScore.current`), the status class in words, every other field as path: old → new.
+ * `awayScore.current`), the status class in words, every other field as path: old → new. A score with neither
+ * side known reads "no score" ("no score → 4-3", FX-28 M22; it was "– – – → 4-3").
  */
 const props = defineProps<{ change: Change; compact?: boolean }>()
 const { t } = useI18n()
 
 const v = (x: unknown) => (x == null ? '–' : typeof x === 'object' ? JSON.stringify(x) : String(x))
+/** İki tarafın skoru; ikisi de bilinmiyorsa "skor yok" (bir taraf bilinmiyorsa o taraf "–"). */
+const pair = (home: unknown, away: unknown) => (home == null && away == null ? t('ui.corrections.noScore') : `${v(home)}-${v(away)}`)
 
 const lines = computed(() => {
   const fields = props.change.fields
@@ -25,7 +28,7 @@ const lines = computed(() => {
     if (away) used.add(away.path)
     const label = m[1] === 'current' || m[1] === 'display' ? t('ui.corrections.score') : m[1]
     if (out.some((o) => o.label === label && label === t('ui.corrections.score'))) continue
-    out.push({ key: f.path, label, text: `${v(f.old)}-${v(away?.old)} → ${v(f.new)}-${v(away?.new)}` })
+    out.push({ key: f.path, label, text: `${pair(f.old, away?.old)} → ${pair(f.new, away?.new)}` })
   }
   for (const f of fields) {
     if (used.has(f.path)) continue

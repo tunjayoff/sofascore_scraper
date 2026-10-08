@@ -15,10 +15,15 @@ import { isIndividual } from '@/app/sports'
  *     is kept for this page (`remoteCache`, case and spaces ignored), and the server keeps it 10 minutes, so
  *     a text typed again costs nothing. The server counts each request in the shared budget.
  *
- * The result is one list: the local names first (follows, then stored names), then SofaScore's hits in its own
+ * The result is one list: the local names first, then SofaScore's hits in its own
  * order, which is its relevance across kinds (FX-26, M17: grouped by kind, "sinner" showed six e-sports and
  * football teams before Jannik Sinner); each row names its kind. A name found twice is shown once. "Already
  * added" is read from the follows, so a kept answer is never stale about it.
+ *
+ * The local names (FX-28, M23) are ranked by where the text is: names that start with it, then names with a word
+ * that starts with it, follows before stored names within each; a name that holds the text only inside a word
+ * ("la" in Atalanta) is left out when some name or word starts with it, and at most `MAX_LOCAL` are shown, so
+ * SofaScore's hits stay in view ("la" showed four stored teams and never LaLiga).
  */
 
 export type SuggestKind = 'tournament' | 'team' | 'player'
@@ -31,6 +36,8 @@ export const REMOTE_DELAY = 350
 export const LOCAL_DELAY = 120
 /** At most this many suggestions are shown. */
 export const MAX_SHOWN = 15
+/** SofaScore'un sonuçlarından önce en çok bu kadar yerel öneri (takipler ve kayıtlı adlar) gösterilir (FX-28). */
+export const MAX_LOCAL = 5
 const CACHE_SIZE = 100
 
 export type SuggestSource = 'follow' | 'catalog' | 'sofascore'
@@ -86,13 +93,50 @@ export function normalize(q: string): string {
   return q.trim().replace(/\s+/g, ' ')
 }
 
-/** Case and accents ignored, as the server compares names. */
+// NFKD ile ayrışmayan harfler, sunucunun ad katlamasındaki gibi (sofascore_scraper/store/derive.py `fold_name`)
+const FOLD_EXTRA: Record<string, string> = { ı: 'i', ø: 'o', ł: 'l', đ: 'd', ð: 'd', þ: 'th', æ: 'ae', œ: 'oe', ħ: 'h' }
+
+/** Büyük-küçük harf ve aksan ayrımı yok, sunucunun adları karşılaştırdığı gibi ("İstanbul", "ıstanbul", "Istanbul" aynı). */
 export function fold(s: string): string {
   return normalize(s)
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
-    .replace(/ı/g, 'i')
+    .replace(/[ıøłđðþæœħ]/g, (c) => FOLD_EXTRA[c] ?? c)
+}
+
+const isWordChar = (c: string) => /[\p{L}\p{N}]/u.test(c)
+
+/**
+ * Metnin adda geçtiği yer, ikisi de katlanmış (FX-28): 0 ad metinle başlıyor, 1 bir sözcüğü metinle başlıyor (harf
+ * ya da rakam olmayan bir işaretten sonra: "bodo/glimt"te "glimt"), 2 yalnızca bir sözcüğün ortasında, -1 hiç.
+ */
+export function matchPlace(name: string, wanted: string): number {
+  if (!wanted) return -1
+  if (name.startsWith(wanted)) return 0
+  let at = name.indexOf(wanted, 1)
+  if (at < 0) return -1
+  while (at > 0) {
+    if (!isWordChar(name[at - 1]!)) return 1
+    at = name.indexOf(wanted, at + 1)
+  }
+  return 2
+}
+
+/**
+ * Metin için yerel adlar, gösterilecekleri sırayla (FX-28): metinle başlayanlar, sonra bir sözcüğü metinle
+ * başlayanlar, her biri verilen sırasıyla; metnin yalnızca sözcük ortasında geçtiği adlar ancak hiçbir ad ya da
+ * sözcük metinle başlamıyorsa; en çok `max` tane.
+ */
+export function rankLocal<T>(list: readonly T[], name: (x: T) => string, text: string, max = MAX_LOCAL): T[] {
+  const wanted = fold(text)
+  const placed = list.map((x) => ({ x, place: matchPlace(fold(name(x)), wanted) })).filter((p) => p.place >= 0)
+  const best = Math.min(3, ...placed.map((p) => p.place))
+  return placed
+    .filter((p) => best === 2 || p.place < 2)
+    .sort((a, b) => a.place - b.place)
+    .slice(0, max)
+    .map((p) => p.x)
 }
 
 const isDigits = (q: string) => /^\d+$/.test(q)
@@ -330,10 +374,10 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
     const wanted = fold(q)
     const followed = new Set(follows.value.map((f) => f.id))
     const out = new Map<string, Suggestion>()
+    const fits = (hit: TournamentHit) => SUGGEST_KINDS.includes((hit.kind ?? 'tournament') as SuggestKind) && !(sport.value && hit.sport && hit.sport !== sport.value)
     const add = (hit: TournamentHit, source: SuggestSource) => {
       const kind = (hit.kind ?? 'tournament') as SuggestKind
-      if (!SUGGEST_KINDS.includes(kind)) return
-      if (sport.value && hit.sport && hit.sport !== sport.value) return
+      if (!fits(hit)) return
       const key = `${kind}:${hit.id}`
       const seen = out.get(key)
       if (seen) {
@@ -345,12 +389,22 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
       out.set(key, { key, kind, group: shownKind(kind, hit.sport), hit: { ...hit, kind }, followed: known, source, twin: false })
     }
     if (local) {
-      const starts = (name: string) => (fold(name).startsWith(wanted) ? 0 : 1)
-      follows.value
-        .filter((f) => SUGGEST_KINDS.includes(f.kind as SuggestKind) && fold(f.name).includes(wanted))
-        .sort((a, b) => starts(a.name) - starts(b.name) || a.name.localeCompare(b.name))
-        .forEach((f) => add(followHit(f), 'follow'))
-      catalog.value.forEach((h) => add(h, 'catalog'))
+      // takipler (ada göre) ve katalogdaki adlar (sunucunun sırasıyla) bir arada sıralanır; ikisinde de olan bir
+      // ad takip olarak bir kez durur ve katalogdaki bilgisiyle tamamlanır
+      const locals = new Map<string, { hit: TournamentHit; source: SuggestSource }>()
+      const note = (hit: TournamentHit, source: SuggestSource) => {
+        if (!fits(hit)) return
+        const key = `${hit.kind ?? 'tournament'}:${hit.id}`
+        const seen = locals.get(key)
+        if (seen) seen.hit = merged(seen.hit, hit)
+        else locals.set(key, { hit, source })
+      }
+      ;[...follows.value]
+        .filter((f) => SUGGEST_KINDS.includes(f.kind as SuggestKind))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((f) => note(followHit(f), 'follow'))
+      catalog.value.forEach((h) => note(h, 'catalog'))
+      rankLocal([...locals.values()], (x) => x.hit.name, q).forEach((x) => add(x.hit, x.source))
     }
     if (remoteFor.value) {
       // hits of an older text stay while SofaScore is asked again, but only those that still match it

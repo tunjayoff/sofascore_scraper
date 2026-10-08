@@ -382,14 +382,15 @@ describe('Events', () => {
     ...over,
   })
 
-  it('lists the stored events with score, status and data; every status by default', async () => {
+  it('lists the stored events with score, status and data; the played ones, newest first, by default', async () => {
     const f = mockFetch(routes())
     ;({ w } = await mountScreen(EventsScreen, '/events'))
     await flush()
     const q = params(f, 'GET /api/v1/events')
-    // FX-14a: upcoming and in-progress matches are not hidden; "All statuses" is the pressed chip
-    expect(q.getAll('status')).toEqual([])
-    expect(w.find('[data-class="all"]').attributes('aria-pressed')).toBe('true')
+    // FX-28 (M21): played (in progress and finished), newest first; next season's fixtures are one click away
+    expect(q.getAll('status')).toEqual(['live', 'completed', 'decided_without_play'])
+    expect(w.find('[data-when="played"]').attributes('aria-pressed')).toBe('true')
+    expect(w.find('[data-class="all"]').attributes('aria-pressed')).toBe('false')
     expect([q.get('sort'), q.get('include')]).toEqual(['-start_utc', 'slices_summary'])
     const rows = w.findAll('tbody tr')
     expect(rows[0].text()).toContain('Chelsea')
@@ -413,8 +414,9 @@ describe('Events', () => {
     expect([q.get('tournament'), q.get('has'), q.get('q')]).toEqual(['17', 'missing', 'Chelsea'])
     await w.find('[data-class="void"]').trigger('click')
     await flush()
-    expect(router.currentRoute.value.query.status).toEqual(['void'])
-    expect(params(f, 'GET /api/v1/events').getAll('status')).toEqual(['void'])
+    // the played switch is the starting choice: Void is added to its statuses (as on a team's page, FX-26)
+    expect(router.currentRoute.value.query.status).toEqual(['live', 'completed', 'decided_without_play', 'void'])
+    expect(params(f, 'GET /api/v1/events').getAll('status')).toEqual(['live', 'completed', 'decided_without_play', 'void'])
     await w.find('[data-sort="start"]').trigger('click')
     await flush()
     expect(params(f, 'GET /api/v1/events').get('sort')).toBe('start_utc')
@@ -422,6 +424,37 @@ describe('Events', () => {
     await flush()
     expect(params(f, 'GET /api/v1/events').get('cursor')).toBe('C2')
     expect(w.text()).toContain(t('ui.filter.active', { n: 4 }))
+  })
+
+  it('switches between played, upcoming and every match and keeps the choice in the address (FX-28)', async () => {
+    const f = mockFetch(routes())
+    let router
+    ;({ w, router } = await mountScreen(EventsScreen, '/events'))
+    await flush()
+    await w.find('[data-when="upcoming"]').trigger('click')
+    await flush()
+    expect(router.currentRoute.value.query.when).toBe('upcoming')
+    let q = params(f, 'GET /api/v1/events')
+    expect([q.getAll('status'), q.get('sort')]).toEqual([['not_started'], 'start_utc'])
+    expect(w.find('[data-when="upcoming"]').attributes('aria-pressed')).toBe('true')
+    await w.find('[data-class="all"]').trigger('click')
+    await flush()
+    expect(router.currentRoute.value.query.when).toBe('all')
+    q = params(f, 'GET /api/v1/events')
+    expect([q.getAll('status'), q.get('sort')]).toEqual([[], '-start_utc'])
+    expect(w.find('[data-class="all"]').attributes('aria-pressed')).toBe('true')
+    await w.find('[data-when="played"]').trigger('click')
+    await flush()
+    expect(router.currentRoute.value.query.when).toBeUndefined()
+    expect(params(f, 'GET /api/v1/events').getAll('status')).toEqual(['live', 'completed', 'decided_without_play'])
+  })
+
+  it('an address with status=any (an older link) shows every match', async () => {
+    const f = mockFetch(routes())
+    ;({ w } = await mountScreen(EventsScreen, '/events?status=any', '/events'))
+    await flush()
+    expect(params(f, 'GET /api/v1/events').getAll('status')).toEqual([])
+    expect(w.find('[data-when="all"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('fetch missing data sends only the selected events with something missing, by tournament', async () => {
@@ -633,6 +666,26 @@ describe('Corrections', () => {
     expect(rows[1].text()).toContain(t('ui.status.quality.regressed'))
     expect(rows[0].find('a').attributes('href')).toBe('/events/9100003?tab=corrections')
     expect(await axeViolations(w.element)).toEqual([])
+  })
+
+  it('a score that was not known before reads "no score" (FX-28, M22); one unknown side stays a dash', async () => {
+    mockFetch(
+      routes({
+        'GET /api/v1/changes': page([
+          change({ fields: [{ path: 'homeScore.current', old: null, new: 4 }, { path: 'awayScore.current', old: null, new: 3 }] }),
+          change({ seq: 2, event_id: 9100002, fields: [{ path: 'homeScore.current', old: 1, new: 1 }, { path: 'awayScore.current', old: null, new: 0 }] }),
+        ]),
+      }),
+    )
+    ;({ w } = await mountScreen(CorrectionsScreen, '/corrections'))
+    await flush()
+    await flush()
+    const rows = w.findAll('tbody tr')
+    expect(rows[0].text()).toContain(`${t('ui.corrections.noScore')} → 4-3`)
+    expect(rows[1].text()).toContain('1-– → 1-0')
+    setLocale('tr')
+    await flush()
+    expect(w.findAll('tbody tr')[0].text()).toContain('skor yok → 4-3')
   })
 
   it('filters tournament and dates on the server, "status regressed" within the page', async () => {

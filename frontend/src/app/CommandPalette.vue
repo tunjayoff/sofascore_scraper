@@ -5,18 +5,20 @@ import { useI18n } from 'vue-i18n'
 import UiIcon, { type UiIconName } from '@/ui/UiIcon.vue'
 import { trapTab } from '@/ui/focus'
 import { v1 } from '@/api/v1/client'
-import type { FollowRecord, Job, TournamentRecord } from '@/api/v1/schema'
+import type { FollowRecord, Job, TournamentHit } from '@/api/v1/schema'
 import { NAV } from '@/app/nav'
 import { jobKindText, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
 import { loadTournaments } from '@/screens/events/eventText'
-import { MIN_CHARS, noteFollows, normalize, useSuggest } from '@/app/suggest'
+import { MIN_CHARS, noteFollows, normalize, rankLocal, useSuggest } from '@/app/suggest'
 import { sportName } from '@/app/sports'
 import { hitPlace, hitTraits, kindIcon, playerTeam } from '@/screens/follows/followText'
 
 /**
  * Quick search, `Ctrl K` / `⌘ K` (3.3, decision 20). It searches stored data: the actions (Add league,
  * Back up, Export, Settings, Help; FX-14a), the screens, the follows and the stored tournaments by name, an
- * event or job id, and the recent jobs. From 2 characters on a "On SofaScore" section suggests SofaScore's
+ * event or job id, and the recent jobs. The follows and stored tournaments are ranked as the follow editor's
+ * suggestions are (FX-28, `rankLocal`: names or words that start with the text first, at most five). From 2
+ * characters on a "On SofaScore" section suggests SofaScore's
  * leagues, teams and players while typing (FX-20, `useSuggest`: one search after a 350 ms pause, a newer
  * keystroke cancels the older one, answers kept for the page and 10 minutes on the server). Enter on one
  * opens the follow editor with it filled in (its follow page when it is added already); the last entry,
@@ -33,10 +35,11 @@ const listId = useId()
 const active = ref(0)
 const jobs = ref<Job[]>([])
 const follows = ref<FollowRecord[]>([])
-const tournaments = ref<TournamentRecord[]>([])
+const tournaments = ref<TournamentHit[]>([])
 let returnTo: HTMLElement | null = null
 
 // Tournaments of the stored catalog by name, asked for while typing (debounced); never SofaScore
+// (FX-28: katalog önerileri, sunucu sıralar: adı ya da bir sözcüğü metinle başlayanlar önce; yalnızca turnuvalar)
 let timer: ReturnType<typeof setTimeout> | null = null
 let controller: AbortController | null = null
 watch(query, (value) => {
@@ -49,8 +52,8 @@ watch(query, (value) => {
   timer = setTimeout(() => {
     controller?.abort()
     controller = new AbortController()
-    v1.tournaments({ q, limit: 6 }, controller.signal)
-      .then((r) => (tournaments.value = r.data))
+    v1.suggestCatalog({ q, limit: 20 }, controller.signal)
+      .then((hits) => (tournaments.value = hits.filter((h) => h.kind === 'tournament')))
       .catch(() => {})
   }, 200)
 })
@@ -100,12 +103,18 @@ const hits = computed<Hit[]>(() => {
   if (/^\d{1,12}$/.test(q)) out.unshift({ id: `event-${q}`, label: t('ui.palette.openEvent', { id: q }), hint: t('ui.nav.events'), icon: 'events', to: `/events/${q}` })
   if (/^[0-9a-hjkmnp-tv-z]{26}$/i.test(q)) out.unshift({ id: `job-${q}`, label: t('ui.palette.openJob', { id: q.toUpperCase() }), hint: t('ui.nav.jobs'), icon: 'jobs', to: `/jobs/${q.toUpperCase()}` })
   if (q) {
-    for (const f of follows.value)
-      if (lower(f.name).includes(q)) out.push({ id: `follow-${f.id}`, label: f.name, hint: t('ui.nav.follows'), icon: 'follows', to: `/follows/${f.kind}/${f.entity_id}` })
+    // takipler ve kayıtlı turnuvalar, takip düzenleyicisinin önerileri gibi sıralanır (FX-28): adı ya da bir
+    // sözcüğü metinle başlayanlar önce, sözcük ortasında geçenler yalnızca başka yoksa, en çok beş
     const followed = new Set(follows.value.filter((f) => f.kind === 'tournament').map((f) => f.entity_id))
-    for (const tour of tournaments.value)
-      if (!followed.has(tour.id) && lower(tour.name ?? '').includes(q))
-        out.push({ id: `tournament-${tour.id}`, label: tour.name ?? `#${tour.id}`, hint: t('ui.palette.tournament'), icon: 'events', to: { path: '/events', query: { tournament: String(tour.id) } } })
+    const names: Hit[] = [
+      ...[...follows.value]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((f): Hit => ({ id: `follow-${f.id}`, label: f.name, hint: t('ui.nav.follows'), icon: 'follows', to: `/follows/${f.kind}/${f.entity_id}` })),
+      ...tournaments.value
+        .filter((tour) => !followed.has(tour.id) && tour.name)
+        .map((tour): Hit => ({ id: `tournament-${tour.id}`, label: tour.name, hint: t('ui.palette.tournament'), icon: 'events', to: { path: '/events', query: { tournament: String(tour.id) } } })),
+    ]
+    out.push(...rankLocal(names, (h) => h.label, q))
   }
   for (const j of jobs.value) {
     const label = `${jobKindText(j.kind, j.spec)} · ${jobTarget(j)}`

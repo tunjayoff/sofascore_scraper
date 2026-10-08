@@ -1313,6 +1313,7 @@ const tr: typeof en = {
   corrections: {
     description: 'Kaydedildikten sonra SofaScore’un değiştirdiği skorlar ve sonuçlar.',
     score: 'Skor',
+    noScore: 'skor yok',
     status: 'Durum',
     more: '+{n} alan',
     regressedOnly: 'Yalnızca durumu geriye dönenler',
@@ -1832,7 +1833,7 @@ const tr: typeof en = {
       proxy: 'Parola hiçbir zaman gösterilmez; Değiştir yeni bir adres ayarlar.',
     },
     fetch: {
-      only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki maç sayıları ve eski /api maç listeleri de yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada her durum görünür, durum süzgeciyle seçilir); takım, oyuncu ve tek maç takiplerini de.',
+      only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki maç sayıları ve eski /api maç listeleri de yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada ne görüneceğini Oynananlar / Gelecek / Tümü seçimi ve durum süzgeci belirler); takım, oyuncu ve tek maç takiplerini de.',
     },
     defaults: {
       slices: 'Veri türleri ya da grupları, virgülle ayrılmış. “core” temel maç verisidir: maç, istatistikler, kadrolar, olaylar ve diğerleri; oranlar ayrı bir gruptur (“odds”).',
