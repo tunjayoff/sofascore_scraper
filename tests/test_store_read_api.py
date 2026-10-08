@@ -40,6 +40,7 @@ import store_fixtures as sf
 import test_store_query_plans as plans
 from sofascore_scraper import refresh
 from sofascore_scraper.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher
+from sofascore_scraper.services.query import legacy_detail_keys, required_detail_keys
 from sofascore_scraper.slices import match_detail_slice_present
 from sofascore_scraper.sports import event_sport_slug, slices_for
 from sofascore_scraper.store import (
@@ -107,6 +108,9 @@ CUP_PEN_2 = 17090707  # FA Cup yarı finalinin detayı olmayan maçı (Arsenal -
 PL_DETAILS = "match_details/17_Premier_League/season_Premier_League_26_27"
 PL_MATCHES = "matches/17_Premier_League/96668_Premier_League_26_27"
 REQUIRED = {"": [detail.key for detail in slices_for(None, required_only=True)]}
+# Dosya tabanlı kuralla karşılaştırmada her spor kendi tamlık dilimlerini bekler (`exclusive=True`): FX-16'dan beri
+# futbol, basketbol ve teniste ortak kümeden farklıdır (pregame_form isteğe bağlı, tenisin point_by_point'i sayılır)
+BY_SPORT = required_detail_keys()
 FINISHED = ("completed", "decided_without_play")
 SETTLED = FINISHED + ("void",)  # ST-27: yenileme politikasının baktığı durumlar (planning.SETTLED_CLASSES)
 
@@ -1021,8 +1025,14 @@ def _file_missing_keys(fetcher: MatchDataFetcher, event_id: int) -> Tuple[str, .
     directory = found[2]
     data = fetcher._load_match_data_from_dir(directory, str(event_id))
     sport = event_sport_slug(data["basic"]) or ""
-    return tuple(key for key in legacy_writer.expected_slices(directory, sport, UNAVAILABLE_AFTER_ATTEMPTS)
-                 if not match_detail_slice_present(key, data))
+    expected = legacy_writer.expected_slices(directory, sport, UNAVAILABLE_AFTER_ATTEMPTS)
+    # Eski yanıt spora özel dilimleri taşımaz (`legacy_detail_keys`); FX-16'dan beri tamlığa giren tenisin
+    # point_by_point'i dosyasından okunur
+    for key in set(expected) - set(legacy_detail_keys()):
+        path = Path(directory) / f"{key}.json"
+        if path.is_file():
+            data[key] = json.loads(path.read_bytes())
+    return tuple(key for key in expected if not match_detail_slice_present(key, data))
 
 
 @pytest.mark.parametrize("name", sf.FIXTURE_NAMES)
@@ -1034,7 +1044,8 @@ def test_missing_equals_the_file_based_refill_set(built: Dict[str, sf.LegacyFixt
     known = ids(list(store.events.iter(EventQuery())))
     needs = _file_needs(fetcher, known)
     deferred = _deferred(store, needs)
-    rows = {row.event_id: row for row in store.events.missing(None, REQUIRED, status_classes=())}
+    rows = {row.event_id: row for row in store.events.missing(None, BY_SPORT, status_classes=(),
+                                                                       exclusive=True)}
     refill = {event_id for event_id, row in rows.items() if row.has_event_payload}
 
     assert refill - deferred == {event_id for event_id, need in needs.items() if need == "refill"}
@@ -1044,8 +1055,9 @@ def test_missing_equals_the_file_based_refill_set(built: Dict[str, sf.LegacyFixt
     full = {event_id for event_id, need in needs.items() if need == "full"}
     assert {event_id for event_id, row in rows.items() if not row.has_event_payload} - deferred == full
     if name == "canonical":
-        # ST-27: 6 maç yalnızca listeden biliniyor ve bitmemiş (başlamamış ya da void): indirilmez
-        assert len(refill) == 8 and len(full) == 6
+        # ST-27: 6 maç yalnızca listeden biliniyor ve bitmemiş (başlamamış ya da void): indirilmez. FX-16: yarıda
+        # kalan tenis maçı (WIM_RET) point_by_point'i için yeniden doldurulur (8 → 9)
+        assert len(refill) == 9 and len(full) == 6 and sf.event_id(sf.WIM_RET) in refill
     if name == "legacy":
         assert refill == {15500003, AVL} and store.events.get(BRE).has_event_payload  # type: ignore[union-attr]
         # yarıda kesilmiş dilim dosyası yalnızca o dilimi düşürür (RD-1 öncesinin okuyucusu maçın bütün dosyalarını bırakırdı)
@@ -1200,7 +1212,8 @@ def test_needs_from_the_catalog_equal_the_file_based_ones_for_random_states(
     needs = _file_needs(fetcher, fx.detail_ids)
     deferred = _deferred(store, needs)
 
-    rows = {row.event_id: row for row in store.events.missing(None, REQUIRED, status_classes=())}
+    rows = {row.event_id: row for row in store.events.missing(None, BY_SPORT, status_classes=(),
+                                                                       exclusive=True)}
     refill = {event_id for event_id, need in needs.items() if need == "refill"}
     assert set(rows) - deferred == refill and all(row.has_event_payload for row in rows.values())
     for event_id in refill:

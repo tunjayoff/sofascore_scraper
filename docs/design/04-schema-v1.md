@@ -518,7 +518,7 @@ away value. A pair is null when SofaScore gave neither value.
 | `away` | integer | yes | goals | `awayScore.display`, else `awayScore.current` | Headline score of the away side: goals including extra time, without the penalty shoot-out. |
 | `half_time` | [ScorePair](#scorepair) | yes | goals | `period1` | Goals in the first half. |
 | `regulation` | [ScorePair](#scorepair) | yes | goals | `normaltime` | Goals after 90 minutes. |
-| `after_extra_time` | [ScorePair](#scorepair) | yes | goals | `display`, only when `status.code` is 110 or 120 | Goals after extra time (cumulative, without the shoot-out). Null unless the match went to extra time. |
+| `after_extra_time` | [ScorePair](#scorepair) | yes | goals | `display`, only when `status.code` is 110, or 120 when SofaScore sends `overtime`, `extra1` or `extra2` | Goals after extra time (cumulative, without the shoot-out). Null unless the match went to extra time. |
 | `penalties` | [ScorePair](#scorepair) | yes | goals | `penalties` | Goals of the penalty shoot-out alone. |
 <!-- /fields:FootballScore -->
 

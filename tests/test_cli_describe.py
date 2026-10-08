@@ -198,8 +198,9 @@ def test_slices_are_the_registry(described: Dict[str, Any]):
     by_key = {entry["key"]: entry for entry in described["slices"]}
     assert by_key["point_by_point"]["sports"] == ["darts", "tennis"]
     assert by_key["point_by_point"]["counts_for_completeness"] is True
-    assert by_key["point_by_point"]["optional_in"] == ["tennis"]
-    assert by_key["lineups"]["not_in"] == ["darts", "mma", "padel", "snooker"]
+    assert by_key["point_by_point"]["optional_in"] == []  # FX-16: teniste de tamlığa girer
+    assert by_key["lineups"]["not_in"] == ["darts", "mma", "padel", "snooker", "tennis"]
+    assert {"football", "basketball", "tennis"} <= set(by_key["pregame_form"]["optional_in"])
     assert by_key["statistics"]["sports"] is None and by_key["statistics"]["path"] == "/event/{event_id}/statistics"
 
 

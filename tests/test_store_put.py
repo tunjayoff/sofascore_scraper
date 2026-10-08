@@ -32,6 +32,7 @@ import store_dump
 import store_fixtures as sf
 import legacy_writer
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
+from sofascore_scraper.sports import event_sport_slug, slices_for
 from sofascore_scraper.status import observation_record
 from sofascore_scraper.store import (
     EventQuery,
@@ -406,8 +407,11 @@ def test_random_outcome_sequences_match_todays_marker_rules(tmp_path: Path, seed
     rng = random.Random(seed)
     twin = _Twin(tmp_path)
     event_id = 6_000_000 + seed
+    # Eski yazıcı işaretleri yalnızca maçın sporunda tamlığa giren dilimlere yazar; FX-16'dan beri futbolun
+    # pregame_form'u onlardan değildir
+    keys = [spec.key for spec in slices_for(event_sport_slug(basic_of()), required_only=True)]
     for position in range(12):
-        steps = {key: rng.choice(STEPS) for key in rng.sample(SLICE_KEYS, rng.randint(1, len(SLICE_KEYS)))}
+        steps = {key: rng.choice(STEPS) for key in rng.sample(keys, rng.randint(1, len(keys)))}
         twin.apply(event_id, steps)
         legacy, v3 = twin.dumps(event_id)
         assert store_dump.diff(legacy, v3) == [], (seed, position, steps)

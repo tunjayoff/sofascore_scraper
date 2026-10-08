@@ -27,6 +27,7 @@ from sofascore_scraper.services import planning
 from sofascore_scraper.services import status as status_module
 from sofascore_scraper.services.status import CoverageReport, SeasonCoverage, StatusService, TournamentCoverage
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, Outcome, match_detail_slice_present
+from sofascore_scraper.sports import event_sport_slug, sport_slugs
 from sofascore_scraper.status import classify_status
 from sofascore_scraper.store import Ref, Scope, Store, open_store
 
@@ -88,7 +89,9 @@ def test_coverage_agrees_with_the_summary(fx: sf.LegacyFixture) -> None:
             assert 0 < count <= tournament.matches - tournament.complete
     for key, count in report.missing.items():
         assert count == sum(t.missing.get(key, 0) for t in report.tournaments)
-    assert all(key in planning.expected_slice_keys(None) for key in report.missing)
+    # her eksik bir sporun beklediği bir dilimdir (FX-16: teniste point_by_point ortak kümede değil)
+    expected = {key for sport in (None, *sport_slugs()) for key in planning.expected_slice_keys(sport)}
+    assert all(key in expected for key in report.missing)
 
 
 def test_complete_means_the_planner_has_nothing_to_fill_but_a_confirmation(fx: sf.LegacyFixture) -> None:
@@ -128,7 +131,8 @@ def file_missing(directory: Path) -> Tuple[str, ...]:
     failed_last = {str(k) for k, v in status.items() if isinstance(v, dict) and "error" in v} \
         if isinstance(status, dict) else set()
     missing: List[str] = []
-    for key in REQUIRED:
+    # Maçın sporunun beklediği dilimler (FX-16'dan beri futbolda pregame_form yok, teniste point_by_point var)
+    for key in planning.expected_slice_keys(event_sport_slug(event) if isinstance(event, dict) else None):
         body = _read(directory / f"{key}.json")
         if body is not None and match_detail_slice_present(key, {key: body}):
             continue
@@ -155,7 +159,7 @@ def test_canonical_fixture_matches_the_files(tmp_path: Path) -> None:
 
     report = StatusService(open_store(fixture.data_dir)).coverage()
     assert report.matches == len(fixture.details)
-    assert dict(report.missing) == {key: expected_missing[key] for key in REQUIRED if key in expected_missing}
+    assert dict(report.missing) == expected_missing
     assert {t.tournament_id: (t.matches, t.complete) for t in report.tournaments} == by_tournament
     assert report.complete < report.matches  # fikstürde eksik dilimli maç var: kural gerçekten sınanıyor
     assert report.completion_rate == round(report.complete / report.matches * 100, 2)

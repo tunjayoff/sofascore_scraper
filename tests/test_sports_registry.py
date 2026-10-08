@@ -233,9 +233,9 @@ def test_detail_slice_table():
     ]
     assert all(s.default_enabled for s in sports.DETAIL_SLICES)
     assert [s.key for s in sports.DETAIL_SLICES if not s.required] == ["esports_games"]
-    # spora göre: tenisin point_by_point'i isteğe bağlı, dartınki tamlığa girer (tests/test_sport_slices.py)
+    # spora göre: point_by_point teniste ve dartta tamlığa girer (FX-16; tests/test_sport_slices.py)
     assert sports.get_slice("point_by_point").sports == frozenset({"tennis", "darts"})
-    assert sports.get_slice("point_by_point").optional_in == frozenset({"tennis"})
+    assert sports.get_slice("point_by_point").optional_in == frozenset()
     assert sports.get_slice("esports_games").sports == frozenset({"esports"})
     assert sports.get_slice("esports_games").phases == frozenset({"live", "post"})  # oyunlar maç başlayınca var
     assert sports.get_slice("innings").sports == frozenset({"cricket"})
@@ -260,25 +260,31 @@ def test_slice_url():
 
 
 # Spor başına bütün dilimler ve tamlık: tests/test_sport_slices.py (kanıt tablosuna karşı)
-@pytest.mark.parametrize("sport,expected", [
-    ("football", COMMON_KEYS),
-    ("basketball", COMMON_KEYS),
-    ("tennis", COMMON_KEYS + ("point_by_point",)),
-    ("handball", COMMON_KEYS),
-    ("volleyball", COMMON_KEYS),
-    ("table-tennis", COMMON_KEYS),  # point_by_point teniste ve dartta
-    ("waterpolo", COMMON_KEYS),
-    ("", COMMON_KEYS),
-    (None, COMMON_KEYS),
+# FX-16: futbol, basketbol ve teniste pregame_form istenir ama tamlığa girmez; teniste kadro ve olaylar istenmez,
+# point_by_point tamlığa girer
+NO_FORM = tuple(k for k in COMMON_KEYS if k != "pregame_form")
+TENNIS_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "point_by_point")
+
+
+@pytest.mark.parametrize("sport,expected,counted", [
+    ("football", COMMON_KEYS, NO_FORM),
+    ("basketball", COMMON_KEYS, NO_FORM),
+    ("tennis", TENNIS_KEYS, ("statistics", "team_streaks", "h2h", "point_by_point")),
+    ("handball", COMMON_KEYS, COMMON_KEYS),
+    ("volleyball", COMMON_KEYS, COMMON_KEYS),
+    ("table-tennis", COMMON_KEYS, COMMON_KEYS),  # point_by_point teniste ve dartta
+    ("waterpolo", COMMON_KEYS, COMMON_KEYS),
+    ("", COMMON_KEYS, COMMON_KEYS),
+    (None, COMMON_KEYS, COMMON_KEYS),
 ])
-def test_slices_for_sport(sport, expected):
+def test_slices_for_sport(sport, expected, counted):
     assert tuple(s.key for s in sports.slices_for(sport)) == expected
-    assert tuple(s.key for s in sports.slices_for(sport, required_only=True)) == COMMON_KEYS
+    assert tuple(s.key for s in sports.slices_for(sport, required_only=True)) == counted
 
 
 def test_sport_spec_lists_its_slices():
     assert sports.get_sport("football").detail_slices == COMMON_KEYS
-    assert sports.get_sport("tennis").detail_slices == COMMON_KEYS + ("point_by_point",)
+    assert sports.get_sport("tennis").detail_slices == TENNIS_KEYS
     assert sports.get_sport("esports").detail_slices == (
         "statistics", "team_streaks", "pregame_form", "h2h", "lineups", "esports_games")
     assert sports.get_sport("cricket").detail_slices == COMMON_KEYS + ("innings",)
@@ -359,9 +365,13 @@ def test_select_slices_with_a_selection():
     assert _keys(sports.select_slices("event", "football", ["h2h", "lineups"])) == ("h2h", "lineups")
     assert _keys(sports.select_slices("event", "football", ["point_by_point"])) == ()  # tenis dışında yok
     no_h2h = sports.SliceSelection(disable=("point_by_point", "h2h"))
-    assert _keys(sports.select_slices("event", "tennis", no_h2h)) == tuple(k for k in COMMON_KEYS if k != "h2h")
-    narrow = sports.SliceSelection(base=("h2h",), enable=("incidents",))
-    assert _keys(sports.select_slices("event", "tennis", narrow)) == ("h2h", "incidents")
+    assert _keys(sports.select_slices("event", "tennis", no_h2h)) == tuple(k for k in TENNIS_KEYS
+                                                                           if k not in ("h2h", "point_by_point"))
+    narrow = sports.SliceSelection(base=("h2h",), enable=("statistics",))
+    assert _keys(sports.select_slices("event", "tennis", narrow)) == ("statistics", "h2h")
+    # FX-16: teniste olaylar istenmez; seçim onu açamaz
+    no_incidents = sports.SliceSelection(base=("h2h",), enable=("incidents",))
+    assert _keys(sports.select_slices("event", "tennis", no_incidents)) == ("h2h",)
     # "statistics" hem dilim anahtarı hem (tasarımda) grup adı
     assert _keys(sports.select_slices("event", "football", ["statistics"])) == ("statistics",)
     # P28: `odds` grubu maçın dört oran dilimini seçer (varsayılan olarak kapalılar)

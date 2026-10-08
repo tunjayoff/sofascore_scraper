@@ -167,7 +167,10 @@ def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
 
 
 def test_row02_slices_requested(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """İki giriş noktası da sporun bütün dilimlerini ister, isteğe bağlılar dahil (teniste point_by_point)."""
+    """
+    İki giriş noktası da sporun bütün dilimlerini ister, isteğe bağlılar dahil (FX-16'dan beri teniste
+    pregame_form); teniste kadro ve olaylar istenmez.
+    """
     in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
 
     assert _run_plan(in_plan, [TENNIS]) == []
@@ -175,7 +178,8 @@ def test_row02_slices_requested(fake: FakeSofaScore, tmp_path: Path) -> None:
     fake.reset_log()
     assert _run_picked(in_picked, [TENNIS]) == []
 
-    expected = sorted(_event_paths(TENNIS, SLICES + ["point-by-point"]))
+    tennis = [name for name in SLICES if name not in ("lineups", "incidents")] + ["point-by-point"]
+    expected = sorted(_event_paths(TENNIS, tennis))
     assert sorted(plan_paths) == sorted(_api_paths(fake)) == expected
     assert "point_by_point.json" in _stored(in_plan, TENNIS)
     assert "point_by_point.json" in _stored(in_picked, TENNIS)
@@ -365,16 +369,16 @@ def test_row11_not_finished_outcome(fake: FakeSofaScore, tmp_path: Path) -> None
 
 def test_row12_slice_markers(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    "Yok" işaretleri bitmiş maçta istenen her dilim için tutulur, isteğe bağlılar dahil (point_by_point); bitmemiş
-    maçta hiçbiri için tutulmaz.
+    "Yok" işaretleri bitmiş maçta istenen her dilim için tutulur, isteğe bağlılar dahil (FX-16'dan beri teniste
+    pregame_form); bitmemiş maçta hiçbiri için tutulmaz. Teniste kadro ve olaylar istenmez (FX-16): işaretleri yok.
     """
     in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
-    fake.add(f"/event/{TENNIS}/point-by-point", {"pointByPoint": []})  # isteğe bağlı dilim boş geliyor
+    fake.add(f"/event/{TENNIS}/point-by-point", {"pointByPoint": []})  # tamlığa giren dilim boş geliyor
 
     assert _run_plan(in_plan, [TENNIS]) == []
     assert _run_picked(in_picked, [TENNIS]) == []
 
-    empty = {"incidents": 1, "lineups": 1, "pregame_form": 1, "team_streaks": 1, "point_by_point": 1}
+    empty = {"pregame_form": 1, "team_streaks": 1, "point_by_point": 1}
     for md in (in_plan, in_picked):
         stored = _stored(md, TENNIS)
         assert stored["_unavailable.json"] == empty

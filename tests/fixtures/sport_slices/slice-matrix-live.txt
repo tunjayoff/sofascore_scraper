@@ -1,0 +1,20 @@
+# App-side evidence of the live validation (FX-16): one live match per sport (13 sports), each a single-match
+# follow with every slice, downloaded through the app on 2026-10-08 while the match was in play. Copied
+# verbatim from the validation's matrix (no match ids). Columns used by tests/test_sport_slices.py:
+# stat=statistics, lin=lineups, inc=incidents, form=pregame_form, h2h, strk=team_streaks, pbp=point_by_point.
+# Y=data, -=no data (404/empty), not_=requested with no body yet (the match had not finished),
+# .=not in this sport's registry / not requested
+sport          stat   lin   inc  form   h2h  strk   pbp   inn games  oddF  oddA   win
+football       not_     Y     Y     Y     Y     Y     .     .     .     Y     Y     Y
+basketball        Y     Y     Y     Y     Y     Y     .     .     .     Y     Y     Y
+tennis            Y  not_  not_  not_     -     Y     Y     .     .     Y     Y     Y
+ice-hockey        Y  not_     Y     Y     Y     Y     .     .     .     .     .     .
+handball          Y     Y     Y     Y     Y     Y     .     .     .     Y     Y     Y
+futsal            Y     Y     Y     Y     -     -     .     .     .     .     .     .
+minifootball      Y  not_     Y  not_     Y     -     .     .     .     .     .     .
+volleyball     not_  not_     Y  not_     Y     Y     .     .     .     .     .     .
+badminton         Y  not_     Y  not_     Y     -     .     .     .     .     .     .
+table-tennis      Y  not_     Y  not_     Y     -     .     .     .     .     .     .
+cricket        not_     Y  not_  not_     -     Y     .     Y     .     .     .     .
+esports        not_  not_     .  not_     Y     -     .     .     Y     Y     Y     Y
+mma               Y     .     .  not_     -     -     .     .     .     .     .     .

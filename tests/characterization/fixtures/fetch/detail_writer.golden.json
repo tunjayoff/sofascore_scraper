@@ -323,20 +323,6 @@
         "state": "ok",
         "unverified_empty_count": 0
        },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "point_by_point": {
         "empty_count": 0,
         "error": null,
@@ -473,8 +459,6 @@
       "async /event/9100010/team-streaks 200",
       "async /event/9200001 200",
       "async /event/9200001/h2h 200",
-      "async /event/9200001/incidents 404",
-      "async /event/9200001/lineups 404",
       "async /event/9200001/point-by-point 200",
       "async /event/9200001/pregame-form 404",
       "async /event/9200001/statistics 200",
@@ -815,20 +799,6 @@
         "error": null,
         "sha256": "fdde46c64269da4f6394501cfbba8bcba068aa2c0fe992077bdc528e11ce8f16",
         "state": "ok",
-        "unverified_empty_count": 0
-       },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
         "unverified_empty_count": 0
        },
        "point_by_point": {
@@ -1314,20 +1284,6 @@
         "state": "ok",
         "unverified_empty_count": 0
        },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "point_by_point": {
         "empty_count": 0,
         "error": null,
@@ -1796,20 +1752,6 @@
         "error": null,
         "sha256": "fdde46c64269da4f6394501cfbba8bcba068aa2c0fe992077bdc528e11ce8f16",
         "state": "ok",
-        "unverified_empty_count": 0
-       },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
         "unverified_empty_count": 0
        },
        "point_by_point": {
@@ -2369,20 +2311,6 @@
         "state": "ok",
         "unverified_empty_count": 0
        },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "point_by_point": {
         "empty_count": 0,
         "error": null,
@@ -2937,20 +2865,6 @@
         "state": "ok",
         "unverified_empty_count": 0
        },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "point_by_point": {
         "empty_count": 0,
         "error": null,
@@ -3495,20 +3409,6 @@
         "state": "ok",
         "unverified_empty_count": 0
        },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "point_by_point": {
         "empty_count": 0,
         "error": null,
@@ -3987,20 +3887,6 @@
         "error": null,
         "sha256": "fdde46c64269da4f6394501cfbba8bcba068aa2c0fe992077bdc528e11ce8f16",
         "state": "ok",
-        "unverified_empty_count": 0
-       },
-       "incidents": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "lineups": {
-        "empty_count": 1,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
         "unverified_empty_count": 0
        },
        "point_by_point": {
