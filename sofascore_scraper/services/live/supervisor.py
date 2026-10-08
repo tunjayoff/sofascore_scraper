@@ -94,7 +94,7 @@ logger = logging.getLogger(__name__)
 LIVE_LEASE = "live"
 LEASE_PURPOSE = "watch"
 RUNTIME_KEY = "live"
-WATCH_THROTTLE_LANE = "watch"  # sofascore_scraper/watcher.py ile aynı şerit: izleyiciler toplamda ≥ 1 sn aralıkla istek atar
+WATCH_THROTTLE_LANE = "watch"  # 2.x izleyicisiyle aynı şerit: canlı süreçler toplamda ≥ 1 sn aralıkla istek atar
 MIN_REQUEST_SPACING_SECONDS = 1.0
 DEFAULT_SPORT = "football"  # sporu belirtilmemiş takip (yapılandırmanın varsayılanı)
 

@@ -73,7 +73,7 @@ REQUIRED_MODULES: Tuple[Tuple[str, str], ...] = (
 _PROFILE_LOCK_FILES = ("SingletonLock", "SingletonSocket", "SingletonCookie")
 
 BROWSER_PROBE_TIMEOUT = 90.0
-# Canlı denetimin tek isteği: küçük ve durağan bir uç nokta (challenge_solver._PROBE_URL ile aynı)
+# Canlı denetimin tek isteği: küçük ve durağan bir uç nokta (client/bridge.py `_PROBE_URL` ile aynı)
 LIVE_PROBE_PATH = "/unique-tournament/17/seasons"
 
 _ALLOWED_API_HOSTS = ("www.sofascore.com", "api.sofascore.com")
@@ -1037,7 +1037,7 @@ def check_live(ctx: Context, fetch: Optional[Callable[[str], Any]] = None) -> Ch
     (çalışan web uygulaması) tarayıcı başlayamaz ve denetim başarısız olur.
     """
     if fetch is None:
-        from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync as fetch
+        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync as fetch
 
     try:
         data = fetch(LIVE_PROBE_PATH)

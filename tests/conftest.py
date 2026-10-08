@@ -561,7 +561,7 @@ def _isolate_request_layer(request, monkeypatch):
     taşınmaz. `browser` işaretli olmayan testler gerçek bir tarayıcı başlatamaz.
     """
     import sofascore_scraper.utils as utils
-    import sofascore_scraper.challenge_solver as cs
+    from sofascore_scraper.client import bridge as cs
     from sofascore_scraper import bridge_health
 
     monkeypatch.setattr(utils, "_browser_first_until", 0.0)

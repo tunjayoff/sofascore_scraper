@@ -706,7 +706,7 @@ def _ok_probe(python):
 
 
 def test_run_checks_returns_every_check_once_and_never_the_live_one(make_ctx, monkeypatch):
-    import sofascore_scraper.challenge_solver as cs
+    from sofascore_scraper.client import bridge as cs
 
     monkeypatch.setattr(cs, "fetch_api_via_browser_sync", lambda *a, **k: pytest.fail("canlı istek atılmamalı"))
     results = doctor.run_checks(make_ctx(), browser_probe=_ok_probe)

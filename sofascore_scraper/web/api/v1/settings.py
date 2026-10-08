@@ -466,7 +466,7 @@ def _move_data_dir(changes: Mapping[str, Any], target: str) -> None:
     ayar yazılır. Ayar yazılamazsa depo geçerli dizine geri döner. Çalışan iş ya da süren bir veri işlemi
     varken reddedilir (JobStoreConflict → 409).
     """
-    from sofascore_scraper.web.jobs import default_db_path
+    from sofascore_scraper.store import default_db_path
 
     store = deps.job_store()
     previous = os.path.abspath(deps.config_manager().get_data_dir())

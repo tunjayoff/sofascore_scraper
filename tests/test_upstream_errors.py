@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 import sofascore_scraper.season_fetcher as season_fetcher_mod
 import sofascore_scraper.utils as utils
 from conftest import DATA_DIR, LEAGUE_ID, SEASON_ID, SEASON_NAME

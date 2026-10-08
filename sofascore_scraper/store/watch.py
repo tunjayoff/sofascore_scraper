@@ -6,12 +6,10 @@
 aynı sözlük maç başına bir satırdır; bir izleyicinin satırları `watcher` adıyla ayrılır (bugün spor adı).
 Biten maçların satırları WATCH_STATE_RETENTION_SECONDS sonra, bir sonraki `save` sırasında silinir.
 
-2.x dosyalarıyla ilgili iki yardımcı da buradadır, çünkü DATA_DIR'e yalnızca Store dokunur:
-  * `import_legacy`: `watch_state_<spor>.json` dosyasını **bir kez** tabloya alır (bölüm 8.3). Dosya artık
-    yazılmaz (P23): canlı servis ve eski `--watch` takma adı durumu yalnızca tabloda tutar.
-  * `append_legacy_events`: `watch_events.jsonl` satırları; yalnızca eski `--watch` takma adı yazar ve onunla
-    birlikte kalkar (P30). Bayt olarak ve LF ile eklenir: 2.x metin kipinde yazdığı için Windows'ta CRLF
-    üretiyordu, öteki bütün veri dosyaları LF'dir.
+2.x dosyasıyla ilgili yardımcı da buradadır, çünkü DATA_DIR'e yalnızca Store dokunur: `import_legacy`,
+`watch_state_<spor>.json` dosyasını **bir kez** tabloya alır (bölüm 8.3). Dosya artık yazılmaz (P23): canlı servis
+durumu yalnızca tabloda tutar. 2.x izleyicisinin olay dosyası (`watch_events.jsonl`) 3.1'den beri hiç yazılmaz
+(P30); varsa yalnızca okunur (yedek, `ssc migrate`).
 """
 from __future__ import annotations
 
@@ -20,7 +18,7 @@ import logging
 import os
 import re
 import time
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Mapping, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Mapping, Optional
 
 from sofascore_scraper.store import files, layout
 from sofascore_scraper.store.errors import LayoutError, PayloadMissing, StoreError
@@ -32,7 +30,7 @@ logger = logging.getLogger("Store")
 
 WATCH_STATE_RETENTION_SECONDS = 7 * 86400  # bitmiş maçın durumu bu kadar saklanır (bölüm 9.3)
 
-# 2.x dosya adları (sofascore_scraper/watcher.py ve sofascore_scraper/store/legacy.py'deki sabitlerle aynı; testler eşitliği denetler)
+# 2.x dosya adları (sofascore_scraper/store/legacy.py'deki sabitlerle aynı; testler eşitliği denetler)
 LEGACY_EVENTS_FILE = "watch_events.jsonl"
 LEGACY_STATE_FILE = "watch_state_{sport}.json"
 META_IMPORTED_PREFIX = "imported_watch_state:"  # meta anahtarı: + spor adı
@@ -213,25 +211,6 @@ class WatchStateStore:
         if record["found"]:
             logger.info("Legacy watch state %s imported: %s of %s entries", name, imported, record["rows"])
         return imported
-
-    def append_legacy_events(self, lines: Sequence[str]) -> None:
-        """
-        Satırları `watch_events.jsonl` dosyasının sonuna ekler: her biri UTF-8 ve LF ile, hepsi tek yazmada
-        (aynı dosyaya ekleyen başka bir izleyicinin satırlarıyla karışmaz).
-        """
-        if not lines:
-            return
-        path = layout.resolve(self._data_dir, LEGACY_EVENTS_FILE)
-        data = "".join(f"{line}\n" for line in lines).encode("utf-8")
-        try:
-            os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-            with open(path, "ab") as f:
-                f.write(data)
-                if files.durability_full():
-                    f.flush()
-                    os.fsync(f.fileno())
-        except OSError as e:
-            raise StoreError.from_exception(e, path) from e
 
 
 __all__ = [

@@ -25,7 +25,7 @@ import pytest
 
 import conftest
 import test_cli_skeleton as skeleton
-from sofascore_scraper import breaker, bridge_health, language, paths, refresh, throttle, watcher
+from sofascore_scraper import breaker, bridge_health, language, paths, refresh, throttle
 from sofascore_scraper import logger as app_logger
 from sofascore_scraper.config import Settings, config_schema, loader
 from sofascore_scraper.config import settings as model
@@ -250,7 +250,6 @@ TODAYS_READERS = {
     "LOG_MAX_MB": (app_logger.log_max_bytes, lambda s: int(s.log.max_mb * 1024 * 1024)),
     "LOG_BACKUP_COUNT": (app_logger.log_backup_count, lambda s: s.log.backup_count),
     "LOG_DIR": (lambda: os.getenv("LOG_DIR", "").strip(), _log_dir),
-    "WATCH_MAX_EVENT_POLLS": (watcher.max_event_polls, lambda s: s.live.max_event_polls),
     "SOFASCORE_ALLOWED_HOSTS": (security.allowed_hosts, lambda s: list(s.server.allowed_hosts)),
     "SOFASCORE_API_TOKEN": (lambda: os.environ.get("SOFASCORE_API_TOKEN", "").strip(), lambda s: s.server.token),
     "STORE_DURABILITY": (store_files.durability_full, lambda s: s.storage.durability == "full"),
@@ -315,14 +314,14 @@ def test_bridge_blocked_threshold_is_never_below_the_degraded_one(monkeypatch):
 
 
 def test_browser_headed_matches_the_bridge(monkeypatch):
-    from sofascore_scraper import challenge_solver
+    from sofascore_scraper.client import bridge
 
     for raw in (None,) + RAW_VALUES:
         if raw is None:
             monkeypatch.delenv("SOFASCORE_BROWSER_HEADED", raising=False)
         else:
             monkeypatch.setenv("SOFASCORE_BROWSER_HEADED", raw)
-        assert _from_process_env().client.browser_headed is (not challenge_solver._headless()), repr(raw)
+        assert _from_process_env().client.browser_headed is (not bridge._headless()), repr(raw)
 
 
 @pytest.mark.parametrize(
@@ -1255,7 +1254,7 @@ def test_activate_takes_an_explicit_file_and_flags(active, tmp_path, monkeypatch
 def test_secrets_named_by_the_config_file_reach_today_s_readers_and_are_masked(active, monkeypatch):
     """
     token_env / proxy_env başka bir değişkeni gösterse de değer, belirteci ve proxy'yi bugün ortamdan okuyan
-    koda (sofascore_scraper/web/security.py, sofascore_scraper/challenge_solver.py) bugünkü adıyla ulaşır ve loglarda maskelenir.
+    koda (sofascore_scraper/web/security.py, sofascore_scraper/client/bridge.py) bugünkü adıyla ulaşır ve loglarda maskelenir.
     """
     from sofascore_scraper import redact
 

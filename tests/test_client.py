@@ -42,7 +42,6 @@ from sofascore_scraper.match_fetcher import MatchFetcher
 from sofascore_scraper.season_fetcher import SeasonFetcher
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
 from sofascore_scraper.sports import DETAIL_SLICES
-from sofascore_scraper.watcher import MatchWatcher
 
 EVENT = {"id": 1, "status": {"type": "finished"}}
 
@@ -603,10 +602,10 @@ def test_request_context_restores_after_an_error() -> None:
 def test_an_answer_fetched_by_the_bridge_says_so(fake: FakeSofaScore, client: Client) -> None:
     fake.fail("/event/1", 403, body=CHALLENGE_BODY)
 
-    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", return_value={"event": EVENT}):
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", return_value={"event": EVENT}):
         through_bridge = client.get_sync("/event/1")
         browser_first = client.get_sync("/event/1")  # "önce tarayıcı" modu: curl denenmez
-    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", AsyncMock(return_value={"__404__": True})):
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser", AsyncMock(return_value={"__404__": True})):
         missing = _get(client, "/event/1", "async")
 
     assert (through_bridge.status, through_bridge.via, through_bridge.http_status) == (SLICE_OK, "bridge", None)
@@ -620,7 +619,7 @@ def test_a_refused_request_that_the_bridge_cannot_rescue_is_failed_via_curl(
 ) -> None:
     fake.fail("/event/1", 403, body=CHALLENGE_BODY)
 
-    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", return_value=None):
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", return_value=None):
         outcome = client.get_sync("/event/1", retries=1)
 
     assert (outcome.status, outcome.reason, outcome.http_status, outcome.via) == (SLICE_FAILED, "403", 403, "curl")
@@ -794,30 +793,27 @@ def test_the_default_api_base_is_unchanged(tmp_path: Path, sent_urls: List[str],
     assert {seasons.base_url, matches.base_url, details.base_url} == {DEFAULT_BASE}
 
     seasons.fetch_seasons_checked(17)
-    MatchWatcher._default_fetch("/sport/football/events/live")
     utils.make_api_request("/event/1/statistics")
     details.fetch_match_data("1")
 
     assert sent_urls == [
         f"{DEFAULT_BASE}/unique-tournament/17/seasons",
-        f"{DEFAULT_BASE}/sport/football/events/live",
         f"{DEFAULT_BASE}/event/1/statistics",
     ]
     assert f"{DEFAULT_BASE}/event/1" in sent_async_urls
     assert all(url.startswith(f"{DEFAULT_BASE}/event/1") for url in sent_async_urls)
 
 
-def test_a_configured_api_base_reaches_every_fetcher_and_the_watcher(
+def test_a_configured_api_base_reaches_every_fetcher(
     tmp_path: Path, sent_urls: List[str], sent_async_urls: List[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Eskiden yalnızca göreli yollar API_BASE_URL'i kullanıyordu; sezon, detay ve izleyici istekleri sabit adrese gidiyordu."""
+    """Eskiden yalnızca göreli yollar API_BASE_URL'i kullanıyordu; sezon ve detay istekleri sabit adrese gidiyordu."""
     monkeypatch.setattr(utils, "API_BASE_URL", OTHER_BASE)
     seasons, matches, details = _fetchers(tmp_path)
 
     assert {seasons.base_url, matches.base_url, details.base_url} == {OTHER_BASE}
 
     seasons.fetch_seasons_checked(17)
-    MatchWatcher._default_fetch("/sport/football/events/live")
     utils.make_api_request("/event/1/h2h")
     Client().get_sync(endpoints.event(1))
     monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)  # EVENT'in durum kodu yok: dilimleri de istensin
@@ -825,7 +821,6 @@ def test_a_configured_api_base_reaches_every_fetcher_and_the_watcher(
 
     assert sent_urls == [
         f"{OTHER_BASE}/unique-tournament/17/seasons",
-        f"{OTHER_BASE}/sport/football/events/live",
         f"{OTHER_BASE}/event/1/h2h",
         f"{OTHER_BASE}/event/1",
     ]
@@ -855,8 +850,8 @@ def test_the_bridge_fallback_gets_the_full_address(
         async with utils.create_session_async() as session:
             return await utils.make_api_request_async(session, path)
 
-    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", sync_bridge), \
-            patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", async_bridge):
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", sync_bridge), \
+            patch("sofascore_scraper.client.bridge.fetch_api_via_browser", async_bridge):
         assert utils.make_api_request("/event/1") == {"ok": 1}  # 403 challenge → köprü
         assert utils.make_api_request("/event/2") == {"ok": 1}  # "önce tarayıcı" modu
         monkeypatch.setattr(utils, "_browser_first_until", 0.0)

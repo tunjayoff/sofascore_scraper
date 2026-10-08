@@ -5,7 +5,7 @@ BrowserBridge ve Turnstile çözücü testleri.
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from sofascore_scraper.challenge_solver import (
+from sofascore_scraper.client.bridge import (
     BrowserBridge,
     apply_token_to_headers,
     fetch_api_via_browser,
@@ -64,7 +64,7 @@ def test_make_api_request_falls_back_to_browser_bridge_on_challenge():
     expected_data = {"seasons": [{"id": 1, "name": "Test Season"}]}
 
     with patch("sofascore_scraper.utils.cffi_requests.get", return_value=mock_response), \
-         patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", return_value=expected_data):
+         patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", return_value=expected_data):
         res = make_api_request("/unique-tournament/17/seasons")
         assert res == expected_data
 
@@ -82,7 +82,7 @@ async def test_make_api_request_async_falls_back_to_browser_bridge_on_challenge(
 
     expected_data = {"events": [{"id": 12345}]}
 
-    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", new_callable=AsyncMock, return_value=expected_data):
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser", new_callable=AsyncMock, return_value=expected_data):
         res = await make_api_request_async(mock_session, "/sport/football/events/live")
         assert res == expected_data
 
@@ -90,7 +90,7 @@ async def test_make_api_request_async_falls_back_to_browser_bridge_on_challenge(
 def test_browser_calls_share_one_event_loop_across_callers():
     """Async çağrılar çağıranın döngüsünde değil, sync yol ile aynı arka plan döngüsünde çalışmalı."""
     import asyncio
-    from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync
+    from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
 
     loops = []
 

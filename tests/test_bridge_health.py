@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 from sofascore_scraper import bridge_health
 from sofascore_scraper.bridge_health import BLOCKED, DEGRADED, OK, BridgeHealth
 from sofascore_scraper.i18n import I18nManager

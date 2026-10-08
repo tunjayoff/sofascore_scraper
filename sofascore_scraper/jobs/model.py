@@ -106,7 +106,7 @@ class Job:
     cancel_requested: bool = False
 
 
-# Bugünkü `jobs.status` sütununun alabildiği değerler (sofascore_scraper/web/jobs.py) ve karşılıkları.
+# Bugünkü `jobs.status` sütununun alabildiği değerler (sofascore_scraper/store/jobs.py) ve karşılıkları.
 # Canlı yansıdaki büyük harfli biçimler (Running, Completed, Failed, Cancelled) da aynı tabloya düşer.
 LEGACY_STATUS_TO_STATE: Mapping[str, JobState] = MappingProxyType(
     {

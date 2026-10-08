@@ -173,7 +173,7 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 from sofascore_scraper.web.api import v1  # noqa: E402
-from sofascore_scraper.web.jobs import JobStoreConflict  # noqa: E402
+from sofascore_scraper.store import JobStoreConflict  # noqa: E402
 
 # 2.x'in `/api` yolları 3.1'de kalktı (P30): HTTP API yalnızca `/api/v1`dir
 app.include_router(v1.router)

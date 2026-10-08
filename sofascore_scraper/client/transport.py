@@ -172,7 +172,7 @@ def get_sofa_captcha_token() -> Optional[str]:
     if env_token:
         return env_token
     try:
-        from sofascore_scraper.challenge_solver import get_cached_token
+        from sofascore_scraper.client.bridge import get_cached_token
         return get_cached_token()
     except Exception:
         return None
@@ -345,7 +345,7 @@ def _request_sync(
     breaker.check(url)
     if _browser_first():
         raise_if_cancelled()
-        from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync
+        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
         data = fetch_api_via_browser_sync(full_url)
         if data is not None:
             trace.bridge()
@@ -400,7 +400,7 @@ def _request_sync(
                 if "challenge" in response.text:
                     logger.info("Turnstile challenge detected; fetching through the browser bridge")
                     try:
-                        from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync
+                        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
                         browser_data = fetch_api_via_browser_sync(full_url)
                         if browser_data is not None:
                             trace.bridge()
@@ -541,7 +541,7 @@ async def _request_async(
         raise_if_cancelled()
         browser_data = None
         try:
-            from sofascore_scraper.challenge_solver import fetch_api_via_browser
+            from sofascore_scraper.client.bridge import fetch_api_via_browser
             async with semaphore:
                 # Semafor beklenirken iş durdurulmuş olabilir (aşağıdaki curl yoluyla aynı kural)
                 raise_if_cancelled()
@@ -616,7 +616,7 @@ async def _request_async(
                 logger.info("Turnstile challenge detected; fetching through the browser bridge")
                 browser_data = None
                 try:
-                    from sofascore_scraper.challenge_solver import fetch_api_via_browser
+                    from sofascore_scraper.client.bridge import fetch_api_via_browser
                     browser_data = await fetch_api_via_browser(full_url)
                 except Exception as te:
                     logger.debug(f"Browser bridge error: {te!r}")

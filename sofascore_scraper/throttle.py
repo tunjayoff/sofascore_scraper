@@ -6,7 +6,7 @@ indirme: MAX_CONCURRENT; program çekme: kendi semaforu). Aynı anda çalışan 
 başına bir `--watch`, web işi, cron'dan `--refresh-only`) birbirini görmediği için toplam
 hız süreç sayısıyla çarpılıyordu. Buradaki sınırlayıcı, SofaScore'a giden her isteğin
 geçtiği en alt noktalardan çağrılır (sofascore_scraper/client/transport.py: curl istekleri;
-sofascore_scraper/challenge_solver.py: tarayıcı köprüsünün fetch'i) ve durumunu bir dosyada tutar: aynı kullanıcının tüm süreçleri
+sofascore_scraper/client/bridge.py: tarayıcı köprüsünün fetch'i) ve durumunu bir dosyada tutar: aynı kullanıcının tüm süreçleri
 tek bütçeyi paylaşır.
 
 Algoritma (GCRA): dosyada "sıradaki boş an" (tat) durur. Her istek kilidi alır, kendi anını

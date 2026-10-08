@@ -58,7 +58,7 @@ def run_once(matches: int, latency: float, sport: str, rate: str) -> Dict[str, f
         else:
             os.environ["REQUEST_RATE_LIMIT"] = rate
 
-        import sofascore_scraper.challenge_solver as cs
+        from sofascore_scraper.client import bridge as cs
         import sofascore_scraper.utils as utils
         from sofascore_scraper import throttle
         from sofascore_scraper.config_manager import ConfigManager

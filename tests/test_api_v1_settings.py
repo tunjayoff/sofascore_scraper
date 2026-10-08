@@ -32,7 +32,7 @@ from sofascore_scraper.store import LeaseHeld, SchemaTooNew, open_store
 from sofascore_scraper.web import deps
 from sofascore_scraper.web.api.v1 import settings as settings_v1
 from sofascore_scraper.web.app import app
-from sofascore_scraper.web.jobs import default_db_path
+from sofascore_scraper.store import default_db_path
 
 client = TestClient(app)
 store = deps.job_store()

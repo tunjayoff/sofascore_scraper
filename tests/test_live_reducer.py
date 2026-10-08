@@ -1,12 +1,12 @@
 """
 Canlı indirgeyicinin goldenları (plan maddesi P23; docs/design/02-services.md bölüm 8.1).
 
-Senaryolar tests/test_watcher.py'deki durumlardan ve iki boşluk durumundan (ara kareler görülmeden
+Senaryolar 2.x izleyicisinin testlerindeki durumlardan ve iki boşluk durumundan (ara kareler görülmeden
 canlı → bitti; birden çok adım sıçrayan skor) kurulur. Her adım bir gözlemdir: (maç nesnesi, hangi istek
 gösterdi, an). Golden her adımda üretilen 2.x olaylarını ve adımdan sonraki maç durumunu tutar.
 
-Golden önce bugünkü izleyiciyle (`MatchWatcher._observe`) yazıldı; indirgeyici ondan çıkarıldığında aynı
-golden ona karşı da koşar.
+Golden önce 2.x izleyicisiyle (`MatchWatcher._observe`) yazıldı; indirgeyici ondan çıkarıldığında aynı
+golden ona karşı da koştu. İzleyici (sofascore_scraper/watcher.py) 3.1'de kalktı (P30): golden artık indirgeyicinindir.
 
 Yeniden üretmek: `REGEN_LIVE_GOLDENS=1 python -m pytest tests/test_live_reducer.py` (fark gözden geçirilmeden
 commit edilmez: golden değiştiyse davranış değişmiştir).
@@ -141,7 +141,7 @@ def _stuck_cleared_by_a_new_start() -> Tuple[str, List[Step]]:
 
 
 def _tennis_stuck_from_play_start() -> Tuple[str, List[Step]]:
-    from sofascore_scraper.watcher import play_start
+    from sofascore_scraper.services.live.reducer import play_start
 
     ev = fx(TN_LATE, 810)
     begin = play_start(ev)
@@ -195,24 +195,6 @@ def plain(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False))
 
 
-def run_watcher(tmp_path: Path, sport: str, steps: List[Step]) -> List[Dict[str, Any]]:
-    """Bugünkü izleyiciyle: her adımda `_observe`, üretilen olaylar geri çağrıdan."""
-    from sofascore_scraper.watcher import MatchWatcher
-
-    now = [steps[0][2]]
-    emitted: List[Dict[str, Any]] = []
-    eid = steps[0][0]["id"]
-    watcher = MatchWatcher(sport, event_ids=[eid], data_dir=str(tmp_path), fetch_json=lambda path: None,
-                           clock=lambda: now[0], sleep=lambda s: None, on_event=emitted.append)
-    out = []
-    for event, via, at in steps:
-        now[0] = at
-        before = len(emitted)
-        watcher._observe(copy.deepcopy(event), via)
-        out.append({"events": plain(emitted[before:]), "state": plain(watcher.state[str(eid)])})
-    return out
-
-
 def scenario_results(tmp_path: Path, runner: Callable[[Path, str, List[Step]], List[Dict[str, Any]]]
                      ) -> Dict[str, Any]:
     results = {}
@@ -236,10 +218,6 @@ def check_golden(actual: Dict[str, Any]) -> None:
     assert GOLDEN.exists(), f"golden missing: {GOLDEN} (run with {REGEN_ENV}=1 and review the result)"
     assert json.loads(text) == json.loads(GOLDEN.read_text(encoding="utf-8")), \
         f"{GOLDEN.name} differs; if the change is intended, regenerate with {REGEN_ENV}=1"
-
-
-def test_the_watcher_matches_the_golden(tmp_path: Path, fixed_window: None) -> None:
-    check_golden(scenario_results(tmp_path, run_watcher))
 
 
 def test_every_scenario_emits_what_its_name_says(tmp_path: Path, fixed_window: None) -> None:
@@ -287,8 +265,7 @@ def run_reducer(tmp_path: Path, sport: str, steps: List[Step]) -> List[Dict[str,
 
 
 def test_the_reducer_matches_the_golden(tmp_path: Path, fixed_window: None) -> None:
-    golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
-    assert scenario_results(tmp_path, run_reducer) == golden
+    check_golden(scenario_results(tmp_path, run_reducer))
 
 
 def test_the_window_is_read_only_for_the_first_completion() -> None:

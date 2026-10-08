@@ -24,7 +24,7 @@ from sofascore_scraper.refresh import SCORE_CHANGES_FILE, diff_basic
 from sofascore_scraper.sports import event_sport_slug, slices_for
 from sofascore_scraper.status import OBSERVATION_KEY
 from sofascore_scraper.store import open_store
-from sofascore_scraper.web.progress import JobProgress
+from sofascore_scraper.jobs.progress import JobProgress
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 MID = "16950622"

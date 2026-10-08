@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 import sofascore_scraper.utils as utils
 from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError
 from sofascore_scraper.match_data_fetcher import MatchDataFetcher
@@ -344,7 +344,7 @@ def test_browser_first_mode_skips_curl(monkeypatch):
     session = _session(Resp(403, text="challenge"))
     browser = AsyncMock(return_value={"ok": 1})
     monkeypatch.setattr(utils, "_browser_first_until", 0.0)
-    with _patched(), patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", browser):
+    with _patched(), patch("sofascore_scraper.client.bridge.fetch_api_via_browser", browser):
         assert _run(utils.make_api_request_async(session, "/a")) == {"ok": 1}
         assert utils._browser_first()
         assert _run(utils.make_api_request_async(session, "/b")) == {"ok": 1}

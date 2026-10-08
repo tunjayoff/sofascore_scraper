@@ -14,12 +14,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 import sofascore_scraper.utils as utils
 from sofascore_scraper import throttle
 from sofascore_scraper.client import request_context, transport
 from sofascore_scraper.throttle import RequestThrottle, Reservation, advance, put_back, take
-from sofascore_scraper.watcher import MatchWatcher
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -1230,91 +1229,63 @@ def test_one_cancelled_job_does_not_stop_a_shared_solve(monkeypatch):
             cs._run_sync(cs._wait_for_slot(), 5.0)
 
 
-# --- izleyici: 1 sn aralık ortak bütçenin "watch" şeridinden gelir -----------------------------
-
-def _fake_api(path):
-    return {"events": []} if path.endswith("/events/live") else None
+# --- canlı servis: 1 sn aralık ortak bütçenin "watch" şeridinden gelir ---------------------------------
+# (sofascore_scraper/services/live/supervisor.py; 2.x izleyicisi sofascore_scraper/watcher.py aynı şeridi kullanıyordu)
 
 
-def test_watcher_with_injected_fetch_keeps_its_lane_in_process(shared_dir, tmp_path):
+def _watch_lane(clock: "Clock", *, shared: bool = True) -> RequestThrottle:
+    from sofascore_scraper.services.live import supervisor
+
+    return throttle.lane(supervisor.WATCH_THROTTLE_LANE, supervisor.MIN_REQUEST_SPACING_SECONDS, shared=shared,
+                         clock=clock, sleep=clock.sleep)
+
+
+def test_the_watch_lane_with_an_injected_fetch_stays_in_process(shared_dir, tmp_path):
     clock = Clock()
-    w = MatchWatcher("football", league_ids=[17], data_dir=str(tmp_path / "d"), fetch_json=_fake_api,
-                     clock=clock, sleep=clock.sleep)
+    lane = _watch_lane(clock, shared=False)  # sahte fetch verilmiş servis: ortak dosyaya dokunmaz
     for _ in range(3):
-        w._get("/sport/football/events/live")
+        lane.wait()
     assert clock.sleeps == [1.0, 1.0]
-    assert not os.path.exists(shared_dir / "watch.json")  # sahte fetch: ortak dosyaya dokunmaz
+    assert not os.path.exists(shared_dir / "watch.json")
 
 
-def test_watchers_in_separate_processes_share_one_second_spacing(shared_dir, tmp_path):
-    """
-    Spor başına bir --watch süreci (issue #16): gerçek fetch kullanan izleyiciler aynı şeridi
-    paylaşır, toplamda istekler arası ≥ 1 sn kalır. İki izleyici iki süreci temsil eder.
-    """
+def test_watch_lanes_of_separate_processes_share_one_second_spacing(shared_dir, tmp_path):
+    """Spor başına bir canlı süreç (issue #16): şerit paylaşılır, toplamda istekler arası ≥ 1 sn kalır."""
     clock = Clock()
     stamps = []
-
-    def fetch(path):
-        stamps.append(clock())
-        return _fake_api(path)
-
-    watchers = []
-    for sport in ("football", "tennis"):
-        with patch.object(MatchWatcher, "_default_fetch", staticmethod(fetch)):
-            watchers.append(MatchWatcher(sport, league_ids=[17], data_dir=str(tmp_path / "d"),
-                                         clock=clock, sleep=clock.sleep))
+    lanes = [_watch_lane(clock), _watch_lane(clock)]  # iki süreç
     for _ in range(3):
-        for w in watchers:
-            w._get(f"/sport/{w.sport}/events/live")
+        for lane in lanes:
+            lane.wait()
+            stamps.append(clock())
     assert len(stamps) == 6
     assert all(b - a >= 1.0 for a, b in zip(stamps, stamps[1:], strict=False))
     assert os.path.exists(shared_dir / "watch.json")
 
 
-def test_watchers_keep_one_second_spacing_with_the_default_budget(shared_dir, tmp_path, monkeypatch):
-    """REQUEST_RATE_LIMIT verilmemişken (5 istek/sn) izleyici şeridi değişmez: toplamda ≥ 1 sn, ortak dosya."""
+def test_watch_lanes_keep_one_second_spacing_with_the_default_budget(shared_dir, tmp_path, monkeypatch):
+    """REQUEST_RATE_LIMIT verilmemişken (5 istek/sn) şerit değişmez: toplamda ≥ 1 sn, ortak dosya."""
     monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
     clock = Clock()
     stamps = []
-
-    def fetch(path):
-        stamps.append(clock())
-        return _fake_api(path)
-
-    watchers = []
-    for sport in ("football", "tennis"):
-        with patch.object(MatchWatcher, "_default_fetch", staticmethod(fetch)):
-            watchers.append(MatchWatcher(sport, league_ids=[17], data_dir=str(tmp_path / "d"),
-                                         clock=clock, sleep=clock.sleep))
+    lanes = [_watch_lane(clock), _watch_lane(clock)]
     for _ in range(3):
-        for w in watchers:
-            w._get(f"/sport/{w.sport}/events/live")
+        for lane in lanes:
+            lane.wait()
+            stamps.append(clock())
     assert [b - a for a, b in zip(stamps, stamps[1:], strict=False)] == [1.0] * 5
     assert os.path.exists(shared_dir / "watch.json")
 
 
-def test_watcher_keeps_private_spacing_when_shared_budget_is_off(shared_dir, tmp_path, monkeypatch):
-    """REQUEST_RATE_LIMIT=0: ortak dosya yok, ama izleyicinin 1 sn aralığı (eski davranış) sürer."""
+def test_the_watch_lane_keeps_private_spacing_when_the_shared_budget_is_off(shared_dir, tmp_path, monkeypatch):
+    """REQUEST_RATE_LIMIT=0: ortak dosya yok, ama 1 sn aralık (eski davranış) sürer."""
     monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
     clock = Clock()
-    with patch.object(MatchWatcher, "_default_fetch", staticmethod(_fake_api)):
-        w = MatchWatcher("football", league_ids=[17], data_dir=str(tmp_path / "d"), clock=clock, sleep=clock.sleep)
+    lane = _watch_lane(clock)
     for _ in range(3):
-        w._get("/sport/football/events/live")
+        lane.wait()
     assert clock.sleeps == [1.0, 1.0]
     assert not os.path.exists(shared_dir / "watch.json")
-
-
-def test_watcher_default_fetch_also_passes_the_api_lane(shared_dir, tmp_path, monkeypatch):
-    """İzleyicinin gerçek isteği make_api_request'ten geçer: genel bütçeden de sıra alır."""
-    calls = _reserve_counter(monkeypatch)
-    clock = Clock()
-    w = MatchWatcher("football", league_ids=[17], data_dir=str(tmp_path / "d"), clock=clock, sleep=clock.sleep)
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(200, {"events": []})):
-        assert w._get("/sport/football/events/live") == {"events": []}
-    assert len(calls) == 1
 
 
 # --- ayarlar uç noktası -----------------------------------------------------------------------

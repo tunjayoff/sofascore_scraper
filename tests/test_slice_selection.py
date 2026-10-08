@@ -41,7 +41,7 @@ from sofascore_scraper.sports import SliceSelection, SliceSpec, UnknownSliceName
 from sofascore_scraper.store import FollowSpec, Scope, Store, open_store
 from sofascore_scraper.web import deps
 from sofascore_scraper.web.app import app
-from sofascore_scraper.web.jobs import default_db_path
+from sofascore_scraper.store import default_db_path
 
 client = TestClient(app)
 

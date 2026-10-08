@@ -3,13 +3,11 @@ sofascore_scraper/store/streams.py ve sofascore_scraper/store/watch.py: sıra nu
 (docs/design/01-storage.md bölüm 2.3 ve 9.3; plan maddesi ST-18).
 
 Süreçler arası testler gerçek ikinci süreçler başlatır (aynı state.db'ye ekleyen iki süreç, başka sürecin
-eklemesiyle uyanan `wait`). Son bölüm izleyicinin (sofascore_scraper/watcher.py) durumunu ve olaylarını Store üzerinden
-tuttuğunu denetler; izleyicinin davranışı tests/test_watcher.py'dedir. Tümü çevrimdışı.
+eklemesiyle uyanan `wait`). Canlı servisin durumu ve olayları tests/test_live_service.py'dedir (2.x izleyicisi,
+sofascore_scraper/watcher.py, 3.1'de kalktı: P30). Tümü çevrimdışı.
 """
 from __future__ import annotations
 
-import copy
-import datetime as dt
 import json
 import os
 import subprocess
@@ -21,9 +19,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-import conftest
 import sofascore_scraper.store
-from sofascore_scraper import watcher as watcher_mod
 from sofascore_scraper.store import (
     LayoutError,
     Store,
@@ -37,7 +33,6 @@ from sofascore_scraper.store import (
     open_store,
 )
 from sofascore_scraper.store import legacy, streams, watch
-from sofascore_scraper.watcher import MatchWatcher
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DAY = 86400
@@ -764,251 +759,6 @@ def test_legacy_files_refuse_a_sport_that_is_not_a_file_name(store: Store, data_
     assert sorted(p.name for p in data_dir.iterdir()) == [".meta"]
 
 
-def test_legacy_event_lines_are_appended_as_utf8_with_lf(store: Store, data_dir: Path) -> None:
-    path = data_dir / "watch_events.jsonl"
-    store.watch.append_legacy_events([])
-    assert not path.exists()
-    store.watch.append_legacy_events(['{"type": "stuck", "ad": "Gençlerbirliği"}'])
-    store.watch.append_legacy_events(['{"n": 2}', '{"n": 3}'])
-    assert path.read_bytes() == '{"type": "stuck", "ad": "Gençlerbirliği"}\n{"n": 2}\n{"n": 3}\n'.encode("utf-8")
-    path.unlink()
-    path.mkdir()
-    with pytest.raises(StoreError):
-        store.watch.append_legacy_events(["{}"])
-
-
-# --- izleyici Store üzerinden çalışır ---------------------------------------------------------------
-
-STATUS_FIXTURES = Path(__file__).parent / "fixtures" / "status"
-LIVE_FOOTBALL = "football/A_inprogress-7-2nd-half__17018572"
-DONE_FOOTBALL = "football/A_finished-100-ended__17099711"
-LIVE_TENNIS = "tennis/A_inprogress-9-2nd-set__17208186"
-
-
-def fixture_event(rel: str, event_id: int, tournament_id: Any = None) -> Dict[str, Any]:
-    event = json.loads((STATUS_FIXTURES / f"{rel}.json").read_text(encoding="utf-8"))
-    event["id"] = event_id
-    if tournament_id is not None:
-        event["tournament"] = {"uniqueTournament": {"id": tournament_id}}
-    return event
-
-
-def fixture_time(rel: str) -> float:
-    return dt.datetime.fromisoformat(fixture_event(rel, 0)["fetched_at_utc"]).timestamp()
-
-
-class FakeApi:
-    """Canlı liste ve /event yanıtları; ikisi de testten değiştirilebilir."""
-
-    def __init__(self, sport: str, live_list: List[Dict[str, Any]], events: Dict[int, Dict[str, Any]]) -> None:
-        self.sport = sport
-        self.live_list = live_list
-        self.events = events
-        self.calls: List[str] = []
-
-    def __call__(self, path: str) -> Any:
-        self.calls.append(path)
-        if path == f"/sport/{self.sport}/events/live":
-            return {"events": self.live_list}
-        event = self.events.get(int(path.rsplit("/", 1)[-1]))
-        return {"event": event} if event else None
-
-
-class Clock:
-    def __init__(self, now: float) -> None:
-        self.now = now
-
-    def __call__(self) -> float:
-        return self.now
-
-    def sleep(self, seconds: float) -> None:
-        self.now += seconds
-
-
-@pytest.fixture
-def watched_dir(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Veri dizini `DATA_DIR` olarak da bildirilir: çalışma zamanı sınır denetimi bu dizine erişimleri izler."""
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
-    return data_dir
-
-
-def make_watcher(data_dir: Path, api: FakeApi, clock: Clock, **kwargs: Any) -> MatchWatcher:
-    return MatchWatcher(api.sport, data_dir=str(data_dir), fetch_json=api, clock=clock, sleep=clock.sleep, **kwargs)
-
-
-def file_events(data_dir: Path) -> List[Dict[str, Any]]:
-    path = data_dir / watcher_mod.WATCH_EVENTS_FILE
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
-
-
-def test_watcher_names_equal_the_store_names() -> None:
-    assert watcher_mod.WATCH_EVENTS_FILE == watch.LEGACY_EVENTS_FILE
-    assert watcher_mod.WATCH_STATE_FILE == watch.LEGACY_STATE_FILE
-    assert watcher_mod.LIVE_STREAM == streams.LIVE_STREAM
-
-
-def test_watcher_events_reach_the_live_stream_the_file_and_the_callback(watched_dir: Path) -> None:
-    live_event = fixture_event(LIVE_FOOTBALL, 500, tournament_id=17)
-    goal = copy.deepcopy(live_event)
-    goal["homeScore"]["display"] = goal["homeScore"]["current"] = live_event["homeScore"]["current"] + 1
-    done = fixture_event(DONE_FOOTBALL, 500, tournament_id=17)
-    done["startTimestamp"] = live_event["startTimestamp"]
-    api = FakeApi("football", [live_event], {500: live_event})
-    received: List[Dict[str, Any]] = []
-    watcher = make_watcher(watched_dir, api, Clock(fixture_time(LIVE_FOOTBALL)), event_ids=[500],
-                           on_event=received.append)
-    watcher.start()
-    watcher.tick()
-    api.live_list[:] = [goal]
-    watcher.tick()  # gol
-    api.live_list[:] = []
-    api.events[500] = done
-    watcher.tick()  # listeden düştü → bitti
-
-    lines = file_events(watched_dir)
-    assert [line["type"] for line in lines] == ["score_changed", "status_changed"]
-    assert received == lines  # geri çağrıya ve dosyaya aynı satırlar gider (2.x biçimi)
-    batch = open_store(watched_dir).streams.read(streams=["live"])
-    # Akış aynı olayları canlı servisin biçiminde taşır (P23): `data` ve yinelenme anahtarı
-    assert [record.type for record in batch.events] == ["live.score_changed", "live.status_changed"]
-    assert all((r.stream, r.event_id, r.sport, r.tournament_id, r.source) == ("live", 500, "football", 17, "poll")
-               for r in batch.events)
-    assert all(r.dedup_key for r in batch.events)
-    assert seqs_of(batch) == sorted(set(seqs_of(batch))) and not batch.gap
-    goal_line, done_line = lines
-    assert batch.events[0].data["from"] == {"home": goal_line["from"][0], "away": goal_line["from"][1]}
-    assert batch.events[0].data["to"] == {"home": goal_line["to"][0], "away": goal_line["to"][1]}
-    done_data = batch.events[1].data
-    assert (done_data["from"], done_data["to"], done_data["provisional"], done_data["change_ts"]) == \
-        ("live", "completed", True, done_line["change_ts"])
-    assert done_data["score"]["family"] == "football"
-
-
-def test_watch_events_file_gets_lf_line_endings_on_every_platform(watched_dir: Path) -> None:
-    not_started = fixture_event("football/A_notstarted-0-not-started__17184998", 700)
-    api = FakeApi("football", [], {700: not_started})
-    make_watcher(watched_dir, api, Clock(not_started["startTimestamp"] + 5 * 3600), event_ids=[700]).start()
-
-    data = (watched_dir / "watch_events.jsonl").read_bytes()
-    assert data.count(b"\n") == 1 and data.endswith(b"\n") and b"\r" not in data
-    assert json.loads(data)["type"] == "stuck"
-    stuck = open_store(watched_dir).streams.read(types=["live.stuck"]).events
-    assert len(stuck) == 1 and stuck[0].tournament_id is None  # turnuvası bilinmeyen maç
-
-
-def test_watcher_state_is_only_in_the_store(watched_dir: Path) -> None:
-    live_event = fixture_event(LIVE_FOOTBALL, 500)
-    done = fixture_event(DONE_FOOTBALL, 500)
-    done["startTimestamp"] = live_event["startTimestamp"]
-    api = FakeApi("football", [live_event], {500: live_event})
-    clock = Clock(fixture_time(LIVE_FOOTBALL))
-    watcher = make_watcher(watched_dir, api, clock, event_ids=[500])
-    watcher.start()
-    watcher.tick()
-
-    stored = open_store(watched_dir).watch.load("football")
-    assert stored == watcher.state and stored["500"]["class"] == "live"
-    assert not (watched_dir / "watch_state_football.json").exists()  # 2.x kopyası artık yazılmaz (P23)
-
-    # Yeniden başlayan izleyici durumunu Store'dan alır
-    restarted = make_watcher(watched_dir, api, clock, event_ids=[500])
-    assert restarted.state == stored
-    before = len(api.calls)
-    restarted.start()  # durumda olduğu için /event başlangıç okuması yok
-    assert api.calls[before:] == []
-    api.live_list[:] = []
-    api.events[500] = done
-    restarted.tick()
-    again = make_watcher(watched_dir, api, clock, event_ids=[500])
-    again.start()
-    again.tick()
-    assert [line["type"] for line in file_events(watched_dir)] == ["status_changed"]  # geçiş yinelenmedi
-    assert len(open_store(watched_dir).streams.read().events) == 1
-    assert not (watched_dir / "watch_state_football.json").exists()
-
-
-def test_watcher_imports_a_2x_state_file_on_its_first_run(watched_dir: Path) -> None:
-    live_event = fixture_event(LIVE_FOOTBALL, 500)
-    done = fixture_event(DONE_FOOTBALL, 500)
-    done["startTimestamp"] = live_event["startTimestamp"]
-    watched_dir.mkdir()
-    old_state = {"500": {"class": "live", "done": False, "start_ts": live_event["startTimestamp"],
-                         "tournament_id": None, "score": [1, 0], "near_end": True, "stuck": False}}
-    (watched_dir / "watch_state_football.json").write_text(json.dumps(old_state, indent=2), encoding="utf-8")
-    api = FakeApi("football", [], {500: done})
-
-    watcher = make_watcher(watched_dir, api, Clock(fixture_time(LIVE_FOOTBALL)), event_ids=[500])
-    assert watcher.state == old_state  # 2.x'in bıraktığı yerden
-    watcher.start()
-    watcher.tick()
-
-    lines = file_events(watched_dir)
-    assert [(line["type"], line["from"], line["to"]) for line in lines] == [("status_changed", "live", "completed")]
-    store = open_store(watched_dir)
-    assert store.watch.load("football")["500"]["class"] == "completed"
-    assert import_record(store, "football")["imported"] == 1
-    assert store.watch.import_legacy("football") is None
-
-
-def test_watchers_of_two_sports_share_the_log_and_keep_separate_state(watched_dir: Path) -> None:
-    football = fixture_event("football/A_notstarted-0-not-started__17184998", 700)
-    tennis = fixture_event("tennis/A_notstarted-0-not-started__17204702", 820)
-    late = max(football["startTimestamp"], tennis["startTimestamp"]) + 7 * 3600
-    make_watcher(watched_dir, FakeApi("football", [], {700: football}), Clock(late), event_ids=[700]).start()
-    make_watcher(watched_dir, FakeApi("tennis", [], {820: tennis}), Clock(late), event_ids=[820]).start()
-
-    store = open_store(watched_dir)
-    assert set(store.watch.load("football")) == {"700"} and set(store.watch.load("tennis")) == {"820"}
-    events = store.streams.read().events
-    assert [(e.type, e.event_id, e.sport) for e in events] == \
-        [("live.stuck", 700, "football"), ("live.stuck", 820, "tennis")]
-    assert events[0].seq < events[1].seq
-    assert [e.event_id for e in store.streams.read(sport="tennis").events] == [820]
-    assert [line["event_id"] for line in file_events(watched_dir)] == [700, 820]
-
-
-def test_watcher_saves_only_the_rows_that_changed(watched_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    live_event = fixture_event(LIVE_TENNIS, 600)
-    other = fixture_event(LIVE_TENNIS, 601)
-    api = FakeApi("tennis", [live_event, other], {600: live_event, 601: other})
-    clock = Clock(fixture_time(LIVE_TENNIS))
-    watcher = make_watcher(watched_dir, api, clock, event_ids=[600, 601])
-    saved: List[List[str]] = []
-    real_save = watcher._store.watch.save
-
-    def spy(name: str, state: Any, *, changed: Any = None) -> None:
-        saved.append(sorted(changed))
-        real_save(name, state, changed=changed)
-
-    monkeypatch.setattr(watcher._store.watch, "save", spy)
-    watcher.start()
-    watcher.tick()
-    assert saved == [["600", "601"], []]  # ikinci turda hiçbir şey değişmedi
-
-    changed_event = copy.deepcopy(live_event)
-    changed_event["homeScore"]["display"] = changed_event["homeScore"]["current"] = 9
-    api.live_list[:] = [changed_event, other]
-    watcher.tick()
-    assert saved[2] == ["600"]
-    assert open_store(watched_dir).watch.load("tennis") == watcher.state
-
-    restarted = make_watcher(watched_dir, api, clock, event_ids=[600, 601])
-    monkeypatch.setattr(restarted._store.watch, "save", spy)
-    restarted.start()
-    assert saved[3] == []  # yüklenen durum zaten kayıtlı olandır
-
-
-def test_watcher_reaches_the_data_dir_only_through_the_store(watched_dir: Path) -> None:
-    live_event = fixture_event(LIVE_FOOTBALL, 500)
-    done = fixture_event(DONE_FOOTBALL, 500)
-    api = FakeApi("football", [live_event], {500: live_event})
-    watcher = make_watcher(watched_dir, api, Clock(fixture_time(LIVE_FOOTBALL)), event_ids=[500])
-    watcher.start()
-    api.live_list[:] = []
-    api.events[500] = done
-    watcher.run()
-
-    assert sorted(p.name for p in watched_dir.iterdir()) == [".meta", "watch_events.jsonl"]
-    assert (watcher.events_path, watcher.state_path) == \
-        (os.path.join(str(watched_dir), "watch_events.jsonl"), os.path.join(str(watched_dir), "watch_state_football.json"))
-    assert [key for key in conftest.STORE_BOUNDARY.records if key[0] == "sofascore_scraper/watcher.py"] == []
+def test_the_legacy_event_file_is_no_longer_written(store: Store) -> None:
+    """2.x izleyicisinin `watch_events.jsonl` yazarı 3.1'de kalktı (P30)."""
+    assert not hasattr(store.watch, "append_legacy_events")

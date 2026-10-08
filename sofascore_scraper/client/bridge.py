@@ -10,9 +10,9 @@ sofascore.com/captcha.html sayfasındaki gömülü Turnstile'ı Scrapling'in sol
 özelliğiyle geçerek çözülür; sonuç sofa_captcha cookie'si ve JWT token'dır. Standart
 Playwright ile headless modda Turnstile hiç geçilemiyordu (ölçüm: 0/12 istek).
 
-Modül P24 ile sofascore_scraper/challenge_solver.py'den buraya taşındı. Eski ad (`sofascore_scraper.challenge_solver`) aynı modül
-nesnesinin takma adıdır: eski import'lar ve testlerin `monkeypatch.setattr(cs, ...)` atamaları bu modüle
-ulaşır. API kökü sofascore_scraper/client/transport.py'deki ayardan (`api_url`) gelir; köprü kendi kökünü tutmaz.
+Modül P24 ile sofascore_scraper/challenge_solver.py'den buraya taşındı; eski ad yalnızca FX-29'un araştırma betikleri için
+bir takma ad olarak durur (sofascore_scraper/challenge_solver.py).
+API kökü sofascore_scraper/client/transport.py'deki ayardan (`api_url`) gelir; köprü kendi kökünü tutmaz.
 
 İptal (docs/design/02-services.md 2.4; plan bölüm 15, satır 61 ve 92): köprünün sonucunu bekleyen çağıran kendi
 iptal kontrolüne de bakar, sync yolda (_run_sync, P24) ve her indirmenin geçtiği async yolda

@@ -2,7 +2,7 @@
 İş deposu: işlerin geçmişi (state.db'nin `jobs` ve `job_events` tabloları) ve çalışan işin bellek içi yansısı.
 
 2.x'te sofascore_scraper/web/jobs.py'de, `.meta/jobs.db` üzerinde duruyordu; yöntemler ve hata sınıfları aynen taşındı
-(docs/design/01-storage.md bölüm 2.3 ve 3.1). sofascore_scraper/web/jobs.py artık buradaki adları yeniden dışa açar.
+(docs/design/01-storage.md bölüm 2.3 ve 3.1). Eski içe aktarma yolu (sofascore_scraper/web/jobs.py) 3.1'de kalktı (P30).
 
   * Satırlar `.meta/state.db`'ye yazılır. `.meta/jobs.db`'ye 3.x dokunmaz: satırları bir kez, salt okunur
     içe aktarılır (`meta.imported_jobs_db` kaydı) ve dosya yerinde kalır; aynı dizinde başlatılan bir 2.x

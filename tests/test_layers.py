@@ -179,7 +179,7 @@ FACE_MAY_IMPORT = frozenset({"sofascore_scraper.services", "sofascore_scraper.jo
 # Web yüzünün bugün içe aktardığı başka modüller ve nedeni. Bir girdi, servisi geldiğinde silinir (2.x'in
 # `/api` yollarının girdileri P30'la gitti).
 WEB_ALSO_IMPORTS: Dict[str, str] = {
-    "sofascore_scraper.store": "hata sınıfları (StoreError, LeaseHeld, JobStoreConflict ...), iş deposu (sofascore_scraper/web/jobs.py) ve "
+    "sofascore_scraper.store": "hata sınıfları (StoreError, LeaseHeld, JobStoreConflict ...), iş deposu ve "
                  "`open_store`: rotalar depoyu açıp servise verir (deps.store)",
     "sofascore_scraper.schema": "şema v1 kayıtlarının yanıt modelleri (sofascore_scraper/web/api/v1/records.py)",
     "sofascore_scraper.sports": "spor kayıt defteri (`/sports`, lig sporları)",

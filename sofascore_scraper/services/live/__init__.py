@@ -10,8 +10,8 @@ Canlı izleme servisi (docs/design/02-services.md bölüm 8; plan maddesi P23).
     arbiter      spor başına kaynak hakemi (P24): SportArbiter; push sessizse yoklamaya döner
     direct_source doğrudan push istemcisi (P31, `--source direct`, uyarılı açık seçim): DirectSource
 
-`ssc watch` (sofascore_scraper/cli/commands/watch.py) servisi ön planda çalıştırır; 2.x'in `main.py --watch`ı (3.1'de kalktı)
-sofascore_scraper/watcher.py üzerinden aynı indirgeyiciyi ve kaynağı kullanır. Canlı verinin HTTP uç noktası yoktur: olaylar
+`ssc watch` (sofascore_scraper/cli/commands/watch.py) servisi ön planda çalıştırır; 2.x'in `main.py --watch`ı ve
+izleyicisi (sofascore_scraper/watcher.py) 3.1'de kalktı (P30). Canlı verinin HTTP uç noktası yoktur: olaylar
 olay günlüğüne yazılır ve sink'lerle (stdout, dosya, webhook) ya da `ssc events` ile okunur.
 """
 from __future__ import annotations

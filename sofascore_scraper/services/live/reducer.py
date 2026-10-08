@@ -2,7 +2,7 @@
 Canlı indirgeyici: bir maçın son bilinen durumu + yeni gözlem → yeni durum + olaylar
 (docs/design/02-services.md bölüm 8.1). Saf işlevdir: ağa, depoya ve saate dokunmaz; anı gözlem taşır.
 
-Kural 2.x izleyicisinin `MatchWatcher._observe` yöntemidir (bugün `sofascore_scraper/watcher.py` bunu çağırır):
+Kural 2.x izleyicisinin `MatchWatcher._observe` yöntemidir (izleyici, sofascore_scraper/watcher.py, 3.1'de kalktı):
 
   * Durum sınıfı değiştiyse `status_changed` (ilk `completed`te `provisional`: başlangıç + REFRESH_WINDOW_HOURS
     dolmadıysa sonuç geçicidir, 03-A);

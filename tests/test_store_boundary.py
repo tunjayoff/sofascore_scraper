@@ -64,7 +64,6 @@ FS_ALLOWLIST: Dict[str, str] = {
     "sofascore_scraper/i18n.py": "çeviri dosyaları (locales/)",
     "sofascore_scraper/doctor.py": "ortam yoklamaları",
     "sofascore_scraper/throttle.py": "istek bütçesi dosyaları",
-    "sofascore_scraper/challenge_solver.py": "tarayıcı profili",
     "sofascore_scraper/client/profile_lock.py": "tarayıcı profilinin kilidi ve geçici kardeş profiller (FX-23)",
     "sofascore_scraper/logger.py": "log dosyaları",
     "sofascore_scraper/diagnostics.py": "log dosyaları ve tanılama paketi",

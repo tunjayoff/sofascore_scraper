@@ -11,7 +11,7 @@ import tempfile
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 
 pytestmark = [pytest.mark.live, pytest.mark.browser]
 

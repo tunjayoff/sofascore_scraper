@@ -32,7 +32,8 @@ import legacy_writer
 import store_dump
 import store_fixtures as sf
 from sofascore_scraper import match_data_fetcher as mdf
-from sofascore_scraper import refresh, slices, sports, status, watcher
+from sofascore_scraper import refresh, slices, sports, status
+from sofascore_scraper.store import watch
 from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.match_data_fetcher import MatchDataFetcher
 from sofascore_scraper.services import stats as stats_service
@@ -117,8 +118,8 @@ def test_names_equal_the_writers_constants() -> None:
     assert legacy.OBSERVATION_KEY == status.OBSERVATION_KEY
     assert legacy.OBSERVATION_FILE == f"{status.OBSERVATION_KEY}.json"
     assert legacy.CHANGES_FILE == refresh.SCORE_CHANGES_FILE
-    assert legacy.WATCH_EVENTS_FILE == watcher.WATCH_EVENTS_FILE
-    assert legacy._WATCH_STATE_RE.fullmatch(watcher.WATCH_STATE_FILE.format(sport="table-tennis")).group(1) == \
+    assert legacy.WATCH_EVENTS_FILE == "watch_events.jsonl"  # 2.x izleyicisinin dosyası (P30'da kalktı)
+    assert legacy._WATCH_STATE_RE.fullmatch(watch.LEGACY_STATE_FILE.format(sport="table-tennis")).group(1) == \
         "table-tennis"
     assert LegacyReader("x").known_slices == tuple(s.key for s in sports.DETAIL_SLICES)
     for name in ("a b/c\\d", "Premier League", "Wimbledon, Men"):

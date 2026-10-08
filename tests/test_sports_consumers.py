@@ -5,7 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sofascore_scraper import sports, watcher
+from sofascore_scraper import sports
+from sofascore_scraper.services.live import reducer
 from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, MatchDataFetcher
 from sofascore_scraper.sports import DetailSlice
 from sofascore_scraper.status import BasketballScores, FootballScores, ScoreSheet, TennisScores, extract_scores
@@ -50,25 +51,25 @@ def test_extract_scores_for_unregistered_sport_is_a_bare_sheet(sport, caplog):
     assert "unsupported sport" in caplog.text
 
 
-# --- izleyici ---------------------------------------------------------------------------
+# --- canlı indirgeyici (2.x izleyicisinin kuralları) -------------------------------------
 
-def test_watcher_constants_keep_their_values():
-    assert watcher.STUCK_AFTER_SECONDS == 4 * 3600
-    assert watcher.STUCK_AFTER_SECONDS_TENNIS == 6 * 3600
+def test_stuck_thresholds_keep_their_values():
+    assert sports.DEFAULT_STUCK_AFTER_SECONDS == 4 * 3600
+    assert sports.watcher_params("tennis").stuck_after_seconds == 6 * 3600
 
 
 def test_every_registered_near_end_rule_is_implemented():
     for spec in sports.SPORTS:
         # "never": kural yok (sofascore_scraper/sports.py NearEndRule); SP-1'de saat verisi olmayan sporlar
-        assert spec.watcher.near_end_rule == "never" or spec.watcher.near_end_rule in watcher._NEAR_END_RULES
+        assert spec.watcher.near_end_rule == "never" or spec.watcher.near_end_rule in reducer.NEAR_END_RULES
 
 
 def test_near_end_is_false_for_unregistered_sport():
     live_last_period = {"status": {"code": 7, "type": "inprogress"}, "time": {"injuryTime2": 4}}
-    assert watcher.near_end(live_last_period, "football", 0.0) is True
-    assert watcher.near_end(live_last_period, "waterpolo", 0.0) is False
-    assert watcher.near_end(live_last_period, "futsal", 0.0) is False  # kayıtlı, kuralı "never"
-    assert watcher.near_end(live_last_period, "Football", 0.0) is False  # slug tam eşleşir
+    assert reducer.near_end(live_last_period, "football", 0.0) is True
+    assert reducer.near_end(live_last_period, "waterpolo", 0.0) is False
+    assert reducer.near_end(live_last_period, "futsal", 0.0) is False  # kayıtlı, kuralı "never"
+    assert reducer.near_end(live_last_period, "Football", 0.0) is False  # slug tam eşleşir
 
 
 def _stuck_after(tmp_path, sport: str, hours: float) -> bool:
@@ -76,10 +77,8 @@ def _stuck_after(tmp_path, sport: str, hours: float) -> bool:
     event = {"id": 9, "startTimestamp": start, "status": {"code": 20, "type": "inprogress"},
              "time": {"currentPeriodStartTimestamp": start + 3600}}
     now = start + hours * 3600
-    w = watcher.MatchWatcher(sport, event_ids=[9], data_dir=str(tmp_path), fetch_json=lambda path: None,
-                             clock=lambda: now, sleep=lambda s: None)
-    w._observe(event, "live")
-    return w.state["9"]["stuck"]
+    state, _events = reducer.reduce(None, reducer.Observation(event=event, via="live", at=now), sport)
+    return bool(state["stuck"])
 
 
 @pytest.mark.parametrize("sport,hours,expected", [

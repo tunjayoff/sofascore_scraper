@@ -273,21 +273,6 @@ def test_a_crash_before_the_state_was_saved_does_not_store_the_transition_twice(
     assert report.events == 0
 
 
-def test_the_service_continues_where_the_legacy_watcher_stopped(store: Store, data_dir: Path) -> None:
-    from sofascore_scraper.watcher import MatchWatcher
-
-    live, done = finish_scenario()
-    api = FakeApi({"football": [live]}, {500: live})
-    clock = Clock(fetched(FB_LIVE))
-    legacy = MatchWatcher("football", league_ids=[17], data_dir=str(data_dir), fetch_json=api, clock=clock,
-                          sleep=clock.sleep)
-    legacy.tick()
-    api.live["football"] = []
-    api.events[500] = done
-    service(store, api, clock, explicit_scope(["football"], tournament_ids=[17])).run(Stop(clock, rounds=1))
-    assert [(e.data["from"], e.data["to"]) for e in live_events(store)] == [("live", "completed")]
-
-
 def test_a_2x_state_file_is_imported_once(store: Store, data_dir: Path) -> None:
     live, done = finish_scenario()
     old = {"500": {"class": "live", "done": False, "start_ts": live["startTimestamp"], "tournament_id": 17,
@@ -468,18 +453,6 @@ def test_the_service_does_not_end_on_a_busy_store(store: Store, monkeypatch: pyt
     report = service(store, api, clock, explicit_scope(["football"], tournament_ids=[17]), confirm=False).run(
         Stop(clock, rounds=2, on_wait=finish))
     assert report.events == 1 and report.rounds == 2
-
-
-def test_the_legacy_watcher_does_not_end_on_a_busy_store(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from sofascore_scraper.watcher import MatchWatcher
-
-    not_started = fx("football/A_notstarted-0-not-started__17184998", 700)
-    clock = Clock(not_started["startTimestamp"] + 5 * 3600)
-    watcher = MatchWatcher("football", event_ids=[700], data_dir=str(data_dir),
-                           fetch_json=FakeApi({"football": []}, {700: not_started}), clock=clock, sleep=clock.sleep)
-    busy_then(watcher._store, monkeypatch, 2)
-    watcher.start()  # stuck
-    assert [e.type for e in live_events(watcher._store)] == ["live.stuck"]
 
 
 # --- kapsam ---------------------------------------------------------------------------------------------

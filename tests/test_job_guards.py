@@ -11,7 +11,7 @@ import sqlite3
 
 import pytest
 
-from sofascore_scraper.web.jobs import (
+from sofascore_scraper.store import (
     DataOperationRunningError,
     JobRunningError,
     JobStore,

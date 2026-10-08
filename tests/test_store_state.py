@@ -25,7 +25,6 @@ from typing import Any, Dict, List
 
 import pytest
 
-import sofascore_scraper.web.jobs as web_jobs
 from sofascore_scraper.exceptions import StorageError
 from sofascore_scraper.store import SchemaTooNew, StoreBusy, StoreError, layout
 from sofascore_scraper.store import jobs as store_jobs
@@ -731,12 +730,14 @@ def test_default_db_path_is_state_db_under_meta(tmp_path):
     assert (data_dir / ".meta").is_dir() and not os.path.exists(path)
 
 
-def test_web_module_reexports_the_store_objects():
+def test_the_store_root_exports_the_job_store_objects():
+    import sofascore_scraper.store as store_root
+
     for name in ("JobStore", "JobStoreConflict", "JobRunningError", "DataOperationRunningError",
                  "default_db_path", "get_job_store"):
-        assert getattr(web_jobs, name) is getattr(store_jobs, name), name
-    assert issubclass(web_jobs.JobRunningError, web_jobs.JobStoreConflict)
-    assert issubclass(web_jobs.JobStoreConflict, RuntimeError)
+        assert getattr(store_root, name) is getattr(store_jobs, name), name
+    assert issubclass(store_root.JobRunningError, store_root.JobStoreConflict)
+    assert issubclass(store_root.JobStoreConflict, RuntimeError)
 
 
 def test_rows_keep_todays_shape(tmp_path):

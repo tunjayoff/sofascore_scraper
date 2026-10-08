@@ -9,7 +9,8 @@ değiştirmemeli. Davranış bilerek değiştirildiyse dosya şöyle yeniden ür
 
 Fixture başına kayıt:
   - scores: extract_scores sonucu (sınıf adı + alanlar)
-  - observed: yanıtın alındığı anda izleyicinin durumu (sınıf, bitti mi, bitişe yakın mı, takılı mı, oyun başlangıcı)
+  - observed: yanıtın alındığı anda canlı indirgeyicinin durumu (sınıf, bitti mi, bitişe yakın mı, takılı mı, oyun
+    başlangıcı)
   - stuck_5h: başlangıçtan 5 saat sonra takılı sayılır mı (4 sa ve 6 sa eşiklerini ayırır)
 """
 import dataclasses
@@ -21,8 +22,8 @@ from pathlib import Path
 import pytest
 
 from sofascore_scraper.sports import sport_slugs
+from sofascore_scraper.services.live.reducer import Observation, reduce
 from sofascore_scraper.status import extract_scores
-from sofascore_scraper.watcher import MatchWatcher
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 GOLDEN = Path(__file__).parent / "fixtures" / "status_golden.json"
@@ -34,10 +35,9 @@ def _key(path: Path) -> str:
 
 
 def _observe_at(event: dict, sport: str, now: float, data_dir: str) -> dict:
-    watcher = MatchWatcher(sport, event_ids=[event["id"]], data_dir=data_dir, fetch_json=lambda path: None,
-                           clock=lambda: now, sleep=lambda s: None)
-    watcher._observe(event, "live")
-    return watcher.state[str(event["id"])]
+    """Canlı indirgeyicinin ilk gözlemden sonraki durumu (2.x izleyicisinin `_observe`u bu indirgeyiciydi; P30)."""
+    state, _events = reduce(None, Observation(event=event, via="live", at=now), sport)
+    return dict(state)
 
 
 def _snapshot(path: Path, data_dir: str) -> dict:

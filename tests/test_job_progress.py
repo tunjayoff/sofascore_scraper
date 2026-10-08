@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import pytest
 
 from sofascore_scraper.web import deps
-from sofascore_scraper.web.jobs import JobStore
+from sofascore_scraper.store import JobStore
 from sofascore_scraper.jobs.progress import MAX_FAILED_LISTED, JobProgress
 
 

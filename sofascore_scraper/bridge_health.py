@@ -1,7 +1,7 @@
 """
 Tarayıcı köprüsünün sağlık durumu: "SofaScore bizi engelliyor mu?"
 
-Her şey headless tarayıcının SofaScore challenge'ını çözmesine bağlı (sofascore_scraper/challenge_solver.py).
+Her şey headless tarayıcının SofaScore challenge'ını çözmesine bağlı (sofascore_scraper/client/bridge.py).
 Bu bozulduğunda işler yalnızca yavaşça başarısız oluyordu; kullanıcıya nedenini söyleyen bir
 şey yoktu. Burada köprüden geçen her isteğin SONUCU sayılır ve üç durumdan biri tutulur:
 
@@ -55,7 +55,7 @@ KIND_BROWSER = "browser"      # headless tarayıcı başlatılamadı
 
 DEFAULT_DEGRADED_AFTER = 3
 DEFAULT_BLOCKED_AFTER = 10
-# Başarısız bir çözüm 180 sn yeniden denenmez (challenge_solver._SOLVE_RETRY_AFTER): 200 sn süren
+# Başarısız bir çözüm 180 sn yeniden denenmez (client/bridge.py `_SOLVE_RETRY_AFTER`): 200 sn süren
 # bir seri, en az bir yeniden denemenin de başarısız olduğunu gösterir.
 DEFAULT_BLOCKED_MIN_SECONDS = 200.0
 

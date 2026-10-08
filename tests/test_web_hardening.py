@@ -34,7 +34,7 @@ from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 
 import conftest
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 import sofascore_scraper.utils as utils
 from sofascore_scraper import bridge_health, diagnostics, private_files, redact
 from sofascore_scraper.paths import env_file_path

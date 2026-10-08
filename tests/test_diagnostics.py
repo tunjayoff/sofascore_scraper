@@ -20,7 +20,7 @@ from sofascore_scraper.store import LeaseHeld
 from sofascore_scraper.store.jobs import JOB_COLUMNS
 from sofascore_scraper.version import __version__
 from sofascore_scraper.web.app import app
-from sofascore_scraper.web.jobs import JobStore, default_db_path
+from sofascore_scraper.store import JobStore, default_db_path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
