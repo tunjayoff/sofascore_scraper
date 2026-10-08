@@ -9,6 +9,7 @@ import StatusBadge from '@/ui/StatusBadge.vue'
 import UiBadge from '@/ui/UiBadge.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import TimeText from '@/ui/TimeText.vue'
+import { dayText } from '@/ui/time'
 import ConfirmDialog from '@/ui/ConfirmDialog.vue'
 import { v1, type ListEventsQuery } from '@/api/v1/client'
 import type { EventListItem } from '@/api/v1/schema'
@@ -45,7 +46,7 @@ import {
  * FX-26 M15); with `fixedSport` the sport filter is not offered (a team plays one sport).
  */
 const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; fixedSport?: string | null; tableId?: string }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const status = useStatusStore()
 
@@ -155,8 +156,8 @@ const chips = computed(() => {
   if (f.value.sport && !props.fixedSport) out.push({ key: 'sport', label: sportName(f.value.sport) })
   if (!props.fixedTournament && f.value.tournament) out.push({ key: 'tournament', label: tournamentName(f.value.tournament) })
   if (f.value.season) out.push({ key: 'season', label: seasonName(f.value.season) })
-  if (f.value.from) out.push({ key: 'from', label: t('ui.events.from', { date: f.value.from }) })
-  if (f.value.to) out.push({ key: 'to', label: t('ui.events.to', { date: f.value.to }) })
+  if (f.value.from) out.push({ key: 'from', label: t('ui.events.from', { date: dayText(f.value.from) }) })
+  if (f.value.to) out.push({ key: 'to', label: t('ui.events.to', { date: dayText(f.value.to) }) })
   if (f.value.classes.length) out.push({ key: 'status', label: f.value.classes.map((c) => t(`ui.status.event.${c}`)).join(', ') })
   if (f.value.has) out.push({ key: 'has', label: t(`ui.events.has.${f.value.has}`) })
   if (f.value.team) out.push({ key: 'q', label: `“${f.value.team}”` })
@@ -241,11 +242,13 @@ defineExpose({ reload: list.load })
       </label>
       <label class="flex flex-col">
         <span class="u-label">{{ t('ui.events.fromLabel') }}</span>
-        <input type="date" class="u-field" :value="f.from" data-filter="from" @change="list.setQuery({ from: ($event.target as HTMLInputElement).value })" />
+        <input type="date" class="u-field" :lang="locale" :value="f.from" data-filter="from" @change="list.setQuery({ from: ($event.target as HTMLInputElement).value })" />
+        <span v-if="f.from" class="u-small u-muted" data-testid="date-hint-from">{{ dayText(f.from) }}</span>
       </label>
       <label class="flex flex-col">
         <span class="u-label">{{ t('ui.events.toLabel') }}</span>
-        <input type="date" class="u-field" :value="f.to" data-filter="to" @change="list.setQuery({ to: ($event.target as HTMLInputElement).value })" />
+        <input type="date" class="u-field" :lang="locale" :value="f.to" data-filter="to" @change="list.setQuery({ to: ($event.target as HTMLInputElement).value })" />
+        <span v-if="f.to" class="u-small u-muted" data-testid="date-hint-to">{{ dayText(f.to) }}</span>
       </label>
       <label class="flex flex-col">
         <span class="u-label">{{ t('ui.events.col.data') }}</span>

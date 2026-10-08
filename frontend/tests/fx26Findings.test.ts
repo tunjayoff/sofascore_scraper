@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { VueWrapper } from '@vue/test-utils'
 import SettingsScreen from '@/screens/settings/SettingsScreen.vue'
+import EventsScreen from '@/screens/events/EventsScreen.vue'
+import { dayText } from '@/ui/time'
 import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
 import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
 import { followName } from '@/screens/follows/followText'
@@ -186,6 +188,27 @@ describe('a team’s matches: played first, a switch to the upcoming ones, no sp
     await flush()
     expect(w.find('[data-filter="sport"]').exists()).toBe(false)
     expect(query(f).get('sport')).toBe('basketball')
+  })
+})
+
+describe('date fields say the chosen day in the reader’s words (M13)', () => {
+  it('a calendar day in words, in both languages; anything else as given', () => {
+    setLocale('tr')
+    expect(dayText('2026-10-07')).toBe('7 Ekim 2026')
+    setLocale('en')
+    expect(dayText('2026-10-07')).toBe('October 7, 2026')
+    expect(dayText('yesterday')).toBe('yesterday')
+    expect(dayText(null)).toBe('')
+  })
+
+  it('Matches: the day under the field and in the chip; the field carries the UI language', async () => {
+    setLocale('tr')
+    mockFetch({ 'GET /api/v1/sports': list([]), 'GET /api/v1/tournaments': list([]), 'GET /api/v1/events': list([]), 'GET /api/v1/status': { data: status() } })
+    ;({ w } = await mountScreen(EventsScreen, '/events?from=2026-10-07&to=2026-10-08', '/events'))
+    await flush()
+    expect(w.find('[data-filter="from"]').attributes('lang')).toBe('tr')
+    expect(w.find('[data-testid="date-hint-from"]').text()).toBe('7 Ekim 2026')
+    expect(w.find('[data-testid="date-hint-to"]').text()).toBe('8 Ekim 2026')
   })
 })
 

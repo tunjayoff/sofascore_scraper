@@ -12,7 +12,7 @@ import { v1 } from '@/api/v1/client'
 import type { Change, Event } from '@/api/v1/schema'
 import { queryIds, queryText, usePagedList } from '@/app/pagedList'
 import { loadSports, sportName, sports } from '@/app/sports'
-import { duration } from '@/ui/time'
+import { dayText, duration } from '@/ui/time'
 import ChangeFields from './events/ChangeFields.vue'
 import { eventTitle, loadTournaments, tournamentName, tournamentNames } from './events/eventText'
 
@@ -21,7 +21,7 @@ import { eventTitle, loadTournaments, tournamentName, tournamentNames } from './
  * stored. Tournament and dates are filtered by the server; sport and "status regressed only" within the
  * page (the route has no such filters). The names of the matches are read for the rows shown.
  */
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 
 const f = computed(() => ({
@@ -66,8 +66,8 @@ const chips = computed(() => {
   const out: { key: string; label: string }[] = []
   if (f.value.sport) out.push({ key: 'sport', label: sportName(f.value.sport) })
   if (f.value.tournament) out.push({ key: 'tournament', label: tournamentName(f.value.tournament) })
-  if (f.value.from) out.push({ key: 'from', label: t('ui.events.from', { date: f.value.from }) })
-  if (f.value.to) out.push({ key: 'to', label: t('ui.events.to', { date: f.value.to }) })
+  if (f.value.from) out.push({ key: 'from', label: t('ui.events.from', { date: dayText(f.value.from) }) })
+  if (f.value.to) out.push({ key: 'to', label: t('ui.events.to', { date: dayText(f.value.to) }) })
   if (f.value.regressed) out.push({ key: 'regressed', label: t('ui.corrections.regressedOnly') })
   return out
 })
@@ -105,11 +105,13 @@ onMounted(() => {
       </label>
       <label class="flex flex-col">
         <span class="u-label">{{ t('ui.events.fromLabel') }}</span>
-        <input type="date" class="u-field" :value="f.from" data-filter="from" @change="list.setQuery({ from: ($event.target as HTMLInputElement).value })" />
+        <input type="date" class="u-field" :lang="locale" :value="f.from" data-filter="from" @change="list.setQuery({ from: ($event.target as HTMLInputElement).value })" />
+        <span v-if="f.from" class="u-small u-muted" data-testid="date-hint-from">{{ dayText(f.from) }}</span>
       </label>
       <label class="flex flex-col">
         <span class="u-label">{{ t('ui.events.toLabel') }}</span>
-        <input type="date" class="u-field" :value="f.to" data-filter="to" @change="list.setQuery({ to: ($event.target as HTMLInputElement).value })" />
+        <input type="date" class="u-field" :lang="locale" :value="f.to" data-filter="to" @change="list.setQuery({ to: ($event.target as HTMLInputElement).value })" />
+        <span v-if="f.to" class="u-small u-muted" data-testid="date-hint-to">{{ dayText(f.to) }}</span>
       </label>
       <label class="flex items-center gap-2 self-end min-h-[40px]">
         <input type="checkbox" class="u-check" :checked="f.regressed" data-filter="regressed" @change="list.setQuery({ regressed: ($event.target as HTMLInputElement).checked ? '1' : null }, true)" />

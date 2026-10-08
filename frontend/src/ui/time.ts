@@ -41,6 +41,18 @@ export function formatTime(d: Date, style: TimeStyle = 'datetime', utc = timeDis
   return utc ? `${text} UTC` : text
 }
 
+/**
+ * A calendar day ("2026-10-07") in the reader's words ("7 Ekim 2026", "7 October 2026"); the text as given when it
+ * is not such a day. A date field shows the browser's own order (often mm/dd/yyyy in a Turkish UI, live
+ * validation M13): the screens write the chosen day under it in words, and in their filter chips (FX-26).
+ */
+export function dayText(day: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day ?? '')
+  if (!m) return day ?? ''
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+  return new Intl.DateTimeFormat(loc(), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d)
+}
+
 /** "2026-10-02 18:04:05 UTC": the exact value, for the hover text and screen readers. */
 export function utcText(d: Date): string {
   return `${d.toISOString().slice(0, 19).replace('T', ' ')} UTC`
