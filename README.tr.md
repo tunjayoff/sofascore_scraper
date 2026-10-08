@@ -10,7 +10,7 @@
 
 Tek çekirdek, üç yüz: bir **Python kütüphanesi**, sunucular ve otomasyon için **`ssc` komut satırı** ve üzerinde bir **web arayüzü** bulunan sürümlü bir **HTTP API**. Kendi bilgisayarınızda ya da sunucunuzda çalışır.
 
-> **3.0.0 hazırlanıyor.** Bu README, `main` dalında bulunan ama henüz yayımlanmamış 3.0.0'ı anlatır: sürüm numarası hâlâ 2.0.0'dır, yayımlanmış bir Docker imajı ya da sürüm arşivi yoktur. Sürüm çıkana kadar kaynaktan kurun (`docker compose up -d --build` ya da aşağıdaki pip adımları).
+> **3.0.0 kaynaktan kurulan bir sürüm olarak yayımlandı.** Bir checkout'tan kurun (aşağıdaki Docker ya da pip adımları); GitHub'daki her sürümde derlenmiş web arayüzünü içeren bir kaynak arşivi de vardır, Docker imajı ise `ghcr.io/tunjayoff/sofascore_scraper`'dır. PyPI'de paket yoktur. 2.x'ten geçiyorsanız: [2.x'ten yükseltme](#2xten-yükseltme).
 
 Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#sorumluluk-reddi).
 
@@ -32,16 +32,16 @@ Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#soru
 
 ## Ekran görüntüleri
 
-![Genel bakış: saklanan maçlar, SofaScore bağlantısı, servisler ve son işler](docs/images/overview.webp)
+![Gerçek veriyle genel bakış: saklanan 804 maç, 20 sporda 41 takip, SofaScore bağlantısı, servisler, son işler ve son skor değişikliği](docs/images/overview.webp)
 
 | | |
 |---|---|
-| ![Lig ekle: SofaScore'da adla arama ya da adresteki kimliği girme](docs/images/add-league.webp) | ![Biten bir futbol maçı ve devrelere göre istatistikleri](docs/images/match-statistics.webp) |
-| **Lig ekle**: adla arayın ya da SofaScore kimliğini girin, sonra sezonları ve verileri seçin. | **Bir maç**: devrelere göre skor, istatistikler, kadrolar, olaylar ve ham veri. |
-| ![Normalleştirilmiş veri kümeleri ve CSV, JSONL, Parquet, SQLite biçimleriyle yeni dışa aktarım penceresi](docs/images/export-dialog.webp) | ![Spor, turnuva, tarih, veri ve duruma göre süzgeçleriyle koyu temada maç listesi](docs/images/matches-dark.webp) |
+| ![Lig ya da takım ekle: "premier" yazınca SofaScore'un ligleri sporları ve ülkeleriyle önerilir](docs/images/add-league.webp) | ![Paris Saint-Germain ile Tottenham Hotspur, 2025 UEFA Süper Kupa finali, 2-2 ve penaltılarla 4-3, istatistikleriyle](docs/images/match-statistics.webp) |
+| **Lig ekle**: yazarken öneriler ya da SofaScore kimliği, sonra sezonlar ve veriler. | **Bir maç**: skor, devrelere göre istatistikler, kadrolar, olaylar, oranlar ve ham veri. |
+| ![Yeni dışa aktarım penceresi: normalleştirilmiş veri, maç tablosu ya da SofaScore'un özgün verisi; CSV, JSONL, Parquet ve SQLite biçimleri](docs/images/export-dialog.webp) | ![Koyu temada, biten futbol maçlarına süzülmüş maç listesi; spor, turnuva, tarih, takım, veri ve duruma göre süzgeçler](docs/images/matches-dark.webp) |
 | **Dışa aktarımlar**: normalleştirilmiş veri, maç tablosu ya da ham yanıtlar. | Koyu temada **Maçlar**. |
 
-Ekran görüntüleri İngilizce arayüzden alındı ve gerçek SofaScore verisi değil, sentetik bir demo veri kümesi kullanır.
+Ekran görüntüleri İngilizce arayüzden alındı ve 2026-10-08'de indirilmiş gerçek SofaScore verisini gösterir.
 
 ## Hızlı başlangıç
 
@@ -204,7 +204,7 @@ ssc export --out matches.csv                               # 2.x'in geniş CSV's
 
 ## Canlı izleme
 
-`ssc watch` canlı servistir: canlı maçları izleyen ve değişikliklerini (`live.status_changed`, `live.score_changed`, `live.stuck`) olay günlüğüne ve yapılandırılmış hedeflere yazan, ön planda çalışan bir süreç. Web arayüzünün parçası değildir.
+`ssc watch` canlı servistir: canlı maçları izleyen ve değişikliklerini (`live.status_changed`, `live.score_changed`, `live.stuck`) olay günlüğüne ve yapılandırılmış hedeflere yazan, ön planda çalışan bir süreç. Web arayüzünün parçası değildir. Setlerle oynanan sporlarda (tenis, masa tenisi, voleybol, badminton, padel) bir `live.score_changed` kazanılan bir settir; set içindeki bir oyun ya da sayı değildir.
 
 ```bash
 ssc watch                                                    # canlı olarak işaretli takipler
@@ -242,13 +242,15 @@ Uygulama yalnızca izin verilen sunucu adlarına yanıt verir, başka sitelerin 
 ```bash
 git pull
 pip install -r requirements.txt -c constraints.txt
+pip install -e .          # her güncellemeden sonra yeniden: içe aktarılan paket artık sofascore_scraper
 cd frontend && npm install && npm run build && cd ..
 ssc migrate --dry-run     # isteğe bağlı: yeni düzene neyin taşınacağı
 ```
 
 - **Veriler**: hiçbir şey kendiliğinden taşınmaz. Eski veriler bulundukları yerden okunur; yeni yazmalar yeni düzeni kullanır. `ssc migrate` eski klasörleri dönüştürüp doğrular ve eskilerini korur; `ssc migrate --delete-legacy --yes` doğrulanmış eski kopyaları sonradan siler.
 - **Terminal menüsü kaldırıldı.** `python main.py` argümansız çalıştırılınca kısa bir yardım yazar ve `2` ile çıkar. Web arayüzünü ya da betikler için `ssc`'yi kullanın.
-- **Bir sürüm daha çalışacak, sonra kalkacak olanlar**: `main.py` seçenekleri (`--headless --update-all` `ssc sync`'i, `--refresh-only` `ssc refresh`'i, `--watch` `ssc watch --source poll --stdout`'u, `--web` `ssc serve`'ü çalıştırır, …; her biri çalıştırdığı komutu yazar) ve `/api/...` altındaki 2.x yolları; bunlar bir `Deprecation` başlığı ve `/api/v1`'deki karşılıklarını gösteren bir `Link` ile yanıt verir. Çıkış kodları yeni tabloya uyar (devre kesicinin durdurduğu iş artık `2` değil `4`).
+- **İçe aktarılan paket `sofascore_scraper`'dır** (önceden `src`'ydi ve takma adı yoktur): kendi systemd birimleriniz ve betikleriniz `python -m src.cli.main` yerine `python -m sofascore_scraper.cli.main` çalıştırır, kütüphane kodu `sofascore_scraper`'ı içe aktarır.
+- **3.0.0'da kullanımdan kalkan, 3.1'de kaldırılacak olanlar**: `main.py` seçenekleri (`--headless --update-all` `ssc sync`'i, `--refresh-only` `ssc refresh`'i, `--watch` `ssc watch --source poll --stdout`'u, `--web` `ssc serve`'ü çalıştırır, …; her biri çalıştırdığı komutu yazar), `/api/...` altındaki 2.x yolları (bunlar bir `Deprecation` başlığı ve `/api/v1`'deki karşılıklarını gösteren bir `Link` ile yanıt verir) ve `config`, `seasons`, `matches`, `match_details` yedek kapsamları (yerlerine `all`, `state` ya da `data`). Çıkış kodları yeni tabloya uyar (devre kesicinin durdurduğu iş artık `2` değil `4`).
 - **Ayarlar**: `.env` çalışmaya devam eder; `ssc config init --from-legacy > sofascore.toml` bugünkü `.env`'i ve `config/leagues.txt`'yi bir yapılandırma dosyası olarak yazar. `config/leagues.txt`'deki ligler indirilmeye devam eder; ligin sayfasındaki **Buraya taşı** onu uygulamaya taşır.
 
 Değişikliklerin tam listesi [CHANGELOG.md](CHANGELOG.md) dosyasındadır (İngilizce).
