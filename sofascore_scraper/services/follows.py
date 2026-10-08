@@ -597,6 +597,21 @@ def _sport_of(*holders: Mapping[str, Any]) -> Optional[str]:
     return None
 
 
+def _entity_sport(item: Mapping[str, Any], entity: Mapping[str, Any], team: Mapping[str, Any]) -> Optional[str]:
+    """
+    Takım ya da oyuncu sonucunun sporu (FX-26, canlı doğrulama M16: "Benoit Sinner" sporsuz göründü). Önce varlığın
+    ve oyuncunun takımının `sport`'u; yoksa SofaScore'un başka alanları: kategorinin sporu, ana turnuvanın
+    kategorisinin sporu, sonucun kendi `sport`'u. Hiçbirinde yoksa None (ön yüz sporu yazmaz).
+    """
+    holders: List[Mapping[str, Any]] = [entity, team]
+    for owner in (entity, team):
+        holders.append(_mapping(owner.get("category")))
+        holders.append(_mapping(_mapping(owner.get("primaryUniqueTournament")).get("category")))
+        holders.append(_mapping(_mapping(owner.get("tournament")).get("category")))
+    holders.append(item)
+    return _sport_of(*holders)
+
+
 def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Optional[SearchHit]:
     """
     Bir arama sonucu → SearchHit; tanınmayan biçim ya da tür None. typed: `/search/all`'ın sonucu (`type` alanı
@@ -625,7 +640,7 @@ def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Op
     team = _mapping(entity.get("team")) if kind == "player" else {}
     national = entity.get("national")
     return SearchHit(
-        id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_sport_of(entity, team),
+        id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_entity_sport(item, entity, team),
         category_id=None, category_name=None, category_slug=None, country_code=_text(country.get("alpha2")),
         followed=(kind, entity_id) in followed, kind=kind, country_name=_text(country.get("name")),
         team_id=_number(team.get("id")), team_name=_text(team.get("name")),
