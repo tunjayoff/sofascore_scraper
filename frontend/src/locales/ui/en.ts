@@ -865,6 +865,7 @@ const en = {
     match: 'Match (score, status, teams)',
     always: 'always',
     optional: 'not always available for this sport',
+    optionalAny: 'not available in every sport',
     offByDefault: 'off by default',
     oddsOnShort: 'on',
     oddsHistory: 'Odds history exists only for what is fetched: by repeated downloads before kick-off, or by the live service.',
@@ -1268,7 +1269,7 @@ const en = {
     top_players: 'Best players of the season',
     top_teams: 'Best teams of the season',
     season_odds: 'Season odds (champion, relegation)',
-    team_rankings: 'Player rankings',
+    team_rankings: 'Tennis player’s rankings (ATP, WTA)',
     player_statistics: 'Player statistics',
     rankings: 'Rankings',
   },
@@ -1763,7 +1764,7 @@ const en = {
       ignore: 'Never stop early',
     },
     fetch: {
-      only_finished: 'Show finished matches only',
+      only_finished: 'Finished matches only in a league download',
     },
     defaults: {
       slices: 'Default data to download',
@@ -1821,7 +1822,7 @@ const en = {
       proxy: 'The password is never shown; Replace sets a new address.',
     },
     fetch: {
-      only_finished: 'The match lists show only matches that have ended. It does not change what is downloaded: every listed match is stored whatever its status, and so is an unfinished match you fetch on purpose.',
+      only_finished: 'When on, a league download fetches the details of finished matches only; future fixtures stay as listed rows. The match counts on Overview and the old /api match lists also count only finished matches (or matches with details). It does not change the Matches screen (every status shows there; filter by status) nor team, player and single-match follows.',
     },
     defaults: {
       slices: 'Data types or groups, separated by commas. “core” is the core match data: the match, statistics, line-ups, incidents and the rest; odds are a group of their own (“odds”).',

@@ -867,6 +867,7 @@ const tr: typeof en = {
     match: 'Maç (skor, durum, takımlar)',
     always: 'her zaman',
     optional: 'bu sporda her zaman bulunmaz',
+    optionalAny: 'her sporda bulunmaz',
     offByDefault: 'varsayılan olarak kapalı',
     oddsOnShort: 'açık',
     oddsHistory: 'Oran geçmişi yalnızca çekilenler için vardır: başlama öncesi tekrarlanan indirmelerle ya da canlı servisle.',
@@ -1270,7 +1271,7 @@ const tr: typeof en = {
     top_players: 'Sezonun en iyi oyuncuları',
     top_teams: 'Sezonun en iyi takımları',
     season_odds: 'Sezon oranları (şampiyonluk, düşme)',
-    team_rankings: 'Oyuncu sıralamaları',
+    team_rankings: 'Tenisçinin sıralaması (ATP, WTA)',
     player_statistics: 'Oyuncu istatistikleri',
     rankings: 'Sıralamalar',
   },
@@ -1765,7 +1766,7 @@ const tr: typeof en = {
       ignore: 'Hiçbir zaman erken durma',
     },
     fetch: {
-      only_finished: 'Yalnızca bitmiş maçları göster',
+      only_finished: 'Lig indirmesinde yalnızca bitmiş maçlar',
     },
     defaults: {
       slices: 'Varsayılan indirilecek veriler',
@@ -1823,7 +1824,7 @@ const tr: typeof en = {
       proxy: 'Parola hiçbir zaman gösterilmez; Değiştir yeni bir adres ayarlar.',
     },
     fetch: {
-      only_finished: 'Maç listeleri yalnızca bitmiş maçları gösterir. İndirileni değiştirmez: listelenen her maç durumu ne olursa olsun saklanır, bilerek çektiğiniz bitmemiş bir maç da.',
+      only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki maç sayıları ve eski /api maç listeleri de yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada her durum görünür, durum süzgeciyle seçilir); takım, oyuncu ve tek maç takiplerini de.',
     },
     defaults: {
       slices: 'Veri türleri ya da grupları, virgülle ayrılmış. “core” temel maç verisidir: maç, istatistikler, kadrolar, olaylar ve diğerleri; oranlar ayrı bir gruptur (“odds”).',

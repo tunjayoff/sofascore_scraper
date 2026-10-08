@@ -11,9 +11,10 @@ import { SECTIONS, sectionOf, type SectionKey } from './sliceSelection'
  * The data types of a sport as a grouped checklist (6.3 step 3, 6.16 Data; FX-14b): match data (fetched
  * once per match, the match itself always), betting odds (off by default, said in the header), then the
  * data of a season, a team, a player or the sport (fetched once per owner). A data type SofaScore does not
- * always have for the sport says so. `disabled` shows the ticks read-only (the defaults, or a locked value).
+ * always have for the sport says so (`allSports`: the defaults of every sport, "not available in every sport";
+ * FX-26). `disabled` shows the ticks read-only (the defaults, or a locked value).
  */
-const props = defineProps<{ slices: readonly SportSlice[]; chosen: ReadonlySet<string>; disabled?: boolean; label: string }>()
+const props = defineProps<{ slices: readonly SportSlice[]; chosen: ReadonlySet<string>; disabled?: boolean; label: string; allSports?: boolean }>()
 const emit = defineEmits<{ toggle: [key: string, on: boolean] }>()
 const { t } = useI18n()
 const uid = useId()
@@ -59,7 +60,7 @@ function hint(key: SectionKey): string {
           @change="emit('toggle', s.key, ($event.target as HTMLInputElement).checked)"
         />
         <span class="flex-1">{{ sliceLabel(s.key) }}</span>
-        <span v-if="!s.required && sec.key === 'match'" class="u-small u-muted">{{ t('ui.slicePicker.optional') }}</span>
+        <span v-if="!s.required && sec.key === 'match'" class="u-small u-muted">{{ allSports ? t('ui.slicePicker.optionalAny') : t('ui.slicePicker.optional') }}</span>
       </label>
       <p v-if="sec.key === 'odds'" class="m-0 u-small u-muted flex gap-2"><UiIcon name="info" :size="14" />{{ t('ui.slicePicker.oddsHistory') }}</p>
     </section>

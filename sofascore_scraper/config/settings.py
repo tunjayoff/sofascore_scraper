@@ -157,7 +157,9 @@ class BridgeSettings:
 @dataclass(frozen=True)
 class FetchSettings:
     only_finished: bool = setting(
-        True, KIND_BOOL, "Show only finished events in the match lists; every listed event is stored whatever its status.",
+        True, KIND_BOOL, "A league download fetches the details of finished events only, and the Overview counts and "
+        "the old /api match lists count finished events (or events with details) only. Team, player and event "
+        "follows and the v1 event list are not affected.",
     )
     save_empty_rounds: bool = setting(False, KIND_BOOL, "Write round files that hold no event.")
 

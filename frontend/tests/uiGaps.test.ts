@@ -122,16 +122,18 @@ describe('Settings', () => {
     expect(others.findAll('[data-sport]')).toHaveLength(4)
   })
 
-  it('the retired "keep empty rounds" is not shown; "finished matches only" says it only filters the lists', async () => {
+  it('the retired "keep empty rounds" is not shown; "finished matches only" says what it affects (FX-26, M3)', async () => {
     await open([])
     expect(w.find('[data-setting="fetch.save_empty_rounds"]').exists()).toBe(false)
     expect(w.text()).not.toContain('Keep empty rounds')
     const onlyFinished = w.find('[data-setting="fetch.only_finished"]')
     expect(onlyFinished.text()).toContain(t('ui.setting.fetch.only_finished'))
     expect(onlyFinished.text()).toContain(t('ui.settingHelp.fetch.only_finished'))
-    expect(t('ui.settingHelp.fetch.only_finished')).toContain('does not change what is downloaded')
+    // it decides which league matches get details, the Overview counts and the old lists; not the Matches screen
+    expect(t('ui.settingHelp.fetch.only_finished')).toContain('a league download fetches the details of finished matches only')
+    expect(t('ui.settingHelp.fetch.only_finished')).toContain('It does not change the Matches screen')
     setLocale('tr')
-    expect(t('ui.setting.fetch.only_finished')).toBe('Yalnızca bitmiş maçları göster')
+    expect(t('ui.setting.fetch.only_finished')).toBe('Lig indirmesinde yalnızca bitmiş maçlar')
     setLocale('en')
   })
 })

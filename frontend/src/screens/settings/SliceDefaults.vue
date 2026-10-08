@@ -137,7 +137,7 @@ onMounted(() => {
           </button>
         </div>
         <p v-if="globalLock" class="m-0 u-small u-muted flex items-center gap-2" data-testid="lock"><UiIcon name="lock" :size="13" />{{ globalLock }}</p>
-        <SliceChecklist :slices="all" :chosen="chosen" :disabled="!!globalLock" :label="t('ui.sliceDefaults.global')" @toggle="toggleGlobal" />
+        <SliceChecklist :slices="all" :chosen="chosen" :disabled="!!globalLock" :label="t('ui.sliceDefaults.global')" all-sports @toggle="toggleGlobal" />
         <p v-if="problems[KEY]" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ problems[KEY] }}</p>
       </div>
 
