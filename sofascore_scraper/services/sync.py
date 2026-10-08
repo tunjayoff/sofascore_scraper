@@ -315,6 +315,24 @@ def extras_kinds(summary: Any) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
     return tuple(saved), tuple(key for key in unavailable if key not in saved)
 
 
+def _cost_class(item: Any) -> str:
+    """
+    Takip maçının istek sınıfı (tahmini süre, FX-26): yalnızca olayı okunan gelecek fikstür (`event_only`), ya da
+    planlayıcının ihtiyacı (`full`, `refill`, `refresh`); sınıfların maç başına isteği ayrı ölçülür.
+    """
+    if getattr(item, "reason", None) == follow_sync.EVENT_ONLY_REASON:
+        return follow_sync.EVENT_ONLY
+    return str(getattr(item, "need", "") or "other")
+
+
+def _requests_of(result: Any) -> int:
+    """Bir iş biriminin SofaScore'a gönderdiği istek: olay ve her dilim (gönderilmeyen, `skipped`, sayılmaz)."""
+    from sofascore_scraper.slices import SLICE_SKIPPED
+
+    outcomes = [result.event, *getattr(result, "slices", {}).values()]
+    return sum(1 for outcome in outcomes if outcome is not None and outcome.status != SLICE_SKIPPED)
+
+
 def _follows_of(spec: SyncSpec) -> Tuple[str, ...]:
     return tuple(getattr(spec, "follows", ()) or ())
 
@@ -812,6 +830,8 @@ class _SyncRun:
         base = int(tracker.detail()["done"])
         tracker.set_total(int(tracker.detail()["total"]) + len(items))
         tracker.set_context()
+        # Tahmini süre maç başına istekten (FX-26, M14): gelecek fikstür yalnızca olayı okur, bitmiş maç dilimlerini de
+        tracker.plan_costs(Counter(_cost_class(item) for item in items))
         self.log(f"Fetching {len(items)} matches of team, player and match follows...", "sync_follow_details",
                  count=len(items))
         done = 0
@@ -819,6 +839,7 @@ class _SyncRun:
         def on_result(result: Any) -> None:
             nonlocal done
             done += 1
+            tracker.note_cost(_cost_class(result.item), _requests_of(result))
             tracker.advance(base + done)
             if result.item.need == "refresh" and result.ok:
                 tracker.add_refreshed(str(result.event_id), bool(result.changed))
