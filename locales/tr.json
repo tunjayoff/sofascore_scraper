@@ -162,6 +162,7 @@
     "ssc_help_events_event": "yalnızca bu maç kimliğinin olayları (yinelenebilir)",
     "ssc_help_events_limit": "bu kadar olaydan sonra dur",
     "ssc_help_cmd_watch": "canlı maçları izle ve değişikliklerini olay günlüğüne ve yapılandırılmış sink'lere yaz (durdurulana kadar ön planda çalışır)",
+    "ssc_desc_watch": "Canlı maçları izler ve değişikliklerini olay günlüğüne ve yapılandırılmış sink'lere yazar; durdurulana kadar ön planda çalışır. live.score_changed ana skoru izler: gol ya da sayı, tenis, masa tenisi, voleybol, badminton ve padelde kazanılan setler. Set içindeki bir oyun ya da sayı olay değildir; her olayın score alanı o anki bütün set skorlarını taşır.",
     "ssc_help_watch_sport": "yalnızca bu spor (yinelenebilir); --event ya da --tournament ile: o kimliklerin sporu",
     "ssc_help_watch_event": "takip edilenler yerine bu maç kimliğini izle (yinelenebilir; --sport gerekir)",
     "ssc_help_watch_tournament": "takip edilenler yerine bu turnuvanın canlı maçlarını izle (yinelenebilir; --sport gerekir)",

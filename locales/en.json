@@ -162,6 +162,7 @@
     "ssc_help_events_event": "only the events of this match id (may be repeated)",
     "ssc_help_events_limit": "stop after this many events",
     "ssc_help_cmd_watch": "watch live matches and write their changes to the event log and to the configured sinks (runs in the foreground until stopped)",
+    "ssc_desc_watch": "Watch live matches and write their changes to the event log and to the configured sinks; runs in the foreground until stopped. live.score_changed follows the headline score: goals or points, and the sets won in tennis, table tennis, volleyball, badminton and padel. A game or a point inside a set is not an event; the score field of every event carries the scores of each set at that moment.",
     "ssc_help_watch_sport": "only this sport (may be repeated); with --event or --tournament: the sport of those ids",
     "ssc_help_watch_event": "watch this match id instead of the followed ones (may be repeated; needs --sport)",
     "ssc_help_watch_tournament": "watch the live matches of this tournament id instead of the followed ones (may be repeated; needs --sport)",

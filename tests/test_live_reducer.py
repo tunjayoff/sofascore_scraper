@@ -390,3 +390,32 @@ def test_dedup_keys_name_the_transition_and_are_stable(fixed_window: None) -> No
     assert keys["completed_seen_twice"] == keys["finish_after_drop"]
     no_ts = {"type": "status_changed", "event_id": 1, "from": "live", "to": "void", "change_ts": None}
     assert dedup_key(no_ts) == '1:status_changed:"live">"void":-'
+
+
+TN_LIVE = "tennis/A_inprogress-9-2nd-set__17208186"
+
+
+@pytest.mark.parametrize(("rel", "sport"), [(TN_LIVE, "tennis"),
+                                            ("table-tennis/A_inprogress-9-2nd-set__17220178", "table-tennis")])
+def test_a_set_sport_emits_a_score_change_only_when_a_set_is_won(rel: str, sport: str) -> None:
+    """
+    FX-27 V7: `live.score_changed` ana skoru izler (02-services.md 5.1, 04-schema-v1.md "LiveEvent data"); set
+    sporlarında ana skor kazanılan setlerdir. Set içindeki oyun ya da sayı olay değildir; olayın `score` alanı
+    o anki set skorlarını taşır.
+    """
+    from sofascore_scraper.services.live.reducer import Observation, reduce
+
+    event = fx(rel, 77)
+    at = fetched(rel)
+    state, _ = reduce(None, Observation(event=event, via="live", at=at), sport)
+    in_set = copy.deepcopy(event)
+    for side in ("homeScore", "awayScore"):
+        in_set[side]["period2"] = int(in_set[side].get("period2") or 0) + 1  # set içinde bir oyun / sayı
+        in_set[side].pop("point", None)
+    state, emitted = reduce(state, Observation(event=in_set, via="live", at=at + 30), sport)
+    assert emitted == []
+    won = copy.deepcopy(in_set)
+    for key in ("current", "display"):
+        won["homeScore"][key] = int(won["homeScore"].get(key) or 0) + 1
+    state, emitted = reduce(state, Observation(event=won, via="live", at=at + 60), sport)
+    assert [e["type"] for e in emitted] == ["score_changed"]

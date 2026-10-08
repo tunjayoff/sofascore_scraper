@@ -796,6 +796,14 @@ def test_watch_hosts_the_configured_sinks(cli: CliRunner, data_dir: Path, tmp_pa
     assert [line["type"] for line in lines] == ["live.status_changed"]
 
 
+def test_watch_help_says_which_score_changes_are_events(cli: CliRunner) -> None:
+    """FX-27 V7: set sporlarında `live.score_changed` yalnızca kazanılan set değişince gelir; yardım bunu söyler."""
+    text = " ".join(cli("watch", "--help").stdout.split())
+    assert "live.score_changed follows the headline score" in text and "not an event" in text
+    text_tr = " ".join(cli("watch", "--help", "--lang=tr").stdout.split())
+    assert "live.score_changed ana skoru izler" in text_tr
+
+
 def test_watch_and_the_watch_sources_are_described(cli: CliRunner) -> None:
     described = cli("describe", "config").data["config"]
     sources = {entry["name"]: entry for entry in described["live_sources"]}

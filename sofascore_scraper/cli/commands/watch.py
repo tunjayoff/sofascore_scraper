@@ -108,7 +108,7 @@ def _start_thread(target: Any, name: str) -> threading.Thread:
     return thread
 
 
-@command("watch", help="ssc_help_cmd_watch", configure=_arguments, settings=True)
+@command("watch", help="ssc_help_cmd_watch", description="ssc_desc_watch", configure=_arguments, settings=True)
 def watch(inv: Invocation) -> CommandResult:
     args = inv.args
     if args.stdout and inv.out.mode == JSON:
