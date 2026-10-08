@@ -23,6 +23,44 @@ export function eventTitle(e: Pick<Event, 'participants'>) {
 // Skorun metni spora göre ayrı modülde (FX-26); eski içe aktarmalar buradan devam eder
 export { scoreDetail, scoreText } from './scoreText'
 
+/**
+ * SofaScore's round names ("Quarterfinals", "Round of 128", "Qualification Round 1") are English; the common
+ * ones are named in the reader's language (FX-26, M5), any other as SofaScore gives it. A round without a name
+ * is "Round 5" by its number.
+ */
+const ROUND_PATTERNS: [RegExp, string, ((m: RegExpMatchArray) => Record<string, unknown>)?][] = [
+  [/^finals?$/, 'final'],
+  [/^semi[- ]?finals?$/, 'semifinal'],
+  [/^quarter[- ]?finals?$/, 'quarterfinal'],
+  [/^round of (\d+)$/, 'roundOf', (m) => ({ n: Number(m[1]) })],
+  [/^last (\d+)$/, 'roundOf', (m) => ({ n: Number(m[1]) })],
+  [/^1\/(\d+)[- ]?finals?$/, 'roundOf', (m) => ({ n: Number(m[1]) * 2 })],
+  [/^(?:qualification|qualifying)(?: round)? (\d+)$/, 'qualification', (m) => ({ n: Number(m[1]) })],
+  [/^(?:qualification|qualifying)(?: round)? final$/, 'qualificationFinal'],
+  [/^(?:qualification|qualifying|qualifiers?)$/, 'qualifying'],
+  [/^group stage$/, 'groupStage'],
+  [/^group ([a-z0-9]{1,2})$/, 'group', (m) => ({ g: m[1].toUpperCase() })],
+  [/^round (\d+)$/, 'nth', (m) => ({ n: Number(m[1]) })],
+  [/^(\d+)(?:st|nd|rd|th) round$/, 'nth', (m) => ({ n: Number(m[1]) })],
+  [/^play-?offs?$/, 'playoff'],
+  [/^play-?in$/, 'playIn'],
+  [/^(?:3rd|third) place(?: final| match| play-?off)?$|^match for (?:3rd|third) place$/, 'third'],
+  [/^preliminary round$/, 'preliminary'],
+  [/^regular season$/, 'regularSeason'],
+]
+
+export function roundName(round: { name?: string | null; number?: number | null } | null | undefined): string | null {
+  if (!round) return null
+  const name = round.name?.trim()
+  if (!name) return round.number != null ? t('ui.eventDetail.round', { n: round.number }) : null
+  const key = name.toLowerCase().replace(/\s+/g, ' ')
+  for (const [re, code, args] of ROUND_PATTERNS) {
+    const m = key.match(re)
+    if (m) return t(`ui.roundName.${code}`, args ? args(m) : {})
+  }
+  return name
+}
+
 export function sliceLabel(key: string): string {
   const k = `ui.slice.${key}`
   return te(k) ? t(k) : key

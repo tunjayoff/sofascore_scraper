@@ -5,13 +5,13 @@ import type { VueWrapper } from '@vue/test-utils'
 import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
 import type { Event, EventExtra } from '@/api/v1/schema'
 import { lineScore, methodName, scoreDetail, scoreText, setText } from '@/screens/events/scoreText'
-import { resetNames } from '@/screens/events/eventText'
+import { resetNames, roundName } from '@/screens/events/eventText'
 import { resetSports } from '@/app/sports'
 import { authNeeded } from '@/lib/auth'
 import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import { flush, mockFetch } from './helpers'
-import { axeViolations, mountScreen, page, status } from './v1'
+import { axeViolations, mountScreen, page, setting, settingsDoc, status } from './v1'
 
 /**
  * FX-26: the score of every sport as the live validation of 2026-10-08 found it (M7 to M11, M19). The events
@@ -178,5 +178,66 @@ describe('the match header of every sport', () => {
   it('tennis: tie-break points in the set scores', async () => {
     const score = await open('tennis__16385361')
     expect(score.text()).toContain('6-7(7) 7-6(2) 6-3 6-4')
+  })
+})
+
+describe('round names and the provisional result (M5, M6)', () => {
+  it('common round names in the reader’s language; others as SofaScore gives them', () => {
+    const names = ['Final', 'Semifinals', 'Quarterfinals', 'Round of 128', 'Round of 32', 'Qualification Round 1', 'Group stage', 'Group B', '1/8 finals', 'Play-offs', 'Kicker Cup R2']
+    expect(names.map((name) => roundName({ name, number: null }))).toEqual([
+      'Final', 'Semi-finals', 'Quarter-finals', 'Round of 128', 'Round of 32', 'Qualifying round 1', 'Group stage', 'Group B', 'Round of 16', 'Play-offs', 'Kicker Cup R2',
+    ])
+    setLocale('tr')
+    expect(names.map((name) => roundName({ name, number: null }))).toEqual([
+      'Final', 'Yarı final', 'Çeyrek final', 'Son 128', 'Son 32', 'Eleme 1. tur', 'Grup aşaması', 'B Grubu', 'Son 16', 'Play-off', 'Kicker Cup R2',
+    ])
+    expect(roundName({ name: null, number: 5 })).toBe('5. tur')
+    expect(roundName(null)).toBeNull()
+  })
+
+  const routes = (e: Event, windowHours: number | null) => ({
+    'GET /api/v1/sports': { data: [], page: { limit: 0, next_cursor: null } },
+    'GET /api/v1/tournaments': page([]),
+    [`GET /api/v1/tournaments/${e.tournament_id}/seasons`]: { data: [], page: { limit: 0, next_cursor: null } },
+    [`GET /api/v1/events/${e.id}`]: { data: e },
+    [`GET /api/v1/events/${e.id}/extra`]: { data: { note: null, series: null, venue: null, referee: null } },
+    [`GET /api/v1/events/${e.id}/slices`]: { data: [], page: { limit: 0, next_cursor: null } },
+    [`GET /api/v1/events/${e.id}/odds`]: { data: [], page: { limit: 0, next_cursor: null } },
+    'GET /api/v1/changes': page([]),
+    'GET /api/v1/status': { data: status() },
+    'GET /api/v1/settings': { data: settingsDoc(windowHours == null ? [] : [setting('refresh.window_hours', windowHours)]) },
+  })
+
+  it('the header shows the round in Turkish and no "Provisional" badge; the facts say why and until when', async () => {
+    setLocale('tr')
+    const e = ev('futsal__17256669')
+    e.quality = { ...e.quality, settlement: 'provisional', provisional: true }
+    mockFetch(routes(e, 72))
+    ;({ w } = await mountScreen(EventDetailScreen, `/events/${e.id}`, '/events/:id'))
+    await flush()
+    await flush()
+    expect(w.text()).toContain('Çeyrek final')
+    expect(w.text()).not.toContain('Quarterfinals')
+    expect(w.find('[data-testid="event-score"]').text()).not.toContain(t('ui.status.settlement.provisional'))
+    const why = w.find('[data-testid="settlement-why"]')
+    expect(why.text()).toContain(t('ui.eventDetail.provisionalWhy', { h: 72 }))
+    expect(why.find('time').attributes('datetime')).toBe(new Date(Date.parse(e.start_utc!) + 72 * 3600_000).toISOString())
+    expect(await axeViolations(w.element)).toEqual([])
+  })
+
+  it('without the window setting the explanation is plain; a final result has none', async () => {
+    const e = ev('futsal__17256669')
+    e.quality = { ...e.quality, settlement: 'provisional', provisional: true }
+    mockFetch(routes(e, null))
+    ;({ w } = await mountScreen(EventDetailScreen, `/events/${e.id}`, '/events/:id'))
+    await flush()
+    await flush()
+    expect(w.find('[data-testid="settlement-why"]').text()).toBe(t('ui.eventDetail.provisionalWhyPlain'))
+    w.unmount()
+    mockFetch(routes(ev('futsal__17256669'), 72))
+    ;({ w } = await mountScreen(EventDetailScreen, '/events/17256669', '/events/:id'))
+    await flush()
+    expect(w.find('[data-testid="settlement"]').text()).toBe(t('ui.eventDetail.settled.final'))
+    expect(w.find('[data-testid="settlement-why"]').exists()).toBe(false)
   })
 })

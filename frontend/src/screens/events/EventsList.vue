@@ -23,6 +23,7 @@ import {
   loadSeasons,
   loadTournaments,
   needsData,
+  roundName,
   scoreText,
   seasonName,
   seasonNames,
@@ -281,7 +282,7 @@ defineExpose({ reload: list.load })
       <template #cell-start="{ row }"><TimeText :value="row.start_utc" /></template>
       <template #cell-sport="{ row }">{{ sportName(row.sport) }}</template>
       <template #cell-tournament="{ row }">{{ tournamentName(row.tournament_id) }}</template>
-      <template #cell-round="{ row }">{{ row.round?.name ?? row.round?.number ?? '—' }}</template>
+      <template #cell-round="{ row }">{{ roundName(row.round) ?? '—' }}</template>
       <template #cell-match="{ row }">
         <span class="inline-flex flex-wrap items-baseline gap-x-2">
           <span>{{ row.participants.home?.name ?? '—' }}</span>
@@ -292,7 +293,7 @@ defineExpose({ reload: list.load })
       <template #cell-status="{ row }">
         <span class="inline-flex flex-wrap items-center gap-1">
           <StatusBadge kind="event" :value="row.status.class" />
-          <UiBadge v-if="row.quality.settlement === 'provisional'" tone="info" icon="clock">{{ t('ui.status.settlement.provisional') }}</UiBadge>
+          <UiBadge v-if="row.quality.settlement === 'provisional'" tone="info" icon="clock" :title="t('ui.eventDetail.provisionalWhyPlain')">{{ t('ui.status.settlement.provisional') }}</UiBadge>
           <UiBadge v-if="row.quality.stale" tone="warn" icon="alert">{{ t('ui.status.quality.stale') }}</UiBadge>
           <UiBadge v-if="row.quality.status_regressed" tone="warn" icon="alert">{{ t('ui.status.quality.regressed') }}</UiBadge>
         </span>

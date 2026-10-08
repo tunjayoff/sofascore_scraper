@@ -998,6 +998,23 @@ const en = {
       skipped: '{n} matches have no tournament and are left out.',
     },
   },
+  roundName: {
+    final: 'Final',
+    semifinal: 'Semi-finals',
+    quarterfinal: 'Quarter-finals',
+    roundOf: 'Round of {n}',
+    qualification: 'Qualifying round {n}',
+    qualificationFinal: 'Qualifying final',
+    qualifying: 'Qualifying',
+    groupStage: 'Group stage',
+    group: 'Group {g}',
+    nth: 'Round {n}',
+    playoff: 'Play-offs',
+    playIn: 'Play-in',
+    third: 'Third-place match',
+    preliminary: 'Preliminary round',
+    regularSeason: 'Regular season',
+  },
   eventDetail: {
     tabs: 'Sections',
     tab: {
@@ -1032,6 +1049,9 @@ const en = {
       event: 'the event page',
       listing: 'a schedule only',
     },
+    provisionalWhy: 'Read within {h} hours of the start; SofaScore may still correct the score or the status in that time. The first update after the window reads it once more and the result becomes final.',
+    provisionalWhyPlain: 'Read shortly after it ended; SofaScore may still correct the score or the status. Once the refresh window has passed it is read once more and becomes final.',
+    provisionalUntil: 'The window ends',
     settled: {
       open: 'Not yet',
       provisional: 'Provisional, may change',

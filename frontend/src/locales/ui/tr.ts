@@ -1000,6 +1000,23 @@ const tr: typeof en = {
       skipped: '{n} maçın turnuvası yok; dışarıda bırakıldı.',
     },
   },
+  roundName: {
+    final: 'Final',
+    semifinal: 'Yarı final',
+    quarterfinal: 'Çeyrek final',
+    roundOf: 'Son {n}',
+    qualification: 'Eleme {n}. tur',
+    qualificationFinal: 'Eleme finali',
+    qualifying: 'Eleme',
+    groupStage: 'Grup aşaması',
+    group: '{g} Grubu',
+    nth: '{n}. tur',
+    playoff: 'Play-off',
+    playIn: 'Play-in',
+    third: 'Üçüncülük maçı',
+    preliminary: 'Ön eleme',
+    regularSeason: 'Normal sezon',
+  },
   eventDetail: {
     tabs: 'Bölümler',
     tab: {
@@ -1034,6 +1051,9 @@ const tr: typeof en = {
       event: 'maç sayfası',
       listing: 'yalnızca fikstür',
     },
+    provisionalWhy: 'Maç başladıktan sonraki {h} saat içinde okundu; SofaScore bu sürede skoru ya da durumu düzeltebilir. Süre dolduktan sonraki ilk güncellemede bir kez daha okunur ve kesinleşir.',
+    provisionalWhyPlain: 'Bitişinden kısa süre sonra okundu; SofaScore skoru ya da durumu hâlâ düzeltebilir. Yenileme süresi dolunca bir kez daha okunur ve kesinleşir.',
+    provisionalUntil: 'Süre doluyor:',
     settled: {
       open: 'Henüz değil',
       provisional: 'Geçici, değişebilir',

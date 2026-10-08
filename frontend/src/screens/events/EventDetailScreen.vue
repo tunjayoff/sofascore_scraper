@@ -29,7 +29,7 @@ import SliceTab from './SliceTab.vue'
 import RawPayload from './RawPayload.vue'
 import ChangeFields from './ChangeFields.vue'
 import OddsView from './OddsView.vue'
-import { awayName, eventTitle, fetchSelections, homeName, loadSeasons, loadTournaments, seasonName, sliceLabel, tournamentName } from './eventText'
+import { awayName, eventTitle, fetchSelections, homeName, loadSeasons, loadTournaments, roundName, seasonName, sliceLabel, tournamentName } from './eventText'
 import { aggregateScored, lineScore, scoreDetail, scoreText } from './scoreText'
 
 /**
@@ -118,6 +118,32 @@ function loadChanges() {
     .catch((e) => (changesError.value = e))
 }
 
+/**
+ * A provisional result (FX-26, M6): its badge is not in the header any more (next to "Ended" it read as an
+ * uncertain result); the facts say why it is provisional and until when. A finished match counts as
+ * provisional while it was last read within `refresh.window_hours` of its start (Settings › Requests); the
+ * first update after that window reads it once more and it becomes final.
+ */
+const windowHours = ref<number | null>(null)
+let windowAsked = false
+watch(
+  () => event.value?.quality.settlement,
+  (s) => {
+    if (s !== 'provisional' || windowAsked) return
+    windowAsked = true
+    v1.settings()
+      .then((doc) => {
+        const v = doc.settings.find((x) => x.key === 'refresh.window_hours')?.value
+        windowHours.value = typeof v === 'number' && v > 0 ? v : null
+      })
+      .catch(() => {})
+  },
+)
+const finalAfter = computed(() => {
+  const start = event.value?.start_utc ? Date.parse(event.value.start_utc) : NaN
+  return windowHours.value && Number.isFinite(start) ? new Date(start + windowHours.value * 3600_000).toISOString() : null
+})
+
 /** Baseball's inning-by-inning line (R, H, E); null for every other sport. */
 const innings = computed(() => (event.value ? lineScore(event.value.score) : null))
 /**
@@ -142,7 +168,7 @@ const facts = computed(() => {
     { key: 'id', label: t('ui.eventDetail.fact.id'), value: String(e.id), mono: true },
     { key: 'sport', label: t('ui.eventDetail.fact.sport'), value: sportName(e.sport) },
     { key: 'status', label: t('ui.eventDetail.fact.status') },
-    { key: 'settlement', label: t('ui.eventDetail.fact.settlement'), value: t(`ui.eventDetail.settled.${e.quality.settlement}`) },
+    { key: 'settlement', label: t('ui.eventDetail.fact.settlement') },
     { key: 'observed', label: t('ui.eventDetail.fact.observed') },
     { key: 'changed', label: t('ui.eventDetail.fact.changed') },
     { key: 'source', label: t('ui.eventDetail.fact.source'), value: t(`ui.eventDetail.source.${e.quality.source}`) },
@@ -156,7 +182,7 @@ const where = computed(() => {
   return [
     e.tournament_id ? tournamentName(e.tournament_id) : (e.stage?.name ?? null),
     e.season_id ? seasonName(e.season_id) : null,
-    e.round?.name ?? (e.round?.number != null ? t('ui.eventDetail.round', { n: e.round.number }) : null),
+    roundName(e.round),
   ].filter(Boolean) as string[]
 })
 
@@ -326,7 +352,6 @@ onMounted(() => {
         </div>
         <p class="m-0 flex flex-wrap items-center justify-center gap-2">
           <StatusBadge kind="event" :value="event.status.class" />
-          <UiBadge v-if="event.quality.settlement === 'provisional'" tone="info" icon="clock">{{ t('ui.status.settlement.provisional') }}</UiBadge>
           <UiBadge v-if="event.quality.stale" tone="warn" icon="alert">{{ t('ui.status.quality.stale') }}</UiBadge>
           <UiBadge v-if="event.quality.status_regressed" tone="warn" icon="alert">{{ t('ui.status.quality.regressed') }}</UiBadge>
         </p>
@@ -451,6 +476,15 @@ onMounted(() => {
                   <summary>{{ t('ui.eventDetail.statusDetails') }}</summary>
                   <span>{{ t('ui.eventDetail.statusRaw') }}: </span><span class="u-mono" lang="en">{{ statusRaw }}</span>
                 </details>
+              </span>
+            </template>
+            <template #value-settlement>
+              <span class="flex flex-col gap-1" data-testid="settlement">
+                <span>{{ t(`ui.eventDetail.settled.${event.quality.settlement}`) }}</span>
+                <span v-if="event.quality.settlement === 'provisional'" class="u-small u-muted" data-testid="settlement-why">
+                  {{ windowHours ? t('ui.eventDetail.provisionalWhy', { h: windowHours }) : t('ui.eventDetail.provisionalWhyPlain') }}
+                  <template v-if="finalAfter"> {{ t('ui.eventDetail.provisionalUntil') }} <TimeText :value="finalAfter" />.</template>
+                </span>
               </span>
             </template>
             <template #value-observed><TimeText :value="event.quality.observed_at_utc" /></template>
