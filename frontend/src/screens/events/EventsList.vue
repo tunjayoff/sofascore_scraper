@@ -40,9 +40,11 @@ import {
  * from `include=slices_summary`. Selected events can be fetched: "Fetch missing data" sends only the
  * events with something missing, "Fetch again" all of them; both are `fetch` jobs by event id, one
  * selection per tournament. Without a status filter every status is shown, upcoming and in-progress
- * matches too (FX-14a); "All statuses" says so and brings it back.
+ * matches too (FX-14a); "All statuses" says so and brings it back. A team's or a player's list (`fixedParticipant`)
+ * starts with the played matches, newest first, and switches to the upcoming ones, soonest first (`when`,
+ * FX-26 M15); with `fixedSport` the sport filter is not offered (a team plays one sport).
  */
-const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; tableId?: string }>()
+const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; fixedSport?: string | null; tableId?: string }>()
 const { t } = useI18n()
 const route = useRoute()
 const status = useStatusStore()
@@ -51,14 +53,23 @@ const CLASSES = ['not_started', 'live', 'completed', 'decided_without_play', 'vo
 type StatusClass = (typeof CLASSES)[number]
 /** Without a status filter in the address: every status (FX-14a; it was "finished only"). */
 const DEFAULT_CLASSES: StatusClass[] = []
-const SERVER_KEYS = ['sport', 'tournament', 'season', 'from', 'to', 'status', 'has', 'q', 'sort'] as const
+const SERVER_KEYS = ['sport', 'tournament', 'season', 'from', 'to', 'status', 'has', 'q', 'sort', 'when'] as const
+/** A team's or a player's list: played (newest first), upcoming (soonest first) or every match (FX-26, M15). */
+const WHEN = ['played', 'upcoming', 'all'] as const
+type When = (typeof WHEN)[number]
+const WHEN_CLASSES: Record<When, StatusClass[]> = { played: ['live', 'completed', 'decided_without_play'], upcoming: ['not_started'], all: [] }
 
 const f = computed(() => {
   const q = route.query
   const raw = queryList(q, 'status')
   const classes: StatusClass[] = raw.includes('any') ? [] : raw.length ? (raw.filter((x) => (CLASSES as readonly string[]).includes(x)) as StatusClass[]) : DEFAULT_CLASSES
+  const when: When | null = props.fixedParticipant ? ((WHEN as readonly string[]).includes(queryText(q, 'when')) ? (queryText(q, 'when') as When) : 'played') : null
+  const sortText = queryText(q, 'sort')
   return {
-    sport: queryText(q, 'sport'),
+    when,
+    /** The status classes asked for: the filter's, else the switch's. */
+    asked: classes.length || !when ? classes : WHEN_CLASSES[when],
+    sport: props.fixedSport ?? queryText(q, 'sport'),
     tournament: props.fixedTournament ?? queryIds(q, 'tournament')[0] ?? null,
     season: queryIds(q, 'season')[0] ?? null,
     from: queryText(q, 'from'),
@@ -66,7 +77,7 @@ const f = computed(() => {
     classes,
     has: (['details', 'missing'].includes(queryText(q, 'has')) ? queryText(q, 'has') : '') as '' | 'details' | 'missing',
     team: queryText(q, 'q'),
-    asc: queryText(q, 'sort') === 'asc',
+    asc: sortText ? sortText === 'asc' : when === 'upcoming',
   }
 })
 
@@ -78,7 +89,7 @@ const list = usePagedList<EventListItem>(
       season: f.value.season ? [f.value.season] : null,
       from: f.value.from || null,
       to: f.value.to || null,
-      status: f.value.classes.length ? f.value.classes : null,
+      status: f.value.asked.length ? f.value.asked : null,
       has: f.value.has || null,
       q: f.value.team || null,
       participant: props.fixedParticipant ? [props.fixedParticipant] : null,
@@ -97,7 +108,10 @@ watch(() => list.rows.value, () => (selection.value = selection.value.filter((id
 
 const sort = computed<Sort>(() => ({ key: 'start', dir: f.value.asc ? 'asc' : 'desc' }))
 function onSort(s: Sort | null) {
-  list.setQuery({ sort: s?.dir === 'asc' ? 'asc' : null })
+  list.setQuery({ sort: s?.dir === 'asc' ? 'asc' : f.value.when === 'upcoming' ? 'desc' : null })
+}
+function setWhen(w: When) {
+  list.setQuery({ when: w === 'played' ? null : w, sort: null, status: null })
 }
 
 const columns = computed<Column<EventListItem>[]>(() => [
@@ -129,7 +143,8 @@ watch(
 )
 
 function toggleClass(c: StatusClass) {
-  const set = new Set(f.value.classes)
+  // the played / upcoming switch counts as the starting choice (FX-26)
+  const set = new Set(f.value.classes.length ? f.value.classes : f.value.asked)
   if (set.has(c)) set.delete(c)
   else set.add(c)
   list.setQuery({ status: set.size ? [...set] : null })
@@ -137,7 +152,7 @@ function toggleClass(c: StatusClass) {
 
 const chips = computed(() => {
   const out: { key: string; label: string }[] = []
-  if (f.value.sport) out.push({ key: 'sport', label: sportName(f.value.sport) })
+  if (f.value.sport && !props.fixedSport) out.push({ key: 'sport', label: sportName(f.value.sport) })
   if (!props.fixedTournament && f.value.tournament) out.push({ key: 'tournament', label: tournamentName(f.value.tournament) })
   if (f.value.season) out.push({ key: 'season', label: seasonName(f.value.season) })
   if (f.value.from) out.push({ key: 'from', label: t('ui.events.from', { date: f.value.from }) })
@@ -199,8 +214,11 @@ defineExpose({ reload: list.load })
 
 <template>
   <div>
+    <div v-if="f.when" class="u-seg mb-3" role="group" :aria-label="t('ui.events.when.label')" data-testid="events-when">
+      <button v-for="w in WHEN" :key="w" type="button" :aria-pressed="!f.classes.length && f.when === w" :data-when="w" @click="setWhen(w)">{{ t(`ui.events.when.${w}`) }}</button>
+    </div>
     <FilterBar :active-count="chips.length" :chips="chips" @clear="clearFilters" @remove="removeFilter">
-      <label class="flex flex-col">
+      <label v-if="!fixedSport" class="flex flex-col">
         <span class="u-label">{{ t('ui.events.col.sport') }}</span>
         <select class="u-field" :value="f.sport" data-filter="sport" data-filter-focus @change="list.setQuery({ sport: ($event.target as HTMLSelectElement).value })">
           <option value="">{{ t('ui.filter.all') }}</option>
@@ -244,8 +262,8 @@ defineExpose({ reload: list.load })
       <div class="flex flex-col basis-full">
         <span id="events-status" class="u-label">{{ t('ui.events.col.status') }}</span>
         <div class="flex flex-wrap gap-2" role="group" aria-labelledby="events-status">
-          <button type="button" class="u-chip u-toggle-chip" :aria-pressed="!f.classes.length" data-class="all" @click="list.setQuery({ status: null })">{{ t('ui.events.anyStatus') }}</button>
-          <button v-for="c in CLASSES" :key="c" type="button" class="u-chip u-toggle-chip" :aria-pressed="f.classes.includes(c)" :data-class="c" @click="toggleClass(c)">
+          <button type="button" class="u-chip u-toggle-chip" :aria-pressed="!f.asked.length" data-class="all" @click="f.when ? setWhen('all') : list.setQuery({ status: null })">{{ t('ui.events.anyStatus') }}</button>
+          <button v-for="c in CLASSES" :key="c" type="button" class="u-chip u-toggle-chip" :aria-pressed="f.asked.includes(c)" :data-class="c" @click="toggleClass(c)">
             {{ t(`ui.status.event.${c}`) }}
           </button>
         </div>

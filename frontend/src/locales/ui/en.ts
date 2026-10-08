@@ -954,6 +954,12 @@ const en = {
     empty: 'SofaScore lists no season for this league. Choose the current season or all seasons.',
   },
   events: {
+    when: {
+      label: 'Which matches',
+      played: 'Played',
+      upcoming: 'Upcoming',
+      all: 'All',
+    },
     notPlayed: 'not played',
     description: 'The downloaded matches: find them, see their state, download what is missing.',
     notLive: 'Stored data, read when it was fetched: a match “in progress” shows the state of its last read, not a live score.',

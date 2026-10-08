@@ -956,6 +956,12 @@ const tr: typeof en = {
     empty: 'SofaScore bu lig için sezon listelemiyor. Güncel sezonu ya da tüm sezonları seçin.',
   },
   events: {
+    when: {
+      label: 'Hangi maçlar',
+      played: 'Oynananlar',
+      upcoming: 'Gelecek',
+      all: 'Tümü',
+    },
     notPlayed: 'oynanmadı',
     description: 'İndirilen maçlar: bulun, durumlarını görün, eksik olanı indirin.',
     notLive: 'Kayıtlı veri, çekildiği andaki haliyle: “sürüyor” görünen bir maç son okumanın durumudur, canlı skor değildir.',

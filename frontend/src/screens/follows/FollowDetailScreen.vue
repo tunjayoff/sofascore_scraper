@@ -319,8 +319,8 @@ onMounted(() => void load())
             </div>
 
             <template v-else-if="tab === 'events'">
-              <EventsList v-if="isTournament" :fixed-tournament="entityId" table-id="follow-events" />
-              <EventsList v-else :fixed-participant="entityId" table-id="follow-team-events" />
+              <EventsList v-if="isTournament" :fixed-tournament="entityId" :fixed-sport="follow.sport" table-id="follow-events" />
+              <EventsList v-else :fixed-participant="entityId" :fixed-sport="follow.sport" table-id="follow-team-events" />
             </template>
 
             <div v-else-if="tab === 'data'" class="flex flex-col gap-4">

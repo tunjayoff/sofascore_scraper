@@ -11,7 +11,7 @@ import { needsData, resetNames } from '@/screens/events/eventText'
 import { authNeeded } from '@/lib/auth'
 import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
-import { flush, mockFetch } from './helpers'
+import { callsTo, flush, mockFetch } from './helpers'
 import { axeViolations, event, follow, mountScreen, setting, settingsDoc, sportWithOdds, status } from './v1'
 
 /**
@@ -138,6 +138,54 @@ describe('coverage counts finished matches only, for every kind of follow (M12, 
   it('a match not played yet needs no "Fetch missing data"', () => {
     expect(needsData(ev(4, 'not_started', 'event'))).toBe(false)
     expect(needsData({ ...ev(3, 'completed', 'listing') })).toBe(true)
+  })
+})
+
+describe('a team’s matches: played first, a switch to the upcoming ones, no sport filter (M15)', () => {
+  const routes = () => ({
+    'GET /api/v1/sports': list([sportWithOdds('football'), sportWithOdds('basketball')]),
+    'GET /api/v1/tournaments': list([]),
+    'GET /api/v1/follows/team:3422': { data: follow({ id: 'team:3422', kind: 'team', entity_id: 3422, name: 'Boston Celtics', sport: 'basketball' }) },
+    'GET /api/v1/jobs': list([]),
+    'GET /api/v1/events': list([event({ id: 1, sport: 'basketball' })]),
+    'GET /api/v1/status': { data: status() },
+  })
+  const query = (f: ReturnType<typeof mockFetch>) => new URL(String(callsTo(f, 'GET /api/v1/events').at(-1)![0]), 'http://x').searchParams
+
+  it('starts with the played matches, newest first; "Upcoming" lists the fixtures, soonest first', async () => {
+    const f = mockFetch(routes())
+    let router
+    ;({ w, router } = await mountScreen(FollowDetailScreen, '/follows/team/3422?tab=events', '/follows/:kind/:id'))
+    await flush()
+    await flush()
+    const when = w.find('[data-testid="events-when"]')
+    expect(when.find('[aria-pressed="true"]').attributes('data-when')).toBe('played')
+    expect(query(f).getAll('status')).toEqual(['live', 'completed', 'decided_without_play'])
+    expect(query(f).get('sort')).toBe('-start_utc')
+    expect(query(f).get('participant')).toBe('3422')
+    // the status chips say what the switch chose
+    expect(w.find('[data-class="all"]').attributes('aria-pressed')).toBe('false')
+    expect(w.find('[data-class="completed"]').attributes('aria-pressed')).toBe('true')
+    await when.find('[data-when="upcoming"]').trigger('click')
+    await flush()
+    await flush()
+    expect(router.currentRoute.value.query.when).toBe('upcoming')
+    expect(query(f).getAll('status')).toEqual(['not_started'])
+    expect(query(f).get('sort')).toBe('start_utc')
+    await w.find('[data-testid="events-when"] [data-when="all"]').trigger('click')
+    await flush()
+    await flush()
+    expect(query(f).getAll('status')).toEqual([])
+    expect(await axeViolations(w.find('[data-testid="events-when"]').element)).toEqual([])
+  })
+
+  it('the sport filter is not offered: the team plays one sport, and the list asks for it', async () => {
+    const f = mockFetch(routes())
+    ;({ w } = await mountScreen(FollowDetailScreen, '/follows/team/3422?tab=events', '/follows/:kind/:id'))
+    await flush()
+    await flush()
+    expect(w.find('[data-filter="sport"]').exists()).toBe(false)
+    expect(query(f).get('sport')).toBe('basketball')
   })
 })
 
