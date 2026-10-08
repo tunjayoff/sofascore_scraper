@@ -38,7 +38,7 @@ Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#soru
 |---|---|
 | ![Lig ya da takım ekle: "premier" yazınca SofaScore'un ligleri sporları ve ülkeleriyle önerilir](docs/images/add-league.webp) | ![Paris Saint-Germain ile Tottenham Hotspur, 2025 UEFA Süper Kupa finali, 2-2 ve penaltılarla 4-3, istatistikleriyle](docs/images/match-statistics.webp) |
 | **Lig ekle**: yazarken öneriler ya da SofaScore kimliği, sonra sezonlar ve veriler. | **Bir maç**: skor, devrelere göre istatistikler, kadrolar, olaylar, oranlar ve ham veri. |
-| ![Yeni dışa aktarım penceresi: normalleştirilmiş veri, maç tablosu ya da SofaScore'un özgün verisi; CSV, JSONL, Parquet ve SQLite biçimleri](docs/images/export-dialog.webp) | ![Koyu temada, biten futbol maçlarına süzülmüş maç listesi; spor, turnuva, tarih, takım, veri ve duruma göre süzgeçler](docs/images/matches-dark.webp) |
+| ![Yeni dışa aktarım penceresi: normalleştirilmiş veri, maç tablosu ya da SofaScore'un özgün verisi; CSV, JSONL, Parquet ve SQLite biçimleri](docs/images/export-dialog.webp) | ![Koyu temada maç listesi: oynanmış futbol maçları, en yenisi önce; Oynananlar / Gelecek / Tümü seçimi ve spor, turnuva, tarih, takım, veri ve duruma göre süzgeçler](docs/images/matches-dark.webp) |
 | **Dışa aktarımlar**: normalleştirilmiş veri, maç tablosu ya da ham yanıtlar. | Koyu temada **Maçlar**. |
 
 Ekran görüntüleri İngilizce arayüzden alındı ve 2026-10-08'de indirilmiş gerçek SofaScore verisini gösterir.

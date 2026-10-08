@@ -38,7 +38,7 @@ Unofficial and not affiliated with SofaScore; see the [disclaimer](#disclaimer).
 |---|---|
 | ![Add a league or team: typing "premier" suggests SofaScore's leagues with their sport and country](docs/images/add-league.webp) | ![Paris Saint-Germain against Tottenham Hotspur, the 2025 UEFA Super Cup final, 2-2 and 4-3 on penalties, with its statistics](docs/images/match-statistics.webp) |
 | **Add league**: suggestions while you type, or the SofaScore id, then seasons and data. | **A match**: score, statistics by period, line-ups, incidents, odds and the raw data. |
-| ![New export dialog: normalized data, the match table or SofaScore's original data, in the CSV, JSONL, Parquet and SQLite formats](docs/images/export-dialog.webp) | ![The match list in the dark theme, filtered to finished football matches, with filters by sport, tournament, date, team, data and status](docs/images/matches-dark.webp) |
+| ![New export dialog: normalized data, the match table or SofaScore's original data, in the CSV, JSONL, Parquet and SQLite formats](docs/images/export-dialog.webp) | ![The match list in the dark theme: played football matches, newest first, with the Played / Upcoming / All switch and filters by sport, tournament, date, team, data and status](docs/images/matches-dark.webp) |
 | **Exports**: normalized data, the match table or the raw payloads. | **Matches** in the dark theme. |
 
 The screenshots show real SofaScore data, downloaded on 2026-10-08, in the English UI.
