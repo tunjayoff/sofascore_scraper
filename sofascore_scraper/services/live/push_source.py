@@ -43,7 +43,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Deque, Dict, List, Mapping, Optional, Protocol, Tuple, Union
 from urllib.parse import urlsplit
 
-from sofascore_scraper.status import StatusClass, classify_status
+from sofascore_scraper.status import StatusClass, classify_code, classify_status
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,7 @@ def merge_frame(base: Mapping[str, Any], frame: Mapping[str, Any]) -> Dict[str, 
         node[parts[-1]] = copy.deepcopy(value)
     status = out.get("status")
     if "status.code" in frame and "status.type" not in frame and isinstance(status, dict) and status.get("type"):
-        by_code = classify_status({"status": {"code": status.get("code")}})
+        by_code = classify_code(status.get("code"))  # yoklama: bilinmeyen kod burada uyarı değil
         if by_code is not StatusClass.UNKNOWN and by_code is not classify_status(out):
             del status["type"]
     return out

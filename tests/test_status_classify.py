@@ -181,6 +181,46 @@ def test_new_live_codes_are_live_without_a_type(code, caplog):
     assert caplog.text == ""
 
 
+LIVE_2026_10_08 = json.loads((Path(__file__).parent / "fixtures" / "live_validation" / "live-statuses-2026-10-08.json")
+                             .read_text(encoding="utf-8"))["statuses"]
+
+
+def test_the_live_validation_saw_every_live_sport():
+    """FX-27 V4: canlı doğrulamada (2026-10-08) canlı listelerde görülen 13 spor ve 34 durum."""
+    assert len({row["sport"] for row in LIVE_2026_10_08}) == 13 and len(LIVE_2026_10_08) == 34
+
+
+@pytest.mark.parametrize("row", LIVE_2026_10_08, ids=lambda r: f"{r['sport']}-{r['code']}")
+def test_every_live_status_seen_on_2026_10_08_is_live_with_and_without_its_type(row, caplog):
+    """
+    FX-27 V4: görülen her (spor, kod, açıklama, tür) canlıdır; tür düşmüş yükte de (push karesi yalnızca kodu
+    taşıyabilir) kod tablosundan canlı çıkar ve "Status could not be classified" uyarısı yazılmaz.
+    """
+    status = {"code": row["code"], "description": row["description"], "type": row["type"]}
+    with caplog.at_level("WARNING", logger="sofascore_scraper.status"):
+        assert classify_status({"status": status}) is StatusClass.LIVE
+        assert classify_status({"status": {"code": row["code"], "description": row["description"]}}) \
+            is StatusClass.LIVE
+        assert classify_status({"status": {"code": row["code"]}}) is StatusClass.LIVE
+    assert caplog.text == ""
+
+
+@pytest.mark.parametrize("code", [1, 2, 3, 22, 42, 58, 1003, 1004, 1005])
+def test_codes_added_after_the_live_validation_are_live_without_a_type(code):
+    assert classify_status({"status": {"code": code}}) is StatusClass.LIVE
+
+
+def test_a_push_probe_of_an_unknown_code_logs_nothing(caplog):
+    """`classify_code` push karesinin kodunu yoklar: bilinmeyen kod UNKNOWN döner ama uyarı yazılmaz."""
+    from sofascore_scraper.status import classify_code
+
+    with caplog.at_level("WARNING", logger="sofascore_scraper.status"):
+        assert classify_code(555) is StatusClass.UNKNOWN
+        assert classify_code(None) is StatusClass.UNKNOWN and classify_code(True) is StatusClass.UNKNOWN
+        assert classify_code(2) is StatusClass.LIVE and classify_code(100) is StatusClass.COMPLETED
+    assert caplog.text == ""
+
+
 def test_unseen_inning_codes_stay_unknown_without_a_type():
     """22-27 (2.-7. inning) görülmedi: tipi olmayan yükte bilinmez kalır; tipiyle gelen yük zaten LIVE'dır."""
     assert classify_status({"status": {"code": 25}}) is StatusClass.UNKNOWN

@@ -161,6 +161,17 @@ def test_a_code_only_frame_drops_a_stale_type_that_contradicts_it() -> None:
     assert kept["status"]["type"] == "inprogress"
 
 
+def test_a_code_only_frame_logs_no_classification_warning(caplog: pytest.LogCaptureFixture) -> None:
+    """FX-27 V4: buz hokeyinin 2. periyodu (kod 2, türsüz kare) "Status could not be classified" yazıyordu."""
+    hockey = {"id": 1, "status": {"code": 1, "type": "inprogress", "description": "1st period"}}
+    with caplog.at_level(logging.WARNING, logger="sofascore_scraper.status"):
+        merged = merge_frame(hockey, {"id": 1, "status.code": 2, "status.description": "2nd period"})
+        assert merged["status"]["type"] == "inprogress" and classify_status(merged) is StatusClass.LIVE
+        odd = merge_frame(hockey, {"id": 1, "status.code": 555})  # bilinmeyen kod: yoklama uyarı yazmaz
+        assert odd["status"]["type"] == "inprogress"
+    assert caplog.text == ""
+
+
 def test_a_frame_creates_missing_nodes() -> None:
     merged = merge_frame({"id": 1, "time": 5}, {"id": 1, "time.played": 600, "homeScore.point": "15"})
     assert merged["time"] == {"played": 600} and merged["homeScore"] == {"point": "15"}
