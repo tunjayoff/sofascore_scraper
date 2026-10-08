@@ -47,8 +47,10 @@ client = TestClient(app)
 
 LEAGUE = 17
 FOOTBALL = 9100001  # turnuva 17, ev sahibi 42, konuk 38; bitmiş
-TENNIS = 9200001  # turnuva 2361; bitmiş, point_by_point isteğe bağlı
+TENNIS = 9200001  # turnuva 2361; bitmiş
 FOOTBALL_SLICES = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
+# FX-16: teniste kadro ve olaylar istenmez, point_by_point tamlığa girer
+TENNIS_SLICES = ("statistics", "team_streaks", "pregame_form", "h2h", "point_by_point")
 
 
 @pytest.fixture(autouse=True)
@@ -176,9 +178,9 @@ def test_the_config_file_becomes_the_policy(configure: Callable[[str], Path]) ->
 
     assert policy.defaults == ("statistics", "h2h", "lineups")
     assert _keys(policy.for_sport("football"), "football") == ["statistics", "h2h"]
-    assert _keys(policy.for_sport("tennis"), "tennis") == ["statistics", "h2h", "lineups", "point_by_point"]
-    assert _keys(policy.for_event("tennis", tournament_id=2361), "tennis") == ["statistics", "lineups",
-                                                                              "point_by_point"]
+    # teniste kadro istenmez (FX-16): taban seçse de gelmez
+    assert _keys(policy.for_sport("tennis"), "tennis") == ["statistics", "h2h", "point_by_point"]
+    assert _keys(policy.for_event("tennis", tournament_id=2361), "tennis") == ["statistics", "point_by_point"]
     assert planning.configured_policy() is policy  # ayarlar değişmedikçe önbellekten
 
 
@@ -212,10 +214,8 @@ def test_an_unset_default_keeps_the_registry_s_default_off_slices_off(configure:
 
 
 @pytest.mark.parametrize("selection, football, tennis", [
-    (None, FOOTBALL_SLICES, ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents",
-                             "point_by_point")),
-    (["core"], FOOTBALL_SLICES, ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents",
-                                 "point_by_point")),
+    (None, FOOTBALL_SLICES, TENNIS_SLICES),
+    (["core"], FOOTBALL_SLICES, TENNIS_SLICES),
     (["statistics"], ("statistics",), ("statistics",)),
     (SliceSelection(base=("core",), disable=("lineups", "incidents")), ("statistics", "team_streaks", "pregame_form",
                                                                          "h2h"),
@@ -255,7 +255,7 @@ def test_a_follow_in_the_follows_table_selects_for_its_events(fake: FakeSofaScor
     _download(store, [FOOTBALL, TENNIS])
 
     assert _requested(fake)[FOOTBALL] == ["incidents"]
-    assert len(_requested(fake)[TENNIS]) == 7
+    assert len(_requested(fake)[TENNIS]) == len(TENNIS_SLICES)
 
 
 # --- tamlık ------------------------------------------------------------------------------------------------
@@ -269,11 +269,11 @@ def test_completeness_counts_only_selected_counting_slices(fake: FakeSofaScore, 
     for selection in (["statistics"], ["statistics", "point_by_point"], ["point_by_point"]):
         assert planning.compute_need(states[FOOTBALL], selection, policy) == "none"
         assert planning.compute_need(states[TENNIS], selection, policy) == "none"
-    # Seçimi genişleyen maç eksik dilimleri için yeniden doldurulur; isteğe bağlı dilim (tenisin point_by_point'i)
-    # tamlığa girmez ama doldurmada istenir
+    # Seçimi genişleyen maç eksik dilimleri için yeniden doldurulur; isteğe bağlı dilim (FX-16'dan beri futbolun ve
+    # tenisin pregame_form'u) tamlığa girmez
     assert planning.compute_need(states[FOOTBALL], ["statistics", "h2h"], policy) == "refill"
-    assert planning.missing_slice_keys(states[TENNIS], ["core"]) == ("team_streaks", "pregame_form", "h2h", "lineups",
-                                                                    "incidents")
+    assert planning.missing_slice_keys(states[FOOTBALL], ["core"]) == ("team_streaks", "h2h", "lineups", "incidents")
+    assert planning.missing_slice_keys(states[TENNIS], ["core"]) == ("team_streaks", "h2h")
     item = planning.work_item(TENNIS, states[TENNIS], "refill", ["h2h", "point_by_point"])
     assert item is not None and item.slices == (("h2h", ""),)
     assert planning.event_needs(store, [FOOTBALL, TENNIS], policy) == {FOOTBALL: "refill", TENNIS: "refill"}

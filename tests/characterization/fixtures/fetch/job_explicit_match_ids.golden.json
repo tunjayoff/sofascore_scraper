@@ -212,26 +212,6 @@
      "sha256": "fdde46c64269da4f6394501cfbba8bcba068aa2c0fe992077bdc528e11ce8f16",
      "state": "ok"
     },
-    "incidents": {
-     "checked_at": "<volatile>",
-     "empty": {
-      "at": "<volatile>",
-      "count": 1,
-      "reason": "404",
-      "unverified": 0
-     },
-     "state": "empty"
-    },
-    "lineups": {
-     "checked_at": "<volatile>",
-     "empty": {
-      "at": "<volatile>",
-      "count": 1,
-      "reason": "404",
-      "unverified": 0
-     },
-     "state": "empty"
-    },
     "point_by_point": {
      "bytes": "<volatile>",
      "checked_at": "<volatile>",
@@ -327,8 +307,6 @@
     "async /event/9100004/team-streaks 404",
     "async /event/9200001 200",
     "async /event/9200001/h2h 200",
-    "async /event/9200001/incidents 404",
-    "async /event/9200001/lineups 404",
     "async /event/9200001/point-by-point 200",
     "async /event/9200001/pregame-form 404",
     "async /event/9200001/statistics 200",

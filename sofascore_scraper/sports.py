@@ -502,8 +502,10 @@ DetailSlice = SliceSpec
 #     /event/{id}/pregame-form'u istedi. H2H ve seriler bitmiş maçta ayrı sekmededir: sekmesi açılmayan sporda
 #     yokluk kanıt sayılmaz;
 #   * kanıt yoksa ya da yetersizse (sayfası açılmamış, 403 almış ya da yarım yüklenmiş sporlar) bugünkü
-#     davranış kalır. Futbol, basketbol ve tenis değişmez (goldenları bugünkü davranışı sabitler); kanıtın
-#     onlar için önerdikleri tests/test_sport_slices.py'de PROPOSALS'tadır.
+#     davranış kalır.
+# Futbol, basketbol ve tenis için kanıtın önerdikleri (#121) canlı doğrulamadan sonra sahibin kararıyla
+# uygulandı (FX-16, 2026-10-08): üçünde pregame_form isteğe bağlı; teniste kadro ve olaylar istenmez,
+# point_by_point tamlığa girer. Uygulama tarafı kanıt: tests/fixtures/sport_slices/slice-matrix-*.txt.
 # Kanıt tablosu: tests/fixtures/sport_slices/evidence.json (research/all_sports'tan türer; testler denetler).
 #
 # Sıra önemli: istek sırası ve DETAIL_SLICE_KEYS / REQUIRED_FILES sırası buradan türer
@@ -513,21 +515,22 @@ DETAIL_SLICES: Tuple[SliceSpec, ...] = (
               optional_in=frozenset({"cricket", "futsal", "padel", "esports", "snooker"})),
     SliceSpec("team_streaks", "/event/{event_id}/team-streaks"),
     # Bitmiş maçta 404: kriket, dart, futsal, buz hokeyi, padel. Canlı maçta 404: e-spor, snooker. Veriyle
-    # yalnızca MMA'da (bitmiş) ve su topunda (başlamamış) görüldü
+    # yalnızca MMA'da (bitmiş) ve su topunda (başlamamış) görüldü. Futbol, basketbol, tenis: kayıtlı bütün
+    # bitmiş maçlarda 404; canlı doğrulamada (2026-10-08) bazı maçta veriyle, bazısında veri yok (FX-16)
     SliceSpec("pregame_form", "/event/{event_id}/pregame-form",
-              optional_in=frozenset({"cricket", "darts", "futsal", "ice-hockey", "padel", "esports", "snooker"})),
+              optional_in=frozenset({"basketball", "cricket", "darts", "football", "futsal", "ice-hockey", "padel",
+                                     "esports", "snooker", "tennis"})),
     SliceSpec("h2h", "/event/{event_id}/h2h"),
-    # Bireysel sporların sayfası kadro istemiyor (dart, MMA, padel, snooker); futsal ve mini futbolda bitmiş
-    # maçta 404
+    # Bireysel sporların sayfası kadro istemiyor (dart, MMA, padel, snooker, tenis); futsal ve mini futbolda
+    # bitmiş maçta 404
     SliceSpec("lineups", "/event/{event_id}/lineups",
-              not_in=frozenset({"darts", "mma", "padel", "snooker"}),
+              not_in=frozenset({"darts", "mma", "padel", "snooker", "tennis"}),
               optional_in=frozenset({"futsal", "minifootball"})),
     SliceSpec("incidents", "/event/{event_id}/incidents",
-              not_in=frozenset({"darts", "esports", "mma", "padel", "snooker"})),
-    # Dartta da var: set ve leg başına kalan sayılar (bitmiş maçta veriyle; research/all_sports/samples/darts).
-    # Teniste bugünkü gibi isteğe bağlı kalır
-    SliceSpec("point_by_point", "/event/{event_id}/point-by-point", sports=frozenset({"tennis", "darts"}),
-              optional_in=frozenset({"tennis"})),
+              not_in=frozenset({"darts", "esports", "mma", "padel", "snooker", "tennis"})),
+    # Tenis ve dart: set, oyun (dartta leg) başına sayılar; bitmiş ve canlı maçta veriyle
+    # (research/all_sports/samples/darts; tenis için canlı doğrulama, 2026-10-08, FX-16)
+    SliceSpec("point_by_point", "/event/{event_id}/point-by-point", sports=frozenset({"tennis", "darts"})),
     # E-sporda her oyunun (haritanın) durumu, kazananı ve yarı skorları (SP-3). Oyun nesneleri maç olarak
     # dizinlenmez: yanıt maçın bir dilimidir. Oyunlar maç başlayınca vardır.
     SliceSpec("esports_games", "/event/{event_id}/esports-games", sports=frozenset({"esports"}), required=False,

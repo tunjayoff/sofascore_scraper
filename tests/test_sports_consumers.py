@@ -159,8 +159,8 @@ def test_disabled_slice_is_neither_requested_nor_expected(tmp_path, monkeypatch)
     assert _batch_urls(tmp_path, "football") == ["", "/h2h", "/incidents", "/pregame-form", "/statistics",
                                                   "/team-streaks"]
     f = MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
-    assert f._expected_slice_keys(42, "football") == ["statistics", "team_streaks", "pregame_form", "h2h",
-                                                      "incidents"]
+    # FX-16: futbolda pregame_form istenir ama beklenmez
+    assert f._expected_slice_keys(42, "football") == ["statistics", "team_streaks", "h2h", "incidents"]
 
 
 def test_sport_specific_required_slice_is_fetched_by_every_path(tmp_path, monkeypatch):

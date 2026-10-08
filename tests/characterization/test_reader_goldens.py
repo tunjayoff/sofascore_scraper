@@ -641,7 +641,9 @@ def test_fidelity_slices_and_names() -> None:
     from sofascore_scraper.store import legacy
 
     assert sf.REQUIRED_SLICES == DETAIL_SLICE_KEYS
-    assert tuple(s.key for s in slices_for("tennis") if not s.counts_in("tennis")) == sf.OPTIONAL_SLICES
+    # FX-16: teniste pregame_form tamlığa girmez, point_by_point (fixture'ların OPTIONAL_SLICES'ı) girer
+    assert tuple(s.key for s in slices_for("tennis") if not s.counts_in("tennis")) == ("pregame_form",)
+    assert all(s.counts_in("tennis") for s in slices_for("tennis") if s.key in sf.OPTIONAL_SLICES)
     assert NO_TOURNAMENT_DIR in sf.detail_dir(sf.Detail(sf.FRIENDLY_A, form="L5"))
     for ev in (sf.PL_ARS, sf.NBA_A, sf.WIM_A):
         basic = sf.basic_payload(ev)

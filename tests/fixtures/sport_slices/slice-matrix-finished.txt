@@ -1,0 +1,26 @@
+# App-side evidence of the live validation (FX-16): one finished match per sport (20 sports), each a
+# single-match follow with every slice, downloaded through the app on 2026-10-07. Copied verbatim from the
+# validation's matrix (no match ids). Columns used by tests/test_sport_slices.py: stat=statistics,
+# lin=lineups, inc=incidents, form=pregame_form, h2h, strk=team_streaks, pbp=point_by_point.
+sport              stat   lin   inc  form   h2h  strk   pbp   per games   inn  oddF  oddA   win
+football              Y     Y     Y     Y     Y     Y     .     .     .     .     Y     Y     Y
+basketball            Y     Y     Y     -     Y     Y     .     .     .     .     Y     Y     Y
+tennis                Y     -     -     -     Y     -     Y     .     .     .     Y     Y     Y
+american-football     Y     Y     Y     -     Y     Y     .     .     .     .     Y     Y     -
+ice-hockey            Y     Y     Y     Y     Y     Y     .     .     .     .     Y     Y     Y
+handball              Y     Y     Y     Y     Y     Y     .     .     .     .     Y     Y     Y
+rugby                 -     -     -     Y     Y     Y     .     .     .     .     -     -     -
+futsal                -     -     -     -     Y     Y     .     .     .     .     -     -     -
+minifootball          -     -     -     -     Y     -     .     .     .     .     -     -     -
+floorball             -     -     -     -     Y     Y     .     .     .     .     -     -     -
+volleyball            -     -     Y     -     Y     Y     .     .     .     .     -     -     -
+badminton             Y     -     Y     -     Y     Y     .     .     .     .     -     -     -
+table-tennis          Y     -     Y     -     Y     -     .     .     .     .     Y     Y     Y
+padel                 -     .     .     -     Y     -     .     .     .     .     -     -     -
+snooker               -     .     .     -     Y     Y     .     .     .     .     -     -     -
+baseball              Y     Y     -     -     Y     -     .     .     .     .     Y     Y     Y
+cricket               -     Y     Y     -     Y     -     .     .     .     Y     Y     Y     Y
+esports               -     Y     .     -     Y     -     .     .     .     .     -     -     -
+darts                 Y     .     .     -     Y     -     Y     .     .     .     -     -     -
+mma                   Y     .     .     -     Y     -     .     .     .     .     -     -     -
+Y=data, -=no data (404/empty), X=failed, .=not in this sport's registry / not requested

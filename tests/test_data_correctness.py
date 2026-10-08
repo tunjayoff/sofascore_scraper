@@ -124,7 +124,8 @@ def _basic(mid=42, sport="tennis", desc="Ended"):
     }
 
 
-_EMPTY_SLICES = ("lineups", "incidents", "team_streaks", "pregame_form", "h2h")
+# FX-16: teniste point_by_point tamlığa girer (kadro ve olaylar istenmez, pregame_form isteğe bağlı)
+_EMPTY_SLICES = ("lineups", "incidents", "team_streaks", "pregame_form", "h2h", "point_by_point")
 
 
 def _partial_match():
@@ -188,8 +189,8 @@ def test_coverage_report_counts_the_slices_the_writer_marked_and_writes_nothing(
     assert capsys.readouterr().out == ""
     assert _files(tmp_path) == before
     # 42: bitmiş maçta tek kesin "yok" tamlık için yeter (FX-23; planlayıcı yine bir kez sorar); 43: istatistik
-    # beklenmez, beş dilim eksik
-    missing = {key: 1 for key in ("team_streaks", "pregame_form", "h2h", "lineups", "incidents")}
+    # beklenmez; teniste tamlığa giren öteki üç dilim eksik (FX-16)
+    missing = {key: 1 for key in ("team_streaks", "h2h", "point_by_point")}
     assert (report.matches, report.complete, report.completion_rate) == (2, 1, 50.0)
     assert dict(report.missing) == missing
     (tournament,) = report.tournaments

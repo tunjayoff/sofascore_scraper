@@ -14,8 +14,12 @@ başına tests/fixtures/sport_slices/evidence.json'da (tests/sport_evidence.py t
   unknown    kanıt yok ya da yetersiz                                     → ortak dilim değişmez; spora özel
                                                                             dilim istenmez
 
-Futbol, basketbol ve tenis değişmez (goldenları bugünkü davranışı sabitler): kanıtın onlar için söylediği
-PROPOSALS'ta durur ve kanıt değişirse test bunu görür. Ağ yok.
+Futbol, basketbol ve tenis için kanıtın önerdikleri (#121'in üç önerisi) canlı doğrulamadan sonra sahibin
+kararıyla (2026-10-08) uygulandı (FX-16): DECIDED'da durur. Kararın ek kanıtı uygulama tarafındandır: canlı
+doğrulamada her spordan bir bitmiş (2026-10-07, 20 spor) ve bir canlı maç (2026-10-08, 13 spor) bütün dilimleriyle
+tek maç takibi olarak indirildi; tablolar tests/fixtures/sport_slices/slice-matrix-{finished,live}.txt. evidence.json
+şimdilik yeniden üretilemez (sayfa trafiği araştırma aracı scripts/explore_all_sports.py bozuk, bulgu V3): olduğu gibi
+kalır. Ağ yok.
 """
 from __future__ import annotations
 
@@ -40,16 +44,20 @@ FIXTURES = Path(__file__).parent / "fixtures" / "sport_slices"
 EVIDENCE = evidence_mod.load()
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
-# Kanıtın futbol, basketbol ve tenis için önerdiği ama bu değişikliğin uygulamadığı yerler: (spor, dilim) →
-# kanıtın yargısı. Bu sporların davranışı goldenlarla sabit; değişiklik ayrı bir karar ister.
-PROPOSALS: Dict[Tuple[str, str], str] = {
+# #121'in futbol, basketbol ve tenis için önerdikleri; sahibin kararıyla uygulandı (2026-10-08, FX-16): (spor,
+# dilim) → kanıtın yargısı. Kayıt defteri bunlarda da öteki hücreler gibi kanıta uyar.
+DECIDED: Dict[Tuple[str, str], str] = {
     ("football", "pregame_form"): OPTIONAL,  # bitmiş iki maçta ve canlı maçta 404
     ("basketball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
     ("tennis", "pregame_form"): OPTIONAL,  # bitmiş ve canlı maçta 404
     ("tennis", "lineups"): ABSENT,  # iki eksiksiz sayfa (bitmiş, canlı) istemedi
     ("tennis", "incidents"): ABSENT,
-    ("tennis", "point_by_point"): REQUIRED,  # bitmiş ve canlı maçta veriyle; bugün isteğe bağlı
+    ("tennis", "point_by_point"): REQUIRED,  # bitmiş ve canlı maçta veriyle
 }
+APP_SIDE = ("slice-matrix-finished.txt", "slice-matrix-live.txt")
+# Uygulama tarafı tablonun sütun adları → dilim anahtarları
+_MATRIX_COLUMNS = {"stat": "statistics", "lin": "lineups", "inc": "incidents", "form": "pregame_form", "h2h": "h2h",
+                   "strk": "team_streaks", "pbp": "point_by_point"}
 
 # Kanıttaki, kayıt defterinde dilimi olmayan maç uç noktaları ve neden (tablonun tamamı hesaba katılsın diye)
 OTHER_ENDPOINTS: Dict[str, str] = {
@@ -122,11 +130,6 @@ def test_the_evidence_covers_the_recorded_pages():
 @pytest.mark.parametrize("sport,spec,found", _cells(), ids=lambda v: getattr(v, "key", v))
 def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, found: str):
     applies, counts = spec.applies_to(sport), spec.counts_in(sport)
-    if (sport, spec.key) in PROPOSALS:
-        assert found == PROPOSALS[(sport, spec.key)]
-        # bugünkü davranış: ortak dilim istenir ve tamlığa girer; tenisin point_by_point'i isteğe bağlı
-        assert applies and counts is (spec.key != "point_by_point")
-        return
     if found == REQUIRED:
         assert applies and counts
     elif found == OPTIONAL:
@@ -143,15 +146,64 @@ def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, f
 
 def test_no_sport_requests_a_slice_its_match_page_never_asks_for():
     for sport, spec, found in _cells():
-        if found == ABSENT and (sport, spec.key) not in PROPOSALS:
+        if found == ABSENT:
             assert spec.key not in {s.key for s in sports.slices_for(sport)}, (sport, spec.key)
             assert spec.key not in planning.expected_slice_keys(sport, phase="post"), (sport, spec.key)
 
 
+# --- sahibin kararı (FX-16) ve uygulama tarafı kanıt ----------------------------------------------------------
+
+
+def _matrix(name: str) -> Dict[str, Dict[str, str]]:
+    """Uygulama tarafı tablo: spor → dilim anahtarı → hücre (Y, -, not_, .)."""
+    lines = [line.split() for line in (FIXTURES / name).read_text(encoding="utf-8").splitlines()
+             if line.strip() and not line.startswith("#")]
+    header = lines[0]
+    assert header[0] == "sport"
+    table: Dict[str, Dict[str, str]] = {}
+    for row in lines[1:]:
+        if row[0] not in sports.sport_slugs():  # açıklama satırı
+            continue
+        table[row[0]] = {_MATRIX_COLUMNS[column]: cell for column, cell in zip(header[1:], row[1:], strict=True)
+                         if column in _MATRIX_COLUMNS}
+    return table
+
+
+def test_the_decided_cells_are_what_the_evidence_says():
+    for (sport, key), verdict in DECIDED.items():
+        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(sports.get_slice(key))) == verdict, (sport, key)
+
+
+def test_the_app_side_evidence_backs_the_decision():
+    """Canlı doğrulamanın uygulama tarafı tabloları kararın dayandığı gözlemleri taşır (2026-10-08)."""
+    finished, live = (_matrix(name) for name in APP_SIDE)
+    assert len(finished) == 20 and len(live) == 13
+    # Teniste point_by_point bitmiş ve canlı maçta veriyle: tamlığa girer
+    assert finished["tennis"]["point_by_point"] == live["tennis"]["point_by_point"] == "Y"
+    # Teniste kadro ve olaylar hiç veriyle gelmedi (bitmiş maçta yok, canlı maçta gövdesiz): istenmez
+    for key in ("lineups", "incidents"):
+        assert finished["tennis"][key] == "-" and live["tennis"][key] == "not_"
+    # pregame_form basketbolda ve teniste bitmiş maçta veri getirmedi, basketbolda canlı maçta getirdi; futbolda
+    # iki maçta da getirdi ama kayıtlı üç sayfada 404 aldı (evidence.json): her maçta gelmez, isteğe bağlı
+    assert finished["basketball"]["pregame_form"] == finished["tennis"]["pregame_form"] == "-"
+    assert live["basketball"]["pregame_form"] == "Y"
+    assert finished["football"]["pregame_form"] == live["football"]["pregame_form"] == "Y"
+
+
+@pytest.mark.parametrize("sport", ["football", "basketball", "tennis"])
+def test_pregame_form_is_requested_but_not_awaited_in_the_main_sports(sport: str):
+    spec = sports.get_slice("pregame_form")
+    assert spec.applies_to(sport) and not spec.counts_in(sport)
+    assert "pregame_form" in sports.get_sport(sport).detail_slices
+    assert "pregame_form" not in planning.expected_slice_keys(sport, phase="post")
+
+
 @pytest.mark.parametrize("sport,expected,counted", [
-    ("football", COMMON_KEYS, COMMON_KEYS),
-    ("basketball", COMMON_KEYS, COMMON_KEYS),
-    ("tennis", COMMON_KEYS + ("point_by_point",), COMMON_KEYS),
+    # FX-16: pregame_form istenir ama tamlığa girmez; teniste kadro ve olaylar istenmez, point_by_point tamlığa girer
+    ("football", COMMON_KEYS, ("statistics", "team_streaks", "h2h", "lineups", "incidents")),
+    ("basketball", COMMON_KEYS, ("statistics", "team_streaks", "h2h", "lineups", "incidents")),
+    ("tennis", ("statistics", "team_streaks", "pregame_form", "h2h", "point_by_point"),
+     ("statistics", "team_streaks", "h2h", "point_by_point")),
     ("ice-hockey", COMMON_KEYS, ("statistics", "team_streaks", "h2h", "lineups", "incidents")),
     ("futsal", COMMON_KEYS, ("team_streaks", "h2h", "incidents")),
     ("minifootball", COMMON_KEYS, ("statistics", "team_streaks", "pregame_form", "h2h", "incidents")),

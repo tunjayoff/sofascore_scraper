@@ -84,7 +84,9 @@ def test_a_full_item_stores_the_event_and_every_selected_slice(fake: FakeSofaSco
 
     [result] = summary.results
     assert result.ok and result.reason is None and result.payload["id"] == TENNIS
-    assert list(result.slices) == FOOTBALL_KEYS + ["point_by_point"]  # tablo sırasıyla, isteğe bağlı dahil
+    # tablo sırasıyla; FX-16: teniste kadro ve olaylar istenmez
+    assert list(result.slices) == [key for key in FOOTBALL_KEYS if key not in ("lineups", "incidents")] + [
+        "point_by_point"]
     assert result.put is not None and result.put.created
     assert (summary.total, summary.ok, summary.failed) == (1, 1, 0)
     assert len(fake.sessions) == 1 and fake.requests[0].path == SITE_ROOT  # çalıştırma başına ısıtılmış bir oturum

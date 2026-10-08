@@ -113,9 +113,12 @@ def test_the_threshold_is_the_callers() -> None:
 
 
 def test_an_optional_slice_is_not_awaited() -> None:
+    # FX-16: futbolda pregame_form isteğe bağlı; teniste point_by_point artık tamlığa girer
+    assert compute_need(without_slice(complete(), "pregame_form"), None, POLICY) == NEED_NONE
     tennis = complete(sport="tennis")
     assert "point_by_point" not in {s.key for s in tennis.slices}
-    assert compute_need(tennis, None, POLICY) == NEED_NONE
+    assert compute_need(tennis, None, POLICY) == NEED_REFILL
+    assert compute_need(with_slice(tennis, info("point_by_point")), None, POLICY) == NEED_NONE
     assert compute_need(complete(sport="handball"), None, POLICY) == NEED_NONE
     assert compute_need(complete(sport=""), None, POLICY) == NEED_NONE
 
@@ -168,8 +171,11 @@ def test_the_selection_decides_which_slices_are_awaited() -> None:
     assert compute_need(state, SliceSelection(disable=("lineups",)), POLICY) == NEED_NONE
     assert compute_need(state, ["statistics", "h2h"], POLICY) == NEED_NONE
     assert compute_need(state, ["core"], POLICY) == NEED_REFILL
-    # tenisin isteğe bağlı dilimi seçilse de tamlık hesabına girmez
-    assert compute_need(complete(sport="tennis"), ["core", "point_by_point"], POLICY) == NEED_NONE
+    # futbolun isteğe bağlı dilimi seçilse de tamlık hesabına girmez (FX-16)
+    assert compute_need(without_slice(complete(), "pregame_form"), ["core", "pregame_form"], POLICY) == NEED_NONE
+    # tenisin point_by_point'i seçilince beklenir, seçilmeyince beklenmez
+    assert compute_need(complete(sport="tennis"), ["core", "point_by_point"], POLICY) == NEED_REFILL
+    assert compute_need(complete(sport="tennis"), ["statistics", "h2h"], POLICY) == NEED_NONE
 
 
 @pytest.mark.parametrize("status_class,phase", [

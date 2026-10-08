@@ -23,7 +23,8 @@ def test_api_lists_sports_and_their_slices():
         "i18n_key": "sport.football",
         "score_family": "football",
         "slices": [
-            {"key": k, "path": sports.get_slice(k).path, "required": True, "default_enabled": True}
+            # FX-16: pregame_form istenir ama tamlığa girmez
+            {"key": k, "path": sports.get_slice(k).path, "required": k != "pregame_form", "default_enabled": True}
             for k in COMMON_KEYS
         ],
     }
@@ -31,9 +32,11 @@ def test_api_lists_sports_and_their_slices():
     assert [s["key"] for s in by_slug["basketball"]["slices"]] == list(COMMON_KEYS)
     assert by_slug["tennis"]["score_family"] == "sets"
     assert by_slug["tennis"]["slices"][-1] == {
-        "key": "point_by_point", "path": "/event/{event_id}/point-by-point", "required": False, "default_enabled": True,
+        "key": "point_by_point", "path": "/event/{event_id}/point-by-point", "required": True, "default_enabled": True,
     }
-    assert [s["key"] for s in by_slug["tennis"]["slices"]] == list(COMMON_KEYS) + ["point_by_point"]
+    # FX-16: teniste kadro ve olaylar istenmez
+    assert [s["key"] for s in by_slug["tennis"]["slices"]] == [
+        k for k in COMMON_KEYS if k not in ("lineups", "incidents")] + ["point_by_point"]
     # SP-3: e-sporun oyunları kendi dilimi; yeni skor aileleri
     assert by_slug["esports"]["slices"][-1] == {
         "key": "esports_games", "path": "/event/{event_id}/esports-games", "required": False, "default_enabled": True,

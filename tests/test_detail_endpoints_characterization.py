@@ -6,7 +6,7 @@ tablo değişirse hangi isteğin eklendiği ya da düştüğü burada görünür
 gider (tests/fakes/sofascore.py), istek katmanı gerçektir.
 
 P13'ten beri bütün yollar tek boru hattıdır (sofascore_scraper/services/pipeline.py); üç giriş noktası yine ayrı ayrı sabitlenir:
-  - toplu indirme: sporun bütün dilimleri, teniste point-by-point dahil
+  - toplu indirme: sporun bütün dilimleri, teniste point-by-point dahil (FX-16: teniste kadro ve olaylar yok)
   - tek maç indirme: aynısı (eskiden teniste de point-by-point yoktu)
   - eksik dilim tamamlama (refill): yalnızca eksik ve "yok" sayılmayan dilimler, isteğe bağlılar dahil
 Dilimler eşzamanlı istendiği için sıra karşılaştırılmaz.
@@ -33,8 +33,20 @@ COMMON = [
 ]
 POINT_BY_POINT = f"{EVENT}/point-by-point"
 COMMON_KEYS = ["statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents"]
+# FX-16: teniste kadro ve olaylar istenmez, point-by-point istenir
+TENNIS = [f"{EVENT}/statistics", f"{EVENT}/team-streaks", f"{EVENT}/pregame-form", f"{EVENT}/h2h", POINT_BY_POINT]
+TENNIS_KEYS = ["statistics", "team_streaks", "pregame_form", "h2h", "point_by_point"]
 
-# (etiket, tournament.category.sport nesnesi, toplu indirmede point-by-point istenir mi)
+
+def _paths(tennis: bool) -> list:
+    return TENNIS if tennis else COMMON
+
+
+def _keys(tennis: bool) -> list:
+    return TENNIS_KEYS if tennis else COMMON_KEYS
+
+
+# (etiket, tournament.category.sport nesnesi, tenis mi: point-by-point istenir, kadro ve olaylar istenmez)
 SPORT_CASES = [
     ("football", {"slug": "football", "name": "Football"}, False),
     ("basketball", {"slug": "basketball", "name": "Basketball"}, False),
@@ -102,22 +114,25 @@ def test_batch_download_requests_exactly_these_endpoints(tmp_path, fake, label, 
     _serve(fake, _basic(sport_obj))
     data = f.fetch_matches_batch([MID])[MID]
 
-    expected = [EVENT] + COMMON + ([POINT_BY_POINT] if point_by_point else [])
+    expected = [EVENT] + _paths(point_by_point)
     assert _calls(fake) == sorted(expected)
-    expected_keys = ["basic", "observation"] + COMMON_KEYS + (["point_by_point"] if point_by_point else [])
+    expected_keys = ["basic", "observation"] + _keys(point_by_point)
     assert list(data) == expected_keys  # tablo sırası
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
 def test_batch_download_counts_every_requested_slice_as_unavailable(tmp_path, fake, label, sport_obj,
                                                                      point_by_point):
-    """Boş gelen her istenen dilim "yok" sayılır, point_by_point dahil; tamlık yalnızca altı ortak dilime bakar."""
+    """
+    Boş gelen her istenen dilim "yok" sayılır, point_by_point dahil; sporu bilinmeyen maçın tamlığı yalnızca altı
+    ortak dilime bakar.
+    """
     f = _fetcher(tmp_path)
     _serve(fake, _basic(sport_obj))
     f.fetch_matches_batch([MID])
 
     unavailable = detail_records.legacy_view(f.data_dir, int(MID))["_unavailable.json"]
-    assert unavailable == {k: 1 for k in COMMON_KEYS + (["point_by_point"] if point_by_point else [])}
+    assert unavailable == {k: 1 for k in _keys(point_by_point)}
     assert f._expected_slice_keys(int(MID), None) == COMMON_KEYS
     assert f._compute_detail_need(MID) == "refill"
 
@@ -128,9 +143,8 @@ def test_single_match_download_requests_exactly_these_endpoints(tmp_path, fake, 
     _serve(fake, _basic(sport_obj))
     data = f.fetch_match_data(MID)
 
-    extra = [POINT_BY_POINT] if point_by_point else []
-    assert _calls(fake) == sorted([EVENT] + COMMON + extra)  # toplu indirmeyle aynı dilimler
-    assert list(data) == ["basic", "observation"] + COMMON_KEYS + (["point_by_point"] if point_by_point else [])
+    assert _calls(fake) == sorted([EVENT] + _paths(point_by_point))  # toplu indirmeyle aynı dilimler
+    assert list(data) == ["basic", "observation"] + _keys(point_by_point)
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
@@ -141,7 +155,7 @@ def test_refill_requests_every_missing_slice(tmp_path, fake, label, sport_obj, p
     _serve(fake, basic)
     f.refill_missing_match_slices(MID)
 
-    assert _calls(fake) == sorted([EVENT] + COMMON + ([POINT_BY_POINT] if point_by_point else []))
+    assert _calls(fake) == sorted([EVENT] + _paths(point_by_point))
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
