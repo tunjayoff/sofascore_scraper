@@ -564,9 +564,11 @@ ODDS_SLICES: Tuple[SliceSpec, ...] = (
     SliceSpec("odds_changes", "/event/{event_id}/odds/{sub}/changes", subs=PROVIDER_SUBS, group="odds",
               default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE,
               body_key="changedOdds"),
-    # Oranlara göre beklenen ve gerçekleşen kazanma oranı. Tek kayıtlı örnek 404: biçim bilinmiyor
+    # Oranlara göre beklenen ve gerçekleşen kazanma oranı: {"home": null | {"fractionalValue", "expected", "actual",
+    # "id"}, "away": {...}}. Bir taraf null olabilir; biçim canlı doğrulamada görüldü (2026-10-08, FX-27). Gövdenin
+    # kuralı sofascore_scraper/services/pipeline.py `body_state`; şemanın Odds kaydına girmez, ham kalır
     SliceSpec("winning_odds", "/event/{event_id}/provider/{sub}/winning-odds", subs=PROVIDER_SUBS, group="odds",
-              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE, experimental=True),
+              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE),
 )
 
 # Maç dışı dilimler: sahibi sezon, takım, oyuncu ya da spordur. Planlayıcı sahip başına bir iş birimi üretir

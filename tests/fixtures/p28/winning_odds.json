@@ -1,0 +1,13 @@
+{
+ "source": "live validation 2026-10-08 (FX-27): the shape of /event/16483632/provider/1/winning-odds (Süper Lig), one side null; the numbers are illustrative, the answer was not recorded",
+ "path": "/event/16483632/provider/1/winning-odds",
+ "body": {
+  "home": null,
+  "away": {
+   "fractionalValue": "13/10",
+   "expected": 43,
+   "actual": 47,
+   "id": 1000001
+  }
+ }
+}

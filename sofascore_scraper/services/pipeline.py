@@ -643,12 +643,33 @@ def with_provenance(key: str, sub: str, outcome: Outcome, country: str = "") -> 
     return dataclasses.replace(outcome, meta=meta)
 
 
+# Gövdesi iki taraflı olan dilimler: {"home": nesne | null, "away": nesne | null} (winning_odds, FX-27)
+SIDED_BODY_KEYS = frozenset({"winning_odds"})
+
+
+def sided_body_state(body: Any) -> str:
+    """
+    İki taraflı gövde: bir tarafı dolu bir nesneyse veri var; iki taraf da null ya da yoksa "veri yok" (bir
+    tarafın null olması olağandır); nesne olmayan gövde ya da null / nesne olmayan bir taraf okunamaz.
+    """
+    if body is None or (isinstance(body, (dict, list)) and not body):
+        return BODY_NO_DATA
+    if not isinstance(body, dict):
+        return BODY_MALFORMED
+    sides = [body.get("home"), body.get("away")]
+    if any(side is not None and not isinstance(side, dict) for side in sides):
+        return BODY_MALFORMED
+    return BODY_DATA if any(sides) else BODY_NO_DATA
+
+
 def body_state(key: str, body: Any) -> str:
     """
     Yanıt gövdesinin üç yanıtından biri: kayıt defterinde `body_key`'i olan dilimde (P28) gövde bir nesne ve o
-    anahtarın değeri doluysa veri var, None ya da boş gövde "veri yok", nesne olmayan gövde okunamaz; öteki
-    dilimlerde sofascore_scraper.slices.slice_body_state.
+    anahtarın değeri doluysa veri var, None ya da boş gövde "veri yok", nesne olmayan gövde okunamaz; iki taraflı
+    gövdede (`SIDED_BODY_KEYS`) `sided_body_state`; öteki dilimlerde sofascore_scraper.slices.slice_body_state.
     """
+    if key in SIDED_BODY_KEYS:
+        return sided_body_state(body)
     spec = get_slice(key)
     if spec is None or spec.body_key is None:
         return slice_body_state(key, body)
