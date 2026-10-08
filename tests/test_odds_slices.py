@@ -298,8 +298,9 @@ def test_pre_match_odds_are_read_again_until_kick_off(fake: FakeSofaScore, store
     assert items[0].slices == tuple((key, "1") for key in ODDS_KEYS)
     FetchPipeline(store, concurrency=1, selection=WITH_ODDS).run_sync(items)
     assert store.events.slice(NOT_STARTED, "odds_all", "1").state == "ok"
-    # Bitmemiş maçta 404 sayılmaz: gövdesi olmayan dilim yazılmaz
-    assert store.events.slice(NOT_STARTED, "odds_changes", "1").state == "not_requested"
+    # Bitmemiş maçta 404 sayılmaz: gövdesi olmayan dilime sayılmayan bir "veri yok" kaydı açılır (FX-27 V5)
+    unanswered = store.events.slice(NOT_STARTED, "odds_changes", "1")
+    assert (unanswered.state, unanswered.empty_count, unanswered.has_payload) == ("empty", 0, False)
 
     # max_age dolmadan: oranlar istenmez; ama okunamayan iki dilim yine istenir
     soon = planning.prematch_items(store, policy_at(now + 60), tournament_ids=(17,), selection=WITH_ODDS)

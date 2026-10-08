@@ -288,6 +288,20 @@ def test_one_no_data_answer_is_resolved_only_for_a_finished_match(store: Store) 
     assert planning.unresolved_slice_keys(void) == planning.missing_slice_keys(void)
 
 
+
+def test_a_no_data_answer_taken_while_the_match_was_on_does_not_resolve_it_after_the_end(store: Store) -> None:
+    """
+    FX-27 V5: maç oynanırken alınan "veri yok" sayılmadan kaydedilir (durum `empty`, sayaç 0). Maç bitince o
+    kayıt tamlığa girmez: bitişten sonraki ilk istek onu sayana kadar dilim çözülmemiştir ve yeniden istenir.
+    """
+    event_id = put(store, _payload(sf.PL, sf.PL_2627, 9300051), have=tuple(k for k in REQUIRED if k != "lineups"))
+    store.events.put(event_id, {"lineups": Outcome(SLICE_EMPTY, data=None, reason="empty", http_status=404)},
+                     count_empties=False)
+    state = _state(store, event_id)
+    assert (state.slice("lineups").state, state.slice("lineups").empty_count) == ("empty", 0)
+    assert planning.missing_slice_keys(state) == ("lineups",) == planning.unresolved_slice_keys(state)
+
+
 def _state(store: Store, event_id: int) -> Any:
     (found,) = store.events.states(Scope(event_ids=(event_id,)))
     return found

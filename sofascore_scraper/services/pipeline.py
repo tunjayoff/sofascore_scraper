@@ -446,9 +446,12 @@ class FetchPipeline:
             outcomes.update((targets[name], o) for name, o in slices.items())
             counted = tuple(dict.fromkeys(keys))
         else:
-            # Bitmemiş maçta sayaç ve hata kaydı tutulmaz: yalnızca gövdesi olan yanıtlar saklanır
+            # Bitmemiş maçta sayaç ve hata kaydı tutulmaz: gövdesi olan yanıtlar saklanır; "veri yok" (404, gövdesiz)
+            # yanıtı da sayılmadan bir kayıt açar (durum `empty`, sayaç 0). Böylece istenen dilim "istenmedi"
+            # görünmez (canlı doğrulama, FX-27 V5); sayaç 0 kaldığı için eksik sayılır ve yeniden istenir
+            # (planning.slice_missing), tamlığa da girmez (planning.unresolved_slice_keys). Başarısız istek yazılmaz.
             outcomes.update((targets[name], o) for name, o in slices.items()
-                            if o.status in (SLICE_OK, SLICE_EMPTY) and o.data is not None)
+                            if o.status == SLICE_EMPTY or (o.status == SLICE_OK and o.data is not None))
         kept = tuple(dict.fromkeys(spec.key for spec, _sub in pairs if spec.keep_history))
         # Geçmişi tutulan dilim yoksa çağrı bugünküyle aynıdır (keep_history verilmez)
         history: Dict[str, Any] = {"keep_history": kept} if kept else {}

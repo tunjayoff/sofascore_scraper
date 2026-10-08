@@ -297,6 +297,30 @@
      "raw_bytes": 606,
      "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
      "state": "ok"
+    },
+    "h2h": {
+     "checked_at": "<volatile>",
+     "state": "empty"
+    },
+    "incidents": {
+     "checked_at": "<volatile>",
+     "state": "empty"
+    },
+    "lineups": {
+     "checked_at": "<volatile>",
+     "state": "empty"
+    },
+    "pregame_form": {
+     "checked_at": "<volatile>",
+     "state": "empty"
+    },
+    "statistics": {
+     "checked_at": "<volatile>",
+     "state": "empty"
+    },
+    "team_streaks": {
+     "checked_at": "<volatile>",
+     "state": "empty"
     }
    },
    "updated_at": "<volatile>"
