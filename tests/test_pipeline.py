@@ -66,7 +66,7 @@ def _refresh(event_id: int) -> planning.WorkItem:
 
 
 def _run(store: Any, items: List[planning.WorkItem], **kwargs: Any) -> pipeline.PipelineSummary:
-    options = {"concurrency": 5, "only_finished": True}
+    options: Dict[str, Any] = {"concurrency": 5}
     run_options = {key: kwargs.pop(key) for key in ("cancelled", "on_result") if key in kwargs}
     options.update(kwargs)
     return FetchPipeline(store, **options).run_sync(items, **run_options)
@@ -171,11 +171,9 @@ def test_an_answer_without_an_event_is_no_such_match(fake: FakeSofaScore, store:
 
 
 @pytest.mark.parametrize("event_id", [NOT_STARTED, LIVE])
-@pytest.mark.parametrize("only_finished", [True, False])
-def test_an_unfinished_event_is_stored_as_it_is_now(fake: FakeSofaScore, store: Any, event_id: int,
-                                                    only_finished: bool) -> None:
-    """ST-27: her durumdaki maç saklanır; emekli `only_finished` bir şey değiştirmez (planlayıcı karar verir)."""
-    summary = _run(store, [_full(event_id)], only_finished=only_finished)
+def test_an_unfinished_event_is_stored_as_it_is_now(fake: FakeSofaScore, store: Any, event_id: int) -> None:
+    """ST-27: her durumdaki maç saklanır (planlayıcı karar verir; boru hattının `only_finished`ı 3.1'de kalktı)."""
+    summary = _run(store, [_full(event_id)])
 
     [result] = summary.results
     assert result.ok and result.payload is not None
@@ -186,9 +184,8 @@ def test_an_unfinished_event_is_stored_as_it_is_now(fake: FakeSofaScore, store: 
     assert detail_records.slice_marks(store.data_dir, event_id) == {}  # 404'ler sayılmaz
 
 
-def test_an_unfinished_event_is_stored_without_marks_when_every_status_is_wanted(fake: FakeSofaScore,
-                                                                                 store: Any) -> None:
-    [result] = _run(store, [_full(LIVE)], only_finished=False).results
+def test_an_unfinished_event_is_stored_with_the_slices_it_has(fake: FakeSofaScore, store: Any) -> None:
+    [result] = _run(store, [_full(LIVE)]).results
 
     assert result.ok
     assert detail_records.stored_slices(store.data_dir, LIVE) == sorted(["event", "incidents", "lineups",

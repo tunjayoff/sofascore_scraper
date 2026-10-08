@@ -22,7 +22,7 @@ Kurallar (2.x'in season_fetcher.py ve match_fetcher.py modüllerinden taşındı
     durumdaki maç saklanır (plan maddesi ST-27): sayfa, maçı olduğu sürece bütün maçlarıyla yazılır. "Yalnızca
     bitmiş maçlar" (`only_finished`) yalnızca sonucun `chunks`'ını süzer (çağıranın "maç listelendi mi" sorusu);
     neyin saklandığını değiştirmez. Okuyanlar ayarı okurken uygular (sofascore_scraper/services/query.py).
-  * Maçı olmayan tur atlanır ve saklanmaz (SAVE_EMPTY_ROUNDS emekli, ST-27). 404 "yok"tur, hata değildir.
+  * Maçı olmayan tur atlanır ve saklanmaz (ST-27; SAVE_EMPTY_ROUNDS ayarı 3.1'de kalktı). 404 "yok"tur, hata değildir.
   * Deneme sayıları istek katmanınınki gibidir: tur listesi 1, olay sayfası 2, tur ve sezon listesi ayardaki
     (`MAX_RETRIES`).
 
@@ -405,12 +405,10 @@ class ScheduleLister:
 
     store              sayfaların yazıldığı ve önbellek kararının okunduğu depo
     only_finished      sonucun `chunks`'ı yalnızca bitmiş maçları sayar (FETCH_ONLY_FINISHED); saklananı değiştirmez
-    save_empty_rounds  emekli (ST-27): eski çağıranlar için kabul edilir, etkisi yoktur; maçı olmayan tur saklanmaz
     concurrency        aynı anda istenen tur sayısı
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
-                 concurrency: int = 5, max_round: int = MAX_ROUND,
+    def __init__(self, store: "Store", *, only_finished: bool, concurrency: int = 5, max_round: int = MAX_ROUND,
                  clock: Callable[[], float] = time.time) -> None:
         self.store = store
         self.only_finished = bool(only_finished)
@@ -672,7 +670,7 @@ class ListingFetcher:
     enqueue_events                     programda bitmiş görünen eksik maçlar için maç birimleri getirilir
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
+    def __init__(self, store: "Store", *, only_finished: bool,
                  concurrency: int = 5, max_round: int = MAX_ROUND, season_max_age: Optional[float] = None,
                  schedule_max_age: Optional[float] = None, enqueue_events: bool = False,
                  clock: Callable[[], float] = time.time) -> None:
@@ -761,7 +759,7 @@ class ListingService:
     ve devre kesici çağıranın istek bağlamındadır (sofascore_scraper.client.context.request_context).
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
+    def __init__(self, store: "Store", *, only_finished: bool,
                  concurrency: int = 5, max_round: int = MAX_ROUND, client: Optional["Client"] = None,
                  enqueue_events: bool = False, clock: Callable[[], float] = time.time) -> None:
         self.store = store
