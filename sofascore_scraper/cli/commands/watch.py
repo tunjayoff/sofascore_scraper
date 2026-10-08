@@ -91,18 +91,15 @@ def _source_warnings(requested: str, from_flag: bool) -> List[CliWarning]:
 
 
 def _scope(args: argparse.Namespace, store: Any) -> Any:
-    from sofascore_scraper.services.live.supervisor import LiveScope, explicit_scope, scope_from_follows
+    from sofascore_scraper.services.live.supervisor import explicit_scope, scope_from_follows
 
     sports = [s.strip().lower() for s in args.sports or () if s.strip()]
     if args.event_ids or args.tournament_ids:
         if not sports:
             raise UsageError("--event and --tournament need --sport")
         return explicit_scope(sports, event_ids=args.event_ids or (), tournament_ids=args.tournament_ids or ())
-    scope = scope_from_follows(store.follows.list(enabled=True))
-    if sports:
-        scope = LiveScope(sports=tuple(s for s in scope.sports if s.sport in sports), from_follows=True,
-                          skipped=scope.skipped)
-    return scope
+    # `--sport` süzgeci kapsamın içinde taşınır: servis takipleri yeniden okurken de yalnızca bu sporları alır
+    return scope_from_follows(store.follows.list(enabled=True), sports)
 
 
 def _start_thread(target: Any, name: str) -> threading.Thread:
@@ -111,7 +108,7 @@ def _start_thread(target: Any, name: str) -> threading.Thread:
     return thread
 
 
-@command("watch", help="ssc_help_cmd_watch", configure=_arguments, settings=True)
+@command("watch", help="ssc_help_cmd_watch", description="ssc_desc_watch", configure=_arguments, settings=True)
 def watch(inv: Invocation) -> CommandResult:
     args = inv.args
     if args.stdout and inv.out.mode == JSON:

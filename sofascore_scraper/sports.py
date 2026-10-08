@@ -564,9 +564,11 @@ ODDS_SLICES: Tuple[SliceSpec, ...] = (
     SliceSpec("odds_changes", "/event/{event_id}/odds/{sub}/changes", subs=PROVIDER_SUBS, group="odds",
               default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE,
               body_key="changedOdds"),
-    # Oranlara göre beklenen ve gerçekleşen kazanma oranı. Tek kayıtlı örnek 404: biçim bilinmiyor
+    # Oranlara göre beklenen ve gerçekleşen kazanma oranı: {"home": null | {"fractionalValue", "expected", "actual",
+    # "id"}, "away": {...}}. Bir taraf null olabilir; biçim canlı doğrulamada görüldü (2026-10-08, FX-27). Gövdenin
+    # kuralı sofascore_scraper/services/pipeline.py `body_state`; şemanın Odds kaydına girmez, ham kalır
     SliceSpec("winning_odds", "/event/{event_id}/provider/{sub}/winning-odds", subs=PROVIDER_SUBS, group="odds",
-              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE, experimental=True),
+              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE),
 )
 
 # Maç dışı dilimler: sahibi sezon, takım, oyuncu ya da spordur. Planlayıcı sahip başına bir iş birimi üretir
@@ -601,8 +603,9 @@ OWNER_SLICES: Tuple[SliceSpec, ...] = (
     # Oyuncunun sezon istatistikleri; yalnızca katalogda (örnek yok). Sahibi takip edilen oyunculardır
     SliceSpec("player_statistics", "/player/{player_id}/statistics/seasons", owner="player", group="players",
               default_enabled=False, required=False, max_age=timedelta(days=1), experimental=True),
-    # Sporun sıralama listesi; alt anahtar sıralama türü (5: ATP, sitenin ATP sayfası). Gövdesinin örneği yok
-    SliceSpec("rankings", "/rankings/{sub}", owner="sport", subs=("5",), group="rankings",
+    # Sporun sıralama listesi; alt anahtar sıralama türü: 5 ATP, 6 WTA (canlı doğrulama 2026-10-08: /rankings/5
+    # Sinner'le, /rankings/6 Rybakina ile başlıyor; FX-27 V8). Gövdesinin kaydedilmiş örneği yok
+    SliceSpec("rankings", "/rankings/{sub}", owner="sport", subs=("5", "6"), group="rankings",
               sports=frozenset({"tennis"}), default_enabled=False, required=False, max_age=timedelta(days=1),
               body_key="rankings", experimental=True),
 )

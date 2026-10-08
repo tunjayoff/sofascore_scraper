@@ -62,8 +62,10 @@ from sofascore_scraper.services.live.push_source import (
     PushFeed,
     Signal,
     quiet_url,
+    release_route,
     route_action,
     sport_page_url,
+    stop_routing,
 )
 
 logger = logging.getLogger(__name__)
@@ -254,6 +256,9 @@ class BrowserCredentialReader:
             except asyncio.TimeoutError:
                 raise CredentialUnavailable("the page opened no push connection") from None
         finally:
+            # CONNECT okunduğunda sayfa hâlâ yükleniyor: sürmekte olan istekler kurallar kaldırılmadan kapatılırsa
+            # Playwright'ın yönlendirme görevleri asılı kalır (V9)
+            await stop_routing(b.context)
             try:
                 await page.close()
             except Exception as e:
@@ -279,8 +284,9 @@ class BrowserCredentialReader:
             if action == ROUTE_THROTTLE:
                 await bridge._wait_for_slot()
             await route.continue_()
-        except Exception as e:  # sayfa kapanırken gelen istek: önemsiz
+        except Exception as e:  # sayfa kapanırken gelen istek: önemsiz, ama Playwright'ın görevi bitmeli
             logger.debug("A credential page request could not be routed (%s)", type(e).__name__)
+            await release_route(route)
 
     def close(self) -> None:
         from sofascore_scraper.client import bridge

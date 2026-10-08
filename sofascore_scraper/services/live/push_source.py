@@ -43,7 +43,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Deque, Dict, List, Mapping, Optional, Protocol, Tuple, Union
 from urllib.parse import urlsplit
 
-from sofascore_scraper.status import StatusClass, classify_status
+from sofascore_scraper.status import StatusClass, classify_code, classify_status
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,7 @@ def merge_frame(base: Mapping[str, Any], frame: Mapping[str, Any]) -> Dict[str, 
         node[parts[-1]] = copy.deepcopy(value)
     status = out.get("status")
     if "status.code" in frame and "status.type" not in frame and isinstance(status, dict) and status.get("type"):
-        by_code = classify_status({"status": {"code": status.get("code")}})
+        by_code = classify_code(status.get("code"))  # yoklama: bilinmeyen kod burada uyarı değil
         if by_code is not StatusClass.UNKNOWN and by_code is not classify_status(out):
             del status["type"]
     return out
@@ -506,6 +506,34 @@ def route_action(url: str, resource_type: str, since_load: float) -> str:
     return ROUTE_CONTINUE
 
 
+async def release_route(route: Any) -> None:
+    """
+    İşlenemeyen isteği Playwright'a geri verir (`route.fallback()`). `continue_`/`abort` sayfa ya da tarayıcı
+    kapanırken hata verirse istek "işlendi" sayılmaz ve Playwright'ın `_on_route` görevi bu sonucu sonsuza dek
+    bekler; görev çöpe gidince "Task was destroyed but it is pending!" yazılır (canlı doğrulama, V9).
+    Zaten işlenmişse ya da bağlantı gittiyse hata önemsizdir.
+    """
+    try:
+        await route.fallback()
+    except Exception as e:
+        logger.debug("A request could not be handed back to the browser (%s)", type(e).__name__)
+
+
+async def stop_routing(context: Any) -> None:
+    """
+    Bağlamın istek kurallarını kapatmadan önce kaldırır: yeni istek işleyiciye gelmez, sürmekte olanların
+    hataları Playwright'ta sessizce yutulur (`unroute_all(behavior="ignoreErrors")`). "wait" kullanılmaz:
+    bütçeden sıra bekleyen işleyiciler kapanışı uzatırdı.
+    """
+    unroute_all = getattr(context, "unroute_all", None)
+    if unroute_all is None:
+        return
+    try:
+        await unroute_all(behavior="ignoreErrors")
+    except Exception as e:
+        logger.debug("The request rules could not be removed before closing (%s)", type(e).__name__)
+
+
 def live_profile_dir() -> str:
     """Canlı sayfaların profili: köprü profilinin yanında `<profil>-live` (karar D10)."""
     from sofascore_scraper.paths import browser_profile_dir
@@ -641,8 +669,9 @@ class BrowserPageOpener:
             if action == ROUTE_THROTTLE:
                 await bridge._wait_for_slot()
             await route.continue_()
-        except Exception as e:  # sayfa kapanırken gelen istek: önemsiz
+        except Exception as e:  # sayfa kapanırken gelen istek: önemsiz, ama Playwright'ın görevi bitmeli
             logger.debug("A live page request could not be routed (%s)", type(e).__name__)
+            await release_route(route)
 
     def _close_page(self, handle: _BrowserPage) -> None:
         from sofascore_scraper.client import bridge
@@ -668,8 +697,14 @@ class BrowserPageOpener:
         for handle in list(self._pages):
             handle.close()
         if self._bridge is not None:
+            browser = self._bridge
+
+            async def shutdown() -> None:
+                await stop_routing(getattr(browser, "context", None))
+                await browser.close()
+
             try:
-                bridge._run_sync(self._bridge.close(), 15.0)
+                bridge._run_sync(shutdown(), 15.0)
             except Exception as e:
                 logger.debug("The live browser could not be closed (%s)", type(e).__name__)
             self._bridge = None
@@ -695,7 +730,9 @@ __all__ = [
     "frame_body",
     "live_profile_dir",
     "merge_frame",
+    "release_route",
     "route_action",
     "sport_page_url",
+    "stop_routing",
     "subject_wanted",
 ]

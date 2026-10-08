@@ -161,6 +161,17 @@ def test_a_code_only_frame_drops_a_stale_type_that_contradicts_it() -> None:
     assert kept["status"]["type"] == "inprogress"
 
 
+def test_a_code_only_frame_logs_no_classification_warning(caplog: pytest.LogCaptureFixture) -> None:
+    """FX-27 V4: buz hokeyinin 2. periyodu (kod 2, türsüz kare) "Status could not be classified" yazıyordu."""
+    hockey = {"id": 1, "status": {"code": 1, "type": "inprogress", "description": "1st period"}}
+    with caplog.at_level(logging.WARNING, logger="sofascore_scraper.status"):
+        merged = merge_frame(hockey, {"id": 1, "status.code": 2, "status.description": "2nd period"})
+        assert merged["status"]["type"] == "inprogress" and classify_status(merged) is StatusClass.LIVE
+        odd = merge_frame(hockey, {"id": 1, "status.code": 555})  # bilinmeyen kod: yoklama uyarı yazmaz
+        assert odd["status"]["type"] == "inprogress"
+    assert caplog.text == ""
+
+
 def test_a_frame_creates_missing_nodes() -> None:
     merged = merge_frame({"id": 1, "time": 5}, {"id": 1, "time.played": 600, "homeScore.point": "15"})
     assert merged["time"] == {"played": 600} and merged["homeScore"] == {"point": "15"}
@@ -652,8 +663,13 @@ class FakeBridge:
         self.closed = False
         self.captcha_first = captcha_first
         self.fail = fail
-        self.context = SimpleNamespace(route=self._route, new_page=self._new_page)
+        self.unrouted: List[str] = []
+        self.context = SimpleNamespace(route=self._route, new_page=self._new_page, unroute_all=self._unroute_all)
         FakeBridge.made.append(self)
+
+    async def _unroute_all(self, behavior: Optional[str] = None) -> None:
+        assert not self.closed, "the rules are removed before the browser closes"
+        self.unrouted.append(str(behavior))
 
     async def ensure_ready(self) -> None:
         if self.fail:
@@ -733,9 +749,58 @@ def test_the_opener_uses_the_live_profile_and_opens_the_sport_page(fake_bridge: 
     assert results == [("abort", False), ("continue", True)]
 
     handle.close()
-    assert page.closed
+    assert page.closed and b.unrouted == []  # tek sayfa kapanır: kurallar öteki sayfalar için kalır
     opener.close()
-    assert b.closed
+    assert b.closed and b.unrouted == ["ignoreErrors"]
+
+
+class PendingRoute(FakeRoute):
+    """
+    Playwright'ın Route'u gibi: işleyici bitince `_on_route` görevi `handled` sonucunu bekler; bu sonucu
+    yalnızca başarılı bir continue_/abort ya da fallback verir. Kapanan sayfada continue_/abort hata verir.
+    """
+
+    def __init__(self, url: str, kind: str, page: Any) -> None:
+        super().__init__(url, kind, page)
+        self.handled: "asyncio.Future[bool]" = asyncio.get_running_loop().create_future()
+
+    async def abort(self, reason: str = "") -> None:
+        raise RuntimeError("Target page, context or browser has been closed")
+
+    async def continue_(self) -> None:
+        raise RuntimeError("Target page, context or browser has been closed")
+
+    async def fallback(self) -> None:
+        if self.handled.done():
+            raise RuntimeError("Route is already handled!")
+        self.handled.set_result(False)
+
+
+def test_a_request_that_fails_while_the_page_closes_is_handed_back(fake_bridge: Any, tmp_path: Path,
+                                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """V9: kapanırken başarısız olan istek bırakılırsa Playwright'ın `_on_route` görevi asılı kalır ve çöpe gider."""
+    from sofascore_scraper.client import bridge
+
+    async def slot() -> None:
+        pass
+
+    monkeypatch.setattr(bridge, "_wait_for_slot", slot)
+    opener = ps.BrowserPageOpener(profile_dir=str(tmp_path / "p"))
+    handle = opener.open("football", PushFeed("football"))
+    wait_for(lambda: handle.ready)
+    b = FakeBridge.made[0]
+    handler, page = b.routes[0][1], b.pages[0]
+
+    async def on_route(url: str, kind: str) -> bool:
+        route = PendingRoute(url, kind, page)
+        await handler(route)
+        return await asyncio.wait_for(route.handled, 1.0)  # asılı kalsaydı zaman aşımı
+
+    for url, kind in (("https://www.google-analytics.com/collect", "fetch"),
+                      ("https://www.sofascore.com/api/v1/sport/football/events/live", "fetch"),
+                      ("https://www.sofascore.com/football", "document")):
+        assert asyncio.run(on_route(url, kind)) is False
+    opener.close()
 
 
 def test_the_opener_solves_a_captcha_once_and_reports_a_failed_start(fake_bridge: Any, tmp_path: Path) -> None:
@@ -754,6 +819,15 @@ def test_the_opener_solves_a_captcha_once_and_reports_a_failed_start(fake_bridge
     wait_for(lambda: handle.failed is not None)
     assert [(s.kind, s.text) for s in feed.drain()] == [("gone", "open failed: RuntimeError")]
     opener.close()
+
+
+def test_the_browser_library_offers_what_the_close_path_uses() -> None:
+    """V9 düzeltmesinin dayandığı API: `BrowserContext.unroute_all(behavior=...)` ve `Route.fallback()`."""
+    import inspect
+
+    api = pytest.importorskip("patchright.async_api")
+    assert "behavior" in inspect.signature(api.BrowserContext.unroute_all).parameters
+    assert callable(getattr(api.Route, "fallback", None))
 
 
 assert conftest  # sınır denetimi ve kancalar conftest'te kurulur

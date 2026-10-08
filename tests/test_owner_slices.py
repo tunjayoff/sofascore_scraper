@@ -117,6 +117,8 @@ def test_owner_paths() -> None:
     assert endpoints.owner_slice("team_rankings", team_id=42) == "/team/42/rankings"
     assert endpoints.owner_slice("player_statistics", player_id=7) == "/player/7/statistics/seasons"
     assert endpoints.owner_slice("rankings", "5") == "/rankings/5"
+    assert endpoints.owner_slice("rankings", "6") == "/rankings/6"
+    assert sports.get_slice("rankings").sub_keys("1") == ("5", "6")  # ATP ve WTA (FX-27 V8)
     with pytest.raises(KeyError):
         endpoints.owner_slice("standings", "total", tournament_id=17)  # sezon eksik
     with pytest.raises(KeyError):
@@ -219,12 +221,12 @@ def test_teams_players_and_sports_are_owners_of_their_own(fake: FakeSofaScore, s
         ("team", 206570, (("team_rankings", ""),)),
         ("team", 275923, (("team_rankings", ""),)),
         ("player", 823984, (("player_statistics", ""),)),
-        ("sport", 5, (("rankings", "5"),)),
+        ("sport", 5, (("rankings", "5"), ("rankings", "6"))),
     ]
     fake.reset_log()
     summary = FetchPipeline(store, concurrency=1, selection=policy).run_sync(items)
-    assert sorted(api_paths(fake)) == ["/player/823984/statistics/seasons", "/rankings/5", "/team/206570/rankings",
-                                      "/team/275923/rankings"]
+    assert sorted(api_paths(fake)) == ["/player/823984/statistics/seasons", "/rankings/5", "/rankings/6",
+                                      "/team/206570/rankings", "/team/275923/rankings"]
     assert summary.total == 4
     assert store.entities.slice(Ref.team(275923), "team_rankings").state == "ok"
     assert store.entities.slice(Ref.team(206570), "team_rankings").state == "empty"

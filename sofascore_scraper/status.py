@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class StatusClass(str, Enum):
     NOT_STARTED = "not_started"  # type notstarted (code 0)
-    # type inprogress (6, 7, 8-12, 13-16, 20, 21, 28, 29, 30, 31, 1001, 1002) ve kriketin gün sonu: willcontinue (141)
+    # type inprogress (1-3, 6, 7, 8-12, 13-16, 20-22, 28-31, 42, 58, 1001-1005) ve kriketin gün sonu: willcontinue (141)
     LIVE = "live"
     COMPLETED = "completed"  # type finished, code 100/110/120 (oynandı ve bitti)
     DECIDED_WITHOUT_PLAY = "decided_without_play"  # type finished, code 91 Walkover / 92 Retired
@@ -33,8 +33,14 @@ _WITHOUT_PLAY_CODES = frozenset({91, 92})
 # 11 / 12: 4. ve 5. set (masa tenisi, voleybol; SP-2). Tip inprogress olduğundan zaten LIVE sayılıyorlardı;
 # burada yalnızca tipi olmayan yükte fark eder. SP-3'te görülenler de öyle: 21 (kriket 1. innings), 28 / 29
 # (beyzbol 8. / 9. inning), 1001 / 1002 (e-spor 1. / 2. oyun) ve 141 (kriket "End of day 1"). Görülmeyen ara
-# kodlar (22-27 gibi) eklenmedi: tipi olmayan yükte UNKNOWN kalırlar.
-_LIVE_CODES = frozenset({6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 28, 29, 30, 31, 141, 1001, 1002})
+# kodlar (23-27 gibi) eklenmedi: tipi olmayan yükte UNKNOWN kalırlar.
+# Canlı doğrulamada (2026-10-08, FX-27 V4) görülenler: 1 / 2 / 3 (buz hokeyi 1.-3. periyot; başka hiçbir sporda
+# bu kodlar görülmedi, hepsi oyun içi olduğundan spora göre ayırmak gerekmez), 22 (kriket "2nd Inning"),
+# 42 (futbol "2nd extra"), 58 (MMA "Awaiting announcement", tipi inprogress) ve 1003 (e-spor "Third game").
+# E-spor oyunları 1001-1005 kapalı bir dizi (en çok beş oyunluk seri): 1004 / 1005 de eklendi. Push karesi
+# yalnızca kodu taşıyabilir (tip düşer), bu kodlar o yolda "Status could not be classified" uyarısı veriyordu.
+_LIVE_CODES = frozenset({1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 28, 29, 30, 31, 42, 58, 141,
+                         1001, 1002, 1003, 1004, 1005})
 _VOID_CODES = frozenset({60, 70, 80, 81, 90})
 
 # Çok günlü kriket maçında gün sonu (kod 141 "End of day 1"): maç sürüyor, yalnızca ertesi güne kadar ara
@@ -73,6 +79,16 @@ def _by_code(code: int) -> StatusClass:
     if code in _VOID_CODES:
         return StatusClass.VOID
     return StatusClass.UNKNOWN
+
+
+def classify_code(code: Any) -> StatusClass:
+    """
+    Yalnızca `status.code`'un sınıfı; loglamaz. Push karesinin tek başına kodunu yoklamak için (bilinmeyen kod
+    orada bir sınıflandırma hatası değildir; asıl sınıflandırma `classify_status` ile yapılır ve o loglar).
+    """
+    if isinstance(code, bool) or not isinstance(code, int):
+        return StatusClass.UNKNOWN
+    return _by_code(code)
 
 
 def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:

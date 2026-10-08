@@ -1,0 +1,243 @@
+{
+ "source": "GET /sport/{sport}/events/live for every sport, 2026-10-08 19:55 +03 (live validation, FX-27 V4); one row per status seen, match ids left out",
+ "statuses": [
+  {
+   "sport": "badminton",
+   "code": 8,
+   "description": "1st set",
+   "type": "inprogress",
+   "matches": 2
+  },
+  {
+   "sport": "badminton",
+   "code": 9,
+   "description": "2nd set",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "basketball",
+   "code": 13,
+   "description": "1st quarter",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "basketball",
+   "code": 14,
+   "description": "2nd quarter",
+   "type": "inprogress",
+   "matches": 4
+  },
+  {
+   "sport": "basketball",
+   "code": 16,
+   "description": "4th quarter",
+   "type": "inprogress",
+   "matches": 4
+  },
+  {
+   "sport": "basketball",
+   "code": 30,
+   "description": "Pause",
+   "type": "inprogress",
+   "matches": 2
+  },
+  {
+   "sport": "basketball",
+   "code": 31,
+   "description": "Halftime",
+   "type": "inprogress",
+   "matches": 7
+  },
+  {
+   "sport": "cricket",
+   "code": 22,
+   "description": "2nd Inning",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "esports",
+   "code": 1001,
+   "description": "First game",
+   "type": "inprogress",
+   "matches": 2
+  },
+  {
+   "sport": "esports",
+   "code": 1003,
+   "description": "Third game",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "football",
+   "code": 6,
+   "description": "1st half",
+   "type": "inprogress",
+   "matches": 11
+  },
+  {
+   "sport": "football",
+   "code": 7,
+   "description": "2nd half",
+   "type": "inprogress",
+   "matches": 19
+  },
+  {
+   "sport": "football",
+   "code": 20,
+   "description": "Started",
+   "type": "inprogress",
+   "matches": 17
+  },
+  {
+   "sport": "football",
+   "code": 31,
+   "description": "Halftime",
+   "type": "inprogress",
+   "matches": 11
+  },
+  {
+   "sport": "football",
+   "code": 42,
+   "description": "2nd extra",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "futsal",
+   "code": 7,
+   "description": "2nd half",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "handball",
+   "code": 6,
+   "description": "1st half",
+   "type": "inprogress",
+   "matches": 3
+  },
+  {
+   "sport": "handball",
+   "code": 7,
+   "description": "2nd half",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "ice-hockey",
+   "code": 1,
+   "description": "1st period",
+   "type": "inprogress",
+   "matches": 6
+  },
+  {
+   "sport": "ice-hockey",
+   "code": 2,
+   "description": "2nd period",
+   "type": "inprogress",
+   "matches": 5
+  },
+  {
+   "sport": "ice-hockey",
+   "code": 3,
+   "description": "3rd period",
+   "type": "inprogress",
+   "matches": 2
+  },
+  {
+   "sport": "ice-hockey",
+   "code": 30,
+   "description": "Pause",
+   "type": "inprogress",
+   "matches": 5
+  },
+  {
+   "sport": "minifootball",
+   "code": 7,
+   "description": "2nd half",
+   "type": "inprogress",
+   "matches": 1
+  },
+  {
+   "sport": "mma",
+   "code": 58,
+   "description": "Awaiting announcement",
+   "type": "inprogress",
+   "matches": 6
+  },
+  {
+   "sport": "table-tennis",
+   "code": 8,
+   "description": "1st set",
+   "type": "inprogress",
+   "matches": 4
+  },
+  {
+   "sport": "table-tennis",
+   "code": 9,
+   "description": "2nd set",
+   "type": "inprogress",
+   "matches": 3
+  },
+  {
+   "sport": "table-tennis",
+   "code": 10,
+   "description": "3rd set",
+   "type": "inprogress",
+   "matches": 5
+  },
+  {
+   "sport": "table-tennis",
+   "code": 11,
+   "description": "4th set",
+   "type": "inprogress",
+   "matches": 5
+  },
+  {
+   "sport": "table-tennis",
+   "code": 12,
+   "description": "5th set",
+   "type": "inprogress",
+   "matches": 6
+  },
+  {
+   "sport": "tennis",
+   "code": 8,
+   "description": "1st set",
+   "type": "inprogress",
+   "matches": 12
+  },
+  {
+   "sport": "tennis",
+   "code": 9,
+   "description": "2nd set",
+   "type": "inprogress",
+   "matches": 15
+  },
+  {
+   "sport": "tennis",
+   "code": 10,
+   "description": "3rd set",
+   "type": "inprogress",
+   "matches": 5
+  },
+  {
+   "sport": "volleyball",
+   "code": 9,
+   "description": "2nd set",
+   "type": "inprogress",
+   "matches": 2
+  },
+  {
+   "sport": "volleyball",
+   "code": 10,
+   "description": "3rd set",
+   "type": "inprogress",
+   "matches": 1
+  }
+ ]
+}

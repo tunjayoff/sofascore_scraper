@@ -378,12 +378,18 @@ def unresolved_slice_keys(state: "EventState", selection: Selection = CONFIGURED
     "veri yok" olan dilim (durumu `empty`) çözülmüş sayılır (FX-23). Planlayıcı onu yine bir kez daha ister
     (eşik `threshold`, iki kesin yanıt: geçici bir 404 kalıcı sayılmasın), ama ilk indirmeden sonra tamlık
     "%0" görünmez: bitmiş tek maçlık bir kupada puan durumu ya da kadro gerçekten yoktur. Bitmemiş maçta kural
-    `missing_slice_keys` ile aynıdır.
+    `missing_slice_keys` ile aynıdır. Yalnızca sayılmış yanıt çözer: maç oynanırken alınan "veri yok" sayılmaz
+    (sayaç 0; FX-27 V5), maç bittikten sonraki ilk istek onu sayana kadar dilim çözülmemiş kalır.
     """
     keys = missing_slice_keys(state, selection, threshold=threshold)
     if state.event.status_class not in _FINISHED_CLASSES:
         return keys
-    return tuple(key for key in keys if state.slice(key).state != _SLICE_EMPTY)
+    return tuple(key for key in keys if not _counted_empty(state.slice(key)))
+
+
+def _counted_empty(info: "SliceInfo") -> bool:
+    """SofaScore'un son yanıtı "veri yok" ve bu yanıt sayılmış (bitmiş maçta alınmış)."""
+    return info.state == _SLICE_EMPTY and info.empty_count + info.unverified_empty_count > 0
 
 
 def wanted_slice_keys(state: "EventState", selection: Selection = CONFIGURED, *,

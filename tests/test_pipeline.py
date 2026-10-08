@@ -26,7 +26,7 @@ from sofascore_scraper.services import planning, pipeline
 from sofascore_scraper.services.pipeline import FetchPipeline, ItemResult
 from sofascore_scraper.services.query import RefreshPolicy
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
-from sofascore_scraper.store import Ref, StoreBusy, open_store
+from sofascore_scraper.store import Ref, Scope, StoreBusy, open_store
 
 FINISHED = 9100001
 EMPTY_SLICES = 9100002  # pregame-form 404, lineups boş
@@ -181,7 +181,7 @@ def test_an_unfinished_event_is_stored_as_it_is_now(fake: FakeSofaScore, store: 
     stored = store.events.get(event_id)
     assert stored is not None and stored.has_event_payload
     assert stored.status_class == ("not_started" if event_id == NOT_STARTED else "live")
-    assert detail_records.slice_marks(store.data_dir, event_id) == {}  # 404'ler sayılmaz ve kayıt açmaz
+    assert detail_records.slice_marks(store.data_dir, event_id) == {}  # 404'ler sayılmaz
 
 
 def test_an_unfinished_event_is_stored_without_marks_when_every_status_is_wanted(fake: FakeSofaScore,
@@ -191,7 +191,23 @@ def test_an_unfinished_event_is_stored_without_marks_when_every_status_is_wanted
     assert result.ok
     assert detail_records.stored_slices(store.data_dir, LIVE) == sorted(["event", "incidents", "lineups",
                                                                         "statistics"])
-    assert detail_records.slice_marks(store.data_dir, LIVE) == {}  # 404'ler sayılmaz ve kayıt açmaz
+    assert detail_records.slice_marks(store.data_dir, LIVE) == {}  # 404'ler sayılmaz
+
+
+def test_a_no_data_answer_of_an_unfinished_event_is_recorded_but_not_counted(fake: FakeSofaScore, store: Any
+                                                                             ) -> None:
+    """
+    FX-27 V5: canlı maçta SofaScore'un "veri yok" dediği dilim "istenmedi" görünmüyordu (katalogda satırı yoktu).
+    Artık sayılmayan bir kayıt açar (durum `empty`, sayaç 0): planlayıcı onu yine eksik sayar ve yeniden ister.
+    """
+    [result] = _run(store, [_full(LIVE)]).results
+    no_data = sorted(name for name, o in result.slices.items() if o.status == SLICE_EMPTY and o.data is None)
+    assert no_data  # sahte dünyada canlı maçın en az bir dilimi 404 verir
+    for key in no_data:
+        info = store.events.slice(LIVE, key)
+        assert (info.state, info.empty_count, info.unverified_empty_count, info.has_payload) == ("empty", 0, 0, False)
+    (state,) = store.events.states(Scope(event_ids=(LIVE,)))
+    assert set(no_data) <= set(planning.wanted_slice_keys(state))
 
 
 def test_empty_answers_are_counted_on_a_finished_event(fake: FakeSofaScore, store: Any) -> None:

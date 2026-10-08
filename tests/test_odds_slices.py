@@ -102,8 +102,8 @@ def test_odds_slices_are_registered_off_by_default() -> None:
         assert spec.default_enabled is False and spec.required is False
         assert spec.subs == sports.PROVIDER_SUBS and spec.keep_history and spec.max_age == sports.ODDS_MAX_AGE
         assert spec.phases == sports.ALL_PHASES and "{sub}" in spec.path
-    assert sports.get_slice("winning_odds").experimental
-    assert not any(sports.get_slice(key).experimental for key in ("odds_all", "odds_featured", "odds_changes"))
+    # FX-27: winning_odds'un biçimi canlı doğrulamada görüldü; artık deneysel değil
+    assert not any(sports.get_slice(key).experimental for key in ODDS_KEYS)
     # Varsayılan seçim (kayıt defteri, `core`) hiçbir sporda ve evrede oran seçmez
     for sport in (*sports.sport_slugs(), None):
         for phase in (*sports.PHASES, None):
@@ -139,7 +139,14 @@ def test_the_odds_body_rule() -> None:
     assert body_state("odds_all", "markets") == BODY_MALFORMED
     assert body_state("odds_featured", body("odds_featured")) == BODY_DATA
     assert body_state("odds_changes", body("odds_changes")) == BODY_DATA
-    assert body_state("winning_odds", {"home": {}}) == BODY_DATA  # biçimi bilinmiyor: dolu gövde yeter
+    # winning_odds: iki taraflı gövde, bir taraf null olabilir (FX-27)
+    assert body_state("winning_odds", body("winning_odds")) == BODY_DATA
+    assert body_state("winning_odds", {"home": body("winning_odds")["away"], "away": None}) == BODY_DATA
+    assert body_state("winning_odds", {"home": None, "away": None}) == BODY_NO_DATA
+    assert body_state("winning_odds", {"home": {}, "away": None}) == BODY_NO_DATA
+    assert body_state("winning_odds", {}) == BODY_NO_DATA and body_state("winning_odds", None) == BODY_NO_DATA
+    assert body_state("winning_odds", {"home": "13/10", "away": None}) == BODY_MALFORMED
+    assert body_state("winning_odds", ["x"]) == BODY_MALFORMED
     # P28 öncesi dilimlerin kuralı değişmez
     assert body_state("lineups", {"home": {"players": [1]}}) == BODY_DATA
 
@@ -298,8 +305,9 @@ def test_pre_match_odds_are_read_again_until_kick_off(fake: FakeSofaScore, store
     assert items[0].slices == tuple((key, "1") for key in ODDS_KEYS)
     FetchPipeline(store, concurrency=1, selection=WITH_ODDS).run_sync(items)
     assert store.events.slice(NOT_STARTED, "odds_all", "1").state == "ok"
-    # Bitmemiş maçta 404 sayılmaz: gövdesi olmayan dilim yazılmaz
-    assert store.events.slice(NOT_STARTED, "odds_changes", "1").state == "not_requested"
+    # Bitmemiş maçta 404 sayılmaz: gövdesi olmayan dilime sayılmayan bir "veri yok" kaydı açılır (FX-27 V5)
+    unanswered = store.events.slice(NOT_STARTED, "odds_changes", "1")
+    assert (unanswered.state, unanswered.empty_count, unanswered.has_payload) == ("empty", 0, False)
 
     # max_age dolmadan: oranlar istenmez; ama okunamayan iki dilim yine istenir
     soon = planning.prematch_items(store, policy_at(now + 60), tournament_ids=(17,), selection=WITH_ODDS)
@@ -391,6 +399,27 @@ def test_the_api_lists_odds_and_their_snapshots(fake: FakeSofaScore, store: Stor
     assert client.get("/api/v1/events/123/odds/odds_all").status_code == 404
     assert client.get(f"/api/v1/events/{FINISHED}/odds/odds_changes").status_code == 404
     assert client.get(f"/api/v1/events/{FINISHED}/odds/odds_all", params={"sub": "x"}).status_code == 422
+
+
+def test_a_winning_odds_answer_with_a_null_side_is_stored_raw_and_kept_out_of_the_odds_dataset(
+        fake: FakeSofaScore, store: Store) -> None:
+    """
+    FX-27: /event/{id}/provider/1/winning-odds yanıtında bir taraf null olabilir. Gövde veri sayılır ve ham
+    saklanır; şemanın Odds kaydına girmez (mappers.ODDS_KEYS), oran veri kümesi onu atlar ve hata vermez.
+    """
+    add_odds(fake, FINISHED)
+    fake.add(f"/event/{FINISHED}/provider/1/winning-odds", body("winning_odds"))
+    download(store, [FINISHED], WITH_ODDS)
+    info = store.events.slice(FINISHED, "winning_odds", "1")
+    assert info.state == "ok" and info.meta == {"provider_id": 1}
+    assert store.events.payload(FINISHED, "winning_odds", "1") == body("winning_odds")
+    assert mappers.odds_from_payload(FINISHED, "winning_odds", body("winning_odds")) is None
+    rows = [record.to_dict() for record in ExportService(store).records("odds")]
+    assert rows and {row["key"] for row in rows} == {"odds_all", "odds_featured"}
+    listed = client.get(f"/api/v1/events/{FINISHED}/odds").json()["data"]
+    assert ("winning_odds", "1", "ok") in [(s["key"], s["sub"], s["state"]) for s in listed]
+    raw = client.get(f"/api/v1/events/{FINISHED}/slices/winning_odds/raw", params={"sub": "1"})
+    assert raw.status_code == 200 and raw.json() == body("winning_odds")
 
 
 def test_the_odds_dataset_has_one_row_per_outcome_and_snapshot(fake: FakeSofaScore, store: Store,
