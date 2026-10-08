@@ -8,11 +8,8 @@ Denetlenenler:
   2. Hangi maçlar: detayı (olay yükü) saklanan her maç bir kez, başlangıç zamanı sırasıyla; iki düzen de.
   3. `league_folder` / `season_folder`: eski düzende dizin adları, düz kayıtta yok, v3'te eski yazıcının adları.
   4. Akışa ve dosyaya yazma, lig süzgeci (birleşik satırlar, pandas yok), boş seçim, desteklenmeyen biçim.
-  5. Yüzler: `GET /api/export/csv` istekte üretir ve diske yazmaz; POST aynı yanıtı verir; terminal menüsü ve
-     MatchDataFetcher'ın eski girişleri servisi çağırır.
+  5. Yüzler: MatchDataFetcher'ın eski girişleri servisi çağırır (2.x'in `/api/export/csv` yolu 3.1'de kalktı, P30).
   6. Web işinin sonunda CSV aşaması yoktur (karar D9).
-
-Altın dosyalar (`tests/golden/readers/*.api_export_csv.json`) uç noktanın yanıtını bütünüyle sabitler.
 """
 from __future__ import annotations
 
@@ -40,7 +37,7 @@ from sofascore_scraper.services.export import (
     legacy_wide_row,
 )
 from sofascore_scraper.slices import SLICE_OK, Outcome
-from sofascore_scraper.store import StoreError, open_store
+from sofascore_scraper.store import open_store
 from sofascore_scraper.web.app import app
 
 client = TestClient(app)
@@ -297,53 +294,6 @@ def test_files_by_league_hold_their_own_columns(tmp_path: Path, monkeypatch: pyt
 
 
 # --- 5. yüzler ------------------------------------------------------------------------------------------
-
-def test_the_get_route_computes_the_export_and_writes_nothing(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    fixture = _fixture("processed_only", tmp_path, monkeypatch)
-    open_store(fixture.data_dir)
-    before = _tree(fixture.data_dir)
-
-    got = client.get("/api/export/csv")
-    posted = client.post("/api/export/csv")
-
-    assert got.status_code == posted.status_code == 200
-    assert got.headers["content-type"] == "text/csv; charset=utf-8"
-    assert got.headers["content-disposition"].startswith('attachment; filename="all_matches_')
-    assert _table(got.text)[1:] == _table(posted.text)[1:]
-    # Dosyadaki bayat dışa aktarma sunulmaz: satırlar saklanan detaylardandır
-    ids = sorted(int(row[0]) for row in _table(got.text)[1:])
-    assert ids == sorted(e for e in fixture.detail_ids if open_store(fixture.data_dir).events.get(e))
-    assert _tree(fixture.data_dir) == before
-
-
-def test_the_route_answers_404_without_data_and_for_an_unknown_league(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "empty"))
-    assert client.get("/api/export/csv").json() == {"detail": "No CSV data available. Run a fetch first."}
-
-    fixture = _fixture("canonical", tmp_path, monkeypatch)
-    r = client.get("/api/export/csv?league_id=999")
-    assert r.status_code == 404 and r.json() == {"detail": "No exported matches for league 999."}
-    r = client.get("/api/export/csv?league_id=17")
-    assert r.status_code == 200 and 'filename="league_17_all_matches_' in r.headers["content-disposition"]
-    assert not (fixture.data_dir / "match_details" / "processed").exists() or not any(
-        (fixture.data_dir / "match_details" / "processed").iterdir())
-
-
-def test_a_storage_error_is_a_500(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _fixture("canonical", tmp_path, monkeypatch)
-
-    def broken(self: ExportService, spec: Any = None) -> Any:
-        raise StoreError("disk gone")
-
-    monkeypatch.setattr(ExportService, "legacy_table", broken)
-
-    r = client.get("/api/export/csv")
-    assert r.status_code == 500 and r.json() == {"detail": "CSV generation failed"}
-
 
 def test_the_legacy_csv_files_of_the_service(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Birleşik dosya, seçilen maçlar ve lig başına dosyalar (eski `create_csv_dataset` yönlendirmesinin işi)."""

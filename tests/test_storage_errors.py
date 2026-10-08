@@ -235,9 +235,9 @@ def test_headless_cli_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch,
 def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.jobs import JobStore
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    from sofascore_scraper.services import context
+    from sofascore_scraper.store import JobStore
+    from web_job import run_sync_job
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
@@ -268,16 +268,17 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
 
     # Servis bağlamının (ServiceContext) yerini tutar
     ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=FullDisk())
-    monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-    req = FetchRequest(mode="details", league_id=17)
-    fj.run_fetch_job(store.create_running(req.model_dump()), req)
+    monkeypatch.setattr(context, "build_context", lambda config_manager: ctx)
+    final = run_sync_job(store, {"mode": "details", "league_id": 17})
 
-    final = store.snapshot()
     assert final["status"] == "Failed"
     assert "/data/match_details/17_PL/season_x/a" in final["current_task"]
     assert os.strerror(errno.ENOSPC) in final["current_task"]
     assert final["matches_failed"] == 1
-    assert final["result"]["error"] == "storage"
+    from sofascore_scraper.jobs.manager import JobManager
+
+    job = JobManager(store).get(final["job_id"])
+    assert job is not None and job.error is not None and job.error.code == "storage_error"
 
 
 # --- maçın yeri: v3, kimlikten (uniqueTournament.id'si olmasa da) ------------------------------------

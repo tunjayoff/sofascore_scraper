@@ -342,8 +342,6 @@ def run_sync_job(inv: Invocation, ctx: "ServiceContext", spec: "SyncSpec", *, ki
         job = jobs.start(
             JobKind(kind), recorded, origin=local_origin("cli"),
             wait_for_lease=float(option(inv, "wait", 0.0)),
-            # Web arayüzünün iş kartı başlığı istek gövdesinden üretilir: aynı biçim
-            payload={"league_id": spec.league_id, "mode": spec.mode, "selections": None},
             lease_purpose=purpose,
         )
     except JobStoreConflict as conflict:

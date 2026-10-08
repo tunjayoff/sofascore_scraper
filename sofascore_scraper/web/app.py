@@ -14,7 +14,7 @@ from sofascore_scraper.logger import attach_file_handler, get_logger
 from sofascore_scraper.paths import env_file_path
 from sofascore_scraper.version import __version__
 from sofascore_scraper.web import deps, errors, security
-from sofascore_scraper.web.api import deprecation_headers, is_v1
+from sofascore_scraper.web.api import is_v1
 from sofascore_scraper.web.missing_ui import MISSING_UI_HTML
 
 dotenv.load_dotenv(env_file_path())
@@ -61,7 +61,6 @@ if "*" in ALLOWED_HOSTS:
     logger.warning("The Host allow list is off (*): every Host header is answered, no DNS rebinding protection.")
 
 
-LOGIN_PATH = "/api/auth/login"
 TOO_MANY_ATTEMPTS = "too_many_attempts"
 
 
@@ -130,24 +129,13 @@ async def _guarded(request: Request, call_next: RequestResponseEndpoint, path: s
         if bearer:
             limiter.success(client)
 
-    login = token_set and request.method == "POST" and path == LOGIN_PATH
-    if login:
-        wait = limiter.retry_after(client)
-        if wait > 0:
-            return _too_many_attempts(request, False, wait)
     try:
-        response = await call_next(request)
+        return await call_next(request)
     except Exception as exc:
         if not v1:
             raise
         # v1 rotasından çıkan her hata (PlatformError, StorageError, beklenmeyen ...) hata modeliyle döner
         return errors.exception_response(request, exc)
-    if login:
-        if response.status_code == 401:
-            _failed_attempt(client)
-        elif response.status_code == 200:
-            limiter.success(client)
-    return response
 
 
 @app.middleware("http")
@@ -163,8 +151,8 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
       3. Güvenlik başlıkları: ret yanıtları dahil her yanıta eklenir.
 
     `/api/v1` yanıtları ayrıca istek kimliğini (`X-Request-Id`) taşır ve retler v1 hata modeliyle döner
-    (`unauthorized`, `forbidden_origin`); eski yolların ret gövdeleri değişmez. Eski her rotanın yanıtına
-    `Deprecation` ve halefini gösteren `Link` başlıkları eklenir (sofascore_scraper/web/api/__init__.py).
+    (`unauthorized`, `forbidden_origin`). v1 dışındaki yolların (`/health`, arayüzün dosyaları, var olmayan bir
+    `/api` yolu) ret gövdeleri 2.x'in biçimindedir.
     """
     # Yönlendiricinin eşleştirdiği yolun kendisi. request.url, Host başlığıyla birleştirilerek kurulur:
     # "*" izin listesinde "x/y?" gibi bir Host, oradan okunan yolu değiştirip belirteç denetimini
@@ -178,20 +166,16 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
         response.headers[name] = value
     if v1:
         response.headers[errors.REQUEST_ID_HEADER] = errors.request_id_of(request)
-    else:
-        for name, value in deprecation_headers(path, request.method):
-            response.headers[name] = value
     return response
 
 
 # Eklenen son middleware en dışta çalışır: Host kontrolü diğer her şeyden önce
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
-from sofascore_scraper.web.api import legacy, v1  # noqa: E402
+from sofascore_scraper.web.api import v1  # noqa: E402
 from sofascore_scraper.web.jobs import JobStoreConflict  # noqa: E402
 
-# Eski yollar bir sürüm daha durur: belgede `deprecated`, yanıtlarında Deprecation ve Link başlıkları
-app.include_router(legacy.router, deprecated=True)
+# 2.x'in `/api` yolları 3.1'de kalktı (P30): HTTP API yalnızca `/api/v1`dir
 app.include_router(v1.router)
 errors.install(app)
 

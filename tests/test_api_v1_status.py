@@ -94,7 +94,7 @@ def test_the_session_routes_answer_without_the_token(token: str) -> None:
     assert anonymous.get("/api/v1/status").status_code == 401
 
 
-def test_login_sets_the_session_cookie_of_the_legacy_route(token: str) -> None:
+def test_login_sets_the_session_cookie(token: str) -> None:
     browser = TestClient(app)
     r = browser.post("/api/v1/auth/login", json={"token": f"  {token} "})
     assert data(r) == {"required": True, "authenticated": True}
@@ -102,7 +102,6 @@ def test_login_sets_the_session_cookie_of_the_legacy_route(token: str) -> None:
     assert cookie.startswith(f"{security.SESSION_COOKIE}={security.session_value(token)};")
     assert "HttpOnly" in cookie and "SameSite=strict" in cookie and token not in cookie
     assert browser.get("/api/v1/status").status_code == 200
-    assert browser.get("/api/settings").status_code == 200  # aynı cookie eski yollarda da geçer
     assert data(browser.post("/api/v1/auth/logout")) == {"required": True, "authenticated": False}
     assert browser.get("/api/v1/status").status_code == 401
 
@@ -119,16 +118,16 @@ def test_a_wrong_token_is_unauthorized_with_a_reason(token: str) -> None:
     assert r.headers["www-authenticate"] == "Bearer" and r.headers["x-request-id"] == body["request_id"]
 
 
-def test_failed_logins_share_the_limit_with_the_legacy_route(token: str) -> None:
+def test_failed_logins_share_the_limit_with_wrong_bearer_tokens(token: str) -> None:
     c = TestClient(app)
     for _ in range(4):
         assert c.post("/api/v1/auth/login", json={"token": "nope"}).status_code == 401
-    assert c.post("/api/auth/login", json={"token": "nope"}).status_code == 401  # fifth: the lock starts
+    wrong = {"authorization": "Bearer nope"}
+    assert c.get("/api/v1/status", headers=wrong).status_code == 401  # fifth: the lock starts
     locked = c.post("/api/v1/auth/login", json={"token": token})  # the right token is not evaluated
     body = error(locked, 401, "unauthorized")
     assert body["details"]["reason"] == "too_many_attempts" and int(locked.headers["retry-after"]) >= 1
     assert "set-cookie" not in locked.headers
-    assert c.post("/api/auth/login", json={"token": token}).status_code == 429
     deps.attempt_limiter.reset()
     assert c.post("/api/v1/auth/login", json={"token": token}).status_code == 200
 

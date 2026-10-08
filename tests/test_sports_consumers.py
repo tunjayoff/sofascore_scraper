@@ -4,14 +4,12 @@ import dataclasses
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 from sofascore_scraper import sports, watcher
 from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, MatchDataFetcher
 from sofascore_scraper.sports import DetailSlice
 from sofascore_scraper.status import BasketballScores, FootballScores, ScoreSheet, TennisScores, extract_scores
 from sofascore_scraper.web import league_sports
-from sofascore_scraper.web.app import app
 
 REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-rules", "ice-hockey", "handball",
               "rugby", "futsal", "minifootball", "floorball",  # SP-1: + sekiz periyot sporu
@@ -26,12 +24,6 @@ def test_league_sports_names_come_from_the_registry():
     assert league_sports.SPORTS == sports.sport_slugs() == REGISTERED
     for raw in ("Football", "basketball", " Tennis ", "Soccer", "ice-hockey", "table-tennis", "", None):
         assert league_sports.normalize_sport(raw) == sports.normalize_sport(raw)
-
-
-def test_unknown_sport_error_lists_the_registered_sports():
-    r = TestClient(app).patch("/api/leagues/17", json={"sport": "curling"})
-    assert r.status_code == 422
-    assert r.json()["detail"] == f"Unknown sport. Use one of: {', '.join(REGISTERED)}."
 
 
 # --- skor ailesi → extract_scores -------------------------------------------------------

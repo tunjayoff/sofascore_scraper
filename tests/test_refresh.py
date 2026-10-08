@@ -365,7 +365,12 @@ def test_settings_expose_refresh_window(monkeypatch):
     from sofascore_scraper.web.app import app
 
     client = TestClient(app)
-    assert client.get("/api/settings").json()["refresh_window_hours"] == 72
+
+    def window() -> Any:
+        rows = client.get("/api/v1/settings").json()["data"]["settings"]
+        return next(row["value"] for row in rows if row["key"] == "refresh.window_hours")
+
+    assert window() == 72
+    assert client.patch("/api/v1/settings", json={"values": {"refresh.window_hours": -1}}).status_code == 422
     monkeypatch.setenv("REFRESH_WINDOW_HOURS", "24")
-    assert client.get("/api/settings").json()["refresh_window_hours"] == 24
-    assert client.post("/api/settings", json={"refresh_window_hours": -1}).status_code == 422
+    assert window() == 24

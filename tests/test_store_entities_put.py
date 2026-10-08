@@ -404,11 +404,11 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
     assert [name for name in tree(data) if name.startswith("matches/")] == []
 
     store = open_store(data)
-    rows = QueryService(store).season_matches_legacy(season.id, league.id, only_finished=False)
+    rows = QueryService(store).listed_events(tournament_ids=(league.id,), season_ids=(season.id,), only_finished=False)
     _results, summary = sf.summary_of(listings)
-    have = {row["match_id"]: {k: str(v) for k, v in row.items()} for row in rows}
-    want = {row["match_id"]: {k: str(v) for k, v in row.items()} for row in summary}
-    assert {mid: have[mid] for mid in want} == want  # özetin her satırı listede, aynı değerlerle
+    have = {row.id: (row.home_name, row.away_name, row.status_description) for row in rows}
+    want = {int(row["match_id"]): (row["home_team"], row["away_team"], row["status"]) for row in summary}
+    assert {mid: have[mid] for mid in want} == want  # özetin her satırı listede, aynı takımlar ve durumla
     assert differences(store) == []
 
 

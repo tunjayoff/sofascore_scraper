@@ -1,10 +1,10 @@
 """
 Uçtan uca: proxy parolası kaydedildikten sonra hiçbir yerden geri okunamamalı.
 
-İki özellik birlikte denenir: proxy ayarları web API'sinden kaydedilir (sofascore_scraper/web/routes/settings.py),
-istekler o proxy üzerinden gider ve başarısız olur (hata metninde proxy adresi geçer), sonra
-parolanın API yanıtlarında, log dosyasında (sofascore_scraper/logger.py), /api/logs'ta ve tanılama özetinde /
-paketinde (sofascore_scraper/diagnostics.py; web ve CLI yolu) bulunmadığı doğrulanır.
+İki özellik birlikte denenir: proxy ayarları web API'sinden kaydedilir (`PATCH /api/v1/settings`,
+sofascore_scraper/web/api/v1/settings.py), istekler o proxy üzerinden gider ve başarısız olur (hata metninde proxy
+adresi geçer), sonra parolanın API yanıtlarında, log dosyasında (sofascore_scraper/logger.py), `/api/v1/logs`ta ve
+tanılama özetinde / paketinde (sofascore_scraper/diagnostics.py; web ve CLI yolu) bulunmadığı doğrulanır.
 
 Çevrimdışı: yalnızca curl sahtedir; gerçek tarayıcıyı conftest engeller.
 """
@@ -22,8 +22,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import sofascore_scraper.utils as utils
-from conftest import LEAGUE_ID
 from sofascore_scraper import diagnostics, redact
+from sofascore_scraper.config import active_settings
 from sofascore_scraper import logger as app_logger
 from sofascore_scraper.paths import env_file_path
 from sofascore_scraper.web.app import app
@@ -60,26 +60,37 @@ def app_log(tmp_path):
     logging.getLogger().setLevel(saved_level)
 
 
+def _patch(values: dict) -> object:
+    return client.patch("/api/v1/settings", json={"values": values})
+
+
+def _proxy_row() -> object:
+    rows = client.get("/api/v1/settings").json()["data"]["settings"]
+    return next(row["value"] for row in rows if row["key"] == "client.proxy")
+
+
 @pytest.fixture(autouse=True)
-def _restore_env(monkeypatch):
-    """Test .env dosyasını ve proxy ortam değişkenlerini eski haline döndürür."""
+def _restore_env(monkeypatch, settings_overrides):
+    """Test .env dosyasını, proxy ortam değişkenlerini ve Ayarlar sayfasının dosyasını eski haline döndürür."""
     path = env_file_path()
     with open(path, encoding="utf-8") as f:
         before = f.read()
-    monkeypatch.setenv("PROXY_URL", "")
-    monkeypatch.setenv("USE_PROXY", "false")
+    # Ortamdan verilmiş proxy ayarı kilitli olurdu: Ayarlar API'si onu yazamazdı
+    monkeypatch.delenv("PROXY_URL", raising=False)
+    monkeypatch.delenv("USE_PROXY", raising=False)
     redact.refresh()
     yield
     with open(path, "w", encoding="utf-8") as f:
         f.write(before)
     monkeypatch.undo()
+    assert _patch({"client.proxy": None, "client.use_proxy": None, "client.retries": None}).status_code == 200
     redact.refresh()
 
 
 def _failing_requests_through(proxy_url: str, extra: str = "") -> dict:
     """
-    Lig arama, sezon yenileme ve bağlantı testi: curl, bozuk bir proxy'nin vereceği türden bir
-    hatayla başarısız olur ve hata metninde proxy adresini (parolasıyla) taşır. Yanıt metinlerini döndürür.
+    Turnuva arama ve bağlantı denetimi: curl, bozuk bir proxy'nin vereceği türden bir hatayla başarısız olur ve
+    hata metninde proxy adresini (parolasıyla) taşır. Yanıt metinlerini döndürür.
     """
     seen = []
 
@@ -88,16 +99,14 @@ def _failing_requests_through(proxy_url: str, extra: str = "") -> dict:
         raise ConnectionError(f"curl: (56) CONNECT tunnel failed, response 407 via {proxy_url}{extra}")
 
     with patch.object(utils, "_sleep"), patch.object(utils.cffi_requests, "get", side_effect=curl):
-        search = client.post("/api/leagues/search-remote", params={"q": "premier"})
-        refresh = client.post(f"/api/leagues/{LEAGUE_ID}/seasons/refresh")
+        search = client.post("/api/v1/tournaments/search", json={"q": "premier"})
     # İstekler gerçekten kayıtlı proxy ile (parolası tam) gönderildi: maskelenen şey kullanılan değer
     assert seen and all(p == {"http": proxy_url, "https": proxy_url} for p in seen), seen
-    assert search.status_code == 502 and search.json()["detail"]["reason"] == "network"
-    assert refresh.status_code == 502 and refresh.json()["detail"]["reason"] == "network"
-    # Bağlantı testi: tarayıcı başlatılamaz (conftest), proxy ayarı tarayıcıya da verilecekti
-    test = client.post("/api/bypass/test")
-    assert test.status_code == 200 and test.json()["success"] is False
-    return {"search": search.text, "refresh": refresh.text, "bypass test": test.text}
+    assert search.status_code == 502 and search.json()["error"]["details"]["reason"] == "network"
+    # Bağlantı denetimi: tarayıcı başlatılamaz (conftest), proxy ayarı tarayıcıya da verilecekti
+    check = client.post("/api/v1/status/check", json={"target": "sofascore"})
+    assert check.status_code == 200
+    return {"search": search.text, "status check": check.text}
 
 
 def _everything_a_user_could_share(log_dir, tmp_path) -> dict:
@@ -110,15 +119,15 @@ def _everything_a_user_could_share(log_dir, tmp_path) -> dict:
     for name in names:
         out[f"log file {name}"] = (log_dir / name).read_text(encoding="utf-8", errors="replace")
 
-    out["GET /api/settings"] = client.get("/api/settings").text
-    logs = client.get("/api/logs", params={"limit": 2000})
-    assert logs.status_code == 200 and logs.json()["count"] > 0
-    out["GET /api/logs"] = logs.text
-    summary = client.get("/api/diagnostics")
+    out["GET /api/v1/settings"] = client.get("/api/v1/settings").text
+    logs = client.get("/api/v1/logs", params={"limit": 2000})
+    assert logs.status_code == 200 and logs.json()["data"]["count"] > 0
+    out["GET /api/v1/logs"] = logs.text
+    summary = client.get("/api/v1/diagnostics")
     assert summary.status_code == 200
-    out["GET /api/diagnostics"] = summary.text
+    out["GET /api/v1/diagnostics"] = json.dumps(summary.json()["data"])
 
-    bundle = client.get("/api/diagnostics/bundle")
+    bundle = client.get("/api/v1/diagnostics/bundle")
     assert bundle.status_code == 200
     cli_bundle = diagnostics.write_bundle(str(tmp_path / "cli-bundle.zip"), source="cli")
     with open(cli_bundle, "rb") as f:
@@ -144,33 +153,32 @@ def test_proxy_password_saved_in_settings_never_reaches_logs_or_diagnostics(app_
     secrets = {sample, decoded, f"scraper:{sample}", f"scraper:{decoded}"}
     outputs = {}
 
-    saved = client.post("/api/settings", json={"use_proxy": True, "proxy_url": url})
-    assert saved.status_code == 200 and saved.json()["status"] == "success"
-    assert os.environ["PROXY_URL"] == url  # tam değer yalnızca .env'de ve süreç ortamında
-    outputs["POST /api/settings"] = saved.text
+    saved = _patch({"client.use_proxy": True, "client.proxy": url})
+    assert saved.status_code == 200, saved.text
+    assert active_settings().client.proxy == url  # tam değer yalnızca Ayarlar sayfasının dosyasında
+    outputs["PATCH /api/v1/settings"] = saved.text
 
     outputs.update(_failing_requests_through(url, extra=f" (proxy auth failed for scraper:{decoded})"))
 
     # Form maskeli adresi geri gönderir: parola korunur; başka sunucuya taşınmaz (422)
-    masked = client.get("/api/settings").json()["proxy_url"]
+    masked = _proxy_row()
     assert masked == f"http://scraper:***@{HOST}"
-    kept = client.post("/api/settings", json={"proxy_url": masked, "max_retries": 2})
-    assert kept.status_code == 200 and os.environ["PROXY_URL"] == url
-    refused = client.post("/api/settings", json={"proxy_url": "http://scraper:***@other.example:8080"})
-    assert refused.status_code == 422 and os.environ["PROXY_URL"] == url
-    outputs["POST /api/settings (masked)"] = kept.text
-    outputs["POST /api/settings (other host)"] = refused.text
+    kept = _patch({"client.proxy": masked, "client.retries": 2})
+    assert kept.status_code == 200 and active_settings().client.proxy == url
+    refused = _patch({"client.proxy": "http://scraper:***@other.example:8080"})
+    assert refused.status_code == 422 and active_settings().client.proxy == url
+    outputs["PATCH /api/v1/settings (masked)"] = kept.text
+    outputs["PATCH /api/v1/settings (other host)"] = refused.text
 
     outputs.update(_everything_a_user_could_share(app_log, tmp_path))
     _assert_no_leak(outputs, secrets)
 
     # Sınama boş değil: ilgili satırlar log'da, maskelenmiş halleriyle
     log_text = outputs["log file sofascore_scraper.log"]
-    assert "PROXY_URL=***" in log_text
     assert "Proxy or connection error" in log_text or "Request error" in log_text
     assert f"***@{HOST}" in log_text
     assert f"***@{HOST}" in outputs["web bundle log_tail.txt"]
-    for name in ("GET /api/diagnostics", "web bundle diagnostics.json", "cli bundle diagnostics.json"):
+    for name in ("GET /api/v1/diagnostics", "web bundle diagnostics.json", "cli bundle diagnostics.json"):
         values = json.loads(outputs[name])["settings"]["values"]
         assert values["PROXY_URL"] == f"http://***@{HOST}", name
         assert values["USE_PROXY"] == "true", name
@@ -186,10 +194,10 @@ def test_hand_written_proxy_without_a_scheme_never_reaches_logs_or_diagnostics(a
     config_manager.reload_config()  # uygulama açılışında olduğu gibi .env okunur
 
     outputs = _failing_requests_through(url)
-    assert client.get("/api/settings").json()["proxy_url"] == f"scraper:***@{HOST}"
+    assert _proxy_row() == f"scraper:***@{HOST}"
     outputs.update(_everything_a_user_could_share(app_log, tmp_path))
     _assert_no_leak(outputs, {SAMPLE_PLAIN, f"scraper:{SAMPLE_PLAIN}"})
 
     assert f"***@{HOST}" in outputs["log file sofascore_scraper.log"]
-    for name in ("GET /api/diagnostics", "web bundle diagnostics.json", "cli bundle diagnostics.json"):
+    for name in ("GET /api/v1/diagnostics", "web bundle diagnostics.json", "cli bundle diagnostics.json"):
         assert json.loads(outputs[name])["settings"]["values"]["PROXY_URL"] == f"***@{HOST}", name

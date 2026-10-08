@@ -279,8 +279,8 @@ def test_start_runs_a_sync_job_in_the_background(store: JobStore, body: Any) -> 
     assert (ended["state"], ended["result"], ended["error"]) == ("succeeded", {"details_done": 2}, None)
     (spec,) = body.specs
     assert (spec.mode, spec.league_id, spec.job_phases) == ("full", 17, ("seasons", "matches", "details"))
-    # Eski arayüzün iş kartı başlığı için istek gövdesi biçimi
-    assert store.get_job(job["id"])["payload"] == {"league_id": 17, "mode": "full", "selections": None}
+    # 2.x arayüzünün iş kartı başlığı (`mode`lu `payload`) 3.1'de yazılmaz (P30)
+    assert "mode" not in store.get_job(job["id"])["payload"]
 
 
 @pytest.mark.parametrize("request_body,expected", [
@@ -470,31 +470,6 @@ def test_a_failed_item_ends_the_job_partial(store: JobStore, service: _Details) 
     service.failing = ["b"]
     ended = _ended(data(client.post("/api/v1/jobs", json={"kind": "fetch"}), 202)["id"])
     assert ended["state"] == "partial" and ended["error"] is None and ended["result"]["failed_count"] == 1
-
-
-# --- eski arayüzle birlikte ----------------------------------------------------------------------------
-
-
-def test_a_job_started_through_v1_is_the_job_of_the_legacy_ui(body: Any) -> None:
-    """Aynı iş deposu: eski durum ucu işi gösterir, eski başlatma ucu ikinci bir işi reddeder."""
-    real = deps.job_store()
-    if real.snapshot().get("is_running"):
-        real.update(status="Cancelled", finished=True)
-    try:
-        job = data(client.post("/api/v1/jobs", json={"kind": "sync", "spec": {"league_id": 17}}), 202)
-
-        status = client.get("/api/scrape/status").json()
-        assert status["is_running"] is True and status["job_id"] == job["id"]
-        assert client.post("/api/fetch", json={"mode": "full", "league_id": 17}).status_code == 409
-        assert client.get(f"/api/jobs/{job['id']}").json()["status"] == "running"
-
-        body.release.set()
-        _ended(job["id"])
-        after = wait_for(lambda: (lambda s: s if not s["is_running"] else None)(client.get("/api/scrape/status").json()))
-        assert after["status"] == "Completed"
-    finally:
-        body.release.set()
-        wait_for(lambda: not real.snapshot().get("is_running"), what="the job to end")
 
 
 # --- olay akışı --------------------------------------------------------------------------------------
@@ -789,12 +764,6 @@ def test_sports_are_the_registry() -> None:
                                                       if s.applies_to("football")]
     assert list(football["slices"][0]) == ["key", "path", "required", "default_enabled", "selected", "group", "owner",
                                            "phases", "keep_history", "max_age_seconds"]
-    # Eski uç ile aynı veri (zarf, P27'nin seçim alanları ve P28'in eski uçta olmayan dilimleri dışında)
-    legacy_fields = ("key", "path", "required", "default_enabled")
-    detail_keys = {s.key for s in sports.DETAIL_SLICES}
-    assert [{**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"] if s["key"] in detail_keys]}
-            for sport in body["data"]] == client.get("/api/sports").json()
-
     missing = error(client.get("/api/v1/sports/quidditch"), 404, "not_found")
     assert missing["details"] == {"slug": "quidditch"}
 

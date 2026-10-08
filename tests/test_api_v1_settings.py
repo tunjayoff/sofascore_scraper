@@ -142,15 +142,6 @@ def test_secrets_are_masked(sandbox: Path, monkeypatch: pytest.MonkeyPatch) -> N
     assert "captcha-value-123" not in text and PROXY_SECRET not in text
 
 
-def test_v1_reports_the_models_value_where_the_legacy_route_has_its_own_rule(
-    sandbox: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """`DEBUG=yes`: günlükçü ve model bunu açık sayar; eski GET /api/settings yalnızca `true` sözcüğünü."""
-    monkeypatch.setenv("DEBUG", "yes")
-    assert rows()["log.debug"]["value"] is True
-    assert client.get("/api/settings").json()["debug"] is False
-
-
 # --- yazma -------------------------------------------------------------------------------------------
 
 
@@ -168,10 +159,8 @@ def test_patch_writes_the_overrides_file_and_the_value_is_in_force_at_once(sandb
     assert found["display.language"]["value"] == "tr"
     assert json.loads(sandbox.read_text(encoding="utf-8")) == {"client": {"retries": 7}, "display": {"language": "tr"}}
     assert sandbox.read_text(encoding="utf-8").endswith("}\n")
-    # Uygulamanın geri kalanı da yeni değeri görür: yapılandırma yöneticisi, eski uç, ortamı okuyan modüller
+    # Uygulamanın geri kalanı da yeni değeri görür: yapılandırma yöneticisi, ortamı okuyan modüller
     assert deps.config_manager().get_max_retries() == 7
-    legacy = client.get("/api/settings").json()
-    assert (legacy["max_retries"], legacy["language"]) == (7, "tr")
     assert os.environ["MAX_RETRIES"] == "7"
     assert rows() == found
 
@@ -193,30 +182,6 @@ def test_a_value_written_here_beats_the_env_file_and_null_gives_it_back(sandbox:
     assert (row["value"], row["source"]) == (5, "dotenv")
     assert json.loads(sandbox.read_text(encoding="utf-8")) == {}
     assert os.environ["MAX_CONCURRENT"] == "5"
-
-
-def test_a_later_save_of_the_legacy_route_replaces_a_value_written_here(sandbox: Path) -> None:
-    """
-    Plan bölüm 15, satır 78 (P21): overrides.json `.env`'in üstündedir. Eski `POST /api/settings` bir anahtarı
-    `.env`'e yazınca aynı anahtarın overrides.json'daki değerini de siler: kaydedilen değer geçerli olur. Öteki
-    anahtarlar dosyada kalır.
-    """
-    assert patch({"client.retries": 7, "client.timeout_seconds": 30}).status_code == 200
-
-    legacy = client.post("/api/settings", json={"max_retries": 2})
-
-    assert legacy.status_code == 200 and legacy.json()["status"] == "success"
-    row = rows()["client.retries"]
-    assert (row["value"], row["source"]) == (2, "dotenv") and deps.config_manager().get_max_retries() == 2
-    assert json.loads(sandbox.read_text(encoding="utf-8")) == {"client": {"timeout_seconds": 30}}
-    assert rows()["client.timeout_seconds"]["source"] == "overrides"
-
-
-def test_a_legacy_save_of_a_key_not_written_here_leaves_the_overrides_file_alone(sandbox: Path) -> None:
-    assert patch({"client.timeout_seconds": 30}).status_code == 200
-    before = sandbox.read_bytes()
-    assert client.post("/api/settings", json={"max_retries": 2}).json()["status"] == "success"
-    assert sandbox.read_bytes() == before
 
 
 def test_an_empty_patch_changes_nothing(sandbox: Path) -> None:
@@ -262,11 +227,6 @@ def test_a_key_pinned_by_the_config_file_is_refused(sandbox: Path, tmp_path: Pat
     refused = error(patch({"client.retries": 2}), 400)
     assert refused["details"]["locked"] == [{"key": "client.retries", "source": "file", "source_name": str(config)}]
     assert not sandbox.exists() and deps.config_manager().get_max_retries() == 9
-
-    # Eski rota aynı değer için hâlâ başarı bildirir; değer `.env`'e gider ve etkisi olmaz
-    legacy = client.post("/api/settings", json={"max_retries": 2})
-    assert legacy.status_code == 200 and legacy.json()["status"] == "success"
-    assert deps.config_manager().get_max_retries() == 9
 
     # Dosyanın sabitlemediği anahtarlar yazılabilir
     assert patch({"client.timeout_seconds": 30}).status_code == 200
@@ -420,7 +380,6 @@ def test_a_data_dir_change_moves_the_job_store(data_dir_sandbox: Path) -> None:
     assert (row["value"], row["source"]) == (new_dir, "overrides")
     assert store.db_path == default_db_path(new_dir) and os.path.isfile(store.db_path)
     assert deps.config_manager().get_data_dir() == new_dir
-    assert client.get("/api/settings").json()["data_dir"] == new_dir
     assert client.get("/api/v1/jobs").json()["data"] == []
     # Aynı dizini yeniden yazmak bir taşıma değildir
     assert patch({"storage.data_dir": new_dir}).status_code == 200 and store.db_path == default_db_path(new_dir)

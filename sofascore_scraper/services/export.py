@@ -82,7 +82,7 @@ class ExportSpec:
         NotSupportedError.
     tournament_ids, event_ids: boş = süzgeç yok; dolu alanlar birlikte (VE) uygulanır. Yalnızca detayı
         (olay yükü) saklanan maçlar dışa aktarılır.
-    league_id: eski lig süzgeçli indirme (`GET /api/export/csv?league_id=`): birleşik tablonun `league_folder`'ı
+    league_id: 2.x'in lig süzgeçli indirmesi (3.1'de kalkan `GET /api/export/csv?league_id=`): birleşik tablonun `league_folder`'ı
         `<lig id>_` ile başlayan satırları, birleşik tablodaki değerleriyle (sütunlar birleşik tablonunkiler).
     """
 

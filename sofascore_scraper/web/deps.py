@@ -1,10 +1,10 @@
 """
-Web yüzünün (v1 rotaları, eski `/api` bağdaştırıcıları ve uygulamanın ara katmanı) paylaştığı nesneler
-(docs/design/02-services.md bölüm 6).
+Web yüzünün (v1 rotaları, zamanlayıcı ve uygulamanın ara katmanı) paylaştığı nesneler (docs/design/02-services.md
+bölüm 6). 2.x'in `/api` bağdaştırıcıları 3.1'de kalktı (P30).
 
   * servis bağlamı: web sürecinin yapılandırma yöneticisi, iş deposu ve onun üzerindeki iş yöneticisi, geçerli
-    ayarlar ve veri dizininin deposu. İki yüz aynı nesneleri kullanır: v1'den başlatılan bir iş eski arayüzde de
-    görünür ve iki yüz aynı "tek iş" kuralına uyar. Nesneler ilk kullanımda kurulur (içe aktarma anında değil:
+    ayarlar ve veri dizininin deposu. v1 rotaları ve zamanlayıcı aynı nesneleri kullanır ve aynı "tek iş" kuralına
+    uyar. Nesneler ilk kullanımda kurulur (içe aktarma anında değil:
     uygulamayı içe aktarmak artık lig dosyasını ve iş deposunu oluşturmaz) ve çağrı anında okunur: testler
     `job_store` / `config_manager` işlevlerini değiştirebilir, veri dizini değişimi iş deposunu taşır (`rebind`).
   * erişim belirteci: Settings'ten (`[server] token_env`, varsayılan ad SOFASCORE_API_TOKEN) okunur.

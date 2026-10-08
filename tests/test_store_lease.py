@@ -833,13 +833,11 @@ def test_a_running_job_holds_the_writer_lease_until_it_finishes(tmp_path):
     jobs.close()
 
 
-def test_sweep_and_close_release_the_writer_lease(tmp_path):
+def test_close_releases_the_writer_lease(tmp_path):
     db = str(tmp_path / "jobs.db")
     jobs = JobStore(db)
     jobs.create_running({})
-    assert jobs.mark_stale_running_interrupted() == 1
-    assert _holder(db, "writer") is None and jobs.snapshot()["is_running"] is False
-    jobs.create_running({})
+    assert _holder(db, "writer") is not None
     jobs.close()
     assert _holder(db, "writer") is None
 
@@ -1129,11 +1127,9 @@ def test_concurrent_first_opens_wait_for_the_migrating_process(tmp_path):
 def test_web_api_answers_409_job_running_while_another_process_holds_the_writer_lease(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from sofascore_scraper.web.api import legacy as fetch_job
     from sofascore_scraper.web.app import app
 
     jobs = deps.job_store()
-    monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
     # Silme reddedilmezse ortak test verisine değil bu boş dizine dokunsun
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "scratch"))
     if jobs.snapshot().get("is_running"):
@@ -1143,15 +1139,10 @@ def test_web_api_answers_409_job_running_while_another_process_holds_the_writer_
 
     def assert_job_running(response):
         assert response.status_code == 409, response.text
-        assert response.json()["detail"]["code"] == "job_running"
+        assert response.json()["error"]["code"] == "job_running"
 
     with other_process(HOLDER, web_data_dir, "writer", "headless"):
-        assert_job_running(client.post("/api/fetch", json={"mode": "full", "league_id": 17}))
+        assert_job_running(client.post("/api/v1/jobs", json={"kind": "sync", "spec": {"league_id": 17}}))
         assert jobs.snapshot()["is_running"] is False
-        assert_job_running(client.post("/api/data/clear", json={"scope": "matches"}))
-        assert_job_running(client.post("/api/data/backup"))
-    try:
-        assert client.post("/api/fetch", json={"mode": "full", "league_id": 17}).status_code == 200
-    finally:
-        if jobs.snapshot().get("is_running"):
-            jobs.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
+        assert_job_running(client.post("/api/v1/jobs", json={"kind": "clear", "spec": {"scope": "matches",
+                                                                                         "confirm": True}}))

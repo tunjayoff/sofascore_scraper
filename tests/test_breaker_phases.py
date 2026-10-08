@@ -22,6 +22,7 @@ import pytest
 
 import sofascore_scraper.utils as utils
 from sofascore_scraper.web import deps
+from web_job import run_sync_job
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
                                     SliceOutcome)
@@ -232,15 +233,15 @@ class FakeDetails:
 
 @pytest.fixture
 def job_env(tmp_path, monkeypatch):
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.jobs import JobStore
+    from sofascore_scraper.services import context
+    from sofascore_scraper.store import JobStore
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
     monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
     monkeypatch.setenv("RATE_LIMIT_THRESHOLD_RATIO", "2")
-    return fj, store
+    return context, store
 
 
 def _listing_faces(ui: Any) -> None:
@@ -259,18 +260,13 @@ def _listing_faces(ui: Any) -> None:
             "schedule", lid, sid, chunks=[{"round": 1}] if schedule.fetch_matches_for_season(lid, sid) else [])
 
 
-def _run_job(fj, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, Any]:
-    from sofascore_scraper.web.api.legacy import FetchRequest
-
+def _run_job(context, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, Any]:
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = deps.config_manager()
     _listing_faces(ui)
-    monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
-    req = FetchRequest(**payload)
-    job_id = store.create_running(req.model_dump())
+    monkeypatch.setattr(context, "build_context", lambda config_manager: ui)
     with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
-        fj.run_fetch_job(job_id, req)
-    final = store.snapshot()
+        final = run_sync_job(store, payload)
     final["_gets"] = get.call_count
     return final
 

@@ -15,8 +15,8 @@ pakete girmez; iş metinlerinde, tarayıcı profili kilidinde ve log kuyruğunda
 Okunan dosyalar sabittir: log dosyası yalnızca sofascore_scraper.logger'ın yazdığı dosyadır,
 dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (iş geçmişi salt okunur açılır).
 
-Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (sofascore_scraper/web/api/legacy.py) ve
-GET /api/v1/diagnostics (sofascore_scraper/web/api/v1/). CLI: ssc diagnostics [YOL] (eski adı: python main.py --diagnostics)
+Web: GET /api/v1/logs, GET /api/v1/diagnostics, GET /api/v1/diagnostics/bundle (sofascore_scraper/web/api/v1/).
+CLI: ssc diagnostics [--out YOL]
 """
 from __future__ import annotations
 

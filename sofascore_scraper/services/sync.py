@@ -37,7 +37,7 @@ Maç detayları (detay aşaması, kimliğiyle seçilen maçlar, yalnızca yenile
 P15'te kalktığında çağrılar buraya taşınır. Bitmemiş maç atlanır ve başarısız sayılmaz.
 
 İşin sonunda CSV yazılmaz (karar D9, plan maddesi EX-1): dışa aktarma istendiğinde üretilir
-(sofascore_scraper/services/export.py; web'de `GET /api/export/csv` ve dışa aktarma işi, komut satırında `ssc export`).
+(sofascore_scraper/services/export.py; web'de dışa aktarma işi, komut satırında `ssc export`).
 
 İşin tek bir devre kesicisi vardır (sofascore_scraper/breaker.py). İstek katmanı her isteğin sonucunu ona bildirir; her aşama
 döngüsünde ona bakar. SofaScore engellediğinde kalan lig/sezon/maç için istek atılmaz ve neden iş kartına
@@ -45,8 +45,7 @@ yazılır. Servis SofaScore kaynaklı hiçbir durumda fırlatmaz; kalıcı depol
 izin yok) çağırana çıkar.
 
 Servis yazdırmaz (print) ve işin bitiş durumunu kendisi yazmaz: sonucu SyncResult olarak döndürür, onu iş
-kaydına ve kullanıcı metnine çeviren çağıran yüzdür (`ssc sync`, `POST /api/v1/jobs`, eski `/api/fetch`
-(sofascore_scraper/web/api/legacy.py) ve zamanlayıcı).
+kaydına ve kullanıcı metnine çeviren çağıran yüzdür (`ssc sync`, `POST /api/v1/jobs` ve zamanlayıcı).
 """
 from __future__ import annotations
 

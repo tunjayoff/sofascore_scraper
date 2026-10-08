@@ -1,20 +1,18 @@
 """
 Engellenen / başarısız SofaScore isteği "Sonuç yok" ya da sebepsiz bir başarı olarak görünmemeli.
 
-Lig arama ve sezon yenileme tipli bir neden döndürür (sofascore_scraper/web/upstream.py):
-blocked / browser / rate_limited / network / not_found / upstream. Boş liste yalnızca istek
-gerçekten başarılı olup hiçbir şey bulunamadığında döner. Bütün testler çevrimdışıdır: istek
-katmanı (curl ya da make_api_request) sahtedir, gerçek tarayıcı conftest tarafından engellenir.
+İstek katmanı tipli hatalar fırlatır ve web katmanı onları tipli bir nedene çevirir
+(sofascore_scraper/web/upstream.py): blocked / browser / rate_limited / network / not_found / upstream.
+API v1'in arama ve bağlantı denetimi yolları bu nedenleri kullanır (tests/test_api_v1_follows.py,
+test_api_v1_status.py); 2.x'in `/api` lig arama ve sezon yenileme yolları 3.1'de kalktı (P30). Bütün testler
+çevrimdışıdır: istek katmanı (curl ya da make_api_request) sahtedir, gerçek tarayıcı conftest tarafından engellenir.
 """
 from __future__ import annotations
 
 import contextlib
-import json
-import os
 from unittest.mock import patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 import sofascore_scraper.challenge_solver as cs
 import sofascore_scraper.season_fetcher as season_fetcher_mod
@@ -60,17 +58,6 @@ def _curl(*responses, **kw):
             patch.object(utils, "_sleep"), \
             patch.object(utils.cffi_requests, "get", side_effect=effect) as get:
         yield get
-
-
-@pytest.fixture
-def client():
-    from sofascore_scraper.web.app import app
-
-    return TestClient(app)
-
-
-def _detail(r):
-    return r.json()["detail"]
 
 
 # --- istek katmanı: raise_errors -------------------------------------------------
@@ -160,142 +147,7 @@ def test_a_403_is_a_browser_problem_only_when_the_browser_failed_during_this_req
     assert upstream.reason_for(blocked, bridge_health.snapshot()) == "blocked"
 
 
-# --- lig arama --------------------------------------------------------------------
-
-SEARCH = "/api/leagues/search-remote?q=premier"
-
-
-def test_search_returns_results(client):
-    data = {"results": [{"entity": {
-        "id": 17, "name": "Premier League", "slug": "premier-league",
-        "category": {"name": "England", "sport": {"name": "Football"}},
-    }}]}
-    with patch.object(utils, "make_api_request", return_value=data) as req:
-        r = client.post(SEARCH)
-    assert r.status_code == 200
-    assert r.json() == [{"id": 17, "name": "Premier League", "country": "England", "slug": "premier-league", "sport": "Football"}]
-    # Etkileşimli arama: tek deneme, kısa zaman aşımı, tipli hata
-    assert req.call_args.kwargs == {"max_retries": 1, "timeout": 10, "raise_errors": True}
-
-
-def test_search_with_nothing_found_is_an_empty_success(client):
-    with patch.object(utils, "make_api_request", return_value={"results": []}):
-        r = client.post(SEARCH)
-    assert r.status_code == 200 and r.json() == []
-
-
-@pytest.mark.parametrize(
-    "exc, status, reason",
-    [
-        (APIError("HTTP 403 Forbidden", status_code=403), 502, "blocked"),
-        (RateLimitError(status_code=429), 503, "rate_limited"),
-        (NetworkError("İstek başarısız"), 502, "network"),
-        (APIError("HTTP 500", status_code=500), 502, "upstream"),
-        (DataParsingError("bad json"), 502, "upstream"),
-        # Arama uç noktası sonuç yokken boş liste döndürür; 404 "sonuç yok" sayılmaz
-        (ResourceNotFoundError(), 502, "upstream"),
-    ],
-)
-def test_search_failure_is_a_typed_error_not_an_empty_list(client, exc, status, reason):
-    with patch.object(utils, "make_api_request", side_effect=exc):
-        r = client.post(SEARCH)
-    assert r.status_code == status
-    assert _detail(r)["reason"] == reason
-    assert _detail(r)["message"]
-
-
-@pytest.mark.parametrize("data", [None, {}, {"error": {"code": 403}}, {"results": None}, ["x"]])
-def test_search_answer_without_a_result_list_is_not_reported_as_no_results(client, data):
-    with patch.object(utils, "make_api_request", return_value=data):
-        r = client.post(SEARCH)
-    assert r.status_code == 502 and _detail(r)["reason"] == "upstream"
-
-
-def test_search_blocked_end_to_end_through_the_request_layer(client):
-    """curl 403 alır, challenge sunulmaz: SofaScore reddediyor."""
-    with _curl(Resp(403, text="Access denied")) as get:
-        r = client.post(SEARCH)
-    assert get.call_count == 1  # etkileşimli arama yeniden denemez
-    assert r.status_code == 502 and _detail(r)["reason"] == "blocked"
-
-
-def test_search_names_the_browser_when_the_challenge_cannot_even_be_attempted(client):
-    """curl challenge alır, gömülü tarayıcı başlatılamaz (conftest gerçek tarayıcıyı engeller)."""
-    with _curl(Resp(403, text=CHALLENGE)):
-        r = client.post(SEARCH)
-    assert r.status_code == 502 and _detail(r)["reason"] == "browser"
-    assert bridge_health.snapshot()["last_error"]["kind"] == "browser"
-
-
-def test_search_network_failure_end_to_end(client):
-    with _curl(side_effect=ConnectionError("curl: (6) Could not resolve host: www.sofascore.com")):
-        r = client.post(SEARCH)
-    assert r.status_code == 502 and _detail(r)["reason"] == "network"
-
-
-# --- sezon yenileme ---------------------------------------------------------------
-
-REFRESH = f"/api/leagues/{LEAGUE_ID}/seasons/refresh"
-
-
-def _seasons_on_disk():
-    path = os.path.join(DATA_DIR, "seasons", f"{LEAGUE_ID}_Premier_League_seasons.json")
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)["seasons"]
-
-
-def test_refresh_returns_the_seasons_sofascore_sent(client):
-    with patch.object(season_fetcher_mod, "make_api_request", return_value={"seasons": SEEDED_SEASONS}) as req:
-        r = client.post(REFRESH)
-    assert r.status_code == 200
-    assert r.json() == {"status": "success", "seasons": SEEDED_SEASONS}
-    assert req.call_args.kwargs == {"max_retries": 2, "raise_errors": True}
-    assert _seasons_on_disk() == SEEDED_SEASONS
-
-
-def test_refresh_with_no_seasons_at_sofascore_is_an_empty_success(client):
-    with patch.object(season_fetcher_mod, "make_api_request", return_value={"seasons": []}), \
-            patch.object(SeasonFetcher, "_save_seasons_json"):
-        r = client.post("/api/leagues/424242/seasons/refresh")
-    assert r.status_code == 200 and r.json() == {"status": "success", "seasons": []}
-
-
-@pytest.mark.parametrize(
-    "exc, status, reason",
-    [
-        (APIError("HTTP 403 Forbidden", status_code=403), 502, "blocked"),
-        (RateLimitError(status_code=429), 503, "rate_limited"),
-        (NetworkError("İstek başarısız"), 502, "network"),
-        (ResourceNotFoundError(), 404, "not_found"),
-        (APIError("HTTP 500", status_code=500), 502, "upstream"),
-    ],
-)
-def test_refresh_failure_is_not_reported_as_success(client, exc, status, reason):
-    """Diskte eski bir sezon listesi olsa bile: yenileme başarısızsa başarı denmez."""
-    assert _seasons_on_disk() == SEEDED_SEASONS
-    with patch.object(season_fetcher_mod, "make_api_request", side_effect=exc):
-        r = client.post(REFRESH)
-    assert r.status_code == status
-    assert _detail(r)["reason"] == reason
-    assert _seasons_on_disk() == SEEDED_SEASONS  # kayıtlı liste bozulmadı
-    # Kayıtlı liste hâlâ okunabilir
-    assert client.get(f"/api/leagues/{LEAGUE_ID}/seasons").json() == {"seasons": SEEDED_SEASONS, "fetched": True}
-
-
-@pytest.mark.parametrize("data", [None, {}, {"seasons": None}, {"error": {"code": 500}}])
-def test_refresh_answer_without_a_season_list_is_an_upstream_error(client, data):
-    with patch.object(season_fetcher_mod, "make_api_request", return_value=data):
-        r = client.post(REFRESH)
-    assert r.status_code == 502 and _detail(r)["reason"] == "upstream"
-    assert _seasons_on_disk() == SEEDED_SEASONS
-
-
-def test_refresh_blocked_end_to_end_through_the_request_layer(client):
-    with _curl(side_effect=lambda *a, **k: Resp(403, text="Access denied")) as get:
-        r = client.post(REFRESH)
-    assert get.call_count == 2  # etkileşimli yenileme: en çok iki deneme
-    assert r.status_code == 502 and _detail(r)["reason"] == "blocked"
-
+# --- sezon listesi ---------------------------------------------------------------
 
 def test_the_checked_season_fetch_raises_the_typed_error_and_returns_the_list():
     """`fetch_seasons_checked` (web'in "sezonları yenile" uç noktası) başarısızlığı boş listeyle gizlemez."""

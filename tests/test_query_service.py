@@ -1,38 +1,28 @@
 """
 Sorgu servisi ve depodan okuyan maç okuyucuları (plan maddeleri RD-1 ve RD-2).
 
-Dört şey denetlenir:
+İki şey denetlenir:
 
-  1. `QueryService.match_detail_legacy`: `GET /api/matches/{id}` yanıtının sözlüğü depodan okunur. Bugünkü
-     kodun yazdığı dizinlerde sonuç, dizindeki dosyaların kendisidir (anahtar sırasıyla); eski biçimlerde
-     tasarımın üç düzeltmesi görünür (docs/design/01-storage.md 5.1 ve 5.2).
-  2. `GET /api/matches/{id}` o servisi çağırır: 200, 404 ve depo okunamadığında 500.
-  3. `MatchDataFetcher._find_match_path`, `_build_match_index` ve `_load_match_data_from_dir` depodan okur;
+  1. `QueryService.match_detail_legacy`: maçın saklanan detayı depodan okunur. Bugünkü kodun yazdığı dizinlerde
+     sonuç, dizindeki dosyaların kendisidir (anahtar sırasıyla); eski biçimlerde tasarımın üç düzeltmesi görünür
+     (docs/design/01-storage.md 5.1 ve 5.2).
+  2. `MatchDataFetcher._find_match_path`, `_build_match_index` ve `_load_match_data_from_dir` depodan okur;
      `begin_job_cache` yalnızca ihtiyaç önbelleğini tutar.
-  4. `QueryService.matches_legacy` ve `season_matches_legacy` (`GET /api/matches`, `GET /api/seasons/{id}/matches`):
-     bugünkü kodun yazdığı dizinde satırlar özet CSV'sinin satırlarıdır; "yalnızca bitmiş maçlar" ayarı okurken
-     uygulanır; eski biçimlerde katalog dizin gezicilerinin yanlışlarını düzeltir; dışa aktarma CSV'sine geri
-     düşülmez (karar S14).
 
-Altın dosyalar (`tests/golden/readers/*.api_match_detail.json`, `*.fetcher.json`, `*.api_matches.json`,
-`*.api_season_matches.json`) aynı davranışı yanıtın
-tamamıyla sabitler; buradaki testler kuralları tek tek ve nedenleriyle söyler.
+2.x'in `/api/matches` yolları ve liste biçimleri (`matches_legacy`, `season_matches_legacy`) 3.1'de kalktı (P30).
 """
 from __future__ import annotations
 
 import contextlib
-import csv
-import datetime
 import json
 import logging
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, Optional
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi.testclient import TestClient
 
 import store_fixtures as sf
 from sofascore_scraper import refresh
@@ -43,10 +33,9 @@ from sofascore_scraper.match_data_fetcher import (
     _stored_observation,
 )
 from sofascore_scraper.services import query
-from sofascore_scraper.services.query import LEGACY_LIST_COLUMNS, QueryService, legacy_detail_keys
+from sofascore_scraper.services.query import QueryService, legacy_detail_keys
 from sofascore_scraper.status import OBSERVATION_KEY
 from sofascore_scraper.store import PayloadCorrupt, StoreError, open_store
-from sofascore_scraper.web.app import app
 
 ARS = sf.event_id(sf.PL_ARS)  # legacy: iki yerde duran maç (lig/sezon dizini ve bayat düz kopya)
 LIV = sf.event_id(sf.PL_LIV)  # legacy: basic.json'ın yanında birleşik dosya ve gözlem
@@ -280,52 +269,6 @@ def test_event_payload_removed_behind_the_catalog_is_no_record(canonical: sf.Leg
     queries = service(canonical)
     (directory / "basic.json").unlink()
     assert queries.match_detail_legacy(ARS) is None
-
-
-# --- GET /api/matches/{id} ----------------------------------------------------------------------------
-
-client = TestClient(app)
-
-
-def test_route_answers_from_the_service(old_forms: sf.LegacyFixture) -> None:
-    queries = service(old_forms)
-    for event_id in (ARS, LIV, LEE, BRE, AVL):
-        response = client.get(f"/api/matches/{event_id}")
-        assert response.status_code == 200
-        assert response.json() == queries.match_detail_legacy(event_id)
-        assert list(response.json()) == list(queries.match_detail_legacy(event_id))
-    for event_id in (NEW, UNKNOWN, 2 ** 70):
-        response = client.get(f"/api/matches/{event_id}")
-        assert (response.status_code, response.json()) == (404, {"detail": "Match details not found."})
-    assert client.get("/api/matches/abc").status_code == 422
-
-
-def test_route_reads_through_the_store_only(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Uç nokta indirici kurmaz, dizin ağacını gezmez: yanıt servisten gelir."""
-    import sofascore_scraper.match_data_fetcher as fetcher_module
-    import sofascore_scraper.web.api.legacy as routes
-
-    monkeypatch.setattr(fetcher_module, "MatchDataFetcher", MagicMock(side_effect=AssertionError("not used")))
-    seen = []
-    real = QueryService.match_detail_legacy
-
-    def spy(self: QueryService, event_id: int) -> Optional[Dict[str, Any]]:
-        seen.append(event_id)
-        return real(self, event_id)
-
-    monkeypatch.setattr(routes.QueryService, "match_detail_legacy", spy)
-    assert client.get(f"/api/matches/{ARS}").status_code == 200
-    assert seen == [ARS]
-
-
-def test_route_answers_500_when_the_store_cannot_be_read(
-        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    def broken(self: QueryService, event_id: int) -> Dict[str, Any]:
-        raise StoreError("disk unreadable")
-
-    monkeypatch.setattr(query.QueryService, "match_detail_legacy", broken)
-    response = client.get(f"/api/matches/{ARS}")
-    assert (response.status_code, response.json()) == (500, {"detail": "Error parsing match data."})
 
 
 # --- MatchDataFetcher: yer arama ----------------------------------------------------------------------
@@ -569,203 +512,3 @@ def test_reading_writes_nothing_into_the_event_directories(old_forms: sf.LegacyF
     fetcher._build_match_index()
     assert before == {d.path: (list(_iter_slice_files(folder(old_forms, d))), folder(old_forms, d).stat().st_mtime_ns)
                       for d in old_forms.details}
-
-
-# --- maç listeleri: QueryService.matches_legacy ve season_matches_legacy (RD-2) ------------------------
-
-NBA_VOID = sf.event_id(sf.NBA_VOID)  # canonical: listede "Ended", saklanan olay yükü sonradan "Abandoned"
-LIGA_UNFINISHED = {sf.event_id(ev) for ev in (sf.LIGA_POSTPONED, sf.LIGA_INTERRUPTED, sf.LIGA_CANCELED)}
-LIGA_NEXT = sf.event_id(sf.LIGA_NEXT)  # canonical: bitmemiş, detayı indirilmiş
-OLD_PL = (sf.event_id(sf.PL_OLD_A), sf.event_id(sf.PL_OLD_B))  # legacy: yalnızca `_matches.csv`'de
-FLAT_OR_NO_TOURNAMENT = {sf.event_id(ev) for ev in (sf.FRIENDLY_A, sf.EXHIBITION_A, sf.NO_SPORT_A)}
-LIGA_OLD = sf.event_id(sf.LIGA_A)  # legacy: kimliksiz lig dizini (L2)
-ALL = 200
-
-
-def everything(queries: QueryService, **kw: Any) -> List[Dict[str, Any]]:
-    page = queries.matches_legacy(limit=ALL, **kw)
-    assert page.total == len(page.items) < ALL
-    return list(page.items)
-
-
-def _csv_value(column: str, text: str) -> Any:
-    """Özet CSV'sindeki metnin yanıttaki değeri (pandas'ın okuduğu gibi: tamsayı sütunlar sayı)."""
-    if column in ("match_id", "home_score", "away_score") or (column == "round" and text.isdigit()):
-        return int(text)
-    return text
-
-
-def test_list_rows_are_the_summary_csv_rows(canonical: sf.LegacyFixture) -> None:
-    """Bugünkü kodun yazdığı dizinde her özet satırı, sütun sütun ve sırasıyla, listedeki satırdır."""
-    rows = {item["match_id"]: item for item in everything(service(canonical), only_finished=False)}
-    compared = 0
-    for rel in canonical.summary_files:
-        directory = rel.split("/")[1]
-        with open(canonical.data_dir / rel, encoding="utf-8", newline="") as f:
-            for line in csv.DictReader(f):
-                event_id = int(line["match_id"])
-                if event_id == NBA_VOID:
-                    continue  # satırı saklanan olay yükündendir (aşağıdaki test)
-                expected = {c: _csv_value(c, line[c]) for c in LEGACY_LIST_COLUMNS}
-                assert list(rows[event_id])[:len(LEGACY_LIST_COLUMNS)] == list(LEGACY_LIST_COLUMNS)
-                assert {c: rows[event_id][c] for c in LEGACY_LIST_COLUMNS} == expected, event_id
-                assert rows[event_id]["league_folder"] == directory
-                compared += 1
-    assert compared >= 30
-
-
-def test_row_of_an_event_with_details_comes_from_its_stored_payload(canonical: sf.LegacyFixture) -> None:
-    row = next(i for i in everything(service(canonical)) if i["match_id"] == NBA_VOID)
-    assert (row["status"], row["home_score"], row["round"]) == ("Abandoned", 59, "last_1")
-    assert row["has_details"] is True
-
-
-def test_only_finished_lists_finished_matches_and_those_with_details(canonical: sf.LegacyFixture) -> None:
-    queries = service(canonical)
-    every = {i["match_id"]: i for i in everything(queries, only_finished=False)}
-    finished = {i["match_id"] for i in everything(queries)}
-    store = open_store(canonical.data_dir)
-    expected = {mid for mid in every
-                if every[mid]["has_details"] or store.events.get(mid).status_class in query.FINISHED_CLASSES}
-    assert finished == expected
-    assert LIGA_UNFINISHED <= set(every) and not LIGA_UNFINISHED & finished
-    assert LIGA_NEXT in finished and every[LIGA_NEXT]["status"] == "Not started"
-    # Panodaki sayımla aynı kural (plan maddesi RD-4): altın dosyalarda `totals.matches` de 29'dur
-    assert len(finished) == 29
-
-
-def test_details_filters_split_the_list(canonical: sf.LegacyFixture) -> None:
-    queries = service(canonical)
-    for only_finished in (True, False):
-        full = everything(queries, only_finished=only_finished)
-        present = everything(queries, only_finished=only_finished, details=True)
-        missing = everything(queries, only_finished=only_finished, details=False)
-        assert present == [i for i in full if i["has_details"]]
-        assert missing == [i for i in full if not i["has_details"]]
-
-
-@pytest.mark.parametrize("only_finished", [True, False])
-@pytest.mark.parametrize("sort", ["asc", "desc"])
-@pytest.mark.parametrize("date", [None, "2026-09", "2026-09-29T13", "-29T", "13:"])
-def test_pages_join_into_the_full_list(canonical: sf.LegacyFixture, only_finished: bool, sort: str,
-                                       date: Optional[str]) -> None:
-    queries = service(canonical)
-    full = everything(queries, only_finished=only_finished, sort=sort, date=date)
-    starts = [(i["match_date"], i["match_id"]) for i in full]
-    assert starts == (sorted(starts) if sort == "asc" else sorted(starts, reverse=True))
-    joined: List[Dict[str, Any]] = []
-    for offset in range(0, len(full) + 3, 3):
-        page = queries.matches_legacy(only_finished=only_finished, sort=sort, date=date, offset=offset, limit=3)
-        assert page.total == len(full)
-        joined += page.items
-    assert joined == full
-
-
-@pytest.mark.parametrize("date", ["2026-09-15", "2026-09-29T13", "2026-05", "2026", "1999", "17894", "2026-13",
-                                  "T18:00", "-15T", "Ended", ""])
-def test_date_filter_is_a_substring_of_match_date(old_forms: sf.LegacyFixture, date: str) -> None:
-    queries = service(old_forms)
-    full = everything(queries)
-    assert everything(queries, date=date) == [i for i in full if date in i["match_date"]]
-
-
-def test_date_range_of_an_iso_prefix() -> None:
-    lo, hi = query._date_range("2026-09-15")
-    assert lo is not None and hi is not None
-    assert lo <= datetime.datetime(2026, 9, 15).timestamp() and datetime.datetime(2026, 9, 16).timestamp() <= hi
-    assert query._date_range("2026-12")[1] is not None  # aralık yılın sonunu geçer
-    for text in (None, "", "2026-13", "0000", "T13", "26-09", "2026-9"):
-        assert query._date_range(text) == (None, None)
-
-
-def test_league_and_season_filters(canonical: sf.LegacyFixture) -> None:
-    queries = service(canonical)
-    full = everything(queries)
-    store = open_store(canonical.data_dir)
-    tournament = {i["match_id"]: store.events.get(i["match_id"]).tournament_id for i in full}
-    assert everything(queries, tournament_ids=[17]) == [i for i in full if tournament[i["match_id"]] == 17]
-    assert everything(queries, tournament_ids=[17, 132]) == [i for i in full if tournament[i["match_id"]] in (17, 132)]
-    in_season = everything(queries, tournament_ids=[17], season_id=sf.PL_2627.id)
-    assert {i["season"] for i in in_season} == {sf.PL_2627.name} and in_season
-    assert everything(queries, tournament_ids=[sf.LALIGA.id], season_id=sf.PL_2627.id) == []
-    assert everything(queries, tournament_ids=[999]) == []
-
-
-def test_old_forms_are_corrected(old_forms: sf.LegacyFixture) -> None:
-    queries = service(old_forms)
-    rows = {i["match_id"]: i for i in everything(queries)}
-    # Yalnızca `_matches.csv`'si olan sezon listede
-    assert set(OLD_PL) <= set(rows)
-    # Düz ve turnuvasız dizinlerdeki detay: maç listede ve detayı var
-    assert FLAT_OR_NO_TOURNAMENT <= set(rows) and all(rows[m]["has_details"] for m in FLAT_OR_NO_TOURNAMENT)
-    assert {rows[m]["league_folder"] for m in FLAT_OR_NO_TOURNAMENT} == {"_no_tournament"}
-    # has_details lig süzgecinden bağımsız; kimliksiz lig dizinindeki maçın lig dizini yazıcıların adı
-    filtered = {i["match_id"]: i for i in everything(queries, tournament_ids=[sf.LALIGA.id])}
-    assert all(filtered[m]["has_details"] == rows[m]["has_details"] for m in filtered)
-    assert rows[LIGA_OLD]["has_details"] is True and rows[LIGA_OLD]["league_folder"] == "8_LaLiga"
-    assert rows[LEE]["has_details"] is True  # düz dizin (L3)
-
-
-def test_export_csv_is_not_a_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """processed_only'nin detayları listelenir; dışa aktarma CSV'sindeki öteki maçlar listelenmez (karar S14)."""
-    fixture = _fixture("processed_only", tmp_path, monkeypatch)
-    listed = {i["match_id"] for i in everything(service(fixture))}
-    assert listed == {d.event_id for d in fixture.details}
-    empty = tmp_path / "export_only"
-    (empty / "match_details" / "processed").mkdir(parents=True)
-    (empty / "match_details" / "processed" / "all_matches_1.csv").write_text("match_id,league_folder\n1,17_PL\n")
-    monkeypatch.setenv("DATA_DIR", str(empty))
-    assert QueryService(open_store(empty)).matches_legacy() == query.LegacyMatchPage((), 0)
-
-
-def test_list_arguments_are_checked(canonical: sf.LegacyFixture) -> None:
-    queries = service(canonical)
-    for kw in ({"sort": "bogus"}, {"offset": -1}, {"limit": 0}, {"limit": True}, {"offset": "3"}):
-        with pytest.raises(ValueError):
-            queries.matches_legacy(**kw)
-
-
-def test_season_rows_are_unique_and_ordered_by_start(old_forms: sf.LegacyFixture) -> None:
-    queries = service(old_forms)
-    rows = queries.season_matches_legacy(sf.PL_2627.id, sf.PL.id)
-    ids = [r["match_id"] for r in rows]
-    assert len(ids) == len(set(ids)) and ids  # iki özet dosyasında geçen maç bir kez
-    assert [r["match_date"] for r in rows] == sorted(r["match_date"] for r in rows)
-    assert all(list(r) == list(LEGACY_LIST_COLUMNS) for r in rows)
-    listed = everything(queries, tournament_ids=[sf.PL.id], season_id=sf.PL_2627.id, sort="asc")
-    assert rows == [{c: i[c] for c in LEGACY_LIST_COLUMNS} for i in listed]
-    assert queries.season_matches_legacy(sf.PL_2627.id, 999) == []
-    old = queries.season_matches_legacy(sf.PL_2526.id, sf.PL.id)  # yalnızca `_matches.csv`
-    assert {r["match_id"] for r in old} == set(OLD_PL)
-
-
-def test_season_rows_follow_the_only_finished_rule(canonical: sf.LegacyFixture) -> None:
-    queries = service(canonical)
-    every = {r["match_id"] for r in queries.season_matches_legacy(sf.LALIGA_2627.id, sf.LALIGA.id,
-                                                                    only_finished=False)}
-    finished = {r["match_id"] for r in queries.season_matches_legacy(sf.LALIGA_2627.id, sf.LALIGA.id)}
-    assert finished == every - LIGA_UNFINISHED and LIGA_NEXT in finished
-
-
-def test_list_routes_answer_from_the_service(old_forms: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Uç noktalar dosya ağacını okumaz: özet CSV'si okuyan bir çağrı testi düşürür."""
-    from sofascore_scraper.store.legacy import LegacyReader
-
-    queries = service(old_forms)  # katalog kuruldu: özet CSV'leri dizinlendi
-    monkeypatch.setattr(LegacyReader, "read_summary_rows", MagicMock(side_effect=AssertionError("not used")))
-    body = client.get("/api/matches?league_id=17,8&sort=asc&limit=5&offset=2").json()
-    page = queries.matches_legacy(tournament_ids=[8, 17], sort="asc", offset=2, limit=5)
-    assert body == {"items": list(page.items), "total": page.total, "limit": 5, "offset": 2, "sort": "asc"}
-    body = client.get("/api/matches?details=missing&date=2026-05").json()
-    assert body["items"] == list(queries.matches_legacy(details=False, date="2026-05").items)
-    response = client.get(f"/api/seasons/{sf.PL_2627.id}/matches?league_id={sf.PL.id}")
-    assert response.json() == {"matches": queries.season_matches_legacy(sf.PL_2627.id, sf.PL.id)}
-
-
-def test_list_route_reads_the_only_finished_setting(canonical: sf.LegacyFixture,
-                                                    monkeypatch: pytest.MonkeyPatch) -> None:
-    on = {i["match_id"] for i in client.get("/api/matches?limit=200").json()["items"]}
-    monkeypatch.setenv("FETCH_ONLY_FINISHED", "false")
-    off = {i["match_id"] for i in client.get("/api/matches?limit=200").json()["items"]}
-    assert off - on == LIGA_UNFINISHED | {sf.event_id(ev) for ev in (sf.PL_NOT_STARTED, sf.PL_POSTPONED,
-                                                                      sf.PL_FUTURE)}

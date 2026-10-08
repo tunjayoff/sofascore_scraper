@@ -337,16 +337,6 @@ def test_health_endpoint_reports_a_blocked_bridge_without_failing_liveness(clien
     assert bridge["thresholds"] == {"degraded_after": 3, "blocked_after": 10, "blocked_min_seconds": 0.0}
 
 
-def test_bypass_status_keeps_its_fields_and_adds_health(client):
-    for _ in range(3):
-        bridge_health.record_failure("challenge", "HTTP 403")
-    body = client.get("/api/bypass/status").json()
-    assert body["status"] == "ready"
-    assert body["has_token"] is False and body["is_valid"] is False
-    assert "BrowserBridge" in body["mechanism"]
-    assert set(body["health"]) == HEALTH_KEYS and body["health"]["state"] == "degraded"
-
-
 def test_throttle_status_in_health(client, monkeypatch, tmp_path):
     from sofascore_scraper import throttle
 

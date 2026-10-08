@@ -36,7 +36,6 @@ import legacy_writer
 import sofascore_scraper.store
 import store_fixtures as sf
 from schedule_runner import list_schedule, list_schedule_async
-from sofascore_scraper.web import deps
 from sofascore_scraper.exceptions import StorageError
 from sofascore_scraper.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
 from sofascore_scraper.season_fetcher import SeasonFetcher
@@ -703,13 +702,12 @@ def test_saving_a_season_list_indexes_it(canonical: sf.LegacyFixture) -> None:
 def test_clear_rebuilds_the_catalog(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, scope: str,
                                     left: Dict[str, int]) -> None:
     """Temizlemeden sonra katalog kalan dosyalardan yeniden kurulur: silinen turnuvaların satırları da gider."""
-    from sofascore_scraper.web.api import legacy as data_routes
+    from sofascore_scraper.services.maintenance import MaintenanceService
 
     data = canonical.data_dir
     store = open_store(data)
-    monkeypatch.setattr(deps.config_manager(), "get_data_dir", lambda: str(data))
 
-    assert data_routes._clear_data_sync(scope)["status"] == "success"
+    assert MaintenanceService(store=open_store(data)).clear(scope, confirm=True).cleared  # type: ignore[arg-type]
 
     info = store.info(sizes=False)
     assert {name: info.events_by_layout.get(name, 0) for name in left} == left

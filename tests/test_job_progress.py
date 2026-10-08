@@ -174,7 +174,7 @@ def fake_ui(md: FakeMatchData, seasons: Dict[int, List[Dict[str, Any]]]):
 
 @pytest.fixture
 def job_env(tmp_path, monkeypatch):
-    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.services import context as fj
 
     store = JobStore(str(tmp_path / "jobs.db"))
     snaps: List[Dict[str, Any]] = []
@@ -201,16 +201,13 @@ def _listing_faces(ui: Any) -> None:
 
 
 def run(fj, store, monkeypatch, ui, payload):
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    from web_job import run_sync_job
 
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = deps.config_manager()
     _listing_faces(ui)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
-    req = FetchRequest(**payload)
-    job_id = store.create_running(req.model_dump())
-    fj.run_fetch_job(job_id, req)
-    return store.snapshot()
+    return run_sync_job(store, payload)
 
 
 def test_selection_job_counts_details_across_leagues(job_env, monkeypatch):

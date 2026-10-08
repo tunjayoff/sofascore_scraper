@@ -133,8 +133,6 @@ def _store_then_make_partial(fake: FakeSofaScore, md: MatchDataFetcher) -> None:
 
 def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     """Her giriş noktası aynı boru hattına gider: ısıtılmış bir oturumla, eşzamanlı istekler (`async`)."""
-    import sofascore_scraper.web.api.legacy as matches_routes
-
     md = _fetcher(data_dir)
 
     md.fetch_detail_ids([str(FINISHED)])  # web işi, lig/sezon planı (fetch_job.py)
@@ -148,12 +146,12 @@ def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     assert md.fetch_detail_ids(md.pending_detail_ids(md.collect_detail_match_ids("17") or [])) == 1
     assert {r.via for r in fake.requests} == {"async"}
 
-    # Kimliğiyle seçilen maçlar, tek maç uç noktası, tek maçın eski yüzü: aynı yol, her biri kendi oturumuyla
+    # Kimliğiyle seçilen maçlar ve tek maçın eski yüzü: aynı yol, her biri kendi oturumuyla (2.x'in tek maç uç
+    # noktası 3.1'de kalktı; v1'deki karşılığı `event_ids`li `fetch` işidir)
     fake.reset_log()
     md.fetch_matches_batch([9100002])
-    assert matches_routes._fetch_single_match_sync("9100010") == {"status": "success", "match_id": "9100010"}
     assert md.fetch_match_data(TENNIS) is not None
-    assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 3
+    assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 2
 
     # Eksik dilim (refill) de aynı oturumda tamamlanır: başka bir thread'e geçilmez
     detail_records.drop_slices(md.data_dir, FINISHED, "h2h")
@@ -330,9 +328,7 @@ def test_row09_refill_of_a_match_that_is_no_longer_finished(fake: FakeSofaScore,
 
 
 def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
-    """Her yolun istekleri bir devre kesicinin altındadır, tek maç uç noktası dahil (kendi kesicisi)."""
-    import sofascore_scraper.web.api.legacy as matches_routes
-
+    """Her yolun istekleri bir devre kesicinin altındadır."""
     md = _fetcher(data_dir)
     fake.probe = lambda: request_breaker.current() is not None
 
@@ -341,10 +337,6 @@ def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
 
     fake.reset_log()
     assert _run_picked(md, [FINISHED_2]) == []
-    assert {r.probe for r in fake.requests} == {True}
-
-    fake.reset_log()
-    matches_routes._fetch_single_match_sync("9100010")
     assert {r.probe for r in fake.requests} == {True}
 
 

@@ -252,7 +252,7 @@ def test_cli_locale_files_have_the_same_keys_and_placeholders():
 def test_keys_used_by_the_cli_and_the_launcher_exist():
     en = _locale("en")
     used = set()
-    for name in ("main.py", "sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/bridge_health.py", "sofascore_scraper/match_fetcher.py", "sofascore_scraper/web/api/legacy.py"):
+    for name in ("main.py", "sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/bridge_health.py", "sofascore_scraper/match_fetcher.py"):
         used |= set(re.findall(r"""\bt\(\s*['"]([a-z0-9_]+)['"]""", (REPO / name).read_text(encoding="utf-8")))
     launcher = (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
     used |= {"launcher_" + key for key in re.findall(r'_t\(\s*"([a-z_]+)"', launcher)}
@@ -367,16 +367,19 @@ def test_settings_api_says_whether_the_language_is_pinned(monkeypatch):
     for key in language.ENV_KEYS:
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(language, "_windows_ui_language", lambda: None)
-    body = client.get("/api/settings").json()
-    assert (body["language"], body["language_explicit"]) == ("en", False)
+
+    def shown() -> tuple:
+        rows = client.get("/api/v1/settings").json()["data"]["settings"]
+        row = next(row for row in rows if row["key"] == "display.language")
+        return row["value"], row["source"] != "default"
+
+    assert shown() == ("en", False)
 
     monkeypatch.setenv("LANG", "tr_TR.UTF-8")  # sunucunun sistem dili: CLI için geçerli, ayar değil
-    body = client.get("/api/settings").json()
-    assert (body["language"], body["language_explicit"]) == ("tr", False)
+    assert shown() == ("tr", False)
 
     monkeypatch.setenv("APP_LANGUAGE", "tr")
-    body = client.get("/api/settings").json()
-    assert (body["language"], body["language_explicit"]) == ("tr", True)
+    assert shown() == ("tr", True)
 
 
 # --- yapılandırma katmanları: sofascore.toml ve Ayarlar sayfası (FX-22) ------------------------------------

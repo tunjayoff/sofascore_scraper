@@ -64,7 +64,7 @@ router = APIRouter(tags=["settings"])
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DATA_DIR_KEY = "storage.data_dir"
 PROXY_KEY = "client.proxy"
-# Eski rota ile aynı kural (sofascore_scraper/web/api/legacy.py: _ALLOWED_API_HOSTS)
+# API kökü yalnızca SofaScore'un iki sunucusundan biri olabilir (2.x'in ayarlar rotasındaki kural)
 ALLOWED_API_HOSTS = frozenset({"www.sofascore.com", "api.sofascore.com"})
 PROXY_SCHEMES = ("http", "https", "socks5", "socks5h")
 DEFAULTS_SLICES_KEY = "defaults.slices"

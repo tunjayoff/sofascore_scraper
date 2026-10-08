@@ -4,8 +4,7 @@ Ayar modeli ve yükleyici (sofascore_scraper/config; plan maddesi P09, docs/desi
 Dört grup:
 
   bugünkü davranış   yapılandırma dosyası yokken her ayar bugünkü okuyucusuyla aynı değeri verir (tuhaf
-                     değerler dahil); G-04 goldenı (tests/snapshots/api/settings.json) ve ortamı hâlâ
-                     doğrudan okuyan modüller ölçüttür
+                     değerler dahil); ortamı hâlâ doğrudan okuyan modüller ölçüttür
   yapılandırma       sofascore.toml: bölümler, öncelik sırası, göreli yollar, hatalar, listeler
   etkin ayarlar      ConfigManager getter'ları, ortam köprüsü, yeniden yükleme
   şema               JSON Schema modelden üretilir
@@ -223,50 +222,6 @@ def test_every_documented_environment_key_is_modelled():
 
 
 # === bugünkü davranış: yapılandırma dosyası yokken ==================================================
-
-# GET /api/settings yanıtındaki alan -> ayar. log_level ve debug yanıtta ham olarak yankılanır
-# (routes/settings.py); model log modülünün kuralını izler ve aşağıda sofascore_scraper/logger ile karşılaştırılır.
-GOLDEN_FIELDS = {
-    "language": "display.language",
-    "api_base_url": "client.base_url",
-    "use_proxy": "client.use_proxy",
-    "data_dir": "storage.data_dir",
-    "use_color": "display.use_color",
-    "date_format": "display.date_format",
-    "max_concurrent": "client.max_concurrent",
-    "request_rate_limit": "client.rate",
-    "wait_time_min": "client.wait_time_min",
-    "wait_time_max": "client.wait_time_max",
-    "request_timeout": "client.timeout_seconds",
-    "max_retries": "client.retries",
-    "rate_limit_threshold_consecutive": "breaker.rate_limit_consecutive",
-    "rate_limit_threshold_ratio": "breaker.rate_limit_ratio",
-    "server_error_threshold_consecutive": "breaker.server_error_consecutive",
-    "fetch_only_finished": "fetch.only_finished",
-    "save_empty_rounds": "fetch.save_empty_rounds",
-    "refresh_window_hours": "refresh.window_hours",
-}
-
-
-def _golden_scenarios() -> Dict[str, Any]:
-    return json.loads((ROOT / "tests" / "snapshots" / "api" / "settings.json").read_text(encoding="utf-8"))
-
-
-@pytest.mark.parametrize("scenario", sorted(_golden_scenarios()))
-def test_legacy_environment_resolves_as_the_settings_golden_pins(scenario):
-    """G-04'ün sabitlediği beş senaryo (ayrıştırılamayan değerler dahil) modelde de aynı sonucu verir."""
-    golden = _golden_scenarios()[scenario]
-    env = {"LC_MESSAGES": "C", **golden["env"]}
-    body = golden["response"]["body"]
-    for layer in ("env", "dotenv"):
-        # Değerler süreç ortamından da `.env`'den de gelse sonuç aynıdır
-        loaded = _load(env=env, dotenv=env if layer == "dotenv" else {})
-        for field, key in GOLDEN_FIELDS.items():
-            assert _same(loaded.settings.get(key), body[field]), (layer, field)
-        assert loaded.settings.client.proxy == golden["env"].get("PROXY_URL", "")
-        assert {source.layer for source in loaded.sources.values()} <= {layer}
-        assert loaded.config_file is None and loaded.warnings == ()
-
 
 RAW_VALUES = (
     "", " ", "0", "1", "3", " 7 ", "3.7", "-1", "0.0005", "abc", "1e2", "nan", "off", "OFF", "none", "disabled",

@@ -4,13 +4,15 @@ sorusu ve liglerin sporu katalogdan okunur.
 
 Sınananlar:
 
-  * sezon listesi kuralı: bir ligin birden çok dosyası varsa adı ne olursa olsun en yenisi; üç okuyucu
-    (servis, SeasonFetcher, GET /api/leagues/{id}/seasons) aynı listeyi verir;
+  * sezon listesi kuralı: bir ligin birden çok dosyası varsa adı ne olursa olsun en yenisi; okuyucular (servis,
+    yapılandırılmış adla servis, SeasonFetcher) aynı listeyi verir;
   * okunamayan listeler için verilen yanıtlar;
   * adında kimlik olmayan dosyanın (`<ad>_seasons.json`), takip tablosu başka bir ad taşısa da, ligin
     yapılandırmadaki adıyla bulunması (plan bölüm 15 satır 74);
-  * bugünkü yazıcıların ürettiği dizinde (canonical) hiçbir şeyin değişmediği;
-  * GET /api/leagues'in hiçbir dosya yazmadığı ve aramanın sporu döndürdüğü.
+  * bugünkü yazıcıların ürettiği dizinde (canonical) hiçbir şeyin değişmediği.
+
+2.x'in `GET /api/leagues`, `/api/leagues/search` ve `/api/leagues/{id}/seasons` yolları 3.1'de kalktı (P30);
+`get_seasons` o yolun servisi nasıl çağırdığını (yapılandırmadaki lig adıyla) yeniden üretir.
 
 Testin kendi yazdığı dosyaları katalog, depo bir sonraki açılışta görür (süreç içinde açık duran depo dosya
 sistemini izlemez); bu yüzden dosya yazan adımlardan sonra depo `reopened` ile kapatılıp açılır.
@@ -25,17 +27,13 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import pytest
-from fastapi.testclient import TestClient
 
 import conftest
 import store_fixtures as sf
 from sofascore_scraper.season_fetcher import SeasonFetcher
 from sofascore_scraper.services import tournaments
 from sofascore_scraper.store import FollowSpec, Store, StoreError, open_store
-from sofascore_scraper.web import league_sports
-from sofascore_scraper.web.app import app
-
-client = TestClient(app)
+from sofascore_scraper.web import deps, league_sports
 
 LEAGUES_FILE = os.path.join(conftest.CONFIG_DIR, "leagues.txt")
 SPORTS_FILE = os.path.join(conftest.CONFIG_DIR, "league_sports.json")
@@ -86,9 +84,11 @@ def ids(seasons: Optional[List[Any]]) -> Optional[List[Any]]:
 
 
 def get_seasons(league_id: int) -> Dict[str, Any]:
-    response = client.get(f"/api/leagues/{league_id}/seasons")
-    assert response.status_code == 200
-    return response.json()
+    """Ligin saklanan sezon listesi, yapılandırmadaki adıyla (2.x'in `GET /api/leagues/{id}/seasons` yanıtı)."""
+    manager = deps.config_manager()
+    seasons = tournaments.seasons_of(open_store(manager.get_data_dir()), league_id,
+                                     name=manager.get_league_by_id(league_id))
+    return {"seasons": seasons or [], "fetched": seasons is not None}
 
 
 @contextlib.contextmanager
@@ -246,7 +246,7 @@ def test_a_league_without_any_list(data_dir: Path) -> None:
 def test_a_store_that_cannot_be_read_is_answered_like_a_missing_list(
     data_dir: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Depolama hatası uç noktayı ve SeasonFetcher'ı düşürmez: boş liste, `fetched: false` ve bir hata satırı."""
+    """Depolama hatası SeasonFetcher'ı düşürmez: boş liste ve bir hata satırı."""
     write(data_dir, "seasons/17_seasons.json", season_list(1))
     fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
 
@@ -256,7 +256,6 @@ def test_a_store_that_cannot_be_read_is_answered_like_a_missing_list(
     monkeypatch.setattr(tournaments, "seasons_of", broken)
     monkeypatch.setattr(tournaments, "season_lists", broken)
 
-    assert get_seasons(17) == {"seasons": [], "fetched": False}
     assert fetcher.get_seasons_for_league(17) == []
     assert fetcher.league_seasons == {}
     assert fetcher.get_season_name(17, 1) == "Season_1"
@@ -536,7 +535,7 @@ def test_sports_for_prefers_the_stored_sport_and_writes_nothing(data_dir: Path, 
 def test_a_store_that_cannot_be_opened_leaves_the_sport_unknown(
     data_dir: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Lig listesi yapılandırmadır: katalog okunamıyor diye GET /api/leagues düşmez, spor bilinmiyor kalır."""
+    """Lig listesi yapılandırmadır: katalog okunamıyor diye sporu soran düşmez, spor bilinmiyor kalır."""
     def refuse(*args: Any, **kwargs: Any) -> Store:
         raise StoreError("state.db is newer than this build")
 
@@ -544,52 +543,3 @@ def test_a_store_that_cannot_be_opened_leaves_the_sport_unknown(
 
     assert league_sports.infer_from_data(str(data_dir), 17) is None
     assert "Sport of league 17 could not be read from the catalog" in caplog.text
-    with configured({8: "LaLiga"}):
-        assert client.get("/api/leagues").json() == [{"id": 8, "name": "LaLiga", "sport": None}]
-
-
-# --- GET /api/leagues, /api/leagues/search ---------------------------------------------------------------
-
-
-def test_get_leagues_reads_the_sport_from_the_catalog_and_writes_no_file(data_dir: Path) -> None:
-    """
-    Davranış değişikliği (RD-5): veriden okunan spor `config/league_sports.json`'a yazılmaz; dosya yoksa
-    yaratılmaz, varsa (tanınmayan girdileriyle) bayt bayt aynı kalır. Kullanıcının kaydettiği spor yine kazanır.
-    """
-    basket = _event(21, 132, 80229, 1_790_000_000)
-    basket["tournament"]["category"]["sport"] = {"slug": "basketball", "name": "Basketball"}
-    write(data_dir, "match_details/132_NBA/season_NBA/21/basic.json", basket)
-    write(data_dir, "match_details/17_Premier_League/season_S/23/basic.json", _event(23, 17, 96668, 1_790_000_000))
-    leagues = {17: "Premier League", 132: "NBA", 35: "Bundesliga"}
-    inferred = [
-        {"id": 17, "name": "Premier League", "sport": "football"},
-        {"id": 132, "name": "NBA", "sport": "basketball"},
-        {"id": 35, "name": "Bundesliga", "sport": None},
-    ]
-
-    with configured(leagues):
-        assert client.get("/api/leagues").json() == inferred
-        assert client.get("/api/leagues").json() == inferred
-        assert not os.path.exists(SPORTS_FILE)
-
-    stored = b'{"17": "Tennis", "999": "basketball", "not-an-id": "football", "35": "curling"}'
-    with configured(leagues, stored):
-        assert [row["sport"] for row in client.get("/api/leagues").json()] == ["tennis", "basketball", None]
-        with open(SPORTS_FILE, "rb") as f:
-            assert f.read() == stored
-
-
-def test_league_search_returns_the_sport(data_dir: Path) -> None:
-    """Davranış değişikliği (RD-5): arama eskiden her lig için `sport: null` döndürürdü."""
-    write(data_dir, "match_details/8_LaLiga/season_S/24/basic.json", _event(24, 8, 97532, 1_790_000_000))
-    with configured({17: "Premier League", 8: "LaLiga", 35: "Bundesliga"}, b'{"17": "tennis"}'):
-        assert client.get("/api/leagues/search", params={"q": "LEAGUE"}).json() == [
-            {"id": 17, "name": "Premier League", "sport": "tennis"},  # kayıtlı
-        ]
-        assert client.get("/api/leagues/search", params={"q": "liga"}).json() == [
-            {"id": 8, "name": "LaLiga", "sport": "football"},  # indirilmiş veriden
-            {"id": 35, "name": "Bundesliga", "sport": None},
-        ]
-        assert client.get("/api/leagues/search", params={"q": "zz"}).json() == []
-        with open(SPORTS_FILE, "rb") as f:
-            assert f.read() == b'{"17": "tennis"}'

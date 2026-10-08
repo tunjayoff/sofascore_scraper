@@ -1,8 +1,0 @@
-{
- "processed_files_before": [],
- "get_before_create": {"status": 404, "body": {"detail": "No CSV data available. Run a fetch first."}},
- "all": {"status": 404, "body": {"detail": "No CSV data available. Run a fetch first."}},
- "processed_files_after": [],
- "league_id=17": {"status": 404, "body": {"detail": "No CSV data available. Run a fetch first."}},
- "league_id=999": {"status": 404, "body": {"detail": "No CSV data available. Run a fetch first."}}
-}

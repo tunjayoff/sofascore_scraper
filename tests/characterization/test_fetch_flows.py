@@ -2,9 +2,10 @@
 İndirme akışlarının goldenları: her akışın SofaScore'a attığı istekler (sırasıyla) ve yazdığı dosyalar.
 
 Sabitlenen akışlar:
-  - web işi (sofascore_scraper/web/fetch_job.py): tam güncelleme (lig, tüm ligler, sezon seçimi), yalnızca detay,
-    kimliğiyle seçilen maçlar; ayrıca tam güncellemenin ikinci ve üçüncü çalıştırması
-  - tek maç uç noktası (POST /api/matches/{id}/fetch)
+  - web işi (`POST /api/v1/jobs`un gövdesi, sofascore_scraper/web/api/v1/jobs.py `_run_sync`): tam güncelleme (lig,
+    tüm ligler, sezon seçimi), yalnızca detay, kimliğiyle seçilen maçlar; ayrıca tam güncellemenin ikinci ve
+    üçüncü çalıştırması. 3.0'a kadar aynı servisi 2.x'in `/api/fetch` işi çalıştırıyordu; yol 3.1'de kalktı (P30),
+    goldenlar v1'in işiyle yeniden üretildi (iş günlüğünün ilk satırı ve sonucun `failed_listings` alanı)
   - yalnızca yenileme (main.py --refresh-only'nin çağırdığı sıra)
   - "yok" işaretlerinin yeniden denetimi (main.py --recheck-unavailable'ın çağırdığı fonksiyon)
 
@@ -34,6 +35,7 @@ import legacy_writer
 import sofascore_scraper.utils as utils
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
+from web_job import run_sync_job
 from sofascore_scraper.web import deps
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
@@ -71,22 +73,16 @@ def fake() -> Iterator[FakeSofaScore]:
 
 @pytest.fixture
 def run_job(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> RunJob:
-    """Web işini kendi thread'i olmadan, geçici bir iş deposuyla çalıştırır; son iş durumunu döndürür."""
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.jobs import JobStore
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    """
+    Web işini (`POST /api/v1/jobs`un gövdesi) kendi thread'i olmadan, geçici bir iş deposuyla çalıştırır; son iş
+    durumunu döndürür.
+    """
+    from sofascore_scraper.store import JobStore
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
-
-    def run(**payload: Any) -> Dict[str, Any]:
-        request = FetchRequest(**payload)
-        job_id = store.create_running(request.model_dump())
-        fj.run_fetch_job(job_id, request)
-        return store.snapshot()
-
-    return run
+    return lambda **payload: run_sync_job(store, payload)
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
@@ -471,47 +467,6 @@ def test_web_job_runs_are_idempotent(fake: FakeSofaScore, run_job: RunJob, data_
     assert runs["picked_again"]["requests"] == [] and runs["league_third"]["requests"] == []
     assert fake.sessions == []
     assert_golden("job_idempotency", runs)
-
-
-# --- tek maç uç noktası ----------------------------------------------------------------------
-
-def test_single_match_route(fake: FakeSofaScore, data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from fastapi.testclient import TestClient
-
-    from sofascore_scraper.web.app import app
-    from sofascore_scraper.web.jobs import JobStore
-
-    idle = JobStore(str(tmp_path / "jobs.db"))  # çalışan iş yok
-    monkeypatch.setattr(deps, "job_store", lambda: idle)
-    client = TestClient(app)
-    steps: Dict[str, Any] = {}
-
-    def fetch(step: str, event_id: int) -> None:
-        fake.reset_log()
-        response = client.post(f"/api/matches/{event_id}/fetch")
-        steps[step] = {"status": response.status_code, "body": response.json(), "requests": fake.canonical_log()}
-
-    fetch("new_match", 9100001)
-    fetch("complete_match_again", 9100001)
-    detail_records.drop_slices(data_dir, 9100001, "h2h")
-    fetch("missing_slice", 9100001)
-    fetch("empty_slices", 9100002)
-    fetch("empty_slices_again", 9100002)
-    fetch("empty_slices_third_time", 9100002)
-    fetch("not_started", NOT_STARTED)
-    fetch("unknown_event", 1)
-    # Diskteki maç SofaScore'da artık "oynanıyor": refill vazgeçer, tam çekim /event'i yeniden ister
-    live = fake.event(9100001)
-    live["status"] = {"code": 6, "description": "1st half", "type": "inprogress"}
-    fake.add_event(live)
-    fetch("stored_match_now_live", 9100001)
-    fake.fail("/event/9100003*", 403)
-    fetch("blocked", 9100003)
-    fake.clear_faults()
-    fake.fail("/event/9100003/*", 403)
-    fetch("blocked_slices_only", 9100003)
-
-    assert_golden("single_match_route", {"steps": steps, "files": snapshot_tree(data_dir)})
 
 
 # --- yalnızca yenileme -----------------------------------------------------------------------

@@ -614,3 +614,20 @@ def _close_stores_opened_by_the_test():
     assert not orphaned, ("data folder removed while its Store was still open (fails on Windows); close the "
                           "Store before removing the folder:\n" + "\n".join(orphaned))
     assert not differences, "catalog differs from a rebuild after this test:\n" + "\n".join(differences)
+
+
+@pytest.fixture
+def settings_overrides() -> Any:
+    """
+    Ayarlar API'sine (`PATCH /api/v1/settings`) yazan testler için: test bitince yazılan `CONFIG_DIR/overrides.json`
+    silinir ve etkin ayarlar yeniden okunur. Anahtarları `null` ile geri almak dosyayı boş (`{}`) bırakır; sonraki
+    testler dosyanın hiç olmadığını varsayar (tests/test_api_v1_settings.py `sandbox`).
+    """
+    path = os.path.join(CONFIG_DIR, "overrides.json")
+    existed = os.path.exists(path)
+    yield path
+    if not existed and os.path.exists(path):
+        os.remove(path)
+    loader = sys.modules.get("sofascore_scraper.config.loader")
+    if loader is not None:
+        loader.reload()

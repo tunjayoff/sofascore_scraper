@@ -537,9 +537,9 @@ def test_lists_show_every_status_and_filter_by_status(fake: FakeSofaScore, tmp_p
     assert listed(status=["completed", "not_started"]) == [9100001, 9100002, 9100003, 9100004]
     assert listed(status="live") == []
 
-    # Eski listeler: FETCH_ONLY_FINISHED okurken uygulanan varsayılan süzgeçtir
+    # İndirme planının listesi: FETCH_ONLY_FINISHED okurken uygulanan varsayılan süzgeçtir
     query = QueryService(store)
     for value, expected in (("true", [9100001, 9100002, 9100003]), ("false", [9100001, 9100002, 9100003, 9100004])):
         monkeypatch.setenv("FETCH_ONLY_FINISHED", value)
-        rows = query.season_matches_legacy(61627, LEAGUE, only_finished=only_finished_setting())
-        assert sorted(int(row["match_id"]) for row in rows) == expected
+        rows = query.listed_events(tournament_ids=(LEAGUE,), season_ids=(61627,), only_finished=only_finished_setting())
+        assert sorted(row.id for row in rows) == expected

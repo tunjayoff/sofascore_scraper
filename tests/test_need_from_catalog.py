@@ -1,7 +1,7 @@
 """
 İndirme planı katalogdan (plan maddesi RD-3): `_needs_detail_fetch`, `pending_detail_ids`, `refresh_due_ids`,
-`collect_detail_match_ids` ve `GET /api/leagues/{id}/missing-details` dosya okumaz, kataloğa sorar
-(`planning.event_needs`, `refresh_due_events`, `QueryService.detail_candidates`, `missing_details_legacy`).
+`collect_detail_match_ids` dosya okumaz, kataloğa sorar (`planning.event_needs`, `refresh_due_events`,
+`QueryService.detail_candidates`).
 
 Dört küme:
   * özellik testi: rastgele dilim, işaret ve gözlem durumlarında katalogdan çıkan ihtiyaç, dosyalardan elle
@@ -9,8 +9,7 @@ Dört küme:
     `sofascore_scraper.refresh.refresh_due`) eşittir; yenilenecekler ve iş önbelleği de;
   * eski biçimler: düz, `_no_tournament/` ve kimliksiz lig dizinlerindeki kayıtlar yenilenir, lig süzgeci
     maçın turnuvasına bakar;
-  * listeler: sezon sırası, "yalnızca bitmiş maçlar" ayarı, durumu bilinmeyen özet satırları, eksik detay
-    yanıtının sınırı;
+  * listeler: sezon sırası, "yalnızca bitmiş maçlar" ayarı, durumu bilinmeyen özet satırları;
   * katalog güncel değilse plan yapılmaz (CatalogNotCurrent).
 Ağ yok.
 """
@@ -35,7 +34,6 @@ from sofascore_scraper.services.query import (
     NEED_REFILL,
     NEED_REFRESH,
     CatalogNotCurrent,
-    QueryService,
     RefreshPolicy,
     required_detail_keys,
 )
@@ -43,7 +41,6 @@ from sofascore_scraper.slices import match_detail_slice_present
 from sofascore_scraper.sports import event_sport_slug, slices_for
 from sofascore_scraper.services import planning
 from sofascore_scraper.store import open_store
-from sofascore_scraper.web.api import legacy as matches_routes
 from test_store_read_api import HOUR, NOW, _random_details
 
 UNKNOWN_ID = 1
@@ -213,11 +210,6 @@ def test_the_only_finished_setting_applies_when_reading(tmp_path: Path, monkeypa
         row = store.events.get(int(mid))
         assert row is not None and row.status_class not in ("completed", "decided_without_play")
         assert not row.has_event_payload
-    missing_on = matches_routes._get_missing_details_sync(8, None, str(fx.data_dir))
-    assert missing_on["total_matches"] == len(everything)  # ayar burada kapalı
-    monkeypatch.delenv("FETCH_ONLY_FINISHED")
-    missing_off = matches_routes._get_missing_details_sync(8, None, str(fx.data_dir))
-    assert missing_off["total_matches"] == len(finished_or_stored)
 
 
 def _summary_only_league(data_dir: Path, rows: str) -> None:
@@ -237,20 +229,6 @@ def test_summary_rows_without_a_status_are_kept(tmp_path: Path) -> None:
     assert fetcher.collect_detail_match_ids(league_id="8") is None  # listede maçı olmayan lig
     assert fetcher.collect_detail_match_ids(league_id="17", only_season_ids=[1]) == []  # lig var, sezon yok
     assert fetcher.pending_detail_ids(["501", "502"]) == ["501", "502"]
-    body = matches_routes._get_missing_details_sync(17, 61627, str(data_dir))
-    assert (body["total_matches"], body["missing_count"], body["truncated"]) == (2, 2, False)
-    assert [row["match_id"] for row in body["missing"]] == [501, 502]
-
-
-def test_missing_details_are_limited(tmp_path: Path) -> None:
-    data_dir = tmp_path / "data"
-    _summary_only_league(data_dir, "match_id,status\n" + "".join(f"{600 + n},Ended\n" for n in range(5)))
-    service = QueryService(open_store(data_dir))
-    body = service.missing_details_legacy(17, only_finished=True, limit=3)
-    assert (body["total_matches"], body["missing_count"], body["truncated"]) == (5, 5, True)
-    assert [row["match_id"] for row in body["missing"]] == [600, 601, 602]
-    assert service.missing_details_legacy(17, 1)["total_matches"] == 0
-    assert service.missing_details_legacy(8)["missing"] == []
 
 
 # --- katalog güncel değilse ---------------------------------------------------------------------------

@@ -1,18 +1,13 @@
 """
-Karakterizasyon: veri okuyan uç noktaların ve MatchDataFetcher okuyucularının bugünkü çıktısı (plan maddesi G-02).
+Karakterizasyon: MatchDataFetcher okuyucularının bugünkü çıktısı (plan maddesi G-02).
 
 `tests/store_fixtures.py`'nin kurduğu her veri dizini için şu okuyucuların çıktısı `tests/golden/readers/`
 altında `<dizin>.<okuyucu>.json` olarak durur:
 
-  api_matches            GET /api/matches (lig, sezon, tarih, details, sıralama, limit/offset)
-  api_season_matches     GET /api/seasons/{id}/matches
-  api_missing_details    GET /api/leagues/{id}/missing-details
-  api_match_detail       GET /api/matches/{id}
-  api_dashboard          GET /api/dashboard
-  api_stats_system       GET /api/stats/system
-  api_export_csv         POST /api/export/csv (üretir), GET /api/export/csv (birleşik ve lig süzgeçli)
   fetcher                _needs_detail_fetch, refresh_due_ids, collect_detail_match_ids, pending_detail_ids
   reset_markers          reset_unavailable_markers ve ardından işaret dosyaları
+
+2.x'in `/api` okuyucularının goldenları (`api_*`) yollarla birlikte 3.1'de kalktı (P30).
 
 Okuyucuları kataloğa taşıyan plan maddeleri (RD-1 … RD-5, EX-1, P21) bu dosyaları değiştirmeden geçmeli ya da
 her farkı tek tek açıklamalıdır. Davranış bilerek değiştirildiyse dosyalar şöyle yeniden üretilir:
@@ -31,7 +26,6 @@ from __future__ import annotations
 import contextlib
 import csv
 import datetime as dt
-import io
 import json
 import os
 import re
@@ -40,7 +34,6 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Sequence
 
 import pytest
-from fastapi.testclient import TestClient
 
 import conftest
 import detail_records
@@ -48,20 +41,15 @@ import legacy_writer
 import store_fixtures as sf
 from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.match_data_fetcher import MatchDataFetcher
-from sofascore_scraper.web.app import app
 
 GOLDEN_DIR = Path(__file__).resolve().parent.parent / "golden" / "readers"
 REGENERATE = os.getenv("REGEN_READER_GOLDENS") == "1"
-READERS = ("api_matches", "api_season_matches", "api_missing_details", "api_match_detail", "api_dashboard",
-           "api_stats_system", "api_export_csv", "fetcher", "reset_markers")
+READERS = ("fetcher", "reset_markers")
 LINE_WIDTH = 118
 SHORT_ITEM = 40  # bundan kısa öğeler satıra doldurulur
 MAX_RECORD_KEYS = 32  # bundan az anahtarlı düz sözlük tek satırda kalır
 UNKNOWN_LEAGUE = 999
 UNKNOWN_ID = 1
-
-client = TestClient(app)
-
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
     return MatchDataFetcher(config_manager=ConfigManager(), data_dir=str(data_dir))
@@ -232,162 +220,6 @@ def fx(request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.Monke
 def frozen_clock(monkeypatch: pytest.MonkeyPatch) -> None:
     """Yenileme kararı `time.time()`'a bakar (sofascore_scraper/refresh.py): saat FIXTURE_NOW'da durur."""
     monkeypatch.setattr(time, "time", lambda: float(sf.FIXTURE_NOW))
-
-
-def _get(url: str) -> Dict[str, Any]:
-    """Yanıtın kaydı. 422'nin gövdesi pydantic sürümüne bağlı olduğundan yalnızca kodu tutulur."""
-    r = client.get(url)
-    if r.status_code == 422:
-        return {"status": 422}
-    return {"status": r.status_code, "body": r.json()}
-
-
-# --- GET /api/matches -------------------------------------------------------------------------
-
-
-def _match_queries(fixture: sf.LegacyFixture) -> List[str]:
-    leagues = list(fixture.leagues)
-    queries = [
-        "", "sort=asc", "sort=bogus", "limit=200&sort=asc", "limit=3", "limit=3&offset=3", "limit=3&offset=5000",
-        "limit=0", "details=present", "details=missing", "details=other", "details=missing&sort=asc&limit=2",
-        "date=2026-09-15", "date=2026-09-29T13", "date=2026-05", "date=1999", "date=17894",
-        f"league_id={UNKNOWN_LEAGUE}", "league_id=abc", "season_id=1",
-    ]
-    for league_id in leagues:
-        queries += [f"league_id={league_id}", f"league_id={league_id}&details=present",
-                    f"league_id={league_id}&details=missing"]
-    if len(leagues) > 1:
-        queries.append(f"league_id={leagues[0]},{leagues[1]}&sort=asc")
-        queries.append(f"league_id={leagues[1]},{UNKNOWN_LEAGUE},x")
-    for league_id, season_id in fixture.listed:
-        queries += [f"season_id={season_id}", f"league_id={league_id}&season_id={season_id}",
-                    f"league_id={UNKNOWN_LEAGUE}&season_id={season_id}"]
-    if leagues:
-        queries.append(f"league_id={leagues[0]}&date=2026-09-29&details=present&sort=asc&limit=2&offset=1")
-    return list(dict.fromkeys(queries))
-
-
-def test_api_matches(fx: sf.LegacyFixture) -> None:
-    """
-    Kayıt biçimi: `rows` her maçın satırını bir kez tutar (`has_details` hariç), sorgular yalnızca
-    (toplam, sayfa, [maç id, has_details]) listesini. Bir sorgu aynı maç için farklı bir satır döndürürse
-    test bunu ayrıca bildirir. `has_details` sorguya göre değişebilir: lig süzgeci varken yalnızca
-    `<lig id>_` önekli detay dizinlerine bakılır.
-    """
-    full = _get("/api/matches?limit=200&sort=asc")
-    assert full["status"] == 200
-    assert full["body"]["total"] <= 200, "fixture bir sayfaya sığmalı"
-    everything = full["body"]["items"]
-    rows = {str(item["match_id"]): {k: v for k, v in item.items() if k != "has_details"} for item in everything}
-    assert len(rows) == len(everything)
-
-    golden: Dict[str, Any] = {"rows": rows, "queries": {}}
-    for query in _match_queries(fx):
-        response = _get(f"/api/matches?{query}")
-        if response["status"] == 200:
-            body = response["body"]
-            items = []
-            for item in body["items"]:
-                row = {k: v for k, v in item.items() if k != "has_details"}
-                assert row == rows[str(item["match_id"])], f"{query}: satır tam listedekinden farklı"
-                items.append([item["match_id"], item["has_details"]])
-            meta = {"status": 200, **{k: body[k] for k in ("total", "limit", "offset", "sort")}}
-            assert set(body) == set(meta) - {"status"} | {"items"}
-            response = {"response": meta, "items": items}
-        golden["queries"][query] = response
-    check_golden(fx.name, "api_matches", golden)
-
-
-# --- GET /api/seasons/{id}/matches --------------------------------------------------------------
-
-def test_api_season_matches(fx: sf.LegacyFixture) -> None:
-    """Satırlar katalogdan, belirli bir sırayla gelir (RD-2): iki özet dosyası olan sezon da artık sıralanmaz (FX-15)."""
-    golden: Dict[str, Any] = {}
-    pairs = list(fx.listed) + [(UNKNOWN_LEAGUE, 96668), (next(iter(fx.leagues)), 1)]
-    for league_id, season_id in pairs:
-        response = _get(f"/api/seasons/{season_id}/matches?league_id={league_id}")
-        golden[f"season_id={season_id}&league_id={league_id}"] = response
-    golden["season_id=96668 (league_id missing)"] = _get("/api/seasons/96668/matches")
-    check_golden(fx.name, "api_season_matches", golden)
-
-
-# --- GET /api/leagues/{id}/missing-details ------------------------------------------------------
-
-
-def test_api_missing_details(fx: sf.LegacyFixture) -> None:
-    golden: Dict[str, Any] = {}
-    for league_id in list(fx.leagues) + [UNKNOWN_LEAGUE]:
-        golden[f"league_id={league_id}"] = _get(f"/api/leagues/{league_id}/missing-details")
-        seasons = [sid for lid, sid in fx.listed if lid == league_id] + [1]
-        for season_id in seasons:
-            url = f"/api/leagues/{league_id}/missing-details?season_id={season_id}"
-            golden[f"league_id={league_id}&season_id={season_id}"] = _get(url)
-    check_golden(fx.name, "api_missing_details", golden)
-
-
-# --- GET /api/matches/{id} ----------------------------------------------------------------------
-
-
-def test_api_match_detail(fx: sf.LegacyFixture) -> None:
-    """Her bilinen maç (detayı olan, yalnızca listelenen) ve bilinmeyen bir id."""
-    golden = {str(event_id): _get(f"/api/matches/{event_id}") for event_id in fx.event_ids + [UNKNOWN_ID]}
-    check_golden(fx.name, "api_match_detail", golden)
-
-
-# --- GET /api/dashboard, /api/stats/system ------------------------------------------------------
-
-
-def test_api_dashboard(fx: sf.LegacyFixture) -> None:
-    check_golden(fx.name, "api_dashboard", _get("/api/dashboard"))
-
-
-def test_api_stats_system(fx: sf.LegacyFixture) -> None:
-    check_golden(fx.name, "api_stats_system", _get("/api/stats/system"))
-
-
-# --- GET /api/export/csv ------------------------------------------------------------------------
-
-_TIMESTAMP = re.compile(r"\d{9,}")
-
-
-def _processed_files(fixture: sf.LegacyFixture) -> List[str]:
-    processed = fixture.data_dir / "match_details" / "processed"
-    names = os.listdir(processed) if processed.is_dir() else []
-    return sorted(name if name == sf.PROCESSED_CSV_NAME else _TIMESTAMP.sub("<ts>", name) for name in names)
-
-
-def _export(url: str, method: str = "GET") -> Dict[str, Any]:
-    """CSV yanıtı: sütunlar sırasıyla, satırlar sıralanmış (bugün dizin listeleme sırasıyla yazılır)."""
-    r = client.request(method, url)
-    if r.status_code != 200:
-        return {"status": r.status_code, "body": r.json()}
-    table = list(csv.reader(io.StringIO(r.content.decode("utf-8"), newline="")))
-    disposition = r.headers.get("content-disposition", "")
-    if sf.PROCESSED_CSV_NAME not in disposition:
-        disposition = _TIMESTAMP.sub("<ts>", disposition)
-    return {
-        "status": 200,
-        "content_type": r.headers.get("content-type"),
-        "content_disposition": disposition,
-        "columns": table[0],
-        "rows": sorted(table[1:]),
-    }
-
-
-def test_api_export_csv(fx: sf.LegacyFixture) -> None:
-    """
-    GET yalnızca var olan dışa aktarma dosyasını okur; dosya yoksa 404 döner ve hiçbir şey üretmez (bir GET
-    durum değiştirmez: başka bir sitedeki <img> onu tetikleyebilir). Dosyayı POST üretir (`match_details/
-    processed/` altına; EX-1 dosya yazmayı kaldırır); sonraki GET'ler aynı dosyayı okur. Lig süzgeci dosyayı
-    pandas'tan geçirir. `all`, eskiden üreten GET'in yanıtıydı; şimdi POST'un yanıtıdır (içerik aynı).
-    """
-    golden: Dict[str, Any] = {"processed_files_before": _processed_files(fx)}
-    golden["get_before_create"] = _export("/api/export/csv")
-    golden["all"] = _export("/api/export/csv", method="POST")
-    golden["processed_files_after"] = _processed_files(fx)
-    for league_id in list(fx.leagues) + [UNKNOWN_LEAGUE]:
-        golden[f"league_id={league_id}"] = _export(f"/api/export/csv?league_id={league_id}")
-    check_golden(fx.name, "api_export_csv", golden)
 
 
 # --- MatchDataFetcher okuyucuları ---------------------------------------------------------------

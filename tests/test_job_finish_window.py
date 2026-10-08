@@ -2,7 +2,7 @@
 İşin bitiş penceresi: iş satırını bitirdikten sonra da depoyu kullanır (`job.finished` akış olayı, bitmiş işin
 geri okunması). Bu son erişimler bitene kadar depo onun altından kapatılamaz ve taşınamaz:
 
-  * veri klasörü değişimi (POST /api/settings, `JobStore.rebind`) 409 job_running ile reddedilir;
+  * veri klasörü değişimi (PATCH /api/v1/settings, `JobStore.rebind`) 409 job_running ile reddedilir;
   * `JobStore.close()` işin bitişini bekler;
   * aynı süreçte hemen ardından başlatılan yeni iş reddedilmez, bitişin sonunu bekler.
 
@@ -79,12 +79,17 @@ def join_jobs():
 _SETTINGS_ROUTE = r'''
 from pathlib import Path
 from fastapi.testclient import TestClient
+from sofascore_scraper.config import loader
 from sofascore_scraper.web import deps
 from sofascore_scraper.web.app import app
-from sofascore_scraper.web.api import legacy as api_mod
-from sofascore_scraper.web.api import legacy as settings_mod
+from sofascore_scraper.web.api.v1 import settings as settings_v1
 
-settings_mod._REPO_ROOT = Path(tmp)  # doğrulayıcı tmp altındaki klasörü kabul eder
+# Veri klasörü ortamdan gelseydi kilitli olurdu: Ayarlar sayfasının dosyasından (overrides.json) gelir
+os.environ.pop("DATA_DIR", None)
+with open(os.path.join(conftest.CONFIG_DIR, "overrides.json"), "w", encoding="utf-8") as f:
+    json.dump({"storage": {"data_dir": conftest.DATA_DIR}}, f)
+loader.reload()
+settings_v1.REPO_ROOT = Path(tmp)  # doğrulayıcı tmp altındaki klasörü kabul eder
 store = deps.job_store()
 old_db = store.db_path
 manager = JobManager(store, cancel_poll=0.02, heartbeat=0.05)
@@ -93,13 +98,13 @@ job = manager.submit(JobKind.FETCH, {"mode": "full"}, lambda handle: None, origi
 assert entered.wait(60), "the job never reached its job.finished stream write"
 client = TestClient(app)
 moved = os.path.join(tmp, "moved")
-during = client.post("/api/settings", json={"data_dir": moved})
+during = client.patch("/api/v1/settings", json={"values": {"storage.data_dir": moved}})
 release.set()
 join_jobs()
-after = client.post("/api/settings", json={"data_dir": moved})
+after = client.patch("/api/v1/settings", json={"values": {"storage.data_dir": moved}})
 print(json.dumps({
     "during_status": during.status_code,
-    "during_code": (during.json().get("detail") or {}).get("code") if during.status_code != 200 else None,
+    "during_code": (during.json().get("error") or {}).get("code") if during.status_code != 200 else None,
     "after_status": after.status_code,
     "finished_events": len(finished_events(old_db, job.id)),
     "problems": problems,

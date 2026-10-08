@@ -285,8 +285,7 @@ def _sync_plan(mode: str) -> Callable[[Mapping[str, Any], ContextFactory], TaskP
 
         kind = {"full": JobKind.SYNC, "details": JobKind.FETCH, "refresh": JobKind.REFRESH}[mode]
         # API'nin gövdesiyle aynı alanlar (FX-20); lig adı kaydedilmez (arayüz onu katalogdan okur)
-        return TaskPlan(kind=kind, spec=job_spec.record(kind.value, spec), body=body, phases=spec.job_phases,
-                        payload={"league_id": spec.league_id, "mode": spec.mode, "selections": None})
+        return TaskPlan(kind=kind, spec=job_spec.record(kind.value, spec), body=body, phases=spec.job_phases)
 
     return plan
 

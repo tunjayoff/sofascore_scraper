@@ -719,17 +719,17 @@ def test_write_bundle_default_and_explicit_paths(log_dir, tmp_path):
 
 def test_logs_endpoint(log_dir):
     _log_some("EndpointTest")
-    r = client.get("/api/logs", params={"limit": 3, "level": "WARNING"})
+    r = client.get("/api/v1/logs", params={"limit": 3, "level": "WARNING"})
     assert r.status_code == 200
-    body = r.json()
+    body = r.json()["data"]
     assert body["enabled"] is True and body["min_level"] == "WARNING"
     assert [e["level"] for e in body["entries"]][-2:] == ["WARNING", "ERROR"]
     assert all(e["level"] in ("WARNING", "ERROR", "CRITICAL") for e in body["entries"])
     assert len(body["entries"]) <= 3
 
-    r = client.get("/api/logs")
+    r = client.get("/api/v1/logs")
     assert r.status_code == 200
-    assert any(e["message"] == "ayrıntı satırı" for e in r.json()["entries"])
+    assert any(e["message"] == "ayrıntı satırı" for e in r.json()["data"]["entries"])
 
 
 @pytest.mark.parametrize(
@@ -738,7 +738,7 @@ def test_logs_endpoint(log_dir):
      {"level": "warning"}],
 )
 def test_logs_endpoint_rejects_out_of_range_input(log_dir, params):
-    assert client.get("/api/logs", params=params).status_code == 422
+    assert client.get("/api/v1/logs", params=params).status_code == 422
 
 
 def test_log_endpoints_cannot_be_pointed_at_other_files(log_dir, tmp_path):
@@ -750,23 +750,23 @@ def test_log_endpoints_cannot_be_pointed_at_other_files(log_dir, tmp_path):
         {"path": str(secret_file)}, {"file": str(secret_file)}, {"name": "../private.txt"},
         {"log_file": "/etc/passwd"},
     ):
-        r = client.get("/api/logs", params=params)
+        r = client.get("/api/v1/logs", params=params)
         assert r.status_code == 200
         assert "ÖZEL-DOSYA-İÇERİĞİ" not in r.text and "root:" not in r.text
-        assert r.json()["file"] == app_logger.log_file_path()
-        bundle = client.get("/api/diagnostics/bundle", params=params)
+        assert r.json()["data"]["file"] == app_logger.log_file_path()
+        bundle = client.get("/api/v1/diagnostics/bundle", params=params)
         assert "ÖZEL-DOSYA-İÇERİĞİ" not in "".join(_unzip(bundle.content).values())
 
     # Yol parametresi alan bir rota yok
-    for url in ("/api/logs/private.txt", "/api/logs/..%2F..%2Fetc%2Fpasswd", "/api/diagnostics/bundle/x",
-                "/api/diagnostics/..%2F..%2F.env"):
+    for url in ("/api/v1/logs/private.txt", "/api/v1/logs/..%2F..%2Fetc%2Fpasswd", "/api/v1/diagnostics/bundle/x",
+                "/api/v1/diagnostics/..%2F..%2F.env"):
         assert client.get(url).status_code == 404, url
 
 
 def test_diagnostics_endpoint(log_dir, secrets_everywhere):
-    r = client.get("/api/diagnostics")
+    r = client.get("/api/v1/diagnostics")
     assert r.status_code == 200
-    doc = r.json()
+    doc = r.json()["data"]
     assert doc["source"] == "web"
     assert doc["settings"]["values"]["SOFA_CAPTCHA_TOKEN"] == "***"
     for secret in SECRETS:
@@ -775,7 +775,7 @@ def test_diagnostics_endpoint(log_dir, secrets_everywhere):
 
 def test_bundle_endpoint_is_a_download(log_dir):
     logging.getLogger("WebAPI").warning("pakete giren satır")
-    r = client.get("/api/diagnostics/bundle", params={"log_lines": 50})
+    r = client.get("/api/v1/diagnostics/bundle", params={"log_lines": 50})
     assert r.status_code == 200
     assert r.headers["content-type"] == "application/zip"
     disposition = r.headers["content-disposition"]
@@ -784,11 +784,11 @@ def test_bundle_endpoint_is_a_download(log_dir):
     assert "pakete giren satır" in files["log_tail.txt"]
     assert json.loads(files["diagnostics.json"])["source"] == "web"
 
-    assert client.get("/api/diagnostics/bundle", params={"log_lines": diagnostics.MAX_TAIL_LINES + 1}).status_code == 422
-    assert client.get("/api/diagnostics/bundle", params={"log_lines": -1}).status_code == 422
+    assert client.get("/api/v1/diagnostics/bundle", params={"log_lines": diagnostics.MAX_TAIL_LINES + 1}).status_code == 422
+    assert client.get("/api/v1/diagnostics/bundle", params={"log_lines": -1}).status_code == 422
 
 
-@pytest.mark.parametrize("url", ["/api/logs", "/api/diagnostics", "/api/diagnostics/bundle"])
+@pytest.mark.parametrize("url", ["/api/v1/logs", "/api/v1/diagnostics", "/api/v1/diagnostics/bundle"])
 def test_endpoints_are_read_only(url):
     for method in ("post", "put", "delete"):
         assert getattr(client, method)(url).status_code == 405

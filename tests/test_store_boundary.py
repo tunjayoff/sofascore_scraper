@@ -589,7 +589,7 @@ def test_the_ratchet_baseline_is_gone():
 
 def test_store_itself_is_not_scanned():
     assert all(not rel.startswith("sofascore_scraper/store/") for rel, _path in iter_modules(SRC_DIR))
-    assert {"sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/web/api/legacy.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
+    assert {"sofascore_scraper/doctor.py", "sofascore_scraper/web/api/v1/jobs.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
     assert {"errors", "codec", "files", "layout", "manifest"} <= store_submodules(SRC_DIR)
 
 

@@ -579,24 +579,30 @@ def test_config_manager_applies_log_level_without_restart(reconfigure, tmp_path)
     assert logging.getLogger().level == logging.WARNING
 
 
-def test_settings_endpoint_applies_log_level_at_runtime(reconfigure, tmp_path):
+def test_settings_endpoint_applies_log_level_at_runtime(reconfigure, tmp_path, monkeypatch, settings_overrides):
     from sofascore_scraper.web.app import app
 
     reconfigure(LOG_DIR=str(tmp_path / "web"), LOG_LEVEL="INFO", DEBUG="false")
     client = TestClient(app)
     log = logging.getLogger("WebAPI")
 
-    r = client.post("/api/settings", json={"log_level": "ERROR", "debug": False})
-    assert r.status_code == 200
-    assert client.get("/api/settings").json()["log_level"] == "ERROR"
+    monkeypatch.delenv("LOG_LEVEL", raising=False)  # ortamın değeri ayarı kilitlerdi
+    monkeypatch.delenv("DEBUG", raising=False)
+    r = client.patch("/api/v1/settings", json={"values": {"log.level": "ERROR", "log.debug": False}})
+    assert r.status_code == 200, r.text
+    rows = {row["key"]: row["value"] for row in client.get("/api/v1/settings").json()["data"]["settings"]}
+    assert rows["log.level"] == "ERROR"
     assert logging.getLogger().level == logging.ERROR
     log.warning("ayar sonrası warning")
     log.error("ayar sonrası error")
 
-    r = client.post("/api/settings", json={"debug": True})
-    assert r.status_code == 200
-    assert logging.getLogger().level == logging.DEBUG
-    log.debug("ayar sonrası debug")
+    r = client.patch("/api/v1/settings", json={"values": {"log.debug": True}})
+    try:
+        assert r.status_code == 200
+        assert logging.getLogger().level == logging.DEBUG
+        log.debug("ayar sonrası debug")
+    finally:
+        assert client.patch("/api/v1/settings", json={"values": {"log.level": None, "log.debug": None}}).status_code == 200
 
     text = _read(app_logger.log_file_path())
     assert "ayar sonrası warning" not in text

@@ -29,11 +29,9 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tupl
 
 import pytest
 
-import sofascore_scraper.utils as utils
 from sofascore_scraper.web import deps
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper.client import context as request_ctx
-from sofascore_scraper.client import transport
 from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.exceptions import StorageError
 from sofascore_scraper.jobs.progress import JobProgress
@@ -115,7 +113,7 @@ def test_loading_the_web_job_does_not_load_the_terminal_ui(tmp_path: Path) -> No
     """Ayrı süreçte: rotalar, iş modülü ve servisler yüklendiğinde menü modülleri yüklenmiş olmamalı."""
     code = (
         "import json, sys\n"
-        "import sofascore_scraper.web.api.legacy, sofascore_scraper.services.sync, sofascore_scraper.services.export\n"
+        "import sofascore_scraper.web.api.v1.jobs, sofascore_scraper.services.sync, sofascore_scraper.services.export\n"
         "print(json.dumps(sorted(m for m in sys.modules"
         " if m == 'sofascore_scraper.SofaScoreUi' or m == 'sofascore_scraper.ui' or m.startswith('sofascore_scraper.ui.'))))\n"
     )
@@ -848,10 +846,13 @@ def test_a_storage_error_leaves_the_service_and_the_context_is_taken_back(
 
 @pytest.fixture
 def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.jobs import JobStore
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    """
+    Web işini (`POST /api/v1/jobs`un gövdesi) kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis
+    bağlamıyla çalıştırır.
+    """
+    from sofascore_scraper.services import context
+    from sofascore_scraper.store import JobStore
+    from web_job import run_sync_job
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
@@ -859,48 +860,13 @@ def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
     def run(details: FakeDetails, **payload: Any) -> Dict[str, Any]:
         ctx = make_ctx(deps.config_manager(), monkeypatch, details=details)
-        monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-        request = FetchRequest(**payload)
-        fj.run_fetch_job(store.create_running(request.model_dump()), request)
-        return store.snapshot()
+        monkeypatch.setattr(context, "build_context", lambda config_manager: ctx)
+        return run_sync_job(store, payload)
 
     return run
 
 
-def test_payload_becomes_a_spec() -> None:
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.api.legacy import FetchRequest
-
-    assert fj._spec_from_payload(FetchRequest()) == SyncSpec(mode="full", league_id=None, selections=())
-    assert fj._spec_from_payload(FetchRequest(mode="details", league_id=17, selections=[])) == SyncSpec(
-        mode="details", league_id=17
-    )
-    request = FetchRequest(
-        selections=[
-            {"league_id": 17, "season_ids": [2, 1, 2]},
-            {"league_id": 8, "match_ids": [5]},
-            {"league_id": 9, "season_ids": [], "match_ids": None},
-        ]
-    )
-    assert fj._spec_from_payload(request).selections == (
-        SyncSelection(league_id=17, season_ids=(2, 1, 2)),
-        SyncSelection(league_id=8, match_ids=(5,)),
-        SyncSelection(league_id=9),
-    )
-
-
-def test_the_first_job_log_line_names_the_target() -> None:
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.api.legacy import FetchRequest
-
-    assert fj._summary(FetchRequest()) == "All Leagues"
-    assert fj._summary(FetchRequest(league_id=17)) == "17"
-    assert fj._summary(FetchRequest(league_id=17, selections=[{"league_id": 8}, {"league_id": 9}])) == (
-        "2 targeted selection(s)"
-    )
-
-
-def test_web_job_prints_its_console_line_and_no_menu_text(
+def test_web_job_prints_no_console_line_and_no_menu_text(
     web_job: Any, capsys: pytest.CaptureFixture[str]
 ) -> None:
     from sofascore_scraper.i18n import get_i18n
@@ -908,13 +874,10 @@ def test_web_job_prints_its_console_line_and_no_menu_text(
     final = web_job(FakeDetails({"17": ["a"]}), mode="details", league_id=17)
 
     assert final["status"] == "Completed" and final["progress"] == 100
-    assert final["log"][0] == "[Running] Starting fetch for 17"
-    assert final["log"][-1] == "[Completed] Background Task Completed Successfully."
+    assert final["log"][-1] == "[Completed] Finished"
     assert not any("CSV" in line for line in final["log"])
     out = capsys.readouterr().out
-    assert [line for line in out.splitlines() if line.startswith("-->")] == [
-        "--> Background Task Completed Successfully.",
-    ]
+    assert [line for line in out.splitlines() if line.startswith("-->")] == []
     i18n = get_i18n()
     for key in ("headless_exporting_csv", "title_csv_conversion", "csv_created_success", "csv_created_error"):
         assert i18n.t(key) not in out, key
@@ -953,67 +916,3 @@ def test_web_job_writes_the_result_of_the_service(web_job: Any) -> None:
     assert final["result"]["schedule_empty_seasons"] == 0
     assert final["result"]["failed"] == [{"match_id": "b", "league_id": 17}]
     assert final["result"]["details_done"] == 2 and final["result"]["breaker"] is None
-
-
-# --- lig araması: API kökü ---------------------------------------------------------------------------
-
-DEFAULT_BASE = "https://www.sofascore.com/api/v1"
-OTHER_BASE = "https://api.sofascore.com/api/v1"
-
-
-class _Response:
-    def __init__(self, body: Any) -> None:
-        self.status_code = 200
-        self.reason = "OK"
-        self.headers: Dict[str, str] = {}
-        self.text = json.dumps(body)
-        self._body = body
-
-    def json(self) -> Any:
-        return self._body
-
-
-@pytest.fixture
-def sent_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
-    """curl'e giden tam adresleri toplar; her isteğe tek sonuçlu bir arama yanıtı döner."""
-    urls: List[str] = []
-    body = {
-        "results": [
-            {"entity": {"id": 17, "name": "Premier League", "slug": "premier-league",
-                        "category": {"name": "England", "sport": {"name": "Football"}}}}
-        ]
-    }
-
-    def sync_get(url: str, **kwargs: Any) -> _Response:
-        urls.append(url)
-        return _Response(body)
-
-    monkeypatch.setattr(transport.cffi_requests, "get", sync_get)
-    monkeypatch.setattr(utils, "_sleep", lambda seconds: None)
-    return urls
-
-
-@pytest.mark.parametrize("base", [DEFAULT_BASE, OTHER_BASE])
-def test_league_search_uses_the_api_base_of_the_client(
-    sent_urls: List[str], monkeypatch: pytest.MonkeyPatch, base: str
-) -> None:
-    """Eskiden arama, API_BASE_URL ne olursa olsun varsayılan adrese gidiyordu (PR #48'in bıraktığı tek istek)."""
-    from sofascore_scraper.web.api import legacy as leagues
-
-    monkeypatch.setattr(utils, "API_BASE_URL", base)
-
-    found = leagues._search_remote_leagues_sync("premier league/1")
-
-    # Sorgu yolun parçasıdır ve tümüyle kodlanır ("/" dahil), önceki gibi
-    assert sent_urls == [f"{base}/search/unique-tournaments/premier%20league%2F1"]
-    assert [(league.id, league.name, league.country, league.sport) for league in found] == [
-        (17, "Premier League", "England", "Football")
-    ]
-
-
-def test_the_league_route_module_no_longer_hard_codes_the_api_base() -> None:
-    # Eski lig rotaları sofascore_scraper/web/api/legacy.py'dedir (P21); oradaki SofaScore adları yalnızca ayar doğrulamasının
-    # izin verdiği sunuculardır (`_ALLOWED_API_HOSTS`), bir istek adresi değil
-    source = (SRC / "web" / "api" / "legacy.py").read_text(encoding="utf-8")
-    assert "sofascore.com/api" not in source and "https://www.sofascore.com" not in source
-    assert source.count("sofascore.com") == 2 and '_ALLOWED_API_HOSTS = {"www.sofascore.com", "api.sofascore.com"}' in source

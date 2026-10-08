@@ -106,10 +106,6 @@ def _event_requests(fake: FakeSofaScore) -> Dict[int, List[str]]:
     return {event_id: sorted(paths) for event_id, paths in sorted(found.items())}
 
 
-def _ids(rows: List[Dict[str, Any]]) -> List[int]:
-    return sorted(int(row["match_id"]) for row in rows)
-
-
 # --- saklama --------------------------------------------------------------------------------------------
 
 def test_a_listing_stores_matches_of_every_status(fake: FakeSofaScore, store: Store) -> None:
@@ -134,17 +130,19 @@ def test_the_setting_filters_when_reading(fake: FakeSofaScore, store: Store, tmp
     page = store.entities.payload(Ref.season(LEAGUE, PAGED_SEASON), "schedule", "last_0")
     ScheduleLister(old, only_finished=True).save_page(LEAGUE, PAGED_SEASON, "last_0", page, meta={"filtered": True})
 
+    def listed(of: Store, only_finished: bool) -> List[int]:
+        rows = QueryService(of).listed_events(tournament_ids=(LEAGUE,), season_ids=(PAGED_SEASON,),
+                                              only_finished=only_finished)
+        return [row.id for row in rows]
+
     for only_finished in (True, False):
-        new_rows = QueryService(store).season_matches_legacy(PAGED_SEASON, LEAGUE, only_finished=only_finished)
-        new_page = QueryService(store).matches_legacy(only_finished=only_finished, limit=100)
+        new_rows = listed(store, only_finished)
         new_count = StatusService(store).summary(only_finished=only_finished, sizes=False).matches
         if only_finished:
-            assert new_rows == QueryService(old).season_matches_legacy(PAGED_SEASON, LEAGUE, only_finished=True)
-            assert new_page == QueryService(old).matches_legacy(only_finished=True, limit=100)
+            assert new_rows == listed(old, True) == [PAGED_FINISHED]
             assert new_count == StatusService(old).summary(only_finished=True, sizes=False).matches == 1
-            assert _ids(new_rows) == [PAGED_FINISHED]
         else:
-            assert _ids(new_rows) == _ids(list(new_page.items)) == [PAGED_FINISHED, NOT_STARTED, POSTPONED, LIVE]
+            assert new_rows == [PAGED_FINISHED, NOT_STARTED, POSTPONED, LIVE]
             assert new_count == 4
 
 

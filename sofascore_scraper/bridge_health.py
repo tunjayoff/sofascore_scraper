@@ -129,7 +129,7 @@ class BridgeHealth:
 
     def record_failure(self, kind: str, detail: str = "") -> None:
         """Köprü bir isteği alamadı: reddedildi (403/challenge) ya da tarayıcı açılamadı."""
-        # Ayrıntı /health ve /api/bypass/status ile dışarı verilir: tarayıcı hata metni proxy
+        # Ayrıntı /health ve /api/v1/status ile dışarı verilir: tarayıcı hata metni proxy
         # adresini (parolasıyla) taşıyabilir, bu yüzden log satırları gibi maskelenir
         detail = redact_text(str(detail))[:200]
         with self._lock:
@@ -200,7 +200,7 @@ class BridgeHealth:
     # -- okuma --
 
     def snapshot(self) -> BridgeHealthSnapshot:
-        """JSON'a hazır görüntü (/health, /api/bypass/status). Zamanlar ISO-8601 UTC."""
+        """JSON'a hazır görüntü (/health, /api/v1/status). Zamanlar ISO-8601 UTC."""
         with self._lock:
             return self._snapshot()
 

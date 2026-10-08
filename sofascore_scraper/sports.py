@@ -2,8 +2,8 @@
 Spor kayıt defteri: desteklenen sporlar ve maç detay dilimleri tek yerde.
 
 Okuyanlar: sofascore_scraper/status.py (skor ailesi), sofascore_scraper/services/live/ (izleyici parametreleri), sofascore_scraper/services/pipeline.py
-(istenecek detay uç noktaları), sofascore_scraper/web/league_sports.py (liglerin sporu), sofascore_scraper/web/api/legacy.py ve
-sofascore_scraper/web/api/v1/ (GET /api/sports, /api/v1/sports), `ssc watch` (--sport seçenekleri), sofascore_scraper/services/planning.py
+(istenecek detay uç noktaları), sofascore_scraper/web/league_sports.py (liglerin sporu),
+sofascore_scraper/web/api/v1/ (GET /api/v1/sports), `ssc watch` (--sport seçenekleri), sofascore_scraper/services/planning.py
 (bir maçın ihtiyacı: beklenen dilimler).
 
 Yeni spor eklemek:

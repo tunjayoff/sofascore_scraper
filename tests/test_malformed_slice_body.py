@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Sequence, Tuple
 
 import pytest
-from fastapi import HTTPException
 
 import detail_records
 from characterization import WORLD, pin_default_settings
@@ -35,7 +34,6 @@ from sofascore_scraper.match_data_fetcher import (
     MatchDataFetcher,
     SliceOutcome,
 )
-from sofascore_scraper.web import upstream
 
 # tests/characterization/fixtures/fetch/world.json
 FINISHED = 9100001  # futbol, bitti, altı `required` dilimi de dolu
@@ -364,42 +362,6 @@ def test_point_by_point_answers_for_picked_matches(fake: FakeSofaScore, tmp_path
     assert (empty.status, empty.reason, empty.data) == (SLICE_EMPTY, "empty", {"pointByPoint": []})
     assert (malformed.status, malformed.reason, malformed.data) == (SLICE_FAILED, "parse", None)
     assert {r.via for r in fake.requests} == {"async"}
-
-
-# --- sync hattın diğer çağıranları ---------------------------------------------------------------
-
-
-def test_single_match_route_with_a_malformed_slice(fake: FakeSofaScore, data_dir: Path) -> None:
-    """
-    Tek maç uç noktası (POST /api/matches/{id}/fetch, boru hattı): bir dilimin gövdesi okunamıyorsa maç yine
-    kaydedilir ve "success" döner (eskiden yüklemin hatası 500 "Match fetch failed" oluyor, hiçbir şey
-    kaydedilmiyordu). Yeniden çekim yalnızca o dilimi ister; istenen dilimlerin hiçbiri yanıt almadığı için
-    sonuç tipli `upstream` hatasıdır (502), dilim yine "yok" sayılmaz.
-    """
-    import sofascore_scraper.web.api.legacy as matches_routes
-
-    path = _slice_path(FINISHED, "h2h")
-    fake.add(path, {"teamDuel": "abc"})
-
-    assert matches_routes._fetch_single_match_sync(str(FINISHED)) == {"status": "success", "match_id": str(FINISHED)}
-    md = _fetcher(data_dir)
-    stored = _stored(md, FINISHED)
-    assert sorted(stored) == sorted(
-        ["basic.json", "observation.json", "_slice_status.json"] + [f"{k}.json" for k in REQUIRED if k != "h2h"]
-    )
-    assert list(stored["_slice_status.json"]) == ["h2h"] and list(stored["_slice_status.json"]["h2h"]) == ["error"]
-    assert stored["_slice_status.json"]["h2h"]["error"]["reason"] == "parse"
-
-    fake.reset_log()
-    with pytest.raises(HTTPException) as raised:
-        matches_routes._fetch_single_match_sync(str(FINISHED))
-
-    assert (raised.value.status_code, raised.value.detail["reason"]) == (502, upstream.UPSTREAM)
-    assert sorted(r.path for r in fake.requests if r.path != SITE_ROOT) == [f"/event/{FINISHED}", path]
-    stored = _stored(md, FINISHED)
-    assert "h2h.json" not in stored and "_unavailable.json" not in stored
-    assert list(stored["_slice_status.json"]["h2h"]) == ["error"]
-    assert stored["_slice_status.json"]["h2h"]["error"]["count"] == 2
 
 
 # --- "falsy" gövde de kurala sorulur ----------------------------------------------------------------

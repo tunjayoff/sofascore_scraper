@@ -392,13 +392,12 @@
   "all_leagues": {
    "circuit_breaker_triggered": false,
    "log": [
-    "[Running] Starting fetch for All Leagues",
     "[Running] Refreshing season list for league 17...",
     "[Running] Fetching matches: league 17, season 61627",
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league all (4 matches)…",
-    "[Completed] Background Task Completed Successfully."
+    "[Completed] Finished"
    ],
    "matches_done": 4,
    "matches_failed": 0,
@@ -415,6 +414,7 @@
     "details_total": 4,
     "failed": [],
     "failed_count": 0,
+    "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
     "schedule_empty_seasons": 0
@@ -425,13 +425,12 @@
   "league": {
    "circuit_breaker_triggered": false,
    "log": [
-    "[Running] Starting fetch for 17",
     "[Running] Refreshing season list for league 17...",
     "[Running] Fetching matches: league 17, season 61627",
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league 17 (4 matches)…",
-    "[Completed] Background Task Completed Successfully."
+    "[Completed] Finished"
    ],
    "matches_done": 4,
    "matches_failed": 0,
@@ -448,6 +447,7 @@
     "details_total": 4,
     "failed": [],
     "failed_count": 0,
+    "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
     "schedule_empty_seasons": 0
@@ -458,14 +458,13 @@
   "selected_seasons": {
    "circuit_breaker_triggered": false,
    "log": [
-    "[Running] Starting fetch for 1 targeted selection(s)",
     "[Running] Refreshing season list for league 17...",
     "[Running] Season 99999 outdated → using 52186 for league 17",
     "[Running] Fetching matches: league 17, season 61627",
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league 17 (4 matches)…",
-    "[Completed] Background Task Completed Successfully."
+    "[Completed] Finished"
    ],
    "matches_done": 4,
    "matches_failed": 0,
@@ -482,6 +481,7 @@
     "details_total": 4,
     "failed": [],
     "failed_count": 0,
+    "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
     "schedule_empty_seasons": 0

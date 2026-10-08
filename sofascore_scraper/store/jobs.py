@@ -535,20 +535,6 @@ class JobStore:
                 _insert_event(conn, job_id, EVENT_FINISHED, {"state": STATUS_INTERRUPTED})
         return changed
 
-    def mark_stale_running_interrupted(self) -> int:
-        """
-        Koşulsuz süpürme: çalışan/sıradaki **her** satır (bu deponun kendi işi dahil) `interrupted` olur, yansı
-        boşalır ve `writer` kilidi bırakılır. Depo bunu artık kendiliğinden çağırmaz (açılışta ve `rebind`te
-        `reap_stale` çalışır); bir sürecin kendi işini bilerek bırakması içindir.
-        """
-        with self._lock:
-            with self._state.write() as conn:
-                n = len(self._interrupt(conn, None, _utc_now()))
-            self._active_id = None
-            self._mirror = self._idle_mirror()
-            self._release_writer()
-            return n
-
     def reap_stale(self) -> int:
         """
         Sahibi ölmüş işleri `interrupted` yapar ve sayısını döndürür: satırı "running" (ya da "queued") olup

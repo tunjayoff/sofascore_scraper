@@ -1347,40 +1347,28 @@ def env_file_restored():
     loader.reset()
 
 
-def test_settings_expose_and_update_rate_limit(monkeypatch, env_file_restored):
+def _rate_row(client: object) -> float:
+    rows = client.get("/api/v1/settings").json()["data"]["settings"]  # type: ignore[attr-defined]
+    return next(row["value"] for row in rows if row["key"] == "client.rate")
+
+
+def test_settings_show_the_default_when_unset_and_update_the_rate(monkeypatch, env_file_restored, settings_overrides):
+    """Ayarlar API'si (`/api/v1/settings`): varsayılan 5; 0 ("off") sınırı kaldırır; üst sınır 1000."""
     from fastapi.testclient import TestClient
 
     from sofascore_scraper.web.app import app
 
     client = TestClient(app)
-    before = os.environ.get("REQUEST_RATE_LIMIT")
+    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)  # ortamın değeri ayarı kilitlerdi
     try:
-        assert client.get("/api/settings").json()["request_rate_limit"] == 0.0  # conftest: kapalı
-        assert client.post("/api/settings", json={"request_rate_limit": 2.5}).status_code == 200
-        assert os.environ["REQUEST_RATE_LIMIT"] == "2.5"
-        assert client.get("/api/settings").json()["request_rate_limit"] == 2.5
-        assert client.post("/api/settings", json={"request_rate_limit": -1}).status_code == 422
-        assert client.post("/api/settings", json={"request_rate_limit": 5000}).status_code == 422
+        assert _rate_row(client) == 5.0
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 2.5}}).status_code == 200
+        assert _rate_row(client) == 2.5 and throttle.configured_rate() == 2.5
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 0}}).status_code == 200  # kapalı
+        assert _rate_row(client) == 0.0 and throttle.configured_rate() == 0.0
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 40}}).status_code == 200
+        assert _rate_row(client) == 40.0
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": -1}}).status_code == 422
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 5000}}).status_code == 422
     finally:
-        client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
-        os.environ["REQUEST_RATE_LIMIT"] = before or "0"
-
-
-def test_settings_show_the_default_when_unset_and_accept_off(monkeypatch, env_file_restored):
-    from fastapi.testclient import TestClient
-
-    from sofascore_scraper.web.app import app
-
-    client = TestClient(app)
-    before = os.environ.get("REQUEST_RATE_LIMIT")
-    try:
-        monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
-        assert client.get("/api/settings").json()["request_rate_limit"] == 5.0
-        assert client.post("/api/settings", json={"request_rate_limit": 0}).status_code == 200  # kapalı
-        assert os.environ["REQUEST_RATE_LIMIT"] == "0"
-        assert client.get("/api/settings").json()["request_rate_limit"] == 0.0
-        assert client.post("/api/settings", json={"request_rate_limit": 40}).status_code == 200  # varsayılanın üstü
-        assert client.get("/api/settings").json()["request_rate_limit"] == 40.0
-    finally:
-        client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
-        os.environ["REQUEST_RATE_LIMIT"] = before or "0"
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": None}}).status_code == 200

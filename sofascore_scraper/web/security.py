@@ -119,11 +119,8 @@ SESSION_COOKIE = "sofascore_session"
 SESSION_MAX_AGE = 30 * 24 * 3600
 # Bundan kısa bir belirteç tahmin edilebilir; başlangıçta uyarılır
 MIN_TOKEN_LENGTH = 16
-# Belirteç olmadan da yanıt veren /api yolları: oturum durumu, giriş ve çıkış (eski yollar ve v1 halefleri)
-AUTH_OPEN_PATHS = frozenset({
-    "/api/auth", "/api/auth/login", "/api/auth/logout",
-    "/api/v1/auth", "/api/v1/auth/login", "/api/v1/auth/logout",
-})
+# Belirteç olmadan da yanıt veren /api yolları: oturum durumu, giriş ve çıkış
+AUTH_OPEN_PATHS = frozenset({"/api/v1/auth", "/api/v1/auth/login", "/api/v1/auth/logout"})
 
 
 # Süreç başlarken okunan belirteç (None = henüz okunmadı)
@@ -194,7 +191,7 @@ _CSP = (
     ("img-src", "'self' data:"),
     # Küçük yazı tipleri derlemede CSS'e data: olarak gömülür
     ("font-src", "'self' data:"),
-    # fetch ve SSE (/api/scrape/stream) yalnızca uygulamanın kendisine
+    # fetch ve SSE (/api/v1/jobs/{id}/events) yalnızca uygulamanın kendisine
     ("connect-src", "'self'"),
     ("object-src", "'none'"),
     ("base-uri", "'self'"),

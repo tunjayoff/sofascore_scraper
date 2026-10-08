@@ -1,4 +1,9 @@
-"""GET /api/sports: kayıt defterinin (sofascore_scraper/sports.py) salt okunur görünümü."""
+"""
+GET /api/v1/sports: kayıt defterinin (sofascore_scraper/sports.py) salt okunur görünümü. 2.x'in `/api/sports` yolu
+3.1'de kalktı (P30); buradaki denetimler maç detayı dilimlerinin o yolun gösterdiği dört alanıdır.
+"""
+from typing import Any, Dict, List
+
 from fastapi.testclient import TestClient
 
 from sofascore_scraper import sports
@@ -9,12 +14,23 @@ REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-r
               "volleyball", "badminton", "table-tennis", "padel", "snooker",  # SP-2: + beş set sporu
               "baseball", "cricket", "esports", "darts", "mma")  # SP-3: + beş B sınıfı spor
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
+FIELDS = ("key", "path", "required", "default_enabled")
+
+
+def _sports() -> List[Dict[str, Any]]:
+    """v1'in sporları; dilimler yalnızca maç detayı dilimleri ve dört alanıyla."""
+    r = TestClient(app).get("/api/v1/sports")
+    assert r.status_code == 200
+    detail_keys = {s.key for s in sports.DETAIL_SLICES}
+    return [
+        {**{k: sport[k] for k in ("slug", "name", "i18n_key", "score_family")},
+         "slices": [{k: s[k] for k in FIELDS} for s in sport["slices"] if s["key"] in detail_keys]}
+        for sport in r.json()["data"]
+    ]
 
 
 def test_api_lists_sports_and_their_slices():
-    r = TestClient(app).get("/api/sports")
-    assert r.status_code == 200
-    body = r.json()
+    body = _sports()
     assert [s["slug"] for s in body] == list(REGISTERED)
     by_slug = {s["slug"]: s for s in body}
     assert by_slug["football"] == {
@@ -47,10 +63,10 @@ def test_api_lists_sports_and_their_slices():
 
 def test_api_sports_follows_the_registry(monkeypatch):
     monkeypatch.setattr(sports, "SPORTS", sports.SPORTS[:1])
-    assert [s["slug"] for s in TestClient(app).get("/api/sports").json()] == ["football"]
+    assert [s["slug"] for s in _sports()] == ["football"]
 
 
 def test_api_sports_is_read_only():
     client = TestClient(app)
-    assert client.post("/api/sports", json={}).status_code == 405
-    assert client.delete("/api/sports").status_code == 405
+    assert client.post("/api/v1/sports", json={}).status_code == 405
+    assert client.delete("/api/v1/sports").status_code == 405

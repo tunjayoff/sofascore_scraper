@@ -244,7 +244,7 @@ def test_a_due_task_is_submitted_as_an_ordinary_background_job_of_the_scheduler(
     assert submitted["kind"] is JobKind.SYNC and submitted["background"] is True
     assert submitted["origin"].face == "scheduler" and submitted["origin"].pid
     assert submitted["spec"] == {"league_id": 17, "selections": [], "follows": [], "only": None, "event_ids": []}  # the fields of the API body (FX-20)
-    assert submitted["payload"] == {"league_id": 17, "mode": "full", "selections": None}
+    assert submitted["payload"] is None  # 2.x arayüzünün iş kartı başlığı 3.1'de yazılmaz (P30)
     assert submitted["on_change"] is not None and changes == [1]
     state = sched.states()[0]
     assert (state.last_run_at, state.next_run_at) == (at(2026, 10, 3, 11, 0), at(2026, 10, 3, 12, 0))

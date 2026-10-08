@@ -27,9 +27,7 @@ import store_fixtures as sf
 from sofascore_scraper.services.backup import BackupService
 from sofascore_scraper.services.maintenance import MaintenanceService
 from sofascore_scraper.store import StoreError, open_store
-from sofascore_scraper.web import deps
-from sofascore_scraper.web.api import legacy as data_routes
-from sofascore_scraper.web.api.legacy import _SyncHttpError
+from sofascore_scraper.web import deps, league_sports
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "backup" / "members.json"
 REGEN = os.getenv("REGEN_BACKUP_GOLDEN") == "1"
@@ -74,6 +72,15 @@ def _use_data_dir(monkeypatch: pytest.MonkeyPatch, data_dir: Path) -> None:
     monkeypatch.setattr(deps.config_manager(), "get_data_dir", lambda: str(data_dir))
 
 
+def _create(scope: str, include_env: bool = False) -> Any:
+    """Web sürecinin yedeği (v1'in `backup` işinin gövdesi gibi): lig dosyası ve spor eşlemesi pakete girer."""
+    manager = deps.config_manager()
+    config_path = manager.league_config_path
+    return BackupService(open_store(os.path.abspath(manager.get_data_dir()))).create(
+        scope, config_files=(config_path, league_sports.sidecar_path(config_path)), include_secrets=include_env,
+    )
+
+
 def _all_members(root: Path, monkeypatch: pytest.MonkeyPatch) -> Dict[str, List[List[Any]]]:
     found: Dict[str, List[List[Any]]] = {}
     for name in sf.FIXTURE_NAMES:
@@ -81,11 +88,10 @@ def _all_members(root: Path, monkeypatch: pytest.MonkeyPatch) -> Dict[str, List[
         _use_data_dir(monkeypatch, fixture.data_dir)
         for scope in SCOPES:
             for include_env in (False, True):
-                made = data_routes._create_backup_sync(scope, include_env)
-                path = os.path.join(fixture.data_dir, "backups", made["filename"])
+                made = _create(scope, include_env)
+                path = os.path.join(fixture.data_dir, "backups", made.name)
                 with_env = include_env and scope in ("all", "config")
-                assert re.fullmatch(NAME_RE.format(scope=scope, env="_with_env" if with_env else ""), made["filename"])
-                assert made["download_url"] == f"/api/data/backups/{made['filename']}"
+                assert re.fullmatch(NAME_RE.format(scope=scope, env="_with_env" if with_env else ""), made.name)
                 found[f"{name}/{scope}{'/env' if include_env else ''}"] = _members(path)
                 os.remove(path)
     return found
@@ -103,8 +109,8 @@ def test_the_backup_members_equal_the_golden(configured: Path, monkeypatch: pyte
 def test_a_backup_with_env_is_private(configured: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fixture = sf.build_fixture("canonical", configured / "data")
     _use_data_dir(monkeypatch, fixture.data_dir)
-    made = data_routes._create_backup_sync("config", True)
-    path = fixture.data_dir / "backups" / made["filename"]
+    made = _create("config", True)
+    path = fixture.data_dir / "backups" / made.name
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     with zipfile.ZipFile(path) as zf:
         assert zf.read("config/.env").decode("utf-8") == ENV_TEXT
@@ -165,17 +171,6 @@ def test_a_failed_backup_leaves_no_partial_archive(configured: Path, monkeypatch
         store.backup.create("everything")
 
 
-def test_the_route_answers_500_when_the_store_fails(configured: Path, monkeypatch: pytest.MonkeyPatch,
-                                                    caplog: pytest.LogCaptureFixture) -> None:
-    fixture = sf.build_fixture("empty", configured / "data")
-    _use_data_dir(monkeypatch, fixture.data_dir)
-    (fixture.data_dir / "backups").write_text("a file where the directory should be", encoding="utf-8")
-    with pytest.raises(_SyncHttpError) as caught:
-        data_routes._create_backup_sync("all")
-    assert (caught.value.status_code, caught.value.detail) == (500, "Backup failed")
-    assert any(r.getMessage().startswith("Backup failed: ") for r in caplog.records)
-
-
 # --- MaintenanceService.clear ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("scope, cleared, kept", [
@@ -221,12 +216,4 @@ def test_clear_reports_only_the_trees_that_existed(tmp_path: Path) -> None:
     report = MaintenanceService(store=open_store(fixture.data_dir)).clear("all", confirm=True)
     assert report.cleared == ("match_details",)
     assert not (fixture.data_dir / "matches").exists() and not (fixture.data_dir / "seasons").exists()
-
-
-def test_the_route_returns_what_the_service_cleared(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    fixture = sf.build_fixture("canonical", tmp_path / "data")
-    _use_data_dir(monkeypatch, fixture.data_dir)
-    assert data_routes._clear_data_sync("all") == {"status": "success",
-                                                   "cleared": ["match_details", "matches", "seasons"]}
-    assert data_routes._clear_data_sync("matches") == {"status": "success", "cleared": ["matches"]}
 
