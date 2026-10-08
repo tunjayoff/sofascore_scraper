@@ -71,8 +71,12 @@ browser profile and a log volume of its own, no published port and no health che
 
 - **Memory.** The default source, `page`, keeps one browser page per watched sport open: about 1.8 to 2.6 GB
   per sport. Set `mem_limit` above the peak (about 2.6 GB per sport; three sports about 8 GB), and a larger
-  `shm_size` (the example has 2 GB). `command: ["watch", "--source", "poll"]` needs no browser.
-- **`direct`** (`command: ["watch", "--source", "direct"]`, about 0.2 GB) uses SofaScore's own client
+  `shm_size` (the example has 2 GB). `command: ["watch", "--idle", "--source", "poll"]` needs no browser.
+- **Nothing followed live yet.** The example runs `command: ["watch", "--idle"]`: with no follow marked
+  `live = true` the service logs one line and waits, reading the follows again every 60 seconds, and starts
+  watching once one is added. Without `--idle`, `ssc watch` exits with code 2 when there is nothing to watch,
+  and the restart policy would restart it every few seconds.
+- **`direct`** (`command: ["watch", "--idle", "--source", "direct"]`, about 0.2 GB) uses SofaScore's own client
   credential outside the site's client, may break without notice when the credential or the server changes,
   may get your IP address blocked, and is a terms-of-use grey area that you choose knowingly. It is never
   chosen for you.

@@ -26,7 +26,7 @@ politikadadır). Depodan durumları okuyan sarmalayıcılar (`event_needs`, `ref
   none     tamam
 
 `refill` iş biriminin dilimleri, maçın eksik olan bütün seçili dilimleridir: tamlık hesabına girmeyen (isteğe
-bağlı) dilimler de (ör. tenisin point_by_point'i), maç zaten yeniden okunuyorsa birlikte istenir.
+bağlı) dilimler de (ör. futbolun pregame_form'u, FX-16), maç zaten yeniden okunuyorsa birlikte istenir.
 
 Dilim seçimi (plan maddesi P27, 02-services.md 3.1). Seçilmeyen dilim hiç istenmez, eksik de sayılmaz;
 tamlık yalnızca seçilmiş ve maçın sporunda tamlık hesabına giren dilimlere bakar. Seçim maç maç çözülür

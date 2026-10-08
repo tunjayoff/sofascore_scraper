@@ -28,6 +28,7 @@ from sofascore_scraper.services.live import supervisor
 from sofascore_scraper.services.live.supervisor import (
     Blocked,
     LiveScope,
+    SCOPE_RELOAD_SECONDS,
     LiveService,
     SportScope,
     append_retrying,
@@ -775,6 +776,58 @@ def test_watch_refuses_a_scope_it_cannot_use(cli: CliRunner, data_dir: Path, fak
     assert fake_service.calls == []
 
 
+def test_watch_idle_waits_for_a_live_follow_and_then_watches_it(cli: CliRunner, data_dir: Path,
+                                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    `--idle`: izlenecek takip yokken 2 ile çıkmaz (Compose'un `sofascore-watch`'ı yeniden başlatma döngüsüne
+    giriyordu); bir satır log yazar, takipleri SCOPE_RELOAD_SECONDS'ta bir yeniden okur ve canlı takip eklenince
+    onu izler. Sahte saat: beklemeler saati ilerletir, ilk beklemede bir futbol takibi eklenir.
+    """
+    api = FakeApi({"football": []})
+    clock = Clock(fetched(FB_LIVE))
+    monkeypatch.setattr(watch_command, "SERVICE_OPTIONS", {"fetch": api, "clock": clock, "sleep": clock.sleep})
+    real_run = LiveService.run
+    seen: Dict[str, Any] = {}
+
+    def add_follow(n: int) -> None:
+        if n == 1:
+            seen["calls_while_idle"] = list(api.calls)
+            open_store(data_dir).follows.add(FollowSpec(kind="tournament", entity_id=17, name="Premier League",
+                                                        sport="football", live=True))
+
+    def run_with_fake_stop(self: LiveService, stop: Any, *, until_seconds: Optional[float] = None) -> Any:
+        rounds = int(SCOPE_RELOAD_SECONDS // 10) + 4  # bir yeniden okumadan sonra en az bir tur
+        return real_run(self, Stop(clock, rounds=rounds, on_wait=add_follow), until_seconds=until_seconds)
+
+    monkeypatch.setattr(LiveService, "run", run_with_fake_stop)
+    monkeypatch.setenv("SOFASCORE_LIVE__POLL_INTERVAL_SECONDS", "10")
+    run = cli("watch", "--data-dir", data_dir, "--source", "poll", "--idle", "--json")
+    assert run.exit_code == 0, run.stderr
+    assert [w["code"] for w in run.json["warnings"]] == ["live_nothing_to_watch"]
+    assert "nothing to watch yet" in run.json["warnings"][0]["message"]
+    assert seen["calls_while_idle"] == []  # boşken SofaScore'a istek yok
+    assert run.data["sports"] == ["football"]
+    assert "/sport/football/events/live" in api.calls
+
+
+def test_watch_without_idle_still_exits_2_when_nothing_is_followed(cli: CliRunner, data_dir: Path,
+                                                                   fake_service: FakeApi) -> None:
+    run = cli("watch", "--data-dir", data_dir, "--source", "poll", "--json")
+    assert run.exit_code == 2 and run.error["code"] == "invalid_request"
+    assert "nothing to watch" in run.error["message"] and fake_service.calls == []
+
+
+def test_a_usage_error_through_main_py_points_to_ssc(capsys: pytest.CaptureFixture[str]) -> None:
+    """`main.py` kullanımdan kalkan yüzdür ve konteynerin giriş betiği onu çalıştırır: ipucu `ssc --help`'tir."""
+    from sofascore_scraper.cli.main import main as cli_main
+
+    assert cli_main(["watch", "--event", "1"], prog="python main.py") == 2
+    err = capsys.readouterr().err
+    assert "'ssc --help'" in err and "'python main.py --help'" not in err
+    assert cli_main(["watch", "--event", "1"], prog="python -m sofascore_scraper.cli.main") == 2
+    assert "'python -m sofascore_scraper.cli.main --help'" in capsys.readouterr().err
+
+
 def test_watch_exits_6_when_another_live_service_holds_the_lease(cli: CliRunner, data_dir: Path,
                                                                  fake_service: FakeApi) -> None:
     store = open_store(data_dir)
@@ -815,7 +868,7 @@ def test_watch_and_the_watch_sources_are_described(cli: CliRunner) -> None:
     assert "terms-of-use grey area" in sources["direct"]["warning"]
     commands = {c["name"]: c for c in cli("describe", "commands").data["commands"]["commands"]}
     flags = [option["flags"][0] for option in commands["watch"]["options"]]
-    assert flags == ["--sport", "--event", "--tournament", "--source", "--stdout", "--hours"]
+    assert flags == ["--sport", "--event", "--tournament", "--source", "--stdout", "--hours", "--idle"]
 
 
 def test_the_watch_module_loads_nothing_heavy() -> None:

@@ -18,7 +18,7 @@
    "  \"ok\": false,",
    "  \"command\": \"doctor\",",
    "  \"schema\": \"sofascore.cli/1\",",
-   "  \"version\": \"2.0.0\",",
+   "  \"version\": \"3.0.0\",",
    "  \"error\": {",
    "    \"code\": \"invalid_request\",",
    "    \"message\": \"unrecognized arguments: --headless\",",
@@ -196,7 +196,7 @@
    "or set [server] allowed_hosts in the config file, or SOFASCORE_ALLOWED_HOSTS in .env or the environment.",
    "Or pass --allow-any-host to answer to any name. That is insecure: it turns off the protection against DNS rebinding.",
    "Usage error: --host 0.0.0.0 listens on every network interface, but no allowed host names are set: give --allowed-hosts, [server] allowed_hosts or SOFASCORE_ALLOWED_HOSTS, or --allow-any-host (insecure: it turns off the protection against DNS rebinding)",
-   "Run 'python main.py --help' for the commands and options."
+   "Run 'ssc --help' for the commands and options."
   ],
   "stdout": []
  }

@@ -67,7 +67,9 @@ services:
     build: .
     profiles: ["live"]
     restart: unless-stopped
-    command: ["watch"]
+    # --idle: with no follow marked live yet it waits and reads the follows again every 60 s, instead of
+    # exiting with code 2 and being restarted over and over
+    command: ["watch", "--idle"]
     healthcheck:
       disable: true # the health check asks the web server, which this container does not run
     shm_size: "2gb"

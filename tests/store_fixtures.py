@@ -52,9 +52,12 @@ FIXTURE_NOW = 1790856000  # 2026-10-01T12:00:00Z: testlerin sabitlediği "şimdi
 BASE_MTIME = FIXTURE_NOW - 86400  # her dosyanın mtime'ı (aksi belirtilmedikçe)
 DAY = 86400
 
-# `required` detay dilimleri, istek sırasıyla (sofascore_scraper/sports.py DETAIL_SLICES); tenis ayrıca point_by_point alır
+# Spordan bağımsız `required` detay dilimleri, istek sırasıyla (sofascore_scraper/sports.py DETAIL_SLICES). Bir sporda
+# tamlığa girip girmedikleri `optional_in` / `not_in`'e bağlıdır (FX-16: futbol, basketbol ve teniste pregame_form
+# tamlığa girmez; tenis lineups ve incidents istemez)
 REQUIRED_SLICES: Tuple[str, ...] = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
-OPTIONAL_SLICES: Tuple[str, ...] = ("point_by_point",)
+# Spora özel detay dilimleri (tenis ve dart); teniste point_by_point FX-16'dan beri tamlığa girer
+SPORT_SPECIFIC_SLICES: Tuple[str, ...] = ("point_by_point",)
 
 SUMMARY_COLUMNS = ["round", "match_id", "home_team", "away_team", "home_score", "away_score",
                    "match_date", "status", "tournament", "season"]
@@ -638,7 +641,7 @@ NBA_VOID = Ev("basketball/K1_overtime_finished__17066086", NBA, NBA_2627, "Toron
               eid=17060394)
 NBA_VOID_BASIC = "basketball/A_canceled-90-abandoned__17060394"
 
-# Wimbledon: tenis (kadro / olay dilimi yok; point_by_point isteğe bağlı)
+# Wimbledon: tenis (kadro ve olay dilimi istenmez, pregame_form tamlığa girmez, point_by_point girer; FX-16)
 WIM_A = Ev("tennis/T1_finished__17204710", WIMBLEDON, WIM_2026, "Carlos Alcaraz", "Jannik Sinner")
 WIM_B = Ev("tennis/T1_finished__17206241", WIMBLEDON, WIM_2026, "Novak Djokovic", "Taylor Fritz")
 WIM_RET = Ev("tennis/A_finished-92-retired__17081861", WIMBLEDON, WIM_2026, "Alexander Zverev", "Ben Shelton")

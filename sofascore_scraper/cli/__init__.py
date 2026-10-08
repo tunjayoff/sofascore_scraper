@@ -28,5 +28,7 @@ PROG = "ssc"
 # Kurulum yapılmadan çalıştırma biçimi; yardım metinlerinde komut adı olarak görünür
 MODULE_PROG = "python -m sofascore_scraper.cli.main"
 VERSION_TEXT = f"SofaScore Scraper {__version__}"
+# Depo kökündeki `main.py`nin adı (kullanımdan kalkan yüz, P30'da kalkar); kullanım ipucu onun yerine PROG'u gösterir
+LEGACY_PROG = "python main.py"
 
-__all__ = ["MODULE_PROG", "PROG", "VERSION_TEXT"]
+__all__ = ["LEGACY_PROG", "MODULE_PROG", "PROG", "VERSION_TEXT"]

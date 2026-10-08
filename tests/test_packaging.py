@@ -142,7 +142,8 @@ def test_compose_runs_serve_with_an_explicit_allow_list_and_watch_only_on_reques
     assert 'command: ["serve"]' in web
     assert re.search(r'^\s+SOFASCORE_ALLOWED_HOSTS: "localhost,127\.0\.0\.1,\[::1\]"$', web, flags=re.M)
     assert "SOFASCORE_API_TOKEN:" not in web  # yalnızca yorumda: örnek belirteç yayımlanmaz
-    assert 'command: ["watch"]' in watch and 'profiles: ["live"]' in watch
+    # --idle: without a live follow it waits instead of exiting with 2 and being restarted forever
+    assert 'command: ["watch", "--idle"]' in watch and 'profiles: ["live"]' in watch
     assert "ports:" not in watch and "disable: true" in watch
 
 

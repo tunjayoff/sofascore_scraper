@@ -9,12 +9,17 @@ them with `ssc events --follow`, or print them as they happen with `ssc watch --
 ```bash
 ssc follows add tournament 17 --sport football --live   # what to watch: follows with live = true
 ssc watch                                 # every followed sport, until stopped
+ssc watch --idle                          # the same, but wait while no follow has live = true (services)
 ssc watch --sport football --tournament 17 --stdout   # without follows: this tournament's live matches
 ssc status                                # the live service: holder, source per sport, last heartbeat
 ```
 
 One live service per data folder: a second one exits with code 6. Ctrl+C or SIGTERM stops it after its
 current round; it saves its state, drains the sinks for up to 10 seconds and exits with 0.
+
+With nothing to watch (no follow with `live = true`, and no `--event` or `--tournament`) `ssc watch` exits with
+code 2. `ssc watch --idle` keeps running instead: it logs one line, reads the follows again every 60 seconds
+and starts watching once a follow is marked live. The systemd unit and the Compose example use `--idle`.
 
 ## The three sources
 
@@ -91,8 +96,9 @@ sudo systemctl enable --now sofascore-watch
 journalctl -u sofascore-watch -f
 ```
 
-The unit does not restart on exit code 2 (a configuration error, or nothing to watch: no follow with
-`live = true`) or 6 (another live service holds this data folder); it restarts after other failures.
+The unit runs `ssc watch --idle`, so a data folder with no follow marked `live = true` yet keeps it waiting
+instead of failing. It does not restart on exit code 2 (a configuration error, or nothing to watch when
+`--idle` is removed) or 6 (another live service holds this data folder); it restarts after other failures.
 
 The `page` and `direct` sources start Chromium with the profile `<profile>-live` next to the bridge profile
 (`[client] browser_profile` or `SOFASCORE_BROWSER_PROFILE`, default `~/.cache/sofascore_scraper/chrome_profile`),

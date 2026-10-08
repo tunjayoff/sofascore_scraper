@@ -41,7 +41,7 @@ Kapsam (coverage) kuralları:
   * Beklenen dilimler maçın sporuna ve evresine göredir (sofascore_scraper/services/planning.py `expected_slice_keys`,
     tamlık hesabına girenler). Bir dilim eksiktir, planlayıcı onu yeniden isteyecekse
     (`planning.missing_slice_keys`): satırı yok ya da `ok` değil ve yeterince kesin "veri yok" yanıtı almamış.
-    Yeterince denenip hep boş gelen dilim (ör. tenis maçında kadro) eksik sayılmaz; bitmiş maçta son yanıtı
+    Yeterince denenip hep boş gelen dilim (ör. SofaScore'un o maç için hiç vermediği kadro) eksik sayılmaz; bitmiş maçta son yanıtı
     "veri yok" olan dilim de (`planning.unresolved_slice_keys`, FX-23): planlayıcı onu doğrulamak için bir kez
     daha ister, ama ilk indirmeden sonra tamlık "%0" görünmez.
   * Tam maç: eksik dilimi olmayan maç. Oran yüzdedir, iki ondalık (eski raporla aynı yuvarlama).
