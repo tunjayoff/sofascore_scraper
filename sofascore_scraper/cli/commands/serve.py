@@ -1,6 +1,6 @@
 """
 `serve`: HTTP API'yi ve web arayüzünü ön planda çalıştırır (docs/design/02-services.md bölüm 4.1 ve 4.6; plan
-maddesi P25). `main.py --web`in ve doğrudan uvicorn başlatmalarının yerini alır; başlatıcılar
+maddesi P25). 2.x'in `main.py --web`inin (3.1'de kalktı) ve doğrudan uvicorn başlatmalarının yerini alır; başlatıcılar
 (scripts/start_web.py) ve Docker giriş noktası bu komutu çalıştırır.
 
     ssc serve                                       127.0.0.1:8000 ya da [server] host / port

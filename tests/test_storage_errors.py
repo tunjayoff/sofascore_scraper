@@ -209,7 +209,7 @@ def test_fetch_detail_ids_lets_fatal_storage_errors_through(tmp_path):
             f.fetch_detail_ids(["1"])
 
 
-def test_headless_cli_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, capsys):
+def test_cli_sync_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, capsys, restore_cli_process):
     import main as cli
 
     boom = StorageError.from_exception(
@@ -218,10 +218,9 @@ def test_headless_cli_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch,
     monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.delenv("APP_EXIT_CODE", raising=False)
     monkeypatch.setattr("sys.argv", [
-        "main.py", "--headless", "--update-all", "--fetch-mode", "details", "--league-id", "17",
-        "--data-dir", str(tmp_path),
+        "main.py", "--data-dir", str(tmp_path), "sync", "--only", "events", "--tournament", "17",
     ])
-    # Headless yol SyncService'i çağırır (P10): detay aşamasının ilk indirici çağrısı collect_detail_match_ids'tir
+    # `sync` SyncService'i çağırır (P10): detay aşamasının ilk indirici çağrısı collect_detail_match_ids'tir
     with patch.object(MatchDataFetcher, "collect_detail_match_ids", side_effect=boom), \
             patch.object(utils.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
         assert cli.main() == 5  # P19: depolama hatası 5 (önce 1)

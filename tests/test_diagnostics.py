@@ -807,11 +807,11 @@ def test_cli_messages_exist_in_both_languages(lang):
     assert "{error}" in strings["diagnostics_failed"]
 
 
-def test_cli_flag_writes_the_bundle(tmp_path):
+def test_cli_command_writes_the_bundle(tmp_path):
     # Göreli yol, komutun çalıştırıldığı dizine göre çözülür (main.py proje köküne chdir eder)
     env = dict(os.environ, LOG_DIR=str(tmp_path / "logs"), APP_LANGUAGE="en", PROXY_URL=PROXY, USE_PROXY="true")
     proc = subprocess.run(
-        [sys.executable, os.path.join(ROOT, "main.py"), "--diagnostics", "report.zip"],
+        [sys.executable, os.path.join(ROOT, "main.py"), "diagnostics", "--out", "report.zip"],
         cwd=tmp_path, env=env, capture_output=True, text=True, timeout=120,
     )
     assert proc.returncode == 0, proc.stderr

@@ -420,12 +420,12 @@ def test_the_app_rejects_unknown_hosts_before_anything_else(token):
     assert r.status_code == 400
 
 
-# Sunucunun başladığı anda gördüğü izin listesi (main.py --web, P25'ten beri `ssc serve`; süreç durumu sonra geri alınır)
+# Sunucunun başladığı anda gördüğü izin listesi (`python main.py serve` = `ssc serve`; süreç durumu sonra geri alınır)
 _server_hosts = []
 
 
 def _run_web(monkeypatch, argv, lang="en"):
-    """main.py --web'i (`ssc serve`) sunucuyu başlatmadan çalıştırır: (çıkış kodu, uvicorn.run çağrıları)."""
+    """`python main.py serve`i sunucuyu başlatmadan çalıştırır: (çıkış kodu, uvicorn.run çağrıları)."""
     import main as cli
 
     calls = []
@@ -437,12 +437,12 @@ def _run_web(monkeypatch, argv, lang="en"):
 
     monkeypatch.setenv("APP_LANGUAGE", lang)
     monkeypatch.setattr("uvicorn.run", run)
-    monkeypatch.setattr("sys.argv", ["main.py", "--web", *argv])
+    monkeypatch.setattr("sys.argv", ["main.py", "serve", *argv])
     return cli.main(), calls
 
 
 @pytest.fixture
-def hosts_env(monkeypatch):
+def hosts_env(monkeypatch, restore_cli_process):
     """SOFASCORE_ALLOWED_HOSTS ayarsız başlar; sunucunun başladığı anda gördüğü değer (başlamadıysa ortamdaki)."""
     monkeypatch.delenv(security.ALLOWED_HOSTS_ENV, raising=False)
     _start_with_token(monkeypatch, "")

@@ -27,7 +27,7 @@ boştu) ve lig süzgeçli indirme artık pandas'tan geçmez: satırları birleş
 tamsayı sütunları `1.0` biçiminde çıkmaz, satır sonu her yerde `\\r\\n`'dir.
 
 Servis dosya yazmaz; yalnızca istenen akışa ya da yola yazar. Web'in GET'i çıktıyı istekte üretip akıtır
-(karar D16); `ssc export --profile legacy-wide-csv` (ve onun eski adı `--headless --csv-export`) dosyayı
+(karar D16); `ssc export --profile legacy-wide-csv` (2.x'te `--headless --csv-export`) dosyayı
 `match_details/processed/` altına yazar (`write_legacy_csv`). Dışa aktarma kilit almaz: katalogdan okur.
 """
 from __future__ import annotations
@@ -247,7 +247,7 @@ class ExportService:
             size += len(chunk.encode("utf-8"))
         return ExportResult(prepared.rows, prepared.columns, size, None)
 
-    # -- dosyaya yazan girişler (`ssc export --profile legacy-wide-csv`, eski adı --headless --csv-export) ------
+    # -- dosyaya yazan girişler (`ssc export --profile legacy-wide-csv`; 2.x'te --headless --csv-export) ------
 
     def write_legacy_csv(self, directory: str, spec: Optional[ExportSpec] = None, *,
                          now: Optional[float] = None) -> Optional[ExportResult]:

@@ -1,5 +1,5 @@
 """
-Arayüz dili için tek kural. CLI, `--doctor`, başlatıcı (scripts/start_web.py) ve web sunucusu
+Arayüz dili için tek kural. CLI, `doctor`, başlatıcı (scripts/start_web.py) ve web sunucusu
 bunu kullanır; kurulum betikleri (scripts/install.sh, install.ps1) ve web arayüzü
 (frontend/src/i18n.ts) aynı kuralı kendi dillerinde uygular:
 

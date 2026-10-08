@@ -341,11 +341,12 @@ def test_a_data_operation_blocked_by_a_live_watcher_is_instance_running(store: S
     assert to_platform_error(refused.value).code == "instance_running"
 
 
-def test_the_legacy_alias_still_takes_league_ids(data_dir: Path, monkeypatch: pytest.MonkeyPatch,
-                                                 capsys: pytest.CaptureFixture[str]) -> None:
+def test_polling_watch_takes_several_tournaments_and_a_duration(
+        data_dir: Path, monkeypatch: pytest.MonkeyPatch, restore_cli_process: None,
+        capsys: pytest.CaptureFixture[str]) -> None:
     """
-    P19: `main.py --watch` `ssc watch --source poll --stdout`tur (karar D18); --league-ids turnuva kapsamı,
-    --watch-hours süre olur. Servis sahtedir: kapsamı, kaynağı ve süreyi kaydeder.
+    2.x'in `main.py --watch`ının yerine geçen `ssc watch --source poll --stdout` (karar D18; bayrak P30'da kalktı):
+    her --tournament kapsama girer, --hours süredir. Servis sahtedir: kapsamı, kaynağı ve süreyi kaydeder.
     """
     from types import SimpleNamespace
 
@@ -363,8 +364,8 @@ def test_the_legacy_alias_still_takes_league_ids(data_dir: Path, monkeypatch: py
             seen[-1]["until"] = until_seconds
 
     monkeypatch.setattr("sofascore_scraper.services.live.supervisor.LiveService", Recorder)
-    assert main.main(["--watch", "--sport", "football", "--league-ids", "17,8", "--watch-hours", "2",
-                      "--data-dir", str(data_dir)]) == 0
+    assert main.main(["--data-dir", str(data_dir), "watch", "--source", "poll", "--stdout", "--sport", "football",
+                      "--tournament", "17", "--tournament", "8", "--hours", "2"]) == 0
     assert seen == [{"sports": [("football", [8, 17], [])], "source": "poll", "data_dir": str(data_dir),
                      "until": 7200.0}]
 

@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 import test_cli_skeleton as skeleton
-from sofascore_scraper.cli import legacy_flags, output
+from sofascore_scraper.cli import output, removed_flags
 from sofascore_scraper.cli import main as cli_main
 from sofascore_scraper.cli.commands import sync as sync_command
 from sofascore_scraper.jobs.manager import JobManager
@@ -651,13 +651,16 @@ def test_main_py_passes_a_subcommand_through(box: Sandbox) -> None:
                           env=box.environ(), capture_output=True, text=True, timeout=120)
     assert proc.returncode == 0, proc.stderr
     assert json.loads(proc.stdout)["command"] == "status"
-    assert "deprecated" not in proc.stderr  # bir alt komut kullanımdan kalkmış değildir
+    assert "removed" not in proc.stderr  # bir alt komut kaldırılmış bir bayrak değildir
 
 
-def test_deprecation_line_names_the_new_commands() -> None:
-    t = lambda key, **kw: f"{key}:{kw['commands']}"  # noqa: E731
-    line = legacy_flags.deprecation_line(t, "ssc", [("sync", "--tournament", "17"), ("export",)])
-    assert line == "ssc_legacy_deprecated:ssc sync --tournament 17 && ssc export"
+def test_the_removed_flags_name_the_new_command() -> None:
+    assert removed_flags.replacement(["--headless", "--update-all", "--league-id"]) == "sync --tournament"
+    assert removed_flags.replacement(["--refresh-only", "--update-all"]) == "refresh"  # 2.x'in önceliği
+    assert removed_flags.replacement(["--headless"]) is None
+    message = removed_flags.message(["--headless", "--csv-export"], "ssc")
+    assert message.startswith("--headless --csv-export: the flags of `python main.py` were removed in 3.1")
+    assert "use `ssc export`" in message
 
 
 def test_sync_module_helpers() -> None:

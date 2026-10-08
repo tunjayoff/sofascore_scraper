@@ -31,12 +31,6 @@ def test_no_locale_text_repeats_a_removed_claim(lang: str) -> None:
     assert stale == {}
 
 
-@pytest.mark.parametrize("lang", ["en", "tr"])
-def test_the_main_py_description_counts_every_sport(lang: str) -> None:
-    # Sayı metinde sabittir (argparse metni biçimlendirir, yer tutucu olamaz): yeni bir spor onu da değiştirir
-    assert re.findall(r"\d+", _locale(lang)["cli_description"]) == [str(len(list(sport_slugs())))]
-
-
 def test_the_missing_ui_page_points_at_the_command_line() -> None:
     assert not STALE.search(MISSING_UI_HTML)
     assert MISSING_UI_HTML.count("<code>ssc doctor</code>") == 2  # iki dilde de

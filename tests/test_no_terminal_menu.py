@@ -3,7 +3,8 @@ Terminal menüsü 3.0'da kaldırıldı (plan maddesi P26; docs/design/02-service
 sunucular ve otomasyon komut satırını (`ssc`) kullanır.
 
   * sofascore_scraper/ui/ ve sofascore_scraper/SofaScoreUi.py yok ve hiçbir modül onları içe aktarmaz;
-  * `python main.py` argümansız (ya da yalnızca eylemsiz eski bayraklarla) kısa bir yardım yazar ve 2 ile çıkar.
+  * `python main.py` argümansız `ssc` gibi komutların listesini yazar ve 2 ile çıkar; 2.x'in bayrakları 3.1'de kalktı
+    (P30): onlarla çalıştırma kullanım hatasıdır.
 """
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ import main as cli
 from sofascore_scraper.cli import exit_codes
 
 ROOT = Path(__file__).resolve().parents[1]
+# `main.py`yi bu süreçte çalıştıran testler süreçte bıraktıklarını geri alır (tests/conftest.py)
+pytestmark = pytest.mark.usefixtures("restore_cli_process")
 MENU_MODULES = ("sofascore_scraper.ui", "sofascore_scraper.SofaScoreUi")
 
 
@@ -60,8 +63,8 @@ def test_no_module_imports_the_terminal_menu() -> None:
     assert found == {}
 
 
-@pytest.mark.parametrize("argv", [[], ["--data-dir", "elsewhere"], ["--refresh-legacy"], ["--ignore-rate-limit"]])
-def test_main_without_an_action_prints_a_short_help_and_exits_2(
+@pytest.mark.parametrize("argv", [[], ["--data-dir", "elsewhere"]])
+def test_main_without_a_command_lists_the_commands_and_exits_2(
     argv: List[str], capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -71,34 +74,33 @@ def test_main_without_an_action_prints_a_short_help_and_exits_2(
 
     out, err = capsys.readouterr()
     assert out == ""
-    assert "The terminal menu was removed in version 3.0" in err
-    assert "ssc serve" in err and "ssc --help" in err and "python main.py serve" in err
+    assert "a command is required" in err and "python main.py serve" in err and "ssc --help" in err
     for name in ("backup", "export", "serve", "status", "sync", "watch"):
-        assert name in err.split("Commands: ", 1)[1].split("\n", 1)[0].split(", ")
+        assert name in err
     assert list(tmp_path.iterdir()) == []  # hiçbir şey oluşturulmadı
 
 
-def test_the_short_help_is_in_the_app_language(capsys: pytest.CaptureFixture[str],
-                                              monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("argv", [["--refresh-legacy"], ["--ignore-rate-limit"], ["--headless"]])
+def test_an_old_flag_without_an_action_is_a_usage_error(
+    argv: List[str], capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("APP_LANGUAGE", "en")
+
+    assert cli.main(argv) == exit_codes.USAGE_ERROR
+
+    err = capsys.readouterr().err
+    assert "the flags of `python main.py` were removed in 3.1" in err
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_the_command_list_is_in_the_app_language(capsys: pytest.CaptureFixture[str],
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_LANGUAGE", "tr")
 
     assert cli.main([]) == exit_codes.USAGE_ERROR
 
-    err = capsys.readouterr().err
-    assert "Terminal menüsü 3.0 sürümünde kaldırıldı" in err and "ssc serve" in err
-
-
-def test_a_legacy_warning_is_printed_before_the_short_help(capsys: pytest.CaptureFixture[str],
-                                                          monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """Eylemsiz eski bayrakların uyarıları (ör. `--config` ile bir lig dosyası) kaybolmaz."""
-    monkeypatch.setenv("APP_LANGUAGE", "en")
-    leagues = tmp_path / "leagues.txt"
-    leagues.write_text("", encoding="utf-8")
-
-    assert cli.main(["--config", str(leagues)]) == exit_codes.USAGE_ERROR
-
-    err = capsys.readouterr().err
-    assert "leagues.txt" in err.split("The terminal menu was removed", 1)[0]
+    assert "Kullanım hatası" in capsys.readouterr().err
 
 
 # --- çeviri anahtarları -----------------------------------------------------------------------------

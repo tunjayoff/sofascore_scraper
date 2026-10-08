@@ -63,7 +63,7 @@ def allowed_hosts() -> List[str]:
 
 def allowed_hosts_for_bind(bind_host: str, explicit: Optional[str], allow_any: bool = False) -> Optional[str]:
     """
-    main.py --web --host için SOFASCORE_ALLOWED_HOSTS değeri; None = ortam olduğu gibi kalır.
+    `ssc serve --host` için SOFASCORE_ALLOWED_HOSTS değeri; None = ortam olduğu gibi kalır.
 
       - Kullanıcı SOFASCORE_ALLOWED_HOSTS yazdıysa her zaman o geçerlidir (üzerine yazılmaz).
       - Yerel adres: varsayılan (yalnızca yerel adlar).

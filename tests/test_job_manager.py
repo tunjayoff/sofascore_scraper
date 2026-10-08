@@ -1192,8 +1192,8 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
 
 
 @pytest.fixture
-def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """`main.py <argv> --data-dir <geçici dizin>`i bu süreçte çalıştırır; SyncService.run sahtedir."""
+def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch, restore_cli_process: None) -> Any:
+    """`main.py --data-dir <geçici dizin> <argv>`i bu süreçte çalıştırır; SyncService.run sahtedir."""
     import main as cli_main
     from sofascore_scraper.services.sync import RefreshCounts, SyncResult, SyncService
 
@@ -1231,7 +1231,7 @@ def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(SyncService, "run", run)
 
     def call(*argv: str) -> int:
-        monkeypatch.setattr("sys.argv", ["main.py", *argv, "--data-dir", str(data_dir)])
+        monkeypatch.setattr("sys.argv", ["main.py", "--data-dir", str(data_dir), *argv])
         return cli_main.main()
 
     def jobs() -> List[Job]:
@@ -1241,9 +1241,9 @@ def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 @pytest.mark.parametrize("argv, kind, spec", [
-    (["--headless", "--update-all", "--league-id", "17"], JobKind.SYNC,
+    (["sync", "--tournament", "17"], JobKind.SYNC,
      {"league_id": 17, "selections": [], "follows": [], "only": None, "event_ids": []}),
-    (["--refresh-only"], JobKind.REFRESH, {"league_id": None, "event_ids": []}),
+    (["refresh"], JobKind.REFRESH, {"league_id": None, "event_ids": []}),
 ])
 def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List[str], kind: JobKind, spec: Dict[str, Any]) -> None:
     assert cli.call(*argv) == 0
@@ -1268,14 +1268,14 @@ def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List
 
 def test_cli_job_stopped_by_the_breaker_is_partial_and_exits_with_4(cli: Any) -> None:
     cli.state["breaker"] = "403"
-    assert cli.call("--headless", "--update-all") == 4  # P19: devre kesici 4 (önce 2)
+    assert cli.call("sync") == 4  # P19: devre kesici 4 (önce 2)
     (job,) = cli.jobs()
     assert job.state is JobState.PARTIAL and job.error.code == "blocked"
 
 
 def test_cli_job_with_a_storage_error_is_failed_and_exits_with_5(cli: Any, capsys: pytest.CaptureFixture[str]) -> None:
     cli.state["error"] = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/x")
-    assert cli.call("--headless", "--update-all") == 5  # P19: depolama hatası 5 (önce 1)
+    assert cli.call("sync") == 5  # P19: depolama hatası 5 (önce 1)
     (job,) = cli.jobs()
     assert job.state is JobState.FAILED and job.error.code == "storage_error"
     assert "/data/x" in capsys.readouterr().err
@@ -1287,18 +1287,18 @@ def test_cli_job_is_refused_with_exit_code_6_while_another_job_runs(
     web_store = JobStore(default_db_path(str(data_dir)))
     try:
         web_store.create_running({"mode": "full"})
-        assert cli.call("--headless", "--update-all") == 6
-        assert cli.call("--refresh-only") == 6
+        assert cli.call("sync") == 6
+        assert cli.call("refresh") == 6
         err = capsys.readouterr().err
         assert err.count(f"Held by process {os.getpid()} on ") == 2 and "(job)" in err
         assert cli.state["seen"] == [] and len(cli.jobs()) == 1  # yalnızca web işi kayıtlı
         web_store.update(finished=True)
-        assert cli.call("--refresh-only") == 0
+        assert cli.call("refresh") == 0
     finally:
         web_store.close()
 
 
-@pytest.mark.parametrize("argv", [["--headless", "--update-all"], ["--refresh-only"]])
+@pytest.mark.parametrize("argv", [["sync"], ["refresh"]])
 def test_cli_job_cancelled_from_another_store_ends_like_ctrl_c(
     cli: Any, capsys: pytest.CaptureFixture[str], argv: List[str]
 ) -> None:

@@ -38,7 +38,7 @@ from sofascore_scraper.cli import MODULE_PROG, PROG, VERSION_TEXT
 from sofascore_scraper.cli import commands as registry
 from sofascore_scraper.cli.exit_codes import GENERAL_ERROR, OK, exit_code_for
 from sofascore_scraper.cli.output import JSON, OUTPUT_MODES, TEXT, CommandResult, Output, Translator
-from sofascore_scraper.cli import signals
+from sofascore_scraper.cli import removed_flags, signals
 from sofascore_scraper.errors import INTERNAL, Cancelled, PlatformError, UsageError, to_platform_error
 from sofascore_scraper.sports import sport_slugs
 
@@ -457,6 +457,11 @@ def main(argv: Optional[Sequence[str]] = None, *, prog: Optional[str] = None) ->
         t, lang = translator(wanted_lang)
         out.t = t
         tree = build_tree(t, out.prog)
+        # 2.x'in `main.py` bayrakları (3.1'de kalktı): hiçbir şey çalışmaz, ileti yerine geçen komutu söyler
+        removed = removed_flags.removed_in(
+            arguments, (entry.path[0] for entry in [*registry.commands(), *registry.groups()]))
+        if removed:
+            raise UsageError(removed_flags.message(removed, PROG), {"removed": removed})
         namespace, unknown = tree.root.parse_known_args(arguments)
         if unknown:
             # Hatayı komutun kendi ayrıştırıcısı bildirir: kullanım satırı o komutunkidir

@@ -114,7 +114,7 @@ def test_old_python_blocks_and_other_failures_do_not(launcher, capsys):
 
 def test_unreadable_doctor_report_does_not_block_the_start(launcher, capsys):
     assert launcher._preflight(PY, run_doctor=lambda py: None, run_fix=lambda cmd: pytest.fail("çalışmamalı")) is True
-    assert "--doctor" in capsys.readouterr().err
+    assert "main.py doctor" in capsys.readouterr().err
 
 
 def test_fix_command_that_cannot_be_started_is_survived(launcher, capsys):

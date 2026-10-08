@@ -2,7 +2,7 @@
 Bakım servisi: veri dizininde ağ isteği gerektirmeyen düzeltmeler (docs/design/02-services.md 2.7).
 
 İşler:
-  * "bu dilim bu maçta yok" işaretlerinin yeniden denetime açılması (`main.py --recheck-unavailable`).
+  * "bu dilim bu maçta yok" işaretlerinin yeniden denetime açılması (`ssc data recheck-unavailable`).
     İşaretleri okuyup yazan kod hâlâ MatchDataFetcher'dadır (`reset_unavailable_markers`); servis onu
     yüzlerden bağımsız, türü belli bir sonuçla sunar. Bağlam (`ServiceContext`) ister.
   * verinin temizlenmesi (`clear`, plan maddesi ST-19): işi Store yapar (`Store.clear`,

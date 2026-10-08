@@ -12,7 +12,7 @@ tur "sezon yok" / "maç yok" gibi görünmez: başarısız bir iş birimidir (`S
 `partial` biter. Taze bir liste (sezon listesi SEASON_LIST_TTL_SECONDS, program SCHEDULE_TTL_SECONDS içinde
 çekilmiş) yeniden istenmez.
 
-Komut satırı da aynı servisi çağırır (main.py: `--headless --update-all` ve `--refresh-only`); yalnızca yenileme
+Komut satırı da aynı servisi çağırır (`ssc sync` ve `ssc refresh`); yalnızca yenileme
 ayrı bir kiptir (`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz). Yalnızca
 sezon listeleri de bir kiptir (`mode="seasons"`, plan maddesi FX-13): listeler tazelik süresine bakılmadan yeniden
 okunur, program ve detay istenmez.

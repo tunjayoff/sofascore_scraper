@@ -1,12 +1,12 @@
 """
-CLI goldenları: `python main.py <bayraklar>` bugün ne yapıyor? Her bayrak için stdout, stderr, çıkış kodu,
+CLI goldenları: `python main.py <komut>` (= `ssc <komut>`) ne yapıyor? Her senaryo için stdout, stderr, çıkış kodu,
 SofaScore'a giden istekler ve yazılan dosyalar.
 
-`main.py` gerçek bir alt süreçte çalışır. P19'dan beri bir geçiş kabuğudur: eski bayraklar yeni CLI'nin
-komutlarına çevrilir (sofascore_scraper/cli/legacy_flags.py; `--headless --update-all` → `sync`, `--refresh-only` → `refresh`,
-`--csv-export` → `export`, `--watch` → `watch --source poll --stdout`, ...), stderr'e tek bir kullanımdan kalkma satırı
-yazılır, loglar stderr'e gider ve çıkış kodları yeni tablonundur (sofascore_scraper/cli/exit_codes.py: 3 kısmi, 4 devre kesici,
-5 depolama, 6 kilit, 130/143 iptal). Terminal menüsü (bayraksız) ve `--web` eskisi gibidir. Ağ yoktur: alt sürecin PYTHONPATH'ine yalnızca burada eklenen
+`main.py` gerçek bir alt süreçte çalışır. Senaryolar 2.x'in bayraklarının (P19'dan P30'a kadar çevrildikleri)
+komutlarıdır: `--headless --update-all` → `sync`, `--refresh-only` → `refresh`, `--csv-export` → `export`, `--watch` →
+`watch --source poll --stdout`, ... Bayraklar 3.1'de kalktı (P30): onlarla çalıştırma kullanım hatasıdır
+(usage_errors.golden.json). Loglar stderr'e gider ve çıkış kodları yeni tablonundur (sofascore_scraper/cli/exit_codes.py:
+3 kısmi, 4 devre kesici, 5 depolama, 6 kilit, 130/143 iptal). Ağ yoktur: alt sürecin PYTHONPATH'ine yalnızca burada eklenen
 `cli_env/sitecustomize.py`, istek katmanı yüklendiği anda G-01'in sahte taşıyıcısını (tests/fakes/sofascore.py)
 kurar ve süreç kapanırken kaydını dosyaya yazar. Üretim kodu değişmez.
 
@@ -15,13 +15,12 @@ dizinde) ve ortamı sıfırdan kurulur: testi çalıştıranın kabuğundaki aya
 
 Beklenen çıktılar fixtures/cli/*.golden.json'dadır (yeniden üretmek: `UPDATE_GOLDENS=1 python -m pytest
 tests/characterization/test_cli_goldens.py`). Bu dosya bugünkü davranışı olduğu gibi kaydeder; doğru olduğunu
-söylemez. `main.py`nin davranışını değiştiren iş (plan: P10, P19) goldenları yeniden üretir ve her farkı
+söylemez. CLI'nin davranışını değiştiren iş (plan: P10, P19, P30) goldenları yeniden üretir ve her farkı
 PR metninde sayar.
 
-P10'dan beri headless kipler (--headless, --refresh-only, --recheck-unavailable) terminal arayüzünü kurmaz:
-servis bağlamını kurar, SyncService ve MaintenanceService'i çağırır ve veri dizinine yazarken dizinin yazar
-kilidini tutar (--watch: `watcher:<spor>` kilidi). Kilit başka bir süreçteyse çıkış kodu 6'dır
-(lease_refused.golden.json).
+Komutlar (sync, refresh, data recheck-unavailable) terminal arayüzünü kurmaz: servis bağlamını kurar, SyncService
+ve MaintenanceService'i çağırır ve veri dizinine yazarken dizinin yazar kilidini tutar (watch: `watcher:<spor>`
+kilidi). Kilit başka bir süreçteyse çıkış kodu 6'dır (lease_refused.golden.json).
 
 Karşılaştırmadan önce çıktıdan çalıştırma anına bağlı kısımlar ayıklanır:
   - log satırlarının zamanı ve süreç numarası ("LOG INFO Main: ..." kalır)
@@ -414,20 +413,20 @@ class Seed:
 
 @pytest.fixture(scope="module")
 def seed(tmp_path_factory: pytest.TempPathFactory) -> Seed:
-    """`--headless --update-all`ın boş veri dizinindeki çalıştırması: hem golden hem diğer senaryoların başlangıcı."""
+    """`sync`in boş veri dizinindeki çalıştırması: hem golden hem diğer senaryoların başlangıcı."""
     seed_box = Sandbox.create(tmp_path_factory.mktemp("cli-seed"))
-    return Seed(seed_box, run_cli(seed_box, "--headless", "--update-all"))
+    return Seed(seed_box, run_cli(seed_box, "sync"))
 
 
 @pytest.fixture(scope="module")
 def settled(tmp_path_factory: pytest.TempPathFactory, seed: Seed) -> Seed:
     """
-    Tam güncellemenin ardından bir `--fetch-mode details` çalıştırması: ilkinde boş gelen iki dilim (9100002)
+    Tam güncellemenin ardından bir `sync --only events` çalıştırması: ilkinde boş gelen iki dilim (9100002)
     ikinci kez boş gelir ve kesin "yok" sayılır. Bu durumda yapılacak detay işi kalmamıştır.
     """
     settled_box = Sandbox.create(tmp_path_factory.mktemp("cli-settled"))
     shutil.copytree(seed.box.data, settled_box.data)
-    return Seed(settled_box, run_cli(settled_box, "--headless", "--update-all", "--fetch-mode", "details"))
+    return Seed(settled_box, run_cli(settled_box, "sync", "--only", "events"))
 
 
 NewBox = Callable[..., Sandbox]
@@ -506,19 +505,16 @@ def test_cli_env_hides_its_variables_from_the_application(box: Sandbox) -> None:
     assert not (box.harness / "out" / cli_env.TRANSPORT_LOG).exists()
 
 
-# --- erken yanıtlanan bayraklar: --version, --doctor -----------------------------------------
+# --- erken yanıtlanan: --version, doctor ---------------------------------------------------
 
-@pytest.mark.parametrize("argv", [["--version"], ["--headless", "--update-all", "--version", "--no-such-flag"]])
+@pytest.mark.parametrize("argv", [["--version"], ["--version", "--no-such-flag"]])
 def test_version(box: Sandbox, argv: List[str]) -> None:
-    """
-    Tek satır, yan etkisiz: argümanlar ayrıştırılmadan ve ağır modüller yüklenmeden yanıtlanır (yanındaki
-    bayraklar, geçersiz olanlar dahil, yok sayılır); hiçbir dosya ya da dizin oluşmaz.
-    """
+    """Tek satır, yan etkisiz: istek katmanı yüklenmez; hiçbir dosya ya da dizin oluşmaz."""
     run = run_cli(box, *argv)
 
     assert run.stdout == [f"SofaScore Scraper {__version__}"]
     assert (run.exit_code, run.stderr, run.files) == (0, [], {})
-    assert run.process == {"fake_installed": False, "src_modules": ["sofascore_scraper", "sofascore_scraper.version"]}
+    assert run.process["fake_installed"] is False
 
 
 # Tarayıcı başlatmayan ve makineye (Python sürümü, kurulu paketler, Node) bağlı olmayan denetimler
@@ -539,19 +535,13 @@ def _doctor_report(box: Sandbox, run: CliRun) -> Dict[str, Any]:
     return report
 
 
-def deprecated(*commands: str) -> str:
-    """Eski bayrakların stderr'e yazdığı tek satır (sofascore_scraper/cli/legacy_flags.py)."""
-    return "main.py flags are deprecated and will be removed; this run is: " + " && ".join(
-        f"ssc {command}" for command in commands)
-
-
 def test_doctor_json(box: Sandbox) -> None:
-    """`--doctor --json`: stdout yalnızca rapordur; uygulamanın ağır modülleri (istek katmanı, log) yüklenmez."""
-    run = run_cli(box, "--doctor", "--json", "--only", DOCTOR_PORTABLE_CHECKS)
+    """`--json doctor`: stdout yalnızca rapordur; uygulamanın ağır modülleri (istek katmanı, log) yüklenmez."""
+    run = run_cli(box, "--json", "doctor", "--only", DOCTOR_PORTABLE_CHECKS)
 
     report = _doctor_report(box, run)
     assert (run.exit_code, report["ok"]) == (0, True)
-    assert run.stderr == [deprecated(f"doctor --json --only {DOCTOR_PORTABLE_CHECKS}")]
+    assert run.stderr == []
     assert not run.process["fake_installed"]
     golden = _doctor_golden(run)
     golden["stdout"] = report
@@ -562,8 +552,8 @@ def test_doctor_reports_env_problems_with_exit_code_1(new_box: NewBox) -> None:
     """Geçersiz .env değeri bir hatadır (fail): rapor (metin ya da JSON) stdout'ta, çıkış kodu 1."""
     box = new_box(env_lines=["REQUEST_TIMEOUT=soon", "USE_PROXY=yes", "API_BASE_URL=https://example.org/api"])
 
-    text = run_cli(box, "--doctor", "--only", "env")
-    as_json = run_cli(box, "--doctor", "--json", "--only", "env")
+    text = run_cli(box, "doctor", "--only", "env")
+    as_json = run_cli(box, "--json", "doctor", "--only", "env")
 
     assert (text.exit_code, as_json.exit_code) == (1, 1)
     golden = _doctor_golden(as_json)
@@ -576,11 +566,11 @@ def test_doctor_json_shape_with_the_machine_dependent_checks(box: Sandbox) -> No
     Makineye bağlı denetimlerle (python, packages, frontend) raporun biçimi: içerik goldena yazılmaz.
     Tarayıcı denetimi atlanır (gerçek bir Chromium başlatır); --live hiç çalıştırılmaz.
     """
-    run = run_cli(box, "--doctor", "--json", "--skip", "browser")
+    run = run_cli(box, "--json", "doctor", "--skip", "browser")
 
     report = _doctor_report(box, run)
     assert sorted(report) == ["checks", "counts", "language", "ok", "root", "status"]
-    # P19: `--doctor` `ssc doctor`un takma adı; istek bütçesi denetimi de listede
+    # İstek bütçesi denetimi de listede
     assert [check["id"] for check in report["checks"]] == [
         "python", "packages", "profile", "data_dir", "config_dir", "config", "frontend", "env", "budget",
     ]
@@ -598,22 +588,9 @@ def test_doctor_json_shape_with_the_machine_dependent_checks(box: Sandbox) -> No
 
 # --- kullanım hataları (çıkış kodu 2) --------------------------------------------------------
 
-def _argparse_error(run: CliRun) -> Dict[str, Any]:
-    """
-    argparse'ın hata çıktısı: kullanım özeti ve seçenek listesinin yazımı Python sürümüne göre değişir;
-    goldena yalnızca "<program>: error: ..." satırı (seçenek listesi olmadan) girer.
-    """
-    golden = run.golden()
-    lines = [line for line in run.stderr if isinstance(line, str)]
-    errors = [line.split(" (choose from", 1)[0] for line in lines if ": error: " in line]
-    assert lines[0].startswith("usage: ") and len(errors) == 1
-    golden["stderr"] = errors
-    return golden
-
-
 def _new_cli_usage_error(run: CliRun) -> Dict[str, Any]:
     """
-    Yeni CLI'nin kullanım hatası (stderr: kullanımdan kalkma satırı, hata, kullanım satırı, ipucu). Kullanım
+    CLI'nin kullanım hatası (stderr: hata, kullanım satırı, ipucu). Kullanım
     satırının yazımı Python sürümüne bağlıdır: goldena girmez.
     """
     golden = run.golden()
@@ -623,23 +600,22 @@ def _new_cli_usage_error(run: CliRun) -> Dict[str, Any]:
 
 def test_usage_errors(new_box: NewBox) -> None:
     cases: Dict[str, Dict[str, Any]] = {}
-    # Bayrak eksikleri argümanlar ayrıştırıldıktan sonra anlaşılır: servis bağlamı kurulmuş, veri dizinleri açılmıştır
-    cases["headless_without_an_action"] = run_cli(new_box("headless"), "--headless").golden()
-    cases["headless_without_an_action_tr"] = run_cli(
-        new_box("headless-tr", env_lines=["APP_LANGUAGE=tr"]), "--headless"
-    ).golden()
-    cases["watch_without_sport"] = run_cli(new_box("watch-sport"), "--watch", "--event-ids", "9300001").golden()
-    cases["watch_without_scope"] = run_cli(new_box("watch-scope"), "--watch", "--sport", "football").golden()
+    # 2.x'in bayrakları 3.1'de kalktı (P30): hiçbir şey çalışmaz, ileti yerine geçen komutu söyler
+    cases["removed_headless"] = _new_cli_usage_error(run_cli(new_box("headless"), "--headless"))
+    cases["removed_headless_update_all_tr"] = _new_cli_usage_error(run_cli(
+        new_box("headless-tr", env_lines=["APP_LANGUAGE=tr"]), "--headless", "--update-all", "--league-id", "17"))
+    cases["removed_watch"] = _new_cli_usage_error(
+        run_cli(new_box("watch"), "--watch", "--sport", "football", "--event-ids", "9300001"))
+    cases["removed_web"] = _new_cli_usage_error(run_cli(new_box("web"), "--web", "--host", "0.0.0.0"))
+    cases["removed_doctor"] = _new_cli_usage_error(run_cli(new_box("doctor"), "--doctor", "--json"))
     # Yerel olmayan --host, izin listesi olmadan: sunucu başlatılmaz
-    cases["web_public_host_without_allow_list"] = run_cli(
-        new_box("web"), "--web", "--host", "0.0.0.0", "--port", "0"
+    cases["serve_public_host_without_allow_list"] = run_cli(
+        new_box("serve"), "serve", "--host", "0.0.0.0", "--port", "0"
     ).golden()
-    cases["unknown_flag"] = _argparse_error(run_cli(new_box("unknown"), "--headless", "--update-all", "--no-such-flag"))
-    cases["invalid_choice"] = _argparse_error(run_cli(new_box("choice"), "--headless", "--fetch-mode", "everything"))
-    cases["invalid_recheck_mode"] = _argparse_error(run_cli(new_box("recheck"), "--recheck-unavailable", "some"))
-    # --doctor kalan argümanları `ssc doctor`a verir: main.py'nin diğer bayrakları orada kullanım hatasıdır
-    cases["doctor_with_another_flag"] = _new_cli_usage_error(
-        run_cli(new_box("doctor"), "--headless", "--doctor", "--json"))
+    cases["unknown_flag"] = _new_cli_usage_error(run_cli(new_box("unknown"), "sync", "--no-such-flag"))
+    cases["invalid_choice"] = _new_cli_usage_error(run_cli(new_box("choice"), "sync", "--only", "everything"))
+    cases["invalid_recheck_mode"] = _new_cli_usage_error(
+        run_cli(new_box("recheck"), "sync", "--recheck-unavailable", "some"))
 
     for name, case in cases.items():
         assert case["exit_code"] == 2, name
@@ -653,50 +629,48 @@ def test_help_lists_todays_flags(box: Sandbox) -> None:
     """Yardım metninin kendisi çeviridir (locales/*.json) ve goldena girmez; bayrakların listesi girer."""
     run = run_cli(box, "--help")
 
-    usage = "\n".join(run.printed()).split("\n\n", 1)[0]  # "usage: main.py [-h] [--version] ..." bölümü
-    options = sorted(set(re.findall(r"(?<![\w-])--[a-z][a-z-]*", usage)))
-    assert usage.startswith("usage: main.py")
+    usage = "\n".join(run.printed()).split("\n\n", 1)[0]  # "usage: python main.py [genel seçenekler] ..." bölümü
+    options = sorted(set(re.findall(r"(?<![\w-])--[a-z][a-z-]*", "\n".join(run.printed()))))
+    assert usage.startswith("usage: python main.py")
     assert (run.exit_code, run.stderr, run.requests) == (0, [], [])
     assert_cli_golden("help", {"exit_code": run.exit_code, "options": options, "files": run.files})
 
 
-def test_without_arguments_a_short_help_replaces_the_menu(box: Sandbox) -> None:
+def test_without_arguments_the_commands_are_listed(box: Sandbox) -> None:
     """
-    Terminal menüsü 3.0'da kaldırıldı (P26): bayraksız çalıştırma web arayüzünü (`ssc serve`) ve komutları
-    (`ssc --help`) gösteren kısa bir yardımı stderr'e yazar ve 2 ile çıkar. Hiçbir şey çalışmaz: istek yok,
-    veri dizini oluşmaz, stdin okunmaz. Yardımın metni çeviridir (locales: cli_no_menu) ve goldena girmez.
+    Komut verilmedi: kullanım hatası (2) ve komut listesi stderr'de; web uygulaması `python main.py serve`dir.
+    Hiçbir şey çalışmaz: istek yok, veri dizini oluşmaz, stdin okunmaz. Metin çeviridir ve goldena girmez.
     """
     run = run_cli(box, stdin="0\n")
 
     assert run.exit_code == 2
     assert run.stdout == []
     text = "\n".join(line for line in run.stderr if isinstance(line, str))
-    assert "ssc serve" in text and "ssc --help" in text and "sync" in text
+    assert "python main.py serve" in text and "ssc --help" in text and "sync" in text
     assert run.requests == []
     assert not any(path.startswith("data/") for kind in run.files.values() for path in kind)
     assert terminal_ui_modules(run) == []
 
 
-# --- --headless --update-all ----------------------------------------------------------------
+# --- sync (2.x: --headless --update-all) -----------------------------------------------------
 
 SAME_AS_ALL_LEAGUES = "<same as headless_update_all>"
 
 
 def test_headless_update_all(seed: Seed) -> None:
     """
-    Tüm ligler, boş veri dizini: sezonlar → maç programı → detaylar. Terminal arayüzü yüklenmez. P19: `ssc sync`
-    olarak çalışır; stdout'ta yalnızca sonuç satırı, loglar ve kullanımdan kalkma satırı stderr'de.
+    Tüm ligler, boş veri dizini: sezonlar → maç programı → detaylar. Terminal arayüzü yüklenmez. stdout'ta yalnızca
+    sonuç satırı, loglar stderr'de.
     """
     assert seed.run.exit_code == 0
     assert terminal_ui_modules(seed.run) == []
-    assert seed.run.stderr[0] == deprecated("sync")
     assert not any(isinstance(line, str) and line.startswith("LOG ") for line in seed.run.stdout)
     assert_cli_golden("headless_update_all", seed.run.golden())
 
 
 def test_headless_update_one_league(box: Sandbox, seed: Seed) -> None:
-    """--league-id: aynı istekler ve aynı dosyalar; iki yol da aynı servis akışıdır (SyncService)."""
-    run = run_cli(box, "--headless", "--update-all", "--league-id", str(LEAGUE))
+    """--tournament: aynı istekler ve aynı dosyalar; iki yol da aynı servis akışıdır (SyncService)."""
+    run = run_cli(box, "sync", "--tournament", str(LEAGUE))
 
     assert run.requests == seed.run.requests
     assert run.files == seed.run.files
@@ -707,8 +681,8 @@ def test_headless_update_one_league(box: Sandbox, seed: Seed) -> None:
 
 def test_headless_update_all_again(seeded: Sandbox) -> None:
     """İkinci çalıştırma: program yeniden istenir, boş gelen dilimler bir kez daha denenir; üçüncüde detay isteği kalmaz."""
-    second = run_cli(seeded, "--headless", "--update-all")
-    third = run_cli(seeded, "--headless", "--update-all")
+    second = run_cli(seeded, "sync")
+    third = run_cli(seeded, "sync")
 
     assert (second.exit_code, third.exit_code) == (0, 0)
     assert_cli_golden("headless_update_all_again", {"second_run": second.golden(), "third_run": third.golden()})
@@ -716,18 +690,18 @@ def test_headless_update_all_again(seeded: Sandbox) -> None:
 
 def test_headless_details_only(new_box: NewBox, world: FakeSofaScore) -> None:
     """
-    --fetch-mode details: program istenmez; tüm ligler ve --league-id aynı istekleri atar, aynı dosyaları yazar.
+    --only events: program istenmez; tüm ligler ve --tournament aynı istekleri atar, aynı dosyaları yazar.
     Her ihtiyaçtan bir maç vardır (fetch goldenlarındaki job_details_league ile aynı kurulum).
     """
     _change_score(world, 9100010, home=3)
     runs: Dict[str, CliRun] = {}
-    for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)])):
+    for name, extra in (("all_leagues", []), ("one_league", ["--tournament", str(LEAGUE)])):
         box = new_box(name, data="seed")
         detail_records.drop_slices(box.data, 9100001, "statistics")  # kısmi → refill
         _delete_record(box.data, 9100003)  # kayıt yok → full
         _make_provisional(box.data, world, 9100010)  # geçici → refresh (skoru SofaScore'da düzeltilmiş)
         # 9100002: ilk çalıştırmada iki dilimi boş geldi → refill
-        runs[name] = run_cli(box, "--headless", "--update-all", "--fetch-mode", "details", *extra, world=world)
+        runs[name] = run_cli(box, "sync", "--only", "events", *extra, world=world)
 
     assert runs["one_league"].requests == runs["all_leagues"].requests
     assert runs["one_league"].files == runs["all_leagues"].files
@@ -746,10 +720,10 @@ def test_headless_update_stopped_by_the_breaker(new_box: NewBox, world: FakeSofa
     world.fail("/event/*", 403)
     runs = {
         name: run_cli(
-            new_box(name, env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=4"]), "--headless", "--update-all", *extra,
+            new_box(name, env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=4"]), "sync", *extra,
             world=world,
         )
-        for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)]))
+        for name, extra in (("all_leagues", []), ("one_league", ["--tournament", str(LEAGUE)]))
     }
 
     assert {name: run.exit_code for name, run in runs.items()} == {"all_leagues": 4, "one_league": 4}
@@ -765,8 +739,8 @@ def test_headless_update_blocked_from_the_first_request(new_box: NewBox, world: 
     """
     world.fail("*", 403)
     runs = {
-        name: run_cli(new_box(name), "--headless", "--update-all", *extra, world=world)
-        for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)]))
+        name: run_cli(new_box(name), "sync", *extra, world=world)
+        for name, extra in (("all_leagues", []), ("one_league", ["--tournament", str(LEAGUE)]))
     }
 
     assert {name: run.exit_code for name, run in runs.items()} == {"all_leagues": 3, "one_league": 3}
@@ -782,14 +756,14 @@ def test_headless_storage_error_exits_with_5(new_box: NewBox) -> None:
     if os.geteuid() == 0:
         pytest.skip("root her dizine yazabilir")
     runs: Dict[str, CliRun] = {}
-    for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)])):
+    for name, extra in (("all_leagues", []), ("one_league", ["--tournament", str(LEAGUE)])):
         box = new_box(name, data="settled")  # yapılacak tek iş, yazılamayacak olan maç
         _delete_record(box.data, 9100003)
         # Maçın v3 dizininin üst dizini (sofascore_scraper/store/layout.py `event_dir`): yeni maç oraya yayımlanamaz
         events_dir = box.data / "v3" / "events" / "9" / "100"
         os.chmod(events_dir, 0o555)
         try:
-            runs[name] = run_cli(box, "--headless", "--update-all", "--fetch-mode", "details", *extra)
+            runs[name] = run_cli(box, "sync", "--only", "events", *extra)
         finally:
             os.chmod(events_dir, 0o755)
 
@@ -805,7 +779,7 @@ def test_a_data_dir_that_is_a_file_is_a_storage_error(box: Sandbox) -> None:
     """
     box.data.write_text("not a directory", encoding="utf-8")
 
-    run = run_cli(box, "--headless", "--update-all")
+    run = run_cli(box, "sync")
 
     assert run.exit_code == 5
     assert run.stdout == []
@@ -814,15 +788,15 @@ def test_a_data_dir_that_is_a_file_is_a_storage_error(box: Sandbox) -> None:
     assert run.requests == []
 
 
-# --- --headless --csv-export ----------------------------------------------------------------
+# --- export (2.x: --headless --csv-export) ---------------------------------------------------
 
 def test_headless_csv_export(new_box: NewBox) -> None:
     """
-    `ssc export` olarak çalışır; dosya eskisi gibi match_details/processed/ altına yazılır. Dışa aktarılacak maç
+    Dosya eskisi gibi match_details/processed/ altına yazılır. Dışa aktarılacak maç
     yoksa dosya yazılmaz ve çıkış kodu 1'dir (`not_found`; P19'dan önce hata satırıyla 0).
     """
-    with_data = run_cli(new_box("with-data", data="seed"), "--headless", "--csv-export")
-    empty = run_cli(new_box("empty"), "--headless", "--csv-export")
+    with_data = run_cli(new_box("with-data", data="seed"), "export")
+    empty = run_cli(new_box("empty"), "export")
 
     assert (with_data.exit_code, empty.exit_code) == (0, 1)
     assert [path for path in with_data.files["added"] if path.startswith("data/")] == [
@@ -835,23 +809,6 @@ def test_headless_csv_export(new_box: NewBox) -> None:
 
 # --- --config ve --data-dir -----------------------------------------------------------------
 
-def test_config_flag_with_a_leagues_file_is_ignored_with_a_warning(box: Sandbox, seed: Seed) -> None:
-    """
-    --config bir lig dosyası (`.txt`) gösterirse yok sayılır, eskisi gibi; P19'dan beri bunu bir uyarı söyler
-    (--config artık yapılandırma dosyasıdır). İstekler, dosyalar ve sonuç aynıdır.
-    """
-    other = box.root / "other-leagues.txt"
-    other.write_text("LaLiga: 8\n", encoding="utf-8")
-
-    run = run_cli(box, "--headless", "--update-all", "--config", str(other))
-
-    assert run.argv[-2:] == ["--config", "<SANDBOX>/other-leagues.txt"]
-    warning = [line for line in run.stderr if isinstance(line, str) and "looks like a leagues file" in line]
-    assert len(warning) == 1 and warning[0].startswith("Warning: --config <SANDBOX>/other-leagues.txt")
-    stderr = [line for line in run.stderr if line not in warning]
-    assert {**run.golden(), "argv": seed.run.argv, "stderr": stderr} == seed.run.golden()
-
-
 def test_config_flag_names_the_config_file(new_box: NewBox) -> None:
     """
     --config yapılandırma dosyasıdır (P19): bozuk bir dosya `config_invalid`, çıkış kodu 2, iz dökümü yok,
@@ -861,7 +818,7 @@ def test_config_flag_names_the_config_file(new_box: NewBox) -> None:
     broken = box.root / "sofascore.toml"
     broken.write_text('schema = 1\n[client]\nrate = "fast"\n', encoding="utf-8")
 
-    run = run_cli(box, "--headless", "--update-all", "--config", str(broken))
+    run = run_cli(box, "--config", str(broken), "sync")
 
     assert (run.exit_code, run.requests, run.stdout) == (2, [], [])
     assert any(isinstance(line, str) and line.startswith("Configuration error: ") for line in run.stderr)
@@ -871,7 +828,7 @@ def test_config_flag_names_the_config_file(new_box: NewBox) -> None:
 
 def test_data_dir_flag_overrides_the_environment(box: Sandbox, seed: Seed) -> None:
     """--data-dir, DATA_DIR'in önündedir: aynı istekler, aynı dosyalar, başka dizinde."""
-    run = run_cli(box, "--headless", "--update-all", "--data-dir", str(box.root / "alt-data"))
+    run = run_cli(box, "--data-dir", str(box.root / "alt-data"), "sync")
 
     def moved(text: str) -> str:
         return text.replace("alt-data/", "data/", 1) if text.startswith("alt-data/") else text
@@ -881,7 +838,7 @@ def test_data_dir_flag_overrides_the_environment(box: Sandbox, seed: Seed) -> No
     assert _map_lines(run.stdout, lambda line: line.replace("<SANDBOX>/alt-data", "<SANDBOX>/data")) == seed.run.stdout
 
 
-# --- --refresh-only -------------------------------------------------------------------------
+# --- refresh (2.x: --refresh-only) ----------------------------------------------------------
 
 def test_refresh_only(seeded: Sandbox, world: FakeSofaScore) -> None:
     """
@@ -893,7 +850,7 @@ def test_refresh_only(seeded: Sandbox, world: FakeSofaScore) -> None:
     _change_score(world, 9100003, home=2)
     world.remove("/event/9100010")
 
-    run = run_cli(seeded, "--refresh-only", world=world)
+    run = run_cli(seeded, "refresh", world=world)
 
     assert run.exit_code == 3
     assert terminal_ui_modules(run) == []
@@ -905,22 +862,22 @@ def test_refresh_only_exit_codes(new_box: NewBox, world: FakeSofaScore) -> None:
     0: yenilenecek kayıt yok ya da hepsi yenilendi; 3: en az biri alınamadı (P19'dan önce: hepsi başarısızsa 1,
     biri yenilendiyse 0); 4: devre kesildi, kalanlar denenmedi (P19'dan önce 2).
     """
-    nothing_due = run_cli(new_box("nothing-due", data="seed"), "--refresh-only")
+    nothing_due = run_cli(new_box("nothing-due", data="seed"), "refresh")
 
     gone = FakeSofaScore.from_file(WORLD)
     all_failed_box = new_box("all-failed", data="seed")
     _make_provisional(all_failed_box.data, gone, 9100001)
     gone.remove("/event/9100001")
-    all_failed = run_cli(all_failed_box, "--refresh-only", world=gone)
+    all_failed = run_cli(all_failed_box, "refresh", world=gone)
 
     # Maçlar sırayla (P13'ten beri yenileme eşzamanlıdır): devreyi hangi isteğin keseceği belirli kalsın
     blocked_box = new_box("blocked", data="seed", env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=2", "MAX_CONCURRENT=1"])
     for event_id in (9100001, 9100003, 9100010):
         _make_provisional(blocked_box.data, world, event_id)
     world.fail("/event/*", 403)
-    breaker = run_cli(blocked_box, "--refresh-only", world=world)
-    # --ignore-rate-limit devre kesiciyi kapatır: aynı durumda her maç denenir, sonuç "hepsi başarısız" olur
-    ignored = run_cli(blocked_box, "--refresh-only", "--ignore-rate-limit", world=world)
+    breaker = run_cli(blocked_box, "refresh", world=world)
+    # --ignore-breaker devre kesiciyi kapatır: aynı durumda her maç denenir, sonuç "hepsi başarısız" olur
+    ignored = run_cli(blocked_box, "--ignore-breaker", "refresh", world=world)
 
     assert (nothing_due.exit_code, all_failed.exit_code, breaker.exit_code, ignored.exit_code) == (0, 3, 4, 3)
     assert_cli_golden("refresh_only_exit_codes", {
@@ -935,12 +892,13 @@ def test_refresh_legacy_flag(seeded: Sandbox) -> None:
     """
     observation.json'ı olmayan eski kayıt kesin sayılır; --refresh-legacy ile bir kez yenilenir. Gözlemsiz kayıt
     yalnızca eski düzende olabilir: 9100001 önceki bir sürümün kaydına çevrilir (tests/legacy_writer.py).
+    --include-legacy 2.x'in --refresh-legacy'sidir.
     """
     _as_legacy_record(seeded.data, 9100001)
 
-    without_flag = run_cli(seeded, "--refresh-only")
-    with_flag = run_cli(seeded, "--refresh-only", "--refresh-legacy")
-    again = run_cli(seeded, "--refresh-only", "--refresh-legacy")
+    without_flag = run_cli(seeded, "refresh")
+    with_flag = run_cli(seeded, "refresh", "--include-legacy")
+    again = run_cli(seeded, "refresh", "--include-legacy")
 
     assert (without_flag.requests, again.requests) == ([], [])
     assert_cli_golden("refresh_legacy", {
@@ -948,12 +906,12 @@ def test_refresh_legacy_flag(seeded: Sandbox) -> None:
     })
 
 
-# --- --recheck-unavailable ------------------------------------------------------------------
+# --- data recheck-unavailable (2.x: --recheck-unavailable) ------------------------------------
 
 def test_recheck_unavailable(new_box: NewBox, settled: Seed) -> None:
     """
     İşaretleri geri almak istek atmaz. Varsayılan kip yalnızca eski sürümden kalan (doğrulanmamış) işaretleri
-    açar; `all` kesinleşmiş olanları da. --headless ile birlikte verilirse önce işaretler açılır, sonra indirilir.
+    açar; `--all` kesinleşmiş olanları da. `sync --recheck-unavailable` önce işaretleri açar, sonra indirir.
     """
     # 9100002'nin iki dilimi ikinci kez boş geldi: kesin "yok"
     steps: Dict[str, Dict[str, Any]] = {"details_run_confirms_markers": settled.run.golden()}
@@ -961,13 +919,13 @@ def test_recheck_unavailable(new_box: NewBox, settled: Seed) -> None:
     # Eski sürümden kalma kayıt: 9100001 eski düzende, statistics dilimi doğrulanmadan "yok" sayılmış
     _as_legacy_record(seeded.data, 9100001, drop=("statistics",), unavailable={"statistics": 2})
 
-    default = run_cli(seeded, "--recheck-unavailable")
+    default = run_cli(seeded, "data", "recheck-unavailable")
     assert terminal_ui_modules(default) == []
     steps["default"] = default.golden()
-    steps["default_again"] = run_cli(seeded, "--recheck-unavailable", "--league-id", str(LEAGUE)).golden()
-    steps["other_league"] = run_cli(seeded, "--recheck-unavailable", "all", "--league-id", "8").golden()
+    steps["default_again"] = run_cli(seeded, "data", "recheck-unavailable", "--tournament", str(LEAGUE)).golden()
+    steps["other_league"] = run_cli(seeded, "data", "recheck-unavailable", "--all", "--tournament", "8").golden()
     steps["all_then_download"] = run_cli(
-        seeded, "--recheck-unavailable", "all", "--headless", "--update-all", "--fetch-mode", "details"
+        seeded, "sync", "--only", "events", "--recheck-unavailable", "all"
     ).golden()
 
     for name in ("default", "default_again", "other_league"):
@@ -1038,7 +996,7 @@ def test_a_second_writer_is_refused_with_exit_code_6(new_box: NewBox) -> None:
     Veri dizininin yazar kilidi başka bir süreçteyken (bir web işi ya da başka bir komut satırı çalıştırması)
     indirme, yenileme ve yeniden denetim başlamaz: kilidi kimin tuttuğu (pid, makine, amaç, başlangıç)
     stderr'e uygulamanın dilinde yazılır, çıkış kodu 6'dır, istek atılmaz ve veri değişmez. CSV dışa aktarma
-    yazar kilidi almaz ve çalışır. Kilit bırakılınca aynı komut çalışır. P19: sahip yeni CLI'nin hata satırıyla
+    yazar kilidi almaz ve çalışır. Kilit bırakılınca aynı komut çalışır. Sahip CLI'nin hata satırıyla
     (`job_running`, "Held by process ... on ... since ...") yazılır.
     """
     box = new_box("en", data="seed")
@@ -1047,17 +1005,17 @@ def test_a_second_writer_is_refused_with_exit_code_6(new_box: NewBox) -> None:
     cases: Dict[str, Dict[str, Any]] = {}
 
     with lease_held_elsewhere(box.data, "writer", "job") as pid:
-        refused["update_all"] = run_cli(box, "--headless", "--update-all")
-        refused["refresh_only"] = run_cli(box, "--refresh-only")
-        refused["recheck_unavailable"] = run_cli(box, "--recheck-unavailable")
-        refused["recheck_then_update"] = run_cli(box, "--recheck-unavailable", "all", "--headless", "--update-all")
+        refused["update_all"] = run_cli(box, "sync")
+        refused["refresh_only"] = run_cli(box, "refresh")
+        refused["recheck_unavailable"] = run_cli(box, "data", "recheck-unavailable")
+        refused["recheck_then_update"] = run_cli(box, "sync", "--recheck-unavailable", "all")
         for name, run in refused.items():
             cases[name] = _refused_golden(run, pid)
-        csv_export = run_cli(box, "--headless", "--csv-export")
+        csv_export = run_cli(box, "export")
     with lease_held_elsewhere(turkish.data, "writer", "job") as pid:
-        refused["update_all_tr"] = run_cli(turkish, "--headless", "--update-all")
+        refused["update_all_tr"] = run_cli(turkish, "sync")
         cases["update_all_tr"] = _refused_golden(refused["update_all_tr"], pid)
-    released = run_cli(box, "--refresh-only")
+    released = run_cli(box, "refresh")
 
     for name, run in refused.items():
         assert (run.exit_code, run.requests) == (6, []), name
@@ -1070,25 +1028,25 @@ def test_a_second_writer_is_refused_with_exit_code_6(new_box: NewBox) -> None:
     assert_cli_golden("lease_refused", cases)
 
 
-# --- --watch --------------------------------------------------------------------------------
+# --- watch --source poll --stdout (2.x: --watch) ---------------------------------------------
 
 LIVE_EVENT = 9300001
 
 
 def test_watch_event_ids(box: Sandbox, world: FakeSofaScore) -> None:
     """
-    P19: `--watch` `ssc watch --source poll --stdout`tur (karar D18: tarayıcı başlatmaz). Olaylar stdout'a satır
+    `watch --source poll --stdout` (karar D18: tarayıcı başlatmaz). Olaylar stdout'a satır
     satır (`sofascore.event/1` zarfı), özet stderr'e yazılır; durum ve olay günlüğü depodadır ve yeniden
-    başlatmada kaldığı yerden sürer. İlk çalıştırma: maç oynanıyor, --watch-hours dolunca çıkılır. İkinci
+    başlatmada kaldığı yerden sürer. İlk çalıştırma: maç oynanıyor, --hours dolunca çıkılır. İkinci
     çalıştırma: maç canlı listeden düşmüş ve bitmiş; izlenen tüm maçlar bitince servis kendiliğinden çıkar.
     """
     listed = world.event(LIVE_EVENT)
     listed["homeScore"].update(current=2, display=2, period1=2)  # /event ile canlı liste arasında gol
     world.add("/sport/football/events/live", {"events": [listed]})
-    argv = ["--watch", "--sport", "football", "--event-ids", str(LIVE_EVENT)]
+    argv = ["watch", "--source", "poll", "--stdout", "--sport", "football", "--event", str(LIVE_EVENT)]
 
     # Süre her turun sonunda denetlenir: sınır ne kadar kısa olursa olsun ilk tur tamamlanır
-    first = run_cli(box, *argv, "--watch-hours", "0.000000001", world=world)
+    first = run_cli(box, *argv, "--hours", "0.000000001", world=world)
 
     finished = copy.deepcopy(listed)
     finished["status"] = {"code": 100, "description": "Ended", "type": "finished"}
@@ -1113,25 +1071,25 @@ def test_a_second_watcher_for_the_same_sport_is_refused(box: Sandbox) -> None:
     (`instance_running`, çıkış kodu 6, istek yok); yazar kilidi ise başka bir kilittir: bir izleyici çalışırken
     yenileme reddedilmez.
     """
-    argv = ["--watch", "--sport", "football", "--event-ids", str(LIVE_EVENT)]
+    argv = ["watch", "--source", "poll", "--stdout", "--sport", "football", "--event", str(LIVE_EVENT)]
 
     with lease_held_elsewhere(box.data, "watcher:football", "watch") as pid:
         watch = run_cli(box, *argv)
-        refresh = run_cli(box, "--refresh-only")
+        refresh = run_cli(box, "refresh")
 
     assert (watch.exit_code, watch.requests) == (6, [])
     assert refresh.exit_code == 0
     assert_cli_golden("lease_refused_watch", _refused_golden(watch, pid))
 
 
-# --- --diagnostics --------------------------------------------------------------------------
+# --- diagnostics ----------------------------------------------------------------------------
 
 def test_diagnostics_writes_a_bundle_relative_to_the_invoking_directory(box: Sandbox) -> None:
     """Göreli yol, kullanıcının komutu çalıştırdığı dizine göre çözülür (main.py depo köküne chdir etse de)."""
-    run = run_cli(box, "--diagnostics", "out/bundle.zip")
+    run = run_cli(box, "diagnostics", "--out", "out/bundle.zip")
 
     assert (run.exit_code, run.requests) == (0, [])
     assert run.printed() == ["Diagnostics bundle written: <SANDBOX>/cwd/out/bundle.zip"]
-    assert run.stderr == [deprecated("diagnostics --out <SANDBOX>/cwd/out/bundle.zip")]
+    assert run.stderr == []
     assert run.files["added"]["cwd/out/bundle.zip"] == "<binary>"
     assert_cli_golden("diagnostics", run.golden())

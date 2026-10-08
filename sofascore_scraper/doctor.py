@@ -1,10 +1,10 @@
 """
 Ortam ön denetimi ("doctor"): uygulamanın çalışması için gerekenler yerinde mi?
 
-    python main.py --doctor            # okunur metin; hata varsa çıkış kodu 1
-    python main.py --doctor --json     # aynı sonuç JSON olarak (otomasyon, başlatıcı)
-    python -m sofascore_scraper.doctor               # aynısı (başlatıcı sanal ortamın Python'u ile böyle çağırır)
-    ssc doctor [--json]                # yeni CLI (sofascore_scraper/cli): aynı denetimler + istek bütçesi uyarısı
+    ssc doctor                         # okunur metin; hata varsa çıkış kodu 1 (python main.py doctor da aynı)
+    ssc --json doctor                  # aynı sonuç JSON olarak (otomasyon, başlatıcı)
+    python -m sofascore_scraper.doctor # aynı denetimler, yalnızca standart kütüphaneyle (başlatıcı ve kurulum
+                                       # betikleri sanal ortamın Python'u ile böyle çağırır)
 
 Denetimler SofaScore'a bağlanmaz: Python sürümü, gerekli paketler, köprünün başlatacağı tarayıcı
 (patchright'ın Chromium'u; yerel bir about:blank sayfasıyla denenir), tarayıcı profili, veri ve
@@ -1080,7 +1080,7 @@ CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
 )
 CHECK_IDS = tuple(check_id for check_id, _ in CHECKS)
 
-# Eskiden yalnızca yeni CLI'nin (`run_checks(extra=True)`) çalıştırdığı denetimler. `python main.py --doctor`
+# Eskiden yalnızca yeni CLI'nin (`run_checks(extra=True)`) çalıştırdığı denetimler. 2.x'in `python main.py --doctor`u
 # `ssc doctor`un takma adı olunca (plan maddesi P19) istek bütçesi denetimi CHECKS'e katıldı; liste boş kalır,
 # `extra` parametresi eski çağıranlar için durur.
 EXTRA_CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = ()
@@ -1191,7 +1191,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ctx = Context(lang=lang)
 
     parser = argparse.ArgumentParser(
-        prog="python main.py --doctor", description=ctx.t("doctor_cli_description"), add_help=False
+        prog="python -m sofascore_scraper.doctor", description=ctx.t("doctor_cli_description"), add_help=False
     )
     parser.add_argument("-h", "--help", action="help", help=ctx.t("cli_help_help"))
     parser.add_argument("--json", action="store_true", help=ctx.t("doctor_cli_json"))

@@ -6,7 +6,7 @@
 #     -v sofascore-browser:/app/browser-profile sofascore-scraper
 #
 # Varsayılan komut `ssc serve`dir: HTTP API ve web arayüzü (http://127.0.0.1:8000). `serve` sonrası
-# seçenekler ona geçer; başka argümanlar main.py'ye (yeni CLI'nin komutları ve bir sürüm daha eski bayraklar):
+# seçenekler ona geçer; başka argümanlar CLI'ye (`python -m sofascore_scraper.cli.main`: komutlar, --version):
 #   docker run --rm sofascore-scraper --version
 #   docker run --rm -v sofascore-data:/app/data sofascore-scraper status
 # Kurulum, Host izin listesi, erişim belirteci ve canlı izleme: docs/deploy/docker.md

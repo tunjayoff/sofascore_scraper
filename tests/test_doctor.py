@@ -885,7 +885,7 @@ def test_budget_is_a_regular_check(make_ctx, capsys):
 
 def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
     """
-    `python -S` site-packages'ı kapatır: hiçbir bağımlılık kurulu değilken de `main.py --doctor`
+    `python -S` site-packages'ı kapatır: hiçbir bağımlılık kurulu değilken de `main.py doctor`
     çalışmalı, eksik paketleri bildirmeli ve 1 ile çıkmalı (main.py'nin kendi import'ları çökmeden).
     """
     env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "APP_LANGUAGE")}
@@ -894,11 +894,11 @@ def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
     env["SOFASCORE_ENV_FILE"] = str(env_file)
     env["DATA_DIR"] = str(tmp_path / "data")
     proc = subprocess.run(
-        [sys.executable, "-S", str(REPO / "main.py"), "--doctor", "--json", "--only", "python,packages,data_dir,env"],
+        [sys.executable, "-S", str(REPO / "main.py"), "--json", "doctor", "--only", "python,packages,data_dir,env"],
         cwd=str(tmp_path), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120,
     )
     assert proc.returncode == 1, proc.stderr.decode()
-    envelope = json.loads(proc.stdout.decode())  # `ssc doctor --json`un zarfı (P19: --doctor bir takma addır)
+    envelope = json.loads(proc.stdout.decode())  # `ssc doctor --json`un zarfı
     assert envelope["command"] == "doctor" and envelope["ok"] is True
     out = envelope["data"]
     by_id = {c["id"]: c for c in out["checks"]}
@@ -910,7 +910,7 @@ def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
 
 def test_main_py_lists_doctor_in_help():
     proc = subprocess.run(
-        [sys.executable, str(REPO / "main.py"), "--doctor", "--help"],
+        [sys.executable, str(REPO / "main.py"), "doctor", "--help"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120,
         env={**os.environ, "APP_LANGUAGE": "en"},
     )

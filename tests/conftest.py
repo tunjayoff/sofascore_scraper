@@ -631,3 +631,31 @@ def settings_overrides() -> Any:
     loader = sys.modules.get("sofascore_scraper.config.loader")
     if loader is not None:
         loader.reload()
+
+
+@pytest.fixture
+def restore_cli_process() -> Any:
+    """
+    `main.py`yi (ya da `sofascore_scraper.cli.main.main`i) bu süreçte çalıştıran testler için: CLI bir sürecin giriş
+    noktasıdır ve süreç genelinde iz bırakır (çalışma dizini, etkin ayarlar ve köprünün ortama yazdıkları, log akışı,
+    biçimi ve seviyesi). Hepsi testten sonra geri alınır. 3.0'a kadar `main.py`nin geçiş kabuğu bunu her komut için
+    kendisi yapıyordu (P30'da kalktı).
+    """
+    import logging
+
+    cwd, environ, level = os.getcwd(), dict(os.environ), logging.getLogger().level
+    log_module = sys.modules.get("sofascore_scraper.logger")
+    stream = log_module.console_stream() if log_module is not None else "stdout"
+    log_format = log_module.log_format() if log_module is not None else "text"
+    yield
+    loader = sys.modules.get("sofascore_scraper.config.loader")
+    if loader is not None:
+        loader.reset()
+    os.environ.clear()
+    os.environ.update(environ)
+    log_module = sys.modules.get("sofascore_scraper.logger")
+    if log_module is not None:
+        log_module.set_console_stream(stream)
+        log_module.set_log_format(log_format)
+    logging.getLogger().setLevel(level)
+    os.chdir(cwd)

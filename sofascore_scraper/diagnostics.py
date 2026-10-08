@@ -562,7 +562,7 @@ def _throttle() -> Dict[str, Any]:
 
 def _doctor() -> Dict[str, Any]:
     """
-    Kurulum denetimi (python main.py --doctor ile aynı denetimler, tarayıcıyı başlatan hariç).
+    Kurulum denetimi (`ssc doctor` ile aynı denetimler, tarayıcıyı başlatan hariç).
     SofaScore'a istek atılmaz; hiçbir şey değiştirilmez.
     """
     from sofascore_scraper import doctor

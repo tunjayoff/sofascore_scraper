@@ -229,10 +229,11 @@ def test_entrypoint_starts_serve_on_every_interface_with_the_loopback_names(tmp_
     started = _entrypoint(tmp_path)
     assert started["argv"] == ["-m", "sofascore_scraper.cli.main", "serve", "--host", "0.0.0.0", "--port", "8000"]
     assert started["hosts"] == "localhost,127.0.0.1,[::1]"
-    # `serve` ve eski `web` aynıdır; sonraki seçenekler serve'e geçer; HOST ve PORT ortamdan
+    # Sonraki seçenekler serve'e geçer; HOST ve PORT ortamdan
     started = _entrypoint(tmp_path, "serve", "--dev", env={"PORT": "9000", "HOST": "::"})
     assert started["argv"] == ["-m", "sofascore_scraper.cli.main", "serve", "--host", "::", "--port", "9000", "--dev"]
-    assert _entrypoint(tmp_path, "web")["argv"][:3] == ["-m", "sofascore_scraper.cli.main", "serve"]
+    # 2.x'in `web` takma adı 3.1'de kalktı (P30): CLI'ye bilinmeyen bir komut olarak gider (kullanım hatası)
+    assert _entrypoint(tmp_path, "web")["argv"] == ["-m", "sofascore_scraper.cli.main", "web"]
 
 
 @pytest.mark.parametrize("env,files", [
@@ -254,10 +255,11 @@ def test_entrypoint_gives_the_loopback_names_when_the_config_search_is_off(tmp_p
     assert started["hosts"] == "localhost,127.0.0.1,[::1]"
 
 
-def test_entrypoint_passes_everything_else_to_main_py(tmp_path: Path) -> None:
-    assert _entrypoint(tmp_path, "--version")["argv"] == ["main.py", "--version"]
+def test_entrypoint_passes_everything_else_to_the_cli(tmp_path: Path) -> None:
+    assert _entrypoint(tmp_path, "--version")["argv"] == ["-m", "sofascore_scraper.cli.main", "--version"]
     started = _entrypoint(tmp_path, "watch", "--source", "poll")
-    assert started["argv"] == ["main.py", "watch", "--source", "poll"] and started["hosts"] is None
+    assert started["argv"] == ["-m", "sofascore_scraper.cli.main", "watch", "--source", "poll"]
+    assert started["hosts"] is None
 
 
 @pytest.mark.skipif(shutil.which("flock") is None, reason="flock yok")

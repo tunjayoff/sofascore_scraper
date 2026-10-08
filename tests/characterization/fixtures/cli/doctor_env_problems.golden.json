@@ -1,8 +1,8 @@
 {
  "json": {
   "argv": [
-   "--doctor",
    "--json",
+   "doctor",
    "--only",
    "env"
   ],
@@ -29,9 +29,9 @@
    "sofascore_scraper.cli.commands.sync",
    "sofascore_scraper.cli.commands.watch",
    "sofascore_scraper.cli.exit_codes",
-   "sofascore_scraper.cli.legacy_flags",
    "sofascore_scraper.cli.main",
    "sofascore_scraper.cli.output",
+   "sofascore_scraper.cli.removed_flags",
    "sofascore_scraper.cli.signals",
    "sofascore_scraper.config",
    "sofascore_scraper.config.loader",
@@ -46,9 +46,7 @@
    "sofascore_scraper.sports",
    "sofascore_scraper.version"
   ],
-  "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc doctor --json --only env"
-  ],
+  "stderr": [],
   "stdout": {
    "checks": [
     {
@@ -95,7 +93,7 @@
  },
  "text": {
   "argv": [
-   "--doctor",
+   "doctor",
    "--only",
    "env"
   ],
@@ -122,9 +120,9 @@
    "sofascore_scraper.cli.commands.sync",
    "sofascore_scraper.cli.commands.watch",
    "sofascore_scraper.cli.exit_codes",
-   "sofascore_scraper.cli.legacy_flags",
    "sofascore_scraper.cli.main",
    "sofascore_scraper.cli.output",
+   "sofascore_scraper.cli.removed_flags",
    "sofascore_scraper.cli.signals",
    "sofascore_scraper.config",
    "sofascore_scraper.config.loader",
@@ -139,9 +137,7 @@
    "sofascore_scraper.sports",
    "sofascore_scraper.version"
   ],
-  "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc doctor --only env"
-  ],
+  "stderr": [],
   "stdout": [
    "SofaScore Scraper — environment check",
    "",

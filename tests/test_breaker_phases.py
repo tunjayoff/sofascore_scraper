@@ -184,7 +184,7 @@ def test_detail_batch_stops_when_the_breaker_trips(tmp_path, blocked):
     assert failed == ["1", "2"]  # devreyi kesen maç ve hiç denenmeyenler "başarısız" sayılmaz
 
 
-def test_cli_refresh_only_exits_with_4_when_the_breaker_trips(tmp_path, monkeypatch, capsys, blocked):
+def test_cli_refresh_exits_with_4_when_the_breaker_trips(tmp_path, monkeypatch, capsys, blocked, restore_cli_process):
     import os
 
     import main as cli
@@ -194,7 +194,7 @@ def test_cli_refresh_only_exits_with_4_when_the_breaker_trips(tmp_path, monkeypa
     monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
     monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
-    monkeypatch.setattr("sys.argv", ["main.py", "--refresh-only", "--data-dir", str(tmp_path)])
+    monkeypatch.setattr("sys.argv", ["main.py", "--data-dir", str(tmp_path), "refresh"])
     with _request_layer():
         assert cli.main() == 4  # P19: devre kesici 4 (önce 2)
     assert _event_requests(blocked) == 3 * CFG["max_retries"]

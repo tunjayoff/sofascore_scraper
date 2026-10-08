@@ -252,14 +252,14 @@ def test_cli_locale_files_have_the_same_keys_and_placeholders():
 def test_keys_used_by_the_cli_and_the_launcher_exist():
     en = _locale("en")
     used = set()
-    for name in ("main.py", "sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/bridge_health.py", "sofascore_scraper/match_fetcher.py"):
+    for name in ("sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/bridge_health.py", "sofascore_scraper/match_fetcher.py"):
         used |= set(re.findall(r"""\bt\(\s*['"]([a-z0-9_]+)['"]""", (REPO / name).read_text(encoding="utf-8")))
     launcher = (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
     used |= {"launcher_" + key for key in re.findall(r'_t\(\s*"([a-z_]+)"', launcher)}
-    assert len(used) > 50  # P25: main.py'nin web sunucusu dalı `ssc serve` oldu, onun metinleri gitti
+    # P25: main.py'nin web sunucusu dalı `ssc serve` oldu; P30: main.py'nin bayrakları ve metinleri gitti
+    assert len(used) > 20
     assert used <= set(en), sorted(used - set(en))
     # Kullanılmayan çeviri kalmasın (bu değişiklikle eklenen ön ekler için)
-    main_text = (REPO / "main.py").read_text(encoding="utf-8")
     doctor_text = (REPO / "sofascore_scraper" / "doctor.py").read_text(encoding="utf-8")
     # `details_*` anahtarlarını P15'e kadar MatchDataFetcher yazdırıyordu; artık günlük satırıdırlar ve anahtarlar
     # terminal menüsüyle (P26) kullanım taramasından sonra silinir
@@ -267,7 +267,7 @@ def test_keys_used_by_the_cli_and_the_launcher_exist():
         if key.startswith("launcher_"):
             assert f'"{key[len("launcher_"):]}"' in launcher, key
         elif key.startswith("cli_"):
-            assert f'"{key}"' in main_text or f'"{key}"' in doctor_text, key
+            assert f'"{key}"' in doctor_text, key
 
 
 @pytest.mark.parametrize("lang", ["en", "tr"])
@@ -280,23 +280,18 @@ def test_help_texts_survive_argparse_formatting(lang):
 
 
 @pytest.mark.parametrize("lang,expected,absent", [
-    ("en", ["Start the web interface", "Headless / CI examples", "Show this help message", "--diagnostics [PATH]"], "arayüz"),
-    ("tr", ["Web arayüzünü başlatır", "Headless / CI örnekleri", "Bu yardım iletisini", "--diagnostics [YOL]"], "Start the"),
+    ("en", ["Command line of the SofaScore data platform", "The web app: python main.py serve."], "arayüz"),
+    ("tr", ["SofaScore veri platformunun komut satırı", "Web uygulaması: python main.py serve."], "Command line"),
 ])
-def test_main_help_is_in_the_chosen_language(monkeypatch, capsys, lang, expected, absent):
+def test_main_help_is_in_the_chosen_language(capsys, lang, expected, absent, restore_cli_process):
     import main as cli
 
-    i18n = I18nManager()
-    i18n.set_language(lang)
-    monkeypatch.setattr(cli, "get_i18n", lambda: i18n)
-    monkeypatch.setattr("sys.argv", ["main.py", "--help"])
-    with pytest.raises(SystemExit) as e:
-        cli.parse_arguments()
+    assert cli.main(["--lang", lang, "--help"]) == 0
     out = capsys.readouterr().out
-    assert e.value.code == 0
+    assert out.startswith("usage: python main.py")
     for text in expected:
         assert text in out, text
-    assert absent not in out and "cli_" not in out  # çevrilmemiş anahtar görünmüyor
+    assert absent not in out and "ssc_help_" not in out  # çevrilmemiş anahtar görünmüyor
 
 
 @pytest.mark.parametrize("lang,expected", [("en", "print the result as JSON"), ("tr", "sonucu metin yerine JSON")])
@@ -311,30 +306,15 @@ def test_doctor_help_and_errors_are_in_the_chosen_language(capsys, lang, expecte
     assert ("unknown check id: nope" if lang == "en" else "bilinmeyen denetim adı: nope") in err
 
 
-@pytest.mark.parametrize("lang,usage,stopped", [
-    ("en", "--watch needs --sport", "Refresh: 2 matches refreshed, 1 changed, 0 failed"),
-    ("tr", "--watch için --sport", "Yenileme: 2 maç yenilendi, 1 değişti, 0 başarısız"),
+@pytest.mark.parametrize("lang,stopped", [
+    ("en", "Refresh: 2 matches refreshed, 1 changed, 0 failed"),
+    ("tr", "Yenileme: 2 maç yenilendi, 1 değişti, 0 başarısız"),
 ])
-def test_cli_messages_are_translated(lang, usage, stopped):
+def test_cli_messages_are_translated(lang, stopped):
     i18n = I18nManager()
     i18n.set_language(lang)
-    assert usage in i18n.t("cli_watch_usage")
     assert stopped in i18n.t("ssc_refresh_summary", refreshed=2, changed=1, failed=0)
-    assert "--update-all" in i18n.t("cli_headless_usage")
     assert "12.5" in i18n.t("details_finished", ok=1, total=8, rate="12.5")
-
-
-def test_watch_without_arguments_explains_itself_in_the_app_language(monkeypatch, capsys):
-    import main as cli
-
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirebilir
-    monkeypatch.setattr("sys.argv", ["main.py", "--watch"])
-    for lang, expected in (("en", "--watch needs --sport"), ("tr", "--watch için --sport")):
-        i18n = I18nManager()
-        i18n.set_language(lang)
-        monkeypatch.setattr(cli, "get_i18n", lambda i18n=i18n: i18n)
-        assert cli.main() == 2
-        assert expected in capsys.readouterr().err
 
 
 # --- yeni kurulum İngilizce başlar -------------------------------------------------------------

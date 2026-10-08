@@ -1,10 +1,11 @@
 #!/bin/sh
 # Konteyner giriş noktası.
 #
-#   (argümansız) | serve [seçenekler] | web   → ssc serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000} [seçenekler]
-#   başka her şey                              → python main.py "$@": yeni CLI'nin bir komutu (sync, watch,
-#                                                status, ...) ya da bir sürüm daha çalışan eski bayraklar
-#                                                (--version, --help, --headless --update-all, ...)
+#   (argümansız) | serve [seçenekler]   → ssc serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000} [seçenekler]
+#   başka her şey                       → python -m sofascore_scraper.cli.main "$@": CLI'nin bir komutu (sync,
+#                                         watch, status, ...) ya da --version / --help. 2.x'in bayrakları
+#                                         (--headless --update-all, --web, ...) 3.1'de kalktı: kullanım hatası
+#                                         (çıkış kodu 2), ileti yerine geçen komutu söyler.
 #
 # Web sunucusu `ssc serve` ile başlar (karar D17; docs/deploy/docker.md). Konteynerde 0.0.0.0 yalnızca
 # konteynerin kendi ağ arayüzüdür; dışarıya ne açılacağına `-p` karar verir. `serve` 0.0.0.0'ı "her arayüz"
@@ -86,7 +87,7 @@ case "${1:-serve}" in
     *) unlock_stale_profile "${1:-serve}" ;;
 esac
 
-if [ "$#" -eq 0 ] || [ "$1" = "serve" ] || [ "$1" = "web" ]; then
+if [ "$#" -eq 0 ] || [ "$1" = "serve" ]; then
     [ "$#" -eq 0 ] || shift
     if ! allowed_hosts_given; then
         export SOFASCORE_SERVER__ALLOWED_HOSTS="$LOOPBACK_HOSTS"
@@ -94,4 +95,4 @@ if [ "$#" -eq 0 ] || [ "$1" = "serve" ] || [ "$1" = "web" ]; then
     exec python -m sofascore_scraper.cli.main serve --host "${HOST:-0.0.0.0}" --port "${PORT:-8000}" "$@"
 fi
 
-exec python main.py "$@"
+exec python -m sofascore_scraper.cli.main "$@"
