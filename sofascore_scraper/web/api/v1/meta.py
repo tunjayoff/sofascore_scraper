@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import importlib.util
 import logging
-import time
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, Optional, Tuple
 
 from fastapi import APIRouter
@@ -681,10 +680,11 @@ def check_sofascore() -> StatusCheck:
         else:
             reason = upstream.UPSTREAM
     message = "SofaScore answered." if reason is None else upstream.detail(reason)["message"]
-    bridge_health.record_check(reason is None, reason)
+    # Tek saat okuması: yanıttaki an, `/status`un `last_check.at`ıyla aynıdır (FX-30)
+    checked_at = bridge_health.record_check(reason is None, reason)
     return StatusCheck(
         ok=reason is None, reason=reason, message=message, events_count=count,  # type: ignore[arg-type]
-        checked_at_utc=utc_text(time.time()) or "", bridge=_bridge(), connection=_connection(),
+        checked_at_utc=utc_text(checked_at) or "", bridge=_bridge(), connection=_connection(),
     )
 
 
