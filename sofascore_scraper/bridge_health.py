@@ -244,6 +244,11 @@ class ConnectionState:
     `report_ok` / `report_exception`): yanıt (200, 404) başarı; 403, 429, 5xx, zaman aşımı, ağ ve okunamayan yanıt
     başarısızlık. Devre kesicinin göndermediği istek sayılmaz. Arayüz böylece hiçbir istek başarmadan "bağlı"
     demez.
+
+    Durum son kaydedilen sonuçtur, saatin değil kayıt sırasının kararıdır: her kayıt artan bir sıra numarası
+    alır ve `state` en yüksek numaralı sonucu söyler. Zamanlar saniye çözünürlüğündedir; aynı saniyede (ya da
+    kaba bir saatte aynı anda) gelen bir yanıt ve bir başarısızlıkta zaman karşılaştırması (`success >= failure`)
+    eşitlikte hep "ok" diyordu, sonra gelen başarısızlık da olsa (FX-30'un açık bıraktığı eşitlik kuralı).
     """
 
     def __init__(self, clock: Callable[[], float] = time.time) -> None:
@@ -253,8 +258,13 @@ class ConnectionState:
         self.last_failure_at: Optional[float] = None
         self.last_failure_reason: Optional[str] = None
         self.last_failure_status: Optional[int] = None
-        # Son bağlantı denetimi (`POST /status/check`): (an, yanıt aldı mı, neden)
+        # Kayıt sırası: her sonuç bir numara alır; durum en son kaydedilen sonuçtur (saat eşitliğinde de)
+        self._seq = 0
+        self._success_seq = 0
+        self._failure_seq = 0
+        # Son bağlantı denetimi (`POST /status/check`): (an, yanıt aldı mı, neden) ve kayıt sırasındaki yeri
         self.last_check: Optional[Tuple[float, bool, Optional[str]]] = None
+        self._check_seq = 0
 
     def record_check(self, ok: bool, reason: Optional[str] = None) -> float:
         """
@@ -264,6 +274,8 @@ class ConnectionState:
         with self._lock:
             at = self._clock()
             self.last_check = (at, bool(ok), None if ok else reason)
+            self._seq += 1
+            self._check_seq = self._seq
             return at
 
     def times(self) -> Tuple[Optional[float], Optional[float]]:
@@ -274,10 +286,14 @@ class ConnectionState:
     def record_answer(self) -> None:
         with self._lock:
             self.last_success_at = self._clock()
+            self._seq += 1
+            self._success_seq = self._seq
 
     def record_unanswered(self, reason: str, status: Optional[int] = None) -> None:
         with self._lock:
             self.last_failure_at = self._clock()
+            self._seq += 1
+            self._failure_seq = self._seq
             self.last_failure_reason = str(reason)
             self.last_failure_status = status if isinstance(status, int) and not isinstance(status, bool) else None
 
@@ -287,7 +303,7 @@ class ConnectionState:
             success, failure = self.last_success_at, self.last_failure_at
             if success is None and failure is None:
                 state = CONNECTION_NEVER
-            elif failure is None or (success is not None and success >= failure):
+            elif self._success_seq > self._failure_seq:
                 state = CONNECTION_OK
             else:
                 state = CONNECTION_FAILED
@@ -298,7 +314,11 @@ class ConnectionState:
                 "last_failure_at": _iso(failure),
                 "last_failure_reason": self.last_failure_reason,
                 "last_failure_status": self.last_failure_status,
-                "last_check": None if check is None else {"at": _iso(check[0]), "ok": check[1], "reason": check[2]},
+                "last_check": None if check is None else {
+                    "at": _iso(check[0]), "ok": check[1], "reason": check[2],
+                    # Denetimden sonra yanıt alan bir istek oldu: başarısız denetim artık bağlantıyı anlatmaz
+                    "superseded": self._success_seq > self._check_seq,
+                },
             }
 
 

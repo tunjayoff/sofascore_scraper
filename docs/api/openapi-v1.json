@@ -5554,6 +5554,12 @@
             ],
             "title": "Reason",
             "description": "Why it failed (the check's `reason`); null when ok."
+          },
+          "superseded": {
+            "type": "boolean",
+            "title": "Superseded",
+            "description": "A request was answered after this check, so a failed check no longer describes the connection. Decided by the order of the records, not by their times, which can be equal on a coarse clock.",
+            "default": false
           }
         },
         "type": "object",
@@ -5573,7 +5579,7 @@
               "failed"
             ],
             "title": "State",
-            "description": "never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not."
+            "description": "never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not. The last one is the last recorded, also when an answer and a failure have the same time."
           },
           "last_success_at": {
             "anyOf": [

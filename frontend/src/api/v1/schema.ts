@@ -194,6 +194,8 @@ export interface ConnectionCheck {
   ok: boolean
   /** Why it failed (the check's `reason`); null when ok. */
   reason?: string | null
+  /** A request was answered after this check, so a failed check no longer describes the connection. Decided by the order of the records, not by their times, which can be equal on a coarse clock. */
+  superseded?: boolean
 }
 
 /**
@@ -202,7 +204,7 @@ export interface ConnectionCheck {
  * before any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here.
  */
 export interface ConnectionStatus {
-  /** never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not. */
+  /** never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not. The last one is the last recorded, also when an answer and a failure have the same time. */
   state: "never_tried" | "ok" | "failed"
   /** ISO-8601, UTC. */
   last_success_at?: string | null

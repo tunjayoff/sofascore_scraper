@@ -53,7 +53,10 @@ export function connectionState(s: ConnectionSource | null | undefined): Connect
   const c = s.connection
   if (c) {
     const check = c.last_check
-    if (check && !check.ok && !(ms(c.last_success_at) > ms(check.at))) return 'checkFailed'
+    // A failed check stays the state until a later request is answered; the server decides "later" by the order
+    // of its records (`superseded`), since the times can be equal on a coarse clock. An older server has no flag.
+    const superseded = check?.superseded ?? ms(c.last_success_at) > ms(check?.at)
+    if (check && !check.ok && !superseded) return 'checkFailed'
     if (c.state === 'never_tried') return 'untried'
     return c.state === 'failed' ? 'failing' : 'ok'
   }

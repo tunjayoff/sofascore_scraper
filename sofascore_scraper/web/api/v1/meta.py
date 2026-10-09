@@ -80,6 +80,11 @@ class ConnectionCheck(BaseModel):
     at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
     ok: bool
     reason: Optional[str] = Field(default=None, description="Why it failed (the check's `reason`); null when ok.")
+    superseded: bool = Field(
+        default=False, description="A request was answered after this check, so a failed check no longer describes "
+                                   "the connection. Decided by the order of the records, not by their times, which "
+                                   "can be equal on a coarse clock.",
+    )
 
 
 class ConnectionStatus(BaseModel):
@@ -91,7 +96,8 @@ class ConnectionStatus(BaseModel):
 
     state: Literal["never_tried", "ok", "failed"] = Field(
         description="never_tried: no request has ended since the server started; ok: the last one was answered "
-                    "(200 or 404); failed: the last one was not.",
+                    "(200 or 404); failed: the last one was not. The last one is the last recorded, also when an "
+                    "answer and a failure have the same time.",
     )
     last_success_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
     last_failure_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")

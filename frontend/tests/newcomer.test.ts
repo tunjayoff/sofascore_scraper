@@ -616,6 +616,17 @@ describe('the connection is not "Connected" before anything was answered', () =>
     expect(connectionState({ ...at('ok'), bridge: bridge({ state: 'blocked' }) })).toBe('blocked')
   })
 
+  it('connectionState: a tie of the times on a coarse clock follows the server’s order of records (B2)', () => {
+    const at = (state: 'ok' | 'failed', over = {}) => ({ bridge: bridge(), connection: { state, last_success_at: null, last_failure_at: null, last_check: null, ...over } })
+    const same = '2026-10-02T10:01:00Z'
+    // an answer in the same second after a failed check: the server says the check is superseded
+    expect(connectionState(at('ok', { last_success_at: same, last_check: { ok: false, at: same, reason: 'network', superseded: true } }))).toBe('ok')
+    // the check came after the answer in that second
+    expect(connectionState(at('failed', { last_success_at: same, last_check: { ok: false, at: same, reason: 'network', superseded: false } }))).toBe('checkFailed')
+    // the server's state decides a tie of success and failure
+    expect(connectionState(at('failed', { last_success_at: same, last_failure_at: same }))).toBe('failing')
+  })
+
   it('Health and the pill say "Not tried yet" before a success, and turn amber after a failed check', async () => {
     const never = { state: 'never_tried', last_success_at: null, last_failure_at: null, last_check: null }
     const failed = { state: 'failed', last_success_at: null, last_failure_at: '2026-10-02T11:00:00Z', last_failure_reason: 'network', last_check: { at: '2026-10-02T11:00:00Z', ok: false, reason: 'upstream' } }
