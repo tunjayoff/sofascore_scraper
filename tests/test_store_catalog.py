@@ -97,7 +97,7 @@ def test_prepare_creates_every_table_and_index(cat):
     assert cat.tables() == TABLES
     assert indexes == INDEXES
     assert _pragma(conn, "application_id") == catalog.APPLICATION_ID == 0x53464331
-    assert _pragma(conn, "user_version") == catalog.CATALOG_SCHEMA == 1
+    assert _pragma(conn, "user_version") == catalog.CATALOG_SCHEMA == 2  # 2: P30 (iki skor sütunu kalktı)
     assert cat.quick_check() == []
     assert cat.path.endswith(os.path.join(".meta", "catalog.db")) and os.path.isabs(cat.path)
     assert layout.CATALOG_DB == ".meta/catalog.db"
@@ -226,7 +226,7 @@ def test_missing_catalog_is_created_and_asks_to_be_built(tmp_path):
         # Şema var ama satırlar henüz kurulmadı: yarıda kalan kurulum kendini kullanılabilir göstermez
         state = c.inspect()
         assert (state.exists, state.application_id, state.schema_version, state.derive_version) == (
-            True, catalog.APPLICATION_ID, 1, None)
+            True, catalog.APPLICATION_ID, catalog.CATALOG_SCHEMA, None)
         assert state.rebuild_reason == catalog.REBUILD_DERIVE and state.schema_ok and not state.usable
 
         with c.write():
@@ -276,8 +276,8 @@ def _edit(path: str, *statements: str) -> None:
 
 
 @pytest.mark.parametrize("statement, reason, schema_ok", [
-    ("PRAGMA user_version = 0", "schema_version", False),
-    ("PRAGMA user_version = 2", "schema_version", False),  # daha yeni dosya da yeniden kurulur: sürüm düşürmek güvenli
+    ("PRAGMA user_version = 1", "schema_version", False),  # 3.0'ın kataloğu (iki skor sütunu daha): yeniden kurulur
+    ("PRAGMA user_version = 3", "schema_version", False),  # daha yeni dosya da yeniden kurulur: sürüm düşürmek güvenli
     ("PRAGMA application_id = 0", "application_id", False),
     (f"PRAGMA application_id = {0x53465331}", "application_id", False),  # state.db'nin imzası
     ("UPDATE meta SET value = '0' WHERE key = 'derive_version'", "derive_version", True),
@@ -351,7 +351,7 @@ def test_schema_creation_is_atomic_and_happens_once(tmp_path):
 
     assert sorted(results) == [False, False, False, True]
     with Catalog(path) as c:
-        assert c.tables() == TABLES and c.inspect().schema_version == 1
+        assert c.tables() == TABLES and c.inspect().schema_version == catalog.CATALOG_SCHEMA
 
 
 @pytest.mark.parametrize("round_no", range(10))

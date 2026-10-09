@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 
 PathLike = Union[str, "os.PathLike[str]"]
 
-CATALOG_SCHEMA = 1  # PRAGMA user_version; sofascore_scraper/store/schema/catalog.sql değişince artırılır
+CATALOG_SCHEMA = 2  # PRAGMA user_version; sofascore_scraper/store/schema/catalog.sql değişince artırılır (2: P30)
 APPLICATION_ID = 0x53464331  # "SFC1": dosyanın bir SofaScore kataloğu olduğunu işaretler
 REOPEN_CHECK_SECONDS = 1.0  # dosyanın yerine yenisi konmuş mu: en çok bu sıklıkta bakılır (bölüm 6.3)
 

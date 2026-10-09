@@ -319,8 +319,9 @@ def test_get_an_event_with_a_payload(canon: Store) -> None:
     assert (row.status_type, row.status_code, row.status_class) == ("finished", 100, "completed")
     assert (row.home_name, row.away_name) == ("Arsenal", "Chelsea")
     assert row.start_ts == payload["startTimestamp"] == 1789495200
-    assert (row.home_score_current, row.away_score_current) == (
-        payload["homeScore"]["current"], payload["awayScore"]["current"])
+    assert (row.home_score, row.away_score) == (
+        payload["homeScore"].get("display", payload["homeScore"]["current"]),
+        payload["awayScore"].get("display", payload["awayScore"]["current"]))
     assert row.winner_code == payload["winnerCode"]
     assert (row.row_source, row.has_event_payload, row.layout) == ("event", True, "legacy")
     assert row.path == f"{PL_DETAILS}/{ARS}"

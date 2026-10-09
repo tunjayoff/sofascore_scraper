@@ -23,8 +23,6 @@ class EventRow:
     away_name: Optional[str]
     home_score: Optional[int]
     away_score: Optional[int]
-    home_score_current: Optional[int]
-    away_score_current: Optional[int]
     winner_code: Optional[int]
     scores_json: Optional[str]
     slug: Optional[str]

@@ -594,15 +594,13 @@ def test_catalog_rows_equal_the_season_summary_csv(fx: sf.LegacyFixture, make_ad
                 continue
             assert (row["home_name"], row["away_name"], row["status_description"]) == (
                 line["home_team"], line["away_team"], line["status"])
-            # özet, `current` yoksa 0 yazar (sofascore_scraper/match_fetcher.py); katalog yok olanı NULL tutar
-            assert (row["home_score_current"] or 0, row["away_score_current"] or 0) == (
-                int(line["home_score"]), int(line["away_score"]))
+            # Özetin skor sütunu (`current`) 3.1'de katalogda yok (P30): satırda normalleştirilmiş skor durur
             assert dt.datetime.fromtimestamp(row["start_ts"]).isoformat() == line["match_date"]
             compared += 1
     if fx.name == "canonical":
         assert stale == {sf.event_id(sf.NBA_VOID)} and compared == 31
-        pen = event_row(admin.catalog, sf.event_id(sf.CUP_PEN))  # penaltılar: current 10, normalleştirilmiş 3
-        assert (pen["home_score"], pen["home_score_current"]) == (3, 10)
+        pen = event_row(admin.catalog, sf.event_id(sf.CUP_PEN))  # penaltılar: özette current 10, satırda 3
+        assert pen["home_score"] == 3
     elif fx.name == "legacy":
         assert not stale and compared == 12  # iki özet dosyasında geçen maçlar iki kez karşılaştırılır
     else:
@@ -626,10 +624,8 @@ def test_season_without_page_files_is_indexed_from_its_summary_csv(old_forms: sf
         assert (row["tournament_id"], row["season_id"], row["sport"], row["stage_name"], row["round"],
                 row["listed_in"], row["start_ts"]) == (
             17, 76986, "football", "Premier League", 38, "round_38", event["startTimestamp"])
-        assert (row["home_name"], row["away_name"], row["home_score"], row["away_score"],
-                row["home_score_current"], row["away_score_current"]) == (
-            ev.home, ev.away, event["homeScore"]["current"], event["awayScore"]["current"],
-            event["homeScore"]["current"], event["awayScore"]["current"])
+        assert (row["home_name"], row["away_name"], row["home_score"], row["away_score"]) == (
+            ev.home, ev.away, event["homeScore"]["current"], event["awayScore"]["current"])
         # CSV'de yalnızca durum metni var: sınıf ondan çıkar, tür ve kod bilinmez; takım kimliği yok
         assert (row["status_type"], row["status_code"], row["status_description"], row["status_class"]) == (
             None, None, "Ended", "completed")
@@ -669,11 +665,11 @@ def test_first_version_round_csv_and_summary_for_an_event_with_a_payload(tmp_pat
     assert (first["row_source"], first["listed_in"], first["stale"], first["home_id"]) == (
         "event", "round_1", 0, events[0]["homeTeam"]["id"])
     second = event_row(cat, events[1]["id"])  # iki CSV'de de var: en yenisi (lig dizinindeki özet)
-    assert (second["row_source"], second["listed_in"], second["home_score_current"], second["round"],
+    assert (second["row_source"], second["listed_in"], second["home_score"], second["round"],
             second["first_seen_at"], second["updated_at"], second["home_id"], second["status_type"]) == (
         "listing", "last_0", 7, None, BASE - 10, BASE, None, None)
     third = event_row(cat, 15000009)
-    assert (third["listed_in"], third["round"], third["home_score_current"], third["start_ts"],
+    assert (third["listed_in"], third["round"], third["home_score"], third["start_ts"],
             third["status_class"], third["sport"]) == (None, None, None, None, "completed", "football")
     assert problem_kinds(report) == [("matches/8_LaLiga/77559_LaLiga_25_26_summary.csv", "malformed")]
     assert (report.listed, report.schedules) == (2, 0)

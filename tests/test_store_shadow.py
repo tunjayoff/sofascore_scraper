@@ -580,13 +580,14 @@ def test_refresh_with_a_change_indexes_the_payload_and_the_change_log(canonical:
     old = read_json(match_dir(canonical, LIV) / "basic.json")
     new = copy.deepcopy(old)
     new["homeScore"]["current"] = old["homeScore"]["current"] + 1
+    new["homeScore"]["display"] = new["homeScore"]["current"]
     fetcher = fetcher_of(data)
 
     with serving(new):
         fetcher.refresh(str(LIV))
 
     after = store.events.get(LIV)
-    assert after.home_score_current == before.home_score_current + 1
+    assert after.home_score == before.home_score + 1
     assert store.changes.last_seq() == len(sf.SCORE_CHANGES) + 1
     newest = store.changes.list(event_id=LIV)[-1]
     assert newest.seq == store.changes.last_seq() and "homeScore.current" in newest.fields
@@ -1147,16 +1148,16 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
     store = open_store(data)
     basic_file = match_dir(canonical, ARS) / "basic.json"
     edited = read_json(basic_file)
-    edited["homeScore"]["current"] = 9
+    edited["homeScore"]["display"] = edited["homeScore"]["current"] = 9
     stamp = basic_file.stat().st_mtime_ns
     basic_file.write_bytes(sf.dump_json(edited))  # yerinde: dizinin imzası aynı kalır
     os.utime(basic_file, ns=(stamp, stamp))
-    assert store.events.get(ARS).home_score_current != 9 and api_mod.shadow_unsynced()
+    assert store.events.get(ARS).home_score != 9 and api_mod.shadow_unsynced()
 
     # Ürün kodu dizine dokunur (Store'un dışında: bağlam kurulurken veri dizinleri var edilir, services/context.py)
     _ensure_directory(str(data / "datasets-p30"))
 
-    assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score_current == 9
+    assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score == 9
     assert differences(store) == [] and api_mod.shadow_check() == []
 
 
