@@ -11,7 +11,7 @@ below (see "Releasing" in the README).
 ## [3.1.0] - 2026-10-09
 
 3.1.0 removes what 3.0.0 deprecated (the `main.py` flags, the 2.x `/api` routes, the 2.x
-environment names and the old backup scopes) and adds what the first use of 3.0.0 asked for:
+environment names but four, which are deprecated until 3.2, and the old backup scopes) and adds what the first use of 3.0.0 asked for:
 team records and a team and player filter for exports, counts for every follow, request counters
 in the job progress, odds providers by name, single-set darts and e-sports game scores, and slice
 rows from new evidence for several sports.
@@ -22,15 +22,15 @@ the release archive (the source with the built web app), or the Docker image
 
 **Upgrading from 3.0** (also in the README, "Upgrading from 3.0"):
 
-- **The 2.x environment names are no longer read.** A value set as `DATA_DIR`,
-  `REQUEST_RATE_LIMIT`, `PROXY_URL`, `APP_LANGUAGE`, `SOFASCORE_API_TOKEN`,
-  `SOFASCORE_ALLOWED_HOSTS`, `LOG_LEVEL`, … (in `.env`, the shell, a service file or the container
-  settings) is ignored, and the default applies: an old `DATA_DIR` leaves the app on the default
-  data folder, an old `SOFASCORE_API_TOKEN` leaves the server without an access token. Rename
-  each to `SOFASCORE_<SECTION>__<KEY>` (`SOFASCORE_STORAGE__DATA_DIR`, `SOFASCORE_CLIENT__RATE`,
-  `SOFASCORE_SERVER__TOKEN`, …). `ssc doctor` and `ssc config show` list every old name still set,
-  with its new name and where it is set; `ssc config init --from-legacy > sofascore.toml` writes the
-  old `.env` and `config/leagues.txt` as a config file.
+- **The 2.x environment names are no longer read**, except four deprecated ones (see Deprecated).
+  A value set as `DATA_DIR`, `REQUEST_RATE_LIMIT`, `APP_LANGUAGE`, `LOG_LEVEL`, … (in `.env`, the
+  shell, a service file or the container settings) is ignored, and the default applies: an old
+  `DATA_DIR` leaves the app on the default data folder. `SOFASCORE_API_TOKEN`,
+  `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` still work in 3.1 with a warning and are
+  removed in 3.2. Rename each to `SOFASCORE_<SECTION>__<KEY>` (`SOFASCORE_STORAGE__DATA_DIR`,
+  `SOFASCORE_CLIENT__RATE`, `SOFASCORE_SERVER__TOKEN`, …). `ssc doctor` and `ssc config show` list
+  every old name still set, with its new name and where it is set; `ssc config init --from-legacy >
+  sofascore.toml` writes the old `.env` and `config/leagues.txt` as a config file.
 - **The catalog is rebuilt on its first open** (catalog schema 2, derive version 8). `catalog.db`
   is rebuilt from the stored files once, without a request to SofaScore; on a large data folder
   the first start takes longer.
@@ -84,6 +84,11 @@ the release archive (the source with the built web app), or the Docker image
   of `client.odds_provider` offers them next to the free entry of an id (#192).
 - `connection.last_check.superseded` in `/api/v1/status`: an answer came after a failed
   connection check (#191).
+- `replaced_by` on each setting of `GET /api/v1/settings` and each row of `ssc config show`: the
+  new name of a deprecated 2.x name the value came from (null otherwise). The Settings page shows
+  such a row as locked by the old variable and names the new one; the text output of
+  `ssc config show` reads `[env: SOFASCORE_API_TOKEN, deprecated, use SOFASCORE_SERVER__TOKEN]`, and
+  the diagnostics bundle lists the loader's warnings (`settings.warnings`, names only) (#196).
 
 ### Changed
 
@@ -150,6 +155,24 @@ the release archive (the source with the built web app), or the Docker image
   `research/**`. The research and push scripts use the 3.1 environment names and keep their own
   browser profile under `~/.cache/sofascore_research/` (#181, #182, #184, #187).
 
+### Deprecated
+
+- **`SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` are still read
+  in 3.1 and removed in 3.2.** 3.0.0 documented the first two for protecting the server, and
+  dropping them would leave it without its access token or host allow-list, or send SofaScore
+  requests from your own address instead of the proxy. Each one still set is read as its new name
+  and logged, with `ssc config show` and `ssc doctor`, as deprecated: rename it to
+  `SOFASCORE_SERVER__TOKEN`, `SOFASCORE_SERVER__ALLOWED_HOSTS`, `SOFASCORE_CLIENT__USE_PROXY` or
+  `SOFASCORE_CLIENT__PROXY`. When both names are set the new one wins and the old one is reported
+  as ignored. `PROXY_URL` alone still does not switch the proxy on (it needs `USE_PROXY=true`, as
+  before), and the Settings page shows such a value as locked by the old name. `ssc serve --host
+  0.0.0.0` starts with the old allow-list name, and the Docker entrypoint counts an old
+  `SOFASCORE_ALLOWED_HOSTS` (in the environment or in `.env`) as given, as in 3.0, instead of
+  setting its default list over it. An invalid value under one of the four names is a
+  configuration error that names the variable (`USE_PROXY: expected true or false…`); in 3.0
+  `USE_PROXY=maybe` silently meant false, and `1` or `yes` now mean true, as for the new name
+  (#196).
+
 ### Fixed
 
 - **Darts played in a single set** (`bestOfSets: 1`) show the legs won: `score.format` is
@@ -171,8 +194,8 @@ the release archive (the source with the built web app), or the Docker image
   names the command that replaces it (#186).
 - **The 2.x `/api/...` routes** and their response shapes, `POST /api/export/csv` among them (use
   `/api/v1`; a 2.x path answers 404) (#186).
-- **The 2.x environment names** (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `MAX_CONCURRENT`, `PROXY_URL`,
-  `APP_LANGUAGE`, `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `LOG_LEVEL`, …): use
+- **The 2.x environment names (except the four under Deprecated)** (`DATA_DIR`,
+  `REQUEST_RATE_LIMIT`, `MAX_CONCURRENT`, `APP_LANGUAGE`, `LOG_LEVEL`, …): use
   `SOFASCORE_<SECTION>__<KEY>`. Each old name still set gives a `legacy_name` warning that names
   its replacement, in `ssc config show` (also `--json`), `ssc config validate`, `ssc doctor` and
   the diagnostics bundle; a variable named by `proxy_env` or `token_env` is still read. GNU
