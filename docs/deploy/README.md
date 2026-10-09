@@ -81,8 +81,10 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"   # a long random v
 
 Set it as `SOFASCORE_SERVER__TOKEN` in the service's environment (an `EnvironmentFile` with mode 0600, or
 `.env`), or name another variable with `[server] token_env` in the config file. Restart the service after
-changing it. The 2.x name `SOFASCORE_API_TOKEN` is not read since 3.1 (`ssc doctor` warns about it; keep it by
-setting `token_env = "SOFASCORE_API_TOKEN"` under `[server]`).
+changing it. The 2.x name `SOFASCORE_API_TOKEN`, which 3.0 documented, is deprecated: 3.1 still reads it, with a
+warning in the log, `ssc config show` and `ssc doctor`, and 3.2 removes it. Rename it to `SOFASCORE_SERVER__TOKEN`
+(or keep the variable by setting `token_env = "SOFASCORE_API_TOKEN"` under `[server]`). When both names are set,
+`SOFASCORE_SERVER__TOKEN` wins and the old one is ignored with a warning.
 Programs send `Authorization: Bearer <token>`; the web app asks for it once and keeps a session cookie.
 `GET /health` stays open for health checks and says only `{"status": "ok"}` without the token.
 
@@ -109,8 +111,9 @@ an attack that comes through your own browser and that no firewall stops. The ru
 | any of the above with names set | exactly the names you set, never widened |
 
 Set the names with `--allowed-hosts localhost,127.0.0.1,scraper.example.org`, `[server] allowed_hosts` in the
-config file, or `SOFASCORE_SERVER__ALLOWED_HOSTS` in the environment or `.env` (the flag wins over the others;
-the 2.x name `SOFASCORE_ALLOWED_HOSTS` is not read since 3.1). Include every name and address clients use, and keep `127.0.0.1` when
+config file, or `SOFASCORE_SERVER__ALLOWED_HOSTS` in the environment or `.env` (the flag wins over the others).
+The 2.x name `SOFASCORE_ALLOWED_HOSTS`, which 3.0 documented, is deprecated: 3.1 still reads it, with a warning,
+and 3.2 removes it; rename it to `SOFASCORE_SERVER__ALLOWED_HOSTS`, which wins when both are set. Include every name and address clients use, and keep `127.0.0.1` when
 something on the machine checks `/health`. `--allow-any-host` (or the value `*`) answers to any name: it turns
 the protection off and is only for a server that is reachable through a trusted proxy alone.
 
