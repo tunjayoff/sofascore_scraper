@@ -39,7 +39,7 @@ def test_api_lists_sports_and_their_slices():
         k for k in COMMON_KEYS if k not in ("lineups", "incidents")] + ["point_by_point"]
     # SP-3: e-sporun oyunları kendi dilimi; yeni skor aileleri
     assert by_slug["esports"]["slices"][-1] == {
-        "key": "esports_games", "path": "/event/{event_id}/esports-games", "required": False, "default_enabled": True,
+        "key": "esports_games", "path": "/event/{event_id}/esports-games", "required": True, "default_enabled": True,
     }
     assert [by_slug[s]["score_family"] for s in ("baseball", "cricket", "esports", "darts", "mma")] == [
         "innings", "cricket", "sets", "sets", "fight"]

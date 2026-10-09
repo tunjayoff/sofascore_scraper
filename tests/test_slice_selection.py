@@ -507,9 +507,10 @@ def test_sports_carry_the_registry_fields_and_the_configured_selection(configure
     first = football["slices"][0]
     assert first == {"key": "statistics", "path": "/event/{event_id}/statistics", "required": True,
                      "default_enabled": True, "selected": True, "group": "core", "owner": "event",
-                     "phases": ["pre", "live", "post"], "keep_history": False, "max_age_seconds": None}
+                     "phases": ["live", "post"], "keep_history": False, "max_age_seconds": None}  # FX-31
+    assert football["slices"][1]["phases"] == ["pre", "live", "post"]  # team_streaks
     esports = {s["key"]: s for s in client.get("/api/v1/sports/esports").json()["data"]["slices"]}
-    assert esports["esports_games"]["phases"] == ["live", "post"] and esports["esports_games"]["required"] is False
+    assert esports["esports_games"]["phases"] == ["live", "post"] and esports["esports_games"]["required"] is True
 
     configure('[defaults]\nslices = ["statistics"]\n[slices.football]\nenable = ["h2h"]\n')
     selected = [s["key"] for s in client.get("/api/v1/sports/football").json()["data"]["slices"] if s["selected"]]

@@ -131,8 +131,11 @@ def file_missing(directory: Path) -> Tuple[str, ...]:
     failed_last = {str(k) for k, v in status.items() if isinstance(v, dict) and "error" in v} \
         if isinstance(status, dict) else set()
     missing: List[str] = []
-    # Maçın sporunun beklediği dilimler (FX-16'dan beri futbolda pregame_form yok, teniste point_by_point var)
-    for key in planning.expected_slice_keys(event_sport_slug(event) if isinstance(event, dict) else None):
+    # Maçın sporunun ve evresinin beklediği dilimler (FX-16'dan beri futbolda pregame_form yok, teniste
+    # point_by_point var; FX-31'den beri istatistik maç başlamadan beklenmez)
+    phase = planning.phase_of(classify_status(event).value) if isinstance(event, dict) else None
+    for key in planning.expected_slice_keys(event_sport_slug(event) if isinstance(event, dict) else None,
+                                            phase=phase):
         body = _read(directory / f"{key}.json")
         if body is not None and match_detail_slice_present(key, {key: body}):
             continue

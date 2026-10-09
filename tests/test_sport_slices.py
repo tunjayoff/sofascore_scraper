@@ -1,8 +1,9 @@
 """
 Her spor SofaScore'un o sporda sunduğu detay dilimlerini ister (sofascore_scraper/sports.py, DETAIL_SLICES).
 
-Kanıt: sitenin maç sayfalarının istekleri ve aldığı yanıtlar (research/all_sports, PR #17), spor ve uç nokta
-başına tests/fixtures/sport_slices/evidence.json'da (tests/sport_evidence.py türetir). Kurallar
+Kanıt: sitenin maç sayfalarının istekleri ve aldığı yanıtlar (research/all_sports: PR #17'nin keşfi ve onarılmış
+keşif aracının koşusu lv-20261009, PR #183), spor ve uç nokta başına tests/fixtures/sport_slices/evidence.json'da
+(tests/sport_evidence.py türetir; hangi koşunun neyi kanıtladığı oradaki notta). Kurallar
 (tests/sport_evidence.py `verdict`, sofascore_scraper/sports.py DETAIL_SLICES'ın üstündeki not):
 
   required   bitmiş maçta veriyle yanıtlandı, bitmiş maçta 404 almadı     → istenir, tamlık hesabına girer
@@ -17,9 +18,11 @@ başına tests/fixtures/sport_slices/evidence.json'da (tests/sport_evidence.py t
 Futbol, basketbol ve tenis için kanıtın önerdikleri (#121'in üç önerisi) canlı doğrulamadan sonra sahibin
 kararıyla (2026-10-08) uygulandı (FX-16): DECIDED'da durur. Kararın ek kanıtı uygulama tarafındandır: canlı
 doğrulamada her spordan bir bitmiş (2026-10-07, 20 spor) ve bir canlı maç (2026-10-08, 13 spor) bütün dilimleriyle
-tek maç takibi olarak indirildi; tablolar tests/fixtures/sport_slices/slice-matrix-{finished,live}.txt. evidence.json
-şimdilik yeniden üretilemez (sayfa trafiği araştırma aracı scripts/explore_all_sports.py bozuk, bulgu V3): olduğu gibi
-kalır. Ağ yok.
+tek maç takibi olarak indirildi; tablolar tests/fixtures/sport_slices/slice-matrix-{finished,live}.txt.
+
+evidence.json onarılmış araçla (FX-29, FX-29b) yeniden üretildi (FX-31). Ragbi, florbol, voleybol ve mini futbol
+için kanıtın önerdikleri uygulanmadı: PROPOSALS'ta durur, kayıt defteri onlarda bugünkü davranışı korur, sahip
+karar verir (docs/all-sports/README.md, "Öneri"). Ağ yok.
 """
 from __future__ import annotations
 
@@ -54,6 +57,42 @@ DECIDED: Dict[Tuple[str, str], str] = {
     ("tennis", "incidents"): ABSENT,
     ("tennis", "point_by_point"): REQUIRED,  # bitmiş ve canlı maçta veriyle
 }
+
+# FX-31: lv-20261009'un kanıtının ragbi, florbol, voleybol ve mini futbol için önerdikleri; uygulanmadı, sahip karar
+# verir (docs/all-sports/README.md, "Öneri"). (spor, dilim) → kanıtın yargısı. Kayıt defteri bunlarda bugünkü
+# davranışı korur: ortak dilim istenir ve tamlığa girer. Her biri uygulama tarafı bitmiş tabloda da veri vermedi.
+PROPOSALS: Dict[Tuple[str, str], str] = {
+    ("rugby", "statistics"): OPTIONAL,  # bitmiş maçta 404
+    ("rugby", "lineups"): OPTIONAL,  # bitmiş maçta 404 (#121'in yarım sayfasında 200)
+    ("rugby", "incidents"): OPTIONAL,  # bitmiş maçta 404
+    ("minifootball", "statistics"): OPTIONAL,  # bitmiş maçta 404 (#121'in yarım sayfasında 200)
+    ("minifootball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
+    ("minifootball", "incidents"): OPTIONAL,  # bitmiş maçta 404
+    ("floorball", "statistics"): OPTIONAL,  # bitmiş maçta 404
+    ("floorball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
+    ("floorball", "lineups"): ABSENT,  # eksiksiz bitmiş sayfa (ve başlamamış sayfa) istemedi
+    ("floorball", "incidents"): OPTIONAL,  # bitmiş maçta 404
+    ("volleyball", "statistics"): OPTIONAL,  # bitmiş maçta 404
+    ("volleyball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
+    ("volleyball", "lineups"): OPTIONAL,  # bitmiş maçta 404
+}
+
+# FX-31'in lv-20261009'un kanıtıyla kayıt defterine uyguladıkları: (spor, dilim) → kanıtın yargısı. İsteğe bağlı ya
+# da istenmez olan her hücrede uygulama tarafı bitmiş tablo da veri görmedi ("-").
+APPLIED: Dict[Tuple[str, str], str] = {
+    ("american-football", "pregame_form"): OPTIONAL,  # bitmiş maçta 404 (öteki bitmiş maçta 403)
+    ("badminton", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
+    ("badminton", "lineups"): ABSENT,  # eksiksiz bitmiş sayfa istemedi
+    ("badminton", "point_by_point"): REQUIRED,  # bitmiş maçta veriyle, başlamamış maçta 404
+    ("table-tennis", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
+    ("table-tennis", "lineups"): ABSENT,  # eksiksiz bitmiş sayfa istemedi
+    ("table-tennis", "point_by_point"): REQUIRED,  # bitmiş maçta veriyle, başlamamış maçta 404
+    ("baseball", "pregame_form"): OPTIONAL,  # bitmiş ve canlı maçta 404
+    ("baseball", "incidents"): ABSENT,  # iki eksiksiz bitmiş ve bir canlı sayfa istemedi
+    ("futsal", "incidents"): OPTIONAL,  # bir bitmiş maçta 200 (#121), ötekinde 404
+    ("mma", "pregame_form"): OPTIONAL,  # bir bitmiş maçta 200 (#121), ötekinde 404
+    ("esports", "esports_games"): REQUIRED,  # bitmiş ve canlı maçta veriyle, başlamamış maçta 404
+}
 APP_SIDE = ("slice-matrix-finished.txt", "slice-matrix-live.txt")
 # Uygulama tarafı tablonun sütun adları → dilim anahtarları
 _MATRIX_COLUMNS = {"stat": "statistics", "lin": "lineups", "inc": "incidents", "form": "pregame_form", "h2h": "h2h",
@@ -63,18 +102,20 @@ _MATRIX_COLUMNS = {"stat": "statistics", "lin": "lineups", "inc": "incidents", "
 OTHER_ENDPOINTS: Dict[str, str] = {
     "/": "the event itself (/event/{id}), not a slice",
     "/votes": "fan votes, not match data",
-    "/at-bats": "baseball only (200 on one not-started match, 404 in every other sport): proposal",
-    "/umpires": "baseball only, 404 on a not-started match: no data seen",
-    "/weather": "baseball only, 404 on a not-started match: no data seen",
-    "/comments": "baseball only, 404 on a not-started match: no data seen",
-    "/managers": "every team sport (football, basketball, baseball, handball): proposal, not sport-specific",
-    "/best-players": "basketball player ratings: proposal, not sport-specific",
+    "/at-bats": "baseball only (200 on finished, live and not-started matches; 404 in every other sport): proposal",
+    "/umpires": "baseball only (200 on finished and live matches, 404 on a not-started one): proposal",
+    "/weather": "baseball only (200 on finished and live matches, 404 on a not-started one): proposal",
+    "/comments": "baseball only (200 on finished and live matches, 404 on a not-started one): proposal",
+    "/managers": "team managers (200 in nine team sports, 404 in the rest): proposal, not sport-specific",
+    "/best-players": "player ratings (basketball, American football, handball): proposal, not sport-specific",
     "/best-players/summary": "football player ratings: proposal, not sport-specific",
     "/player-of-the-match": "football fan poll: proposal",
     "/average-positions": "football player positions: proposal",
     "/heatmap/{id}": "football player heatmap (one request per player): proposal",
     "/shotmap": "football shot map: proposal",
-    "/graph": "football and basketball momentum graph: proposal",
+    "/graph": "momentum graph (football, basketball, American football, handball): proposal",
+    "/graph/sequence": "volleyball point sequence (200 on one finished match): proposal",
+    "/tennis-power": "tennis momentum (200 on one finished match): proposal",
     "/graph/win-probability": "404 in every sport",
     "/live-match-tracker": "live widget",
     "/highlights": "media (video links)",
@@ -112,16 +153,21 @@ def test_every_endpoint_in_the_evidence_is_a_slice_or_explained():
 
 def test_the_evidence_covers_the_recorded_pages():
     pages = EVIDENCE["pages"]
-    # Eksiksiz yüklenmiş canlı ya da bitmiş maç sayfası: yokluk yalnızca bunlarda kanıttır
+    # Yokluk kanıtı yalnızca onarılmış koşunun sayfalarından (tests/sport_evidence.py, kural 2)
+    assert {row["run_id"] for rows in pages.values() for row in rows} == set(evidence_mod.REPAIRED_RUNS)
+    # Eksiksiz yüklenmiş canlı ya da bitmiş maç sayfası: yokluk yalnızca bunlarda kanıttır. Kayıtlı 21 sporun
+    # aussie-rules dışında hepsinde var
     complete = sorted(sport for sport, rows in pages.items()
                       if any(row["complete"] and row["state"] in ("finished", "live") for row in rows))
-    assert complete == ["basketball", "cricket", "darts", "esports", "football", "futsal", "ice-hockey", "mma",
-                        "padel", "snooker", "tennis"]
-    # Sayfası 403 aldı, açılmadı ya da yarım yüklendi: kanıt yok
-    for sport in ("american-football", "aussie-rules", "badminton"):
-        assert sport not in pages
-    for sport in ("minifootball", "rugby", "table-tennis"):
-        assert [row["complete"] for row in pages[sport]] == [False]
+    assert complete == sorted(set(sports.sport_slugs()) - {"aussie-rules"})
+    # Aussie rules: yalnızca başlamamış maç sayfası; bandy ve su topu (kayıtlı değil) yalnızca eski koşuda
+    assert [row["state"] for row in pages["aussie-rules"]] == ["notstarted"]
+    assert "bandy" not in pages and "waterpolo" not in pages
+    # Koşunun "başlamamış" diye açtığı ama açıldığında başlamış (ya da bitmiş) maçlar, kendi /event yanıtına göre
+    states = {row["event_id"]: row["state"] for rows in pages.values() for row in rows}
+    assert (states[16685163], states[16546323], states[17212667], states[17279017]) == ("live", "live", "live",
+                                                                                        "finished")
+    assert states[16183708] == "notstarted"  # sayfa kapandıktan sonra başladı
 
 
 # --- kayıt defteri kanıta uyar -------------------------------------------------------------------------------
@@ -130,6 +176,10 @@ def test_the_evidence_covers_the_recorded_pages():
 @pytest.mark.parametrize("sport,spec,found", _cells(), ids=lambda v: getattr(v, "key", v))
 def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, found: str):
     applies, counts = spec.applies_to(sport), spec.counts_in(sport)
+    if (sport, spec.key) in PROPOSALS:
+        assert found == PROPOSALS[(sport, spec.key)]
+        assert applies and counts  # bugünkü davranış: ortak dilim istenir ve tamlığa girer
+        return
     if found == REQUIRED:
         assert applies and counts
     elif found == OPTIONAL:
@@ -146,9 +196,40 @@ def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, f
 
 def test_no_sport_requests_a_slice_its_match_page_never_asks_for():
     for sport, spec, found in _cells():
-        if found == ABSENT:
+        if found == ABSENT and (sport, spec.key) not in PROPOSALS:
             assert spec.key not in {s.key for s in sports.slices_for(sport)}, (sport, spec.key)
             assert spec.key not in planning.expected_slice_keys(sport, phase="post"), (sport, spec.key)
+
+
+def _answers(spec: sports.SliceSpec) -> List[str]:
+    return [code for by_endpoint in EVIDENCE["answers"].values() for code in by_endpoint.get(_endpoint(spec), ())]
+
+
+@pytest.mark.parametrize("spec", sports.DETAIL_SLICES, ids=lambda spec: spec.key)
+def test_the_phases_follow_the_evidence(spec: sports.SliceSpec):
+    """
+    Bir dilim başlamamış maçta yalnızca hiçbir başlamamış maç onu veriyle yanıtlamadıysa istenmez. Canlı maç
+    evrelerden hiç çıkmaz: canlı kanıt az (lv-20261009'da canlı sayfa yok), canlıdaki yokluk evreyi daraltmaz.
+    """
+    assert {"live", "post"} <= spec.phases
+    if "pre" not in spec.phases:
+        assert not [code for code in _answers(spec) if code == "notstarted:200"], spec.key
+        assert spec.key in ("statistics", "point_by_point", "esports_games", "innings")
+
+
+def test_statistics_and_point_by_point_exist_once_the_match_started():
+    """lv-20261009: 15 sporun başlamamış 15 maç sayfası istatistik istemedi; point-by-point'e 404 aldı."""
+    started = {"finished", "live"}
+    for key, codes in (("statistics", set()), ("point_by_point", {"notstarted:404"})):
+        answers = _answers(sports.get_slice(key))
+        assert {code for code in answers if code.split(":")[0] not in started} == codes, key
+    not_started = [row for rows in EVIDENCE["pages"].values() for row in rows
+                   if row["state"] == "notstarted" and row["complete"]]
+    assert len(not_started) == 15
+    assert "statistics" not in planning.expected_slice_keys("football", phase="pre")
+    for key in ("statistics", "point_by_point"):
+        assert key not in {s.key for s in sports.select_slices("event", "tennis", phase="pre")}
+        assert key in {s.key for s in sports.select_slices("event", "tennis", phase="live")}
 
 
 # --- sahibin kararı (FX-16) ve uygulama tarafı kanıt ----------------------------------------------------------
@@ -184,10 +265,29 @@ def test_the_app_side_evidence_backs_the_decision():
     for key in ("lineups", "incidents"):
         assert finished["tennis"][key] == "-" and live["tennis"][key] == "not_"
     # pregame_form basketbolda ve teniste bitmiş maçta veri getirmedi, basketbolda canlı maçta getirdi; futbolda
-    # iki maçta da getirdi ama kayıtlı üç sayfada 404 aldı (evidence.json): her maçta gelmez, isteğe bağlı
+    # iki maçta da getirdi, #121'in üç sayfasında 404, lv-20261009'un iki bitmiş sayfasında 200 aldı
+    # (evidence.json): her maçta gelmez, isteğe bağlı
     assert finished["basketball"]["pregame_form"] == finished["tennis"]["pregame_form"] == "-"
     assert live["basketball"]["pregame_form"] == "Y"
     assert finished["football"]["pregame_form"] == live["football"]["pregame_form"] == "Y"
+
+
+# --- FX-31: lv-20261009'un kanıtı ------------------------------------------------------------------------------
+
+
+def test_the_applied_and_proposed_cells_are_what_the_evidence_says():
+    for (sport, key), verdict in {**APPLIED, **PROPOSALS}.items():
+        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(sports.get_slice(key))) == verdict, (sport, key)
+    assert not set(APPLIED) & set(PROPOSALS) and not set(APPLIED) & set(DECIDED)
+    assert {sport for sport, _key in PROPOSALS} == {"rugby", "floorball", "volleyball", "minifootball"}
+
+
+def test_the_app_side_evidence_saw_no_data_where_the_page_evidence_says_optional_or_absent():
+    """Uygulama tarafı bitmiş tablo (2026-10-07) uygulanan ve önerilen her isteğe bağlı ya da istenmez hücrede "-"."""
+    finished, _live = (_matrix(name) for name in APP_SIDE)
+    for (sport, key), verdict in {**APPLIED, **PROPOSALS}.items():
+        if verdict != REQUIRED:
+            assert finished[sport][key] == "-", (sport, key)
 
 
 @pytest.mark.parametrize("sport", ["football", "basketball", "tennis"])
@@ -205,26 +305,32 @@ def test_pregame_form_is_requested_but_not_awaited_in_the_main_sports(sport: str
     ("tennis", ("statistics", "team_streaks", "pregame_form", "h2h", "point_by_point"),
      ("statistics", "team_streaks", "h2h", "point_by_point")),
     ("ice-hockey", COMMON_KEYS, ("statistics", "team_streaks", "h2h", "lineups", "incidents")),
-    ("futsal", COMMON_KEYS, ("team_streaks", "h2h", "incidents")),
+    ("futsal", COMMON_KEYS, ("team_streaks", "h2h")),
     ("minifootball", COMMON_KEYS, ("statistics", "team_streaks", "pregame_form", "h2h", "incidents")),
     ("padel", ("statistics", "team_streaks", "pregame_form", "h2h"), ("team_streaks", "h2h")),
     ("snooker", ("statistics", "team_streaks", "pregame_form", "h2h"), ("team_streaks", "h2h")),
     ("cricket", COMMON_KEYS + ("innings",), ("team_streaks", "h2h", "lineups", "incidents", "innings")),
     ("esports", ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "esports_games"),
-     ("team_streaks", "h2h", "lineups")),
+     ("team_streaks", "h2h", "lineups", "esports_games")),
     ("darts", ("statistics", "team_streaks", "pregame_form", "h2h", "point_by_point"),
      ("statistics", "team_streaks", "h2h", "point_by_point")),
-    ("mma", ("statistics", "team_streaks", "pregame_form", "h2h"), ("statistics", "team_streaks", "pregame_form", "h2h")),
-    # kanıt yok ya da yetersiz: bugünkü altı dilim
-    ("american-football", COMMON_KEYS, COMMON_KEYS),
+    ("mma", ("statistics", "team_streaks", "pregame_form", "h2h"), ("statistics", "team_streaks", "h2h")),
+    # FX-31 (lv-20261009): pregame_form isteğe bağlı; badminton ve masa tenisinde kadro istenmez, point_by_point
+    # tamlığa girer; beyzbolda olaylar istenmez
+    ("american-football", COMMON_KEYS, ("statistics", "team_streaks", "h2h", "lineups", "incidents")),
+    ("badminton", ("statistics", "team_streaks", "pregame_form", "h2h", "incidents", "point_by_point"),
+     ("statistics", "team_streaks", "h2h", "incidents", "point_by_point")),
+    ("table-tennis", ("statistics", "team_streaks", "pregame_form", "h2h", "incidents", "point_by_point"),
+     ("statistics", "team_streaks", "h2h", "incidents", "point_by_point")),
+    ("baseball", ("statistics", "team_streaks", "pregame_form", "h2h", "lineups"),
+     ("statistics", "team_streaks", "h2h", "lineups")),
+    # kanıt bugünkü altı dilime uyuyor (hentbol) ya da yetersiz (aussie-rules: yalnızca başlamamış maç)
     ("aussie-rules", COMMON_KEYS, COMMON_KEYS),
     ("handball", COMMON_KEYS, COMMON_KEYS),
+    # öneri (PROPOSALS), sahibin kararına kadar bugünkü altı dilim
     ("rugby", COMMON_KEYS, COMMON_KEYS),
     ("floorball", COMMON_KEYS, COMMON_KEYS),
     ("volleyball", COMMON_KEYS, COMMON_KEYS),
-    ("badminton", COMMON_KEYS, COMMON_KEYS),
-    ("table-tennis", COMMON_KEYS, COMMON_KEYS),
-    ("baseball", COMMON_KEYS, COMMON_KEYS),
     # kayıtlı olmayan ya da bilinmeyen spor: bugünkü altı dilim
     ("waterpolo", COMMON_KEYS, COMMON_KEYS),
     ("", COMMON_KEYS, COMMON_KEYS),

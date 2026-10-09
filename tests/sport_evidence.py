@@ -1,12 +1,42 @@
 """
-Her sporun maç sayfasının istediği detay uç noktaları ve aldığı yanıtlar: research/all_sports'tan (PR #17) türeyen
-kanıt tablosu ve dilim kayıt defterinin (sofascore_scraper/sports.py, DETAIL_SLICES) ondan çıkan kuralları.
+Her sporun maç sayfasının istediği detay uç noktaları ve aldığı yanıtlar: research/all_sports'tan türeyen kanıt
+tablosu ve dilim kayıt defterinin (sofascore_scraper/sports.py, DETAIL_SLICES) ondan çıkan kuralları.
 
-Ağ yok: yalnızca research/all_sports/requests.jsonl ve events/*.jsonl okunur. Tablo
+Ağ yok: yalnızca research/all_sports/requests.jsonl, pages.jsonl ve events/*.jsonl okunur. Tablo
 tests/fixtures/sport_slices/evidence.json'a yazılıdır; tests/test_sport_slices.py yazılı tablonun araştırma
 verisinden yeniden türediğini ve kayıt defterinin tabloya uyduğunu denetler.
 
-Yeniden üretmek (araştırma verisi değişirse):
+Veride iki koşu var: 2026-10-01'in keşfi (PR #17; satırlarında `run_id` yok) ve onarılmış keşif aracının
+koşusu `lv-20261009` (PR #183; FX-29 ve FX-29b'den sonra, her satırda `run_id`). Eski araç maç sayfalarının
+isteklerinin çoğunu kaybetti: kaybolan istek ne gönderildi ne kaydedildi, iz bırakmadı (FX-29, FX-29b). İki
+kural buradan çıkar:
+
+  1. Yanıtlar (answers) bütün koşulardan sayılır. Kaydedilmiş bir yanıt SofaScore'un gerçek yanıtıdır; hata
+     yalnızca istekleri düşürdü, yanıtları değiştirmedi. Eski yanıtları atmak gerçek kanıtı atmak olurdu:
+     futbol ve basketbolda team-streaks ve h2h'nin bitmiş ve canlı maç yanıtları yalnızca eski koşudadır;
+     futbolun ve buz hokeyinin bitmiş maçta pregame-form 404'leri de (FX-16'nın kararı) öyle. Aynı dilim bir
+     maçta 200, ötekinde 404 alıyorsa (ör. ragbi lineups: eski koşuda 200, yenisinde 404) ikisi de doğrudur:
+     dilim her maçta gelmez.
+  2. Sayfalar (pages, yani "sayfa bu dilimi hiç istemedi" yokluk kanıtı) yalnızca onarılmış koşulardan
+     (REPAIRED_RUNS) gelir. Eski koşunun maç sayfaları eksik: ragbi, mini futbol ve masa tenisi sayfaları
+     kendi maçları için 4-6 uç nokta yanıtladı, onarılmış koşunun aynı sporlardaki sayfaları 13-15; eski
+     ragbi sayfasında statistics ve incidents hiç yok, yeni sayfa ikisini de istedi. Kaybolan istek
+     "istenmedi"den ayırt edilemez, bu yüzden eski sayfa yokluğa kanıt olamaz.
+
+Maçın durumu isteğin anındaki durumdur. Onarılmış koşunun olay satırlarında `seen_at` vardır: isteğe zamanca
+en yakın, maçın kendi /event/{id} yanıtından gelen gözlem (yoksa o koşunun herhangi bir gözlemi) kullanılır.
+Gerekçe: koşunun "başlamamış" diye açtığı sayfalardan üçünün maçı sayfa açıldığında başlamıştı (basketbol
+16685163, buz hokeyi 16546323, beyzbol 17212667), dartın 17279017'si bitmişti; Amerikan futbolunun 16183708'i
+sayfa kapandıktan sonra başladı ve son gözlem ("inprogress") onu yanlışlıkla canlı sayardı. Eski koşunun
+satırlarında zaman yok: eski koşunun maçın son gözlemi geçerlidir (yeni koşunun gözlemleri eski isteklerin
+durumunu değiştirmez; 2026-10-01'de başlamamış 9 maç 2026-10-09'da bitmişti).
+
+pages.jsonl'daki `request-gone` satırı (FX-29b) sayfanın istediği ama Chromium'un göndermeden düşürdüğü
+isteğidir: maç sayfasındaki bir maç uç noktası için yanıtlara "<durum>:gone" olarak girer (sayfa onu istedi,
+yokluk sayılmaz; yanıt yok, veri ya da 404 sayılmaz). `body_error` (gövde okunamadı) ve `sample_redacted`
+satırları HTTP koduyla sayılır: gövdeye bakılmaz.
+
+Yeniden üretmek (araştırma verisi değişirse; yeni bir onarılmış koşu REPAIRED_RUNS'a eklenir):
     python tests/sport_evidence.py > tests/fixtures/sport_slices/evidence.json
 """
 from __future__ import annotations
@@ -24,9 +54,14 @@ REPO = Path(__file__).resolve().parent.parent
 RESEARCH = REPO / "research" / "all_sports"
 EVIDENCE_FILE = Path(__file__).resolve().parent / "fixtures" / "sport_slices" / "evidence.json"
 
+# Keşif aracının onarılmış sürümüyle (FX-29, FX-29b) kaydedilmiş koşular: yalnızca bunların maç sayfaları yokluk
+# kanıtıdır. Eski koşunun satırlarında run_id yoktur.
+REPAIRED_RUNS = frozenset({"lv-20261009"})
+
 # Maçın durumu, olayın status.type'ından: bitmiş, başlamış (canlı) ya da başlamamış
 FINISHED, LIVE, NOT_STARTED = "finished", "live", "notstarted"
 _STATES = {"finished": FINISHED, "inprogress": LIVE, "willcontinue": LIVE, "notstarted": NOT_STARTED}
+GONE = "gone"  # sayfa istedi, istek gönderilmeden düştü (request-gone): yanıt yok
 
 # Bahis ve oran uç noktaları P28'in işidir; tabloya girmez
 _ODDS = re.compile(r"/odds/|winning-odds|betting-odds")
@@ -42,6 +77,9 @@ OPEN_DATA = "open_data"  # yalnızca bitmemiş maçta veriyle yanıtlandı
 ABSENT = "absent"  # sayfa açılınca istenen dilim, eksiksiz yüklenmiş canlı ya da bitmiş sayfada hiç istenmedi
 UNKNOWN = "unknown"  # kanıt yok ya da yetersiz (sayfası açılmadı, 403, yarım yüklendi, yalnızca başlamamış maç)
 
+# Olayın bir gözlemi (onarılmış koşu): (koşu, zaman, maçın kendi /event/{id} yanıtından mı, spor, durum)
+_Seen = Tuple[str, float, bool, str, str]
+
 
 def _endpoint(url: str) -> Optional[Tuple[int, str]]:
     """API adresi → (olay kimliği, uç nokta kalıbı: "/" ya da "/statistics", "/heatmap/{id}", ...)."""
@@ -56,32 +94,67 @@ def _endpoint(url: str) -> Optional[Tuple[int, str]]:
     return int(m.group(1)), suffix
 
 
-def _events(research: Path) -> Dict[int, Tuple[str, str]]:
-    """Olay kimliği → (spor, durum)."""
-    out: Dict[int, Tuple[str, str]] = {}
-    for path in sorted(glob.glob(os.fspath(research / "events" / "*.jsonl"))):
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                row = json.loads(line)
-                if "id" in row and row.get("sport"):
+class _Events:
+    """Olayların sporu ve durumu: eski koşudan son gözlem, onarılmış koşulardan zamanlı gözlemler."""
+
+    def __init__(self, research: Path) -> None:
+        self.old: Dict[int, Tuple[str, str]] = {}
+        self.timed: Dict[int, List[_Seen]] = collections.defaultdict(list)
+        for path in sorted(glob.glob(os.fspath(research / "events" / "*.jsonl"))):
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    row = json.loads(line)
+                    if "id" not in row or not row.get("sport"):
+                        continue
                     kind = (row.get("status") or {}).get("type") or ""
-                    out[int(row["id"])] = (str(row["sport"]), _STATES.get(kind, kind))
-    return out
+                    sport, state = str(row["sport"]), _STATES.get(kind, kind)
+                    if row.get("run_id") and row.get("seen_at") is not None:
+                        self.timed[int(row["id"])].append((str(row["run_id"]), float(row["seen_at"]),
+                                                           row.get("source_pattern") == "/event/{id}", sport, state))
+                    elif not row.get("run_id"):
+                        self.old[int(row["id"])] = (sport, state)
+
+    def at(self, event_id: int, run_id: Optional[str], ts: float, page_sport: str) -> Tuple[str, str]:
+        """(spor, durum) isteğin anında: onarılmış koşuda zamanca en yakın gözlem, eski koşuda son gözlem."""
+        if run_id:
+            seen = [s for s in self.timed.get(event_id, ()) if s[0] == run_id]
+            own = [s for s in seen if s[2]] or seen
+            if own:
+                nearest = min(own, key=lambda s: (abs(s[1] - ts), s[1]))
+                return nearest[3], nearest[4]
+        return self.old.get(event_id, (page_sport, "unknown"))
+
+
+def _gone_requests(research: Path) -> Iterable[Dict[str, Any]]:
+    """pages.jsonl'daki request-gone satırları, bir maç sayfası açıkken düşenler (onarılmış koşular)."""
+    path = research / "pages.jsonl"
+    if not path.exists():
+        return
+    page_type, sport = "", ""
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("op") == "goto":
+                page_type, sport = str(row.get("page_type") or ""), str(row.get("sport") or "")
+            elif (row.get("op") == "request-gone" and page_type.startswith("event")
+                  and row.get("run_id") in REPAIRED_RUNS):
+                yield {"url": row["url"], "ts": row["ts"], "run_id": row["run_id"], "sport": sport}
 
 
 def derive(research: Path = RESEARCH) -> Dict[str, Any]:
     """
     Kanıt tablosu:
-      answers: spor → uç nokta → ["<durum>:<HTTP kodu>", ...] (maçın durumu ve yanıtın kodu; sıralı, tekil)
-      pages:   spor → [{"event_id", "state", "complete"}]: maç sayfasında açılan maçlar. complete: sayfa
-               /event/{id}'yi ve /event/{id}/pregame-form'u istedi ve yanıt (200 ya da 404) aldı (sayfanın
-               açılış istekleri gitti; 403 alan sayfa sayılmaz)
+      answers: spor → uç nokta → ["<durum>:<HTTP kodu>", ...] (maçın isteğin anındaki durumu ve yanıtın kodu,
+               ya da "<durum>:gone": istendi, gönderilmeden düştü; sıralı, tekil). Bütün koşulardan.
+      pages:   spor → [{"event_id", "state", "complete", "run_id"}]: onarılmış koşularda maç sayfasında açılan
+               maçlar. state: sayfanın /event/{id} yanıtının anındaki durum. complete: sayfa /event/{id}'yi ve
+               /event/{id}/pregame-form'u istedi ve yanıt (200 ya da 404) aldı (403 alan sayfa sayılmaz)
     Yalnızca maç sayfalarındaki (sayfa tipi event…) istekler sayılır; oranlar hariç. Yanıtı kaydedilmemiş istek
     (kod yok) sayılmaz.
     """
-    events = _events(research)
+    events = _Events(research)
     answers: Dict[str, Dict[str, Set[str]]] = collections.defaultdict(lambda: collections.defaultdict(set))
-    seen: Dict[Tuple[str, int], Set[str]] = collections.defaultdict(set)
+    seen: Dict[Tuple[str, int, str], Dict[str, str]] = collections.defaultdict(dict)
     with open(research / "requests.jsonl", encoding="utf-8") as f:
         for line in f:
             row = json.loads(line)
@@ -91,18 +164,29 @@ def derive(research: Path = RESEARCH) -> Dict[str, Any]:
             if found is None or _ODDS.search(found[1]):
                 continue
             event_id, suffix = found
-            sport, state = events.get(event_id, (row["sport"], "unknown"))
+            run_id = row.get("run_id")
+            sport, state = events.at(event_id, run_id, float(row["ts"]), str(row["sport"]))
             answers[sport][suffix].add(f"{state}:{row['status']}")
-            if row["status"] in (200, 404):  # 403: istek engellendi, sayfanın ne istediği bilinmez
-                seen[(sport, event_id)].add(suffix)
+            # 403: istek engellendi, sayfanın ne istediği bilinmez. Eski koşunun sayfaları yokluğa kanıt değil.
+            if row["status"] in (200, 404) and run_id in REPAIRED_RUNS:
+                seen[(sport, event_id, run_id)].setdefault(suffix, state)
+    for row in _gone_requests(research):
+        found = _endpoint(row["url"])
+        if found is None or _ODDS.search(found[1]):
+            continue
+        event_id, suffix = found
+        sport, state = events.at(event_id, row["run_id"], float(row["ts"]), row["sport"])
+        answers[sport][suffix].add(f"{state}:{GONE}")
     pages: Dict[str, List[Dict[str, Any]]] = collections.defaultdict(list)
-    for (sport, event_id), suffixes in sorted(seen.items()):
-        if len(suffixes - {"/", "/votes"}) < 2:
+    for (sport, event_id, run_id), states in sorted(seen.items()):
+        if len(set(states) - {"/", "/votes"}) < 2:
             continue  # başka bir maçın sayfasında geçen maç (ör. H2H listesi): kendi sayfası açılmadı
-        pages[sport].append({"event_id": event_id, "state": events.get(event_id, (sport, "unknown"))[1],
-                             "complete": "/" in suffixes and "/pregame-form" in suffixes})
+        pages[sport].append({"event_id": event_id, "state": states.get("/", next(iter(states.values()))),
+                             "complete": "/" in states and "/pregame-form" in states, "run_id": run_id})
     return {
-        "source": "research/all_sports (PR #17): requests.jsonl, events/*.jsonl",
+        "source": "research/all_sports: requests.jsonl, pages.jsonl, events/*.jsonl; answers from every run "
+                  "(2026-10-01, PR #17; lv-20261009, PR #183), pages from the repaired runs "
+                  f"({', '.join(sorted(REPAIRED_RUNS))})",
         "pages": {sport: pages[sport] for sport in sorted(pages)},
         "answers": {sport: {suffix: sorted(codes) for suffix, codes in sorted(by_suffix.items())}
                     for sport, by_suffix in sorted(answers.items())},

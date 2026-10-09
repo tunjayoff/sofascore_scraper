@@ -73,8 +73,10 @@ def test_esports_games_slice_is_requested_only_for_esports_once_the_match_starte
     assert "esports_games" not in keys("esports", "pre")
     assert keys("esports", "live")[-1] == keys("esports", "post")[-1] == "esports_games"
     assert all("esports_games" not in keys(sport, "post") for sport in sports.sport_slugs() if sport != "esports")
-    # isteğe bağlı: tamlık hesabına girmez, eski maç detayı yanıtında yoktur
-    assert "esports_games" not in {s.key for s in sports.slices_for("esports", required_only=True)}
+    # FX-31: bitmiş ve canlı maçta veriyle geldi, tamlık hesabına girer (tests/test_sport_slices.py); spora özel
+    # olduğu için eski maç detayı yanıtında yoktur
+    assert "esports_games" in {s.key for s in sports.slices_for("esports", required_only=True)}
+    assert sports.get_slice("esports_games").sports == frozenset({"esports"})
 
 
 def test_cricket_end_of_day_is_live_and_open_in_the_catalog(tmp_path: Path) -> None:

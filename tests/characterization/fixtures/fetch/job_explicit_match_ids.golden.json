@@ -196,10 +196,6 @@
      "checked_at": "<volatile>",
      "state": "empty"
     },
-    "statistics": {
-     "checked_at": "<volatile>",
-     "state": "empty"
-    },
     "team_streaks": {
      "checked_at": "<volatile>",
      "state": "empty"
@@ -327,7 +323,6 @@
     "async /event/9100004/incidents 404",
     "async /event/9100004/lineups 404",
     "async /event/9100004/pregame-form 404",
-    "async /event/9100004/statistics 404",
     "async /event/9100004/team-streaks 404",
     "async /event/9200001 200",
     "async /event/9200001/h2h 200",
