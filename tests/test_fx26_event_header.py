@@ -85,10 +85,13 @@ def test_baseball_has_innings_hits_errors_and_the_series(store: Store) -> None:
 def test_formats_without_sets_name_what_they_count(store: Store) -> None:
     formats = {name: get(int(name.split("__")[1]))["data"]["score"]["format"]
                for name in ("darts__17236047", "snooker__17264352", "esports__17264020")}
-    # Dart: tek setlik maç (`bestOfSets: 1`) eşleyicide `legs` kalır ve set listesi boştur; başlık onu leg sayısı
-    # olarak gösterir (ön yüz `setsLabel`). Eşleyicinin kuralı (bestOfSets > 1) ayrı bir iştir: türetme sürümünü değiştirir
-    assert formats == {"darts__17236047": "legs", "snooker__17264352": "frames", "esports__17264020": "games_won"}
-    assert get(17236047)["data"]["score"]["sets"] == []
+    # Dart: tek setlik maç (`bestOfSets: 1`) set usulü değildir: `legs_won`, set listesi boş, başlık skoru leg (B3)
+    assert formats == {"darts__17236047": "legs_won", "snooker__17264352": "frames", "esports__17264020": "games_won"}
+    darts = get(17236047)["data"]["score"]
+    assert (darts["sets"], darts["sets_won"]) == ([], {"home": 4, "away": 0})
+    # E-spor: her harita bir set, skoru raunt (B3)
+    maps = get(17264020)["data"]["score"]["sets"]
+    assert [(m["number"], m["home"], m["away"]) for m in maps] == [(1, 7, 13), (2, 13, 9), (3, 11, 13)]
 
 
 def test_mma_has_method_and_final_round(store: Store) -> None:

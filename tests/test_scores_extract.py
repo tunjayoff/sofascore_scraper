@@ -443,6 +443,8 @@ def test_cricket_end_of_day_keeps_the_score_and_is_live():
     # setsiz maç: `current` kazanılan leg; canlı yükte period1 `current`'ı tekrarlar ve bir set değildir
     ("darts/D2_legs_only__17180772", "legs_won", Pair(4, 2), {}),
     ("darts/A_inprogress-20-started__17225298", "legs_won", Pair(1, 3), {}),
+    # tek setlik maç (bestOfSets 1, bestOfLegs 7): `current` kazanılan leg'dir, kazanılan set değil (B3)
+    ("darts/D3_single_set__17278936", "legs_won", Pair(1, 4), {}),
 ])
 def test_darts_sets_or_legs_by_best_of_sets(rel, unit, sets_won, sets):
     s = extract_scores(_load(rel), "darts")
@@ -450,19 +452,42 @@ def test_darts_sets_or_legs_by_best_of_sets(rel, unit, sets_won, sets):
     assert (s.format, s.sets_won, s.sets, s.tiebreaks, s.match_tiebreak) == (unit, sets_won, sets, {}, False)
 
 
-@pytest.mark.parametrize("best_of_sets", [None, 0, False, "5"])
-def test_darts_without_a_positive_best_of_sets_counts_legs(best_of_sets):
+@pytest.mark.parametrize("best_of_sets", [None, 0, 1, False, True, "5"])
+def test_darts_without_more_than_one_set_counts_legs(best_of_sets):
     event = dict(_load("darts/D1_sets__17099318"), bestOfSets=best_of_sets)
     assert extract_scores(event, "darts").format == "legs_won"
 
 
-def test_esports_counts_games_won_and_keeps_no_sets():
-    """periodN yalnızca oyunu kimin aldığını söyler (1 / 0); oynanmamış oyunlar da 0-0 gelir."""
-    event = _load("esports/A_inprogress-30-pause__17200404")
-    assert event["homeScore"]["period5"] == event["awayScore"]["period5"] == 0
+def test_darts_single_set_live_payload_counts_legs_not_one_set():
+    """Canlı tek setlik maçta period1 `current`'ı tekrarlar (o setin leg'leri): set listesine girmez."""
+    event = dict(_load("darts/A_inprogress-20-started__17225298"), bestOfSets=1)
+    s = extract_scores(event, "darts")
+    assert (s.format, s.sets_won, s.sets) == ("legs_won", Pair(1, 3), {})
+    assert extract_scores(dict(event, bestOfSets=3), "darts").sets == {1: Pair(1, 3)}
+
+
+@pytest.mark.parametrize("rel,sets_won,games,live", [
+    # canlı: periodN oyunu kimin aldığı (1 / 0); o an oynanan ve oynanmamış oyunlar 0-0 gelir, sayılmaz
+    ("esports/A_inprogress-30-pause__17200404", Pair(1, 1), {1: Pair(1, 0), 2: Pair(0, 1)}, True),
+    ("esports/A_inprogress-1002-second-game__17223320", Pair(1, 0), {1: Pair(1, 0)}, True),
+    ("esports/A_inprogress-1001-first-game__17060161", Pair(0, 0), {}, True),
+    # bitmiş CS2 serisi: periodN haritanın raunt skoru (esports-games dilimindeki oyunların `display`'i)
+    ("esports/E1_finished_map_rounds__17264020", Pair(1, 2), {1: Pair(7, 13), 2: Pair(13, 9), 3: Pair(11, 13)}, False),
+])
+def test_esports_counts_games_won_and_keeps_each_game(rel, sets_won, games, live):
+    event = _load(rel)
     s = extract_scores(event, "esports")
-    assert (s.format, s.sets_won, s.sets) == ("games_won", Pair(1, 1), {})
-    assert s.status_class is StatusClass.LIVE
+    assert (s.format, s.sets_won, s.sets, s.tiebreaks, s.match_tiebreak) == ("games_won", sets_won, games, {}, False)
+    assert (s.status_class is StatusClass.LIVE) == live
+
+
+def test_esports_game_scores_match_the_games_slice():
+    """Bitmiş serinin periodN'i /event/{id}/esports-games dilimindeki oyunların skoruyla aynıdır."""
+    root = Path(__file__).resolve().parents[1] / "research" / "all_sports" / "samples" / "esports"
+    games = json.loads((root / "event-id-esports-games__2.json").read_text(encoding="utf-8"))["body"]["games"]
+    s = extract_scores(_load("esports/E1_finished_map_rounds__17264020"), "esports")
+    assert [Pair(g["homeScore"]["display"], g["awayScore"]["display"]) for g in games] == list(s.sets.values())
+    assert [g["winnerCode"] for g in games] == [1 if p.home > p.away else 2 for p in s.sets.values()]
 
 
 @pytest.mark.parametrize("rel,method,final_round,winner", [

@@ -1067,15 +1067,15 @@ export interface SeasonSliceListResponse {
 export interface SetScore {
   /** Number of the set, starting at 1. */
   number: number
-  /** What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. */
+  /** What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. In e-sports (`games_won`) the set is a game (map) and this is its score as SofaScore gives it: rounds in titles played in rounds (CS2), else 1 for the side that won the game and 0 for the other. */
   home: number | null
-  /** What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. */
+  /** What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. In e-sports (`games_won`) the set is a game (map) and this is its score as SofaScore gives it: rounds in titles played in rounds (CS2), else 1 for the side that won the game and 0 for the other. */
   away: number | null
   /** Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel. */
   tiebreak: ScorePair | null
 }
 
-/** Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, badminton and table tennis count points; darts played in sets counts legs per set; snooker, darts played in legs only and e-sports give only the frames, legs or games won and no sets. */
+/** Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, badminton and table tennis count points; darts played in sets counts legs per set; snooker and darts played in legs only give only the frames or legs won and no sets; e-sports give the games (maps) won and the score of each game. */
 export interface SetsScore {
   /** Always `sets`. */
   family: "sets"
@@ -1083,11 +1083,11 @@ export interface SetsScore {
   home: number | null
   /** Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. */
   away: number | null
-  /** What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. */
+  /** What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`: no sets; `sets_won` and the headline score are the frames (snooker) or legs (darts played in legs only or in a single set) won. `games_won`: `sets_won` and the headline score are the games (maps) won in e-sports, and each set is a game. Null when the record has no score sheet. */
   format: "games" | "points" | "frames" | "legs" | "legs_won" | "games_won" | null
   /** Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. */
   sets_won: ScorePair | null
-  /** The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`. */
+  /** The sets that have a score, in order. Empty with the formats `frames` and `legs_won`. With `games_won` the games (maps) that have a score; a game SofaScore gives as 0-0 (not played, or the one being played while live) is left out. */
   sets: SetScore[]
   /** True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel. */
   match_tiebreak: boolean

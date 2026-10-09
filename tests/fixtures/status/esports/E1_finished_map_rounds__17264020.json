@@ -1,0 +1,39 @@
+{
+  "case_id": "E1_finished_map_rounds",
+  "event_id": 17264020,
+  "fetched_at_utc": "2026-10-09T00:09:27+00:00",
+  "source_file": "research/all_sports/samples/esports/event-id__2.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 7,
+    "period2": 13,
+    "period3": 11
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 13,
+    "period2": 9,
+    "period3": 13
+  },
+  "startTimestamp": 1791288000,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "awayScore.current",
+      "awayScore.display",
+      "time.currentPeriodStart"
+    ],
+    "changeTimestamp": 1791299884
+  }
+}
