@@ -10,16 +10,16 @@ where python >nul 2>nul && (
   python scripts\start_web.py
   goto :end
 )
-REM Language: an explicit setting (APP_LANGUAGE in the environment or in .env) wins, then the
+REM Language: an explicit setting (SOFASCORE_DISPLAY__LANGUAGE in the environment or in .env) wins, then the
 REM Windows display language, then English: the same rule as the app (sofascore_scraper\language.py). Only this
 REM message needs it; everything else is printed by scripts\start_web.py. The Turkish text has no
 REM Turkish letters on purpose: this file stays plain ASCII, so it reads the same in every code page.
 set "UI_LANG=en"
 for /f "usebackq delims=" %%L in (`powershell -NoProfile -Command "(Get-UICulture).TwoLetterISOLanguageName" 2^>nul`) do set "UI_LANG=%%L"
-findstr /b /r /i /c:"APP_LANGUAGE *= *tr" .env >nul 2>nul && set "UI_LANG=tr"
-findstr /b /r /i /c:"APP_LANGUAGE *= *en" .env >nul 2>nul && set "UI_LANG=en"
-if /i "%APP_LANGUAGE%"=="tr" set "UI_LANG=tr"
-if /i "%APP_LANGUAGE%"=="en" set "UI_LANG=en"
+findstr /b /r /i /c:"SOFASCORE_DISPLAY__LANGUAGE *= *tr" .env >nul 2>nul && set "UI_LANG=tr"
+findstr /b /r /i /c:"SOFASCORE_DISPLAY__LANGUAGE *= *en" .env >nul 2>nul && set "UI_LANG=en"
+if /i "%SOFASCORE_DISPLAY__LANGUAGE%"=="tr" set "UI_LANG=tr"
+if /i "%SOFASCORE_DISPLAY__LANGUAGE%"=="en" set "UI_LANG=en"
 if /i "%UI_LANG%"=="tr" goto :no_python_tr
 echo Python not found. Install Python 3 from https://www.python.org/downloads/
 echo Then re-run this file.

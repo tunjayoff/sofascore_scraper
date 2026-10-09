@@ -2,9 +2,8 @@
 Dil kuralı: açık ayar (`display.language`: SOFASCORE_DISPLAY__LANGUAGE) > sistem dili > İngilizce.
 
 Kural sofascore_scraper/language.py'de durur; kurulum ve başlatma betikleri (bash, PowerShell) Python daha
-yokken çalıştıkları için kendi kurallarını uygular. Betiklerin Python'suz yedek kuralı 2.x'in APP_LANGUAGE adını
-okur: kurulum betikleri (scripts/install.*) P30'un kapsamında değildir; betiklere kendi tablosu sorulur
-(SCRIPT_CASES). Başlatma betikleri Python varken dili uygulamaya sorar (app_lang, aşağıda).
+yokken çalıştıkları için aynı kuralı kendileri uygular ve aynı tabloyla (CASES) sınanır. Başlatma betikleri
+Python varken dili uygulamaya sorar (app_lang, aşağıda).
 Ayrıca: iki dil dosyasında aynı anahtarlar var mı, yeni kurulum İngilizce mi başlıyor.
 """
 from __future__ import annotations
@@ -48,30 +47,17 @@ CASES = [
     ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr"}, None, "en"),
     ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr_TR:tr"}, None, "en"),
     ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "tr"}, None, "en"),
+    ({"LANG": "tr_TR.UTF-8", "APP_LANGUAGE": "en"}, None, "tr"),
     # .env'deki ayar
     ({"LANG": "en_US.UTF-8"}, "SOFASCORE_CLIENT__MAX_CONCURRENT=5\nSOFASCORE_DISPLAY__LANGUAGE=tr\n", "tr"),
     ({"LANG": "tr_TR.UTF-8"}, 'SOFASCORE_DISPLAY__LANGUAGE="en"\n', "en"),
     ({"LANG": "tr_TR.UTF-8"}, "SOFASCORE_DISPLAY__LANGUAGE=\n", "tr"),  # boş = ayarlanmamış
     ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "en"}, "SOFASCORE_DISPLAY__LANGUAGE=tr\n", "en"),  # süreç ortamı .env'in önünde
     ({"LANG": "en_US.UTF-8"}, "APP_LANGUAGE=tr\n", "en"),
+    ({"LANG": "tr_TR.UTF-8"}, "SOFASCORE_DISPLAY__LANGUAGE=en  # yorum\n", "en"),
+    ({"LANG": "en_US.UTF-8"}, "SOFASCORE_DISPLAY__LANGUAGE=en\nSOFASCORE_DISPLAY__LANGUAGE=tr\n", "tr"),  # son satır
 ]
 _IDS = [f"{i}-{expected}" for i, (_env, _file, expected) in enumerate(CASES)]
-
-# Python'dan önce çalışan betiklerin yedek kuralı (scripts/install.sh, install.ps1 ve başlatma betiklerinin
-# detect_lang'ı): 2.x'in adları. Kurulum betikleri P30'un kapsamında değildir (bkz. modülün açıklaması).
-SCRIPT_CASES = [case for case in CASES[:11]] + [
-    ({"LANG": "tr_TR.UTF-8", "APP_LANGUAGE": "en"}, None, "en"),
-    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "tr"}, None, "tr"),
-    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "TR"}, None, "tr"),
-    ({"LANG": "tr_TR.UTF-8", "APP_LANGUAGE": "de"}, None, "tr"),
-    ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr"}, None, "tr"),
-    ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr_TR:tr"}, None, "en"),
-    ({"LANG": "en_US.UTF-8"}, "MAX_CONCURRENT=5\nAPP_LANGUAGE=tr\n", "tr"),
-    ({"LANG": "tr_TR.UTF-8"}, 'APP_LANGUAGE="en"\n', "en"),
-    ({"LANG": "tr_TR.UTF-8"}, "APP_LANGUAGE=\n", "tr"),
-    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "en"}, "APP_LANGUAGE=tr\n", "en"),
-]
-_SCRIPT_IDS = [f"{i}-{expected}" for i, (_env, _file, expected) in enumerate(SCRIPT_CASES)]
 
 
 # --- Python: tek kural ------------------------------------------------------------------------
@@ -149,7 +135,7 @@ def test_shell_scripts_share_one_detect_lang():
 
 
 @pytest.mark.skipif(os.name == "nt", reason="bash betikleri POSIX'te çalışır")
-@pytest.mark.parametrize("environ,env_text,expected", SCRIPT_CASES, ids=_SCRIPT_IDS)
+@pytest.mark.parametrize("environ,env_text,expected", CASES, ids=_IDS)
 def test_rule_in_the_shell_scripts(tmp_path, environ, env_text, expected):
     bash = shutil.which("bash")
     if bash is None:
@@ -220,8 +206,8 @@ def test_powershell_installer_parses(tmp_path):
 
 # Ortam hiçbir şey söylemiyorsa PowerShell makinenin arayüz diline bakar: o örnek makineye bağlıdır
 @pytest.mark.parametrize(
-    "environ,env_text,expected", [c for c in SCRIPT_CASES if c[0]],
-    ids=[f"{i}-{c[2]}" for i, c in enumerate(SCRIPT_CASES) if c[0]],
+    "environ,env_text,expected", [c for c in CASES if c[0]],
+    ids=[f"{i}-{c[2]}" for i, c in enumerate(CASES) if c[0]],
 )
 def test_rule_in_the_powershell_installer(tmp_path, environ, env_text, expected):
     if _powershell() is None:
@@ -241,7 +227,8 @@ def test_windows_scripts_keep_their_encoding_and_line_endings():
         assert b"\r\n" in data and b"\n" not in data.replace(b"\r\n", b""), f"{name} must use CRLF"
     start = (REPO / "Start SofaScore.bat").read_bytes()
     start.decode("ascii")  # kod sayfasından bağımsız: yalnızca ASCII
-    assert b"Python not found" in start and b"Python bulunamadi" in start and b"APP_LANGUAGE" in start
+    assert b"Python not found" in start and b"Python bulunamadi" in start
+    assert b"SOFASCORE_DISPLAY__LANGUAGE" in start and b"APP_LANGUAGE" not in start
     text = ps1.decode("utf-8-sig")
     assert "$UiLang = Get-UiLanguage" in text
     # Kullanıcıya giden metinler L "English" "Türkçe" ile seçilir
