@@ -627,7 +627,8 @@ gelen uç noktalar:
   200; futbolda bir ülke kodu 404), `/ai-insights-postmatch/{lang}` (futbol), `/sport-video-highlights/...`
   (yalnızca bitince istenir, 404). **Yalnızca canlıyken:** `/live-match-tracker` (11 canlı maçın hepsinde istendi,
   aynı maçların bitmiş sayfasında hiç), `/ai-insights/{lang}` (futbol) ve voleybol `/graph/sequence` (canlıda 200, bitince 404:
-  sayı sırası yalnızca maç sürerken gelir). Bunların hiçbiri dilim değil, uygulama indirmez.
+  sayı sırası yalnızca maç sürerken gelir). Bunların hiçbiri dilim değil; sahibin kararıyla (09.10.2026)
+  indirilmezler (tasarım planı, bölüm 13). Tablo bilgi içindir.
 - **`not_in` satırları canlıda da tutar.** Tam canlı sayfaların hiçbiri kadro istemedi: tenis, badminton, MMA,
   florbol; olay istemedi: tenis, MMA, e-spor. Dart ve masa tenisinin (bitmiş) sayfaları da istemedi.
 - **Kuralın kayıt defterinden ayrıldığı üç hücre, sahibin kararını bekliyor.** Yeni yanıtlarla `verdict()` üç

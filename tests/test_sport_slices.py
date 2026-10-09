@@ -153,14 +153,14 @@ OTHER_ENDPOINTS: Dict[str, str] = {
     "/weather": "baseball only (200 on finished and live matches, 404 on a not-started one): proposal",
     "/comments": "baseball only (200 on finished and live matches, 404 on a not-started one): proposal",
     "/managers": "team managers (200 in nine team sports, 404 in the rest): proposal, not sport-specific",
-    "/best-players": "player ratings (basketball, American football, handball): proposal, not sport-specific",
-    "/best-players/summary": "football player ratings: proposal, not sport-specific",
+    "/best-players": "player ratings (basketball, American football, handball): not downloaded (owner, FX-37)",
+    "/best-players/summary": "football player ratings: not downloaded (owner, FX-37)",
     "/player-of-the-match": "football fan poll: proposal",
     "/average-positions": "football player positions: proposal",
     "/heatmap/{id}": "football player heatmap (one request per player): proposal",
     "/shotmap": "football shot map: proposal",
     "/graph": "momentum graph (football, basketball, American football, handball): proposal",
-    "/graph/sequence": "volleyball point sequence (200 on one finished match): proposal",
+    "/graph/sequence": "volleyball point sequence (200 live, 404 once finished): not downloaded (owner, FX-37)",
     "/tennis-power": "tennis momentum (200 on one finished match): proposal",
     "/graph/win-probability": "404 in every sport",
     "/live-match-tracker": "live widget",
@@ -169,7 +169,7 @@ OTHER_ENDPOINTS: Dict[str, str] = {
     "/media/summary/country/{cc}": "media, per country",
     "/sport-video-highlights/country/{cc}/extended": "media, per country",
     "/ai-insights/{lang}": "generated text, per language",
-    "/ai-insights-postmatch/{lang}": "generated text, per language",
+    "/ai-insights-postmatch/{lang}": "generated text, per language, finished match only: not downloaded",
 }
 
 
