@@ -3994,6 +3994,10 @@ the eleventh):
 - Not downloaded (owner, 2026-10-09; FX-37): the post-match endpoints (highlights, media summary, AI insights,
   best players) and volleyball's live-only `/graph/sequence`; the `not_in` rows stay as they are, baseball
   `incidents` included.
+- Kept required (owner, 2026-10-09; FX-38): basketball `lineups`, handball `pregame_form` and MMA `statistics`,
+  where runs `lv-20261009c` and `lv-20261009d` make the rule say optional (MMA only through a neighbouring
+  fight's 404; the pages' own matches answered 200); pinned in `DECIDED_AGAINST_THE_RULE` of
+  `tests/test_sport_slices.py`.
 
 Open:
 
@@ -5275,14 +5279,6 @@ Open after 3.1, in no fixed order:
   would then say where each entry comes from. It needs a place in the Store for reference data.
 - **A `provider_name` field in schema v1** (`Odds`, `OddsLine`). Additive, with the generated tables of
   `04-schema-v1.md`; until then a consumer reads the names from `GET /odds/providers`.
-- **Live pages of the repaired explorer: three cells wait for the owner.** Runs `lv-20261009c` and
-  `lv-20261009d` (FX-37) added live pages of 15 sports and the finished pages of 13 of the same matches; no
-  slice's answer changed between the live and the finished visit of a match. With their answers the rule says
-  optional where the registry says required in three cells: basketball `lineups` and handball `pregame_form`
-  (404 on the page's own match, live and finished) and MMA `statistics` (404 only on a neighbouring finished
-  fight that a live page also asked for). The registry did not change; `PENDING` in
-  `tests/test_sport_slices.py` pins them (`docs/all-sports/README.md`, "Canlı ve bitmiş (aynı maç)").
-  Darts and table tennis still have no live page (the four pages the run opened as live were finished).
 - **A replacement for `stage_name` and `listed_in`.** P30 dropped only the two score columns of the events
   table: schema v1 reads `stage.name` from `stage_name`, and the listing rules (staleness, the reconcile of
   a season's pages, the planner's listed events) read `listed_in`. Dropping them needs a design first.

@@ -631,8 +631,9 @@ gelen uç noktalar:
   indirilmezler (tasarım planı, bölüm 13). Tablo bilgi içindir.
 - **`not_in` satırları canlıda da tutar.** Tam canlı sayfaların hiçbiri kadro istemedi: tenis, badminton, MMA,
   florbol; olay istemedi: tenis, MMA, e-spor. Dart ve masa tenisinin (bitmiş) sayfaları da istemedi.
-- **Kuralın kayıt defterinden ayrıldığı üç hücre, sahibin kararını bekliyor.** Yeni yanıtlarla `verdict()` üç
-  hücrede *o* der; kayıt defteri değişmedi (zorunlu, tamlığa girer):
+- **Kuralın kayıt defterinden ayrıldığı üç hücre: karar, zorunlu (sahip, 09.10.2026).** Yeni yanıtlarla
+  `verdict()` üç hücrede *o* der; sahip üçünün de zorunlu kalmasına (tamlığa girer) karar verdi, kayıt defteri
+  değişmedi (FX-38):
 
   | Spor, dilim | Kural ← yanıt (koşu, sayfa) | Önceki kanıt |
   |---|---|---|
@@ -640,13 +641,14 @@ gelen uç noktalar:
   | handball, pregame_form | *o* ← 404: canlı ve bitmiş 16642082 (`c`, `d`); sayfanın kendi maçı | F200 N200 N404 |
   | mma, statistics | *o* ← 404: bitmiş 12607782, canlı 12606166'nın sayfasında (`c`) **komşu maç** | F200 |
 
-  MMA'nın iki canlı sayfası kendi maçının istatistiğini 200 aldı; 404 sayfanın da istediği komşu maçtan (FX-36'nın
-  bulgusu: kural sayfadaki her maçın yanıtını sayar). Kural değişmedi; bu hücre kuralın komşu maçı saymasından
-  çıkar.
+  MMA istatistiğinde kuralın yargısı yalnızca komşu maçtan gelir: canlı 12606166'nın sayfasının istediği bitmiş
+  12607782 404 aldı (FX-36'nın bulgusu: kural sayfadaki her maçın yanıtını sayar). Sayfaların kendi maçları (iki
+  canlı sayfa) 200 aldı. Kural değişmedi.
 
 `tests/test_sport_slices.py`: `SAME_MATCH` ve `SAME_MATCH_OTHER` tabloyu `requests.jsonl`'dan yeniden okur
-(`test_no_slice_answers_live_but_not_once_the_same_match_finished`); `PENDING` ve `PENDING_ANSWERS` bekleyen üç
-hücreyi ve yanıtlarını sabitler.
+(`test_no_slice_answers_live_but_not_once_the_same_match_finished`). Üç hücre `DECIDED`'da `REQUIRED`,
+`DECIDED_AGAINST_THE_RULE`'da kuralın yargısıyla (`OPTIONAL`) durur, florbol olayları gibi; kuralı ayıran yanıtları
+kanıt olarak `DECIDED_AGAINST_THE_RULE_ANSWERS` sabitler (`requests.jsonl`'dan yeniden okunur).
 
 ---
 
