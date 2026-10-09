@@ -152,7 +152,7 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
     if v1:
         errors.assign_request_id(request)
     response = await _guarded(request, call_next, path, v1)
-    for name, value in security.security_headers(path, FRONTEND_DIST):
+    for name, value in security.security_headers(path):
         response.headers[name] = value
     if v1:
         response.headers[errors.REQUEST_ID_HEADER] = errors.request_id_of(request)

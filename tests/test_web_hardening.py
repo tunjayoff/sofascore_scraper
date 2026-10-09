@@ -908,7 +908,7 @@ def test_security_headers_on_refusals(token):
 
 
 def test_strict_policy_allows_what_the_app_does():
-    policy = _csp(security.content_security_policy("/", Path("/nonexistent/dist")))
+    policy = _csp(security.content_security_policy("/"))
     assert policy["script-src"] == ["'self'"]  # satır içi betik, eval ve dış betik yok
     assert policy["connect-src"] == ["'self'"]  # fetch ve SSE yalnızca uygulamanın kendisine
     assert _allows(policy, "connect-src", "/api/v1/jobs/1/events")
@@ -939,44 +939,26 @@ def test_built_spa_runs_under_the_policy_it_is_served_with():
         directive = "font-src" if re.search(r"font|\.woff2?", url[:60]) else "img-src"
         assert _allows(policy, directive, url), f"{directive} blocks {url[:80]}"
 
-    # Betikler: kodu metinden üreten (eval / new Function) bir derleme 'unsafe-eval' ister
+    # Betikler: kodu metinden üreten (eval / new Function) bir derleme katı politikada çalışmaz (3.1'de eski
+    # derlemenin 'unsafe-eval' uyum yolu kalktı)
     scripts = "\n".join(js.read_text(encoding="utf-8") for js in assets.glob("*.js"))
-    uses_eval = bool(re.search(r"\bFunction\(|\beval\(", scripts))
-    declares_no_eval = security.CSP_MARKER in r.text
-    if declares_no_eval:
-        assert not uses_eval, "the build says it needs no eval but its scripts use it"
-        assert "'unsafe-eval'" not in policy["script-src"]
-    else:
-        # Eski derleme (CSP etiketi yok): bozulmaması için politika gevşetilir
-        assert "'unsafe-eval'" in policy["script-src"]
+    assert not re.search(r"\bFunction\(|\beval\(", scripts), "the build uses eval; build it again"
+    assert "'unsafe-eval'" not in policy["script-src"]
     # Dış kaynak yok: betiklerdeki her mutlak adres yalnızca metindir (XML ad alanı, belge bağlantısı)
     assert "'unsafe-inline'" not in policy["script-src"]
 
 
-def test_policy_follows_the_build(tmp_path):
-    current = tmp_path / "current"
-    current.mkdir()
-    (current / "index.html").write_text(
-        '<!doctype html><html><head><meta name="sofascore-csp" content="no-eval" /></head><body></body></html>', encoding="utf-8"
-    )
-    legacy = tmp_path / "legacy"
-    legacy.mkdir()
-    (legacy / "index.html").write_text("<!doctype html><html><head></head><body></body></html>", encoding="utf-8")
-
-    assert not security.spa_needs_eval(current)
-    assert security.spa_needs_eval(legacy)
-    assert not security.spa_needs_eval(tmp_path / "missing")
-    assert "'unsafe-eval'" not in security.content_security_policy("/", current)
-    assert _csp(security.content_security_policy("/", legacy))["script-src"] == ["'self'", "'unsafe-eval'"]
-    # Yeniden derleme sunucu yeniden başlatılmadan görülür
-    (legacy / "index.html").write_text((current / "index.html").read_text(encoding="utf-8") + "\n", encoding="utf-8")
-    assert not security.spa_needs_eval(legacy)
+def test_an_old_build_gets_the_strict_policy_too():
+    """3.1 (P30, #43): eski derlemenin 'unsafe-eval' uyum yolu kalktı; politika derlemeye bakmaz."""
+    assert not hasattr(security, "spa_needs_eval") and not hasattr(security, "CSP_MARKER")
+    for path in ("/", "/settings", "/api/v1/health", "/assets/index.js"):
+        assert "'unsafe-eval'" not in security.content_security_policy(path)
+        assert _csp(security.content_security_policy(path))["script-src"] == ["'self'"]
 
 
 def test_frontend_source_declares_what_the_policy_relies_on():
     index = (REPO / "frontend" / "index.html").read_text(encoding="utf-8")
     package = json.loads((REPO / "frontend" / "package.json").read_text(encoding="utf-8"))
-    assert security.CSP_MARKER in index
     # vue-i18n 10 and later compile messages without eval; frontend/tests/csp.test.ts checks the build itself
     assert int(re.match(r"\D*(\d+)", package["dependencies"]["vue-i18n"]).group(1)) >= 10
     page = _Page(index)
@@ -984,7 +966,7 @@ def test_frontend_source_declares_what_the_policy_relies_on():
 
 
 def test_missing_ui_page_runs_under_the_policy(tmp_path):
-    policy = _csp(security.content_security_policy("/", tmp_path))
+    policy = _csp(security.content_security_policy("/"))
     page = _assert_page_runs_under(MISSING_UI_HTML, policy)
     assert page.inline["script"] == 0 and page.inline["style"] == 1
 

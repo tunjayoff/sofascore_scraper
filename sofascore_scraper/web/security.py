@@ -19,12 +19,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import ipaddress
-import logging
-from pathlib import Path
 from typing import List, Mapping, Optional, Tuple
 from urllib.parse import urlparse
-
-logger = logging.getLogger(__name__)
 
 # --- Host izin listesi ----------------------------------------------------------------------
 
@@ -183,11 +179,9 @@ def requires_token(path: str) -> bool:
 
 # --- Güvenlik başlıkları --------------------------------------------------------------------
 
-# Derleme, betiklerinin eval gerektirmediğini frontend/index.html'deki bu etiketle bildirir (vue-i18n 10'dan
-# beri iletiler her zaman JIT ile, eval'siz derlenir; frontend/csp.test bunu sınar). Etiketi taşımayan eski bir
-# derleme vue-i18n iletilerini `Function(...)` ile derler; onu bozmamak için politika 'unsafe-eval' ile gevşer.
-CSP_MARKER = '<meta name="sofascore-csp" content="no-eval"'
-
+# Uygulamanın politikası katıdır: eval yok (vue-i18n 10'dan beri iletiler eval'siz derlenir; frontend/tests/csp.test.ts
+# derlemeyi sınar). 3.0'a kadar `sofascore-csp` etiketini taşımayan eski bir derleme için 'unsafe-eval' ile gevşeyen
+# uyum yolu 3.1'de kalktı (plan maddesi P30, #43): eski derleme yeniden derlenmelidir (npm run build).
 _CSP = (
     ("default-src", "'self'"),
     ("script-src", "'self'"),
@@ -220,43 +214,18 @@ _DOCS_CSP = (
     ("frame-ancestors", "'none'"),
 )
 
-# index.html'in son okunan hali: (yol, mtime_ns, boyut) → eval gerekiyor mu
-_legacy_cache: Tuple[Optional[Tuple[str, int, int]], bool] = (None, False)
-
-
 def _render(policy: Tuple[Tuple[str, str], ...]) -> str:
     return "; ".join(f"{name} {value}" for name, value in policy)
 
 
-def spa_needs_eval(dist: Path) -> bool:
-    """Sunulan derleme CSP etiketini taşımayan eski bir derleme mi? (index.html değişince yeniden okunur)"""
-    global _legacy_cache
-    index = dist / "index.html"
-    try:
-        st = index.stat()
-        signature = (str(index), st.st_mtime_ns, st.st_size)
-        if _legacy_cache[0] != signature:
-            legacy = CSP_MARKER not in index.read_text(encoding="utf-8", errors="replace")
-            _legacy_cache = (signature, legacy)
-            if legacy:
-                logger.warning(
-                    "The web UI is an old build: the Content-Security-Policy allows 'unsafe-eval'. "
-                    "Build it again: cd frontend && npm install && npm run build"
-                )
-        return _legacy_cache[1]
-    except OSError:
-        return False  # derleme yok: yardım sayfasında betik yoktur
-
-
-def content_security_policy(path: str, dist: Path) -> str:
+def content_security_policy(path: str) -> str:
+    """Yolun politikası: belge sayfalarına (/docs, /redoc) kendi gevşek politikaları, geri kalan her yanıta katı olan."""
     if path in DOCS_PATHS:
         return _render(_DOCS_CSP)
-    if spa_needs_eval(dist):
-        return _render(tuple((n, v + " 'unsafe-eval'" if n == "script-src" else v) for n, v in _CSP))
     return _render(_CSP)
 
 
-def security_headers(path: str, dist: Path) -> List[Tuple[str, str]]:
+def security_headers(path: str) -> List[Tuple[str, str]]:
     return [
         # Yanıt, bildirilen türünden başka bir şey (betik, stil) olarak yorumlanmaz
         ("X-Content-Type-Options", "nosniff"),
@@ -266,5 +235,5 @@ def security_headers(path: str, dist: Path) -> List[Tuple[str, str]]:
         ("Referrer-Policy", "no-referrer"),
         # Başka bir site yanıtları <script>/<img> ile kendi sayfasına gömemez
         ("Cross-Origin-Resource-Policy", "same-origin"),
-        ("Content-Security-Policy", content_security_policy(path, dist)),
+        ("Content-Security-Policy", content_security_policy(path)),
     ]
