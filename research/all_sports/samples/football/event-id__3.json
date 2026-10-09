@@ -1,0 +1,391 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17256969",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:52:57+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/mas-de-fes-raja-club-athletic/hKqsKax#id:17256969",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "eventState": {},
+      "tournament": {
+        "name": "Botola Pro",
+        "slug": "botola",
+        "category": {
+          "name": "Morocco",
+          "slug": "morocco",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "MA",
+            "alpha3": "MAR",
+            "name": "Morocco",
+            "slug": "morocco"
+          },
+          "id": 303,
+          "flag": "morocco",
+          "alpha2": "MA",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "المغرب",
+              "ru": "Марокко"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Botola Pro",
+          "slug": "botola-pro",
+          "primaryColorHex": "#03774c",
+          "secondaryColorHex": "#df180e",
+          "category": {
+            "name": "Morocco",
+            "slug": "morocco",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 303,
+            "flag": "morocco",
+            "alpha2": "MA",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "المغرب",
+                "ru": "Марокко"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 27916,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": true,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 937,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البطولة الإحترافية 1",
+              "bn": "বোতোলা প্রো",
+              "hi": "बोटोला प्रो",
+              "ru": "Ботола Про"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 1,
+        "isLive": false,
+        "id": 3640,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري المغربي لكرة القدم D1",
+            "bn": "বোটোলা প্রো ডি1",
+            "hi": "बोटोला प्रो डी1",
+            "ru": "Ботола Про"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "Botola Pro D1 26/27",
+        "year": "26/27",
+        "editor": false,
+        "seasonCoverageInfo": {
+          "editorCoverageLevel": 1
+        },
+        "id": 102220
+      },
+      "roundInfo": {
+        "round": 3
+      },
+      "customId": "hKqsKax",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 3,
+      "homeTeam": {
+        "name": "MAS de Fès",
+        "slug": "mas-de-fes",
+        "shortName": "MAS",
+        "gender": "M",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "userCount": 41915,
+        "manager": {
+          "name": "Rui Almeida",
+          "slug": "rui-almeida",
+          "shortName": "R. Almeida",
+          "country": {
+            "alpha2": "PT",
+            "alpha3": "PRT",
+            "name": "Portugal",
+            "slug": "portugal"
+          },
+          "id": 785244,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "روي ألميدا",
+              "ru": "Руй Алмейда"
+            },
+            "shortNameTranslation": {
+              "ar": "ر. ألميدا",
+              "ru": "Р. Алмейда"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Fes",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 27098
+          },
+          "venueCoordinates": {
+            "latitude": 34.00272,
+            "longitude": -4.968962
+          },
+          "hidden": true,
+          "slug": "complexe-sportif-de-f-s",
+          "name": "Complexe Sportif de Fès",
+          "capacity": 45000,
+          "country": {
+            "alpha2": "MA",
+            "alpha3": "MAR",
+            "name": "Morocco",
+            "slug": "morocco"
+          },
+          "id": 4266,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مجمع رياضي فاس",
+              "hi": "कॉम्प्लेक्स स्पोर्टिफ़ डी फ़ेज़",
+              "bn": "কমপ্লেক্স স্পোর্টিফ ডি ফেস",
+              "ru": "Спортивный комплекс Complexe Sportif de Fès"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Complexe Sportif de Fès",
+            "capacity": 45000
+          }
+        },
+        "nameCode": "MAG",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "MA",
+          "alpha3": "MAR",
+          "name": "Morocco",
+          "slug": "morocco"
+        },
+        "id": 55035,
+        "fullName": "MAS de Fès",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#ffdf00",
+          "secondary": "#000000",
+          "text": "#000000"
+        },
+        "foundationDateTimestamp": -757382400,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "المغرب الفاسي",
+            "ru": "МАС Магхриб А Фес"
+          },
+          "shortNameTranslation": {
+            "ar": "المغرب الفاسي"
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Raja Club Athletic",
+        "slug": "raja-club-athletic",
+        "shortName": "Raja CA",
+        "gender": "M",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "userCount": 183415,
+        "manager": {
+          "name": "Paco Jemez",
+          "slug": "paco-jemez",
+          "shortName": "P. Jemez",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 113580,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "باكو خيميز",
+              "ru": "Пако Хемес"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. خيميز",
+              "ru": "П. Хемес"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Casablanca",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 19831
+          },
+          "venueCoordinates": {
+            "latitude": 33.58831,
+            "longitude": -7.61138
+          },
+          "hidden": true,
+          "slug": "stade-mohammed-v",
+          "name": "Stade Mohammed V",
+          "capacity": 67000,
+          "country": {
+            "alpha2": "MA",
+            "alpha3": "MAR",
+            "name": "Morocco",
+            "slug": "morocco"
+          },
+          "id": 4274,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب محمد الخامس",
+              "hi": "स्टेड मोहम्मद वी",
+              "bn": "স্টেড মোহাম্মদ ভি",
+              "ru": "Стадион Stade Mohammed V"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Stade Mohammed V",
+            "capacity": 67000
+          }
+        },
+        "nameCode": "RCA",
+        "class": 4,
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "MA",
+          "alpha3": "MAR",
+          "name": "Morocco",
+          "slug": "morocco"
+        },
+        "id": 41757,
+        "fullName": "Raja Club Athletic",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#009966",
+          "secondary": "#ffffff",
+          "text": "#ffffff"
+        },
+        "foundationDateTimestamp": -655948800,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الرجاء الرياضي",
+            "ru": "Раджа Касабланка"
+          },
+          "shortNameTranslation": {
+            "ar": "الرجاء الرياضي"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 0,
+        "display": 0,
+        "period1": 0,
+        "period2": 0,
+        "normaltime": 0
+      },
+      "awayScore": {
+        "current": 0,
+        "display": 0,
+        "period1": 0,
+        "period2": 0,
+        "normaltime": 0
+      },
+      "time": {
+        "periodLength": 2700,
+        "overtimeLength": 900,
+        "totalPeriodCount": 2,
+        "currentPeriodStartTimestamp": 1791493548,
+        "lastPeriodEndTimestamp": 1791492630
+      },
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.normaltime",
+          "awayScore.normaltime"
+        ],
+        "changeTimestamp": 1791496533
+      },
+      "hasGlobalHighlights": true,
+      "crowdsourcingDataDisplayEnabled": false,
+      "correctAiInsight": false,
+      "id": 17256969,
+      "awayRedCards": 1,
+      "defaultPeriodCount": 2,
+      "defaultPeriodLength": 45,
+      "defaultOvertimeLength": 15,
+      "slug": "mas-de-fes-raja-club-athletic",
+      "currentPeriodStartTimestamp": 1791493548,
+      "startTimestamp": 1791489600,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false,
+      "eventFilters": {
+        "category": [
+          "club"
+        ],
+        "level": [
+          "top-competitions",
+          "pro"
+        ],
+        "gender": [
+          "M"
+        ]
+      }
+    }
+  }
+}

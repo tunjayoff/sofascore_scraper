@@ -1,0 +1,1565 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/155911/season/99986/team-events/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:03:31+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/ok-napredak-odzak-ok-borac/hYvcsZtve#id:17063542",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "teamEvents": {
+      "302407": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "hYvcsZtve",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK Borac",
+            "slug": "ok-borac",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 23,
+            "nameCode": "BOR",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 302407,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه بوراك",
+                "ru": "ОК Борац"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "OK Napredak Odžak",
+            "slug": "ok-napredak-odzak",
+            "shortName": "OK Napredak Odžak",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 102,
+            "nameCode": "NAP",
+            "national": false,
+            "type": 0,
+            "id": 550949,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه نابريدك أودجاك",
+                "ru": "ОК Напредак Оджак"
+              },
+              "shortNameTranslation": {
+                "ar": "أو كيه نابريدك أودجاك",
+                "ru": "ОК Напредак Оджак"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 16,
+            "period2": 19,
+            "period3": 14
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 25,
+            "period2": 25,
+            "period3": 25
+          },
+          "id": 17063542,
+          "slug": "ok-napredak-odzak-ok-borac",
+          "startTimestamp": 1791311400,
+          "finalResultOnly": false
+        }
+      ],
+      "338966": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "qEKcsFnbj",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "OK Bosna Sarajevo",
+            "slug": "ok-bosna-sarajevo",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 39,
+            "nameCode": "BSA",
+            "national": false,
+            "type": 0,
+            "id": 338966,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه بوسنا سراييفو",
+                "ru": "ОК Босна Сараево"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "OK Ilidža",
+            "slug": "ok-ilidza",
+            "shortName": "Ilidža",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 11,
+            "nameCode": "OIL",
+            "national": false,
+            "type": 0,
+            "id": 1128180,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه إيلدجا",
+                "ru": "ОК Илиджа"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. إيلدجا",
+                "ru": "Илиджа"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 25,
+            "period2": 25,
+            "period3": 25
+          },
+          "awayScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 23,
+            "period2": 21,
+            "period3": 19
+          },
+          "id": 17063546,
+          "slug": "ok-ilidza-ok-bosna-sarajevo",
+          "startTimestamp": 1791043200,
+          "finalResultOnly": false
+        }
+      ],
+      "1128181": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "GnbjsTadk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK Gacko",
+            "slug": "ok-gacko",
+            "shortName": "OK Gacko",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 1,
+            "nameCode": "OGA",
+            "national": false,
+            "type": 0,
+            "id": 1257543,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "OK Tempo",
+            "slug": "ok-tempo",
+            "shortName": "Tempo",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 7,
+            "nameCode": "OTE",
+            "national": false,
+            "type": 0,
+            "id": 1128181,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه تيمبو",
+                "ru": "ОК Темпо"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. تيمبو",
+                "ru": "Темпо"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 9,
+            "period2": 14,
+            "period3": 15
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 25,
+            "period2": 25,
+            "period3": 25
+          },
+          "id": 17063543,
+          "slug": "ok-gacko-ok-tempo",
+          "startTimestamp": 1790953200,
+          "finalResultOnly": false
+        }
+      ],
+      "335876": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "BrJcscOJc",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK Modriča Novoprom",
+            "slug": "modrica-optima",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 11,
+            "nameCode": "MOP",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 336952,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه مودريتشا نوفوبروم",
+                "ru": "ОК Модрича Новопром"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "HOK Domaljevac",
+            "slug": "hok-domaljevac",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 31,
+            "nameCode": "DOM",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 335876,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "HOK دومالييفاتس",
+                "ru": "ХОК Домалевец"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "homeScore": {
+            "current": 1,
+            "display": 1,
+            "period1": 25,
+            "period2": 14,
+            "period3": 17,
+            "period4": 15
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 22,
+            "period2": 25,
+            "period3": 25,
+            "period4": 25
+          },
+          "id": 17063540,
+          "slug": "ok-modrica-novoprom-hok-domaljevac",
+          "startTimestamp": 1790955000,
+          "finalResultOnly": false
+        }
+      ],
+      "1257542": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "PqrsRadk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK 7 Lukavac",
+            "slug": "ok-7-lukavac",
+            "shortName": "OK 7 Lukavac",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 2,
+            "nameCode": "O7L",
+            "national": false,
+            "type": 0,
+            "id": 1257542,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "OK Kakanj 78",
+            "slug": "kakanj",
+            "shortName": "Kakanj",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 30,
+            "nameCode": "KAK",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 43340,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه كاكانج 78",
+                "ru": "Какань"
+              },
+              "shortNameTranslation": {
+                "ar": "كاكانج"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 31,
+            "period2": 17,
+            "period3": 18
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 33,
+            "period2": 25,
+            "period3": 25
+          },
+          "id": 17063541,
+          "slug": "ok-7-lukavac-ok-kakanj-78",
+          "startTimestamp": 1791043200,
+          "finalResultOnly": false
+        }
+      ],
+      "550949": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "hYvcsZtve",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK Borac",
+            "slug": "ok-borac",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 23,
+            "nameCode": "BOR",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 302407,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه بوراك",
+                "ru": "ОК Борац"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "OK Napredak Odžak",
+            "slug": "ok-napredak-odzak",
+            "shortName": "OK Napredak Odžak",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 102,
+            "nameCode": "NAP",
+            "national": false,
+            "type": 0,
+            "id": 550949,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه نابريدك أودجاك",
+                "ru": "ОК Напредак Оджак"
+              },
+              "shortNameTranslation": {
+                "ar": "أو كيه نابريدك أودجاك",
+                "ru": "ОК Напредак Оджак"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 16,
+            "period2": 19,
+            "period3": 14
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 25,
+            "period2": 25,
+            "period3": 25
+          },
+          "id": 17063542,
+          "slug": "ok-napredak-odzak-ok-borac",
+          "startTimestamp": 1791311400,
+          "finalResultOnly": false
+        }
+      ],
+      "336952": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "BrJcscOJc",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK Modriča Novoprom",
+            "slug": "modrica-optima",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 11,
+            "nameCode": "MOP",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 336952,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه مودريتشا نوفوبروم",
+                "ru": "ОК Модрича Новопром"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "HOK Domaljevac",
+            "slug": "hok-domaljevac",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 31,
+            "nameCode": "DOM",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 335876,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "HOK دومالييفاتس",
+                "ru": "ХОК Домалевец"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "homeScore": {
+            "current": 1,
+            "display": 1,
+            "period1": 25,
+            "period2": 14,
+            "period3": 17,
+            "period4": 15
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 22,
+            "period2": 25,
+            "period3": 25,
+            "period4": 25
+          },
+          "id": 17063540,
+          "slug": "ok-modrica-novoprom-hok-domaljevac",
+          "startTimestamp": 1790955000,
+          "finalResultOnly": false
+        }
+      ],
+      "1128180": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "qEKcsFnbj",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "OK Bosna Sarajevo",
+            "slug": "ok-bosna-sarajevo",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 39,
+            "nameCode": "BSA",
+            "national": false,
+            "type": 0,
+            "id": 338966,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه بوسنا سراييفو",
+                "ru": "ОК Босна Сараево"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "OK Ilidža",
+            "slug": "ok-ilidza",
+            "shortName": "Ilidža",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 11,
+            "nameCode": "OIL",
+            "national": false,
+            "type": 0,
+            "id": 1128180,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه إيلدجا",
+                "ru": "ОК Илиджа"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. إيلدجا",
+                "ru": "Илиджа"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 25,
+            "period2": 25,
+            "period3": 25
+          },
+          "awayScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 23,
+            "period2": 21,
+            "period3": 19
+          },
+          "id": 17063546,
+          "slug": "ok-ilidza-ok-bosna-sarajevo",
+          "startTimestamp": 1791043200,
+          "finalResultOnly": false
+        }
+      ],
+      "1257543": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "GnbjsTadk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK Gacko",
+            "slug": "ok-gacko",
+            "shortName": "OK Gacko",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 1,
+            "nameCode": "OGA",
+            "national": false,
+            "type": 0,
+            "id": 1257543,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "OK Tempo",
+            "slug": "ok-tempo",
+            "shortName": "Tempo",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 7,
+            "nameCode": "OTE",
+            "national": false,
+            "type": 0,
+            "id": 1128181,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه تيمبو",
+                "ru": "ОК Темпо"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. تيمبو",
+                "ru": "Темпо"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 9,
+            "period2": 14,
+            "period3": 15
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 25,
+            "period2": 25,
+            "period3": 25
+          },
+          "id": 17063543,
+          "slug": "ok-gacko-ok-tempo",
+          "startTimestamp": 1790953200,
+          "finalResultOnly": false
+        }
+      ],
+      "43340": [
+        {
+          "tournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Premijer Liga",
+              "slug": "premijer-liga",
+              "category": {
+                "name": "Bosnia & Herzegovina",
+                "slug": "bosnia-herzegovina",
+                "sport": {
+                  "name": "Volleyball",
+                  "slug": "volleyball",
+                  "id": 23
+                },
+                "priority": 0,
+                "id": 1050,
+                "flag": "bosnia-herzegovina",
+                "alpha2": "BA",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "البوسنة والهرسك",
+                    "ru": "Босния и Герцеговина"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 22,
+              "liveActivityEnabled": false,
+              "id": 27514,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الدوري الممتاز",
+                  "ru": "Премьер-лига"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 155911,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премиер Лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "PqrsRadk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "OK 7 Lukavac",
+            "slug": "ok-7-lukavac",
+            "shortName": "OK 7 Lukavac",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 2,
+            "nameCode": "O7L",
+            "national": false,
+            "type": 0,
+            "id": 1257542,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "OK Kakanj 78",
+            "slug": "kakanj",
+            "shortName": "Kakanj",
+            "gender": "M",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "userCount": 30,
+            "nameCode": "KAK",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 43340,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أو كيه كاكانج 78",
+                "ru": "Какань"
+              },
+              "shortNameTranslation": {
+                "ar": "كاكانج"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 0,
+            "display": 0,
+            "period1": 31,
+            "period2": 17,
+            "period3": 18
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3,
+            "period1": 33,
+            "period2": 25,
+            "period3": 25
+          },
+          "id": 17063541,
+          "slug": "ok-7-lukavac-ok-kakanj-78",
+          "startTimestamp": 1791043200,
+          "finalResultOnly": false
+        }
+      ]
+    }
+  }
+}

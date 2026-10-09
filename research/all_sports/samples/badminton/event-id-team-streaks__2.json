@@ -1,0 +1,19 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17287651/team-streaks",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:24:11+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/miyazaki-okuhara/PiKsNbWd#id:17287651",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "general": [],
+    "head2head": [
+      {
+        "name": "Wins",
+        "value": "3",
+        "team": "away"
+      }
+    ]
+  }
+}

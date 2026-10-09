@@ -1,0 +1,716 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15534082/best-players/summary",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:53:45+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "bestHomeTeamPlayers": [
+      {
+        "value": "6.9",
+        "label": "rating",
+        "player": {
+          "name": "Josip Stanišić",
+          "firstName": "",
+          "lastName": "",
+          "slug": "josip-stanisic",
+          "shortName": "J. Stanišić",
+          "position": "D",
+          "jerseyNumber": "44",
+          "height": 186,
+          "userCount": 12826,
+          "gender": "M",
+          "sofascoreId": "iw8-rwx",
+          "id": 927407,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 954633600,
+          "proposedMarketValueRaw": {
+            "value": 39000000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يوسيب ستانيشيتش",
+              "bn": "জোসিপ স্ট্যানিসিচ",
+              "hi": "जोसिप स्टैनिसिक",
+              "ru": "Йосип Станишич"
+            },
+            "shortNameTranslation": {
+              "ar": "ي. ستانيشيتش",
+              "bn": "জে. স্ট্যানিসিচ",
+              "hi": "जे. स्टैनिसिक",
+              "ru": "Й. Станишич"
+            }
+          }
+        },
+        "team": {
+          "name": "Croatia",
+          "slug": "croatia",
+          "shortName": "Croatia",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 516520,
+          "nameCode": "CRO",
+          "ranking": 14,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4715,
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كرواتيا",
+              "bn": "ক্রোয়েশিয়া",
+              "hi": "क्रोएशिया",
+              "ru": "Хорватия"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "6.9",
+        "label": "rating",
+        "player": {
+          "name": "Luka Modrić",
+          "slug": "luka-modric",
+          "shortName": "L. Modrić",
+          "position": "M",
+          "jerseyNumber": "14",
+          "height": 173,
+          "userCount": 284185,
+          "gender": "M",
+          "sofascoreId": "cz8-6gi",
+          "id": 15466,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 495072000,
+          "proposedMarketValueRaw": {
+            "value": 3800000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوكا مودريتش",
+              "bn": "লুকা মডরিচ",
+              "hi": "लुका मोड्रिक",
+              "ru": "Лука Модрич"
+            },
+            "shortNameTranslation": {
+              "ar": "ل. مودريتش",
+              "bn": "এল. মডরিচ",
+              "hi": "एल. मोड्रिक",
+              "ru": "Л. Модрич"
+            }
+          }
+        },
+        "team": {
+          "name": "Croatia",
+          "slug": "croatia",
+          "shortName": "Croatia",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 516520,
+          "nameCode": "CRO",
+          "ranking": 14,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4715,
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كرواتيا",
+              "bn": "ক্রোয়েশিয়া",
+              "hi": "क्रोएशिया",
+              "ru": "Хорватия"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "6.8",
+        "label": "rating",
+        "player": {
+          "name": "Nikola Vlašić",
+          "slug": "nikola-vlasic",
+          "shortName": "N. Vlašić",
+          "position": "M",
+          "jerseyNumber": "10",
+          "height": 178,
+          "userCount": 6295,
+          "gender": "M",
+          "sofascoreId": "hug-83c",
+          "id": 357596,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 875923200,
+          "proposedMarketValueRaw": {
+            "value": 10300000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نيكولا فلاشيتش",
+              "bn": "নিকোলা ভ্লাসিচ",
+              "hi": "निकोला व्लासिक",
+              "ru": "Никола Влашич"
+            },
+            "shortNameTranslation": {
+              "ar": "ن. فلاشيتش",
+              "bn": "এন. ভ্লাসিচ",
+              "hi": "एन. व्लासिक",
+              "ru": "Н. Влашич"
+            }
+          }
+        },
+        "team": {
+          "name": "Croatia",
+          "slug": "croatia",
+          "shortName": "Croatia",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 516520,
+          "nameCode": "CRO",
+          "ranking": 14,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4715,
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كرواتيا",
+              "bn": "ক্রোয়েশিয়া",
+              "hi": "क्रोएशिया",
+              "ru": "Хорватия"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      }
+    ],
+    "bestAwayTeamPlayers": [
+      {
+        "value": "8.3",
+        "label": "rating",
+        "player": {
+          "name": "Mikel Merino",
+          "firstName": "Mikel",
+          "lastName": "Merino",
+          "slug": "mikel-merino",
+          "shortName": "M. Merino",
+          "position": "M",
+          "jerseyNumber": "23",
+          "height": 188,
+          "userCount": 41195,
+          "gender": "M",
+          "sofascoreId": "cby-ewg",
+          "id": 592010,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 835401600,
+          "proposedMarketValueRaw": {
+            "value": 26000000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميكيل ميرينو",
+              "bn": "মাইকেল মেরিনো",
+              "hi": "मिकेल मेरिनो",
+              "ru": "Микель Мерино"
+            },
+            "shortNameTranslation": {
+              "ar": "م. ميرينو",
+              "bn": "এম. মেরিনো",
+              "hi": "एम. मेरिनो",
+              "ru": "М. Мерино"
+            }
+          }
+        },
+        "team": {
+          "name": "Spain",
+          "slug": "spain",
+          "shortName": "Spain",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 2512996,
+          "nameCode": "ESP",
+          "ranking": 1,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4698,
+          "teamColors": {
+            "primary": "#cc0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "hi": "स्पेन",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "7.5",
+        "label": "rating",
+        "player": {
+          "name": "Aymeric Laporte",
+          "firstName": "Aymeric",
+          "lastName": "Laporte",
+          "slug": "aymeric-laporte",
+          "shortName": "A. Laporte",
+          "position": "D",
+          "jerseyNumber": "14",
+          "height": 191,
+          "userCount": 19092,
+          "gender": "M",
+          "sofascoreId": "faq-x9b",
+          "id": 149734,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 769996800,
+          "proposedMarketValueRaw": {
+            "value": 8400000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيميريك لابورت",
+              "bn": "আইমেরিক ল্যাপোর্টে",
+              "hi": "एमेरिक लापोर्टे",
+              "ru": "Эмерик Лапорт"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. لابورت",
+              "bn": "এ. ল্যাপোর্টে",
+              "hi": "ए. लापोर्टे",
+              "ru": "Э. Лапорт"
+            }
+          }
+        },
+        "team": {
+          "name": "Spain",
+          "slug": "spain",
+          "shortName": "Spain",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 2512996,
+          "nameCode": "ESP",
+          "ranking": 1,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4698,
+          "teamColors": {
+            "primary": "#cc0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "hi": "स्पेन",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "7.3",
+        "label": "rating",
+        "player": {
+          "name": "Unai Simón",
+          "firstName": "Unai",
+          "lastName": "Simon",
+          "slug": "unai-simon",
+          "shortName": "U. Simón",
+          "position": "G",
+          "jerseyNumber": "1",
+          "height": 189,
+          "userCount": 16463,
+          "gender": "M",
+          "sofascoreId": "vke-cns",
+          "id": 797291,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 865987200,
+          "proposedMarketValueRaw": {
+            "value": 21000000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوناي سيمون",
+              "bn": "উনাই সাইমন",
+              "hi": "उनाई सिमोन",
+              "ru": "Унай Симон"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. سيمون",
+              "bn": "ইউ. সাইমন",
+              "hi": "यू. सिमोन",
+              "ru": "У. Симон"
+            }
+          }
+        },
+        "team": {
+          "name": "Spain",
+          "slug": "spain",
+          "shortName": "Spain",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 2512996,
+          "nameCode": "ESP",
+          "ranking": 1,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4698,
+          "teamColors": {
+            "primary": "#cc0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "hi": "स्पेन",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      }
+    ],
+    "leaderboard": [
+      {
+        "value": "8.3",
+        "label": "rating",
+        "player": {
+          "name": "Mikel Merino",
+          "firstName": "Mikel",
+          "lastName": "Merino",
+          "slug": "mikel-merino",
+          "shortName": "M. Merino",
+          "position": "M",
+          "jerseyNumber": "23",
+          "height": 188,
+          "userCount": 41195,
+          "gender": "M",
+          "sofascoreId": "cby-ewg",
+          "id": 592010,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 835401600,
+          "proposedMarketValueRaw": {
+            "value": 26000000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميكيل ميرينو",
+              "bn": "মাইকেল মেরিনো",
+              "hi": "मिकेल मेरिनो",
+              "ru": "Микель Мерино"
+            },
+            "shortNameTranslation": {
+              "ar": "م. ميرينو",
+              "bn": "এম. মেরিনো",
+              "hi": "एम. मेरिनो",
+              "ru": "М. Мерино"
+            }
+          }
+        },
+        "team": {
+          "name": "Spain",
+          "slug": "spain",
+          "shortName": "Spain",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 2512996,
+          "nameCode": "ESP",
+          "ranking": 1,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4698,
+          "teamColors": {
+            "primary": "#cc0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "hi": "स्पेन",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "7.5",
+        "label": "rating",
+        "player": {
+          "name": "Aymeric Laporte",
+          "firstName": "Aymeric",
+          "lastName": "Laporte",
+          "slug": "aymeric-laporte",
+          "shortName": "A. Laporte",
+          "position": "D",
+          "jerseyNumber": "14",
+          "height": 191,
+          "userCount": 19092,
+          "gender": "M",
+          "sofascoreId": "faq-x9b",
+          "id": 149734,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 769996800,
+          "proposedMarketValueRaw": {
+            "value": 8400000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيميريك لابورت",
+              "bn": "আইমেরিক ল্যাপোর্টে",
+              "hi": "एमेरिक लापोर्टे",
+              "ru": "Эмерик Лапорт"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. لابورت",
+              "bn": "এ. ল্যাপোর্টে",
+              "hi": "ए. लापोर्टे",
+              "ru": "Э. Лапорт"
+            }
+          }
+        },
+        "team": {
+          "name": "Spain",
+          "slug": "spain",
+          "shortName": "Spain",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 2512996,
+          "nameCode": "ESP",
+          "ranking": 1,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4698,
+          "teamColors": {
+            "primary": "#cc0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "hi": "स्पेन",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "7.3",
+        "label": "rating",
+        "player": {
+          "name": "Unai Simón",
+          "firstName": "Unai",
+          "lastName": "Simon",
+          "slug": "unai-simon",
+          "shortName": "U. Simón",
+          "position": "G",
+          "jerseyNumber": "1",
+          "height": 189,
+          "userCount": 16463,
+          "gender": "M",
+          "sofascoreId": "vke-cns",
+          "id": 797291,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 865987200,
+          "proposedMarketValueRaw": {
+            "value": 21000000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوناي سيمون",
+              "bn": "উনাই সাইমন",
+              "hi": "उनाई सिमोन",
+              "ru": "Унай Симон"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. سيمون",
+              "bn": "ইউ. সাইমন",
+              "hi": "यू. सिमोन",
+              "ru": "У. Симон"
+            }
+          }
+        },
+        "team": {
+          "name": "Spain",
+          "slug": "spain",
+          "shortName": "Spain",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 2512996,
+          "nameCode": "ESP",
+          "ranking": 1,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 4698,
+          "teamColors": {
+            "primary": "#cc0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "hi": "स्पेन",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "__trimmed__": 7
+      }
+    ],
+    "playerOfTheMatch": {
+      "value": "8.3",
+      "label": "rating",
+      "player": {
+        "name": "Mikel Merino",
+        "firstName": "Mikel",
+        "lastName": "Merino",
+        "slug": "mikel-merino",
+        "shortName": "M. Merino",
+        "position": "M",
+        "jerseyNumber": "23",
+        "height": 188,
+        "userCount": 41195,
+        "gender": "M",
+        "sofascoreId": "cby-ewg",
+        "id": 592010,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 835401600,
+        "proposedMarketValueRaw": {
+          "value": 26000000,
+          "currency": "EUR"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ميكيل ميرينو",
+            "bn": "মাইকেল মেরিনো",
+            "hi": "मिकेल मेरिनो",
+            "ru": "Микель Мерино"
+          },
+          "shortNameTranslation": {
+            "ar": "م. ميرينو",
+            "bn": "এম. মেরিনো",
+            "hi": "एम. मेरिनो",
+            "ru": "М. Мерино"
+          }
+        }
+      },
+      "team": {
+        "name": "Spain",
+        "slug": "spain",
+        "shortName": "Spain",
+        "gender": "M",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "userCount": 2512996,
+        "nameCode": "ESP",
+        "ranking": 1,
+        "disabled": false,
+        "national": true,
+        "type": 0,
+        "id": 4698,
+        "teamColors": {
+          "primary": "#cc0000",
+          "secondary": "#ffffff",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إسبانيا",
+            "bn": "স্পেন",
+            "hi": "स्पेन",
+            "ru": "Испания"
+          },
+          "shortNameTranslation": {}
+        }
+      }
+    }
+  }
+}

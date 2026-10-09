@@ -1,0 +1,709 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/5447/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:18:33+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/tsv-hannover-burgdorf-sg-flensburg-handewitt/TEbsXic#id:16419114",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Bundesliga",
+          "slug": "bundesliga",
+          "category": {
+            "name": "Germany",
+            "slug": "germany",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "DE",
+              "alpha3": "DEU",
+              "name": "Germany",
+              "slug": "germany"
+            },
+            "id": 53,
+            "flag": "germany",
+            "alpha2": "DE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألمانيا",
+                "hi": "जर्मनी",
+                "bn": "জার্মানি",
+                "ru": "Германия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Bundesliga",
+            "slug": "bundesliga",
+            "primaryColorHex": "#124568",
+            "secondaryColorHex": "#4997e4",
+            "category": {
+              "name": "Germany",
+              "slug": "germany",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "DE",
+                "alpha3": "DEU",
+                "name": "Germany",
+                "slug": "germany"
+              },
+              "id": 53,
+              "flag": "germany",
+              "alpha2": "DE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألمانيا",
+                  "hi": "जर्मनी",
+                  "bn": "জার্মানি",
+                  "ru": "Германия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5934,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 149,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الألماني",
+                "hi": "बुंडेसलीगा",
+                "bn": "বুন্দেসলীগা",
+                "ru": "Бундеслига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 79,
+          "isGroup": false,
+          "isLive": false,
+          "id": 95,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "बुंडेसलीगा",
+              "ar": "الدوري الألماني",
+              "bn": "বুন্দেসলীগা",
+              "ru": "Бундеслига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Bundesliga 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 78525
+        },
+        "roundInfo": {
+          "round": 20
+        },
+        "customId": "XicsNAc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "HC Erlangen",
+          "slug": "hc-erlangen",
+          "shortName": "Erlangen",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 843,
+          "nameCode": "HCE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 6288,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ff0000",
+            "text": "#ff0000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ارلانجن HC",
+              "ru": "ГК Эрланген"
+            },
+            "shortNameTranslation": {
+              "ar": "إرلانجن",
+              "bn": "এরলাঞ্জেন",
+              "hi": "एरलांगेन"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "TSV Hannover Burgdorf",
+          "slug": "tsv-hannover-burgdorf",
+          "shortName": "Burgdorf",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 1494,
+          "nameCode": "HAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 5447,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#004500",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تي إس في هانوفر بورغدورف",
+              "ru": "Ганновер Бюргдорф"
+            },
+            "shortNameTranslation": {
+              "ar": "بورغدورف",
+              "bn": "বার্গডর্ফ",
+              "hi": "बुर्गडॉर्फ"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 29,
+          "display": 29,
+          "period1": 11,
+          "period2": 18,
+          "normaltime": 29
+        },
+        "awayScore": {
+          "current": 30,
+          "display": 30,
+          "period1": 12,
+          "period2": 18,
+          "normaltime": 30
+        },
+        "time": {
+          "played": 3599,
+          "periodLength": 1800,
+          "overtimeLength": 300,
+          "totalPeriodCount": 2,
+          "currentPeriodStartTimestamp": 1770756269
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1770756271
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14203125,
+        "slug": "hc-erlangen-tsv-hannover-burgdorf",
+        "startTimestamp": 1770750000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Bundesliga",
+          "slug": "bundesliga",
+          "category": {
+            "name": "Germany",
+            "slug": "germany",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "DE",
+              "alpha3": "DEU",
+              "name": "Germany",
+              "slug": "germany"
+            },
+            "id": 53,
+            "flag": "germany",
+            "alpha2": "DE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألمانيا",
+                "hi": "जर्मनी",
+                "bn": "জার্মানি",
+                "ru": "Германия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Bundesliga",
+            "slug": "bundesliga",
+            "primaryColorHex": "#124568",
+            "secondaryColorHex": "#4997e4",
+            "category": {
+              "name": "Germany",
+              "slug": "germany",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "DE",
+                "alpha3": "DEU",
+                "name": "Germany",
+                "slug": "germany"
+              },
+              "id": 53,
+              "flag": "germany",
+              "alpha2": "DE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألمانيا",
+                  "hi": "जर्मनी",
+                  "bn": "জার্মানি",
+                  "ru": "Германия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5934,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 149,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الألماني",
+                "hi": "बुंडेसलीगा",
+                "bn": "বুন্দেসলীগা",
+                "ru": "Бундеслига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 79,
+          "isGroup": false,
+          "isLive": false,
+          "id": 95,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "बुंडेसलीगा",
+              "ar": "الدوري الألماني",
+              "bn": "বুন্দেসলীগা",
+              "ru": "Бундеслига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Bundesliga 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 78525
+        },
+        "roundInfo": {
+          "round": 21
+        },
+        "customId": "JEbsXic",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "TSV Hannover Burgdorf",
+          "slug": "tsv-hannover-burgdorf",
+          "shortName": "Burgdorf",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 1494,
+          "nameCode": "HAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 5447,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#004500",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تي إس في هانوفر بورغدورف",
+              "ru": "Ганновер Бюргдорф"
+            },
+            "shortNameTranslation": {
+              "ar": "بورغدورف",
+              "bn": "বার্গডর্ফ",
+              "hi": "बुर्गडॉर्फ"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "HSG Wetzlar",
+          "slug": "hsg-wetzlar",
+          "shortName": "Wetzlar",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 804,
+          "nameCode": "WET",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 3984,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#1e7251",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ڢتزلار HSV",
+              "ru": "Д/М Ветцлар"
+            },
+            "shortNameTranslation": {
+              "ar": "فيتسلار",
+              "bn": "ওয়েটজলার",
+              "hi": "वेट्जलार"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 30,
+          "display": 30,
+          "period1": 14,
+          "period2": 16,
+          "normaltime": 30
+        },
+        "awayScore": {
+          "current": 25,
+          "display": 25,
+          "period1": 11,
+          "period2": 14,
+          "normaltime": 25
+        },
+        "time": {
+          "played": 3600,
+          "periodLength": 1800,
+          "overtimeLength": 300,
+          "totalPeriodCount": 2,
+          "currentPeriodStartTimestamp": 1771097649
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1771097653
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14211237,
+        "slug": "tsv-hannover-burgdorf-hsg-wetzlar",
+        "startTimestamp": 1771092000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "EHF European League, Main Round, Group IV",
+          "slug": "ehf-european-league-main-round-group-iv",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 11,
+            "country": {},
+            "id": 73,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "EHF European League",
+            "slug": "ehf-european-league",
+            "primaryColorHex": "#0f1734",
+            "secondaryColorHex": "#e64315",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "priority": 11,
+              "country": {},
+              "id": 73,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 2255,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 59,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الأوروبي لكرة اليد",
+                "bn": "ইএইচএফ ইউরোপীয়ান লীগ",
+                "hi": "ईएचएफ यूरोपीयन लीग",
+                "ru": "Европейская лига ЕГФ"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group IV",
+          "isLive": false,
+          "id": 124875,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الدوري الأوروبي لكرة اليد، الجولة الرئيسية، المجموعة IV",
+              "bn": "ইএইচএফ ইউরোপীয়ান লীগ, মেইন রাউন্ড, গ্রুপ IV",
+              "hi": "ईएचएफ यूरोपीयन लीग, मैन राउंड, ग्रुप IV",
+              "ru": "Лига Европы ЕГФ, Основной раунд, Группа IV"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "EHF European League 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 78471
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "Xicsekk",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "TSV Hannover Burgdorf",
+          "slug": "tsv-hannover-burgdorf",
+          "shortName": "Burgdorf",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 1494,
+          "nameCode": "HAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 5447,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#004500",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تي إس في هانوفر بورغدورف",
+              "ru": "Ганновер Бюргдорф"
+            },
+            "shortNameTranslation": {
+              "ar": "بورغدورف",
+              "bn": "বার্গডর্ফ",
+              "hi": "बुर्गडॉर्फ"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Nexe Našice",
+          "slug": "nexe-nasice",
+          "shortName": "Nexe",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 2019,
+          "nameCode": "RKN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 25504,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#008000",
+            "secondary": "#ee1212",
+            "text": "#ee1212"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نيكسي ناشيتسه",
+              "ru": "Некс Нащице"
+            },
+            "shortNameTranslation": {
+              "ar": "نيكسي",
+              "ru": "Некс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 34,
+          "display": 34,
+          "period1": 18,
+          "period2": 16,
+          "normaltime": 34
+        },
+        "awayScore": {
+          "current": 28,
+          "display": 28,
+          "period1": 11,
+          "period2": 17,
+          "normaltime": 28
+        },
+        "time": {
+          "played": 3562,
+          "periodLength": 1800,
+          "overtimeLength": 300,
+          "totalPeriodCount": 2,
+          "currentPeriodStartTimestamp": 1771362784
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1771362788
+        },
+        "hasGlobalHighlights": false,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15210824,
+        "slug": "nexe-nasice-tsv-hannover-burgdorf",
+        "startTimestamp": 1771357500,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

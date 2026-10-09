@@ -1,0 +1,637 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/5447/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:18:34+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/tsv-hannover-burgdorf-sg-flensburg-handewitt/TEbsXic#id:16419114",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Bundesliga",
+          "slug": "bundesliga",
+          "category": {
+            "name": "Germany",
+            "slug": "germany",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "DE",
+              "alpha3": "DEU",
+              "name": "Germany",
+              "slug": "germany"
+            },
+            "id": 53,
+            "flag": "germany",
+            "alpha2": "DE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألمانيا",
+                "hi": "जर्मनी",
+                "bn": "জার্মানি",
+                "ru": "Германия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Bundesliga",
+            "slug": "bundesliga",
+            "primaryColorHex": "#124568",
+            "secondaryColorHex": "#4997e4",
+            "category": {
+              "name": "Germany",
+              "slug": "germany",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "DE",
+                "alpha3": "DEU",
+                "name": "Germany",
+                "slug": "germany"
+              },
+              "id": 53,
+              "flag": "germany",
+              "alpha2": "DE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألمانيا",
+                  "hi": "जर्मनी",
+                  "bn": "জার্মানি",
+                  "ru": "Германия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5934,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 149,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الألماني",
+                "hi": "बुंडेसलीगा",
+                "bn": "বুন্দেসলীগা",
+                "ru": "Бундеслига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 79,
+          "isGroup": false,
+          "isLive": false,
+          "id": 95,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "बुंडेसलीगा",
+              "ar": "الدوري الألماني",
+              "bn": "বুন্দেসলীগা",
+              "ru": "Бундеслига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Bundesliga 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 97291
+        },
+        "roundInfo": {
+          "round": 8
+        },
+        "customId": "TEbsXic",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "TSV Hannover Burgdorf",
+          "slug": "tsv-hannover-burgdorf",
+          "shortName": "Burgdorf",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 1494,
+          "nameCode": "HAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 5447,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#004500",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تي إس في هانوفر بورغدورف",
+              "ru": "Ганновер Бюргдорф"
+            },
+            "shortNameTranslation": {
+              "ar": "بورغدورف",
+              "bn": "বার্গডর্ফ",
+              "hi": "बुर्गडॉर्फ"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "SG Flensburg Handewitt",
+          "slug": "sg-flensburg-handewitt",
+          "shortName": "Flensburg",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 5999,
+          "nameCode": "SGF",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 3993,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000044",
+            "secondary": "#ff0000",
+            "text": "#ff0000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إس جي فلنسبورغ هاندفيت",
+              "ru": "Фленсбург-Хандэвитт"
+            },
+            "shortNameTranslation": {
+              "ar": "فلنسبورغ",
+              "bn": "ফ্লেনসবার্গ",
+              "hi": "फ्लेंसबर्ग"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16419114,
+        "slug": "tsv-hannover-burgdorf-sg-flensburg-handewitt",
+        "startTimestamp": 1791565200,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Bundesliga",
+          "slug": "bundesliga",
+          "category": {
+            "name": "Germany",
+            "slug": "germany",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "DE",
+              "alpha3": "DEU",
+              "name": "Germany",
+              "slug": "germany"
+            },
+            "id": 53,
+            "flag": "germany",
+            "alpha2": "DE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألمانيا",
+                "hi": "जर्मनी",
+                "bn": "জার্মানি",
+                "ru": "Германия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Bundesliga",
+            "slug": "bundesliga",
+            "primaryColorHex": "#124568",
+            "secondaryColorHex": "#4997e4",
+            "category": {
+              "name": "Germany",
+              "slug": "germany",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "DE",
+                "alpha3": "DEU",
+                "name": "Germany",
+                "slug": "germany"
+              },
+              "id": 53,
+              "flag": "germany",
+              "alpha2": "DE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألمانيا",
+                  "hi": "जर्मनी",
+                  "bn": "জার্মানি",
+                  "ru": "Германия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5934,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 149,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الألماني",
+                "hi": "बुंडेसलीगा",
+                "bn": "বুন্দেসলীগা",
+                "ru": "Бундеслига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 79,
+          "isGroup": false,
+          "isLive": false,
+          "id": 95,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "बुंडेसलीगा",
+              "ar": "الدوري الألماني",
+              "bn": "বুন্দেসলীগা",
+              "ru": "Бундеслига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Bundesliga 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 97291
+        },
+        "roundInfo": {
+          "round": 9
+        },
+        "customId": "Xicsnjc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "HBW Balingen/Weilstetten",
+          "slug": "hbw-balingenweilstetten",
+          "shortName": "Balingen/W",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 616,
+          "nameCode": "HBW",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 5463,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#0040ff",
+            "secondary": "#ff0000",
+            "text": "#ff0000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إتش بي دبليو بالينغن/فايلشتاتين",
+              "ru": "Балинген/Вейлштеттен"
+            },
+            "shortNameTranslation": {
+              "ar": "بالينغن/و",
+              "bn": "ব্যালিঞ্জেন/ডব্লিউ",
+              "hi": "बालिंजेन/डब्ल्यू"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "TSV Hannover Burgdorf",
+          "slug": "tsv-hannover-burgdorf",
+          "shortName": "Burgdorf",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 1494,
+          "nameCode": "HAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 5447,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#004500",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تي إس في هانوفر بورغدورف",
+              "ru": "Ганновер Бюргдорф"
+            },
+            "shortNameTranslation": {
+              "ar": "بورغدورف",
+              "bn": "বার্গডর্ফ",
+              "hi": "बुर्गडॉर्फ"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16419129,
+        "slug": "hbw-balingenweilstetten-tsv-hannover-burgdorf",
+        "startTimestamp": 1792429200,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Bundesliga",
+          "slug": "bundesliga",
+          "category": {
+            "name": "Germany",
+            "slug": "germany",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "DE",
+              "alpha3": "DEU",
+              "name": "Germany",
+              "slug": "germany"
+            },
+            "id": 53,
+            "flag": "germany",
+            "alpha2": "DE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألمانيا",
+                "hi": "जर्मनी",
+                "bn": "জার্মানি",
+                "ru": "Германия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Bundesliga",
+            "slug": "bundesliga",
+            "primaryColorHex": "#124568",
+            "secondaryColorHex": "#4997e4",
+            "category": {
+              "name": "Germany",
+              "slug": "germany",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "DE",
+                "alpha3": "DEU",
+                "name": "Germany",
+                "slug": "germany"
+              },
+              "id": 53,
+              "flag": "germany",
+              "alpha2": "DE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألمانيا",
+                  "hi": "जर्मनी",
+                  "bn": "জার্মানি",
+                  "ru": "Германия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5934,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 149,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الألماني",
+                "hi": "बुंडेसलीगा",
+                "bn": "বুন্দেসলীগা",
+                "ru": "Бундеслига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 79,
+          "isGroup": false,
+          "isLive": false,
+          "id": 95,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "बुंडेसलीगा",
+              "ar": "الدوري الألماني",
+              "bn": "বুন্দেসলীগা",
+              "ru": "Бундеслига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Bundesliga 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 97291
+        },
+        "roundInfo": {
+          "round": 10
+        },
+        "customId": "WEbsXic",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "TSV Hannover Burgdorf",
+          "slug": "tsv-hannover-burgdorf",
+          "shortName": "Burgdorf",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 1494,
+          "nameCode": "HAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 5447,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#004500",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تي إس في هانوفر بورغدورف",
+              "ru": "Ганновер Бюргдорф"
+            },
+            "shortNameTranslation": {
+              "ar": "بورغدورف",
+              "bn": "বার্গডর্ফ",
+              "hi": "बुर्गडॉर्फ"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "TBV Lemgo",
+          "slug": "tbv-lemgo",
+          "shortName": "Lemgo",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 1101,
+          "nameCode": "TBV",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 3996,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#224d7d",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تي بي في ليمغو",
+              "ru": "ТБВ Лемго"
+            },
+            "shortNameTranslation": {
+              "ar": "ليمغو",
+              "bn": "লেমগো",
+              "hi": "लेमगो",
+              "ru": "Лемго"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16419130,
+        "slug": "tsv-hannover-burgdorf-tbv-lemgo",
+        "startTimestamp": 1792778400,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 25
+      }
+    ],
+    "hasNextPage": false
+  }
+}

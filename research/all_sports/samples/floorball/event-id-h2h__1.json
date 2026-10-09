@@ -1,0 +1,17 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16779060/h2h",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:02:14+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/acema-sparta-praha-tatran-stresovice/ctkseRr#id:16779060",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "teamDuel": {
+      "homeWins": 9,
+      "awayWins": 1,
+      "draws": 0
+    },
+    "managerDuel": null
+  }
+}

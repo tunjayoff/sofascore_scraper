@@ -1,0 +1,695 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/245076/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:16:34+00:00",
+  "page": "https://www.sofascore.com/tr/aussie-rules/match/essendon-bombers-western-bulldogs/BbYbsHBDd#id:17236299",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "AFL, Women",
+          "slug": "afl-women",
+          "category": {
+            "name": "Australia",
+            "slug": "australia",
+            "sport": {
+              "name": "Aussie rules",
+              "slug": "aussie-rules",
+              "id": 13
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 87,
+            "flag": "australia",
+            "alpha2": "AU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أستراليا",
+                "ru": "Австралия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "AFL, Women",
+            "slug": "afl-women",
+            "primaryColorHex": "#f27b62",
+            "secondaryColorHex": "#ed4623",
+            "category": {
+              "name": "Australia",
+              "slug": "australia",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AU",
+                "alpha3": "AUS",
+                "name": "Australia",
+                "slug": "australia"
+              },
+              "id": 87,
+              "flag": "australia",
+              "alpha2": "AU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أستراليا",
+                  "ru": "Австралия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 409,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 10159,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+                "ru": "AFL среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 57591,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+              "ru": "AFL, Женщины"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "AFL, Women 2024",
+          "year": "2024",
+          "editor": false,
+          "id": 64462
+        },
+        "roundInfo": {
+          "round": 2
+        },
+        "customId": "BbYbsKBDd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Western Bulldogs",
+          "slug": "western-bulldogs",
+          "shortName": "Bulldogs",
+          "gender": "F",
+          "sport": {
+            "name": "Aussie rules",
+            "slug": "aussie-rules",
+            "id": 13
+          },
+          "userCount": 67,
+          "nameCode": "WEB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 245076,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غرب البلدغ",
+              "ru": "Вестерн Бульдогс"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Port Adelaide Power",
+          "slug": "port-adelaide-power",
+          "shortName": "Port Adelaide",
+          "gender": "F",
+          "sport": {
+            "name": "Aussie rules",
+            "slug": "aussie-rules",
+            "id": 13
+          },
+          "userCount": 88,
+          "nameCode": "POR",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 446335,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بورت أديلايد باور",
+              "ru": "Порт Аделаида Пауэр"
+            },
+            "shortNameTranslation": {
+              "ar": "بورت أديلايد",
+              "ru": "Порт Аделаида"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 6,
+          "display": 6,
+          "period1": 2,
+          "period2": 0,
+          "period3": 3,
+          "period4": 1,
+          "normaltime": 6
+        },
+        "awayScore": {
+          "current": 46,
+          "display": 46,
+          "period1": 13,
+          "period2": 12,
+          "period3": 20,
+          "period4": 1,
+          "normaltime": 46
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1725610763
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 4
+            }
+          ],
+          "changeTimestamp": 1725610765
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 12761671,
+        "slug": "port-adelaide-power-western-bulldogs",
+        "startTimestamp": 1725604200,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "AFL, Women",
+          "slug": "afl-women",
+          "category": {
+            "name": "Australia",
+            "slug": "australia",
+            "sport": {
+              "name": "Aussie rules",
+              "slug": "aussie-rules",
+              "id": 13
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 87,
+            "flag": "australia",
+            "alpha2": "AU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أستراليا",
+                "ru": "Австралия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "AFL, Women",
+            "slug": "afl-women",
+            "primaryColorHex": "#f27b62",
+            "secondaryColorHex": "#ed4623",
+            "category": {
+              "name": "Australia",
+              "slug": "australia",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AU",
+                "alpha3": "AUS",
+                "name": "Australia",
+                "slug": "australia"
+              },
+              "id": 87,
+              "flag": "australia",
+              "alpha2": "AU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أستراليا",
+                  "ru": "Австралия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 409,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 10159,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+                "ru": "AFL среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 57591,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+              "ru": "AFL, Женщины"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "AFL, Women 2024",
+          "year": "2024",
+          "editor": false,
+          "id": 64462
+        },
+        "roundInfo": {
+          "round": 3
+        },
+        "customId": "BbYbsONIc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Western Bulldogs",
+          "slug": "western-bulldogs",
+          "shortName": "Bulldogs",
+          "gender": "F",
+          "sport": {
+            "name": "Aussie rules",
+            "slug": "aussie-rules",
+            "id": 13
+          },
+          "userCount": 67,
+          "nameCode": "WEB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 245076,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غرب البلدغ",
+              "ru": "Вестерн Бульдогс"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "West Coast Eagles",
+          "slug": "west-coast-eagles",
+          "shortName": "West Coast",
+          "gender": "F",
+          "sport": {
+            "name": "Aussie rules",
+            "slug": "aussie-rules",
+            "id": 13
+          },
+          "userCount": 88,
+          "nameCode": "WES",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 334439,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نسر الساحل الغربي",
+              "ru": "Уэст Кост Иглс"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 21,
+          "display": 21,
+          "period1": 13,
+          "period2": 1,
+          "period3": 1,
+          "period4": 6,
+          "normaltime": 21
+        },
+        "awayScore": {
+          "current": 32,
+          "display": 32,
+          "period1": 7,
+          "period2": 12,
+          "period3": 6,
+          "period4": 7,
+          "normaltime": 32
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1726138931
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1726138935
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 12818939,
+        "slug": "west-coast-eagles-western-bulldogs",
+        "startTimestamp": 1726132500,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "AFL, Women",
+          "slug": "afl-women",
+          "category": {
+            "name": "Australia",
+            "slug": "australia",
+            "sport": {
+              "name": "Aussie rules",
+              "slug": "aussie-rules",
+              "id": 13
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 87,
+            "flag": "australia",
+            "alpha2": "AU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أستراليا",
+                "ru": "Австралия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "AFL, Women",
+            "slug": "afl-women",
+            "primaryColorHex": "#f27b62",
+            "secondaryColorHex": "#ed4623",
+            "category": {
+              "name": "Australia",
+              "slug": "australia",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AU",
+                "alpha3": "AUS",
+                "name": "Australia",
+                "slug": "australia"
+              },
+              "id": 87,
+              "flag": "australia",
+              "alpha2": "AU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أستراليا",
+                  "ru": "Австралия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 409,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 10159,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+                "ru": "AFL среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 57591,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+              "ru": "AFL, Женщины"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "AFL, Women 2024",
+          "year": "2024",
+          "editor": false,
+          "id": 64462
+        },
+        "roundInfo": {
+          "round": 4
+        },
+        "customId": "BbYbsbdYb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Brisbane Lions",
+          "slug": "brisbane-lions",
+          "shortName": "Brisbane",
+          "gender": "F",
+          "sport": {
+            "name": "Aussie rules",
+            "slug": "aussie-rules",
+            "id": 13
+          },
+          "userCount": 188,
+          "nameCode": "BRI",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 245151,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أسود بريسبان",
+              "ru": "Брисбен Лайонс"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Western Bulldogs",
+          "slug": "western-bulldogs",
+          "shortName": "Bulldogs",
+          "gender": "F",
+          "sport": {
+            "name": "Aussie rules",
+            "slug": "aussie-rules",
+            "id": 13
+          },
+          "userCount": 67,
+          "nameCode": "WEB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 245076,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غرب البلدغ",
+              "ru": "Вестерн Бульдогс"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 81,
+          "display": 81,
+          "period1": 22,
+          "period2": 19,
+          "period3": 20,
+          "period4": 20,
+          "normaltime": 81
+        },
+        "awayScore": {
+          "current": 34,
+          "display": 34,
+          "period1": 0,
+          "period2": 8,
+          "period3": 13,
+          "period4": 13,
+          "normaltime": 34
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1726657792
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 4
+            }
+          ],
+          "changeTimestamp": 1726657796
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 12831369,
+        "slug": "brisbane-lions-western-bulldogs",
+        "startTimestamp": 1726650900,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

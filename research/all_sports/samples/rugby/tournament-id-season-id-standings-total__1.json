@@ -1,0 +1,566 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/159283/season/100526/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:59:46+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/cardiff-university-cardiff-met/byUiseyUi#id:16793649",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 300453,
+        "type": "total",
+        "tournament": {
+          "name": "BUCS Super Rugby",
+          "slug": "bucs-super-rugby",
+          "category": {
+            "name": "Rugby Union",
+            "slug": "rugby-union",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "priority": 0,
+            "id": 82,
+            "flag": "rugby-union",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "रग्बी यूनियन",
+                "bn": "রাগবি ইউনিয়ন",
+                "ru": "Регби-союз"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 60,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 28278,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سوبر رغبي BUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 159283,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الرغبي الممتاز لBUCS",
+              "ru": "Супер Регби BUCS"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "BUCS Super Rugby 26/27",
+        "descriptions": [],
+        "rows": [
+          {
+            "id": 2531317,
+            "team": {
+              "name": "Exeter University",
+              "slug": "exeter-university",
+              "shortName": "Exeter University ",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 61,
+              "nameCode": "EUN",
+              "national": false,
+              "type": 0,
+              "id": 1082321,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إكستر جامعة",
+                  "ru": "Университет Экстера"
+                },
+                "shortNameTranslation": {
+                  "ar": "إكستر جامعة",
+                  "ru": "Университет Экстера"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 3,
+            "wins": 3,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 137,
+            "scoresAgainst": 81,
+            "points": 15,
+            "scoreDiffFormatted": "+56"
+          },
+          {
+            "id": 2531311,
+            "team": {
+              "name": "Hartpury College",
+              "slug": "hartpury-college",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 70,
+              "nameCode": "HAR",
+              "national": false,
+              "type": 0,
+              "id": 208060,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "هرتبري كولدج",
+                  "ru": "Хартпури Колледж"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 3,
+            "wins": 3,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 111,
+            "scoresAgainst": 92,
+            "points": 15,
+            "scoreDiffFormatted": "+19"
+          },
+          {
+            "id": 2531312,
+            "team": {
+              "name": "Bath University",
+              "slug": "bath-university",
+              "shortName": "Bath University",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 50,
+              "nameCode": "BUN",
+              "national": false,
+              "type": 0,
+              "id": 1111149,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جامعة باث",
+                  "ru": "Университет Бат"
+                },
+                "shortNameTranslation": {
+                  "ar": "ج. باث",
+                  "ru": "Университет Бат"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 3,
+            "matches": 3,
+            "wins": 2,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 139,
+            "scoresAgainst": 81,
+            "points": 11,
+            "scoreDiffFormatted": "+58"
+          },
+          {
+            "id": 2531316,
+            "team": {
+              "name": "Loughborough Students",
+              "slug": "loughborough-students",
+              "shortName": "Loughborough Students",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 52,
+              "nameCode": "LST",
+              "national": false,
+              "type": 0,
+              "id": 1082327,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "لوغبره ستودنتس",
+                  "ru": "Лафборо Студентс"
+                },
+                "shortNameTranslation": {
+                  "ar": "لوغبره ستودنتس",
+                  "ru": "Лафборо Студентс"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 4,
+            "matches": 3,
+            "wins": 2,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 148,
+            "scoresAgainst": 98,
+            "points": 11,
+            "scoreDiffFormatted": "+50"
+          },
+          {
+            "id": 2531320,
+            "team": {
+              "name": "Brunel University",
+              "slug": "brunel-university",
+              "shortName": "Brunel University",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 18,
+              "nameCode": "BUN",
+              "national": false,
+              "type": 0,
+              "id": 1111294,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جامعة برونيل",
+                  "ru": "Университет Брунеля"
+                },
+                "shortNameTranslation": {
+                  "ar": "ج. برونيل",
+                  "ru": "Университет Брунеля"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 5,
+            "matches": 3,
+            "wins": 2,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 106,
+            "scoresAgainst": 114,
+            "points": 11,
+            "scoreDiffFormatted": "-8"
+          },
+          {
+            "id": 2531313,
+            "team": {
+              "name": "Cardiff University",
+              "slug": "cardiff-university",
+              "shortName": "Cardiff University",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 18,
+              "nameCode": "CUN",
+              "national": false,
+              "type": 0,
+              "id": 1111154,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جامعة كارديف",
+                  "ru": "Университет Кардифф"
+                },
+                "shortNameTranslation": {
+                  "ar": "ج. كارديف",
+                  "ru": "Университет Кардифф"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 6,
+            "matches": 3,
+            "wins": 1,
+            "losses": 1,
+            "draws": 1,
+            "scoresFor": 119,
+            "scoresAgainst": 108,
+            "points": 9,
+            "scoreDiffFormatted": "+11"
+          },
+          {
+            "id": 2531319,
+            "team": {
+              "name": "Leeds Beckett University",
+              "slug": "leeds-beckett-university",
+              "shortName": "Leeds Beckett University",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 20,
+              "nameCode": "LBU",
+              "national": false,
+              "type": 0,
+              "id": 1111153,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جامعة ليدز بيكيت",
+                  "ru": "Университет Лидс Беккет"
+                },
+                "shortNameTranslation": {
+                  "ar": "ج. بيكيت",
+                  "ru": "Университет Лидс Беккет"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 7,
+            "matches": 3,
+            "wins": 1,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 96,
+            "scoresAgainst": 139,
+            "points": 6,
+            "scoreDiffFormatted": "-43"
+          },
+          {
+            "id": 2531315,
+            "team": {
+              "name": "Durham University",
+              "slug": "durham-university",
+              "shortName": "Durham University",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 23,
+              "nameCode": "DUN",
+              "national": false,
+              "type": 0,
+              "id": 1111150,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جامعة دورهام",
+                  "ru": "Университет Дарема"
+                },
+                "shortNameTranslation": {
+                  "ar": "ج. دورهام",
+                  "ru": "Университет Дарема"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 8,
+            "matches": 3,
+            "wins": 0,
+            "losses": 2,
+            "draws": 1,
+            "scoresFor": 85,
+            "scoresAgainst": 131,
+            "points": 4,
+            "scoreDiffFormatted": "-46"
+          },
+          {
+            "id": 2531314,
+            "team": {
+              "name": "Nottingham University",
+              "slug": "nottingham-university",
+              "shortName": "Nottingham University",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 24,
+              "nameCode": "NUN",
+              "national": false,
+              "type": 0,
+              "id": 1111152,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جامعة نوتنغهام",
+                  "ru": "Университет Ноттингема"
+                },
+                "shortNameTranslation": {
+                  "ar": "ج. نوتنغهام",
+                  "ru": "Университет Ноттингема"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 9,
+            "matches": 3,
+            "wins": 0,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 90,
+            "scoresAgainst": 151,
+            "points": 3,
+            "scoreDiffFormatted": "-61"
+          },
+          {
+            "id": 2531318,
+            "team": {
+              "name": "Cardiff Met",
+              "slug": "cardiff-met",
+              "shortName": "Cardiff Met",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 36,
+              "nameCode": "CME",
+              "national": false,
+              "type": 0,
+              "id": 1111151,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جامعة كارديف مت",
+                  "ru": "Кардифф Мет"
+                },
+                "shortNameTranslation": {
+                  "ar": "ج. مت",
+                  "ru": "Кардифф Мет"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 3,
+              "text": "Relegation"
+            },
+            "position": 10,
+            "matches": 3,
+            "wins": 0,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 62,
+            "scoresAgainst": 98,
+            "points": 1,
+            "scoreDiffFormatted": "-36"
+          }
+        ],
+        "updatedAtTimestamp": 1791409048
+      }
+    ]
+  }
+}

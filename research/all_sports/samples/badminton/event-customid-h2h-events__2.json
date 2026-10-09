@@ -1,0 +1,822 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/PiKsNbWd/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:24:08+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/miyazaki-okuhara/PiKsNbWd#id:17287651",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Arctic Open, WS",
+          "slug": "arctic-open-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Arctic Open, WS",
+            "slug": "arctic-open-ws",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 36,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 21265,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البطولة المفتوحة في القطب الشمالي، السيدات فردي",
+                "ru": "Арктический Открытый, среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 203378
+        },
+        "season": {
+          "name": "Arctic Open, WS 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 104790
+        },
+        "roundInfo": {
+          "round": 27,
+          "name": "Quarterfinals",
+          "slug": "quarterfinals",
+          "cupRoundType": 4
+        },
+        "customId": "PiKsNbWd",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Miyazaki T.",
+          "slug": "miyazaki-tomoka",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 457,
+          "nameCode": "MIY",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 490088,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مييازكي، توموكا",
+              "ru": "Миядзаки, Томока"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17287651,
+        "slug": "miyazaki-okuhara",
+        "startTimestamp": 1791541800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Indonesia Open 2026, WS",
+          "slug": "indonesia-open-2026-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Indonesia Open (SS), Women Singles",
+            "slug": "indonesia-open-ss-women-singles",
+            "primaryColorHex": "#1d88ca",
+            "secondaryColorHex": "#f29000",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 124,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11690,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة إندونيسيا المفتوحة (SS)، فردي سيدات",
+                "ru": "Открытый чемпионат Индонезии (Суперсерия), женский одиночный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 186932,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Открытый чемпионат Индонезии 2026, женский разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Indonesia Open, Women Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 95174
+        },
+        "roundInfo": {
+          "round": 5,
+          "name": "Round of 16",
+          "slug": "round-of-16",
+          "cupRoundType": 8
+        },
+        "customId": "PiKsNbWd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Miyazaki T.",
+          "slug": "miyazaki-tomoka",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 457,
+          "nameCode": "MIY",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 490088,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مييازكي، توموكا",
+              "ru": "Миядзаки, Томока"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 26,
+          "period2": 16,
+          "period3": 19,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 24,
+          "period2": 21,
+          "period3": 21,
+          "normaltime": 2
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1780582027
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.normaltime",
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period3",
+            "awayScore.normaltime"
+          ],
+          "changeTimestamp": 1780582034
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16275748,
+        "slug": "miyazaki-okuhara",
+        "startTimestamp": 1780576800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "All England Open 2026, WS",
+          "slug": "all-england-open-2026-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "All England Championships, Women Singles",
+            "slug": "all-england-championships-women-singles",
+            "primaryColorHex": "#018c4a",
+            "secondaryColorHex": "#055794",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 172,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11629,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة “أول إنغلاند” للريشة، فردي سيدات",
+                "ru": "Чемпионат Англии, женский одиночный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 176205,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Оупен Англии 2026, женский одиночный разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "All England Open, Women, Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 90330
+        },
+        "roundInfo": {
+          "round": 6,
+          "name": "Round of 32",
+          "slug": "round-of-32",
+          "cupRoundType": 16
+        },
+        "customId": "PiKsNbWd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Miyazaki T.",
+          "slug": "miyazaki-tomoka",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 457,
+          "nameCode": "MIY",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 490088,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مييازكي، توموكا",
+              "ru": "Миядзаки, Томока"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 21,
+          "period2": 15,
+          "period3": 14,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 15,
+          "period2": 21,
+          "period3": 21,
+          "normaltime": 2
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1772626363
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.normaltime",
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period3",
+            "awayScore.normaltime"
+          ],
+          "changeTimestamp": 1772626366
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15634803,
+        "slug": "miyazaki-okuhara",
+        "startTimestamp": 1772621700,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Indonesia Masters I 2023, WS",
+          "slug": "indonesia-masters-i-2023-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Indonesia Masters I, WS",
+            "slug": "indonesia-masters-i-ws",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 9,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 21041,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة إندونيسيا ماسترز 1، السيدات فردي",
+                "ru": "Мастера Индонезии I, среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 120792,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة إندونيسيا ماسترز I 2023، فردي، سيدات",
+              "ru": "Кубок мастеров Индонезии I 2023, женский разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Indonesia Masters I, WS 2023",
+          "year": "2023",
+          "editor": false,
+          "id": 54711
+        },
+        "roundInfo": {
+          "round": 27,
+          "name": "Quarterfinals",
+          "slug": "quarterfinals",
+          "cupRoundType": 4
+        },
+        "customId": "PiKsNbWd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Miyazaki T.",
+          "slug": "miyazaki-tomoka",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 457,
+          "nameCode": "MIY",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 490088,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مييازكي، توموكا",
+              "ru": "Миядзаки, Томока"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 19,
+          "period2": 21,
+          "period3": 19,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 21,
+          "period2": 15,
+          "period3": 21,
+          "normaltime": 2
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1694161635
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.normaltime",
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period3",
+            "awayScore.normaltime",
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1694161638
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 11620062,
+        "slug": "miyazaki-tomoka-okuhara-nozomi",
+        "startTimestamp": 1694157600,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 1,
+        "isEditor": false
+      }
+    ]
+  }
+}

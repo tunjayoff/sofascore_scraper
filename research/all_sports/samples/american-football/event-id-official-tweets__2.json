@@ -1,0 +1,648 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16183708/official-tweets",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:49+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=60, public, s-maxage=36000",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "tweets": [
+      {
+        "id": "2108349943153054088",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "here we goooo 🤠\n\n#TBvsDAL | @bswhealth \n\n📺: Prime Video",
+        "media": [
+          {
+            "id": "2108349899154522112",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108349899154522112/img/pC6dpdgez9XDxwR8.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108349899154522112/vid/avc1/320x568/bUtmuRX3VT2glWVK.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791504772,
+        "externalUrl": "https://x.com/dallascowboys/status/2108349943153054088"
+      },
+      {
+        "id": "2108349103478292497",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "JD1️⃣0️⃣ is ready for primetime 🫡\n\n🔜 #TBvsDAL 8:15 p.m. ET on Prime Video",
+        "media": [
+          {
+            "id": "2108348909533761536",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108348909533761536/img/T3ra4oz5XJpFAZOC.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108348909533761536/vid/avc1/320x400/S0QQfwBR_y1uN6zv.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791504572,
+        "externalUrl": "https://x.com/Buccaneers/status/2108349103478292497"
+      },
+      {
+        "id": "2108347190733164587",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Kickoff in Dallas 🔜",
+        "media": [
+          {
+            "id": "2108347155995893760",
+            "imageUrl": "https://pbs.twimg.com/media/HUJakWBXIAAb6ZA.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791504116,
+        "externalUrl": "https://x.com/Buccaneers/status/2108347190733164587"
+      },
+      {
+        "id": "2108346874885251324",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "I have jersey ⭐️ \n\n@fibulaa's side quests continue from the @officialdwts  ballroom to the sidelines",
+        "media": [
+          {
+            "id": "2108346650112499712",
+            "imageUrl": "https://pbs.twimg.com/media/HUJaG5dXIAAy6PB.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791504040,
+        "externalUrl": "https://x.com/dallascowboys/status/2108346874885251324"
+      },
+      {
+        "id": "2108346247384019192",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "it’s time for some 🏈\n\n#TBvsDAL | @bswhealth",
+        "media": [
+          {
+            "id": "2108346242698715136",
+            "imageUrl": "https://pbs.twimg.com/media/HUJZvLuWIAAgb3G.jpg"
+          },
+          {
+            "id": "2108346242682007552",
+            "imageUrl": "https://pbs.twimg.com/media/HUJZvLqXMAA-NyF.jpg"
+          },
+          {
+            "id": "2108346242694615040",
+            "imageUrl": "https://pbs.twimg.com/media/HUJZvLtXkAAdfYD.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791503891,
+        "externalUrl": "https://x.com/dallascowboys/status/2108346247384019192"
+      },
+      {
+        "id": "2108346133332246581",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Tampa Bay is in your corner, Wesley! ♥️🙏\n\n🔜 #TBvsDAL 8:15 p.m. ET on Prime Video",
+        "media": [
+          {
+            "id": "2108345632557760512",
+            "imageUrl": "https://pbs.twimg.com/media/HUJZoCvXwAAS3qc.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108345632557760512/vid/avc1/320x568/Hdvm1Gb7flMuNyfL.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791503864,
+        "externalUrl": "https://x.com/Buccaneers/status/2108346133332246581"
+      },
+      {
+        "id": "2108346008677531867",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "📺: #TBvsDAL on Prime Video",
+        "media": [],
+        "createdAtTimestamp": 1791503834,
+        "externalUrl": "https://x.com/dallascowboys/status/2108346008677531867"
+      },
+      {
+        "id": "2108336584793956708",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "ready for some thursday night action 🎬\n\n#TBvsDAL | #DallasCowboys",
+        "media": [
+          {
+            "id": "2108336561553035264",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108336561553035264/img/iHk9Jtw6RasiIcme.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108336561553035264/vid/avc1/320x568/UbFnEMqH0n8mS0hU.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791501587,
+        "externalUrl": "https://x.com/dallascowboys/status/2108336584793956708"
+      },
+      {
+        "id": "2108330417916989531",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "TNF is almost here ⏰\n \nJoin the crew as we get ready to take on the Buccaneers with Pregame LIVE presented by @WinStarWorld\n \n📺: #TBvsDAL on Prime Video",
+        "media": [],
+        "createdAtTimestamp": 1791500117,
+        "externalUrl": "https://x.com/dallascowboys/status/2108330417916989531"
+      },
+      {
+        "id": "2108330383632977961",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "LIVE: Pregame Live #TBvsDAL 10-08-26",
+        "media": [],
+        "createdAtTimestamp": 1791500108,
+        "externalUrl": "https://x.com/dallascowboys/status/2108330383632977961"
+      },
+      {
+        "id": "2108329850712855029",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "Congratulations to Paris Skinner and thank you for your tireless efforts to make DFW a better place with @SalArmyNTX!\n\n#ThatDeservesACrown | @CrownRoyal",
+        "media": [
+          {
+            "id": "2108329779992612864",
+            "imageUrl": "https://pbs.twimg.com/media/HUJKw7XWUAAirW9.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791499981,
+        "externalUrl": "https://x.com/dallascowboys/status/2108329850712855029"
+      },
+      {
+        "id": "2108329671074996358",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Game respects game 🫡",
+        "media": [
+          {
+            "id": "2108328951747633152",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108328951747633152/img/xkv184nDs62dshJS.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108328951747633152/vid/avc1/320x400/ggNk_v_RI9yyzO0c.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791499939,
+        "externalUrl": "https://x.com/Buccaneers/status/2108329671074996358"
+      },
+      {
+        "id": "2108327959530491969",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Inactives for #TBvsDAL ⬇️",
+        "media": [
+          {
+            "id": "2108326554287603713",
+            "imageUrl": "https://pbs.twimg.com/media/HUJH1KrWAAEvJ4z.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791499531,
+        "externalUrl": "https://x.com/Buccaneers/status/2108327959530491969"
+      },
+      {
+        "id": "2108327923761418384",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "Thank you to our @UPS Driver Tony Hodges for not only delivering the game ball to @ATTStadium safely, but for his dedicated service to the community as a UPS driver of 25 years.\n\n#TBvsDAL | #ThanksForDelivering",
+        "media": [
+          {
+            "id": "2108327788948140032",
+            "imageUrl": "https://pbs.twimg.com/media/HUJI9CJWsAAihJr.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791499522,
+        "externalUrl": "https://x.com/dallascowboys/status/2108327923761418384"
+      },
+      {
+        "id": "2108327452472750168",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "AIR JOHNSON 🔥",
+        "media": [
+          {
+            "id": "2108327337594904577",
+            "imageUrl": "https://pbs.twimg.com/media/HUJIiwuW4AEU9j9.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791499410,
+        "externalUrl": "https://x.com/Buccaneers/status/2108327452472750168"
+      },
+      {
+        "id": "2108324924465074320",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "88 on site 📍\n\n@_CeeDeeThree | @usnikefootball",
+        "media": [
+          {
+            "id": "2108324920488869888",
+            "imageUrl": "https://pbs.twimg.com/media/HUJGWETXwAAq0IJ.jpg"
+          },
+          {
+            "id": "2108324920467800064",
+            "imageUrl": "https://pbs.twimg.com/media/HUJGWEOWQAASzGI.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791498807,
+        "externalUrl": "https://x.com/dallascowboys/status/2108324924465074320"
+      },
+      {
+        "id": "2108323675871085005",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "welcome back, Tyler 👋",
+        "media": [
+          {
+            "id": "2108323656954740736",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108323656954740736/img/KBJRU38sxsOBYHcm.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108323656954740736/vid/avc1/320x568/QazfGM3nRsFMwrWz.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791498509,
+        "externalUrl": "https://x.com/dallascowboys/status/2108323675871085005"
+      },
+      {
+        "id": "2108320716387193013",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "First NFL primetime start for these rookies 🤩",
+        "media": [
+          {
+            "id": "2108320391328391168",
+            "imageUrl": "https://pbs.twimg.com/media/HUJCOb3XYAAaYCe.jpg"
+          },
+          {
+            "id": "2108320430662578176",
+            "imageUrl": "https://pbs.twimg.com/media/HUJCQuZXcAAgUut.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791497804,
+        "externalUrl": "https://x.com/Buccaneers/status/2108320716387193013"
+      },
+      {
+        "id": "2108312228243869873",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "Caleb lookin’ clean 😮‍💨\n\n#TBvsDAL | @Abercrombie",
+        "media": [
+          {
+            "id": "2108312202247565312",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108312202247565312/img/N0wPG71g6svhC3yD.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108312202247565312/vid/avc1/320x568/nn6P-aC3asM7ck-1.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791495780,
+        "externalUrl": "https://x.com/dallascowboys/status/2108312228243869873"
+      },
+      {
+        "id": "2108310065853694278",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": ".@javontewill33 feelin’ the fan love 🤟\n\n#TBvsDAL | @blockchain",
+        "media": [
+          {
+            "id": "2108310041711296512",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108310041711296512/img/xouqmOhb7F55uLXe.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108310041711296512/vid/avc1/320x568/G5j2_BoODp2pmcbP.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791495264,
+        "externalUrl": "https://x.com/dallascowboys/status/2108310065853694278"
+      },
+      {
+        "id": "2108309316436709575",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "feels good to be home 😁\n\n#TBvsDAL | @blockchain",
+        "media": [
+          {
+            "id": "2108309311168335872",
+            "imageUrl": "https://pbs.twimg.com/media/HUI4JfDWUAAzHPe.jpg"
+          },
+          {
+            "id": "2108309311101218816",
+            "imageUrl": "https://pbs.twimg.com/media/HUI4JezWMAA0TDC.jpg"
+          },
+          {
+            "id": "2108309311239704576",
+            "imageUrl": "https://pbs.twimg.com/media/HUI4JfUXUAA6XM_.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791495086,
+        "externalUrl": "https://x.com/dallascowboys/status/2108309316436709575"
+      },
+      {
+        "id": "2108307939207287264",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "reppin’ the @DallasStars ⭐️\n\n#TBvsDAL | @blockchain",
+        "media": [
+          {
+            "id": "2108307935344377856",
+            "imageUrl": "https://pbs.twimg.com/media/HUI25ZtWwAA4owi.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791494757,
+        "externalUrl": "https://x.com/dallascowboys/status/2108307939207287264"
+      },
+      {
+        "id": "2108302527212962053",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "tonight's captains 🫡\n\n#TBvsDAL | #DallasCowboys",
+        "media": [
+          {
+            "id": "2108302417343188992",
+            "imageUrl": "https://pbs.twimg.com/media/HUIx4NjWkAAY5oM.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791493467,
+        "externalUrl": "https://x.com/dallascowboys/status/2108302527212962053"
+      },
+      {
+        "id": "2108299359557177709",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "QB1 is in the building 🏠\n\n#TBvsDAL | @blockchain",
+        "media": [
+          {
+            "id": "2108299321154187264",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108299321154187264/img/dIvUvGtdR0tZKKbG.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108299321154187264/vid/avc1/320x568/pu880BwNCYx5ZImt.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791492712,
+        "externalUrl": "https://x.com/dallascowboys/status/2108299359557177709"
+      },
+      {
+        "id": "2108275746540044776",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "all in agreement, say Tyler 🗣️",
+        "media": [
+          {
+            "id": "2108275743218188288",
+            "imageUrl": "https://pbs.twimg.com/media/HUIZnksXwAA7Ek0.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791487082,
+        "externalUrl": "https://x.com/dallascowboys/status/2108275746540044776"
+      },
+      {
+        "id": "2108241569572614229",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "honoring those close to us 💙\n\nEvery crucial catch counts. We’re in the fight to end cancer together, and it starts with staying informed. Find local cancer screening resources and learn how to reduce your cancer risk by visiting . \n\n#CrucialCatch |",
+        "media": [
+          {
+            "id": "2108241389213380608",
+            "imageUrl": "https://pbs.twimg.com/media/HUH6X6DW8AABsXV.jpg"
+          },
+          {
+            "id": "2108241388680687616",
+            "imageUrl": "https://pbs.twimg.com/media/HUH6X4EWsAApGhN.jpg"
+          },
+          {
+            "id": "2108241389184012289",
+            "imageUrl": "https://pbs.twimg.com/media/HUH6X58W0AE_6Nv.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791478934,
+        "externalUrl": "https://x.com/dallascowboys/status/2108241569572614229"
+      },
+      {
+        "id": "2108241009758916682",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Ready for a Thursday Night showdown.\n\n#WeAreTheKrewe",
+        "media": [
+          {
+            "id": "2108189326865559552",
+            "imageUrl": "https://pbs.twimg.com/media/HUHLBesXcAAYreQ.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791478800,
+        "externalUrl": "https://x.com/Buccaneers/status/2108241009758916682"
+      },
+      {
+        "id": "2108225918887923853",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "Watch our #TBvsDAL gameday coverage LIVE on Cowboys Mobile,  or Cowboys social channels (Facebook, X and YouTube).",
+        "media": [
+          {
+            "id": "2108201885144412160",
+            "imageUrl": "https://pbs.twimg.com/media/HUHWcd7XcAATIiJ.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791475202,
+        "externalUrl": "https://x.com/dallascowboys/status/2108225918887923853"
+      },
+      {
+        "id": "2108210822899986499",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Primetime battle 💪\n\n📺 #TBvsDAL 8:15 p.m. ET on Prime Video",
+        "media": [
+          {
+            "id": "2108188803089186816",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108188803089186816/img/U4zYZdOfBgjgGgOb.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108188803089186816/vid/avc1/320x400/pz7aaUfMqlChHvvb.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791471603,
+        "externalUrl": "https://x.com/Buccaneers/status/2108210822899986499"
+      },
+      {
+        "id": "2108197573349580951",
+        "account": {
+          "id": "8824902",
+          "name": "Dallas Cowboys",
+          "handle": "dallascowboys",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2047411798953857024/QaW_Sgph_normal.jpg"
+        },
+        "text": "more than a game, more than a color🎗️🫀\n\nintercept cancer with the official crucial catch collection, available in stores and online ➡️ \n\n#TBvsDAL | @CowboysProShop",
+        "media": [
+          {
+            "id": "2108197569213947904",
+            "imageUrl": "https://pbs.twimg.com/media/HUHShP1W4AAMLrl.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791468444,
+        "externalUrl": "https://x.com/dallascowboys/status/2108197573349580951"
+      },
+      {
+        "id": "2108195719999848599",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Happy birthday, Donnie! 🎂",
+        "media": [
+          {
+            "id": "2108189197819428864",
+            "imageUrl": "https://pbs.twimg.com/media/HUHK599XwAA5uXB.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791468002,
+        "externalUrl": "https://x.com/Buccaneers/status/2108195719999848599"
+      },
+      {
+        "id": "2108181032994504829",
+        "account": {
+          "id": "36155311",
+          "name": "Tampa Bay Buccaneers",
+          "handle": "Buccaneers",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2037618478622887936/e0YeskTe_normal.png"
+        },
+        "text": "Tampa Bay 🆚 Dallas on Thursday Night 🔜",
+        "media": [
+          {
+            "id": "2108180398874198016",
+            "imageUrl": "https://pbs.twimg.com/media/HUHC5zVWgAASK5O.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791464501,
+        "externalUrl": "https://x.com/Buccaneers/status/2108181032994504829"
+      }
+    ]
+  }
+}

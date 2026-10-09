@@ -1,0 +1,108 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17257062/odds/1/featured",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:04:59+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/junsung-oh-karlsson/QmQsUyRd#id:17257062",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "featured": {
+      "default": {
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202389459,
+        "suspended": false,
+        "id": 437186465,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "8/15",
+            "fractionalValue": "8/15",
+            "sourceId": 146178733,
+            "name": "1",
+            "winning": true,
+            "slipContent": "/?bs=202389459-146178733~8/15~10",
+            "change": 0
+          },
+          {
+            "initialFractionalValue": "11/8",
+            "fractionalValue": "11/8",
+            "sourceId": 146178734,
+            "name": "2",
+            "winning": false,
+            "slipContent": "/?bs=202389459-146178734~11/8~10",
+            "change": 0
+          }
+        ]
+      },
+      "asian": {
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202389459,
+        "suspended": false,
+        "id": 437186465,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "8/15",
+            "fractionalValue": "8/15",
+            "sourceId": 146178733,
+            "name": "1",
+            "winning": true,
+            "slipContent": "/?bs=202389459-146178733~8/15~10",
+            "change": 0
+          },
+          {
+            "initialFractionalValue": "11/8",
+            "fractionalValue": "11/8",
+            "sourceId": 146178734,
+            "name": "2",
+            "winning": false,
+            "slipContent": "/?bs=202389459-146178734~11/8~10",
+            "change": 0
+          }
+        ]
+      },
+      "fullTime": {
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202389459,
+        "suspended": false,
+        "id": 437186465,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "8/15",
+            "fractionalValue": "8/15",
+            "sourceId": 146178733,
+            "name": "1",
+            "winning": true,
+            "slipContent": "/?bs=202389459-146178733~8/15~10",
+            "change": 0
+          },
+          {
+            "initialFractionalValue": "11/8",
+            "fractionalValue": "11/8",
+            "sourceId": 146178734,
+            "name": "2",
+            "winning": false,
+            "slipContent": "/?bs=202389459-146178734~11/8~10",
+            "change": 0
+          }
+        ]
+      }
+    },
+    "hasMoreOdds": false,
+    "liveStreamUrl": null
+  }
+}

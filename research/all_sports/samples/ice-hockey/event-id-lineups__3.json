@@ -1,0 +1,496 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16546907/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:58:15+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/minnesota-wild-buffalo-sabres/DybsOyb#id:16546907",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Mattias Samuelsson",
+            "firstName": "Mattias",
+            "lastName": "Samuelsson",
+            "slug": "mattias-samuelsson",
+            "shortName": "M. Samuelsson",
+            "position": "D",
+            "jerseyNumber": "23",
+            "height": 193,
+            "userCount": 47,
+            "gender": "M",
+            "sofascoreId": "iww-daa",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 968463,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 952992000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سامويلسون، ماتياس",
+                "bn": "স্যামুয়েলসন, ম্যাটিয়াস",
+                "hi": "सैमुएलसन, मैटियास",
+                "ru": "Маттиас Самуэльссон"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سامويلسون",
+                "bn": "এম. স্যামুয়েলসন",
+                "hi": "एम. सैमुएलसन",
+                "ru": "М. Самуэльссон"
+              }
+            }
+          },
+          "teamId": 3678,
+          "shirtNumber": 23,
+          "jerseyNumber": "23",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 1361,
+            "assists": 0,
+            "goals": 0,
+            "shots": 2,
+            "shotsMissed": 2,
+            "hits": 1,
+            "powerPlayGoals": 0,
+            "powerPlayAssists": 0,
+            "powerPlayPoints": 0,
+            "evenStrengthGoals": 0,
+            "evenStrengthAssists": 0,
+            "evenStrengthPoints": 0,
+            "penaltyMinutes": 0,
+            "faceOffPercentage": 0,
+            "faceOffWins": 0,
+            "faceOffTaken": 0,
+            "takeaways": 0,
+            "giveaways": 1,
+            "shortHandedGoals": 0,
+            "shortHandedAssists": 0,
+            "shortHandedPoints": 0,
+            "blocked": 1,
+            "blockedAttempts": 0,
+            "plusMinus": 0,
+            "points": 0,
+            "statisticsType": {
+              "sportSlug": "ice-hockey",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Justin Danforth",
+            "firstName": "Justin",
+            "lastName": "Danforth",
+            "slug": "justin-danforth",
+            "shortName": "J. Danforth",
+            "position": "R",
+            "jerseyNumber": "15",
+            "height": 173,
+            "userCount": 19,
+            "gender": "M",
+            "sofascoreId": "iw8-ixh",
+            "country": {
+              "alpha2": "CA",
+              "alpha3": "CAN",
+              "name": "Canada",
+              "slug": "canada"
+            },
+            "id": 952719,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 732153600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دانفورث، جوستين",
+                "bn": "ড্যানফোর্থ, জাস্টিন",
+                "hi": "डैनफोर्थ, जस्टिन",
+                "ru": "Данфорт, Джастин"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دانفورث",
+                "bn": "জে. ড্যানফোর্থ",
+                "hi": "जे. डैनफोर्थ",
+                "ru": "Д. Данфорт"
+              }
+            }
+          },
+          "teamId": 3678,
+          "shirtNumber": 15,
+          "jerseyNumber": "15",
+          "position": "R",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 497,
+            "assists": 0,
+            "goals": 0,
+            "shots": 0,
+            "shotsMissed": 0,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "powerPlayAssists": 0,
+            "powerPlayPoints": 0,
+            "evenStrengthGoals": 0,
+            "evenStrengthAssists": 0,
+            "evenStrengthPoints": 0,
+            "penaltyMinutes": 0,
+            "faceOffPercentage": 57.1,
+            "faceOffWins": 4,
+            "faceOffTaken": 7,
+            "takeaways": 0,
+            "giveaways": 0,
+            "shortHandedGoals": 0,
+            "shortHandedAssists": 0,
+            "shortHandedPoints": 0,
+            "blocked": 0,
+            "blockedAttempts": 0,
+            "plusMinus": 0,
+            "points": 0,
+            "statisticsType": {
+              "sportSlug": "ice-hockey",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Peyton Krebs",
+            "firstName": "",
+            "lastName": "",
+            "slug": "krebs-peyton",
+            "shortName": "P. Krebs",
+            "position": "C",
+            "jerseyNumber": "19",
+            "height": 183,
+            "userCount": 37,
+            "gender": "M",
+            "sofascoreId": "6g8-8ud",
+            "country": {
+              "alpha2": "CA",
+              "alpha3": "CAN",
+              "name": "Canada",
+              "slug": "canada"
+            },
+            "id": 1046951,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 980467200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كريبس، بيتون",
+                "bn": "ক্রেবস, পেটন",
+                "hi": "क्रेब्स, पेयटन",
+                "ru": "Кребс, Пейтон"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. كريبس",
+                "bn": "পি. ক্রেবস",
+                "hi": "पी. क्रेब्स",
+                "ru": "П. Кребс"
+              }
+            }
+          },
+          "teamId": 3678,
+          "shirtNumber": 19,
+          "jerseyNumber": "19",
+          "position": "C",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 921,
+            "assists": 1,
+            "goals": 0,
+            "shots": 1,
+            "shotsMissed": 1,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "powerPlayAssists": 0,
+            "powerPlayPoints": 0,
+            "evenStrengthGoals": 0,
+            "evenStrengthAssists": 1,
+            "evenStrengthPoints": 1,
+            "penaltyMinutes": 2,
+            "faceOffPercentage": 100,
+            "faceOffWins": 1,
+            "faceOffTaken": 1,
+            "takeaways": 0,
+            "giveaways": 0,
+            "shortHandedGoals": 0,
+            "shortHandedAssists": 0,
+            "shortHandedPoints": 0,
+            "blocked": 0,
+            "blockedAttempts": 0,
+            "plusMinus": 1,
+            "points": 1,
+            "statisticsType": {
+              "sportSlug": "ice-hockey",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 16
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "212739",
+        "number": "fcb514",
+        "outline": "212739",
+        "fancyNumber": "ffffff"
+      },
+      "goalkeeperColor": {
+        "primary": "fafb00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Daemon Hunt",
+            "firstName": "Daemon",
+            "lastName": "Hunt",
+            "slug": "daemon-hunt",
+            "shortName": "D. Hunt",
+            "position": "D",
+            "jerseyNumber": "48",
+            "height": 185,
+            "userCount": 7,
+            "gender": "M",
+            "sofascoreId": "q4r-em5",
+            "country": {
+              "alpha2": "CA",
+              "alpha3": "CAN",
+              "name": "Canada",
+              "slug": "canada"
+            },
+            "id": 1411300,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1021420800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هانت، ديمون",
+                "bn": "হান্ট, ডেমন",
+                "hi": "हंट, डेमन",
+                "ru": "Демон Хант"
+              },
+              "shortNameTranslation": {
+                "ar": "د. هانت",
+                "bn": "ডি. হান্ট",
+                "hi": "डी. हंट",
+                "ru": "Д. Хант"
+              }
+            }
+          },
+          "teamId": 3689,
+          "shirtNumber": 48,
+          "jerseyNumber": "48",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 848,
+            "assists": 0,
+            "goals": 0,
+            "shots": 0,
+            "shotsMissed": 1,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "powerPlayAssists": 0,
+            "powerPlayPoints": 0,
+            "evenStrengthGoals": 0,
+            "evenStrengthAssists": 0,
+            "evenStrengthPoints": 0,
+            "penaltyMinutes": 0,
+            "faceOffPercentage": 0,
+            "faceOffWins": 0,
+            "faceOffTaken": 0,
+            "takeaways": 1,
+            "giveaways": 1,
+            "shortHandedGoals": 0,
+            "shortHandedAssists": 0,
+            "shortHandedPoints": 0,
+            "blocked": 1,
+            "blockedAttempts": 1,
+            "plusMinus": 0,
+            "points": 0,
+            "statisticsType": {
+              "sportSlug": "ice-hockey",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Matt Boldy",
+            "firstName": "Matthew Boldy",
+            "slug": "boldy-matt",
+            "shortName": "M. Boldy",
+            "position": "L",
+            "jerseyNumber": "12",
+            "height": 188,
+            "userCount": 634,
+            "gender": "M",
+            "sofascoreId": "n5q-8jv",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1122226,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 986428800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بولد، مات",
+                "bn": "বোল্ডি, ম্যাট",
+                "hi": "बोल्डी, मैट",
+                "ru": "Болди, Мэтт"
+              },
+              "shortNameTranslation": {
+                "ar": "م. بولد",
+                "bn": "এম. বোল্ডি",
+                "hi": "एम. बोल्डी",
+                "ru": "М. Болди"
+              }
+            }
+          },
+          "teamId": 3689,
+          "shirtNumber": 12,
+          "jerseyNumber": "12",
+          "position": "L",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 1404,
+            "assists": 0,
+            "goals": 0,
+            "shots": 7,
+            "shotsMissed": 0,
+            "hits": 0,
+            "powerPlayGoals": 0,
+            "powerPlayAssists": 0,
+            "powerPlayPoints": 0,
+            "evenStrengthGoals": 0,
+            "evenStrengthAssists": 0,
+            "evenStrengthPoints": 0,
+            "penaltyMinutes": 0,
+            "faceOffPercentage": 33.3,
+            "faceOffWins": 1,
+            "faceOffTaken": 3,
+            "takeaways": 0,
+            "giveaways": 2,
+            "shortHandedGoals": 0,
+            "shortHandedAssists": 0,
+            "shortHandedPoints": 0,
+            "blocked": 3,
+            "blockedAttempts": 1,
+            "plusMinus": -2,
+            "points": 0,
+            "statisticsType": {
+              "sportSlug": "ice-hockey",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Bobby Brink",
+            "firstName": "Bobby",
+            "lastName": "Brink",
+            "slug": "bobby-brink",
+            "shortName": "B. Brink",
+            "position": "R",
+            "jerseyNumber": "10",
+            "height": 173,
+            "userCount": 36,
+            "gender": "M",
+            "sofascoreId": "wrm-wgz",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1012750,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 994550400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "برينك، بوبي",
+                "bn": "ব্রিঙ্ক, ববি",
+                "hi": "ब्रिंक, बॉबी",
+                "ru": "Бринк, Бобби"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. برينك",
+                "bn": "বি. ব্রিঙ্ক",
+                "hi": "बी. ब्रिंक",
+                "ru": "Б. Бринк"
+              }
+            }
+          },
+          "teamId": 3689,
+          "shirtNumber": 10,
+          "jerseyNumber": "10",
+          "position": "R",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 814,
+            "assists": 0,
+            "goals": 0,
+            "shots": 2,
+            "shotsMissed": 2,
+            "hits": 1,
+            "powerPlayGoals": 0,
+            "powerPlayAssists": 0,
+            "powerPlayPoints": 0,
+            "evenStrengthGoals": 0,
+            "evenStrengthAssists": 0,
+            "evenStrengthPoints": 0,
+            "penaltyMinutes": 0,
+            "faceOffPercentage": 0,
+            "faceOffWins": 0,
+            "faceOffTaken": 0,
+            "takeaways": 0,
+            "giveaways": 2,
+            "shortHandedGoals": 0,
+            "shortHandedAssists": 0,
+            "shortHandedPoints": 0,
+            "blocked": 1,
+            "blockedAttempts": 3,
+            "plusMinus": -1,
+            "points": 0,
+            "statisticsType": {
+              "sportSlug": "ice-hockey",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 16
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "124735",
+        "number": "ded3bb",
+        "outline": "124735",
+        "fancyNumber": "ffffff"
+      },
+      "goalkeeperColor": {
+        "primary": "fafb00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

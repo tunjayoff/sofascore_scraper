@@ -1,0 +1,463 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16832233/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:49+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/brooklyn-nets-charlotte-hornets/FtbsLtb#id:16832233",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Pat Connaughton",
+            "firstName": "Pat",
+            "lastName": "Connaughton",
+            "slug": "connaughton-pat",
+            "shortName": "P. Connaughton",
+            "position": "G",
+            "primaryPosition": "SG",
+            "jerseyNumber": "21",
+            "height": 196,
+            "userCount": 355,
+            "gender": "M",
+            "sofascoreId": "ih5-vje",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 817039,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 726278400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كونوتون، بات",
+                "bn": "কনটন, প্যাট",
+                "hi": "कोनाटन, पैट",
+                "ru": "Коннолтон, Пэт"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. كونوتون",
+                "bn": "পি. কনটন",
+                "hi": "पी. कोनाटन",
+                "ru": "П. Коннолтон"
+              }
+            }
+          },
+          "teamId": 3430,
+          "shirtNumber": 21,
+          "jerseyNumber": "21",
+          "position": "G",
+          "substitute": true,
+          "statistics": {
+            "secondsPlayed": 567,
+            "points": 1,
+            "twoPointsMade": 0,
+            "twoPointAttempts": 0,
+            "threePointsMade": 0,
+            "threePointAttempts": 3,
+            "freeThrowsMade": 1,
+            "freeThrowAttempts": 2,
+            "fieldGoalsMade": 0,
+            "fieldGoalAttempts": 3,
+            "rebounds": 0,
+            "defensiveRebounds": 0,
+            "offensiveRebounds": 0,
+            "turnovers": 1,
+            "blocks": 0,
+            "personalFouls": 1,
+            "assists": 3,
+            "steals": 0,
+            "plusMinus": -17,
+            "fieldGoalPct": 0,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Royce O'Neale",
+            "firstName": "Royce",
+            "lastName": "O'Neale ",
+            "slug": "royce-oneale",
+            "shortName": "R. O'Neale",
+            "position": "F",
+            "primaryPosition": "SF",
+            "jerseyNumber": "0",
+            "height": 198,
+            "userCount": 1192,
+            "gender": "M",
+            "sofascoreId": "hhu-qjc",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 905919,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 739238400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "رويس اونيل",
+                "bn": "রয়েস ও'নিল",
+                "hi": "रॉयस ओ'नील",
+                "ru": "О'Нил, Ройс"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. اونيل",
+                "bn": "আর ও'নিল",
+                "hi": "आर. ओ'नील",
+                "ru": "Р. О'Нил"
+              }
+            }
+          },
+          "teamId": 3430,
+          "shirtNumber": 0,
+          "jerseyNumber": "0",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "secondsPlayed": 1020,
+            "points": 3,
+            "twoPointsMade": 0,
+            "twoPointAttempts": 0,
+            "threePointsMade": 1,
+            "threePointAttempts": 4,
+            "freeThrowsMade": 0,
+            "freeThrowAttempts": 0,
+            "fieldGoalsMade": 1,
+            "fieldGoalAttempts": 4,
+            "rebounds": 2,
+            "defensiveRebounds": 2,
+            "offensiveRebounds": 0,
+            "turnovers": 1,
+            "blocks": 2,
+            "personalFouls": 1,
+            "assists": 5,
+            "steals": 1,
+            "plusMinus": -6,
+            "fieldGoalPct": 25,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Ryan Kalkbrenner",
+            "firstName": "Ryan",
+            "lastName": "Kalkbrenner",
+            "slug": "ryan-kalkbrenner",
+            "shortName": "R. Kalkbrenner",
+            "position": "C",
+            "primaryPosition": "C",
+            "jerseyNumber": "11",
+            "height": 216,
+            "userCount": 565,
+            "gender": "M",
+            "sofascoreId": "jv5-93w",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1178307,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1011225600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كالكبرينر، رايان",
+                "ru": "Райан Калкбреннер"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. كالكبرينر",
+                "ru": "Р. Калкбреннер"
+              }
+            }
+          },
+          "teamId": 3430,
+          "shirtNumber": 11,
+          "jerseyNumber": "11",
+          "position": "C",
+          "substitute": true,
+          "statistics": {
+            "secondsPlayed": 919,
+            "points": 2,
+            "twoPointsMade": 0,
+            "twoPointAttempts": 1,
+            "threePointsMade": 0,
+            "threePointAttempts": 0,
+            "freeThrowsMade": 2,
+            "freeThrowAttempts": 2,
+            "fieldGoalsMade": 0,
+            "fieldGoalAttempts": 1,
+            "rebounds": 2,
+            "defensiveRebounds": 1,
+            "offensiveRebounds": 1,
+            "turnovers": 0,
+            "blocks": 1,
+            "personalFouls": 0,
+            "assists": 0,
+            "steals": 0,
+            "plusMinus": -8,
+            "fieldGoalPct": 0,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 12
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "008ca8",
+        "number": "ffffff",
+        "outline": "008ca8",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "fafb00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Tyler Bilodeau",
+            "slug": "bilodeau-tyler",
+            "shortName": "T. Bilodeau",
+            "position": "F",
+            "primaryPosition": "PF",
+            "jerseyNumber": "34",
+            "height": 206,
+            "userCount": 27,
+            "gender": "M",
+            "sofascoreId": "fpj-gjz",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1441094,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1082160000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بيلودو، تايلر",
+                "ru": "Билодо, Тайлер"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. بيلودو",
+                "ru": "Т. Билодо"
+              }
+            }
+          },
+          "teamId": 3436,
+          "shirtNumber": 34,
+          "jerseyNumber": "34",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "secondsPlayed": 465,
+            "points": 5,
+            "twoPointsMade": 0,
+            "twoPointAttempts": 0,
+            "threePointsMade": 1,
+            "threePointAttempts": 1,
+            "freeThrowsMade": 2,
+            "freeThrowAttempts": 3,
+            "fieldGoalsMade": 1,
+            "fieldGoalAttempts": 1,
+            "rebounds": 3,
+            "defensiveRebounds": 3,
+            "offensiveRebounds": 0,
+            "turnovers": 0,
+            "blocks": 0,
+            "personalFouls": 0,
+            "assists": 0,
+            "steals": 0,
+            "plusMinus": 8,
+            "fieldGoalPct": 100,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Day'Ron Sharpe",
+            "firstName": "Day'Ron",
+            "lastName": "Sharpe",
+            "slug": "dayron-sharpe",
+            "shortName": "D. Sharpe",
+            "position": "C",
+            "primaryPosition": "C",
+            "jerseyNumber": "20",
+            "height": 206,
+            "userCount": 592,
+            "gender": "M",
+            "sofascoreId": "hir-eiw",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1134015,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1005004800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دايرون شارب",
+                "bn": "ডে'রন শার্প",
+                "hi": "डे'रॉन शार्प",
+                "ru": "Шарп, Дей'Рон"
+              },
+              "shortNameTranslation": {
+                "ar": "د. شارب",
+                "bn": "ডি. শার্প",
+                "hi": "डी. शार्प",
+                "ru": "Д. Шарп"
+              }
+            }
+          },
+          "teamId": 3436,
+          "shirtNumber": 20,
+          "jerseyNumber": "20",
+          "position": "C",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 1076,
+            "points": 8,
+            "twoPointsMade": 4,
+            "twoPointAttempts": 7,
+            "threePointsMade": 0,
+            "threePointAttempts": 2,
+            "freeThrowsMade": 0,
+            "freeThrowAttempts": 0,
+            "fieldGoalsMade": 4,
+            "fieldGoalAttempts": 9,
+            "rebounds": 7,
+            "defensiveRebounds": 5,
+            "offensiveRebounds": 2,
+            "turnovers": 1,
+            "blocks": 2,
+            "personalFouls": 1,
+            "assists": 3,
+            "steals": 0,
+            "plusMinus": 19,
+            "fieldGoalPct": 44,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Julius Randle",
+            "firstName": "Julius",
+            "lastName": "Randle ",
+            "slug": "julius-randle",
+            "shortName": "J. Randle",
+            "position": "FC",
+            "primaryPosition": "PF",
+            "jerseyNumber": "30",
+            "height": 203,
+            "userCount": 7546,
+            "gender": "M",
+            "sofascoreId": "tuh-gm5",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 817338,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 786067200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جولياس راندل",
+                "bn": "জুলিয়াস রান্ডেল",
+                "hi": "जूलियस रैंडल",
+                "ru": "Джулиус Рэндл"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. راندل",
+                "bn": "জে. রান্ডেল",
+                "hi": "जे. रैंडल",
+                "ru": "Д. Рэндл"
+              }
+            }
+          },
+          "teamId": 3436,
+          "shirtNumber": 30,
+          "jerseyNumber": "30",
+          "position": "FC",
+          "substitute": false,
+          "statistics": {
+            "secondsPlayed": 1093,
+            "points": 13,
+            "twoPointsMade": 2,
+            "twoPointAttempts": 4,
+            "threePointsMade": 2,
+            "threePointAttempts": 3,
+            "freeThrowsMade": 3,
+            "freeThrowAttempts": 4,
+            "fieldGoalsMade": 4,
+            "fieldGoalAttempts": 7,
+            "rebounds": 2,
+            "defensiveRebounds": 2,
+            "offensiveRebounds": 0,
+            "turnovers": 0,
+            "blocks": 0,
+            "personalFouls": 3,
+            "assists": 3,
+            "steals": 1,
+            "plusMinus": 9,
+            "fieldGoalPct": 57,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 15
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "000000",
+        "outline": "ffffff",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "00ff00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

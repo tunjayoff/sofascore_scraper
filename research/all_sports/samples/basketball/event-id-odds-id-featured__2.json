@@ -1,0 +1,105 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16832233/odds/1/featured",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:55:03+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/brooklyn-nets-charlotte-hornets/FtbsLtb#id:16832233",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "featured": {
+      "default": {
+        "sourceId": 202400497,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202400498,
+        "suspended": false,
+        "id": 437229667,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "12/25",
+            "fractionalValue": "18/25",
+            "sourceId": 147512238,
+            "name": "1",
+            "winning": false,
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "31/20",
+            "fractionalValue": "21/20",
+            "sourceId": 147512237,
+            "name": "2",
+            "winning": true,
+            "change": -1
+          }
+        ]
+      },
+      "asian": {
+        "sourceId": 202400497,
+        "structureType": 1,
+        "marketId": 16,
+        "marketName": "Point spread",
+        "isLive": false,
+        "fid": 202400497,
+        "suspended": false,
+        "id": 437280150,
+        "marketGroup": "Point spread",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "793/1000",
+            "fractionalValue": "869/1000",
+            "sourceId": 147512234,
+            "name": "(+1.5) Charlotte Hornets",
+            "slipContent": "/?bs=202400497-147512234~869/1000~10",
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "24/25",
+            "fractionalValue": "869/1000",
+            "sourceId": 147512232,
+            "name": "(-1.5) Brooklyn Nets",
+            "slipContent": "/?bs=202400497-147512232~869/1000~10",
+            "change": -1
+          }
+        ]
+      },
+      "fullTime": {
+        "sourceId": 202400497,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202400498,
+        "suspended": false,
+        "id": 437229667,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "12/25",
+            "fractionalValue": "18/25",
+            "sourceId": 147512238,
+            "name": "1",
+            "winning": false,
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "31/20",
+            "fractionalValue": "21/20",
+            "sourceId": 147512237,
+            "name": "2",
+            "winning": true,
+            "change": -1
+          }
+        ]
+      }
+    },
+    "hasMoreOdds": true,
+    "liveStreamUrl": null
+  }
+}

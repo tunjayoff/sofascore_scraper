@@ -1,0 +1,179 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/112783/rankings",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:55:42+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/aleksandar-kovacevic-matteo-berrettini/IfVsicAb#id:17257382",
+  "cache_control": "max-age=10, public, s-maxage=60",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "rankings": [
+      {
+        "team": {
+          "name": "Matteo Berrettini",
+          "slug": "berrettini-matteo",
+          "shortName": "M. Berrettini",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 41171,
+          "nameCode": "BER",
+          "ranking": 46,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 112783,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماتيو بيريتيني",
+              "ru": "Маттео Берреттини"
+            },
+            "shortNameTranslation": {
+              "ar": "م. بيريتيني",
+              "bn": "এম. বেরেটিনি",
+              "hi": "एम. बेरेटिनी",
+              "ru": "М. Берреттини"
+            }
+          }
+        },
+        "tournamentsPlayed": 16,
+        "type": 5,
+        "rowName": "Matteo Berrettini",
+        "ranking": 46,
+        "points": 1168,
+        "previousRanking": 47,
+        "previousPoints": 1128,
+        "bestRanking": 6,
+        "id": 728,
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "rankingClass": "team"
+      },
+      {
+        "team": {
+          "name": "Matteo Berrettini",
+          "slug": "berrettini-matteo",
+          "shortName": "M. Berrettini",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 41171,
+          "nameCode": "BER",
+          "ranking": 46,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 112783,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماتيو بيريتيني",
+              "ru": "Маттео Берреттини"
+            },
+            "shortNameTranslation": {
+              "ar": "م. بيريتيني",
+              "bn": "এম. বেরেটিনি",
+              "hi": "एम. बेरेटिनी",
+              "ru": "М. Берреттини"
+            }
+          }
+        },
+        "type": 7,
+        "rowName": "Matteo Berrettini",
+        "ranking": 42,
+        "points": 1173,
+        "previousRanking": 46,
+        "id": 214769,
+        "country": {},
+        "rankingClass": "livetennis",
+        "nextWinPoints": 1193,
+        "maxPoints": 2143
+      },
+      {
+        "team": {
+          "name": "Matteo Berrettini",
+          "slug": "berrettini-matteo",
+          "shortName": "M. Berrettini",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 41171,
+          "nameCode": "BER",
+          "ranking": 46,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 112783,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماتيو بيريتيني",
+              "ru": "Маттео Берреттини"
+            },
+            "shortNameTranslation": {
+              "ar": "م. بيريتيني",
+              "bn": "এম. বেরেটিনি",
+              "hi": "एम. बेरेटिनी",
+              "ru": "М. Берреттини"
+            }
+          }
+        },
+        "type": 34,
+        "rowName": "Matteo Berrettini",
+        "ranking": 44,
+        "points": 15.79,
+        "previousRanking": 41,
+        "previousPoints": 15.8,
+        "bestRanking": 8,
+        "id": 180854,
+        "country": {},
+        "rankingClass": "utr",
+        "bestRankingDateTimestamp": 1760011271
+      }
+    ]
+  }
+}

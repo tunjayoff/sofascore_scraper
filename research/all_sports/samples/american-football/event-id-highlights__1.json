@@ -1,0 +1,27 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16245051/highlights",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:57:02+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/southern-mississippi-golden-eagles-troy-trojans/IKbsVEt#id:16245051",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "highlights": [
+      {
+        "title": "Troy 55 - 34 Southern Miss",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=H5E0aMlvHxY",
+        "thumbnailUrl": "https://i.ytimg.com/vi/H5E0aMlvHxY/hqdefault.jpg",
+        "mediaType": 6,
+        "doFollow": false,
+        "keyHighlight": true,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137670,
+        "createdAtTimestamp": 1791346764,
+        "sourceUrl": "https://www.youtube.com/watch?v=H5E0aMlvHxY"
+      }
+    ]
+  }
+}

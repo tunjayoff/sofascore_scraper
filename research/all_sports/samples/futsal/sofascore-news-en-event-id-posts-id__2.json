@@ -1,0 +1,10 @@
+{
+  "url": "https://www.sofascore.com/api/v1/sofascore-news/en/event/16904548/posts/1",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:20:11+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/vinumitaly-petrarca-active-network/rXUdsloae#id:16904548",
+  "cache_control": "max-age=60, public, s-maxage=43200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": []
+}

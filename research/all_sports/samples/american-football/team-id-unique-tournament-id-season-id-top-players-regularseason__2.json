@@ -1,0 +1,1329 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/4392/unique-tournament/9464/season/94366/top-players/regularSeason",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:56+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "topPlayers": {
+      "passingTouchdowns": [
+        {
+          "statistics": {
+            "passingTouchdowns": 8,
+            "id": 120103,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Dak Prescott",
+            "slug": "prescott-dak",
+            "shortName": "D.Prescott",
+            "position": "QB",
+            "userCount": 4262,
+            "gender": "M",
+            "id": 853174,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بريسكوت، داك",
+                "bn": "প্রেসকট, ডাক",
+                "hi": "प्रेस्कॉट, डाक",
+                "ru": "Дак Прескотт"
+              },
+              "shortNameTranslation": {
+                "ar": "د. بريسكوت",
+                "bn": "ডি. প্রেসকট",
+                "hi": "डी. प्रेस्कॉट",
+                "ru": "Д. Прескотт"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        }
+      ],
+      "rushingTouchdowns": [
+        {
+          "statistics": {
+            "rushingTouchdowns": 5,
+            "id": 120104,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Javonte Williams",
+            "slug": "williams-javonte",
+            "shortName": "J.Williams",
+            "position": "RB",
+            "userCount": 624,
+            "gender": "M",
+            "id": 1132436,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ويليامز، جافونتي",
+                "ru": "Джавонте Уильямс"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. ويليامز",
+                "ru": "Д. Уильямс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "rushingTouchdowns": 1,
+            "id": 120087,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "KaVontae Turpin",
+            "slug": "turpin-kavontae",
+            "shortName": "K.Turpin",
+            "position": "WR",
+            "userCount": 112,
+            "gender": "M",
+            "id": 1393830,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "توربين، كافونتي",
+                "ru": "Кавонте Турпин"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. توربين",
+                "ru": "К. Турпин"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        }
+      ],
+      "receivingTouchdowns": [
+        {
+          "statistics": {
+            "receivingTouchdowns": 4,
+            "id": 120109,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "CeeDee Lamb",
+            "slug": "lamb-ceedee",
+            "shortName": "C.Lamb",
+            "position": "WR",
+            "userCount": 2234,
+            "gender": "M",
+            "id": 1026963,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لامب، سيدي",
+                "bn": "ল্যাম্ব, সিডি",
+                "hi": "लैम्ब, सीडी",
+                "ru": "СиДи Лэмб"
+              },
+              "shortNameTranslation": {
+                "ar": "س. لامب",
+                "bn": "সি. ল্যাম্ব",
+                "hi": "सी. लैम्ब",
+                "ru": "С. Лэмб"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingTouchdowns": 3,
+            "id": 120124,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Jake Ferguson",
+            "slug": "ferguson-jake",
+            "shortName": "J.Ferguson",
+            "position": "TE",
+            "userCount": 282,
+            "gender": "M",
+            "id": 1389156,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فيرغسون، جيك",
+                "ru": "Джейк Фергюсон"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. فيرغسون",
+                "ru": "Д. Фергюсон"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingTouchdowns": 1,
+            "id": 120104,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Javonte Williams",
+            "slug": "williams-javonte",
+            "shortName": "J.Williams",
+            "position": "RB",
+            "userCount": 624,
+            "gender": "M",
+            "id": 1132436,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ويليامز، جافونتي",
+                "ru": "Джавонте Уильямс"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. ويليامز",
+                "ru": "Д. Уильямс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        }
+      ],
+      "passingCompletionPercentage": [
+        {
+          "statistics": {
+            "passingCompletionPercentage": 70,
+            "passingCompletions": 105,
+            "id": 120103,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Dak Prescott",
+            "slug": "prescott-dak",
+            "shortName": "D.Prescott",
+            "position": "QB",
+            "userCount": 4262,
+            "gender": "M",
+            "id": 853174,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بريسكوت، داك",
+                "bn": "প্রেসকট, ডাক",
+                "hi": "प्रेस्कॉट, डाक",
+                "ru": "Дак Прескотт"
+              },
+              "shortNameTranslation": {
+                "ar": "د. بريسكوت",
+                "bn": "ডি. প্রেসকট",
+                "hi": "डी. प्रेस्कॉट",
+                "ru": "Д. Прескотт"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        }
+      ],
+      "rushingYardsPerAttempt": [
+        {
+          "statistics": {
+            "rushingYardsPerAttempt": 5.5,
+            "id": 120103,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Dak Prescott",
+            "slug": "prescott-dak",
+            "shortName": "D.Prescott",
+            "position": "QB",
+            "userCount": 4262,
+            "gender": "M",
+            "id": 853174,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بريسكوت، داك",
+                "bn": "প্রেসকট, ডাক",
+                "hi": "प्रेस्कॉट, डाक",
+                "ru": "Дак Прескотт"
+              },
+              "shortNameTranslation": {
+                "ar": "د. بريسكوت",
+                "bn": "ডি. প্রেসকট",
+                "hi": "डी. प्रेस्कॉट",
+                "ru": "Д. Прескотт"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "rushingYardsPerAttempt": 3.78,
+            "id": 120568,
+            "type": "regularSeason",
+            "appearances": 2,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Tyler Goodson",
+            "slug": "goodson-tyler",
+            "shortName": "T.Goodson",
+            "position": "RB",
+            "userCount": 19,
+            "gender": "M",
+            "id": 1389228,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "غودسون، تايلر",
+                "ru": "Тайлер Гудсон"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. غودسون",
+                "ru": "Т. Гудсон"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "rushingYardsPerAttempt": 3.73,
+            "id": 120104,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Javonte Williams",
+            "slug": "williams-javonte",
+            "shortName": "J.Williams",
+            "position": "RB",
+            "userCount": 624,
+            "gender": "M",
+            "id": 1132436,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ويليامز، جافونتي",
+                "ru": "Джавонте Уильямс"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. ويليامز",
+                "ru": "Д. Уильямс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 1
+        }
+      ],
+      "receivingYardsPerReception": [
+        {
+          "statistics": {
+            "receivingYardsPerReception": 13.46,
+            "id": 120109,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "CeeDee Lamb",
+            "slug": "lamb-ceedee",
+            "shortName": "C.Lamb",
+            "position": "WR",
+            "userCount": 2234,
+            "gender": "M",
+            "id": 1026963,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لامب، سيدي",
+                "bn": "ল্যাম্ব, সিডি",
+                "hi": "लैम्ब, सीडी",
+                "ru": "СиДи Лэмб"
+              },
+              "shortNameTranslation": {
+                "ar": "س. لامب",
+                "bn": "সি. ল্যাম্ব",
+                "hi": "सी. लैम्ब",
+                "ru": "С. Лэмб"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingYardsPerReception": 12.5,
+            "id": 120079,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "George Pickens",
+            "slug": "pickens-george",
+            "shortName": "G.Pickens",
+            "position": "WR",
+            "userCount": 1400,
+            "gender": "M",
+            "id": 1389545,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جورج بيكنز",
+                "ru": "Джордж Пиккенс"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيكنز",
+                "ru": "Д. Пиккенс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingYardsPerReception": 8,
+            "id": 120122,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Ryan Flournoy",
+            "slug": "flournoy-ryan",
+            "shortName": "R.Flournoy",
+            "position": "WR",
+            "userCount": 43,
+            "gender": "M",
+            "id": 1861488,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "رايان فلورنو",
+                "ru": "Райан Флорной"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. فلورنو",
+                "ru": "Р. Флорной"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 2
+        }
+      ],
+      "defensiveTotalTackles": [
+        {
+          "statistics": {
+            "defensiveTotalTackles": 17,
+            "id": 120108,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Dee Winters",
+            "slug": "winters-dee",
+            "shortName": "D.Winters",
+            "position": "LB",
+            "userCount": 34,
+            "gender": "M",
+            "id": 1448617,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "وينترز، دي",
+                "ru": "Ди Уинтерс"
+              },
+              "shortNameTranslation": {
+                "ar": "د. وينترز",
+                "ru": "Д. Уинтерс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveTotalTackles": 14,
+            "id": 120112,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Caleb Downs",
+            "slug": "downs-caleb",
+            "shortName": "C. Downs",
+            "position": "DB",
+            "userCount": 93,
+            "gender": "M",
+            "id": 1532762,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "داونز، كاليب",
+                "ru": "Даунс, Калеб"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. داونز",
+                "ru": "К. Даунс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveTotalTackles": 6,
+            "id": 120091,
+            "type": "regularSeason",
+            "appearances": 2,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Malik Hooker",
+            "slug": "hooker-malik",
+            "shortName": "M.Hooker",
+            "position": "SAF",
+            "userCount": 15,
+            "gender": "M",
+            "id": 879006,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هوكر، مالك",
+                "ru": "Малик Хукер"
+              },
+              "shortNameTranslation": {
+                "ar": "م. هوكر",
+                "ru": "М. Хукер"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 21
+        }
+      ],
+      "defensiveSacks": [
+        {
+          "statistics": {
+            "defensiveSacks": 1,
+            "id": 120112,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Caleb Downs",
+            "slug": "downs-caleb",
+            "shortName": "C. Downs",
+            "position": "DB",
+            "userCount": 93,
+            "gender": "M",
+            "id": 1532762,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "داونز، كاليب",
+                "ru": "Даунс, Калеб"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. داونز",
+                "ru": "К. Даунс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveSacks": 1,
+            "id": 120106,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Rashan Gary",
+            "slug": "gary-rashan",
+            "shortName": "R.Gary",
+            "position": "OLB",
+            "userCount": 88,
+            "gender": "M",
+            "id": 981763,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "غاري، راشان",
+                "ru": "Рашан Гэри"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. غاري",
+                "ru": "Р. Гэри"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveSacks": 1,
+            "id": 120111,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Quinnen Williams",
+            "slug": "williams-quinnen",
+            "shortName": "Q.Williams",
+            "position": "DT",
+            "userCount": 68,
+            "gender": "M",
+            "id": 981773,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ويليامز، كوينن",
+                "ru": "Квиннен Уильямс"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. ويليامز",
+                "ru": "К. Уильямс"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 2
+        }
+      ],
+      "kickingFgMade": [
+        {
+          "statistics": {
+            "kickingFgAttempts": 11,
+            "kickingFgMade": 8,
+            "id": 120080,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Brandon Aubrey",
+            "slug": "aubrey-brandon",
+            "shortName": "B.Aubrey",
+            "position": "K",
+            "userCount": 182,
+            "gender": "M",
+            "id": 867769,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوبري، براندون",
+                "ru": "Брэндон Обри"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. أوبري",
+                "ru": "Б. Обри"
+              }
+            }
+          },
+          "team": {
+            "name": "Dallas Cowboys",
+            "slug": "dallas-cowboys",
+            "shortName": "Cowboys",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 22929,
+            "nameCode": "DAL",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4392,
+            "teamColors": {
+              "primary": "#212a52",
+              "secondary": "#c3c2c7",
+              "text": "#c3c2c7"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاوبويز",
+                "ru": "ФК Даллас Ковбойс"
+              },
+              "shortNameTranslation": {
+                "ru": "Ковбойс"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "statisticsType": {
+      "sportSlug": "american-football",
+      "statisticsType": "player"
+    }
+  }
+}

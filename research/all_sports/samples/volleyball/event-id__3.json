@@ -1,0 +1,314 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17063542",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:03:02+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/ok-napredak-odzak-ok-borac/hYvcsZtve#id:17063542",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "Premijer Liga",
+        "slug": "premijer-liga",
+        "category": {
+          "name": "Bosnia & Herzegovina",
+          "slug": "bosnia-herzegovina",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "BA",
+            "alpha3": "BIH",
+            "name": "Bosnia & Herzegovina",
+            "slug": "bosnia-and-herzegovina"
+          },
+          "id": 1050,
+          "flag": "bosnia-herzegovina",
+          "alpha2": "BA",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البوسنة والهرسك",
+              "ru": "Босния и Герцеговина"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Premijer Liga",
+          "slug": "premijer-liga",
+          "category": {
+            "name": "Bosnia & Herzegovina",
+            "slug": "bosnia-herzegovina",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "BA",
+              "alpha3": "BIH",
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-and-herzegovina"
+            },
+            "id": 1050,
+            "flag": "bosnia-herzegovina",
+            "alpha2": "BA",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البوسنة والهرسك",
+                "ru": "Босния и Герцеговина"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 22,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 27514,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري الممتاز",
+              "ru": "Премьер-лига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 1,
+        "id": 155911,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري الممتاز",
+            "ru": "Премиер Лига"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "Premijer Liga 26/27",
+        "year": "26/27",
+        "editor": true,
+        "id": 99986
+      },
+      "roundInfo": {
+        "round": 1
+      },
+      "customId": "hYvcsZtve",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 2,
+      "homeTeam": {
+        "name": "OK Borac",
+        "slug": "ok-borac",
+        "gender": "M",
+        "sport": {
+          "name": "Volleyball",
+          "slug": "volleyball",
+          "id": 23
+        },
+        "userCount": 22,
+        "venue": {
+          "city": {
+            "name": "Banja Luka",
+            "country": {
+              "alpha2": "BA",
+              "alpha3": "BIH",
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-and-herzegovina"
+            },
+            "id": 18893
+          },
+          "hidden": true,
+          "slug": "dvorana-borik",
+          "name": "Dvorana Borik",
+          "country": {
+            "alpha2": "BA",
+            "alpha3": "BIH",
+            "name": "Bosnia & Herzegovina",
+            "slug": "bosnia-and-herzegovina"
+          },
+          "id": 45313,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديفورانا بوريك",
+              "hi": "ड्वोराना बोरिक",
+              "bn": "ডভোরান বোরিক",
+              "ru": "Спортивный комплекс Borik"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Dvorana Borik"
+          }
+        },
+        "nameCode": "BOR",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "BA",
+          "alpha3": "BIH",
+          "name": "Bosnia & Herzegovina",
+          "slug": "bosnia-and-herzegovina"
+        },
+        "id": 302407,
+        "fullName": "OK Borac",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أو كيه بوراك",
+            "ru": "ОК Борац"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "OK Napredak Odžak",
+        "slug": "ok-napredak-odzak",
+        "shortName": "OK Napredak Odžak",
+        "gender": "M",
+        "sport": {
+          "name": "Volleyball",
+          "slug": "volleyball",
+          "id": 23
+        },
+        "userCount": 100,
+        "venue": {
+          "city": {
+            "name": "Odžak",
+            "country": {
+              "alpha2": "BA",
+              "alpha3": "BIH",
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-and-herzegovina"
+            },
+            "id": 26520
+          },
+          "venueCoordinates": {
+            "latitude": 45.0164259,
+            "longitude": 18.3243286
+          },
+          "hidden": true,
+          "slug": "sportska-dvorana-ss-pere-zecevica",
+          "name": "Sportska dvorana SŠ Pere Zečevića",
+          "capacity": 804,
+          "country": {
+            "alpha2": "BA",
+            "alpha3": "BIH",
+            "name": "Bosnia & Herzegovina",
+            "slug": "bosnia-and-herzegovina"
+          },
+          "id": 49985,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Спортивный комплекс ŠŠ Pere Zečevića"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Sportska dvorana SŠ Pere Zečevića",
+            "capacity": 804
+          }
+        },
+        "nameCode": "NAP",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "BA",
+          "alpha3": "BIH",
+          "name": "Bosnia & Herzegovina",
+          "slug": "bosnia-and-herzegovina"
+        },
+        "id": 550949,
+        "fullName": "OK Napredak Odžak",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أو كيه نابريدك أودجاك",
+            "ru": "ОК Напредак Оджак"
+          },
+          "shortNameTranslation": {
+            "ar": "أو كيه نابريدك أودجاك",
+            "ru": "ОК Напредак Оджак"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 0,
+        "display": 0,
+        "period1": 16,
+        "period2": 19,
+        "period3": 14
+      },
+      "awayScore": {
+        "current": 3,
+        "display": 3,
+        "period1": 25,
+        "period2": 25,
+        "period3": 25
+      },
+      "time": {},
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type"
+        ],
+        "changeTimestamp": 1791316508
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17063542,
+      "defaultPeriodCount": 5,
+      "slug": "ok-napredak-odzak-ok-borac",
+      "startTimestamp": 1791311400,
+      "periods": {
+        "current": "Match",
+        "period1": "1st set",
+        "period2": "2nd set",
+        "period3": "3rd set",
+        "period4": "4th set",
+        "period5": "5th set",
+        "period6": "6th set",
+        "period7": "7th set",
+        "overtime": "Overtime"
+      },
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "createdByNickname": "Ajdin Trnka",
+      "eventEditorName": "Ajdin Trnka",
+      "eventEditor": {
+        "id": "65edb199a8594c7fe5e9b2dc",
+        "name": "Ajdin Trnka"
+      },
+      "showTotoPromo": true,
+      "isEditor": true
+    },
+    "editorEntity": true
+  }
+}

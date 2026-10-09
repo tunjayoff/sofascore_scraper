@@ -1,0 +1,682 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/3638/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:08:00+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/atlanta-braves-los-angeles-dodgers/Nxbsgyb#id:17199139",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "FxbsNxb",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Milwaukee Brewers",
+          "slug": "milwaukee-brewers",
+          "shortName": "Brewers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 39943,
+          "nameCode": "MIL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3630,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#b28e42",
+            "secondary": "#b28e42",
+            "text": "#b28e42"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميلووكي برويرز",
+              "ru": "Милуоки Брюэрс"
+            },
+            "shortNameTranslation": {
+              "ar": "برويرز",
+              "bn": "ব্রুয়ার্স",
+              "hi": "ब्रूवर्स",
+              "ru": "Брюэрс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "homeScore": {
+          "series": 0
+        },
+        "awayScore": {
+          "series": 0
+        },
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17193111,
+        "slug": "los-angeles-dodgers-milwaukee-brewers",
+        "startTimestamp": 1791752400,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 7,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "FxbsNxb",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Milwaukee Brewers",
+          "slug": "milwaukee-brewers",
+          "shortName": "Brewers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 39943,
+          "nameCode": "MIL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3630,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#b28e42",
+            "secondary": "#b28e42",
+            "text": "#b28e42"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميلووكي برويرز",
+              "ru": "Милуоки Брюэрс"
+            },
+            "shortNameTranslation": {
+              "ar": "برويرز",
+              "bn": "ব্রুয়ার্স",
+              "hi": "ब्रूवर्स",
+              "ru": "Брюэрс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "homeScore": {
+          "series": 0
+        },
+        "awayScore": {
+          "series": 0
+        },
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17193110,
+        "slug": "los-angeles-dodgers-milwaukee-brewers",
+        "previousLegEventId": 17193111,
+        "startTimestamp": 1791838800,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 7,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "FxbsNxb",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Milwaukee Brewers",
+          "slug": "milwaukee-brewers",
+          "shortName": "Brewers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 39943,
+          "nameCode": "MIL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3630,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#b28e42",
+            "secondary": "#b28e42",
+            "text": "#b28e42"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميلووكي برويرز",
+              "ru": "Милуоки Брюэрс"
+            },
+            "shortNameTranslation": {
+              "ar": "برويرز",
+              "bn": "ব্রুয়ার্স",
+              "hi": "ब्रूवर्स",
+              "ru": "Брюэрс"
+            }
+          }
+        },
+        "homeScore": {
+          "series": 0
+        },
+        "awayScore": {
+          "series": 0
+        },
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17193112,
+        "slug": "los-angeles-dodgers-milwaukee-brewers",
+        "previousLegEventId": 17193110,
+        "startTimestamp": 1792011600,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 7,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 4
+      }
+    ],
+    "hasNextPage": false
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17257382/h2h",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:55:59+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/aleksandar-kovacevic-matteo-berrettini/IfVsicAb#id:17257382",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "teamDuel": {
+      "homeWins": 0,
+      "awayWins": 1,
+      "draws": 0
+    },
+    "managerDuel": null
+  }
+}

@@ -1,0 +1,229 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16793649",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:59:22+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/cardiff-university-cardiff-met/byUiseyUi#id:16793649",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "BUCS Super Rugby",
+        "slug": "bucs-super-rugby",
+        "category": {
+          "name": "Rugby Union",
+          "slug": "rugby-union",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "priority": 0,
+          "country": {},
+          "id": 82,
+          "flag": "rugby-union",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "रग्बी यूनियन",
+              "bn": "রাগবি ইউনিয়ন",
+              "ru": "Регби-союз"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "BUCS Super Rugby",
+          "slug": "bucs-super-rugby",
+          "category": {
+            "name": "Rugby Union",
+            "slug": "rugby-union",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "priority": 0,
+            "country": {},
+            "id": 82,
+            "flag": "rugby-union",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "रग्बी यूनियन",
+                "bn": "রাগবি ইউনিয়ন",
+                "ru": "Регби-союз"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 58,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 28278,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سوبر رغبي BUCS",
+              "ru": "Супер Регби BUCS"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 1,
+        "id": 159283,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دوري الرغبي الممتاز لBUCS",
+            "ru": "Супер Регби BUCS"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "BUCS Super Rugby 26/27",
+        "year": "26/27",
+        "editor": true,
+        "id": 100526
+      },
+      "roundInfo": {
+        "round": 3
+      },
+      "customId": "byUiseyUi",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "homeTeam": {
+        "name": "Cardiff University",
+        "slug": "cardiff-university",
+        "shortName": "Cardiff University",
+        "gender": "M",
+        "sport": {
+          "name": "Rugby",
+          "slug": "rugby",
+          "id": 12
+        },
+        "userCount": 16,
+        "nameCode": "CUN",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "WA",
+          "alpha3": "WAL",
+          "name": "Wales",
+          "slug": "wales"
+        },
+        "id": 1111154,
+        "fullName": "Cardiff University",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "جامعة كارديف",
+            "ru": "Университет Кардифф"
+          },
+          "shortNameTranslation": {
+            "ar": "ج. كارديف",
+            "ru": "Университет Кардифф"
+          }
+        },
+        "createdByEditor": true,
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Cardiff Met",
+        "slug": "cardiff-met",
+        "shortName": "Cardiff Met",
+        "gender": "M",
+        "sport": {
+          "name": "Rugby",
+          "slug": "rugby",
+          "id": 12
+        },
+        "userCount": 36,
+        "nameCode": "CME",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "WA",
+          "alpha3": "WAL",
+          "name": "Wales",
+          "slug": "wales"
+        },
+        "id": 1111151,
+        "fullName": "Cardiff Met",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "جامعة كارديف مت",
+            "ru": "Кардифф Мет"
+          },
+          "shortNameTranslation": {
+            "ar": "ج. مت",
+            "ru": "Кардифф Мет"
+          }
+        },
+        "createdByEditor": true,
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 38,
+        "display": 38
+      },
+      "awayScore": {
+        "current": 14,
+        "display": 14
+      },
+      "time": {},
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.current",
+          "homeScore.display",
+          "awayScore.current",
+          "awayScore.display"
+        ],
+        "changeTimestamp": 1791409039
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 16793649,
+      "defaultPeriodCount": 2,
+      "defaultPeriodLength": 40,
+      "slug": "cardiff-university-cardiff-met",
+      "startTimestamp": 1791385219,
+      "defaultOvertimeLength": 10,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "createdByNickname": "Harry Hearn",
+      "eventEditorName": "Harry Hearn",
+      "eventEditor": {
+        "id": "624848b79fe362a82129448c",
+        "name": "Harry Hearn"
+      },
+      "showTotoPromo": true,
+      "isEditor": true
+    },
+    "editorEntity": true
+  }
+}

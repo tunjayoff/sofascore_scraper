@@ -1,0 +1,229 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/baseball/17199139/top-performers",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:07:38+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/atlanta-braves-los-angeles-dodgers/Nxbsgyb#id:17199139",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "topPerformers": [
+      {
+        "role": "pitcher",
+        "rating": 0.503,
+        "statistics": {
+          "pitchingInningsPitched": 7,
+          "pitchingWins": 1,
+          "pitchingStrikeOuts": 10
+        },
+        "player": {
+          "name": "Yoshinobu Yamamoto",
+          "firstName": "Yoshinobu",
+          "lastName": "Yamamoto",
+          "slug": "yamamoto-yoshinobu",
+          "shortName": "Y. Yamamoto",
+          "position": "SP",
+          "jerseyNumber": "18",
+          "height": 178,
+          "userCount": 2129,
+          "gender": "M",
+          "sofascoreId": "5fw-exr",
+          "id": 1476024,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 903312000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ياماموتو، يوشينوبو",
+              "ru": "Ёсинобу Ямамото"
+            },
+            "shortNameTranslation": {
+              "ar": "ي. ياماموتو",
+              "ru": "Ё. Ямамото"
+            }
+          }
+        },
+        "team": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3638,
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        }
+      },
+      {
+        "role": "batter",
+        "rating": 0.233,
+        "statistics": {
+          "battingHits": 1,
+          "battingAtBats": 4,
+          "battingHomeRuns": 1,
+          "battingRbi": 2
+        },
+        "player": {
+          "name": "Enrique Hernández",
+          "firstName": "Enrique",
+          "lastName": "Hernández",
+          "slug": "hernandez-kike",
+          "shortName": "E. Hernández",
+          "position": "3B",
+          "jerseyNumber": "8",
+          "height": 178,
+          "userCount": 88,
+          "gender": "M",
+          "sofascoreId": "5ff-aas",
+          "id": 961272,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 682992000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هيرنانديز، كيكي",
+              "bn": "হার্নান্দেজ, কিকে",
+              "hi": "हर्नांडेज़, किके",
+              "ru": "Энрике Эрнандес"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. هيرنانديز",
+              "bn": "ই. হার্নান্দেজ",
+              "hi": "ई. हर्नांडेज़",
+              "ru": "Э. Эрнандес"
+            }
+          }
+        },
+        "team": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3638,
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        }
+      },
+      {
+        "role": "batter",
+        "rating": 0.232,
+        "statistics": {
+          "battingHits": 1,
+          "battingAtBats": 4,
+          "battingHomeRuns": 1
+        },
+        "player": {
+          "name": "Freddie Freeman",
+          "firstName": "Frederick",
+          "lastName": "Freeman",
+          "slug": "freeman-freddie",
+          "shortName": "F. Freeman",
+          "position": "1B",
+          "jerseyNumber": "5",
+          "height": 193,
+          "userCount": 833,
+          "gender": "M",
+          "sofascoreId": "q44-cki",
+          "id": 961444,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 621561600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فريمان، فريدي",
+              "bn": "ফ্রিম্যান, ফ্রেডি",
+              "hi": "फ्रीमैन, फ्रेडी",
+              "ru": "Фредди Фримен"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. فريمان",
+              "bn": "এফ. ফ্রিম্যান",
+              "hi": "एफ. फ्रीमैन",
+              "ru": "Ф. Фримен"
+            }
+          }
+        },
+        "team": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3638,
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

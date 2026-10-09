@@ -1,0 +1,1690 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/4388/unique-tournament/9464/season/94366/top-players/regularSeason",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:55+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "topPlayers": {
+      "passingTouchdowns": [
+        {
+          "statistics": {
+            "passingTouchdowns": 2,
+            "id": 119666,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Baker Mayfield",
+            "slug": "mayfield-baker",
+            "shortName": "B.Mayfield",
+            "position": "QB",
+            "userCount": 1339,
+            "gender": "M",
+            "id": 933278,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مايفيلد، بيكر",
+                "ru": "Бейкер Мэйфилд"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. مايفيلد",
+                "ru": "Б. Мэйфилд"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "passingTouchdowns": 1,
+            "id": 120566,
+            "type": "regularSeason",
+            "appearances": 2,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Jalon Daniels",
+            "slug": "daniels-jalon",
+            "shortName": "J. Daniels",
+            "position": "QB",
+            "userCount": 43,
+            "gender": "M",
+            "id": 1453515,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دانييلز، جالون",
+                "ru": "Дэниелс, Джалон"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دانييلز",
+                "ru": "Д. Дэниелс"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        }
+      ],
+      "rushingTouchdowns": [
+        {
+          "statistics": {
+            "rushingTouchdowns": 1,
+            "id": 119666,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Baker Mayfield",
+            "slug": "mayfield-baker",
+            "shortName": "B.Mayfield",
+            "position": "QB",
+            "userCount": 1339,
+            "gender": "M",
+            "id": 933278,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مايفيلد، بيكر",
+                "ru": "Бейкер Мэйфилд"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. مايفيلد",
+                "ru": "Б. Мэйфилд"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "rushingTouchdowns": 1,
+            "id": 120475,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Sean Tucker",
+            "slug": "tucker-sean",
+            "shortName": "S.Tucker",
+            "position": "RB",
+            "userCount": 50,
+            "gender": "M",
+            "id": 1451206,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تاكر، شون",
+                "ru": "Шон Такер"
+              },
+              "shortNameTranslation": {
+                "ar": "ش. تاكر",
+                "ru": "Ш. Такер"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "rushingTouchdowns": 1,
+            "id": 119691,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Bucky Irving",
+            "slug": "irving-markeise",
+            "shortName": "B.Irving",
+            "position": "RB",
+            "userCount": 376,
+            "gender": "M",
+            "id": 1455739,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيرفينغ، باكي",
+                "ru": "Баки Ирвинг"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. إيرفينغ",
+                "ru": "Б. Ирвинг"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        }
+      ],
+      "receivingTouchdowns": [
+        {
+          "statistics": {
+            "receivingTouchdowns": 1,
+            "id": 119659,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Emeka Egbuka",
+            "slug": "egbuka-emeka",
+            "shortName": "E.Egbuka",
+            "position": "WR",
+            "userCount": 419,
+            "gender": "M",
+            "id": 1452915,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إجبوكا، إيميكا",
+                "ru": "Эмека Эгбука"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. إجبوكا",
+                "ru": "Э. Эгбука"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingTouchdowns": 1,
+            "id": 119698,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Kenny Gainwell",
+            "slug": "gainwell-kenneth",
+            "shortName": "K.Gainwell",
+            "position": "RB",
+            "userCount": 139,
+            "gender": "M",
+            "id": 1132672,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "غاينويل، كينيث",
+                "ru": "Кеннет Гейнвелл"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. غاينويل",
+                "ru": "К. Гейнвелл"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingTouchdowns": 1,
+            "id": 119683,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Ted Hurst III",
+            "slug": "ted-hurst",
+            "shortName": "T.Hurst",
+            "position": "WR",
+            "userCount": 8,
+            "gender": "M",
+            "id": 1924337,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هيرست، تيد",
+                "ru": "Хёрст, Тед"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. هيرست",
+                "ru": "Т. Хёрст"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        }
+      ],
+      "passingCompletionPercentage": [
+        {
+          "statistics": {
+            "passingCompletionPercentage": 63.54,
+            "passingCompletions": 61,
+            "id": 119666,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Baker Mayfield",
+            "slug": "mayfield-baker",
+            "shortName": "B.Mayfield",
+            "position": "QB",
+            "userCount": 1339,
+            "gender": "M",
+            "id": 933278,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مايفيلد، بيكر",
+                "ru": "Бейкер Мэйфилд"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. مايفيلد",
+                "ru": "Б. Мэйфилд"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "passingCompletionPercentage": 63.33,
+            "passingCompletions": 19,
+            "id": 120566,
+            "type": "regularSeason",
+            "appearances": 2,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Jalon Daniels",
+            "slug": "daniels-jalon",
+            "shortName": "J. Daniels",
+            "position": "QB",
+            "userCount": 43,
+            "gender": "M",
+            "id": 1453515,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دانييلز، جالون",
+                "ru": "Дэниелс, Джалон"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دانييلز",
+                "ru": "Д. Дэниелс"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        }
+      ],
+      "rushingYardsPerAttempt": [
+        {
+          "statistics": {
+            "rushingYardsPerAttempt": 7.11,
+            "id": 120566,
+            "type": "regularSeason",
+            "appearances": 2,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Jalon Daniels",
+            "slug": "daniels-jalon",
+            "shortName": "J. Daniels",
+            "position": "QB",
+            "userCount": 43,
+            "gender": "M",
+            "id": 1453515,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دانييلز، جالون",
+                "ru": "Дэниелс, Джалон"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دانييلز",
+                "ru": "Д. Дэниелс"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "rushingYardsPerAttempt": 5.91,
+            "id": 119666,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Baker Mayfield",
+            "slug": "mayfield-baker",
+            "shortName": "B.Mayfield",
+            "position": "QB",
+            "userCount": 1339,
+            "gender": "M",
+            "id": 933278,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مايفيلد، بيكر",
+                "ru": "Бейкер Мэйфилд"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. مايفيلد",
+                "ru": "Б. Мэйфилд"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "rushingYardsPerAttempt": 4.3,
+            "id": 119691,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Bucky Irving",
+            "slug": "irving-markeise",
+            "shortName": "B.Irving",
+            "position": "RB",
+            "userCount": 376,
+            "gender": "M",
+            "id": 1455739,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيرفينغ، باكي",
+                "ru": "Баки Ирвинг"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. إيرفينغ",
+                "ru": "Б. Ирвинг"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 1
+        }
+      ],
+      "receivingYardsPerReception": [
+        {
+          "statistics": {
+            "receivingYardsPerReception": 18.5,
+            "id": 119687,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Tez Johnson",
+            "slug": "johnson-tez",
+            "shortName": "T.Johnson",
+            "position": "WR",
+            "userCount": 51,
+            "gender": "M",
+            "id": 2153042,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جونسن، تيز",
+                "ru": "Тез Джонсон"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. جونسن",
+                "ru": "Т. Джонсон"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingYardsPerReception": 16,
+            "id": 119683,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Ted Hurst III",
+            "slug": "ted-hurst",
+            "shortName": "T.Hurst",
+            "position": "WR",
+            "userCount": 8,
+            "gender": "M",
+            "id": 1924337,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هيرست، تيد",
+                "ru": "Хёрст, Тед"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. هيرست",
+                "ru": "Т. Хёрст"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "receivingYardsPerReception": 10.47,
+            "id": 119701,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Cade Otton",
+            "slug": "otton-cade",
+            "shortName": "C.Otton",
+            "position": "TE",
+            "userCount": 109,
+            "gender": "M",
+            "id": 1389614,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوتون، كايد",
+                "ru": "Кейд Оттон"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. أوتون",
+                "ru": "К. Оттон"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 4
+        }
+      ],
+      "defensiveInterceptions": [
+        {
+          "statistics": {
+            "defensiveInterceptions": 1,
+            "id": 119674,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Jacob Parrish",
+            "slug": "parrish-jacob",
+            "shortName": "J.Parrish",
+            "position": "CB",
+            "userCount": 7,
+            "gender": "M",
+            "id": 1452137,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "باريش، جاكوب",
+                "ru": "Джейкоб Парриш"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. باريش",
+                "ru": "Д. Парриш"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveInterceptions": 1,
+            "id": 119672,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Josiah Trotter",
+            "slug": "trotter-josiah",
+            "shortName": "J.Trotter",
+            "position": "LB",
+            "userCount": 6,
+            "gender": "M",
+            "id": 1728703,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تروتر، يوشع",
+                "ru": "Троттер, Иосия"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. تروتر",
+                "ru": "И. Троттер"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveInterceptions": 1,
+            "id": 119668,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "A'Shawn Robinson",
+            "slug": "robinson-ashawn",
+            "shortName": "A.Robinson",
+            "position": "DL",
+            "userCount": 6,
+            "gender": "M",
+            "id": 854916,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "روبنسون، أ.شاون",
+                "ru": "Э'Шон Робинсон"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. روبنسون",
+                "ru": "Э. Робинсон"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        }
+      ],
+      "defensiveTotalTackles": [
+        {
+          "statistics": {
+            "defensiveTotalTackles": 15,
+            "id": 119672,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Josiah Trotter",
+            "slug": "trotter-josiah",
+            "shortName": "J.Trotter",
+            "position": "LB",
+            "userCount": 6,
+            "gender": "M",
+            "id": 1728703,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تروتر، يوشع",
+                "ru": "Троттер, Иосия"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. تروتر",
+                "ru": "И. Троттер"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveTotalTackles": 15,
+            "id": 119665,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Antoine Winfield Jr.",
+            "slug": "winfield-jr-antoine",
+            "shortName": "A.Winfield",
+            "position": "SAF",
+            "userCount": 49,
+            "gender": "M",
+            "id": 1027058,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "وينفيلد، أنطوان",
+                "ru": "Антуан Уинфилд младший"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. وينفيلد",
+                "ru": "А. младший"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveTotalTackles": 15,
+            "id": 119678,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Zyon McCollum",
+            "slug": "mccollum-zyon",
+            "shortName": "Z.McCollum",
+            "position": "CB",
+            "userCount": 12,
+            "gender": "M",
+            "id": 1389612,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماكنولوم، زايون",
+                "ru": "Зайон Макаолум"
+              },
+              "shortNameTranslation": {
+                "ar": "ز. ماكنولوم",
+                "ru": "З. Макаолум"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 17
+        }
+      ],
+      "defensiveSacks": [
+        {
+          "statistics": {
+            "defensiveSacks": 2,
+            "id": 119695,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "David Walker",
+            "slug": "walker-david",
+            "shortName": "D.Walker",
+            "position": "OLB",
+            "userCount": 4,
+            "gender": "M",
+            "id": 1532480,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "وكر، ديفيد",
+                "ru": "Дэвид Уокер"
+              },
+              "shortNameTranslation": {
+                "ar": "د. وكر",
+                "ru": "Д. Уокер"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveSacks": 1,
+            "id": 119672,
+            "type": "regularSeason",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Josiah Trotter",
+            "slug": "trotter-josiah",
+            "shortName": "J.Trotter",
+            "position": "LB",
+            "userCount": 6,
+            "gender": "M",
+            "id": 1728703,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تروتر، يوشع",
+                "ru": "Троттер, Иосия"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. تروتر",
+                "ru": "И. Троттер"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "defensiveSacks": 1,
+            "id": 119679,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Alex Anzalone",
+            "slug": "anzalone-alex",
+            "shortName": "A.Anzalone",
+            "position": "LB",
+            "userCount": 64,
+            "gender": "M",
+            "id": 879082,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أنزالون، أليكس",
+                "ru": "Алекс Анзалоун"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. أنزالون",
+                "ru": "А. Анзалоун"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 2
+        }
+      ],
+      "kickingFgMade": [
+        {
+          "statistics": {
+            "kickingFgAttempts": 9,
+            "kickingFgMade": 9,
+            "id": 119662,
+            "type": "regularSeason",
+            "appearances": 4,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Chase McLaughlin",
+            "slug": "mclaughlin-chase",
+            "shortName": "C.McLaughlin",
+            "position": "K",
+            "userCount": 54,
+            "gender": "M",
+            "id": 984235,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماكلوغلين، تشيس",
+                "ru": "Чейз МаКлафлин"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. ماكلوغلين",
+                "ru": "Ч. МаКлафлин"
+              }
+            }
+          },
+          "team": {
+            "name": "Tampa Bay Buccaneers",
+            "slug": "tampa-bay-buccaneers",
+            "shortName": "Buccaneers",
+            "gender": "M",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "userCount": 12224,
+            "nameCode": "TB",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 4388,
+            "teamColors": {
+              "primary": "#d50a0a",
+              "secondary": "#34302b",
+              "text": "#34302b"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ت. بكنيرز",
+                "ru": "ФК Тампа-Бэй Бакканирс"
+              },
+              "shortNameTranslation": {
+                "ru": "Бакканирс"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "statisticsType": {
+      "sportSlug": "american-football",
+      "statisticsType": "player"
+    }
+  }
+}

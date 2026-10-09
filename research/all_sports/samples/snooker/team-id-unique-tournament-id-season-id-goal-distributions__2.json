@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/102683/unique-tournament/32050/season/88811/goal-distributions",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T00:06:49+00:00",
+  "page": "https://www.sofascore.com/tr/snooker/match/evans-white/nbksIdQ#id:17264352",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

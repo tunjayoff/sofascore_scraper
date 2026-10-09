@@ -1,0 +1,263 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17263404",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:03:58+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/miyazaki-nidaira/idDbsNbWd#id:17263404",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "Arctic Open, WS",
+        "slug": "arctic-open-ws",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "priority": 11,
+          "country": {},
+          "id": 259,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Arctic Open, WS",
+          "slug": "arctic-open-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 35,
+          "hasRounds": false,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 21265,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البطولة المفتوحة في القطب الشمالي، السيدات فردي",
+              "ru": "Арктический Открытый, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 2,
+        "id": 203378
+      },
+      "season": {
+        "name": "Arctic Open, WS 2026",
+        "year": "2026",
+        "editor": false,
+        "id": 104790
+      },
+      "roundInfo": {
+        "round": 6,
+        "name": "Round of 32",
+        "slug": "round-of-32",
+        "cupRoundType": 16
+      },
+      "customId": "idDbsNbWd",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 2,
+      "venue": {
+        "city": {
+          "name": "Vantaa",
+          "country": {
+            "alpha2": "FI",
+            "alpha3": "FIN",
+            "name": "Finland",
+            "slug": "finland"
+          },
+          "id": 18723
+        },
+        "hidden": true,
+        "slug": "court-3",
+        "name": "Court 3",
+        "country": {
+          "alpha2": "FI",
+          "alpha3": "FIN",
+          "name": "Finland",
+          "slug": "finland"
+        },
+        "id": 42034,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب 3",
+            "hi": "कोर्ट 3",
+            "bn": "কোর্ট 3"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Court 3"
+        }
+      },
+      "homeTeam": {
+        "name": "Nidaira N.",
+        "slug": "nidaira-natsuki",
+        "gender": "F",
+        "sport": {
+          "name": "Badminton",
+          "slug": "badminton",
+          "id": 31
+        },
+        "userCount": 50,
+        "nameCode": "NID",
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "JP",
+          "alpha3": "JPN",
+          "name": "Japan",
+          "slug": "japan"
+        },
+        "id": 195158,
+        "fullName": "Nidaira, Natsuki",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "نيديرا، ناتسوكي",
+            "ru": "Нидайра, Нацуки"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Miyazaki T.",
+        "slug": "miyazaki-tomoka",
+        "gender": "F",
+        "sport": {
+          "name": "Badminton",
+          "slug": "badminton",
+          "id": 31
+        },
+        "userCount": 460,
+        "nameCode": "MIY",
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "JP",
+          "alpha3": "JPN",
+          "name": "Japan",
+          "slug": "japan"
+        },
+        "id": 490088,
+        "fullName": "Miyazaki, Tomoka",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مييازكي، توموكا",
+            "ru": "Миядзаки, Томока"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 0,
+        "display": 0,
+        "period1": 13,
+        "period2": 14,
+        "normaltime": 0
+      },
+      "awayScore": {
+        "current": 2,
+        "display": 2,
+        "period1": 21,
+        "period2": 21,
+        "normaltime": 2
+      },
+      "time": {
+        "currentPeriodStartTimestamp": 1791291640
+      },
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.normaltime",
+          "awayScore.current",
+          "awayScore.display",
+          "awayScore.period2",
+          "awayScore.normaltime",
+          "time.currentPeriodStart"
+        ],
+        "changeTimestamp": 1791291642
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17263404,
+      "defaultPeriodCount": 3,
+      "slug": "miyazaki-nidaira",
+      "currentPeriodStartTimestamp": 1791291640,
+      "startTimestamp": 1791288600,
+      "periods": {
+        "current": "Match",
+        "period1": "1st set",
+        "period2": "2nd set",
+        "period3": "3rd set",
+        "period4": "4th set",
+        "period5": "5th set"
+      },
+      "finalResultOnly": false,
+      "hasBet365LiveStream": true,
+      "bet365ExcludedCountryCodes": [
+        "",
+        "IR",
+        "GR",
+        "RU",
+        "CH",
+        "CA"
+      ],
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

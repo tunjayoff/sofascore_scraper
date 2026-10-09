@@ -1,0 +1,692 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/487367/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:20:28+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/vinumitaly-petrarca-active-network/rXUdsloae#id:16904548",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Serie A",
+          "slug": "serie-a",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 185,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "ইতালি",
+                "hi": "इटली",
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A",
+            "slug": "serie-a",
+            "primaryColorHex": "#105da7",
+            "secondaryColorHex": "#009f42",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 185,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "ইতালি",
+                  "hi": "इटली",
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1205,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 595,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الإيطالي أ",
+                "hi": "सीरी ए",
+                "bn": "সিরি আ",
+                "ru": "Серия А"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 6,
+          "isGroup": false,
+          "isLive": false,
+          "id": 1785,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "सीरी ए",
+              "ar": "الدوري الإيطالي",
+              "bn": "সিরি আ",
+              "ru": "Серия А"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 81186
+        },
+        "roundInfo": {
+          "round": 12
+        },
+        "customId": "tCgcsrXUd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Active Network",
+          "slug": "active-network",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 53,
+          "nameCode": "ACT",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 487367,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أكتيف ناتوورك",
+              "bn": "এক্টিভ নেটওয়ার্ক",
+              "hi": "एक्टिव नेटवर्क",
+              "ru": "Активная Сеть"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Feldi Eboli",
+          "slug": "feldi-eboli",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 392,
+          "nameCode": "FEE",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 266368,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فيلدي إيبولي",
+              "bn": "ফেলদি এবোলি",
+              "hi": "फेल्दी एबोली",
+              "ru": "Фелди Эболи"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 0,
+          "period2": 3,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 4,
+          "display": 4,
+          "period1": 1,
+          "period2": 3,
+          "normaltime": 4
+        },
+        "time": {
+          "played": 2400,
+          "periodLength": 1200,
+          "overtimeLength": 300,
+          "totalPeriodCount": 2
+        },
+        "changes": {
+          "changes": [
+            "awayScore.period2",
+            "awayScore.normaltime",
+            "awayScore.current",
+            {
+              "__trimmed__": 1
+            }
+          ],
+          "changeTimestamp": 1765641582
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14522093,
+        "slug": "active-network-feldi-eboli",
+        "startTimestamp": 1765634400,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Serie A",
+          "slug": "serie-a",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 185,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "ইতালি",
+                "hi": "इटली",
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A",
+            "slug": "serie-a",
+            "primaryColorHex": "#105da7",
+            "secondaryColorHex": "#009f42",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 185,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "ইতালি",
+                  "hi": "इटली",
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1205,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 595,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الإيطالي أ",
+                "hi": "सीरी ए",
+                "bn": "সিরি আ",
+                "ru": "Серия А"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 6,
+          "isGroup": false,
+          "isLive": false,
+          "id": 1785,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "सीरी ए",
+              "ar": "الدوري الإيطالي",
+              "bn": "সিরি আ",
+              "ru": "Серия А"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 81186
+        },
+        "roundInfo": {
+          "round": 13
+        },
+        "customId": "KeGcsrXUd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 3,
+        "homeTeam": {
+          "name": "Mantova Calcio A 5",
+          "slug": "mantova-calcio-a-5",
+          "shortName": "Mantova",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 71,
+          "nameCode": "MAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 327735,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مانتوفا كالتشيو 5",
+              "ru": "Мантова Калчо А 5"
+            },
+            "shortNameTranslation": {
+              "ar": "مانتوفا",
+              "bn": "মানতোভা",
+              "hi": "मंटोवा",
+              "ru": "Мантова"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Active Network",
+          "slug": "active-network",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 53,
+          "nameCode": "ACT",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 487367,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أكتيف ناتوورك",
+              "bn": "এক্টিভ নেটওয়ার্ক",
+              "hi": "एक्टिव नेटवर्क",
+              "ru": "Активная Сеть"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 4,
+          "display": 4,
+          "period1": 2,
+          "period2": 2,
+          "normaltime": 4
+        },
+        "awayScore": {
+          "current": 4,
+          "display": 4,
+          "period1": 2,
+          "period2": 2,
+          "normaltime": 4
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1766868960
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 4
+            }
+          ],
+          "changeTimestamp": 1766869965
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14522101,
+        "slug": "active-network-mantova-calcio5",
+        "startTimestamp": 1766863800,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Serie A",
+          "slug": "serie-a",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 185,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "ইতালি",
+                "hi": "इटली",
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A",
+            "slug": "serie-a",
+            "primaryColorHex": "#105da7",
+            "secondaryColorHex": "#009f42",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 185,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "ইতালি",
+                  "hi": "इटली",
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1205,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 595,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الإيطالي أ",
+                "hi": "सीरी ए",
+                "bn": "সিরি আ",
+                "ru": "Серия А"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 6,
+          "isGroup": false,
+          "isLive": false,
+          "id": 1785,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "सीरी ए",
+              "ar": "الدوري الإيطالي",
+              "bn": "সিরি আ",
+              "ru": "Серия А"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 81186
+        },
+        "roundInfo": {
+          "round": 14
+        },
+        "customId": "xPtcsrXUd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Active Network",
+          "slug": "active-network",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 53,
+          "nameCode": "ACT",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 487367,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أكتيف ناتوورك",
+              "bn": "এক্টিভ নেটওয়ার্ক",
+              "hi": "एक्टिव नेटवर्क",
+              "ru": "Активная Сеть"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Meta Catania",
+          "slug": "meta-catania",
+          "shortName": "Meta Catania",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 890,
+          "nameCode": "MEC",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 297022,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميتا كاتانيا",
+              "bn": "মেটা ক্যাটানিয়া",
+              "hi": "मेटा कैटानिया",
+              "ru": "Мета"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 4,
+          "display": 4,
+          "period1": 1,
+          "period2": 3,
+          "normaltime": 4
+        },
+        "awayScore": {
+          "current": 8,
+          "display": 8,
+          "period1": 3,
+          "period2": 5,
+          "normaltime": 8
+        },
+        "time": {
+          "played": 2400,
+          "periodLength": 1200,
+          "overtimeLength": 300,
+          "totalPeriodCount": 2
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 4
+            }
+          ],
+          "changeTimestamp": 1767886995
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14522107,
+        "slug": "active-network-meta-catania",
+        "startTimestamp": 1767880800,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

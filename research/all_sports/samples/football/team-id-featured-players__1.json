@@ -1,0 +1,50 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/42/featured-players",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:12:25+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/arsenal-leeds-united/JsR#id:16363871",
+  "cache_control": "max-age=7200, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "featuredPlayers": {
+      "16363871": {
+        "player": {
+          "name": "Bukayo Saka",
+          "firstName": "Bukayo",
+          "lastName": "Saka",
+          "slug": "bukayo-saka",
+          "shortName": "B. Saka",
+          "position": "F",
+          "jerseyNumber": "7",
+          "userCount": 184297,
+          "gender": "M",
+          "sofascoreId": "iw8-xrp",
+          "id": 934235,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوكايو ساكا",
+              "bn": "বুকায়ো সাকা",
+              "hi": "बुकायो साका",
+              "ru": "Букайо Сака"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. ساكا",
+              "bn": "বি. সাকা",
+              "hi": "बी. साका",
+              "ru": "Б. Сака"
+            }
+          }
+        },
+        "statistics": {
+          "rating": 7.3,
+          "statisticsType": {
+            "sportSlug": "football",
+            "statisticsType": "player"
+          }
+        },
+        "eventId": 16363650
+      }
+    }
+  }
+}

@@ -1,0 +1,449 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17263404/point-by-point",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:03:52+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/miyazaki-nidaira/idDbsNbWd#id:17263404",
+  "cache_control": "max-age=0, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "pointByPoint": [
+      {
+        "set": 2,
+        "points": [
+          {
+            "homePoint": "1",
+            "awayPoint": "0",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "2",
+            "awayPoint": "0",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "3",
+            "awayPoint": "0",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "4",
+            "awayPoint": "0",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "4",
+            "awayPoint": "1",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "4",
+            "awayPoint": "2",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "5",
+            "awayPoint": "2",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "5",
+            "awayPoint": "3",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "6",
+            "awayPoint": "3",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "6",
+            "awayPoint": "4",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "4",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "5",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "6",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "7",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "8",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "9",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "8",
+            "awayPoint": "9",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "9",
+            "awayPoint": "9",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "9",
+            "awayPoint": "10",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "9",
+            "awayPoint": "11",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "9",
+            "awayPoint": "12",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "9",
+            "awayPoint": "13",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "10",
+            "awayPoint": "13",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "10",
+            "awayPoint": "14",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "10",
+            "awayPoint": "15",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "15",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "12",
+            "awayPoint": "15",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "12",
+            "awayPoint": "16",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "13",
+            "awayPoint": "16",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "13",
+            "awayPoint": "17",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "13",
+            "awayPoint": "18",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "13",
+            "awayPoint": "19",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "13",
+            "awayPoint": "20",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "14",
+            "awayPoint": "20",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "14",
+            "awayPoint": "21",
+            "homePointType": 5,
+            "awayPointType": 4
+          }
+        ],
+        "score": {
+          "homeScore": 14,
+          "awayScore": 21,
+          "serving": -1,
+          "scoring": 2
+        }
+      },
+      {
+        "set": 1,
+        "points": [
+          {
+            "homePoint": "0",
+            "awayPoint": "1",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "1",
+            "awayPoint": "1",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "2",
+            "awayPoint": "1",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "2",
+            "awayPoint": "2",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "2",
+            "awayPoint": "3",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "3",
+            "awayPoint": "3",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "3",
+            "awayPoint": "4",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "3",
+            "awayPoint": "5",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "3",
+            "awayPoint": "6",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "4",
+            "awayPoint": "6",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "5",
+            "awayPoint": "6",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "6",
+            "awayPoint": "6",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "6",
+            "awayPoint": "7",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "6",
+            "awayPoint": "8",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "8",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "9",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "7",
+            "awayPoint": "10",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "8",
+            "awayPoint": "10",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "8",
+            "awayPoint": "11",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "9",
+            "awayPoint": "11",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "9",
+            "awayPoint": "12",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "10",
+            "awayPoint": "12",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "12",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "13",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "14",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "15",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "16",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "17",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "18",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "11",
+            "awayPoint": "19",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "12",
+            "awayPoint": "19",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "12",
+            "awayPoint": "20",
+            "homePointType": 5,
+            "awayPointType": 1
+          },
+          {
+            "homePoint": "13",
+            "awayPoint": "20",
+            "homePointType": 1,
+            "awayPointType": 5
+          },
+          {
+            "homePoint": "13",
+            "awayPoint": "21",
+            "homePointType": 5,
+            "awayPointType": 3
+          }
+        ],
+        "score": {
+          "homeScore": 13,
+          "awayScore": 21,
+          "serving": -1,
+          "scoring": 2
+        }
+      }
+    ]
+  }
+}

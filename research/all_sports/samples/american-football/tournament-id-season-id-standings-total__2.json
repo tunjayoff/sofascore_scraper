@@ -1,0 +1,721 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/108947/season/94366/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:42+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 313055,
+        "type": "total",
+        "tournament": {
+          "name": "NFL",
+          "slug": "nfl",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "priority": 0,
+            "id": 1370,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NFL",
+            "slug": "nfl",
+            "primaryColorHex": "#1e3c71",
+            "secondaryColorHex": "#db2526",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "priority": 0,
+              "id": 1370,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 58306,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 9464,
+            "displayInverseHomeAwayTeams": true,
+            "hasDownDistance": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني لكرة القدم الأمريكية",
+                "bn": "এনএফএল",
+                "hi": "एनएफएल",
+                "ru": "НФЛ"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 5,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108947,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القدم الأمريكية (NFL)",
+              "bn": "এনএফএল",
+              "hi": "एनएफएल",
+              "ru": "НФЛ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "bucket": "conference",
+        "name": "AFC",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 1213,
+          "text": "The NFL overall table is sorted by percentage"
+        },
+        "rows": [
+          {
+            "id": 2648679,
+            "team": {
+              "name": "Kansas City Chiefs",
+              "slug": "kansas-city-chiefs",
+              "shortName": "Chiefs",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 43914,
+              "nameCode": "KC",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4422,
+              "teamColors": {
+                "primary": "#aa0114",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ك. تشيفز",
+                  "ru": "ФК Канзас-Сити Чифс"
+                },
+                "shortNameTranslation": {
+                  "ru": "Чифс"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 118,
+            "scoresAgainst": 77,
+            "percentage": 1,
+            "scoreDiffFormatted": "+41"
+          },
+          {
+            "id": 2648678,
+            "team": {
+              "name": "Jacksonville Jaguars",
+              "slug": "jacksonville-jaguars",
+              "shortName": "Jaguars",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 6346,
+              "nameCode": "JAX",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4386,
+              "teamColors": {
+                "primary": "#01839b",
+                "secondary": "#2b2d22",
+                "text": "#2b2d22"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ج. جاغوار",
+                  "ru": "ФК Джексонвилл Ягуары"
+                },
+                "shortNameTranslation": {
+                  "ru": "Ягуары"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 4,
+            "wins": 3,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 104,
+            "scoresAgainst": 53,
+            "percentage": 0.75,
+            "scoreDiffFormatted": "+51"
+          },
+          {
+            "id": 2648672,
+            "team": {
+              "name": "Buffalo Bills",
+              "slug": "buffalo-bills",
+              "shortName": "Bills",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 23019,
+              "nameCode": "BUF",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4414,
+              "teamColors": {
+                "primary": "#004684",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ب. بيلز",
+                  "ru": "ФК Баффало Биллс"
+                },
+                "shortNameTranslation": {
+                  "ru": "Биллс"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 3,
+            "matches": 4,
+            "wins": 3,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 127,
+            "scoresAgainst": 107,
+            "percentage": 0.75,
+            "scoreDiffFormatted": "+20"
+          },
+          {
+            "__trimmed__": 13
+          }
+        ],
+        "updatedAtTimestamp": 1791183735
+      },
+      {
+        "id": 313060,
+        "type": "total",
+        "tournament": {
+          "name": "NFL",
+          "slug": "nfl",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "priority": 0,
+            "id": 1370,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NFL",
+            "slug": "nfl",
+            "primaryColorHex": "#1e3c71",
+            "secondaryColorHex": "#db2526",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "priority": 0,
+              "id": 1370,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 58306,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 9464,
+            "displayInverseHomeAwayTeams": true,
+            "hasDownDistance": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني لكرة القدم الأمريكية",
+                "bn": "এনএফএল",
+                "hi": "एनएफएल",
+                "ru": "НФЛ"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 5,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108947,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القدم الأمريكية (NFL)",
+              "bn": "এনএফএল",
+              "hi": "एनएफएल",
+              "ru": "НФЛ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "bucket": "conference",
+        "name": "NFC",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 1213,
+          "text": "The NFL overall table is sorted by percentage"
+        },
+        "rows": [
+          {
+            "id": 2648711,
+            "team": {
+              "name": "Minnesota Vikings",
+              "slug": "minnesota-vikings",
+              "shortName": "Vikings",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 13282,
+              "nameCode": "MIN",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4423,
+              "teamColors": {
+                "primary": "#3a0064",
+                "secondary": "#ffc72b",
+                "text": "#ffc72b"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "م. فايكينغز",
+                  "ru": "ФК Миннесота Викингс"
+                },
+                "shortNameTranslation": {
+                  "ru": "Викингс"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 86,
+            "scoresAgainst": 51,
+            "percentage": 1,
+            "scoreDiffFormatted": "+35"
+          },
+          {
+            "id": 2648715,
+            "team": {
+              "name": "San Francisco 49ers",
+              "slug": "san-francisco-49ers",
+              "shortName": "49ers",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 29523,
+              "nameCode": "SF",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4389,
+              "teamColors": {
+                "primary": "#aa0000",
+                "secondary": "#b3995d",
+                "text": "#b3995d"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "س. 49",
+                  "ru": "ФК Сан-Франциско 49ерс"
+                },
+                "shortNameTranslation": {
+                  "ru": "49ерс"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 122,
+            "scoresAgainst": 64,
+            "percentage": 1,
+            "scoreDiffFormatted": "+58"
+          },
+          {
+            "id": 2648713,
+            "team": {
+              "name": "New York Giants",
+              "slug": "new-york-giants",
+              "shortName": "Giants",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 13411,
+              "nameCode": "NYG",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4426,
+              "teamColors": {
+                "primary": "#0b2265",
+                "secondary": "#a71930",
+                "text": "#a71930"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ن. جايانتس",
+                  "ru": "ФК Нью-Йорк Джайентс"
+                },
+                "shortNameTranslation": {
+                  "ru": "Джайентс"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 3,
+            "matches": 4,
+            "wins": 3,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 82,
+            "scoresAgainst": 79,
+            "percentage": 0.75,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "__trimmed__": 13
+          }
+        ],
+        "updatedAtTimestamp": 1791271838
+      },
+      {
+        "id": 313056,
+        "type": "total",
+        "tournament": {
+          "name": "NFL",
+          "slug": "nfl",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "priority": 0,
+            "id": 1370,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NFL",
+            "slug": "nfl",
+            "primaryColorHex": "#1e3c71",
+            "secondaryColorHex": "#db2526",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "priority": 0,
+              "id": 1370,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 58306,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 9464,
+            "displayInverseHomeAwayTeams": true,
+            "hasDownDistance": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني لكرة القدم الأمريكية",
+                "bn": "এনএফএল",
+                "hi": "एनएफएल",
+                "ru": "НФЛ"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 5,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108947,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القدم الأمريكية (NFL)",
+              "bn": "এনএফএল",
+              "hi": "एनएफएल",
+              "ru": "НФЛ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "bucket": "division",
+        "name": "AFC East",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 1213,
+          "text": "The NFL overall table is sorted by percentage"
+        },
+        "rows": [
+          {
+            "id": 2648687,
+            "team": {
+              "name": "Buffalo Bills",
+              "slug": "buffalo-bills",
+              "shortName": "Bills",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 23019,
+              "nameCode": "BUF",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4414,
+              "teamColors": {
+                "primary": "#004684",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ب. بيلز",
+                  "ru": "ФК Баффало Биллс"
+                },
+                "shortNameTranslation": {
+                  "ru": "Биллс"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 1,
+            "matches": 4,
+            "wins": 3,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 127,
+            "scoresAgainst": 107,
+            "percentage": 0.75,
+            "scoreDiffFormatted": "+20"
+          },
+          {
+            "id": 2648689,
+            "team": {
+              "name": "New England Patriots",
+              "slug": "new-england-patriots",
+              "shortName": "Patriots",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 32553,
+              "nameCode": "NE",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4424,
+              "teamColors": {
+                "primary": "#0d244d",
+                "secondary": "#b1b8bd",
+                "text": "#b1b8bd"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ن. بيتريوتس",
+                  "ru": "ФК Нью-Ингленд Пэтриотс"
+                },
+                "shortNameTranslation": {
+                  "ru": "Пэтриотс"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 2,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 65,
+            "scoresAgainst": 77,
+            "percentage": 0.5,
+            "scoreDiffFormatted": "-12"
+          },
+          {
+            "id": 2648690,
+            "team": {
+              "name": "New York Jets",
+              "slug": "new-york-jets",
+              "shortName": "Jets",
+              "gender": "M",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "userCount": 6869,
+              "nameCode": "NYJ",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4427,
+              "teamColors": {
+                "primary": "#0c371d",
+                "secondary": "#fefefe",
+                "text": "#fefefe"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ن. جتس",
+                  "ru": "ФК Нью-Йорк Джетс"
+                },
+                "shortNameTranslation": {
+                  "ru": "Джетс"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 3,
+            "matches": 4,
+            "wins": 1,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 76,
+            "scoresAgainst": 84,
+            "percentage": 0.25,
+            "scoreDiffFormatted": "-8"
+          },
+          {
+            "__trimmed__": 1
+          }
+        ],
+        "updatedAtTimestamp": 1791155054
+      },
+      {
+        "__trimmed__": 8
+      }
+    ]
+  }
+}

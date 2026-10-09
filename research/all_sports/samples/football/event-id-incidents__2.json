@@ -1,0 +1,823 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17256969/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:52:49+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/mas-de-fes-raja-club-athletic/hKqsKax#id:17256969",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "FT",
+        "homeScore": 0,
+        "awayScore": 0,
+        "isLive": false,
+        "time": 90,
+        "addedTime": 999,
+        "timeSeconds": 5400,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 2700
+      },
+      {
+        "playerIn": {
+          "name": "Khalid Baba",
+          "firstName": "Khalid Baba",
+          "lastName": "",
+          "slug": "khalid-baba",
+          "shortName": "K. Baba",
+          "position": "M",
+          "jerseyNumber": "68",
+          "height": 175,
+          "userCount": 732,
+          "gender": "M",
+          "sofascoreId": "g8v-3sm",
+          "id": 1140961,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 947721600,
+          "proposedMarketValueRaw": {
+            "value": 440000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "خالد بابا",
+              "ru": "Халид Баба"
+            },
+            "shortNameTranslation": {
+              "ar": "خ. بابا",
+              "ru": "Х. Баба"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Anas Tahiri",
+          "firstName": "",
+          "lastName": "",
+          "slug": "anas-tahiri",
+          "shortName": "A. Tahiri",
+          "position": "M",
+          "jerseyNumber": "19",
+          "height": 179,
+          "userCount": 462,
+          "gender": "M",
+          "sofascoreId": "hdm-rnc",
+          "id": 544156,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 800496000,
+          "proposedMarketValueRaw": {
+            "value": 420000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أنس الطاهري",
+              "bn": "আনাস তাহিরি",
+              "hi": "अनस ताहिरी",
+              "ru": "Анас Тахири"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. الطاهري",
+              "bn": "এ. তাহিরি",
+              "hi": "ए. ताहिरी",
+              "ru": "А. Тахири"
+            }
+          }
+        },
+        "id": 127045556,
+        "time": 86,
+        "injury": false,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 5
+      },
+      {
+        "playerIn": {
+          "name": "El Habib Brija",
+          "firstName": "El Habib Brija",
+          "lastName": "",
+          "slug": "el-habib-brija",
+          "shortName": "E. H. Brija",
+          "position": "M",
+          "jerseyNumber": "27",
+          "height": 176,
+          "userCount": 71,
+          "gender": "M",
+          "sofascoreId": "6gj-mjs",
+          "id": 1140935,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 954288000,
+          "proposedMarketValueRaw": {
+            "value": 315000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الحبيب بريجة",
+              "ru": "Эль Хабиб Бриджа"
+            },
+            "shortNameTranslation": {
+              "ar": "ا. بريجة",
+              "ru": "Э. Бриджа"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Anas El Mahraoui",
+          "firstName": "Anas El Mahraoui",
+          "slug": "anas-el-mahraoui",
+          "shortName": "A. E. Mahraoui",
+          "position": "M",
+          "jerseyNumber": "99",
+          "height": 173,
+          "userCount": 610,
+          "gender": "M",
+          "sofascoreId": "jss-qn8",
+          "id": 1919299,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 985824000,
+          "proposedMarketValueRaw": {
+            "value": 425000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أنس المهراوي",
+              "ru": "Эль Махрауи, Анас"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. المهراوي",
+              "ru": "А. Эль Махрауи"
+            }
+          }
+        },
+        "id": 127045555,
+        "time": 86,
+        "injury": false,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 5
+      },
+      {
+        "player": {
+          "name": "Noureddine Oussama",
+          "firstName": "Noureddine",
+          "lastName": "Oussama",
+          "slug": "noureddine-oussama",
+          "shortName": "N. Oussama",
+          "position": "M",
+          "jerseyNumber": "6",
+          "height": 180,
+          "userCount": 156,
+          "gender": "M",
+          "sofascoreId": "q43-d7f",
+          "id": 1545316,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 985305600,
+          "proposedMarketValueRaw": {
+            "value": 660000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أسامة نور الدين",
+              "ru": "Нуреддин Усама"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. نور الدين",
+              "ru": "Н. Усама"
+            }
+          }
+        },
+        "rescinded": false,
+        "id": 125733100,
+        "time": 82,
+        "isHome": true,
+        "incidentClass": "yellow",
+        "incidentType": "card",
+        "reversedPeriodTime": 9
+      },
+      {
+        "playerIn": {
+          "name": "Mohamed Al Makahasi",
+          "slug": "mohamed-al-makahasi",
+          "shortName": "M. Makaazi",
+          "position": "M",
+          "jerseyNumber": "23",
+          "height": 177,
+          "userCount": 768,
+          "gender": "M",
+          "sofascoreId": "utt-gqp",
+          "id": 970835,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 791942400,
+          "proposedMarketValueRaw": {
+            "value": 710000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "محمد المكعازي",
+              "ru": "Мохамед Аль Макахаси"
+            },
+            "shortNameTranslation": {
+              "ar": "م. المكعازي",
+              "ru": "М. Макахаси"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Badr Benoun",
+          "firstName": "",
+          "lastName": "",
+          "slug": "badr-benoun",
+          "shortName": "B. Benoun",
+          "position": "D",
+          "jerseyNumber": "13",
+          "height": 193,
+          "userCount": 2090,
+          "gender": "M",
+          "sofascoreId": "zzg-cqd",
+          "id": 906597,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 749347200,
+          "proposedMarketValueRaw": {
+            "value": 730000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بدر بانون",
+              "bn": "বদর বেনাউন",
+              "hi": "बद्र बेनून",
+              "ru": "Бадр Бенун"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. بانون",
+              "bn": "বি. বেনাউন",
+              "hi": "बी. बेनून",
+              "ru": "Б. Бенун"
+            }
+          }
+        },
+        "id": 127045551,
+        "time": 78,
+        "injury": false,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 13
+      },
+      {
+        "playerIn": {
+          "name": "Aymen Barkok",
+          "firstName": "",
+          "lastName": "",
+          "slug": "aymen-barkok",
+          "shortName": "A. Barkok",
+          "position": "M",
+          "jerseyNumber": "6",
+          "height": 188,
+          "userCount": 1789,
+          "gender": "M",
+          "sofascoreId": "n3j-azx",
+          "id": 856594,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 895708800,
+          "proposedMarketValueRaw": {
+            "value": 570000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أيمن برقوق",
+              "bn": "আয়মেন বারকোক",
+              "hi": "अयमेन बार्कोक",
+              "ru": "Аймен Баркок"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. برقوق",
+              "bn": "এ. বারকোক",
+              "hi": "ए. बार्कोक",
+              "ru": "А. Баркок"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Younes Bakiz",
+          "firstName": "Younes",
+          "lastName": "Bakiz",
+          "slug": "younes-bakiz",
+          "shortName": "Y. Bakiz",
+          "position": "M",
+          "jerseyNumber": "10",
+          "height": 186,
+          "userCount": 487,
+          "gender": "M",
+          "sofascoreId": "cee-y67",
+          "id": 980149,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 918172800,
+          "proposedMarketValueRaw": {
+            "value": 1600000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يونس باكيز",
+              "ru": "Юнес Бакиз"
+            },
+            "shortNameTranslation": {
+              "ar": "ي. باكيز",
+              "ru": "Ю. Бакиз"
+            }
+          }
+        },
+        "id": 127045550,
+        "time": 78,
+        "injury": false,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 13
+      },
+      {
+        "playerIn": {
+          "name": "Christopher Ibayi",
+          "firstName": "Christopher",
+          "lastName": "Ibayi",
+          "slug": "christopher-ibayi",
+          "shortName": "C. Ibayi",
+          "position": "F",
+          "jerseyNumber": "18",
+          "height": 187,
+          "userCount": 404,
+          "gender": "M",
+          "sofascoreId": "wgq-3wk",
+          "id": 789166,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 806025600,
+          "proposedMarketValueRaw": {
+            "value": 775000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كريستوفر إيبايي",
+              "ru": "Кристофер Ибая"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. إيبايي",
+              "ru": "К. Ибая"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Devin Titus",
+          "firstName": "Devin",
+          "lastName": "Titus",
+          "slug": "devin-titus",
+          "shortName": "D. Titus",
+          "position": "M",
+          "jerseyNumber": "7",
+          "height": 178,
+          "userCount": 272,
+          "gender": "M",
+          "sofascoreId": "iwm-y3k",
+          "id": 1096751,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 958608000,
+          "proposedMarketValueRaw": {
+            "value": 1100000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديفين تيتوس",
+              "ru": "Девин Титус"
+            },
+            "shortNameTranslation": {
+              "ar": "د. تيتوس",
+              "ru": "Д. Титус"
+            }
+          }
+        },
+        "id": 127045545,
+        "time": 76,
+        "injury": false,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 15
+      },
+      {
+        "player": {
+          "name": "Hamza Ait Allal",
+          "firstName": "",
+          "lastName": "",
+          "slug": "hamza-ait-allal",
+          "shortName": "H. A. Allal",
+          "position": "D",
+          "jerseyNumber": "22",
+          "height": 184,
+          "userCount": 272,
+          "gender": "M",
+          "sofascoreId": "vun-ifv",
+          "id": 1004523,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 978307200,
+          "proposedMarketValueRaw": {
+            "value": 530000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "حمزة آيت علال",
+              "ru": "Хамза Айт Аллал"
+            },
+            "shortNameTranslation": {
+              "ar": "ح. آيت علال",
+              "ru": "Х. Аллал"
+            }
+          }
+        },
+        "rescinded": false,
+        "id": 125733096,
+        "time": 68,
+        "isHome": true,
+        "incidentClass": "yellow",
+        "incidentType": "card",
+        "reversedPeriodTime": 23
+      },
+      {
+        "playerIn": {
+          "name": "Adam   Brika",
+          "firstName": "Adam  ",
+          "lastName": "Brika  ",
+          "slug": "adam-brika",
+          "shortName": "A. Brika",
+          "position": "M",
+          "jerseyNumber": "26",
+          "height": 175,
+          "userCount": 246,
+          "gender": "M",
+          "sofascoreId": "kvz-uy5",
+          "id": 2150417,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1143244800,
+          "proposedMarketValueRaw": {
+            "value": 565000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آدم بريكة",
+              "ru": "Адам Брика"
+            },
+            "shortNameTranslation": {
+              "ar": "آ. بريكة",
+              "ru": "А. Брика"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Achraf Harmach",
+          "slug": "achraf-harmach",
+          "shortName": "A. Harmach",
+          "position": "M",
+          "jerseyNumber": "8",
+          "height": 176,
+          "userCount": 271,
+          "gender": "M",
+          "sofascoreId": "ggy-qai",
+          "id": 919329,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 727142400,
+          "proposedMarketValueRaw": {
+            "value": 480000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أشرف هرماش",
+              "ru": "Ашраф Хармаш"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. هرماش",
+              "ru": "А. Хармаш"
+            }
+          }
+        },
+        "id": 127045532,
+        "time": 67,
+        "injury": false,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 24
+      },
+      {
+        "text": "HT",
+        "homeScore": 0,
+        "awayScore": 0,
+        "isLive": false,
+        "time": 45,
+        "addedTime": 999,
+        "timeSeconds": 2700,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 2700
+      },
+      {
+        "player": {
+          "name": "Bouchaib Arrassi",
+          "firstName": "Bouchaib Arrassi",
+          "slug": "bouchaib-arrassi",
+          "shortName": "B. Arrassi",
+          "position": "D",
+          "jerseyNumber": "5",
+          "height": 190,
+          "userCount": 566,
+          "gender": "M",
+          "sofascoreId": "him-rrj",
+          "id": 1168799,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 947116800,
+          "proposedMarketValueRaw": {
+            "value": 230000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوشعيب العراسي",
+              "ru": "Бушайб Арраси"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. العراسي",
+              "ru": "Б. Арраси"
+            }
+          }
+        },
+        "rescinded": false,
+        "id": 125733064,
+        "time": 45,
+        "addedTime": 1,
+        "isHome": false,
+        "incidentClass": "yellow",
+        "incidentType": "card",
+        "reversedPeriodTime": 1
+      },
+      {
+        "playerIn": {
+          "name": "Bouchaib Arrassi",
+          "firstName": "Bouchaib Arrassi",
+          "slug": "bouchaib-arrassi",
+          "shortName": "B. Arrassi",
+          "position": "D",
+          "jerseyNumber": "5",
+          "height": 190,
+          "userCount": 566,
+          "gender": "M",
+          "sofascoreId": "him-rrj",
+          "id": 1168799,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 947116800,
+          "proposedMarketValueRaw": {
+            "value": 230000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوشعيب العراسي",
+              "ru": "Бушайб Арраси"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. العراسي",
+              "ru": "Б. Арраси"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Youness Dahmani",
+          "slug": "youness-dahmani",
+          "shortName": "Y. Dahmani",
+          "position": "M",
+          "jerseyNumber": "7",
+          "height": 175,
+          "userCount": 546,
+          "gender": "M",
+          "sofascoreId": "ikv-3zy",
+          "id": 2033935,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 977097600,
+          "proposedMarketValueRaw": {
+            "value": 630000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يونس دحماني",
+              "ru": "Юнесс Дахмани"
+            },
+            "shortNameTranslation": {
+              "ar": "ي. دحماني",
+              "ru": "Ю. Дахмани"
+            }
+          }
+        },
+        "id": 127045459,
+        "time": 40,
+        "injury": false,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 6
+      },
+      {
+        "player": {
+          "name": "Othmane Chraibi",
+          "firstName": "Othmane Chraibi",
+          "slug": "othmane-chraibi",
+          "shortName": "O. Chraibi",
+          "position": "M",
+          "jerseyNumber": "19",
+          "height": 175,
+          "userCount": 840,
+          "gender": "M",
+          "sofascoreId": "5f2-mgs",
+          "id": 1213240,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1045785600,
+          "proposedMarketValueRaw": {
+            "value": 240000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "عثمان الشرايبي",
+              "ru": "Офман Шрайби"
+            },
+            "shortNameTranslation": {
+              "ar": "ع. الشرايبي",
+              "ru": "О. Шрайби"
+            }
+          }
+        },
+        "rescinded": false,
+        "id": 125732982,
+        "time": 38,
+        "isHome": false,
+        "incidentClass": "red",
+        "incidentType": "card",
+        "reversedPeriodTime": 8
+      },
+      {
+        "player": {
+          "name": "Othmane Chraibi",
+          "firstName": "Othmane Chraibi",
+          "slug": "othmane-chraibi",
+          "shortName": "O. Chraibi",
+          "position": "M",
+          "jerseyNumber": "19",
+          "height": 175,
+          "userCount": 840,
+          "gender": "M",
+          "sofascoreId": "5f2-mgs",
+          "id": 1213240,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1045785600,
+          "proposedMarketValueRaw": {
+            "value": 240000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "عثمان الشرايبي",
+              "ru": "Офман Шрайби"
+            },
+            "shortNameTranslation": {
+              "ar": "ع. الشرايبي",
+              "ru": "О. Шрайби"
+            }
+          }
+        },
+        "rescinded": false,
+        "id": 125732980,
+        "time": 34,
+        "isHome": false,
+        "incidentClass": "yellow",
+        "incidentType": "card",
+        "reversedPeriodTime": 12
+      },
+      {
+        "player": {
+          "name": "Michael Agbekpornu",
+          "firstName": "Michael",
+          "lastName": "Agbekpornu",
+          "slug": "michael-agbekpornu",
+          "shortName": "M. Agbekpornu",
+          "position": "M",
+          "jerseyNumber": "30",
+          "height": 183,
+          "userCount": 604,
+          "gender": "M",
+          "sofascoreId": "iwk-avx",
+          "id": 1005403,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 904521600,
+          "proposedMarketValueRaw": {
+            "value": 310000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مايكل أغبيكبورن",
+              "ru": "Майкл Агбекпорну"
+            },
+            "shortNameTranslation": {
+              "ar": "م. أغبيكبورن",
+              "ru": "М. Агбекпорну"
+            }
+          }
+        },
+        "rescinded": false,
+        "id": 125732934,
+        "time": 28,
+        "isHome": false,
+        "incidentClass": "yellow",
+        "incidentType": "card",
+        "reversedPeriodTime": 18
+      },
+      {
+        "player": {
+          "name": "Achraf Harmach",
+          "slug": "achraf-harmach",
+          "shortName": "A. Harmach",
+          "position": "M",
+          "jerseyNumber": "8",
+          "height": 176,
+          "userCount": 271,
+          "gender": "M",
+          "sofascoreId": "ggy-qai",
+          "id": 919329,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 727142400,
+          "proposedMarketValueRaw": {
+            "value": 480000,
+            "currency": "EUR"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أشرف هرماش",
+              "ru": "Ашраф Хармаш"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. هرماش",
+              "ru": "А. Хармаш"
+            }
+          }
+        },
+        "rescinded": false,
+        "id": 125732884,
+        "time": 8,
+        "isHome": true,
+        "incidentClass": "yellow",
+        "incidentType": "card",
+        "reversedPeriodTime": 38
+      }
+    ],
+    "home": {
+      "goalkeeperColor": {
+        "primary": "fafb00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      },
+      "playerColor": {
+        "primary": "ffdf00",
+        "number": "ffffff",
+        "outline": "ffdf00",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "goalkeeperColor": {
+        "primary": "663300",
+        "number": "000000",
+        "outline": "663300",
+        "fancyNumber": "ffffff"
+      },
+      "playerColor": {
+        "primary": "0066cc",
+        "number": "ffffff",
+        "outline": "0066cc",
+        "fancyNumber": "ffffff"
+      }
+    }
+  }
+}

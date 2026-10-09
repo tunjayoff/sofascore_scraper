@@ -1,0 +1,958 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/15894/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:14:39+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/flavio-cobolli-adrian-mannarino/UrgsFyjc#id:17218921",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "firstToServe": 2,
+        "homeTeamSeed": "WC",
+        "awayTeamSeed": "12",
+        "tournament": {
+          "name": "French Open, Paris, France, Doubles",
+          "slug": "french-open-paris-france-doubles",
+          "category": {
+            "name": "ATP",
+            "slug": "atp",
+            "sport": {
+              "name": "Tennis",
+              "slug": "tennis",
+              "id": 5
+            },
+            "priority": 8,
+            "country": {},
+            "id": 3,
+            "flag": "atp",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "এটিপি",
+                "hi": "डब्ल्यूटीए",
+                "ar": "رابطة محترفي التنس",
+                "ru": "ATP"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Roland Garros, Men Doubles",
+            "slug": "roland-garros-doubles",
+            "primaryColorHex": "#c85a19",
+            "secondaryColorHex": "#01503d",
+            "category": {
+              "name": "ATP",
+              "slug": "atp",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "priority": 8,
+              "country": {},
+              "id": 3,
+              "flag": "atp",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "এটিপি",
+                  "hi": "डब्ल्यूटीए",
+                  "ar": "رابطة محترفي التنس",
+                  "ru": "ATP"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1228,
+            "groundType": "Red clay",
+            "tennisPoints": 2000,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 2393,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "رولان غاروس، زوجي الرجال",
+                "az": "Roland Garros, Kişilər cütü",
+                "bn": "ফ্রেঞ্চ ওপেন, পুরুষ দ্বৈত",
+                "de": "French Open Herrendoppel",
+                "el": "Ρολάν Γκαρός, διπλό ανδρών",
+                "es": "Roland Garros, dobles masculino",
+                "es-la": "Roland Garros, Dobles varonil",
+                "fr": "Roland-Garros double messieurs",
+                "hi": "रोलैंड गैरोस, पुरुष डबल्स",
+                "hr": "Roland Garros, parovi (M)",
+                "hu": "Roland Garros, férfi páros",
+                "id": "Roland Garros, Ganda (Pa)",
+                "it": "Roland Garros (M), doppio",
+                "ja": "全仏オープン、男子ダブルス",
+                "ko": "프랑스 오픈 남자 복식",
+                "nl": "Roland Garros mannendubbelspel",
+                "no": "Roland Garros, menn dobbel",
+                "pl": "French Open, debel mężczyzn",
+                "pt": "Roland Garros duplas masculinas",
+                "pt-pt": "Roland Garros (M), pares",
+                "ro": "Roland Garros, dublu masculin",
+                "sr": "Ролан Гарос, парови (М)",
+                "sv": "Franska öppna, herrdubbel",
+                "th": "เฟรนช์โอเพน ชายคู่",
+                "tr": "Roland Garros, Çift Erkekler",
+                "vi": "Pháp Mở rộng, đôi nam",
+                "ru": "Ролан Гаррос, мужской парный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 185513,
+          "endTimestamp": 1780704000,
+          "startTimestamp": 1779753600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Открытый чемпионат Франции, Париж, Франция, парный разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "French Open Men Doubles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 85952
+        },
+        "roundInfo": {
+          "round": 32,
+          "name": "Round of 64",
+          "slug": "round-of-64"
+        },
+        "customId": "GiHbsBdwc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Mannarino A / Martin F",
+          "slug": "mannarino-a-martin-f",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 5,
+          "nameCode": "MAM",
+          "national": false,
+          "type": 2,
+          "country": {},
+          "id": 205431,
+          "subTeams": [
+            {
+              "name": "Adrian Mannarino",
+              "slug": "mannarino-adrian",
+              "shortName": "A. Mannarino",
+              "gender": "M",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "userCount": 8654,
+              "playerTeamInfo": {
+                "id": 51
+              },
+              "nameCode": "MAN",
+              "ranking": 83,
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "FR",
+                "alpha3": "FRA",
+                "name": "France",
+                "slug": "france"
+              },
+              "id": 15894,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أدريان مانارينوا",
+                  "ru": "Адриан Маннарино"
+                },
+                "shortNameTranslation": {
+                  "ar": "أ. مانارينوا",
+                  "bn": "এ. মান্নারিনো",
+                  "hi": "ए. मनारिनो",
+                  "ru": "А. Маннарино"
+                }
+              }
+            },
+            {
+              "name": "Fabrice Martin",
+              "slug": "martin-fabrice",
+              "shortName": "F. Martin",
+              "gender": "M",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "userCount": 75,
+              "playerTeamInfo": {
+                "id": 1005
+              },
+              "nameCode": "MAR",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "FR",
+                "alpha3": "FRA",
+                "name": "France",
+                "slug": "france"
+              },
+              "id": 15809,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فابريس مارتن",
+                  "bn": "ফ্যাব্রিস মার্টিন",
+                  "hi": "फैब्रिस मार्टिन",
+                  "ru": "Мартин, Фабрис"
+                },
+                "shortNameTranslation": {
+                  "ar": "ف. مارتن"
+                }
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مانارينوا أ / مارتن ف",
+              "ru": "Маннарино А / Мартин Ф"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Krajicek A / Mektic N",
+          "slug": "krajicek-a-mektic-n",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 249,
+          "nameCode": "KME",
+          "national": false,
+          "type": 2,
+          "country": {},
+          "id": 302676,
+          "subTeams": [
+            {
+              "name": "Austin Krajicek",
+              "slug": "krajicek-austin",
+              "shortName": "A. Krajicek",
+              "gender": "M",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "userCount": 250,
+              "playerTeamInfo": {
+                "id": 747
+              },
+              "nameCode": "KRA",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 25189,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أوستن كرايجيك",
+                  "bn": "অস্টিন ক্রাজিসেক",
+                  "hi": "ऑस्टिन क्राजिसेक",
+                  "ru": "Остин Крайчек"
+                },
+                "shortNameTranslation": {
+                  "ar": "أ. كرايجيك"
+                }
+              }
+            },
+            {
+              "name": "Nikola Mektic",
+              "slug": "mektic-nikola",
+              "shortName": "N. Mektic",
+              "gender": "M",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "userCount": 1397,
+              "playerTeamInfo": {
+                "id": 1068
+              },
+              "nameCode": "MEK",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "HR",
+                "alpha3": "HRV",
+                "name": "Croatia",
+                "slug": "croatia"
+              },
+              "id": 16608,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "نيكولا ميكتش",
+                  "ru": "Мектич, Никола"
+                },
+                "shortNameTranslation": {
+                  "ar": "ن. ميكتش",
+                  "bn": "এন. মেকটিক",
+                  "hi": "एन. मेक्तिच"
+                }
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كراييتشيك أ / ميكتش ن",
+              "ru": "Остин Крайчек / Мектич Н"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 4,
+          "period2": 4,
+          "point": "30",
+          "normaltime": 0
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 6,
+          "period2": 6,
+          "point": "40",
+          "normaltime": 2
+        },
+        "time": {
+          "period1": 2099,
+          "period2": 2533,
+          "currentPeriodStartTimestamp": 1779796136
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "time.period2"
+          ],
+          "changeTimestamp": 1779798724
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16223395,
+        "slug": "krajicek-mektic-mannarino-martin",
+        "startTimestamp": 1779793200,
+        "periods": {
+          "point": "Game",
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "groundType": "Red clay",
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "doubles"
+          ],
+          "level": [
+            "pro"
+          ],
+          "tournament": [
+            "grand-slam"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "firstToServe": 1,
+        "tournament": {
+          "name": "S-Hertogenbosch, Netherlands",
+          "slug": "s-hertogenbosch-netherlands",
+          "category": {
+            "name": "ATP",
+            "slug": "atp",
+            "sport": {
+              "name": "Tennis",
+              "slug": "tennis",
+              "id": 5
+            },
+            "priority": 8,
+            "country": {},
+            "id": 3,
+            "flag": "atp",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "এটিপি",
+                "hi": "डब्ल्यूटीए",
+                "ar": "رابطة محترفي التنس",
+                "ru": "ATP"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "'s-Hertogenbosch",
+            "slug": "s-hertogenbosch",
+            "primaryColorHex": "#92c462",
+            "secondaryColorHex": "#6c9d3c",
+            "category": {
+              "name": "ATP",
+              "slug": "atp",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "priority": 8,
+              "country": {},
+              "id": 3,
+              "flag": "atp",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "এটিপি",
+                  "hi": "डब्ल्यूटीए",
+                  "ar": "رابطة محترفي التنس",
+                  "ru": "ATP"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 2177,
+            "groundType": "Grass",
+            "tennisPoints": 250,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 2387,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس-هيرتوجنبوش",
+                "hi": "स-हर्टोजेनबोस",
+                "bn": "এস-হেরটোজেনবোস",
+                "ru": "Хертогенбос"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 187096,
+          "endTimestamp": 1781395200,
+          "startTimestamp": 1780876800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Лига S-Hertogenbosch, Нидерланды"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "ATP S-Hertogenbosch, Netherlands Men Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 81338
+        },
+        "roundInfo": {
+          "round": 6,
+          "name": "Round of 32",
+          "slug": "round-of-32",
+          "cupRoundType": 16
+        },
+        "customId": "Urgsbdmc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Gabriel Diallo",
+          "slug": "diallo-gabriel",
+          "shortName": "G. Diallo",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 7169,
+          "playerTeamInfo": {
+            "id": 4920
+          },
+          "nameCode": "DIA",
+          "ranking": 121,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "CA",
+            "alpha3": "CAN",
+            "name": "Canada",
+            "slug": "canada"
+          },
+          "id": 280151,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غابرييل ديالو",
+              "bn": "গ্যাব্রিয়েল ডায়ালো",
+              "hi": "गेब्रियल डियालो",
+              "ru": "Габриэль Диалло"
+            },
+            "shortNameTranslation": {
+              "ar": "غ. ديالو",
+              "ru": "Г. Диалло"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Adrian Mannarino",
+          "slug": "mannarino-adrian",
+          "shortName": "A. Mannarino",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 8654,
+          "playerTeamInfo": {
+            "id": 51
+          },
+          "nameCode": "MAN",
+          "ranking": 83,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 15894,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أدريان مانارينوا",
+              "ru": "Адриан Маннарино"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. مانارينوا",
+              "bn": "এ. মান্নারিনো",
+              "hi": "ए. मनारिनो",
+              "ru": "А. Маннарино"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 4,
+          "period2": 6,
+          "period3": 5,
+          "point": "0",
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 6,
+          "period2": 3,
+          "period3": 7,
+          "point": "40",
+          "normaltime": 2
+        },
+        "time": {
+          "period1": 2328,
+          "period2": 2743,
+          "period3": 3934,
+          "currentPeriodStartTimestamp": 1781003952
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "time.period3"
+          ],
+          "changeTimestamp": 1781007914
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16286310,
+        "slug": "gabriel-diallo-adrian-mannarino",
+        "startTimestamp": 1780998300,
+        "periods": {
+          "point": "Game",
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "groundType": "Grass",
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "singles"
+          ],
+          "level": [
+            "pro"
+          ],
+          "tournament": [
+            "p250"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "firstToServe": 1,
+        "awayTeamSeed": "4",
+        "tournament": {
+          "name": "S-Hertogenbosch, Netherlands",
+          "slug": "s-hertogenbosch-netherlands",
+          "category": {
+            "name": "ATP",
+            "slug": "atp",
+            "sport": {
+              "name": "Tennis",
+              "slug": "tennis",
+              "id": 5
+            },
+            "priority": 8,
+            "country": {},
+            "id": 3,
+            "flag": "atp",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "এটিপি",
+                "hi": "डब्ल्यूटीए",
+                "ar": "رابطة محترفي التنس",
+                "ru": "ATP"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "'s-Hertogenbosch",
+            "slug": "s-hertogenbosch",
+            "primaryColorHex": "#92c462",
+            "secondaryColorHex": "#6c9d3c",
+            "category": {
+              "name": "ATP",
+              "slug": "atp",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "priority": 8,
+              "country": {},
+              "id": 3,
+              "flag": "atp",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "এটিপি",
+                  "hi": "डब्ल्यूटीए",
+                  "ar": "رابطة محترفي التنس",
+                  "ru": "ATP"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 2177,
+            "groundType": "Grass",
+            "tennisPoints": 250,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 2387,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس-هيرتوجنبوش",
+                "hi": "स-हर्टोजेनबोस",
+                "bn": "এস-হেরটোজেনবোস",
+                "ru": "Хертогенбос"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 187096,
+          "endTimestamp": 1781395200,
+          "startTimestamp": 1780876800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Лига S-Hertogenbosch, Нидерланды"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "ATP S-Hertogenbosch, Netherlands Men Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 81338
+        },
+        "roundInfo": {
+          "round": 5,
+          "name": "Round of 16",
+          "slug": "round-of-16",
+          "cupRoundType": 8
+        },
+        "customId": "UrgsgxA",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Adrian Mannarino",
+          "slug": "mannarino-adrian",
+          "shortName": "A. Mannarino",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 8654,
+          "playerTeamInfo": {
+            "id": 51
+          },
+          "nameCode": "MAN",
+          "ranking": 83,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 15894,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أدريان مانارينوا",
+              "ru": "Адриан Маннарино"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. مانارينوا",
+              "bn": "এ. মান্নারিনো",
+              "hi": "ए. मनारिनो",
+              "ru": "А. Маннарино"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Arthur Rinderknech",
+          "slug": "rinderknech-arthur",
+          "shortName": "A. Rinderknech",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 10255,
+          "playerTeamInfo": {
+            "id": 626
+          },
+          "nameCode": "RIN",
+          "ranking": 33,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 63606,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آرثر ريندركنش",
+              "bn": "আর্থার রিন্ডারকনেচ",
+              "hi": "आर्थर रिंडरक्नेक",
+              "ru": "Артур Риндеркнеш"
+            },
+            "shortNameTranslation": {
+              "ar": "آ. ريندركنش",
+              "ru": "А. Риндеркнеш"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 7,
+          "period2": 3,
+          "period3": 6,
+          "period1TieBreak": 7,
+          "period2TieBreak": 0,
+          "point": "A",
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 6,
+          "period2": 6,
+          "period3": 3,
+          "period1TieBreak": 5,
+          "period2TieBreak": 0,
+          "point": "40",
+          "normaltime": 1
+        },
+        "time": {
+          "period1": 4380,
+          "period2": 2396,
+          "period3": 2845,
+          "currentPeriodStartTimestamp": 1781181625
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "time.period3"
+          ],
+          "changeTimestamp": 1781184523
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16272618,
+        "slug": "arthur-rinderknech-adrian-mannarino",
+        "startTimestamp": 1781174100,
+        "periods": {
+          "point": "Game",
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "groundType": "Grass",
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "singles"
+          ],
+          "level": [
+            "pro"
+          ],
+          "tournament": [
+            "p250"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

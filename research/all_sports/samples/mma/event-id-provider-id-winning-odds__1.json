@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17057712/provider/1/winning-odds",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T00:11:44+00:00",
+  "page": "https://www.sofascore.com/tr/mma/match/summer-onley-alivia-bierley/XFjjscjkk#id:17057712",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

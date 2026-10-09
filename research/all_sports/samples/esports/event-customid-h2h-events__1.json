@@ -1,0 +1,580 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/XMVcsJkXd/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:09:42+00:00",
+  "page": "https://www.sofascore.com/tr/esports/match/parivision-g2/XMVcsJkXd#id:17264020",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "ESL Pro League Group Stage",
+          "slug": "esl-pro-league-group-stage",
+          "category": {
+            "name": "Counter Strike",
+            "slug": "csgo",
+            "sport": {
+              "name": "E-sports",
+              "slug": "esports",
+              "id": 72
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1572,
+            "flag": "counter-strike",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاونتر سترايك",
+                "hi": "काउंटर स्ट्राइक",
+                "bn": "কাউন্টার স্ট্রাইক",
+                "ru": "Counter Strike"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "ESL Pro League",
+            "slug": "esl-pro-league",
+            "category": {
+              "name": "Counter Strike",
+              "slug": "csgo",
+              "sport": {
+                "name": "E-sports",
+                "slug": "esports",
+                "id": 72
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1572,
+              "flag": "counter-strike",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كاونتر سترايك",
+                  "hi": "काउंटर स्ट्राइक",
+                  "bn": "কাউন্টার স্ট্রাইক",
+                  "ru": "Counter Strike"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1608,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16925,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "ইএসএল প্রো লীগ",
+                "hi": "ईएसएल प्रो लीग",
+                "ar": "دوري ESL المحترفين",
+                "ru": "Лига Pro ESL"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group Stage",
+          "id": 131718,
+          "endTimestamp": 1791403800,
+          "startTimestamp": 1791018000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مرحلة المجموعة في دوري ESL المحترفين",
+              "ru": "ESL Pro League Group Stage"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Season 24 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 104235
+        },
+        "customId": "XMVcsJkXd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "G2",
+          "slug": "g2",
+          "shortName": "G2",
+          "gender": "M",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 4242,
+          "nameCode": "G2",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 364397,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "PARIVISION",
+          "slug": "parivision",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 1057,
+          "nameCode": "PRV",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 493034,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 7,
+          "period2": 13,
+          "period3": 11
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 13,
+          "period2": 9,
+          "period3": 13
+        },
+        "coverage": 92,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "awayScore.current",
+            "awayScore.display",
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1791299884
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17264020,
+        "bestOf": 3,
+        "eventType": "best_of",
+        "roundsInAHalf": 12,
+        "slug": "parivision-g2",
+        "startTimestamp": 1791288000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "PGL Group Stage",
+          "slug": "pgl-group-stage",
+          "category": {
+            "name": "Counter Strike",
+            "slug": "csgo",
+            "sport": {
+              "name": "E-sports",
+              "slug": "esports",
+              "id": 72
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1572,
+            "flag": "counter-strike",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاونتر سترايك",
+                "hi": "काउंटर स्ट्राइक",
+                "bn": "কাউন্টার স্ট্রাইক",
+                "ru": "Counter Strike"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "PGL",
+            "slug": "pgl",
+            "category": {
+              "name": "Counter Strike",
+              "slug": "csgo",
+              "sport": {
+                "name": "E-sports",
+                "slug": "esports",
+                "id": 72
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1572,
+              "flag": "counter-strike",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كاونتر سترايك",
+                  "hi": "काउंटर स्ट्राइक",
+                  "bn": "কাউন্টার স্ট্রাইক",
+                  "ru": "Counter Strike"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 696,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 24921,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "PGL",
+                "ru": "PGL"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group Stage",
+          "id": 145546,
+          "endTimestamp": 1779027480,
+          "startTimestamp": 1778302800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مرحلة المجموعات من PGL",
+              "ru": "Лига PGL, Групповой этап"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Astana 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 93726
+        },
+        "customId": "XMVcsJkXd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "PARIVISION",
+          "slug": "parivision",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 1057,
+          "nameCode": "PRV",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 493034,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "G2",
+          "slug": "g2",
+          "shortName": "G2",
+          "gender": "M",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 4242,
+          "nameCode": "G2",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 364397,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 0,
+          "period2": 1,
+          "period3": 0
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 1,
+          "period2": 0,
+          "period3": 1
+        },
+        "coverage": 91,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.period3",
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period3",
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1778596746
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16165845,
+        "bestOf": 3,
+        "eventType": "best_of",
+        "roundsInAHalf": 12,
+        "slug": "parivision-g2",
+        "startTimestamp": 1778584800,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "PGL Group Stage",
+          "slug": "pgl-group-stage",
+          "category": {
+            "name": "Counter Strike",
+            "slug": "csgo",
+            "sport": {
+              "name": "E-sports",
+              "slug": "esports",
+              "id": 72
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1572,
+            "flag": "counter-strike",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاونتر سترايك",
+                "hi": "काउंटर स्ट्राइक",
+                "bn": "কাউন্টার স্ট্রাইক",
+                "ru": "Counter Strike"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "PGL",
+            "slug": "pgl",
+            "category": {
+              "name": "Counter Strike",
+              "slug": "csgo",
+              "sport": {
+                "name": "E-sports",
+                "slug": "esports",
+                "id": 72
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1572,
+              "flag": "counter-strike",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كاونتر سترايك",
+                  "hi": "काउंटर स्ट्राइक",
+                  "bn": "কাউন্টার স্ট্রাইক",
+                  "ru": "Counter Strike"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 696,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 24921,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "PGL",
+                "ru": "PGL"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group Stage",
+          "id": 145546,
+          "endTimestamp": 1779027480,
+          "startTimestamp": 1778302800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مرحلة المجموعات من PGL",
+              "ru": "Лига PGL, Групповой этап"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Cluj-Napoca 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89501
+        },
+        "customId": "XMVcsJkXd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "G2",
+          "slug": "g2",
+          "shortName": "G2",
+          "gender": "M",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 4242,
+          "nameCode": "G2",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 364397,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "PARIVISION",
+          "slug": "parivision",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 1057,
+          "nameCode": "PRV",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 493034,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 1,
+          "period2": 0,
+          "period3": 0
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 0,
+          "period2": 1,
+          "period3": 1
+        },
+        "coverage": 91,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.period3",
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period3",
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1771161194
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15545049,
+        "bestOf": 3,
+        "eventType": "best_of",
+        "roundsInAHalf": 12,
+        "slug": "parivision-g2",
+        "startTimestamp": 1771151100,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,946 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16245051/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:56:37+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/southern-mississippi-golden-eagles-troy-trojans/IKbsVEt#id:16245051",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "Q4",
+        "homeScore": 55,
+        "awayScore": 34,
+        "isLive": false,
+        "time": 60,
+        "addedTime": 999,
+        "timeSeconds": 3600,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 900
+      },
+      {
+        "from": "ep",
+        "homeScore": 55,
+        "awayScore": 34,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364296710,
+        "time": 59,
+        "timeSeconds": 3489,
+        "isHome": true,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 111,
+        "periodTimeSeconds": 789
+      },
+      {
+        "from": "td",
+        "homeScore": 54,
+        "awayScore": 34,
+        "player": {
+          "name": "Gavin Griffin",
+          "firstName": "Gavin Griffin",
+          "slug": "gavin-griffin",
+          "shortName": "G. Griffin",
+          "userCount": 0,
+          "sofascoreId": "xdn-svi",
+          "id": 2736759,
+          "marketValueCurrency": "EUR"
+        },
+        "id": 364296689,
+        "time": 59,
+        "timeSeconds": 3489,
+        "isHome": true,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 111,
+        "periodTimeSeconds": 789
+      },
+      {
+        "from": "ep",
+        "homeScore": 48,
+        "awayScore": 34,
+        "player": {
+          "name": "Creighton Wilbanks",
+          "slug": "wilbanks-creighton",
+          "shortName": "C. Wilbanks",
+          "height": 178,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "u5a-73c",
+          "id": 2214099,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويلبانكس، كرايتون",
+              "ru": "Уилбэнкс, Крейгтон"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. ويلبانكس",
+              "ru": "К. Уилбэнкс"
+            }
+          }
+        },
+        "id": 364296331,
+        "time": 56,
+        "timeSeconds": 3322,
+        "isHome": false,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 5,
+        "reversedPeriodTimeSeconds": 278,
+        "periodTimeSeconds": 622
+      },
+      {
+        "from": "td",
+        "homeScore": 48,
+        "awayScore": 33,
+        "player": {
+          "name": "Jamarice Wilder",
+          "slug": "wilder-jamarice",
+          "shortName": "J. Wilder",
+          "position": "RB",
+          "jerseyNumber": "33",
+          "height": 175,
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "8rx-t5n",
+          "id": 2125120,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وايلدر، جاماريش",
+              "ru": "Уайлдер, Джамарис"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. وايلدر",
+              "ru": "Д. Уайлдер"
+            }
+          }
+        },
+        "id": 364296294,
+        "time": 56,
+        "timeSeconds": 3322,
+        "isHome": false,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 5,
+        "reversedPeriodTimeSeconds": 278,
+        "periodTimeSeconds": 622
+      },
+      {
+        "from": "ep",
+        "homeScore": 48,
+        "awayScore": 27,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364295886,
+        "time": 54,
+        "timeSeconds": 3190,
+        "isHome": true,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 7,
+        "reversedPeriodTimeSeconds": 410,
+        "periodTimeSeconds": 490
+      },
+      {
+        "from": "td",
+        "homeScore": 47,
+        "awayScore": 27,
+        "player": {
+          "name": "Jaheim Merriweather",
+          "slug": "merriweather-jaheim",
+          "shortName": "J. Merriweather",
+          "position": "ATH",
+          "height": 191,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "dqx-jdt",
+          "id": 1716342,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميري ويذر، جاهييم",
+              "ru": "Мерривезер, Джаим"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. ميري ويذر",
+              "ru": "Д. Мерривезер"
+            }
+          }
+        },
+        "id": 364295885,
+        "time": 54,
+        "timeSeconds": 3190,
+        "isHome": true,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 7,
+        "reversedPeriodTimeSeconds": 410,
+        "periodTimeSeconds": 490
+      },
+      {
+        "text": "Q3",
+        "homeScore": 41,
+        "awayScore": 27,
+        "isLive": false,
+        "time": 45,
+        "addedTime": 999,
+        "timeSeconds": 2700,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 900
+      },
+      {
+        "from": "ep",
+        "homeScore": 41,
+        "awayScore": 27,
+        "player": {
+          "name": "Creighton Wilbanks",
+          "slug": "wilbanks-creighton",
+          "shortName": "C. Wilbanks",
+          "height": 178,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "u5a-73c",
+          "id": 2214099,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويلبانكس، كرايتون",
+              "ru": "Уилбэнкс, Крейгтон"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. ويلبانكس",
+              "ru": "К. Уилбэнкс"
+            }
+          }
+        },
+        "id": 364295288,
+        "time": 44,
+        "timeSeconds": 2637,
+        "isHome": false,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 63,
+        "periodTimeSeconds": 837
+      },
+      {
+        "from": "td",
+        "homeScore": 41,
+        "awayScore": 26,
+        "player": {
+          "name": "Robert Briggs",
+          "slug": "briggs-robert",
+          "shortName": "R. Briggs",
+          "position": "RB",
+          "jerseyNumber": "14",
+          "height": 168,
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "tde-wpn",
+          "id": 1448410,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بريغز، روبرت",
+              "ru": "Бриггс, Роберт"
+            },
+            "shortNameTranslation": {
+              "ar": "ر. بريغز",
+              "ru": "Р. Бриггс"
+            }
+          }
+        },
+        "id": 364295276,
+        "time": 44,
+        "timeSeconds": 2637,
+        "isHome": false,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 63,
+        "periodTimeSeconds": 837
+      },
+      {
+        "from": "fg",
+        "homeScore": 41,
+        "awayScore": 20,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364295189,
+        "time": 43,
+        "timeSeconds": 2568,
+        "isHome": true,
+        "incidentClass": "fieldGoal",
+        "incidentType": "goal",
+        "reversedPeriodTime": 3,
+        "reversedPeriodTimeSeconds": 132,
+        "periodTimeSeconds": 768
+      },
+      {
+        "from": "ep",
+        "homeScore": 38,
+        "awayScore": 20,
+        "player": {
+          "name": "Creighton Wilbanks",
+          "slug": "wilbanks-creighton",
+          "shortName": "C. Wilbanks",
+          "height": 178,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "u5a-73c",
+          "id": 2214099,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويلبانكس، كرايتون",
+              "ru": "Уилбэнкс, Крейгтон"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. ويلبانكس",
+              "ru": "К. Уилбэнкс"
+            }
+          }
+        },
+        "id": 364294872,
+        "time": 40,
+        "timeSeconds": 2381,
+        "isHome": false,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 6,
+        "reversedPeriodTimeSeconds": 319,
+        "periodTimeSeconds": 581
+      },
+      {
+        "from": "td",
+        "homeScore": 38,
+        "awayScore": 19,
+        "player": {
+          "name": "Mario Sanders",
+          "slug": "sanders-mario",
+          "shortName": "M. Sanders",
+          "position": "WR",
+          "jerseyNumber": "1",
+          "height": 178,
+          "userCount": 2,
+          "gender": "M",
+          "sofascoreId": "td3-8gi",
+          "id": 1715866,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ساندرز، ماريو",
+              "ru": "Сандерс, Марио"
+            },
+            "shortNameTranslation": {
+              "ar": "م. ساندرز",
+              "ru": "М. Сандерс"
+            }
+          }
+        },
+        "id": 364294850,
+        "time": 40,
+        "timeSeconds": 2375,
+        "isHome": false,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 6,
+        "reversedPeriodTimeSeconds": 325,
+        "periodTimeSeconds": 575
+      },
+      {
+        "from": "ep",
+        "homeScore": 38,
+        "awayScore": 13,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364294223,
+        "time": 33,
+        "timeSeconds": 1967,
+        "isHome": true,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 13,
+        "reversedPeriodTimeSeconds": 733,
+        "periodTimeSeconds": 167
+      },
+      {
+        "from": "td",
+        "homeScore": 37,
+        "awayScore": 13,
+        "player": {
+          "name": "Jordan Lovett",
+          "slug": "lovett-jordan",
+          "shortName": "J. Lovett",
+          "position": "ATH",
+          "jerseyNumber": "15",
+          "height": 180,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "8j9-fp2",
+          "id": 1533344,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوفيت، جوردان",
+              "ru": "Ловетт, Джордан"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. لوفيت",
+              "ru": "Д. Ловетт"
+            }
+          }
+        },
+        "id": 364294156,
+        "time": 33,
+        "timeSeconds": 1967,
+        "isHome": true,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 13,
+        "reversedPeriodTimeSeconds": 733,
+        "periodTimeSeconds": 167
+      },
+      {
+        "from": "td",
+        "homeScore": 31,
+        "awayScore": 13,
+        "player": {
+          "name": "AJ Little",
+          "slug": "little-aj",
+          "shortName": "A. Little",
+          "position": "WR",
+          "height": 178,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "hib-9tk",
+          "id": 1543836,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ليتل، إيه. جي.",
+              "ru": "Литтл, Эй Джей"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. ليتل",
+              "ru": "Э. Литтл"
+            }
+          }
+        },
+        "id": 364293998,
+        "time": 31,
+        "timeSeconds": 1817,
+        "isHome": false,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 15,
+        "reversedPeriodTimeSeconds": 883,
+        "periodTimeSeconds": 17
+      },
+      {
+        "text": "Q2",
+        "homeScore": 31,
+        "awayScore": 7,
+        "isLive": false,
+        "time": 30,
+        "addedTime": 999,
+        "timeSeconds": 1800,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 900
+      },
+      {
+        "from": "ep",
+        "homeScore": 31,
+        "awayScore": 7,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364293408,
+        "time": 30,
+        "timeSeconds": 1784,
+        "isHome": true,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 16,
+        "periodTimeSeconds": 884
+      },
+      {
+        "from": "td",
+        "homeScore": 30,
+        "awayScore": 7,
+        "player": {
+          "name": "Nick Hampton",
+          "slug": "nick-hampton",
+          "shortName": "N. Hampton",
+          "position": "TE",
+          "height": 191,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "8ry-7vu",
+          "id": 2549664,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Ник Хэмптон"
+            },
+            "shortNameTranslation": {
+              "ru": "Н. Хэмптон"
+            }
+          }
+        },
+        "id": 364293393,
+        "time": 30,
+        "timeSeconds": 1779,
+        "isHome": true,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 21,
+        "periodTimeSeconds": 879
+      },
+      {
+        "from": "ep",
+        "homeScore": 24,
+        "awayScore": 7,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364292383,
+        "time": 24,
+        "timeSeconds": 1426,
+        "isHome": true,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 7,
+        "reversedPeriodTimeSeconds": 374,
+        "periodTimeSeconds": 526
+      },
+      {
+        "from": "td",
+        "homeScore": 23,
+        "awayScore": 7,
+        "player": {
+          "name": "Will Crowder",
+          "slug": "crowder-will",
+          "shortName": "W. Crowder",
+          "position": "QB",
+          "jerseyNumber": "9",
+          "height": 188,
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "iw7-psk",
+          "id": 1537819,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كراودر، ويل",
+              "ru": "Краудер, Уилл"
+            },
+            "shortNameTranslation": {
+              "ar": "و. كراودر",
+              "ru": "У. Краудер"
+            }
+          }
+        },
+        "id": 364292376,
+        "time": 24,
+        "timeSeconds": 1420,
+        "isHome": true,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 7,
+        "reversedPeriodTimeSeconds": 380,
+        "periodTimeSeconds": 520
+      },
+      {
+        "from": "ep",
+        "homeScore": 17,
+        "awayScore": 7,
+        "player": {
+          "name": "Creighton Wilbanks",
+          "slug": "wilbanks-creighton",
+          "shortName": "C. Wilbanks",
+          "height": 178,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "u5a-73c",
+          "id": 2214099,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويلبانكس، كرايتون",
+              "ru": "Уилбэнкс, Крейгтон"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. ويلبانكس",
+              "ru": "К. Уилбэнкс"
+            }
+          }
+        },
+        "id": 364292036,
+        "time": 18,
+        "timeSeconds": 1078,
+        "isHome": false,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 13,
+        "reversedPeriodTimeSeconds": 722,
+        "periodTimeSeconds": 178
+      },
+      {
+        "from": "td",
+        "homeScore": 17,
+        "awayScore": 6,
+        "player": {
+          "name": "Mario Sanders",
+          "slug": "sanders-mario",
+          "shortName": "M. Sanders",
+          "position": "WR",
+          "jerseyNumber": "1",
+          "height": 178,
+          "userCount": 2,
+          "gender": "M",
+          "sofascoreId": "td3-8gi",
+          "id": 1715866,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ساندرز، ماريو",
+              "ru": "Сандерс, Марио"
+            },
+            "shortNameTranslation": {
+              "ar": "م. ساندرز",
+              "ru": "М. Сандерс"
+            }
+          }
+        },
+        "id": 364292016,
+        "time": 18,
+        "timeSeconds": 1071,
+        "isHome": false,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 13,
+        "reversedPeriodTimeSeconds": 729,
+        "periodTimeSeconds": 171
+      },
+      {
+        "text": "Q1",
+        "homeScore": 17,
+        "awayScore": 0,
+        "isLive": false,
+        "time": 15,
+        "addedTime": 999,
+        "timeSeconds": 900,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 900
+      },
+      {
+        "from": "ep",
+        "homeScore": 17,
+        "awayScore": 0,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364291525,
+        "time": 14,
+        "timeSeconds": 787,
+        "isHome": true,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 113,
+        "periodTimeSeconds": 787
+      },
+      {
+        "from": "td",
+        "homeScore": 16,
+        "awayScore": 0,
+        "player": {
+          "name": "Will Crowder",
+          "slug": "crowder-will",
+          "shortName": "W. Crowder",
+          "position": "QB",
+          "jerseyNumber": "9",
+          "height": 188,
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "iw7-psk",
+          "id": 1537819,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كراودر، ويل",
+              "ru": "Краудер, Уилл"
+            },
+            "shortNameTranslation": {
+              "ar": "و. كراودر",
+              "ru": "У. Краудер"
+            }
+          }
+        },
+        "id": 364291516,
+        "time": 14,
+        "timeSeconds": 787,
+        "isHome": true,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 113,
+        "periodTimeSeconds": 787
+      },
+      {
+        "from": "fg",
+        "homeScore": 10,
+        "awayScore": 0,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364291341,
+        "time": 11,
+        "timeSeconds": 630,
+        "isHome": true,
+        "incidentClass": "fieldGoal",
+        "incidentType": "goal",
+        "reversedPeriodTime": 5,
+        "reversedPeriodTimeSeconds": 270,
+        "periodTimeSeconds": 630
+      },
+      {
+        "from": "ep",
+        "homeScore": 7,
+        "awayScore": 0,
+        "player": {
+          "name": "Ethan Head",
+          "firstName": "Ethan Head",
+          "slug": "ethan-head",
+          "shortName": "E. Head",
+          "position": "K",
+          "userCount": 0,
+          "sofascoreId": "5bb-ivd",
+          "id": 1921752,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيثان هيد",
+              "ru": "Итан Хед"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. هيد",
+              "ru": "И. Хед"
+            }
+          }
+        },
+        "id": 364290792,
+        "time": 5,
+        "timeSeconds": 289,
+        "isHome": true,
+        "incidentClass": "extraPoint",
+        "incidentType": "goal",
+        "reversedPeriodTime": 11,
+        "reversedPeriodTimeSeconds": 611,
+        "periodTimeSeconds": 289
+      },
+      {
+        "from": "td",
+        "homeScore": 6,
+        "awayScore": 0,
+        "player": {
+          "name": "Jordan Lovett",
+          "slug": "lovett-jordan",
+          "shortName": "J. Lovett",
+          "position": "ATH",
+          "jerseyNumber": "15",
+          "height": 180,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "8j9-fp2",
+          "id": 1533344,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوفيت، جوردان",
+              "ru": "Ловетт, Джордан"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. لوفيت",
+              "ru": "Д. Ловетт"
+            }
+          }
+        },
+        "id": 364290774,
+        "time": 5,
+        "timeSeconds": 289,
+        "isHome": true,
+        "incidentClass": "touchdown",
+        "incidentType": "goal",
+        "reversedPeriodTime": 11,
+        "reversedPeriodTimeSeconds": 611,
+        "periodTimeSeconds": 289
+      }
+    ]
+  }
+}

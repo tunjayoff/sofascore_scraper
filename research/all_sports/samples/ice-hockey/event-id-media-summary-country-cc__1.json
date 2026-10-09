@@ -1,0 +1,48 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16546907/media/summary/country/TR",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:57:43+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/minnesota-wild-buffalo-sabres/DybsOyb#id:16546907",
+  "cache_control": "max-age=30, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "highlightedItem": {
+      "type": "highlight",
+      "item": {
+        "title": "Sabres 3 - 2 Wild",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=yy6c8O9GpqI",
+        "thumbnailUrl": "https://i.ytimg.com/vi/yy6c8O9GpqI/hqdefault.jpg",
+        "mediaType": 6,
+        "doFollow": false,
+        "keyHighlight": true,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137658,
+        "createdAtTimestamp": 1791341352,
+        "sourceUrl": "https://www.youtube.com/watch?v=yy6c8O9GpqI"
+      }
+    },
+    "mediaItems": [
+      {
+        "type": "highlight",
+        "item": {
+          "title": "Sabres 3 - 2 Wild",
+          "subtitle": "Full Highlights",
+          "url": "https://www.youtube.com/watch?v=yy6c8O9GpqI",
+          "thumbnailUrl": "https://i.ytimg.com/vi/yy6c8O9GpqI/hqdefault.jpg",
+          "mediaType": 6,
+          "doFollow": false,
+          "keyHighlight": true,
+          "livestream": false,
+          "removeOnFinish": false,
+          "id": 8137658,
+          "createdAtTimestamp": 1791341352,
+          "sourceUrl": "https://www.youtube.com/watch?v=yy6c8O9GpqI"
+        }
+      }
+    ],
+    "itemsCount": 9
+  }
+}

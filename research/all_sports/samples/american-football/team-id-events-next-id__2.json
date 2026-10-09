@@ -1,0 +1,649 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/4388/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:33+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "NFL",
+          "slug": "nfl",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1370,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NFL",
+            "slug": "nfl",
+            "primaryColorHex": "#1e3c71",
+            "secondaryColorHex": "#db2526",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1370,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 58306,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 9464,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "hasDownDistance": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني لكرة القدم الأمريكية",
+                "bn": "এনএফএল",
+                "hi": "एनएफएल",
+                "ru": "НФЛ"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 5,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108947,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القدم الأمريكية (NFL)",
+              "bn": "এনএফএল",
+              "hi": "एनएफएल",
+              "ru": "НФЛ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NFL 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 94366
+        },
+        "roundInfo": {
+          "round": 5
+        },
+        "customId": "NMbsRMb",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Dallas Cowboys",
+          "slug": "dallas-cowboys",
+          "shortName": "Cowboys",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 22929,
+          "nameCode": "DAL",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 4392,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#212a52",
+            "secondary": "#c3c2c7",
+            "text": "#c3c2c7"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كاوبويز",
+              "ru": "ФК Даллас Ковбойс"
+            },
+            "shortNameTranslation": {
+              "ru": "Ковбойс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Tampa Bay Buccaneers",
+          "slug": "tampa-bay-buccaneers",
+          "shortName": "Buccaneers",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 12224,
+          "nameCode": "TB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 4388,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#d50a0a",
+            "secondary": "#34302b",
+            "text": "#34302b"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ت. بكنيرز",
+              "ru": "ФК Тампа-Бэй Бакканирс"
+            },
+            "shortNameTranslation": {
+              "ru": "Бакканирс"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16183708,
+        "slug": "dallas-cowboys-tampa-bay-buccaneers",
+        "startTimestamp": 1791504900,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "homeTeamSeasonHistoricalForm": {
+          "wins": 2,
+          "losses": 2
+        },
+        "awayTeamSeasonHistoricalForm": {
+          "wins": 0,
+          "losses": 4
+        }
+      },
+      {
+        "tournament": {
+          "name": "NFL",
+          "slug": "nfl",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1370,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NFL",
+            "slug": "nfl",
+            "primaryColorHex": "#1e3c71",
+            "secondaryColorHex": "#db2526",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1370,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 58306,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 9464,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "hasDownDistance": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني لكرة القدم الأمريكية",
+                "bn": "এনএফএল",
+                "hi": "एनएफएल",
+                "ru": "НФЛ"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 5,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108947,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القدم الأمريكية (NFL)",
+              "bn": "এনএফএল",
+              "hi": "एनएफएल",
+              "ru": "НФЛ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NFL 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 94366
+        },
+        "roundInfo": {
+          "round": 6
+        },
+        "customId": "VLbsNMb",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Tampa Bay Buccaneers",
+          "slug": "tampa-bay-buccaneers",
+          "shortName": "Buccaneers",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 12224,
+          "nameCode": "TB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 4388,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#d50a0a",
+            "secondary": "#34302b",
+            "text": "#34302b"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ت. بكنيرز",
+              "ru": "ФК Тампа-Бэй Бакканирс"
+            },
+            "shortNameTranslation": {
+              "ru": "Бакканирс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Pittsburgh Steelers",
+          "slug": "pittsburgh-steelers",
+          "shortName": "Steelers",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 18146,
+          "nameCode": "PIT",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 4345,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ffd700",
+            "secondary": "#191310",
+            "text": "#191310"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "پ. ستيلرز",
+              "ru": "Питтсбург Стилерс"
+            },
+            "shortNameTranslation": {
+              "ru": "Стилерс"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16183732,
+        "slug": "tampa-bay-buccaneers-pittsburgh-steelers",
+        "startTimestamp": 1792342800,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "NFL",
+          "slug": "nfl",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1370,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NFL",
+            "slug": "nfl",
+            "primaryColorHex": "#1e3c71",
+            "secondaryColorHex": "#db2526",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "American football",
+                "slug": "american-football",
+                "id": 63
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1370,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 58306,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 9464,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "hasDownDistance": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني لكرة القدم الأمريكية",
+                "bn": "এনএফএল",
+                "hi": "एनएफएल",
+                "ru": "НФЛ"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 5,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108947,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القدم الأمريكية (NFL)",
+              "bn": "এনএফএল",
+              "hi": "एनएफएल",
+              "ru": "НФЛ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NFL 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 94366
+        },
+        "roundInfo": {
+          "round": 7
+        },
+        "customId": "NMbspNb",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Carolina Panthers",
+          "slug": "carolina-panthers",
+          "shortName": "Panthers",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 6496,
+          "nameCode": "CAR",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 4415,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#3a84c5",
+            "secondary": "#07141e",
+            "text": "#07141e"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كارولاينا بانثرز",
+              "ru": "ФК Каролина Пэнтерс"
+            },
+            "shortNameTranslation": {
+              "ru": "Пэнтерс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Tampa Bay Buccaneers",
+          "slug": "tampa-bay-buccaneers",
+          "shortName": "Buccaneers",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 12224,
+          "nameCode": "TB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 4388,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#d50a0a",
+            "secondary": "#34302b",
+            "text": "#34302b"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ت. بكنيرز",
+              "ru": "ФК Тампа-Бэй Бакканирс"
+            },
+            "shortNameTranslation": {
+              "ru": "Бакканирс"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16183740,
+        "slug": "carolina-panthers-tampa-bay-buccaneers",
+        "startTimestamp": 1792947600,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 10
+      }
+    ],
+    "hasNextPage": false
+  }
+}

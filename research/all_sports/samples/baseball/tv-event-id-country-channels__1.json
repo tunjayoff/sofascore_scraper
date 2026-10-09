@@ -1,0 +1,16 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tv/event/17212666/country-channels",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:07:29+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/atlanta-braves-los-angeles-dodgers/Nxbsgyb#id:17199139",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "countryChannels": {
+      "US": [
+        527
+      ]
+    }
+  }
+}

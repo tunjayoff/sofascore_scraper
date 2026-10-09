@@ -1,0 +1,784 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/1082385/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:00:35+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/boca-juniors-secla-futsal/fkpdsKXHi#id:17256669",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Primera A de Futsal Femenino, Fase Regular",
+          "slug": "primera-a-de-futsal-femenino-fase-regular",
+          "category": {
+            "name": "Argentina",
+            "slug": "argentina",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AR",
+              "alpha3": "ARG",
+              "name": "Argentina",
+              "slug": "argentina"
+            },
+            "id": 1253,
+            "flag": "argentina",
+            "alpha2": "AR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الأرجنتين",
+                "ru": "Аргентина"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Primera A de Futsal Femenino",
+            "slug": "primera-a-de-futsal-femenino",
+            "category": {
+              "name": "Argentina",
+              "slug": "argentina",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AR",
+                "alpha3": "ARG",
+                "name": "Argentina",
+                "slug": "argentina"
+              },
+              "id": 1253,
+              "flag": "argentina",
+              "alpha2": "AR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الأرجنتين",
+                  "ru": "Аргентина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 54,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 25672,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدرجة الأولى لكرة الصالات للسيدات",
+                "ru": "Дивизион 1 по футзалу среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Fase Regular",
+          "id": 148577,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدرجة الأولى لكرة الصالات للسيدات، المرحلة العادية",
+              "ru": "Примера A по Футзалу Женский, Регулярная Фаза"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Primera A de Futsal Femenino 2026",
+          "year": "2026",
+          "editor": true,
+          "id": 91233
+        },
+        "roundInfo": {
+          "round": 28
+        },
+        "customId": "MwpdsKXHi",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Racing Club",
+          "slug": "racing-club",
+          "shortName": "Racing Club",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 72,
+          "nameCode": "RAC",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 413587,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "راسينغ كلوب",
+              "ru": "Рейсинг Клуб"
+            },
+            "shortNameTranslation": {
+              "ar": "راسينغ كلوب",
+              "ru": "Рейсинг Клуб"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Boca Juniors",
+          "slug": "boca-juniors",
+          "shortName": "Boca Juniors",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 230,
+          "nameCode": "BJU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 1082385,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            },
+            "shortNameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17282340,
+        "slug": "boca-juniors-racing-club",
+        "startTimestamp": 1791675000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      },
+      {
+        "tournament": {
+          "name": "Primera A de Futsal Femenino, Fase Regular",
+          "slug": "primera-a-de-futsal-femenino-fase-regular",
+          "category": {
+            "name": "Argentina",
+            "slug": "argentina",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AR",
+              "alpha3": "ARG",
+              "name": "Argentina",
+              "slug": "argentina"
+            },
+            "id": 1253,
+            "flag": "argentina",
+            "alpha2": "AR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الأرجنتين",
+                "ru": "Аргентина"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Primera A de Futsal Femenino",
+            "slug": "primera-a-de-futsal-femenino",
+            "category": {
+              "name": "Argentina",
+              "slug": "argentina",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AR",
+                "alpha3": "ARG",
+                "name": "Argentina",
+                "slug": "argentina"
+              },
+              "id": 1253,
+              "flag": "argentina",
+              "alpha2": "AR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الأرجنتين",
+                  "ru": "Аргентина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 54,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 25672,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدرجة الأولى لكرة الصالات للسيدات",
+                "ru": "Дивизион 1 по футзалу среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Fase Regular",
+          "id": 148577,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدرجة الأولى لكرة الصالات للسيدات، المرحلة العادية",
+              "ru": "Примера A по Футзалу Женский, Регулярная Фаза"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Primera A de Futsal Femenino 2026",
+          "year": "2026",
+          "editor": true,
+          "id": 91233
+        },
+        "roundInfo": {
+          "round": 25
+        },
+        "customId": "xiqdsKXHi",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Boca Juniors",
+          "slug": "boca-juniors",
+          "shortName": "Boca Juniors",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 230,
+          "nameCode": "BJU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 1082385,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            },
+            "shortNameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Ferro Carril Oeste",
+          "slug": "ferro-carril-oeste",
+          "shortName": "Ferro",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 23,
+          "nameCode": "FCO",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 415422,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فيرو كاريل أوست",
+              "ru": "Ферро Каррил Оэсте"
+            },
+            "shortNameTranslation": {
+              "ar": "فيرو كاريل أوست",
+              "ru": "Ферро Каррил Оэсте"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17116818,
+        "slug": "boca-juniors-ferro-carril-oeste",
+        "startTimestamp": 1791946814,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      },
+      {
+        "tournament": {
+          "name": "Primera A de Futsal Femenino, Fase Regular",
+          "slug": "primera-a-de-futsal-femenino-fase-regular",
+          "category": {
+            "name": "Argentina",
+            "slug": "argentina",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AR",
+              "alpha3": "ARG",
+              "name": "Argentina",
+              "slug": "argentina"
+            },
+            "id": 1253,
+            "flag": "argentina",
+            "alpha2": "AR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الأرجنتين",
+                "ru": "Аргентина"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Primera A de Futsal Femenino",
+            "slug": "primera-a-de-futsal-femenino",
+            "category": {
+              "name": "Argentina",
+              "slug": "argentina",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AR",
+                "alpha3": "ARG",
+                "name": "Argentina",
+                "slug": "argentina"
+              },
+              "id": 1253,
+              "flag": "argentina",
+              "alpha2": "AR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الأرجنتين",
+                  "ru": "Аргентина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 54,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 25672,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدرجة الأولى لكرة الصالات للسيدات",
+                "ru": "Дивизион 1 по футзалу среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Fase Regular",
+          "id": 148577,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدرجة الأولى لكرة الصالات للسيدات، المرحلة العادية",
+              "ru": "Примера A по Футзалу Женский, Регулярная Фаза"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Primera A de Futsal Femenino 2026",
+          "year": "2026",
+          "editor": true,
+          "id": 91233
+        },
+        "roundInfo": {
+          "round": 23
+        },
+        "customId": "KXHisCAQi",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "17 de Agosto Futsal",
+          "slug": "17-de-agosto-futsal",
+          "shortName": "17 de Agosto",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 10,
+          "nameCode": "1DA",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 1103777,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "17 دي أغوستو فوتسال",
+              "ru": "17 Августа Футзал"
+            },
+            "shortNameTranslation": {
+              "ar": "17 دي أغوستو فوتسال",
+              "ru": "17 Августа Футзал"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Boca Juniors",
+          "slug": "boca-juniors",
+          "shortName": "Boca Juniors",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 230,
+          "nameCode": "BJU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 1082385,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            },
+            "shortNameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17021000,
+        "slug": "17-de-agosto-futsal-boca-juniors",
+        "startTimestamp": 1792026000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      },
+      {
+        "tournament": {
+          "name": "Primera A de Futsal Femenino, Fase Regular",
+          "slug": "primera-a-de-futsal-femenino-fase-regular",
+          "category": {
+            "name": "Argentina",
+            "slug": "argentina",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AR",
+              "alpha3": "ARG",
+              "name": "Argentina",
+              "slug": "argentina"
+            },
+            "id": 1253,
+            "flag": "argentina",
+            "alpha2": "AR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الأرجنتين",
+                "ru": "Аргентина"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Primera A de Futsal Femenino",
+            "slug": "primera-a-de-futsal-femenino",
+            "category": {
+              "name": "Argentina",
+              "slug": "argentina",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AR",
+                "alpha3": "ARG",
+                "name": "Argentina",
+                "slug": "argentina"
+              },
+              "id": 1253,
+              "flag": "argentina",
+              "alpha2": "AR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الأرجنتين",
+                  "ru": "Аргентина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 54,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 25672,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدرجة الأولى لكرة الصالات للسيدات",
+                "ru": "Дивизион 1 по футзалу среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Fase Regular",
+          "id": 148577,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدرجة الأولى لكرة الصالات للسيدات، المرحلة العادية",
+              "ru": "Примера A по Футзалу Женский, Регулярная Фаза"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Primera A de Futsal Femenino 2026",
+          "year": "2026",
+          "editor": true,
+          "id": 91233
+        },
+        "roundInfo": {
+          "round": 24
+        },
+        "customId": "PyqdsKXHi",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Boca Juniors",
+          "slug": "boca-juniors",
+          "shortName": "Boca Juniors",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 230,
+          "nameCode": "BJU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 1082385,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            },
+            "shortNameTranslation": {
+              "ar": "بوكا جونيورز",
+              "ru": "Бока Хуниорс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "River Plate",
+          "slug": "river-plate",
+          "shortName": "River Plate",
+          "gender": "F",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 82,
+          "nameCode": "RPL",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 416190,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ريفر بلايت",
+              "ru": "Ривер Плейт"
+            },
+            "shortNameTranslation": {
+              "ar": "ريفر بلايت",
+              "ru": "Ривер Плейт"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17058543,
+        "slug": "boca-juniors-river-plate",
+        "startTimestamp": 1793242800,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      }
+    ],
+    "hasNextPage": false
+  }
+}

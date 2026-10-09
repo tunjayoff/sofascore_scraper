@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/103141/unique-tournament/23705/season/103515/goal-distributions",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T00:05:11+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/junsung-oh-karlsson/QmQsUyRd#id:17257062",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

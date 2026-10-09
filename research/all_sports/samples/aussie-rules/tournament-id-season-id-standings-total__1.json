@@ -1,0 +1,901 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/57591/season/95427/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:16:43+00:00",
+  "page": "https://www.sofascore.com/tr/aussie-rules/match/essendon-bombers-western-bulldogs/BbYbsHBDd#id:17236299",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 274722,
+        "type": "total",
+        "tournament": {
+          "name": "AFL, Women",
+          "slug": "afl-women",
+          "category": {
+            "name": "Australia",
+            "slug": "australia",
+            "sport": {
+              "name": "Aussie rules",
+              "slug": "aussie-rules",
+              "id": 13
+            },
+            "priority": 0,
+            "id": 87,
+            "flag": "australia",
+            "alpha2": "AU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أستراليا",
+                "ru": "Австралия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "AFL, Women",
+            "slug": "afl-women",
+            "primaryColorHex": "#f27b62",
+            "secondaryColorHex": "#ed4623",
+            "category": {
+              "name": "Australia",
+              "slug": "australia",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "priority": 0,
+              "id": 87,
+              "flag": "australia",
+              "alpha2": "AU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أستراليا",
+                  "ru": "Австралия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 409,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 10159,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+                "ru": "AFL среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 57591,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+              "ru": "AFL, Женщины"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "AFL Women 2026",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 2686,
+          "text": "If teams are tied on points, the number of \"points for\" breaks the tie"
+        },
+        "rows": [
+          {
+            "id": 2313287,
+            "team": {
+              "name": "North Melbourne",
+              "slug": "north-melbourne",
+              "shortName": "North Melbourne",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 157,
+              "nameCode": "NMK",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 307631,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "شمال ملبورن الكنغر",
+                  "ru": "Норт Мельбурн"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 8,
+            "wins": 7,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 507,
+            "scoresAgainst": 195,
+            "points": 28,
+            "scoreDiffFormatted": "+312"
+          },
+          {
+            "id": 2313286,
+            "team": {
+              "name": "Melbourne Demons",
+              "slug": "melbourne-demons",
+              "shortName": "Melbourne",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 95,
+              "nameCode": "MED",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245150,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "شياطين ملبورن",
+                  "ru": "Мельбурн"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 8,
+            "wins": 7,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 498,
+            "scoresAgainst": 263,
+            "points": 28,
+            "scoreDiffFormatted": "+235"
+          },
+          {
+            "id": 2313282,
+            "team": {
+              "name": "Geelong Cats",
+              "slug": "geelong-cats",
+              "shortName": "Geelong",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 78,
+              "nameCode": "GEE",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 307632,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "القطط جيلونغ",
+                  "ru": "Геелонг Кэтс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 3,
+            "matches": 8,
+            "wins": 7,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 557,
+            "scoresAgainst": 384,
+            "points": 28,
+            "scoreDiffFormatted": "+173"
+          },
+          {
+            "id": 2313283,
+            "team": {
+              "name": "Gold Coast Suns",
+              "slug": "gold-coast-suns",
+              "shortName": "Gold Coast",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 61,
+              "nameCode": "GCS",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 334440,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "غولد كوست صن",
+                  "ru": "Голд Кост Санс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 4,
+            "matches": 8,
+            "wins": 6,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 379,
+            "scoresAgainst": 253,
+            "points": 24,
+            "scoreDiffFormatted": "+126"
+          },
+          {
+            "id": 2313278,
+            "team": {
+              "name": "Carlton Blues",
+              "slug": "carlton-blues",
+              "shortName": "Carlton",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 115,
+              "nameCode": "CAR",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245028,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كارلتون بلو",
+                  "ru": "Карлтон"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 5,
+            "matches": 8,
+            "wins": 6,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 391,
+            "scoresAgainst": 270,
+            "points": 24,
+            "scoreDiffFormatted": "+121"
+          },
+          {
+            "id": 2313293,
+            "team": {
+              "name": "Western Bulldogs",
+              "slug": "western-bulldogs",
+              "shortName": "Bulldogs",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 67,
+              "nameCode": "WEB",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245076,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "غرب البلدغ",
+                  "ru": "Вестерн Бульдогс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 6,
+            "matches": 8,
+            "wins": 6,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 334,
+            "scoresAgainst": 275,
+            "points": 24,
+            "scoreDiffFormatted": "+59"
+          },
+          {
+            "id": 2313291,
+            "team": {
+              "name": "Sydney Swans",
+              "slug": "sydney-swans",
+              "shortName": "Sydney",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 122,
+              "nameCode": "SYD",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 446334,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سيدني سوانز",
+                  "ru": "Сидни Свонз"
+                },
+                "shortNameTranslation": {
+                  "ar": "سيدني",
+                  "ru": "Сидни"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 7,
+            "matches": 8,
+            "wins": 6,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 379,
+            "scoresAgainst": 347,
+            "points": 24,
+            "scoreDiffFormatted": "+32"
+          },
+          {
+            "id": 2313281,
+            "team": {
+              "name": "Fremantle Dockers",
+              "slug": "fremantle-dockers",
+              "shortName": "Fremantle",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 92,
+              "nameCode": "FRD",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245077,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أرصفة فريمانتل",
+                  "ru": "Фримантл Докерс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 8,
+            "matches": 8,
+            "wins": 4,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 326,
+            "scoresAgainst": 290,
+            "points": 16,
+            "scoreDiffFormatted": "+36"
+          },
+          {
+            "id": 2313285,
+            "team": {
+              "name": "Hawthorn Hawks",
+              "slug": "hawthorn-hawks",
+              "shortName": "Hawthorn",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 102,
+              "nameCode": "HAW",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 446333,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "هوذورن هوكس",
+                  "ru": "Хоторн Хокс"
+                },
+                "shortNameTranslation": {
+                  "ar": "هوذورن",
+                  "ru": "Хоторн"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 9,
+            "matches": 8,
+            "wins": 4,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 342,
+            "scoresAgainst": 359,
+            "points": 16,
+            "scoreDiffFormatted": "-17"
+          },
+          {
+            "id": 2313292,
+            "team": {
+              "name": "West Coast Eagles",
+              "slug": "west-coast-eagles",
+              "shortName": "West Coast",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 88,
+              "nameCode": "WES",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 334439,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "نسر الساحل الغربي",
+                  "ru": "Уэст Кост Иглс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 10,
+            "matches": 8,
+            "wins": 4,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 329,
+            "scoresAgainst": 392,
+            "points": 16,
+            "scoreDiffFormatted": "-63"
+          },
+          {
+            "id": 2313289,
+            "team": {
+              "name": "Richmond Tigers",
+              "slug": "richmond-tigers",
+              "shortName": "Richmond",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 96,
+              "nameCode": "RIC",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 334441,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "نمور ريتشموند",
+                  "ru": "Ричмонд Тайгерс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 11,
+            "matches": 8,
+            "wins": 4,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 323,
+            "scoresAgainst": 403,
+            "points": 16,
+            "scoreDiffFormatted": "-80"
+          },
+          {
+            "id": 2313276,
+            "team": {
+              "name": "Adelaide Crows",
+              "slug": "adelaide-crows",
+              "shortName": "Adelaide",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 173,
+              "nameCode": "ADE",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245069,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أديليد كروز",
+                  "ru": "Аделаида Кроус"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 12,
+            "matches": 8,
+            "wins": 3,
+            "losses": 5,
+            "draws": 0,
+            "scoresFor": 345,
+            "scoresAgainst": 376,
+            "points": 12,
+            "scoreDiffFormatted": "-31"
+          },
+          {
+            "id": 2313288,
+            "team": {
+              "name": "Port Adelaide Power",
+              "slug": "port-adelaide-power",
+              "shortName": "Port Adelaide",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 88,
+              "nameCode": "POR",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 446335,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "بورت أديلايد باور",
+                  "ru": "Порт Аделаида Пауэр"
+                },
+                "shortNameTranslation": {
+                  "ar": "بورت أديلايد",
+                  "ru": "Порт Аделаида"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 13,
+            "matches": 8,
+            "wins": 3,
+            "losses": 5,
+            "draws": 0,
+            "scoresFor": 275,
+            "scoresAgainst": 349,
+            "points": 12,
+            "scoreDiffFormatted": "-74"
+          },
+          {
+            "id": 2313277,
+            "team": {
+              "name": "Brisbane Lions",
+              "slug": "brisbane-lions",
+              "shortName": "Brisbane",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 188,
+              "nameCode": "BRI",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245151,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أسود بريسبان",
+                  "ru": "Брисбен Лайонс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 14,
+            "matches": 8,
+            "wins": 2,
+            "losses": 6,
+            "draws": 0,
+            "scoresFor": 320,
+            "scoresAgainst": 356,
+            "points": 8,
+            "scoreDiffFormatted": "-36"
+          },
+          {
+            "id": 2313284,
+            "team": {
+              "name": "GWS Giants",
+              "slug": "gws-giants",
+              "shortName": "Giants",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 77,
+              "nameCode": "GSG",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245070,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جي دبليو إس جاينتس",
+                  "ru": "Грейтер Вестерн Сидней"
+                },
+                "shortNameTranslation": {
+                  "ar": "جاينتس"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 15,
+            "matches": 8,
+            "wins": 1,
+            "losses": 7,
+            "draws": 0,
+            "scoresFor": 315,
+            "scoresAgainst": 441,
+            "points": 4,
+            "scoreDiffFormatted": "-126"
+          },
+          {
+            "id": 2313280,
+            "team": {
+              "name": "Essendon Bombers",
+              "slug": "essendon-bombers",
+              "shortName": "Essendon",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 77,
+              "nameCode": "ESS",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 446332,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيسندون بومبرز",
+                  "ru": "Эссендон Бомберс"
+                },
+                "shortNameTranslation": {
+                  "ar": "إيسندون",
+                  "ru": "Эссендон"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 16,
+            "matches": 8,
+            "wins": 1,
+            "losses": 7,
+            "draws": 0,
+            "scoresFor": 273,
+            "scoresAgainst": 440,
+            "points": 4,
+            "scoreDiffFormatted": "-167"
+          },
+          {
+            "id": 2313279,
+            "team": {
+              "name": "Collingwood Magpies",
+              "slug": "collingwood-magpies",
+              "shortName": "Collingwood",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 107,
+              "nameCode": "COL",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 245027,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كولينجوود ماجبيس",
+                  "ru": "Коллингвуд"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 17,
+            "matches": 8,
+            "wins": 1,
+            "losses": 7,
+            "draws": 0,
+            "scoresFor": 249,
+            "scoresAgainst": 437,
+            "points": 4,
+            "scoreDiffFormatted": "-188"
+          },
+          {
+            "id": 2313290,
+            "team": {
+              "name": "St Kilda Saints",
+              "slug": "st-kilda-saints",
+              "shortName": "St Kilda",
+              "gender": "F",
+              "sport": {
+                "name": "Aussie rules",
+                "slug": "aussie-rules",
+                "id": 13
+              },
+              "userCount": 76,
+              "nameCode": "KIL",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 334438,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سانت كيلدا سانتس",
+                  "ru": "Сент-Килда Сентс"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 18,
+            "matches": 8,
+            "wins": 0,
+            "losses": 8,
+            "draws": 0,
+            "scoresFor": 185,
+            "scoresAgainst": 497,
+            "points": 0,
+            "scoreDiffFormatted": "-312"
+          }
+        ],
+        "updatedAtTimestamp": 1791100794
+      }
+    ]
+  }
+}

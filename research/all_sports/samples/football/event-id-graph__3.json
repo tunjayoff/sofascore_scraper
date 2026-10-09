@@ -1,0 +1,385 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15534082/graph",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:03+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=10, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "graphPoints": [
+      {
+        "minute": 1,
+        "value": -2
+      },
+      {
+        "minute": 2,
+        "value": -3
+      },
+      {
+        "minute": 3,
+        "value": -13
+      },
+      {
+        "minute": 4,
+        "value": -10
+      },
+      {
+        "minute": 5,
+        "value": -8
+      },
+      {
+        "minute": 6,
+        "value": -16
+      },
+      {
+        "minute": 7,
+        "value": 17
+      },
+      {
+        "minute": 8,
+        "value": 1
+      },
+      {
+        "minute": 9,
+        "value": -10
+      },
+      {
+        "minute": 10,
+        "value": -4
+      },
+      {
+        "minute": 11,
+        "value": 2
+      },
+      {
+        "minute": 12,
+        "value": 2
+      },
+      {
+        "minute": 13,
+        "value": 32
+      },
+      {
+        "minute": 14,
+        "value": 18
+      },
+      {
+        "minute": 15,
+        "value": 52
+      },
+      {
+        "minute": 16,
+        "value": 31
+      },
+      {
+        "minute": 17,
+        "value": 11
+      },
+      {
+        "minute": 18,
+        "value": 56
+      },
+      {
+        "minute": 19,
+        "value": 30
+      },
+      {
+        "minute": 20,
+        "value": 4
+      },
+      {
+        "minute": 21,
+        "value": -4
+      },
+      {
+        "minute": 22,
+        "value": 40
+      },
+      {
+        "minute": 23,
+        "value": 48
+      },
+      {
+        "minute": 24,
+        "value": 34
+      },
+      {
+        "minute": 25,
+        "value": 18
+      },
+      {
+        "minute": 26,
+        "value": -15
+      },
+      {
+        "minute": 27,
+        "value": 10
+      },
+      {
+        "minute": 28,
+        "value": -8
+      },
+      {
+        "minute": 29,
+        "value": -17
+      },
+      {
+        "minute": 30,
+        "value": -19
+      },
+      {
+        "minute": 31,
+        "value": -19
+      },
+      {
+        "minute": 32,
+        "value": -44
+      },
+      {
+        "minute": 33,
+        "value": -35
+      },
+      {
+        "minute": 34,
+        "value": -59
+      },
+      {
+        "minute": 35,
+        "value": -42
+      },
+      {
+        "minute": 36,
+        "value": -23
+      },
+      {
+        "minute": 37,
+        "value": -23
+      },
+      {
+        "minute": 38,
+        "value": -15
+      },
+      {
+        "minute": 39,
+        "value": -36
+      },
+      {
+        "minute": 40,
+        "value": -27
+      },
+      {
+        "minute": 41,
+        "value": -23
+      },
+      {
+        "minute": 42,
+        "value": -43
+      },
+      {
+        "minute": 43,
+        "value": -11
+      },
+      {
+        "minute": 44,
+        "value": -11
+      },
+      {
+        "minute": 45,
+        "value": 22
+      },
+      {
+        "minute": 45.5,
+        "value": -46
+      },
+      {
+        "minute": 46,
+        "value": -6
+      },
+      {
+        "minute": 47,
+        "value": -28
+      },
+      {
+        "minute": 48,
+        "value": -23
+      },
+      {
+        "minute": 49,
+        "value": -20
+      },
+      {
+        "minute": 50,
+        "value": -18
+      },
+      {
+        "minute": 51,
+        "value": -38
+      },
+      {
+        "minute": 52,
+        "value": -28
+      },
+      {
+        "minute": 53,
+        "value": -29
+      },
+      {
+        "minute": 54,
+        "value": -58
+      },
+      {
+        "minute": 55,
+        "value": -41
+      },
+      {
+        "minute": 56,
+        "value": -30
+      },
+      {
+        "minute": 57,
+        "value": -25
+      },
+      {
+        "minute": 58,
+        "value": -49
+      },
+      {
+        "minute": 59,
+        "value": -67
+      },
+      {
+        "minute": 60,
+        "value": -50
+      },
+      {
+        "minute": 61,
+        "value": -40
+      },
+      {
+        "minute": 62,
+        "value": -49
+      },
+      {
+        "minute": 63,
+        "value": -36
+      },
+      {
+        "minute": 64,
+        "value": -27
+      },
+      {
+        "minute": 65,
+        "value": -62
+      },
+      {
+        "minute": 66,
+        "value": -37
+      },
+      {
+        "minute": 67,
+        "value": -29
+      },
+      {
+        "minute": 68,
+        "value": -6
+      },
+      {
+        "minute": 69,
+        "value": 12
+      },
+      {
+        "minute": 70,
+        "value": -19
+      },
+      {
+        "minute": 71,
+        "value": -13
+      },
+      {
+        "minute": 72,
+        "value": -11
+      },
+      {
+        "minute": 73,
+        "value": -16
+      },
+      {
+        "minute": 74,
+        "value": -17
+      },
+      {
+        "minute": 75,
+        "value": -16
+      },
+      {
+        "minute": 76,
+        "value": -7
+      },
+      {
+        "minute": 77,
+        "value": -15
+      },
+      {
+        "minute": 78,
+        "value": -17
+      },
+      {
+        "minute": 79,
+        "value": 31
+      },
+      {
+        "minute": 80,
+        "value": 5
+      },
+      {
+        "minute": 81,
+        "value": -22
+      },
+      {
+        "minute": 82,
+        "value": -28
+      },
+      {
+        "minute": 83,
+        "value": -24
+      },
+      {
+        "minute": 84,
+        "value": -35
+      },
+      {
+        "minute": 85,
+        "value": -37
+      },
+      {
+        "minute": 86,
+        "value": -32
+      },
+      {
+        "minute": 87,
+        "value": -42
+      },
+      {
+        "minute": 88,
+        "value": -25
+      },
+      {
+        "minute": 89,
+        "value": -39
+      },
+      {
+        "minute": 90,
+        "value": -23
+      },
+      {
+        "minute": 90.5,
+        "value": 4
+      }
+    ],
+    "periodTime": 45,
+    "overtimeLength": 15,
+    "periodCount": 2,
+    "overtimeCount": null
+  }
+}

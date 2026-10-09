@@ -1,0 +1,108 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17257382/odds/1/featured",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:55:58+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/aleksandar-kovacevic-matteo-berrettini/IfVsicAb#id:17257382",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "featured": {
+      "default": {
+        "sourceId": 202395677,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202395677,
+        "suspended": false,
+        "id": 437188305,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "2/1",
+            "fractionalValue": "163/100",
+            "sourceId": 146890172,
+            "name": "1",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "2/5",
+            "fractionalValue": "1/2",
+            "sourceId": 146890188,
+            "name": "2",
+            "winning": true,
+            "change": 1
+          }
+        ]
+      },
+      "asian": {
+        "sourceId": 202395677,
+        "structureType": 2,
+        "marketId": 12,
+        "marketName": "Total games won",
+        "choiceGroup": "24.5",
+        "isLive": false,
+        "fid": 202395677,
+        "suspended": false,
+        "id": 437231799,
+        "marketGroup": "Total sets/games",
+        "marketPeriod": "Extra time",
+        "choices": [
+          {
+            "initialFractionalValue": "5/6",
+            "fractionalValue": "5/6",
+            "sourceId": 146945591,
+            "name": "Over",
+            "winning": true,
+            "slipContent": "/?bs=202395677-146945591~5/6~10",
+            "change": 0
+          },
+          {
+            "initialFractionalValue": "5/6",
+            "fractionalValue": "5/6",
+            "sourceId": 146945580,
+            "name": "Under",
+            "winning": false,
+            "slipContent": "/?bs=202395677-146945580~5/6~10",
+            "change": 0
+          }
+        ]
+      },
+      "fullTime": {
+        "sourceId": 202395677,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202395677,
+        "suspended": false,
+        "id": 437188305,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "2/1",
+            "fractionalValue": "163/100",
+            "sourceId": 146890172,
+            "name": "1",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "2/5",
+            "fractionalValue": "1/2",
+            "sourceId": 146890188,
+            "name": "2",
+            "winning": true,
+            "change": 1
+          }
+        ]
+      }
+    },
+    "hasMoreOdds": true,
+    "liveStreamUrl": null
+  }
+}

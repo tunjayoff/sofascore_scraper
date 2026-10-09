@@ -1,0 +1,301 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17257062",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:04:49+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/junsung-oh-karlsson/QmQsUyRd#id:17257062",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "China Smash, MS",
+        "slug": "china-smash-2025-ms",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "priority": 11,
+          "country": {},
+          "id": 88,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "China Smash, MS",
+          "slug": "china-smash-ms",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 90,
+          "hasRounds": false,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 23705,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة الصين سماش، MS",
+              "ru": "China Smash, мужской разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 2,
+        "id": 164861,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تشاينا سماش 2025، فردي",
+            "ru": "Китайский Смеш 2025, мужской"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "China Smash, MS 2026",
+        "year": "2026",
+        "editor": false,
+        "id": 103515
+      },
+      "roundInfo": {
+        "round": 6,
+        "name": "Round of 32",
+        "slug": "round-of-32",
+        "cupRoundType": 16
+      },
+      "customId": "QmQsUyRd",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "venue": {
+        "city": {
+          "name": "Beijing",
+          "country": {
+            "alpha2": "CN",
+            "alpha3": "CHN",
+            "name": "China",
+            "slug": "china"
+          },
+          "id": 19159
+        },
+        "hidden": true,
+        "slug": "table-2",
+        "name": "Table 2",
+        "country": {
+          "alpha2": "CN",
+          "alpha3": "CHN",
+          "name": "China",
+          "slug": "china"
+        },
+        "id": 46457,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الطاولة 2",
+            "hi": "टेबल 2",
+            "bn": "টেবিল 2"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Table 2"
+        }
+      },
+      "homeTeam": {
+        "name": "Junsung Oh",
+        "slug": "oh-junsung",
+        "shortName": "Junsung Oh",
+        "gender": "M",
+        "sport": {
+          "name": "Table tennis",
+          "slug": "table-tennis",
+          "id": 20
+        },
+        "userCount": 112,
+        "playerTeamInfo": {
+          "id": 21367,
+          "underage": false
+        },
+        "nameCode": "JUN",
+        "disabled": false,
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "KR",
+          "alpha3": "KOR",
+          "name": "South Korea",
+          "slug": "south-korea"
+        },
+        "id": 481194,
+        "fullName": "Junsung Oh",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أوه، جونسونغ",
+            "bn": "ওহ, জুনসুং",
+            "hi": "ओएच, जंसुंग",
+            "ru": "Джунсунг ОХ."
+          },
+          "shortNameTranslation": {
+            "ru": "Д. ОХ."
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Karlsson K.",
+        "slug": "karlsson-kristian",
+        "gender": "M",
+        "sport": {
+          "name": "Table tennis",
+          "slug": "table-tennis",
+          "id": 20
+        },
+        "userCount": 343,
+        "playerTeamInfo": {
+          "id": 37263,
+          "underage": false
+        },
+        "nameCode": "KAR",
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "SE",
+          "alpha3": "SWE",
+          "name": "Sweden",
+          "slug": "sweden"
+        },
+        "id": 103141,
+        "fullName": "Karlsson K.",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كارلسون، كريستيان",
+            "bn": "কার্লসন, ক্রিস্টিয়ান",
+            "hi": "कार्लसन, क्रिस्टियन",
+            "ru": "Карлссон К."
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 3,
+        "display": 3,
+        "period1": 10,
+        "period2": 13,
+        "period3": 6,
+        "period4": 11,
+        "period5": 11,
+        "normaltime": 3
+      },
+      "awayScore": {
+        "current": 2,
+        "display": 2,
+        "period1": 12,
+        "period2": 11,
+        "period3": 11,
+        "period4": 9,
+        "period5": 8,
+        "normaltime": 2
+      },
+      "time": {
+        "currentPeriodStartTimestamp": 1791291179
+      },
+      "changes": {
+        "changes": [
+          "homeScore.period1",
+          "homeScore.period2",
+          "homeScore.period3",
+          "homeScore.period4",
+          "awayScore.period1",
+          "awayScore.period2",
+          "awayScore.period3",
+          "awayScore.period4"
+        ],
+        "changeTimestamp": 1791292149
+      },
+      "hasGlobalHighlights": true,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17257062,
+      "defaultPeriodCount": 5,
+      "slug": "junsung-oh-karlsson",
+      "currentPeriodStartTimestamp": 1791291179,
+      "startTimestamp": 1791288000,
+      "periods": {
+        "current": "Match",
+        "period1": "1st set",
+        "period2": "2nd set",
+        "period3": "3rd set",
+        "period4": "4th set",
+        "period5": "5th set",
+        "period6": "6th set",
+        "period7": "7th set"
+      },
+      "finalResultOnly": false,
+      "hasBet365LiveStream": true,
+      "bet365ExcludedCountryCodes": [
+        "AN",
+        "CU",
+        "IR",
+        "KP",
+        "SY",
+        "VE",
+        "GR",
+        "RU",
+        "CH",
+        "CA"
+      ],
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

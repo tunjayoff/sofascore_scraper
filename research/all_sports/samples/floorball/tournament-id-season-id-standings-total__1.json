@@ -1,0 +1,784 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/4840/season/100421/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:02:27+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/acema-sparta-praha-tatran-stresovice/ctkseRr#id:16779060",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 300303,
+        "type": "total",
+        "tournament": {
+          "name": "Extraliga",
+          "slug": "extraliga",
+          "category": {
+            "name": "Czech Republic",
+            "slug": "czech-republic",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "id": 394,
+            "flag": "czech-republic",
+            "alpha2": "CZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جمهورية التشيك",
+                "hi": "चेक गणराज्य",
+                "bn": "চেক প্রজাতন্ত্র",
+                "ru": "Чехия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Superliga",
+            "slug": "superliga",
+            "primaryColorHex": "#0c2e6a",
+            "secondaryColorHex": "#d31820",
+            "category": {
+              "name": "Czech Republic",
+              "slug": "czech-republic",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "id": 394,
+              "flag": "czech-republic",
+              "alpha2": "CZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جمهورية التشيك",
+                  "hi": "चेक गणराज्य",
+                  "bn": "চেক প্রজাতন্ত্র",
+                  "ru": "Чехия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 122,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 829,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "hi": "सुपरलिगा",
+                "bn": "সুপারলীগা",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 4840,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "एक्स्ट्रालिगा",
+              "ar": "الدوري الاضافي",
+              "bn": "এক্সট্রালীগা",
+              "ru": "Экстралига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "Superliga 26/27",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 2059,
+          "text": "In the event that two (or more) teams finish with an equal number of points, the following rules break the tie:\n1. Head-to-head games between the teams concerned\n1a. Points total\n1b. Goal difference\n1c. Goals scored\n2. Goal difference\n3. Goals scored"
+        },
+        "rows": [
+          {
+            "id": 2529298,
+            "team": {
+              "name": "Tatran Střešovice",
+              "slug": "tatran-stresovice",
+              "shortName": "Tatran",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 102,
+              "nameCode": "STR",
+              "national": false,
+              "type": 0,
+              "id": 25902,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تاتران ستريشوفيتس",
+                  "ru": "Татран Омлукс Стрешовице"
+                },
+                "shortNameTranslation": {
+                  "ar": "تاتران",
+                  "bn": "তাত্রান",
+                  "hi": "टाट्रान"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 5,
+            "wins": 5,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 46,
+            "scoresAgainst": 13,
+            "points": 15,
+            "scoreDiffFormatted": "+33"
+          },
+          {
+            "id": 2529248,
+            "team": {
+              "name": "HDT.CZ Florbal Vary Bohemians",
+              "slug": "fb-hurrican-karlovy-vary",
+              "shortName": "Karlovy Vary",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 12,
+              "nameCode": "HUR",
+              "national": false,
+              "type": 0,
+              "id": 448704,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إف بي هوريكاين كارلوفي فاري",
+                  "bn": "এফবি হারিকেন কার্লোভি ভ্যারি",
+                  "hi": "एफबी हरिकेन कार्लोवी वेरी",
+                  "ru": "ФБ Ураган Карловы Вары"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 5,
+            "wins": 4,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 49,
+            "scoresAgainst": 32,
+            "points": 12,
+            "scoreDiffFormatted": "+17"
+          },
+          {
+            "id": 2529237,
+            "team": {
+              "name": "Technology Mladá Boleslav",
+              "slug": "technology-mlada-boleslav",
+              "shortName": "Mladá Boleslav",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 130,
+              "nameCode": "FMB",
+              "national": false,
+              "type": 0,
+              "id": 44609,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تكنولوجيا ملادا بوليسلاف",
+                  "ru": "ФБК Сокол Млада Болеслав"
+                },
+                "shortNameTranslation": {
+                  "ar": "ملادا بوليسلاف",
+                  "bn": "ম্লাদা বোলেস্লাভ",
+                  "hi": "म्लादा बोलेस्लाव"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 3,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 39,
+            "scoresAgainst": 13,
+            "points": 11,
+            "scoreDiffFormatted": "+26"
+          },
+          {
+            "id": 2529192,
+            "team": {
+              "name": "1. SC TEMPISH Vítkovice",
+              "slug": "1-sc-tempish-vitkovice",
+              "shortName": "Vítkovice",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 125,
+              "nameCode": "VIT",
+              "national": false,
+              "type": 0,
+              "id": 37852,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "1. إس سي تيمبيش فيتكوفيتس",
+                  "ru": "1. СК ТЕМПИШ Витковице"
+                },
+                "shortNameTranslation": {
+                  "ar": "فيتكوفيتس",
+                  "bn": "ভিটকোভিস",
+                  "hi": "विटकोविस",
+                  "ru": "Витковице"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 4,
+            "matches": 5,
+            "wins": 4,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 31,
+            "scoresAgainst": 25,
+            "points": 11,
+            "scoreDiffFormatted": "+6"
+          },
+          {
+            "id": 2529229,
+            "team": {
+              "name": "FAT PIPE Florbal Chodov",
+              "slug": "fat-pipe-florbal-chodov",
+              "shortName": "Chodov",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 38,
+              "nameCode": "CHO",
+              "national": false,
+              "type": 0,
+              "id": 44614,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فات بايب فلوربال تشودوف",
+                  "ru": "Йм Ходов"
+                },
+                "shortNameTranslation": {
+                  "ar": "تشودوف",
+                  "bn": "চোদভ",
+                  "hi": "चोडोव"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 5,
+            "matches": 5,
+            "wins": 4,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 32,
+            "scoresAgainst": 30,
+            "points": 11,
+            "scoreDiffFormatted": "+2"
+          },
+          {
+            "id": 2529285,
+            "team": {
+              "name": "ACEMA Sparta Praha",
+              "slug": "acema-sparta-praha",
+              "shortName": "Sparta Praha",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 72,
+              "nameCode": "SPA",
+              "national": false,
+              "type": 0,
+              "id": 44604,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أسيما سبارتا براغ",
+                  "ru": "АК Спарта Прага"
+                },
+                "shortNameTranslation": {
+                  "ar": "سبارتا براغ",
+                  "bn": "স্পার্টা প্রাগ",
+                  "hi": "स्पार्टा प्राहा"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 6,
+            "matches": 5,
+            "wins": 3,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 37,
+            "scoresAgainst": 21,
+            "points": 10,
+            "scoreDiffFormatted": "+16"
+          },
+          {
+            "id": 2529273,
+            "team": {
+              "name": "Sokol Pardubice",
+              "slug": "sokol-pardubice",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 23,
+              "nameCode": "SOP",
+              "national": false,
+              "type": 0,
+              "id": 44611,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوكول باردوبيتسه",
+                  "bn": "সোকল পারদুবিস",
+                  "hi": "सोकोल पार्डुबिस",
+                  "ru": "Сокол Пардубице"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 7,
+            "matches": 5,
+            "wins": 3,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 28,
+            "scoresAgainst": 30,
+            "points": 9,
+            "scoreDiffFormatted": "-2"
+          },
+          {
+            "id": 2529213,
+            "team": {
+              "name": "FBC Liberec",
+              "slug": "fbc-liberec",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 35,
+              "nameCode": "FBC",
+              "national": false,
+              "type": 0,
+              "id": 44607,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إف بي سي ليبيريتس",
+                  "bn": "এফবিসি লিবারেক",
+                  "hi": "एफबीसी लिबेरेक",
+                  "ru": "ФБК Либерец"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 8,
+            "matches": 4,
+            "wins": 3,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 26,
+            "scoresAgainst": 25,
+            "points": 8,
+            "scoreDiffFormatted": "+1"
+          },
+          {
+            "id": 2529198,
+            "team": {
+              "name": "itelligence Bulldogs Brno",
+              "slug": "itelligence-bulldogs-brno",
+              "shortName": "Bulldogs Brno",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 16,
+              "nameCode": "BBR",
+              "national": false,
+              "type": 0,
+              "id": 44605,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيتيلجنس بولدوجز برنو",
+                  "ru": "Бульдогс Брно"
+                },
+                "shortNameTranslation": {
+                  "ar": "بولدوجز برنو",
+                  "bn": "বুলডগস ব্রনো",
+                  "hi": "बुलडॉग्स ब्रनो"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 9,
+            "matches": 5,
+            "wins": 2,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 29,
+            "scoresAgainst": 33,
+            "points": 5,
+            "scoreDiffFormatted": "-4"
+          },
+          {
+            "id": 2529207,
+            "team": {
+              "name": "FBC 4CLEAN Česká Lípa",
+              "slug": "fbc-4clean-ceska-lipa",
+              "shortName": "FBC Česká Lípa",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 27,
+              "nameCode": "CEL",
+              "national": false,
+              "type": 0,
+              "id": 252656,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إف بي سي 4 كلين تشيسكا ليبا",
+                  "ru": "ФБК 4КЛИН Ческа Липа"
+                },
+                "shortNameTranslation": {
+                  "ar": "إف بي سي تشيسكا ليبا",
+                  "bn": "এফবিসি 4চেস্কা লিপা",
+                  "hi": "एफबीसी चेस्का लीपा",
+                  "ru": "ФБК Ческа Липа"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 10,
+            "matches": 5,
+            "wins": 1,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 21,
+            "scoresAgainst": 35,
+            "points": 4,
+            "scoreDiffFormatted": "-14"
+          },
+          {
+            "id": 2529263,
+            "team": {
+              "name": "Kanonyri Kladno",
+              "slug": "kanonyri-kladno",
+              "shortName": "Kladno",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 13,
+              "nameCode": "FBC",
+              "national": false,
+              "type": 0,
+              "id": 44606,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كانونيوري كلادنو",
+                  "ru": "Канонири Кладно"
+                },
+                "shortNameTranslation": {
+                  "ar": "كلادنو",
+                  "bn": "ক্লদনো",
+                  "hi": "क्लाडनो",
+                  "ru": "Кладно"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 45,
+              "text": "Relegation Playoffs"
+            },
+            "position": 11,
+            "matches": 5,
+            "wins": 1,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 28,
+            "scoresAgainst": 42,
+            "points": 3,
+            "scoreDiffFormatted": "-14"
+          },
+          {
+            "id": 2529308,
+            "team": {
+              "name": "Florbal Ústí",
+              "slug": "florbal-usti",
+              "shortName": "Ústí",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 16,
+              "nameCode": "UNL",
+              "national": false,
+              "type": 0,
+              "id": 264972,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فلوربول أوستي",
+                  "ru": "Флорбал Устии"
+                },
+                "shortNameTranslation": {
+                  "ar": "أوستي",
+                  "ru": "Устии"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 45,
+              "text": "Relegation Playoffs"
+            },
+            "position": 12,
+            "matches": 5,
+            "wins": 0,
+            "losses": 5,
+            "draws": 0,
+            "scoresFor": 17,
+            "scoresAgainst": 46,
+            "points": 2,
+            "scoreDiffFormatted": "-29"
+          },
+          {
+            "id": 2529219,
+            "team": {
+              "name": "FBC Bystron Group Ostrava",
+              "slug": "fbc-bystron-group-ostrava",
+              "shortName": "FBC Ostrava",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 19,
+              "nameCode": "FBC",
+              "national": false,
+              "type": 0,
+              "id": 44608,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إف بي سي بيستران غروب أوسترافا",
+                  "ru": "ФБК Острава"
+                },
+                "shortNameTranslation": {
+                  "ar": "إف بي سي أوسترافا",
+                  "bn": "এফবিসি অস্ট্রাভা",
+                  "hi": "एफबीसी ओस्ट्रावा"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 45,
+              "text": "Relegation Playoffs"
+            },
+            "position": 13,
+            "matches": 5,
+            "wins": 0,
+            "losses": 5,
+            "draws": 0,
+            "scoresFor": 23,
+            "scoresAgainst": 47,
+            "points": 1,
+            "scoreDiffFormatted": "-24"
+          },
+          {
+            "id": 2529223,
+            "team": {
+              "name": "Fbs Hattrick Brno",
+              "slug": "fbs-hattrick-brno",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 17,
+              "nameCode": "FHB",
+              "national": false,
+              "type": 0,
+              "id": 68632,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إف بي إس هاتريك برنو",
+                  "bn": "এফবিএস হ্যাট্রিক ব্রনো",
+                  "hi": "एफबीएस हैटट्रिक ब्रनो",
+                  "ru": "ФБС Хаттрик Брно"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 45,
+              "text": "Relegation Playoffs"
+            },
+            "position": 14,
+            "matches": 5,
+            "wins": 0,
+            "losses": 5,
+            "draws": 0,
+            "scoresFor": 23,
+            "scoresAgainst": 37,
+            "points": 0,
+            "scoreDiffFormatted": "-14"
+          }
+        ],
+        "updatedAtTimestamp": 1791482491
+      }
+    ]
+  }
+}

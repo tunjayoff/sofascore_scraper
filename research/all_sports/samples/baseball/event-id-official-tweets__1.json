@@ -1,0 +1,368 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17212667/official-tweets",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:26:50+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/cleveland-guardians-chicago-white-sox/Uxbsayb#id:17212667",
+  "cache_control": "max-age=60, public, s-maxage=36000",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "tweets": [
+      {
+        "id": "2108351804454924659",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "From the pitch to a first pitch! ⚽️\n\nWelcome to Rate Field, Robert Lewandowski!",
+        "media": [
+          {
+            "id": "2108351270444568576",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108351270444568576/img/S50O7IM88sSZB2ID.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108351270444568576/vid/avc1/320x400/fLXTGu_CvjBuiH7A.mp4?tag=29"
+          },
+          {
+            "id": "2108351250831912960",
+            "imageUrl": "https://pbs.twimg.com/media/HUJeSseWMAA1YiU.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791505216,
+        "externalUrl": "https://x.com/whitesox/status/2108351804454924659"
+      },
+      {
+        "id": "2108340790082638207",
+        "account": {
+          "id": "52861612",
+          "name": "Cleveland Guardians",
+          "handle": "CleGuardians",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2100058129538961408/NiDAEcU-_normal.jpg"
+        },
+        "text": "@cavs @JoShowAdell Let's go!",
+        "media": [],
+        "createdAtTimestamp": 1791502590,
+        "externalUrl": "https://x.com/CleGuardians/status/2108340790082638207"
+      },
+      {
+        "id": "2108334286017290582",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "The #WhiteSox takeover of Chicago continues 😤",
+        "media": [
+          {
+            "id": "2108334224520417280",
+            "imageUrl": "https://pbs.twimg.com/media/HUJO29jWMAAwrRI.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108334224520417280/vid/avc1/320x400/zZfjzfzp3_wmfXm7.mp4?tag=16"
+          }
+        ],
+        "createdAtTimestamp": 1791501039,
+        "externalUrl": "https://x.com/whitesox/status/2108334286017290582"
+      },
+      {
+        "id": "2108330224320475180",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "Geared up for Game 4",
+        "media": [
+          {
+            "id": "2108330207102799872",
+            "imageUrl": "https://pbs.twimg.com/media/HUJLJyeWkAAOoB0.jpg"
+          },
+          {
+            "id": "2108330220197445632",
+            "imageUrl": "https://pbs.twimg.com/media/HUJLKjQXAAAAwAq.jpg"
+          },
+          {
+            "id": "2108330215931838464",
+            "imageUrl": "https://pbs.twimg.com/media/HUJLKTXXAAAr1iz.jpg"
+          },
+          {
+            "id": "2108330211842371584",
+            "imageUrl": "https://pbs.twimg.com/media/HUJLKEIWsAA_OFL.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791500071,
+        "externalUrl": "https://x.com/whitesox/status/2108330224320475180"
+      },
+      {
+        "id": "2108316506920538258",
+        "account": {
+          "id": "52861612",
+          "name": "Cleveland Guardians",
+          "handle": "CleGuardians",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2100058129538961408/NiDAEcU-_normal.jpg"
+        },
+        "text": "One game at a time.\n\n#GuardsBall | #StandGuard",
+        "media": [
+          {
+            "id": "2108313627358834688",
+            "imageUrl": "https://pbs.twimg.com/media/HUI8EuHWsAAn2mi.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791496800,
+        "externalUrl": "https://x.com/CleGuardians/status/2108316506920538258"
+      },
+      {
+        "id": "2108302294169121236",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "@NHLBlackhawks @NHL 👏👏",
+        "media": [],
+        "createdAtTimestamp": 1791493411,
+        "externalUrl": "https://x.com/whitesox/status/2108302294169121236"
+      },
+      {
+        "id": "2108301564628636053",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "Can't wait for this to happen in a couple hours",
+        "media": [
+          {
+            "id": "2108301474895679488",
+            "imageUrl": "https://pbs.twimg.com/media/HUIxGPbXoAA7S6I.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108301474895679488/vid/avc1/320x568/e7-DdTHR59-3v4VM.mp4?tag=16"
+          }
+        ],
+        "createdAtTimestamp": 1791493238,
+        "externalUrl": "https://x.com/whitesox/status/2108301564628636053"
+      },
+      {
+        "id": "2108293858123772137",
+        "account": {
+          "id": "52861612",
+          "name": "Cleveland Guardians",
+          "handle": "CleGuardians",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2100058129538961408/NiDAEcU-_normal.jpg"
+        },
+        "text": "Win and go home.\n\n#GuardsBall | #StandGuard",
+        "media": [
+          {
+            "id": "2108264055764828160",
+            "imageUrl": "https://pbs.twimg.com/media/HUIO_RiWQAA-1P_.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791491400,
+        "externalUrl": "https://x.com/CleGuardians/status/2108293858123772137"
+      },
+      {
+        "id": "2108286532331487287",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "Under the lights",
+        "media": [
+          {
+            "id": "2108285808255852544",
+            "imageUrl": "https://pbs.twimg.com/media/HUIixb4WYAAV9Mp.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791489654,
+        "externalUrl": "https://x.com/whitesox/status/2108286532331487287"
+      },
+      {
+        "id": "2108286310595346582",
+        "account": {
+          "id": "52861612",
+          "name": "Cleveland Guardians",
+          "handle": "CleGuardians",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2100058129538961408/NiDAEcU-_normal.jpg"
+        },
+        "text": "The goal is to go 1-0 today.\n\n#GuardsBall | #StandGuard",
+        "media": [
+          {
+            "id": "2108235191462383616",
+            "imageUrl": "https://pbs.twimg.com/media/HUH0vJoX0AA6Q3u.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791489601,
+        "externalUrl": "https://x.com/CleGuardians/status/2108286310595346582"
+      },
+      {
+        "id": "2108279207285387404",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "No surprise, Vargas loved the atmosphere 🎙️",
+        "media": [
+          {
+            "id": "2108279168228028416",
+            "imageUrl": "https://pbs.twimg.com/media/HUIcw-aXMAAADuA.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108279168228028416/vid/avc1/320x320/dyD4UajU94dZMLsq.mp4?tag=16"
+          }
+        ],
+        "createdAtTimestamp": 1791487907,
+        "externalUrl": "https://x.com/whitesox/status/2108279207285387404"
+      },
+      {
+        "id": "2108271574050574766",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "the best fans in baseball",
+        "media": [
+          {
+            "id": "2108271531679756289",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108271531679756289/img/4mZKW5bY5dd--JuP.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108271531679756289/vid/avc1/320x400/vjBMvfuSUSR8b2Tx.mp4?tag=29"
+          },
+          {
+            "id": "2108271531700764673",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108271531700764673/img/AouZciG7dh5DJh5z.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108271531700764673/vid/avc1/320x400/eRNu4Jtl1itnpJs3.mp4?tag=29"
+          },
+          {
+            "id": "2108271531683975168",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108271531683975168/img/SmTckcUUKp5A-w9_.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108271531683975168/vid/avc1/320x400/p2ixiZN_BXgwFaxZ.mp4?tag=29"
+          },
+          {
+            "id": "2108271531717496832",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108271531717496832/img/c2JkTWDuhiXkRP97.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108271531717496832/vid/avc1/320x400/MStqByIVw0gsrIVO.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791486087,
+        "externalUrl": "https://x.com/whitesox/status/2108271574050574766"
+      },
+      {
+        "id": "2108271213961437510",
+        "account": {
+          "id": "52861612",
+          "name": "Cleveland Guardians",
+          "handle": "CleGuardians",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2100058129538961408/NiDAEcU-_normal.jpg"
+        },
+        "text": "Rounding out our birthday festivities with Holdey who deserves a post all on his own. 🥳\n\n#GuardsBall | #StandGuard",
+        "media": [
+          {
+            "id": "2108261286291156992",
+            "imageUrl": "https://pbs.twimg.com/media/HUIMeEcXsAAcvie.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791486001,
+        "externalUrl": "https://x.com/CleGuardians/status/2108271213961437510"
+      },
+      {
+        "id": "2108256107663958239",
+        "account": {
+          "id": "52861612",
+          "name": "Cleveland Guardians",
+          "handle": "CleGuardians",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2100058129538961408/NiDAEcU-_normal.jpg"
+        },
+        "text": "The pitchers were pitching yesterday. 🤩\n\n#GuardsBall | #StandGuard",
+        "media": [
+          {
+            "id": "2108235191432998912",
+            "imageUrl": "https://pbs.twimg.com/media/HUH0vJhXcAAyVkR.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791482400,
+        "externalUrl": "https://x.com/CleGuardians/status/2108256107663958239"
+      },
+      {
+        "id": "2108252391120257396",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "Postseason baseball is better together",
+        "media": [
+          {
+            "id": "2108252351098130432",
+            "imageUrl": "https://pbs.twimg.com/media/HUIEYFyWwAAGLkU.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108252351098130432/vid/avc1/480x270/r-vz2VLljIL4fjPQ.mp4?tag=16"
+          }
+        ],
+        "createdAtTimestamp": 1791481514,
+        "externalUrl": "https://x.com/whitesox/status/2108252391120257396"
+      },
+      {
+        "id": "2108225918712041491",
+        "account": {
+          "id": "52861612",
+          "name": "Cleveland Guardians",
+          "handle": "CleGuardians",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2100058129538961408/NiDAEcU-_normal.jpg"
+        },
+        "text": "Happy birthday, fellas!\n\nLet's get a win tonight, eh?\n\n#GuardsBall | #StandGuard",
+        "media": [
+          {
+            "id": "2108173564566204416",
+            "imageUrl": "https://pbs.twimg.com/media/HUG8r_jWcAA2vvU.jpg"
+          },
+          {
+            "id": "2108173564566245376",
+            "imageUrl": "https://pbs.twimg.com/media/HUG8r_jXEAAEN-o.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791475202,
+        "externalUrl": "https://x.com/CleGuardians/status/2108225918712041491"
+      },
+      {
+        "id": "2108211020543975798",
+        "account": {
+          "id": "53197137",
+          "name": "Chicago White Sox",
+          "handle": "whitesox",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2104330603474624513/OPwSXs48_normal.jpg"
+        },
+        "text": "See you back at Rate Field tonight 😤",
+        "media": [
+          {
+            "id": "2108210984028413952",
+            "imageUrl": "https://pbs.twimg.com/media/HUHev5FXcAA1gc5.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108210984028413952/vid/avc1/320x320/YZnKbuBsqWcmkk34.mp4?tag=16"
+          }
+        ],
+        "createdAtTimestamp": 1791471650,
+        "externalUrl": "https://x.com/whitesox/status/2108211020543975798"
+      }
+    ]
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/1289621/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:21:25+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/sahin-united-mfc-baku-juniors/TYjjswRpk#id:17268351",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Summer Cup Baku, Group A",
+          "slug": "summer-cup-baku-group-a",
+          "category": {
+            "name": "Azerbaijan",
+            "slug": "azerbaijan",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AZ",
+              "alpha3": "AZE",
+              "name": "Azerbaijan",
+              "slug": "azerbaijan"
+            },
+            "id": 1808,
+            "flag": "azerbaijan",
+            "alpha2": "AZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أذربيجان",
+                "ru": "Азербайджан"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Summer Cup Baku",
+            "slug": "summer-cup-baku",
+            "category": {
+              "name": "Azerbaijan",
+              "slug": "azerbaijan",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AZ",
+                "alpha3": "AZE",
+                "name": "Azerbaijan",
+                "slug": "azerbaijan"
+              },
+              "id": 1808,
+              "flag": "azerbaijan",
+              "alpha2": "AZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أذربيجان",
+                  "ru": "Азербайджан"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 54,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 30841,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كأس الصيف باكو",
+                "ru": "Летний Кубок Баку"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group A",
+          "id": 168704,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس الصيف باكو، المجموعة ا",
+              "ru": "Кубок Лета Баку, Группа A"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Summer Cup Baku 2026",
+          "year": "2026",
+          "editor": true,
+          "id": 104839
+        },
+        "roundInfo": {
+          "round": 2
+        },
+        "customId": "TYjjswRpk",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Şahin United MFC",
+          "slug": "sahin-united-mfc",
+          "shortName": "Şahin United",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 1,
+          "nameCode": "AUM",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AZ",
+            "alpha3": "AZE",
+            "name": "Azerbaijan",
+            "slug": "azerbaijan"
+          },
+          "id": 1289621,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "Baku Juniors",
+          "slug": "baku-juniors",
+          "shortName": "Baku Juniors",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 32,
+          "nameCode": "BJU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AZ",
+            "alpha3": "AZE",
+            "name": "Azerbaijan",
+            "slug": "azerbaijan"
+          },
+          "id": 1149943,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "باكو جونيورز",
+              "ru": "Баку Юниорс"
+            },
+            "shortNameTranslation": {
+              "ar": "باكو جونيورز",
+              "ru": "Баку Юниорс"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17268351,
+        "slug": "sahin-united-mfc-baku-juniors",
+        "startTimestamp": 1791630000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      }
+    ],
+    "hasNextPage": false
+  }
+}

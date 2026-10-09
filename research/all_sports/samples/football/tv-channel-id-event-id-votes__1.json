@@ -1,0 +1,19 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tv/channel/1292/event/16363871/votes",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:12:48+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/arsenal-leeds-united/JsR#id:16363871",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "tvChannelVotes": {
+      "tvChannel": {
+        "name": "İdman Azərbaycan",
+        "id": 1292
+      },
+      "upvote": 18,
+      "downvote": 0
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15534082/media/summary/country/TR",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:53:59+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=30, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "highlightedItem": {
+      "type": "highlight",
+      "item": {
+        "title": "Croatia 1 - 2 Spain",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=ARPvC6C1psw",
+        "thumbnailUrl": "https://i.ytimg.com/vi/ARPvC6C1psw/hqdefault.jpg",
+        "mediaType": 6,
+        "doFollow": false,
+        "keyHighlight": true,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137629,
+        "createdAtTimestamp": 1791330620,
+        "sourceUrl": "https://www.youtube.com/watch?v=ARPvC6C1psw"
+      }
+    },
+    "mediaItems": [
+      {
+        "type": "highlight",
+        "item": {
+          "title": "Croatia 1 - 2 Spain",
+          "subtitle": "Full Highlights",
+          "url": "https://www.youtube.com/watch?v=ARPvC6C1psw",
+          "thumbnailUrl": "https://i.ytimg.com/vi/ARPvC6C1psw/hqdefault.jpg",
+          "mediaType": 6,
+          "doFollow": false,
+          "keyHighlight": true,
+          "livestream": false,
+          "removeOnFinish": false,
+          "id": 8137629,
+          "createdAtTimestamp": 1791330620,
+          "sourceUrl": "https://www.youtube.com/watch?v=ARPvC6C1psw"
+        }
+      },
+      {
+        "type": "newsArticle",
+        "item": {
+          "source": 10,
+          "description": "Spain came from behind to win 2-1 in Split, with Mikel Merino’s brace overturning Ivan Perišić’s opener. We break down xG, passing and key moments.",
+          "thumbnailUrl": "https://files.sofascore.com/news/2026/10/imago1084215745h-scaled.jpg",
+          "id": 688769,
+          "fieldTranslations": {
+            "headerTranslation": {
+              "it": "Croazia 1-2 Spagna: la doppietta di Merino sconvolge il Gruppo 3",
+              "pt": "Croácia 1-2 Espanha: dupla de Merino vira o Grupo 3 de cabeça para baixo",
+              "es": "Croacia 1-2 España: El doblete de Merino da un giro inesperado al Grupo 3",
+              "fr": "Croatie 1-2 Espagne : le doublé de Merino bouleverse le Groupe 3"
+            },
+            "descriptionTranslation": {
+              "it": "La Spagna rimonta e vince 2-1 a Spalato, con la doppietta di Mikel Merino che ribalta l’iniziale vantaggio di Ivan Perišić. Analizziamo xG, passaggi e momenti chiave.",
+              "pt": "A Espanha virou para 2-1 em Split com dois gols de Mikel Merino após Perišić abrir o placar. Analisamos xG, passes e os principais momentos.",
+              "es": "España remontó y ganó 2-1 en Split, gracias al doblete de Mikel Merino que neutralizó el tanto inicial de Ivan Perišić. Analizamos xG, pases y los momentos clave.",
+              "fr": "L’Espagne a renversé la situation pour s’imposer 2-1 à Split, grâce au doublé de Mikel Merino qui a répondu à l’ouverture du score d’Ivan Perišić. Nous analysons xG, les passes et les moments clé."
+            }
+          },
+          "header": "Croatia 1-2 Spain: Merino’s brace turns Group 3 on its head",
+          "externalUrl": "https://www.sofascore.com/web-view/news/croatia-1-2-spain-merinos-brace-turns-group-3-on-its-head/",
+          "contentId": "10:152189",
+          "publishedAtTimestamp": 1791319448,
+          "newsProvider": {
+            "id": 10,
+            "name": "Sofascore News"
+          }
+        }
+      }
+    ],
+    "itemsCount": 1
+  }
+}

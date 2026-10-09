@@ -1,0 +1,313 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16245051",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:56:43+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/southern-mississippi-golden-eagles-troy-trojans/IKbsVEt#id:16245051",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "Regular season",
+        "slug": "regular-season",
+        "category": {
+          "name": "USA",
+          "slug": "usa",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 1370,
+          "flag": "usa",
+          "alpha2": "US",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الولايات المتحدة",
+              "ru": "Соединенные Штаты"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "NCAA Division FBS",
+          "slug": "ncaa-division-fbs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "American football",
+              "slug": "american-football",
+              "id": 63
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1370,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 3518,
+          "hasRounds": false,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 32199,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": true,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "НCAA, Дивизион FBS"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "id": 203797
+      },
+      "season": {
+        "name": "NCAA 26/27",
+        "year": "26/27",
+        "editor": false,
+        "id": 93601
+      },
+      "roundInfo": {
+        "round": 1
+      },
+      "customId": "IKbsVEt",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "homeTeam": {
+        "name": "Troy Trojans",
+        "slug": "troy-trojans",
+        "shortName": "Troy",
+        "gender": "M",
+        "sport": {
+          "name": "American football",
+          "slug": "american-football",
+          "id": 63
+        },
+        "userCount": 240,
+        "venue": {
+          "city": {
+            "name": "Troy",
+            "state": "US-NY",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 33922
+          },
+          "hidden": true,
+          "slug": "veterans-memorial-stadium",
+          "name": "Veterans Memorial Stadium",
+          "capacity": 30402,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 35549,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب المحاربين القدامى التذكاري",
+              "hi": "वेटरन्स मेमोरियल स्टेडियम",
+              "bn": "ভেটেরান্স মেমোরিয়াল স্টেডিয়াম",
+              "ru": "Стадион Veterans Memorial"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Veterans Memorial Stadium",
+            "capacity": 30402
+          }
+        },
+        "nameCode": "TROY",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 4283,
+        "fullName": "Troy Trojans",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تروي",
+            "ru": "Трой Троянцы"
+          },
+          "shortNameTranslation": {
+            "ru": "Трой"
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Southern Mississippi Golden Eagles",
+        "slug": "southern-mississippi-golden-eagles",
+        "shortName": "Southern Miss",
+        "gender": "M",
+        "sport": {
+          "name": "American football",
+          "slug": "american-football",
+          "id": 63
+        },
+        "userCount": 183,
+        "venue": {
+          "city": {
+            "name": "Hattiesburg",
+            "state": "US-MS",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 27516
+          },
+          "hidden": true,
+          "slug": "m-m-roberts-stadium",
+          "name": "M.M. Roberts Stadium",
+          "capacity": 36000,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 37656,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب إم إم روبرتس",
+              "hi": "एम.एम. रॉबर्ट्स स्टेडियम",
+              "bn": "এম.এম. রবার্টস স্টেডিয়াম",
+              "ru": "Стадион M.M. Roberts"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "M.M. Roberts Stadium",
+            "capacity": 36000
+          }
+        },
+        "nameCode": "USM",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 46495,
+        "fullName": "Southern Mississippi Golden Eagles",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ساوذيرن",
+            "ru": "ФК Саутерн Миссисипи Голден Иглс"
+          },
+          "shortNameTranslation": {
+            "ru": "Саутерн Мисс"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 55,
+        "display": 55,
+        "period1": 17,
+        "period2": 14,
+        "period3": 10,
+        "period4": 14,
+        "normaltime": 55
+      },
+      "awayScore": {
+        "current": 34,
+        "display": 34,
+        "period1": 0,
+        "period2": 7,
+        "period3": 20,
+        "period4": 7,
+        "normaltime": 34
+      },
+      "time": {
+        "played": 3600,
+        "periodLength": 900,
+        "overtimeLength": 600,
+        "totalPeriodCount": 4
+      },
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "time.played",
+          "time.playedLastUpdated"
+        ],
+        "changeTimestamp": 1791344498
+      },
+      "hasGlobalHighlights": true,
+      "hasEventPlayerStatistics": true,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 16245051,
+      "defaultPeriodCount": 4,
+      "defaultPeriodLength": 15,
+      "defaultOvertimeLength": 10,
+      "slug": "southern-mississippi-golden-eagles-troy-trojans",
+      "startTimestamp": 1791331200,
+      "periods": {
+        "current": "Score",
+        "period1": "1st quarter",
+        "period2": "2nd quarter",
+        "period3": "3rd quarter",
+        "period4": "4th quarter",
+        "overtime": "Overtime"
+      },
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

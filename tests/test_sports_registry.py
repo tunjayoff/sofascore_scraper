@@ -232,10 +232,13 @@ def test_detail_slice_table():
         ("innings", "/event/{event_id}/innings"),
     ]
     assert all(s.default_enabled for s in sports.DETAIL_SLICES)
-    assert [s.key for s in sports.DETAIL_SLICES if not s.required] == ["esports_games"]
-    # spora göre: point_by_point teniste ve dartta tamlığa girer (FX-16; tests/test_sport_slices.py)
-    assert sports.get_slice("point_by_point").sports == frozenset({"tennis", "darts"})
+    assert all(s.required for s in sports.DETAIL_SLICES)  # esports_games da (FX-31)
+    # spora göre: point_by_point teniste, dartta (FX-16), badmintonda ve masa tenisinde (FX-31) tamlığa girer
+    # (tests/test_sport_slices.py); istatistik gibi maç başlayınca vardır
+    assert sports.get_slice("point_by_point").sports == frozenset({"tennis", "darts", "badminton", "table-tennis"})
     assert sports.get_slice("point_by_point").optional_in == frozenset()
+    assert sports.get_slice("point_by_point").phases == frozenset({"live", "post"})
+    assert sports.get_slice("statistics").phases == frozenset({"live", "post"})
     assert sports.get_slice("esports_games").sports == frozenset({"esports"})
     assert sports.get_slice("esports_games").phases == frozenset({"live", "post"})  # oyunlar maç başlayınca var
     assert sports.get_slice("innings").sports == frozenset({"cricket"})
@@ -272,7 +275,9 @@ TENNIS_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "point_by_po
     ("tennis", TENNIS_KEYS, ("statistics", "team_streaks", "h2h", "point_by_point")),
     ("handball", COMMON_KEYS, COMMON_KEYS),
     ("volleyball", COMMON_KEYS, COMMON_KEYS),
-    ("table-tennis", COMMON_KEYS, COMMON_KEYS),  # point_by_point teniste ve dartta
+    # FX-31: masa tenisinde kadro istenmez, pregame_form isteğe bağlı, point_by_point tamlığa girer
+    ("table-tennis", ("statistics", "team_streaks", "pregame_form", "h2h", "incidents", "point_by_point"),
+     ("statistics", "team_streaks", "h2h", "incidents", "point_by_point")),
     ("waterpolo", COMMON_KEYS, COMMON_KEYS),
     ("", COMMON_KEYS, COMMON_KEYS),
     (None, COMMON_KEYS, COMMON_KEYS),
@@ -315,8 +320,10 @@ def test_frontend_locales_have_every_sport_label(locale):
 def test_detail_slice_is_the_slice_spec_with_todays_defaults():
     assert sports.DetailSlice is sports.SliceSpec
     for s in sports.DETAIL_SLICES:
-        # e-sporun oyunları (SP-3) maç başlamadan yoktur: yalnızca canlı ve bitmiş evrede
-        phases = frozenset({"live", "post"}) if s.key in ("esports_games", "innings") else sports.ALL_PHASES
+        # e-sporun oyunları (SP-3), kriketin innings'i, istatistik ve sayı sayı akış (FX-31) maç başlamadan
+        # yoktur: yalnızca canlı ve bitmiş evrede
+        started = ("statistics", "point_by_point", "esports_games", "innings")
+        phases = frozenset({"live", "post"}) if s.key in started else sports.ALL_PHASES
         assert (s.owner, s.subs, s.phases, s.group, s.keep_history, s.max_age) == (
             "event", None, phases, "core", False, None)
         assert s.counts_for_completeness is s.required
@@ -353,7 +360,11 @@ def test_select_slices_without_a_selection_is_slices_for(sport):
     assert sports.select_slices("event", sport) == sports.slices_for(sport)
     assert sports.select_slices("event", sport, ["core"]) == sports.slices_for(sport)
     for phase in sports.PHASES:
-        assert sports.select_slices("event", sport, phase=phase) == sports.slices_for(sport)
+        assert sports.select_slices("event", sport, phase=phase) == tuple(
+            s for s in sports.slices_for(sport) if phase in s.phases)
+    # FX-31: istatistik yalnızca maç başlayınca
+    assert "statistics" not in {s.key for s in sports.select_slices("event", sport, phase="pre")}
+    assert "statistics" in {s.key for s in sports.select_slices("event", sport, phase="live")}
     assert sports.select_slices("season", sport) == ()
 
 

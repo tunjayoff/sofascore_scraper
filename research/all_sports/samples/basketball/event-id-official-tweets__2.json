@@ -1,0 +1,85 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16832233/official-tweets",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:55:17+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/brooklyn-nets-charlotte-hornets/FtbsLtb#id:16832233",
+  "cache_control": "max-age=60, public, s-maxage=36000",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "tweets": [
+      {
+        "id": "2107661495441994179",
+        "account": {
+          "id": "18552281",
+          "name": "Brooklyn Nets",
+          "handle": "BrooklynNets",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2074194755194388480/VylaJpB0_normal.jpg"
+        },
+        "text": "@gelohuer shoutout NT 💪",
+        "media": [
+          {
+            "id": "2107661398708768768",
+            "imageUrl": "https://pbs.twimg.com/tweet_video_thumb/HT_q4BDW0AATLNc.jpg",
+            "videoUrl": "https://video.twimg.com/tweet_video/HT_q4BDW0AATLNc.mp4"
+          }
+        ],
+        "createdAtTimestamp": 1791340633,
+        "externalUrl": "https://x.com/BrooklynNets/status/2107661495441994179"
+      },
+      {
+        "id": "2107651370920644801",
+        "account": {
+          "id": "18552281",
+          "name": "Brooklyn Nets",
+          "handle": "BrooklynNets",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2074194755194388480/VylaJpB0_normal.jpg"
+        },
+        "text": "see y'all thursday at @barclayscenter!",
+        "media": [
+          {
+            "id": "2107647161466748928",
+            "imageUrl": "https://pbs.twimg.com/media/HT_d7TMWAAA3dSy.jpg"
+          },
+          {
+            "id": "2107647759503200256",
+            "imageUrl": "https://pbs.twimg.com/media/HT_eeHDWEAAPCh_.jpg"
+          },
+          {
+            "id": "2107647161483616256",
+            "imageUrl": "https://pbs.twimg.com/media/HT_d7TQXYAAvG_f.jpg"
+          },
+          {
+            "__trimmed__": 1
+          }
+        ],
+        "createdAtTimestamp": 1791338219,
+        "externalUrl": "https://x.com/BrooklynNets/status/2107651370920644801"
+      },
+      {
+        "id": "2107645889590280493",
+        "account": {
+          "id": "21308488",
+          "name": "Charlotte Hornets",
+          "handle": "hornets",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2045503866339504128/0E3kuQ6M_normal.jpg"
+        },
+        "text": "Back at it on Sunday. — @BankofAmerica",
+        "media": [
+          {
+            "id": "2107645885974728705",
+            "imageUrl": "https://pbs.twimg.com/media/HT_cxDnWUAEUXgw.jpg"
+          }
+        ],
+        "createdAtTimestamp": 1791336912,
+        "externalUrl": "https://x.com/hornets/status/2107645889590280493"
+      },
+      {
+        "__trimmed__": 36
+      }
+    ]
+  }
+}

@@ -1,0 +1,870 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15534082/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:01+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Dominik Livaković",
+            "slug": "dominik-livakovic",
+            "shortName": "D. Livaković",
+            "position": "G",
+            "jerseyNumber": "25",
+            "height": 186,
+            "userCount": 43392,
+            "gender": "M",
+            "sofascoreId": "uba-dcn",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 190419,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 789609600,
+            "proposedMarketValueRaw": {
+              "value": 4099999,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دومينيك ليفاكوفيتش",
+                "bn": "ডমিনিক লিভাকোভিচ",
+                "hi": "डोमिनिक लिवाकोविच",
+                "ru": "Доминик Ливакович"
+              },
+              "shortNameTranslation": {
+                "ar": "د. ليفاكوفيتش",
+                "bn": "ডি. লিভাকোভিচ",
+                "hi": "डी. लिवाकोविच",
+                "ru": "Д. Ливакович"
+              }
+            }
+          },
+          "teamId": 2817,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "position": "G",
+          "substitute": false,
+          "statistics": {
+            "totalPass": 30,
+            "accuratePass": 11,
+            "totalLongBalls": 22,
+            "accurateLongBalls": 4,
+            "goalAssist": 0,
+            "accurateOwnHalfPasses": 9,
+            "totalOwnHalfPasses": 16,
+            "accurateOppositionHalfPasses": 2,
+            "totalOppositionHalfPasses": 14,
+            "totalClearance": 1,
+            "ballRecovery": 10,
+            "goodHighClaim": 3,
+            "savedShotsFromInsideTheBox": 1,
+            "saves": 1,
+            "punches": 1,
+            "totalKeeperSweeper": 1,
+            "accurateKeeperSweeper": 1,
+            "minutesPlayed": 90,
+            "touches": 40,
+            "rating": 5.7,
+            "possessionLostCtrl": 19,
+            "expectedAssists": 0.00015548,
+            "totalBallCarriesDistance": 22.298666867352,
+            "ballCarriesCount": 4,
+            "totalProgression": -6.5190219535012,
+            "progressiveBallCarriesCount": 0,
+            "keeperSaveValue": 0.0247,
+            "ratingVersions": {
+              "original": 5.7,
+              "alternative": 6.3
+            },
+            "totalShots": 0,
+            "goalsPrevented": -0.5294,
+            "passValueNormalized": -0.01,
+            "dribbleValueNormalized": -0.01,
+            "defensiveValueNormalized": -0.19,
+            "goalkeeperValueNormalized": -0.61,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Josip Stanišić",
+            "firstName": "",
+            "lastName": "",
+            "slug": "josip-stanisic",
+            "shortName": "J. Stanišić",
+            "position": "D",
+            "jerseyNumber": "44",
+            "height": 186,
+            "userCount": 12797,
+            "gender": "M",
+            "sofascoreId": "iw8-rwx",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 927407,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 954633600,
+            "proposedMarketValueRaw": {
+              "value": 39000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "يوسيب ستانيشيتش",
+                "bn": "জোসিপ স্ট্যানিসিচ",
+                "hi": "जोसिप स्टैनिसिक",
+                "ru": "Йосип Станишич"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. ستانيشيتش",
+                "bn": "জে. স্ট্যানিসিচ",
+                "hi": "जे. स्टैनिसिक",
+                "ru": "Й. Станишич"
+              }
+            }
+          },
+          "teamId": 2672,
+          "shirtNumber": 2,
+          "jerseyNumber": "2",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "totalPass": 27,
+            "accuratePass": 26,
+            "totalLongBalls": 2,
+            "accurateLongBalls": 1,
+            "goalAssist": 0,
+            "accurateOwnHalfPasses": 17,
+            "totalOwnHalfPasses": 18,
+            "accurateOppositionHalfPasses": 9,
+            "totalOppositionHalfPasses": 9,
+            "duelWon": 1,
+            "bigChanceMissed": 1,
+            "onTargetScoringAttempt": 1,
+            "totalClearance": 4,
+            "interceptionWon": 1,
+            "ballRecovery": 3,
+            "unsuccessfulTouch": 3,
+            "wasFouled": 1,
+            "minutesPlayed": 90,
+            "touches": 41,
+            "rating": 6.9,
+            "possessionLostCtrl": 5,
+            "expectedGoals": 0.0551,
+            "expectedGoalsOnTarget": 0.176,
+            "expectedAssists": 0.0337381,
+            "totalBallCarriesDistance": 41.764878675331,
+            "ballCarriesCount": 6,
+            "totalProgression": 2.3687901980789,
+            "progressiveBallCarriesCount": 0,
+            "keyPass": 1,
+            "ratingVersions": {
+              "original": 6.9,
+              "alternative": 6.7
+            },
+            "totalShots": 1,
+            "shotValueNormalized": 0.08,
+            "passValueNormalized": 0.15,
+            "dribbleValueNormalized": 0,
+            "defensiveValueNormalized": -0.02,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Josip Šutalo",
+            "firstName": "",
+            "lastName": "",
+            "slug": "josip-sutalo",
+            "shortName": "J. Šutalo",
+            "position": "D",
+            "jerseyNumber": "37",
+            "height": 190,
+            "userCount": 4994,
+            "gender": "M",
+            "sofascoreId": "g88-8br",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 954836,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 951696000,
+            "proposedMarketValueRaw": {
+              "value": 13100000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "يوسيب شوتالو",
+                "bn": "জোসিপ সুতালো",
+                "hi": "जोसिप शुटालो",
+                "ru": "Йосип Шутало"
+              },
+              "shortNameTranslation": {
+                "ar": "ي. شوتالو",
+                "bn": "জে. সুতালো",
+                "hi": "जे. शुटालो",
+                "ru": "Й. Шутало"
+              }
+            }
+          },
+          "teamId": 2699,
+          "shirtNumber": 6,
+          "jerseyNumber": "6",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "totalPass": 43,
+            "accuratePass": 38,
+            "totalLongBalls": 4,
+            "accurateLongBalls": 3,
+            "goalAssist": 0,
+            "accurateOwnHalfPasses": 30,
+            "totalOwnHalfPasses": 33,
+            "accurateOppositionHalfPasses": 8,
+            "totalOppositionHalfPasses": 10,
+            "duelWon": 3,
+            "totalContest": 1,
+            "wonContest": 1,
+            "interceptionWon": 2,
+            "ballRecovery": 5,
+            "totalTackle": 1,
+            "wasFouled": 1,
+            "minutesPlayed": 90,
+            "touches": 49,
+            "rating": 6.6,
+            "possessionLostCtrl": 5,
+            "expectedAssists": 0.0124718,
+            "totalBallCarriesDistance": 143.50530166135,
+            "ballCarriesCount": 15,
+            "totalProgression": 35.588135556496,
+            "bestBallCarryProgression": 28.142197183521,
+            "totalProgressiveBallCarriesDistance": 33.809172261385,
+            "progressiveBallCarriesCount": 1,
+            "ratingVersions": {
+              "original": 6.6,
+              "alternative": 6.7
+            },
+            "totalShots": 0,
+            "passValueNormalized": 0.12,
+            "dribbleValueNormalized": 0.06,
+            "defensiveValueNormalized": -0.3,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 20
+        }
+      ],
+      "supportStaff": [],
+      "formation": "4-5-1",
+      "playerColor": {
+        "primary": "274ebb",
+        "number": "ffffff",
+        "outline": "274ebb",
+        "fancyNumber": "ffffff"
+      },
+      "goalkeeperColor": {
+        "primary": "e93b74",
+        "number": "f7fffc",
+        "outline": "e93b74",
+        "fancyNumber": "222226"
+      },
+      "missingPlayers": [
+        {
+          "player": {
+            "name": "Franjo Ivanović",
+            "slug": "franjo-ivanovic",
+            "shortName": "F. Ivanović",
+            "position": "F",
+            "jerseyNumber": "29",
+            "height": 185,
+            "userCount": 7084,
+            "gender": "M",
+            "sofascoreId": "zb9-bpc",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1103333,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1064966400,
+            "proposedMarketValueRaw": {
+              "value": 14600000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فرانجو إيفانوفيتش",
+                "bn": "ফ্রাঞ্জো ইভানোভিচ",
+                "hi": "फ्रांजो इवानोविच",
+                "ru": "Франьо Иванович"
+              },
+              "shortNameTranslation": {
+                "ar": "ف. إيفانوفيتش",
+                "bn": "এফ ইভানোভিচ",
+                "hi": "एफ. इवानोविच",
+                "ru": "Ф. Иванович"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 0,
+          "externalType": 5
+        },
+        {
+          "player": {
+            "name": "Ivan Smolčić",
+            "firstName": "",
+            "lastName": "",
+            "slug": "ivan-smolcic",
+            "shortName": "I. Smolčić",
+            "position": "D",
+            "jerseyNumber": "28",
+            "height": 181,
+            "userCount": 2051,
+            "gender": "M",
+            "sofascoreId": "cee-7kw",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 974581,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 966470400,
+            "proposedMarketValueRaw": {
+              "value": 3800000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيفان سمولتشيتش",
+                "ru": "Иван Смолчич"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. سمولتشيتش",
+                "ru": "И. Смолчич"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 1,
+          "externalType": 5
+        },
+        {
+          "player": {
+            "name": "Lovro Majer",
+            "firstName": "Lovro",
+            "lastName": "Majer",
+            "slug": "lovro-majer",
+            "shortName": "L. Majer",
+            "position": "M",
+            "jerseyNumber": "14",
+            "height": 179,
+            "userCount": 5152,
+            "gender": "M",
+            "sofascoreId": "ic3-jqe",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 841947,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 884995200,
+            "proposedMarketValueRaw": {
+              "value": 8600000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوفرو ماير",
+                "bn": "লভরো মেজার",
+                "hi": "लोवरो मेजर",
+                "ru": "Ловро Майер"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. ماير",
+                "bn": "এল. মেজার",
+                "hi": "एल. मेजर",
+                "ru": "Л. Майер"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 0,
+          "externalType": 5
+        },
+        {
+          "__trimmed__": 2
+        }
+      ]
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Unai Simón",
+            "firstName": "Unai",
+            "lastName": "Simon",
+            "slug": "unai-simon",
+            "shortName": "U. Simón",
+            "position": "G",
+            "jerseyNumber": "1",
+            "height": 189,
+            "userCount": 16443,
+            "gender": "M",
+            "sofascoreId": "vke-cns",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 797291,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 865987200,
+            "proposedMarketValueRaw": {
+              "value": 21000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوناي سيمون",
+                "bn": "উনাই সাইমন",
+                "hi": "उनाई सिमोन",
+                "ru": "Унай Симон"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. سيمون",
+                "bn": "ইউ. সাইমন",
+                "hi": "यू. सिमोन",
+                "ru": "У. Симон"
+              }
+            }
+          },
+          "teamId": 2825,
+          "shirtNumber": 23,
+          "jerseyNumber": "23",
+          "position": "G",
+          "substitute": false,
+          "statistics": {
+            "totalPass": 22,
+            "accuratePass": 21,
+            "totalLongBalls": 4,
+            "accurateLongBalls": 3,
+            "goalAssist": 0,
+            "accurateOwnHalfPasses": 21,
+            "totalOwnHalfPasses": 22,
+            "totalClearance": 1,
+            "ballRecovery": 5,
+            "savedShotsFromInsideTheBox": 4,
+            "saves": 4,
+            "totalKeeperSweeper": 2,
+            "accurateKeeperSweeper": 2,
+            "minutesPlayed": 90,
+            "touches": 30,
+            "rating": 7.3,
+            "possessionLostCtrl": 1,
+            "expectedAssists": 0.00016299,
+            "totalBallCarriesDistance": 19.507440344265,
+            "ballCarriesCount": 4,
+            "totalProgression": 6.973693763962,
+            "progressiveBallCarriesCount": 0,
+            "keeperSaveValue": 0.7813,
+            "ratingVersions": {
+              "original": 7.3,
+              "alternative": 7.4
+            },
+            "totalShots": 0,
+            "goalsPrevented": 0.236,
+            "passValueNormalized": 0.03,
+            "dribbleValueNormalized": 0.02,
+            "defensiveValueNormalized": -0.06,
+            "goalkeeperValueNormalized": 0.37,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Marc Pubill",
+            "slug": "marc-pubill",
+            "shortName": "Pubill",
+            "position": "D",
+            "jerseyNumber": "18",
+            "height": 190,
+            "userCount": 8152,
+            "gender": "M",
+            "sofascoreId": "tdp-rgm",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 1094106,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1056067200,
+            "proposedMarketValueRaw": {
+              "value": 48000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مارك بوبيل",
+                "bn": "মার্ক পাবিল",
+                "hi": "मार्क पबिल",
+                "ru": "Марк Пубиль"
+              },
+              "shortNameTranslation": {
+                "ar": "بوبيل",
+                "bn": "পাবিল",
+                "hi": "पबिल पबिल",
+                "ru": "М. Пубиль"
+              }
+            }
+          },
+          "teamId": 2836,
+          "shirtNumber": 12,
+          "jerseyNumber": "12",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "totalPass": 80,
+            "accuratePass": 75,
+            "totalLongBalls": 2,
+            "goalAssist": 0,
+            "accurateOwnHalfPasses": 20,
+            "totalOwnHalfPasses": 21,
+            "accurateOppositionHalfPasses": 55,
+            "totalOppositionHalfPasses": 59,
+            "totalCross": 2,
+            "duelLost": 3,
+            "duelWon": 3,
+            "challengeLost": 1,
+            "outfielderBlock": 1,
+            "interceptionWon": 1,
+            "ballRecovery": 5,
+            "totalTackle": 1,
+            "wonTackle": 1,
+            "unsuccessfulTouch": 1,
+            "wasFouled": 2,
+            "fouls": 2,
+            "minutesPlayed": 90,
+            "touches": 99,
+            "rating": 6.6,
+            "possessionLostCtrl": 9,
+            "expectedAssists": 0.033974,
+            "totalBallCarriesDistance": 187.88642000091,
+            "ballCarriesCount": 26,
+            "totalProgression": 71.282465970349,
+            "bestBallCarryProgression": 21.443071639075,
+            "totalProgressiveBallCarriesDistance": 29.189229794566,
+            "progressiveBallCarriesCount": 1,
+            "ratingVersions": {
+              "original": 6.6,
+              "alternative": 7.2
+            },
+            "totalShots": 0,
+            "passValueNormalized": 0.04,
+            "dribbleValueNormalized": 0.16,
+            "defensiveValueNormalized": -0.11,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Pau Cubarsí",
+            "firstName": "Pau Cubarsí",
+            "slug": "pau-cubarsi",
+            "shortName": "P. Cubarsí",
+            "position": "D",
+            "jerseyNumber": "5",
+            "height": 184,
+            "userCount": 173650,
+            "gender": "M",
+            "sofascoreId": "g8d-wys",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 1402913,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1169424000,
+            "proposedMarketValueRaw": {
+              "value": 94000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "باو كوبارسي",
+                "bn": "পাউ কিউবারসি",
+                "hi": "पाउ क्यूबार्सी",
+                "ru": "Пау Кубарси"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. كوبارسي",
+                "bn": "পি. কিউবারসি",
+                "hi": "पी. क्यूबार्सी",
+                "ru": "П. Кубарси"
+              }
+            }
+          },
+          "teamId": 2817,
+          "shirtNumber": 5,
+          "jerseyNumber": "5",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "totalPass": 99,
+            "accuratePass": 93,
+            "totalLongBalls": 5,
+            "accurateLongBalls": 1,
+            "goalAssist": 0,
+            "accurateOwnHalfPasses": 36,
+            "totalOwnHalfPasses": 39,
+            "accurateOppositionHalfPasses": 57,
+            "totalOppositionHalfPasses": 60,
+            "aerialLost": 1,
+            "aerialWon": 2,
+            "duelLost": 3,
+            "duelWon": 3,
+            "totalClearance": 5,
+            "outfielderBlock": 1,
+            "interceptionWon": 2,
+            "ballRecovery": 6,
+            "totalTackle": 1,
+            "wonTackle": 1,
+            "unsuccessfulTouch": 1,
+            "fouls": 2,
+            "minutesPlayed": 90,
+            "touches": 113,
+            "rating": 7.1,
+            "possessionLostCtrl": 7,
+            "expectedAssists": 0.221903,
+            "totalBallCarriesDistance": 354.83078773622,
+            "ballCarriesCount": 35,
+            "totalProgression": 194.66704788846,
+            "bestBallCarryProgression": 27.655298372,
+            "totalProgressiveBallCarriesDistance": 112.52621972682,
+            "progressiveBallCarriesCount": 5,
+            "ratingVersions": {
+              "original": 7.1,
+              "alternative": 7.4
+            },
+            "totalShots": 0,
+            "passValueNormalized": 0.26,
+            "dribbleValueNormalized": 0.28,
+            "defensiveValueNormalized": 0.16,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 20
+        }
+      ],
+      "supportStaff": [],
+      "formation": "4-3-3",
+      "playerColor": {
+        "primary": "ffffff",
+        "number": "cc0000",
+        "outline": "ffffff",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "3590ca",
+        "number": "c9ea80",
+        "outline": "3590ca",
+        "fancyNumber": "222226"
+      },
+      "missingPlayers": [
+        {
+          "player": {
+            "name": "Eric García",
+            "firstName": "Eric",
+            "lastName": "Garcia",
+            "slug": "eric-garcia",
+            "shortName": "E. García",
+            "position": "D",
+            "jerseyNumber": "24",
+            "height": 182,
+            "userCount": 76845,
+            "gender": "M",
+            "sofascoreId": "dzg-3df",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 876214,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 978998400,
+            "proposedMarketValueRaw": {
+              "value": 39000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إريك غارسيا",
+                "bn": "এরিক গার্সিয়া",
+                "hi": "एरिक गार्सिया",
+                "ru": "Эрик Гарсия"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. غارسيا",
+                "bn": "ই. গার্সিয়া",
+                "hi": "ई. गार्सिया",
+                "ru": "Э. Гарсия"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 1,
+          "description": "Knee Injury",
+          "externalType": 5,
+          "expectedEndDate": "2026-10-20T00:00:00+00:00"
+        },
+        {
+          "player": {
+            "name": "Ferran Torres",
+            "firstName": "Ferran",
+            "lastName": "Torres",
+            "slug": "ferran-torres",
+            "shortName": "F. Torres",
+            "position": "F",
+            "jerseyNumber": "9",
+            "height": 183,
+            "userCount": 187306,
+            "gender": "M",
+            "sofascoreId": "bdu-rjq",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 855833,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 951782400,
+            "proposedMarketValueRaw": {
+              "value": 59000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فيران توريس",
+                "bn": "ফেরান টরেস",
+                "hi": "फ़ेरैन टोरेस",
+                "ru": "Ферран Торрес"
+              },
+              "shortNameTranslation": {
+                "ar": "ف. توريس",
+                "bn": "এফ. টরেস",
+                "hi": "एफ. टोरेस",
+                "ru": "Ф. Торрес"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 1,
+          "description": "Physical Discomfort",
+          "externalType": 5,
+          "expectedEndDate": "2026-10-16T00:00:00+00:00"
+        },
+        {
+          "player": {
+            "name": "Joan García",
+            "firstName": "Joan",
+            "lastName": "Garcia",
+            "slug": "joan-garcia",
+            "shortName": "J. García",
+            "position": "G",
+            "jerseyNumber": "1",
+            "height": 193,
+            "userCount": 145236,
+            "gender": "M",
+            "sofascoreId": "iw8-s8p",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 930267,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 988934400,
+            "proposedMarketValueRaw": {
+              "value": 46000000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جوان جارسيا",
+                "bn": "জোয়ান গার্সিয়া",
+                "hi": "जोन गार्सिया",
+                "ru": "Жоан Гарсия"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. جارسيا",
+                "bn": "জে. গার্সিয়া",
+                "hi": "जे. गार्सिया",
+                "ru": "Ж. Гарсия"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 1,
+          "description": "Knee Injury",
+          "externalType": 5,
+          "expectedEndDate": "2026-10-10T00:00:00+00:00"
+        },
+        {
+          "__trimmed__": 3
+        }
+      ]
+    },
+    "statisticalVersion": 3
+  }
+}

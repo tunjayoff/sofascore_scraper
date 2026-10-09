@@ -1,0 +1,91 @@
+{
+  "url": "https://www.sofascore.com/api/v1/sport/10800/event-count",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:09:00+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884177",
+  "cache_control": "max-age=10, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "badminton": {
+      "live": 0,
+      "total": 73
+    },
+    "futsal": {
+      "live": 0,
+      "total": 157
+    },
+    "ice-hockey": {
+      "live": 7,
+      "total": 169
+    },
+    "minifootball": {
+      "live": 1,
+      "total": 121
+    },
+    "darts": {
+      "live": 0,
+      "total": 41
+    },
+    "table-tennis": {
+      "live": 12,
+      "total": 990
+    },
+    "american-football": {
+      "live": 4,
+      "total": 8
+    },
+    "aussie-rules": {
+      "live": 0,
+      "total": 1
+    },
+    "floorball": {
+      "live": 0,
+      "total": 13
+    },
+    "football": {
+      "live": 79,
+      "total": 1202
+    },
+    "tennis": {
+      "live": 14,
+      "total": 278
+    },
+    "baseball": {
+      "live": 0,
+      "total": 17
+    },
+    "basketball": {
+      "live": 10,
+      "total": 276
+    },
+    "padel": {
+      "live": 0,
+      "total": 33
+    },
+    "handball": {
+      "live": 0,
+      "total": 90
+    },
+    "cricket": {
+      "live": 2,
+      "total": 26
+    },
+    "rugby": {
+      "live": 0,
+      "total": 19
+    },
+    "waterpolo": {
+      "live": 0,
+      "total": 20
+    },
+    "esports": {
+      "live": 0,
+      "total": 59
+    },
+    "volleyball": {
+      "live": 6,
+      "total": 98
+    }
+  }
+}

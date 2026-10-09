@@ -1,0 +1,216 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/168704/season/104839/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:21:34+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/sahin-united-mfc-baku-juniors/TYjjswRpk#id:17268351",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 320547,
+        "type": "total",
+        "tournament": {
+          "name": "Summer Cup Baku, Group A",
+          "slug": "summer-cup-baku-group-a",
+          "category": {
+            "name": "Azerbaijan",
+            "slug": "azerbaijan",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "priority": 0,
+            "id": 1808,
+            "flag": "azerbaijan",
+            "alpha2": "AZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أذربيجان",
+                "ru": "Азербайджан"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Summer Cup Baku",
+            "slug": "summer-cup-baku",
+            "category": {
+              "name": "Azerbaijan",
+              "slug": "azerbaijan",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1808,
+              "flag": "azerbaijan",
+              "alpha2": "AZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أذربيجان",
+                  "ru": "Азербайджан"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 54,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 30841,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كأس الصيف باكو",
+                "ru": "Летний Кубок Баку"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group A",
+          "id": 168704,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس الصيف باكو، المجموعة ا",
+              "ru": "Кубок Лета Баку, Группа A"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "Summer Cup Baku, Group A 2026",
+        "descriptions": [],
+        "rows": [
+          {
+            "id": 2710000,
+            "team": {
+              "name": "Qarayev MFK",
+              "slug": "qarayev-mfk",
+              "shortName": "Qarayev",
+              "gender": "M",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "userCount": 19,
+              "nameCode": "QMF",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 1176821,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "قراييف إم إف كيه",
+                  "ru": "Караев МФК"
+                },
+                "shortNameTranslation": {
+                  "ar": "قراييف",
+                  "ru": "Караев"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 1,
+            "matches": 2,
+            "wins": 1,
+            "losses": 0,
+            "draws": 1,
+            "scoresFor": 12,
+            "scoresAgainst": 9,
+            "points": 4,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2709999,
+            "team": {
+              "name": "Baku Juniors",
+              "slug": "baku-juniors",
+              "shortName": "Baku Juniors",
+              "gender": "M",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "userCount": 32,
+              "nameCode": "BJU",
+              "national": false,
+              "type": 0,
+              "id": 1149943,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "باكو جونيورز",
+                  "ru": "Баку Юниорс"
+                },
+                "shortNameTranslation": {
+                  "ar": "باكو جونيورز",
+                  "ru": "Баку Юниорс"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 2,
+            "matches": 1,
+            "wins": 0,
+            "losses": 0,
+            "draws": 1,
+            "scoresFor": 6,
+            "scoresAgainst": 6,
+            "points": 1,
+            "scoreDiffFormatted": "0"
+          },
+          {
+            "id": 2710011,
+            "team": {
+              "name": "Şahin United MFC",
+              "slug": "sahin-united-mfc",
+              "shortName": "Şahin United",
+              "gender": "M",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "userCount": 1,
+              "nameCode": "AUM",
+              "national": false,
+              "type": 0,
+              "id": 1289621,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              }
+            },
+            "descriptions": [],
+            "position": 3,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 3,
+            "scoresAgainst": 6,
+            "points": 0,
+            "scoreDiffFormatted": "-3"
+          }
+        ],
+        "updatedAtTimestamp": 1791040274
+      }
+    ]
+  }
+}

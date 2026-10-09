@@ -1,0 +1,214 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/240420/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:25:01+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/matsushima-feng/viWbshNCc#id:17283335",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "China Smash, MS",
+          "slug": "china-smash-2025-ms",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "China Smash, MS",
+            "slug": "china-smash-ms",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 94,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 23705,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة الصين سماش، MS",
+                "ru": "China Smash, мужской разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 164861,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تشاينا سماش 2025، فردي",
+              "ru": "Китайский Смеш 2025, мужской"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "China Smash, MS 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 103515
+        },
+        "roundInfo": {
+          "round": 27,
+          "name": "Quarterfinals",
+          "slug": "quarterfinals",
+          "cupRoundType": 4
+        },
+        "customId": "viWbshNCc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Feng Y.",
+          "slug": "feng-yi-hsin",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 80,
+          "playerTeamInfo": {
+            "id": 43573
+          },
+          "nameCode": "FEN",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "TW",
+            "alpha3": "TWN",
+            "name": "Chinese Taipei",
+            "slug": "chinese-taipei"
+          },
+          "id": 240420,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فينغ، يي-هسين",
+              "ru": "Фэн Й."
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Matsushima S.",
+          "slug": "matsushima-sora",
+          "shortName": "Matsushima S.",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 419,
+          "playerTeamInfo": {
+            "id": 21366
+          },
+          "nameCode": "MAT",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 319407,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماتسوشيما، سورا",
+              "bn": "মাতসুশিমা, সোরা",
+              "hi": "मात्सुशिमा, सोरा",
+              "ru": "Матсушима С."
+            },
+            "shortNameTranslation": {
+              "ru": "М. С."
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17283335,
+        "slug": "matsushima-feng",
+        "startTimestamp": 1791520200,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ],
+    "hasNextPage": false
+  }
+}

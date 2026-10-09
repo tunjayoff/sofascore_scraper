@@ -1,0 +1,10 @@
+{
+  "url": "https://www.sofascore.com/api/v1/sofascore-news/en/event/16534955/posts/1",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:19:11+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/stade-francais-paris-montpellier-herault-rugby/epcipc#id:16534955",
+  "cache_control": "max-age=60, public, s-maxage=43200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": []
+}

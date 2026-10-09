@@ -1,0 +1,323 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17266951",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:05:49+00:00",
+  "page": "https://www.sofascore.com/tr/padel/match/b-jensen-christensen-l-andersson-andersson/KVFjsuwrk#id:17266951",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "FIP Bronze DBC COFFEE COPENHAGEN Men - Qualification",
+        "slug": "fip-bronze-dbc-coffee-copenhagen-men-qualification",
+        "category": {
+          "name": "Cupra FIP Tour",
+          "slug": "cupra-fip-tour",
+          "sport": {
+            "name": "Padel",
+            "slug": "padel",
+            "id": 110
+          },
+          "country": {},
+          "id": 2335,
+          "flag": "cupra-fip-tour"
+        },
+        "uniqueTournament": {
+          "name": "FIP Bronze DBC COFFEE COPENHAGEN Men",
+          "slug": "fip-bronze-dbc-coffee-copenhagen-men",
+          "category": {
+            "name": "Cupra FIP Tour",
+            "slug": "cupra-fip-tour",
+            "sport": {
+              "name": "Padel",
+              "slug": "padel",
+              "id": 110
+            },
+            "country": {},
+            "id": 2335,
+            "flag": "cupra-fip-tour"
+          },
+          "userCount": 0,
+          "hasRounds": false,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 38798,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false
+        },
+        "priority": 0,
+        "isGroup": false,
+        "id": 203509,
+        "qualificationOrPreliminary": true
+      },
+      "season": {
+        "name": "2026",
+        "year": "2026",
+        "editor": false,
+        "id": 105738
+      },
+      "roundInfo": {
+        "round": 201,
+        "name": "Qualification Round 1",
+        "slug": "qualification-round-1"
+      },
+      "customId": "KVFjsuwrk",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "homeTeam": {
+        "name": "L. Andersson / O. Andersson",
+        "slug": "l-andersson-o-andersson",
+        "shortName": "L. A. / O. Andersson",
+        "gender": "M",
+        "sport": {
+          "name": "Padel",
+          "slug": "padel",
+          "id": 110
+        },
+        "userCount": 0,
+        "nameCode": "A/A",
+        "national": false,
+        "type": 2,
+        "country": {},
+        "id": 1202285,
+        "fullName": "L. Andersson / O. Andersson",
+        "subTeams": [
+          {
+            "name": "Linus Andersson",
+            "slug": "linus-andersson",
+            "gender": "M",
+            "sport": {
+              "name": "Padel",
+              "slug": "padel",
+              "id": 110
+            },
+            "userCount": 0,
+            "nameCode": "AND",
+            "ranking": 1788,
+            "national": false,
+            "type": 1,
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 1232072,
+            "fullName": "Linus Andersson",
+            "subTeams": [],
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ru": "Линус Андерссон"
+              },
+              "shortNameTranslation": {}
+            },
+            "timeActive": []
+          },
+          {
+            "name": "Oliver Andersson",
+            "slug": "oliver-andersson",
+            "gender": "M",
+            "sport": {
+              "name": "Padel",
+              "slug": "padel",
+              "id": 110
+            },
+            "userCount": 0,
+            "nameCode": "OAN",
+            "ranking": 3269,
+            "national": false,
+            "type": 0,
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 1283049,
+            "fullName": "Oliver Andersson",
+            "subTeams": [],
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "timeActive": []
+          }
+        ],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ل. أندرسون / أ. أندرسون",
+            "ru": "Л. Андерссон / О. Андерссон"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "B. Jensen / L. Christensen",
+        "slug": "b-jensen-l-christensen",
+        "shortName": "B. J. / L. Christensen",
+        "gender": "M",
+        "sport": {
+          "name": "Padel",
+          "slug": "padel",
+          "id": 110
+        },
+        "userCount": 0,
+        "nameCode": "J/C",
+        "national": false,
+        "type": 2,
+        "country": {},
+        "id": 1293569,
+        "fullName": "B. Jensen / L. Christensen",
+        "subTeams": [
+          {
+            "name": "Bertram Sondrup Jensen",
+            "slug": "bertram-sondrup-jensen",
+            "gender": "M",
+            "sport": {
+              "name": "Padel",
+              "slug": "padel",
+              "id": 110
+            },
+            "userCount": 0,
+            "nameCode": "JEN",
+            "ranking": 3269,
+            "national": false,
+            "type": 1,
+            "country": {
+              "alpha2": "DK",
+              "alpha3": "DNK",
+              "name": "Denmark",
+              "slug": "denmark"
+            },
+            "id": 1224043,
+            "fullName": "Bertram Sondrup Jensen",
+            "subTeams": [],
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ru": "Бертрам Сондруп Йенсен"
+              },
+              "shortNameTranslation": {}
+            },
+            "timeActive": []
+          },
+          {
+            "name": "Lucas Orskov Christensen",
+            "slug": "lucas-orskov-christensen",
+            "gender": "M",
+            "sport": {
+              "name": "Padel",
+              "slug": "padel",
+              "id": 110
+            },
+            "userCount": 0,
+            "nameCode": "CHR",
+            "ranking": 1317,
+            "national": false,
+            "type": 1,
+            "country": {
+              "alpha2": "DK",
+              "alpha3": "DNK",
+              "name": "Denmark",
+              "slug": "denmark"
+            },
+            "id": 1220659,
+            "fullName": "Lucas Orskov Christensen",
+            "subTeams": [],
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوكاس أورسكوڤ كريستنسن",
+                "ru": "Лукас Орсков Кристенсен"
+              },
+              "shortNameTranslation": {}
+            },
+            "timeActive": []
+          }
+        ],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 2,
+        "display": 2,
+        "period1": 7,
+        "period2": 6,
+        "period1TieBreak": 7
+      },
+      "awayScore": {
+        "current": 0,
+        "display": 0,
+        "period1": 6,
+        "period2": 4,
+        "period1TieBreak": 4
+      },
+      "time": {},
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.current",
+          "homeScore.display",
+          "homeScore.period1",
+          "homeScore.period2",
+          "homeScore.period1TieBreak",
+          "awayScore.current",
+          "awayScore.display",
+          "awayScore.period1",
+          "awayScore.period2",
+          "awayScore.period1TieBreak"
+        ],
+        "changeTimestamp": 1791385519
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17266951,
+      "slug": "b-jensen-christensen-l-andersson-andersson",
+      "startTimestamp": 1791385200,
+      "periods": {
+        "point": "Game",
+        "current": "Match",
+        "period1": "1st set",
+        "period2": "2nd set",
+        "period3": "3rd set"
+      },
+      "defaultPeriodCount": 3,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

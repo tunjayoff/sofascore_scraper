@@ -1,0 +1,43 @@
+{
+  "url": "https://www.sofascore.com/api/v1/dsp/country/TR",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:40+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=60, public, s-maxage=60",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "ads": [
+      {
+        "name": "Crypto com",
+        "type": "html",
+        "width": 300,
+        "height": 250,
+        "content": "<a href=\"https://cryptocom.sjv.io/c/5441787/3268629/25666\" target=\"_blank\" rel=\"noopener\"\n style=\"display: block; width: 300px; height: 250px;\">\n  <img src=\"https://files.sofascore.com/creatives/c7c707e33de2d8d59a2e81c38e307019\" alt=\"\" width=\"100%\" height=\"100%\" style=\"display: block;\">\n</a>",
+        "enabled": true,
+        "id": 916068
+      },
+      {
+        "name": "Crypto com",
+        "type": "html",
+        "width": 300,
+        "height": 600,
+        "content": "<a href=\"https://cryptocom.sjv.io/c/5441787/3268701/25666\" target=\"_blank\" rel=\"noopener\"\n style=\"display: block; width: 300px; height: 600px;\">\n  <img src=\"https://files.sofascore.com/creatives/fe96f0b6cf492daf6a0d643bc16f8b27\" alt=\"\" width=\"100%\" height=\"100%\" style=\"display: block;\">\n</a>",
+        "enabled": true,
+        "id": 916069
+      },
+      {
+        "name": "Crypto com",
+        "type": "html",
+        "width": 728,
+        "height": 90,
+        "content": "<a href=\"https://cryptocom.sjv.io/c/5441787/3268639/25666\" target=\"_blank\" rel=\"noopener\"\n style=\"display: block; width: 728px; height: 90px;\">\n  <img src=\"https://files.sofascore.com/creatives/63f9a8225783eb679acdafdee80dc47c\" alt=\"\" width=\"100%\" height=\"100%\" style=\"display: block;\">\n</a>",
+        "enabled": true,
+        "id": 916070
+      },
+      {
+        "__trimmed__": 13
+      }
+    ]
+  }
+}

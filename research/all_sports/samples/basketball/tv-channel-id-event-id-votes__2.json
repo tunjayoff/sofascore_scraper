@@ -1,0 +1,20 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tv/channel/4024/event/16685163/votes",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:13:47+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/cleveland-cavaliers-boston-celtics/xtbsHtb#id:16685163",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "tvChannelVotes": {
+      "tvChannel": {
+        "link": "https://nba.sjv.io/c/5441787/2176796/16284",
+        "name": "NBA League Pass",
+        "id": 4024
+      },
+      "upvote": 74,
+      "downvote": 21
+    }
+  }
+}

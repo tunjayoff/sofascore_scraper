@@ -1,0 +1,318 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16245051/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:56:41+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/southern-mississippi-golden-eagles-troy-trojans/IKbsVEt#id:16245051",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Howard Kinchen",
+            "firstName": "Howard Kinchen",
+            "slug": "howard-kinchen",
+            "shortName": "H. Kinchen",
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "vx3-3yw",
+            "country": {},
+            "id": 2771115,
+            "marketValueCurrency": "EUR"
+          },
+          "teamId": 4283,
+          "substitute": true,
+          "statistics": {
+            "receivingTouchdowns": 0,
+            "receivingReceptions": 2,
+            "receivingYards": 9,
+            "receivingTargets": 2,
+            "receivingFirstDowns": 1,
+            "receivingLongest": 5,
+            "receivingYardsPerReception": 4.5,
+            "receivingRedZoneTargets": 0,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Will Crowder",
+            "slug": "crowder-will",
+            "shortName": "W. Crowder",
+            "position": "QB",
+            "jerseyNumber": "9",
+            "height": 188,
+            "userCount": 4,
+            "gender": "M",
+            "sofascoreId": "iw7-psk",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1537819,
+            "marketValueCurrency": "EUR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كراودر، ويل",
+                "ru": "Краудер, Уилл"
+              },
+              "shortNameTranslation": {
+                "ar": "و. كراودر",
+                "ru": "У. Краудер"
+              }
+            }
+          },
+          "teamId": 4283,
+          "position": "QB",
+          "substitute": true,
+          "statistics": {
+            "passingAttempts": 21,
+            "passingCompletions": 18,
+            "passingYards": 225,
+            "passingSackYards": 14,
+            "passingNetYards": 211,
+            "passingInterceptions": 0,
+            "passingLongest": 46,
+            "passingSacked": 2,
+            "passingTouchdowns": 2,
+            "passingFirstDowns": 13,
+            "rushingAttempts": 17,
+            "rushingYards": 145,
+            "rushingFirstDowns": 8,
+            "rushingTouchdowns": 2,
+            "rushingLongest": 48,
+            "passingYardsPerAttempt": 10.7,
+            "rushingYardsPerAttempt": 8.5,
+            "rushingRedZoneAttempts": 5,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Jordan Lovett",
+            "slug": "lovett-jordan",
+            "shortName": "J. Lovett",
+            "position": "ATH",
+            "jerseyNumber": "15",
+            "height": 180,
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "8j9-fp2",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1533344,
+            "marketValueCurrency": "EUR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوفيت، جوردان",
+                "ru": "Ловетт, Джордан"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. لوفيت",
+                "ru": "Д. Ловетт"
+              }
+            }
+          },
+          "teamId": 4283,
+          "position": "ATH",
+          "substitute": true,
+          "statistics": {
+            "rushingAttempts": 12,
+            "rushingYards": 142,
+            "rushingFirstDowns": 4,
+            "rushingTouchdowns": 1,
+            "rushingLongest": 68,
+            "receivingTouchdowns": 1,
+            "receivingReceptions": 2,
+            "receivingYards": 53,
+            "receivingTargets": 2,
+            "receivingFirstDowns": 2,
+            "receivingLongest": 46,
+            "rushingYardsPerAttempt": 11.8,
+            "rushingRedZoneAttempts": 3,
+            "receivingYardsPerReception": 26.5,
+            "receivingRedZoneTargets": 0,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 29
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Reed Harradine",
+            "slug": "harradine-reed",
+            "shortName": "R. Harradine",
+            "position": "K",
+            "height": 191,
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "kmi-acp",
+            "country": {},
+            "id": 1717105,
+            "marketValueCurrency": "EUR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هارادين، ريد",
+                "ru": "Харрадин, Рид"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. هارادين",
+                "ru": "Р. Харрадин"
+              }
+            }
+          },
+          "teamId": 46495,
+          "position": "K",
+          "substitute": true,
+          "statistics": {
+            "kickoffEndZone": 1,
+            "kickoffOutOfBounds": 0,
+            "kickoffInside20": 2,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Mike Steven Robinson",
+            "slug": "steven-robinson-mike",
+            "shortName": "M. S. Robinson",
+            "position": "DB",
+            "height": 183,
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "g8p-2pw",
+            "country": {},
+            "id": 1543988,
+            "marketValueCurrency": "EUR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ستيفن روبنسون، مايك",
+                "ru": "Стивен Робинсон, Майк"
+              },
+              "shortNameTranslation": {
+                "ar": "م. ستيفن روبنسون",
+                "ru": "М. Стивен Робинсон"
+              }
+            }
+          },
+          "teamId": 46495,
+          "position": "DB",
+          "substitute": true,
+          "statistics": {
+            "defensiveCombineTackles": 6,
+            "defensiveAssistTackles": 0,
+            "defensiveSacks": 0,
+            "defensiveForcedFumbles": 0,
+            "defensiveInterceptions": 0,
+            "defensivePassesDefensed": 0,
+            "defensiveTacklesForLostYards": 1,
+            "defensiveTacklesForLoss": 1,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Nasim Cairo",
+            "slug": "cairo-nasim",
+            "shortName": "N. Cairo",
+            "position": "DL",
+            "jerseyNumber": "96",
+            "height": 188,
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "n5g-paq",
+            "country": {},
+            "id": 1437042,
+            "marketValueCurrency": "EUR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كايرو، نسيم",
+                "ru": "Кайро, Насим"
+              },
+              "shortNameTranslation": {
+                "ar": "ن. كايرو",
+                "ru": "Н. Кайро"
+              }
+            }
+          },
+          "teamId": 46495,
+          "position": "DL",
+          "substitute": true,
+          "statistics": {
+            "defensiveCombineTackles": 2,
+            "defensiveAssistTackles": 0,
+            "defensiveSacks": 0,
+            "defensiveForcedFumbles": 0,
+            "defensiveInterceptions": 0,
+            "defensivePassesDefensed": 0,
+            "defensiveTacklesForLostYards": 0,
+            "defensiveTacklesForLoss": 0,
+            "statisticsType": {
+              "sportSlug": "american-football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 33
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

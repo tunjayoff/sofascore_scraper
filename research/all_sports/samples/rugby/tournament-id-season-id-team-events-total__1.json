@@ -1,0 +1,4689 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/159283/season/100526/team-events/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:59:52+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/cardiff-university-cardiff-met/byUiseyUi#id:16793649",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "teamEvents": {
+      "1111151": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "byUiseyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Cardiff University",
+            "slug": "cardiff-university",
+            "shortName": "Cardiff University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "CUN",
+            "national": false,
+            "type": 0,
+            "id": 1111154,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف",
+                "ru": "Университет Кардифф"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. كارديف",
+                "ru": "Университет Кардифф"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Cardiff Met",
+            "slug": "cardiff-met",
+            "shortName": "Cardiff Met",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 36,
+            "nameCode": "CME",
+            "national": false,
+            "type": 0,
+            "id": 1111151,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف مت",
+                "ru": "Кардифф Мет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مت",
+                "ru": "Кардифф Мет"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 38,
+            "display": 38
+          },
+          "awayScore": {
+            "current": 14,
+            "display": 14
+          },
+          "id": 16793649,
+          "slug": "cardiff-university-cardiff-met",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "klIbsbyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Hartpury College",
+            "slug": "hartpury-college",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 70,
+            "nameCode": "HAR",
+            "national": false,
+            "type": 0,
+            "id": 208060,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هرتبري كولدج",
+                "ru": "Хартпури Колледж"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "Cardiff Met",
+            "slug": "cardiff-met",
+            "shortName": "Cardiff Met",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 36,
+            "nameCode": "CME",
+            "national": false,
+            "type": 0,
+            "id": 1111151,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف مت",
+                "ru": "Кардифф Мет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مت",
+                "ru": "Кардифф Мет"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 31,
+            "display": 31
+          },
+          "awayScore": {
+            "current": 28,
+            "display": 28
+          },
+          "id": 16793644,
+          "slug": "cardiff-met-hartpury-college",
+          "startTimestamp": 1790789400,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "byUisUAUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Cardiff Met",
+            "slug": "cardiff-met",
+            "shortName": "Cardiff Met",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 36,
+            "nameCode": "CME",
+            "national": false,
+            "type": 0,
+            "id": 1111151,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف مت",
+                "ru": "Кардифф Мет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مت",
+                "ru": "Кардифф Мет"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Brunel University",
+            "slug": "brunel-university",
+            "shortName": "Brunel University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111294,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة برونيل",
+                "ru": "Университет Брунеля"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. برونيل",
+                "ru": "Университет Брунеля"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 20,
+            "display": 20
+          },
+          "awayScore": {
+            "current": 29,
+            "display": 29
+          },
+          "id": 16793637,
+          "slug": "brunel-university-cardiff-met",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1111152": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "cyUisUAUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Nottingham University",
+            "slug": "nottingham-university",
+            "shortName": "Nottingham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 24,
+            "nameCode": "NUN",
+            "national": false,
+            "type": 0,
+            "id": 1111152,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة نوتنغهام",
+                "ru": "Университет Ноттингема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. نوتنغهام",
+                "ru": "Университет Ноттингема"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Brunel University",
+            "slug": "brunel-university",
+            "shortName": "Brunel University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111294,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة برونيل",
+                "ru": "Университет Брунеля"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. برونيل",
+                "ru": "Университет Брунеля"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 26,
+            "display": 26
+          },
+          "awayScore": {
+            "current": 53,
+            "display": 53
+          },
+          "id": 16793648,
+          "slug": "brunel-university-nottingham-university",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "CWHiscyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Loughborough Students",
+            "slug": "loughborough-students",
+            "shortName": "Loughborough Students",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 52,
+            "nameCode": "LST",
+            "national": false,
+            "type": 0,
+            "id": 1082327,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              },
+              "shortNameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Nottingham University",
+            "slug": "nottingham-university",
+            "shortName": "Nottingham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 24,
+            "nameCode": "NUN",
+            "national": false,
+            "type": 0,
+            "id": 1111152,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة نوتنغهام",
+                "ru": "Университет Ноттингема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. نوتنغهام",
+                "ru": "Университет Ноттингема"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 56,
+            "display": 56
+          },
+          "awayScore": {
+            "current": 38,
+            "display": 38
+          },
+          "id": 16793646,
+          "slug": "nottingham-university-loughborough-students",
+          "startTimestamp": 1790791200,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "wWHiscyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Nottingham University",
+            "slug": "nottingham-university",
+            "shortName": "Nottingham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 24,
+            "nameCode": "NUN",
+            "national": false,
+            "type": 0,
+            "id": 1111152,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة نوتنغهام",
+                "ru": "Университет Ноттингема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. نوتنغهام",
+                "ru": "Университет Ноттингема"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Exeter University",
+            "slug": "exeter-university",
+            "shortName": "Exeter University ",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 61,
+            "nameCode": "EUN",
+            "national": false,
+            "type": 0,
+            "id": 1082321,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              },
+              "shortNameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 26,
+            "display": 26
+          },
+          "awayScore": {
+            "current": 42,
+            "display": 42
+          },
+          "id": 16793634,
+          "slug": "nottingham-university-exeter-university",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1111153": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "CWHisdyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Loughborough Students",
+            "slug": "loughborough-students",
+            "shortName": "Loughborough Students",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 52,
+            "nameCode": "LST",
+            "national": false,
+            "type": 0,
+            "id": 1082327,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              },
+              "shortNameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Leeds Beckett University",
+            "slug": "leeds-beckett-university",
+            "shortName": "Leeds Beckett University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 20,
+            "nameCode": "LBU",
+            "national": false,
+            "type": 0,
+            "id": 1111153,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة ليدز بيكيت",
+                "ru": "Университет Лидс Беккет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيكيت",
+                "ru": "Университет Лидс Беккет"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 59,
+            "display": 59
+          },
+          "awayScore": {
+            "current": 10,
+            "display": 10
+          },
+          "id": 16793651,
+          "slug": "leeds-beckett-university-loughborough-students",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "wWHisdyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Leeds Beckett University",
+            "slug": "leeds-beckett-university",
+            "shortName": "Leeds Beckett University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 20,
+            "nameCode": "LBU",
+            "national": false,
+            "type": 0,
+            "id": 1111153,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة ليدز بيكيت",
+                "ru": "Университет Лидс Беккет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيكيت",
+                "ru": "Университет Лидс Беккет"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Exeter University",
+            "slug": "exeter-university",
+            "shortName": "Exeter University ",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 61,
+            "nameCode": "EUN",
+            "national": false,
+            "type": 0,
+            "id": 1082321,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              },
+              "shortNameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 36,
+            "display": 36
+          },
+          "awayScore": {
+            "current": 52,
+            "display": 52
+          },
+          "id": 16793645,
+          "slug": "leeds-beckett-university-exeter-university",
+          "startTimestamp": 1790773200,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "ayUisdyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Leeds Beckett University",
+            "slug": "leeds-beckett-university",
+            "shortName": "Leeds Beckett University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 20,
+            "nameCode": "LBU",
+            "national": false,
+            "type": 0,
+            "id": 1111153,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة ليدز بيكيت",
+                "ru": "Университет Лидс Беккет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيكيت",
+                "ru": "Университет Лидс Беккет"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Durham University",
+            "slug": "durham-university",
+            "shortName": "Durham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 23,
+            "nameCode": "DUN",
+            "national": false,
+            "type": 0,
+            "id": 1111150,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة دورهام",
+                "ru": "Университет Дарема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دورهام",
+                "ru": "Университет Дарема"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 50,
+            "display": 50
+          },
+          "awayScore": {
+            "current": 28,
+            "display": 28
+          },
+          "id": 16793640,
+          "slug": "leeds-beckett-university-durham-university",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1111150": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "wWHisayUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Exeter University",
+            "slug": "exeter-university",
+            "shortName": "Exeter University ",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 61,
+            "nameCode": "EUN",
+            "national": false,
+            "type": 0,
+            "id": 1082321,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              },
+              "shortNameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Durham University",
+            "slug": "durham-university",
+            "shortName": "Durham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 23,
+            "nameCode": "DUN",
+            "national": false,
+            "type": 0,
+            "id": 1111150,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة دورهام",
+                "ru": "Университет Дарема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دورهام",
+                "ru": "Университет Дарема"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 43,
+            "display": 43
+          },
+          "awayScore": {
+            "current": 19,
+            "display": 19
+          },
+          "id": 16793650,
+          "slug": "durham-university-exeter-university",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "ayUiseyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 3,
+          "homeTeam": {
+            "name": "Durham University",
+            "slug": "durham-university",
+            "shortName": "Durham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 23,
+            "nameCode": "DUN",
+            "national": false,
+            "type": 0,
+            "id": 1111150,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة دورهام",
+                "ru": "Университет Дарема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دورهام",
+                "ru": "Университет Дарема"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Cardiff University",
+            "slug": "cardiff-university",
+            "shortName": "Cardiff University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "CUN",
+            "national": false,
+            "type": 0,
+            "id": 1111154,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف",
+                "ru": "Университет Кардифф"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. كارديف",
+                "ru": "Университет Кардифф"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 38,
+            "display": 38
+          },
+          "awayScore": {
+            "current": 38,
+            "display": 38
+          },
+          "id": 16793642,
+          "slug": "cardiff-university-durham-university",
+          "startTimestamp": 1790789400,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "ayUisdyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Leeds Beckett University",
+            "slug": "leeds-beckett-university",
+            "shortName": "Leeds Beckett University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 20,
+            "nameCode": "LBU",
+            "national": false,
+            "type": 0,
+            "id": 1111153,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة ليدز بيكيت",
+                "ru": "Университет Лидс Беккет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيكيت",
+                "ru": "Университет Лидс Беккет"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Durham University",
+            "slug": "durham-university",
+            "shortName": "Durham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 23,
+            "nameCode": "DUN",
+            "national": false,
+            "type": 0,
+            "id": 1111150,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة دورهام",
+                "ru": "Университет Дарема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دورهام",
+                "ru": "Университет Дарема"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 50,
+            "display": 50
+          },
+          "awayScore": {
+            "current": 28,
+            "display": 28
+          },
+          "id": 16793640,
+          "slug": "leeds-beckett-university-durham-university",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1111294": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "cyUisUAUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Nottingham University",
+            "slug": "nottingham-university",
+            "shortName": "Nottingham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 24,
+            "nameCode": "NUN",
+            "national": false,
+            "type": 0,
+            "id": 1111152,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة نوتنغهام",
+                "ru": "Университет Ноттингема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. نوتنغهام",
+                "ru": "Университет Ноттингема"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Brunel University",
+            "slug": "brunel-university",
+            "shortName": "Brunel University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111294,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة برونيل",
+                "ru": "Университет Брунеля"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. برونيل",
+                "ru": "Университет Брунеля"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 26,
+            "display": 26
+          },
+          "awayScore": {
+            "current": 53,
+            "display": 53
+          },
+          "id": 16793648,
+          "slug": "brunel-university-nottingham-university",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "ZxUisUAUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Brunel University",
+            "slug": "brunel-university",
+            "shortName": "Brunel University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111294,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة برونيل",
+                "ru": "Университет Брунеля"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. برونيل",
+                "ru": "Университет Брунеля"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Bath University",
+            "slug": "bath-university",
+            "shortName": "Bath University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 50,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111149,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة باث",
+                "ru": "Университет Бат"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. باث",
+                "ru": "Университет Бат"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 24,
+            "display": 24
+          },
+          "awayScore": {
+            "current": 68,
+            "display": 68
+          },
+          "id": 16793641,
+          "slug": "brunel-university-bath-university",
+          "startTimestamp": 1790793000,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "byUisUAUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Cardiff Met",
+            "slug": "cardiff-met",
+            "shortName": "Cardiff Met",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 36,
+            "nameCode": "CME",
+            "national": false,
+            "type": 0,
+            "id": 1111151,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف مت",
+                "ru": "Кардифф Мет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مت",
+                "ru": "Кардифф Мет"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Brunel University",
+            "slug": "brunel-university",
+            "shortName": "Brunel University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111294,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة برونيل",
+                "ru": "Университет Брунеля"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. برونيل",
+                "ru": "Университет Брунеля"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 20,
+            "display": 20
+          },
+          "awayScore": {
+            "current": 29,
+            "display": 29
+          },
+          "id": 16793637,
+          "slug": "brunel-university-cardiff-met",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1082321": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "wWHisayUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Exeter University",
+            "slug": "exeter-university",
+            "shortName": "Exeter University ",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 61,
+            "nameCode": "EUN",
+            "national": false,
+            "type": 0,
+            "id": 1082321,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              },
+              "shortNameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Durham University",
+            "slug": "durham-university",
+            "shortName": "Durham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 23,
+            "nameCode": "DUN",
+            "national": false,
+            "type": 0,
+            "id": 1111150,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة دورهام",
+                "ru": "Университет Дарема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دورهام",
+                "ru": "Университет Дарема"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 43,
+            "display": 43
+          },
+          "awayScore": {
+            "current": 19,
+            "display": 19
+          },
+          "id": 16793650,
+          "slug": "durham-university-exeter-university",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "wWHisdyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Leeds Beckett University",
+            "slug": "leeds-beckett-university",
+            "shortName": "Leeds Beckett University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 20,
+            "nameCode": "LBU",
+            "national": false,
+            "type": 0,
+            "id": 1111153,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة ليدز بيكيت",
+                "ru": "Университет Лидс Беккет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيكيت",
+                "ru": "Университет Лидс Беккет"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Exeter University",
+            "slug": "exeter-university",
+            "shortName": "Exeter University ",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 61,
+            "nameCode": "EUN",
+            "national": false,
+            "type": 0,
+            "id": 1082321,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              },
+              "shortNameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 36,
+            "display": 36
+          },
+          "awayScore": {
+            "current": 52,
+            "display": 52
+          },
+          "id": 16793645,
+          "slug": "leeds-beckett-university-exeter-university",
+          "startTimestamp": 1790773200,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "wWHiscyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Nottingham University",
+            "slug": "nottingham-university",
+            "shortName": "Nottingham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 24,
+            "nameCode": "NUN",
+            "national": false,
+            "type": 0,
+            "id": 1111152,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة نوتنغهام",
+                "ru": "Университет Ноттингема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. نوتنغهام",
+                "ru": "Университет Ноттингема"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Exeter University",
+            "slug": "exeter-university",
+            "shortName": "Exeter University ",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 61,
+            "nameCode": "EUN",
+            "national": false,
+            "type": 0,
+            "id": 1082321,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              },
+              "shortNameTranslation": {
+                "ar": "إكستر جامعة",
+                "ru": "Университет Экстера"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 26,
+            "display": 26
+          },
+          "awayScore": {
+            "current": 42,
+            "display": 42
+          },
+          "id": 16793634,
+          "slug": "nottingham-university-exeter-university",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "208060": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "klIbsZxUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Hartpury College",
+            "slug": "hartpury-college",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 70,
+            "nameCode": "HAR",
+            "national": false,
+            "type": 0,
+            "id": 208060,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هرتبري كولدج",
+                "ru": "Хартпури Колледж"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "Bath University",
+            "slug": "bath-university",
+            "shortName": "Bath University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 50,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111149,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة باث",
+                "ru": "Университет Бат"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. باث",
+                "ru": "Университет Бат"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 24,
+            "display": 24
+          },
+          "awayScore": {
+            "current": 21,
+            "display": 21
+          },
+          "id": 16793647,
+          "slug": "bath-university-hartpury-college",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "klIbsbyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Hartpury College",
+            "slug": "hartpury-college",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 70,
+            "nameCode": "HAR",
+            "national": false,
+            "type": 0,
+            "id": 208060,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هرتبري كولدج",
+                "ru": "Хартпури Колледж"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "Cardiff Met",
+            "slug": "cardiff-met",
+            "shortName": "Cardiff Met",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 36,
+            "nameCode": "CME",
+            "national": false,
+            "type": 0,
+            "id": 1111151,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف مت",
+                "ru": "Кардифф Мет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مت",
+                "ru": "Кардифф Мет"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 31,
+            "display": 31
+          },
+          "awayScore": {
+            "current": 28,
+            "display": 28
+          },
+          "id": 16793644,
+          "slug": "cardiff-met-hartpury-college",
+          "startTimestamp": 1790789400,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "klIbseyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Cardiff University",
+            "slug": "cardiff-university",
+            "shortName": "Cardiff University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "CUN",
+            "national": false,
+            "type": 0,
+            "id": 1111154,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف",
+                "ru": "Университет Кардифф"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. كارديف",
+                "ru": "Университет Кардифф"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Hartpury College",
+            "slug": "hartpury-college",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 70,
+            "nameCode": "HAR",
+            "national": false,
+            "type": 0,
+            "id": 208060,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هرتبري كولدج",
+                "ru": "Хартпури Колледж"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "homeScore": {
+            "current": 43,
+            "display": 43
+          },
+          "awayScore": {
+            "current": 56,
+            "display": 56
+          },
+          "id": 16793636,
+          "slug": "cardiff-university-hartpury-college",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1082327": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "CWHisdyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Loughborough Students",
+            "slug": "loughborough-students",
+            "shortName": "Loughborough Students",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 52,
+            "nameCode": "LST",
+            "national": false,
+            "type": 0,
+            "id": 1082327,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              },
+              "shortNameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Leeds Beckett University",
+            "slug": "leeds-beckett-university",
+            "shortName": "Leeds Beckett University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 20,
+            "nameCode": "LBU",
+            "national": false,
+            "type": 0,
+            "id": 1111153,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة ليدز بيكيت",
+                "ru": "Университет Лидс Беккет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيكيت",
+                "ru": "Университет Лидс Беккет"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 59,
+            "display": 59
+          },
+          "awayScore": {
+            "current": 10,
+            "display": 10
+          },
+          "id": 16793651,
+          "slug": "leeds-beckett-university-loughborough-students",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "CWHiscyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Loughborough Students",
+            "slug": "loughborough-students",
+            "shortName": "Loughborough Students",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 52,
+            "nameCode": "LST",
+            "national": false,
+            "type": 0,
+            "id": 1082327,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              },
+              "shortNameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Nottingham University",
+            "slug": "nottingham-university",
+            "shortName": "Nottingham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 24,
+            "nameCode": "NUN",
+            "national": false,
+            "type": 0,
+            "id": 1111152,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة نوتنغهام",
+                "ru": "Университет Ноттингема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. نوتنغهام",
+                "ru": "Университет Ноттингема"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 56,
+            "display": 56
+          },
+          "awayScore": {
+            "current": 38,
+            "display": 38
+          },
+          "id": 16793646,
+          "slug": "nottingham-university-loughborough-students",
+          "startTimestamp": 1790791200,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "CWHisZxUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Bath University",
+            "slug": "bath-university",
+            "shortName": "Bath University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 50,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111149,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة باث",
+                "ru": "Университет Бат"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. باث",
+                "ru": "Университет Бат"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Loughborough Students",
+            "slug": "loughborough-students",
+            "shortName": "Loughborough Students",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 52,
+            "nameCode": "LST",
+            "national": false,
+            "type": 0,
+            "id": 1082327,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              },
+              "shortNameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 50,
+            "display": 50
+          },
+          "awayScore": {
+            "current": 33,
+            "display": 33
+          },
+          "id": 16793639,
+          "slug": "bath-university-loughborough-students",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1111149": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "klIbsZxUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Hartpury College",
+            "slug": "hartpury-college",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 70,
+            "nameCode": "HAR",
+            "national": false,
+            "type": 0,
+            "id": 208060,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هرتبري كولدج",
+                "ru": "Хартпури Колледж"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "awayTeam": {
+            "name": "Bath University",
+            "slug": "bath-university",
+            "shortName": "Bath University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 50,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111149,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة باث",
+                "ru": "Университет Бат"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. باث",
+                "ru": "Университет Бат"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 24,
+            "display": 24
+          },
+          "awayScore": {
+            "current": 21,
+            "display": 21
+          },
+          "id": 16793647,
+          "slug": "bath-university-hartpury-college",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "ZxUisUAUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Brunel University",
+            "slug": "brunel-university",
+            "shortName": "Brunel University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111294,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة برونيل",
+                "ru": "Университет Брунеля"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. برونيل",
+                "ru": "Университет Брунеля"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Bath University",
+            "slug": "bath-university",
+            "shortName": "Bath University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 50,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111149,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة باث",
+                "ru": "Университет Бат"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. باث",
+                "ru": "Университет Бат"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 24,
+            "display": 24
+          },
+          "awayScore": {
+            "current": 68,
+            "display": 68
+          },
+          "id": 16793641,
+          "slug": "brunel-university-bath-university",
+          "startTimestamp": 1790793000,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "CWHisZxUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Bath University",
+            "slug": "bath-university",
+            "shortName": "Bath University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 50,
+            "nameCode": "BUN",
+            "national": false,
+            "type": 0,
+            "id": 1111149,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة باث",
+                "ru": "Университет Бат"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. باث",
+                "ru": "Университет Бат"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Loughborough Students",
+            "slug": "loughborough-students",
+            "shortName": "Loughborough Students",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 52,
+            "nameCode": "LST",
+            "national": false,
+            "type": 0,
+            "id": 1082327,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              },
+              "shortNameTranslation": {
+                "ar": "لوغبره ستودنتس",
+                "ru": "Лафборо Студентс"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 50,
+            "display": 50
+          },
+          "awayScore": {
+            "current": 33,
+            "display": 33
+          },
+          "id": 16793639,
+          "slug": "bath-university-loughborough-students",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ],
+      "1111154": [
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 3
+          },
+          "customId": "byUiseyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Cardiff University",
+            "slug": "cardiff-university",
+            "shortName": "Cardiff University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "CUN",
+            "national": false,
+            "type": 0,
+            "id": 1111154,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف",
+                "ru": "Университет Кардифф"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. كارديف",
+                "ru": "Университет Кардифф"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Cardiff Met",
+            "slug": "cardiff-met",
+            "shortName": "Cardiff Met",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 36,
+            "nameCode": "CME",
+            "national": false,
+            "type": 0,
+            "id": 1111151,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف مت",
+                "ru": "Кардифф Мет"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. مت",
+                "ru": "Кардифф Мет"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 38,
+            "display": 38
+          },
+          "awayScore": {
+            "current": 14,
+            "display": 14
+          },
+          "id": 16793649,
+          "slug": "cardiff-university-cardiff-met",
+          "startTimestamp": 1791385219,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "ayUiseyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 3,
+          "homeTeam": {
+            "name": "Durham University",
+            "slug": "durham-university",
+            "shortName": "Durham University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 23,
+            "nameCode": "DUN",
+            "national": false,
+            "type": 0,
+            "id": 1111150,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة دورهام",
+                "ru": "Университет Дарема"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. دورهام",
+                "ru": "Университет Дарема"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Cardiff University",
+            "slug": "cardiff-university",
+            "shortName": "Cardiff University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "CUN",
+            "national": false,
+            "type": 0,
+            "id": 1111154,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف",
+                "ru": "Университет Кардифф"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. كارديف",
+                "ru": "Университет Кардифф"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 38,
+            "display": 38
+          },
+          "awayScore": {
+            "current": 38,
+            "display": 38
+          },
+          "id": 16793642,
+          "slug": "cardiff-university-durham-university",
+          "startTimestamp": 1790789400,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "BUCS Super Rugby",
+            "slug": "bucs-super-rugby",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "BUCS Super Rugby",
+              "slug": "bucs-super-rugby",
+              "category": {
+                "name": "Rugby Union",
+                "slug": "rugby-union",
+                "sport": {
+                  "name": "Rugby",
+                  "slug": "rugby",
+                  "id": 12
+                },
+                "priority": 0,
+                "id": 82,
+                "flag": "rugby-union",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "العالم",
+                    "hi": "रग्बी यूनियन",
+                    "bn": "রাগবি ইউনিয়ন",
+                    "ru": "Регби-союз"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 60,
+              "liveActivityEnabled": false,
+              "id": 28278,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سوبر رغبي BUCS",
+                  "ru": "Супер Регби BUCS"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 159283,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الرغبي الممتاز لBUCS",
+                "ru": "Супер Регби BUCS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "klIbseyUi",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 2,
+          "homeTeam": {
+            "name": "Cardiff University",
+            "slug": "cardiff-university",
+            "shortName": "Cardiff University",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 18,
+            "nameCode": "CUN",
+            "national": false,
+            "type": 0,
+            "id": 1111154,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جامعة كارديف",
+                "ru": "Университет Кардифф"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. كارديف",
+                "ru": "Университет Кардифф"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Hartpury College",
+            "slug": "hartpury-college",
+            "gender": "M",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "userCount": 70,
+            "nameCode": "HAR",
+            "national": false,
+            "type": 0,
+            "id": 208060,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هرتبري كولدج",
+                "ru": "Хартпури Колледж"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "homeScore": {
+            "current": 43,
+            "display": 43
+          },
+          "awayScore": {
+            "current": 56,
+            "display": 56
+          },
+          "id": 16793636,
+          "slug": "cardiff-university-hartpury-college",
+          "startTimestamp": 1790175619,
+          "finalResultOnly": false
+        }
+      ]
+    }
+  }
+}

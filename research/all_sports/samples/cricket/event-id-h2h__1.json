@@ -1,0 +1,17 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15884178/h2h",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:08:30+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884177",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "teamDuel": {
+      "homeWins": 8,
+      "awayWins": 2,
+      "draws": 0
+    },
+    "managerDuel": null
+  }
+}

@@ -1,0 +1,643 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/287064/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:29:23+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/lauby-jr-borland/oQocsfuqc#id:17279017",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "firstToServe": 2,
+        "firstToServeInMatch": 1,
+        "tournament": {
+          "name": "Modus Super Series",
+          "slug": "modus-super-series",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Modus Super Series",
+            "slug": "modus-super-series",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 543,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16756,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري مودوس دارتس المباشر عبر الإنترنت",
+                "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+                "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+                "ru": "Суперсерия Modus"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 2,
+          "isGroup": false,
+          "isLive": false,
+          "id": 91878,
+          "endTimestamp": 1798675200,
+          "startTimestamp": 1767225600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+              "ar": "دوري Modus Darts المباشر عبر الإنترنت",
+              "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+              "ru": "Суперсерия Modus"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Modus Super Series 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89749
+        },
+        "customId": "DuzsoQoc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "West S.",
+          "slug": "west-steve",
+          "shortName": "West S.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 159,
+          "playerTeamInfo": {
+            "id": 33697
+          },
+          "nameCode": "WES",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 60978,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويست، ستيف",
+              "bn": "ওয়েস্ট, স্টিভ",
+              "hi": "वेस्ट, स्टीव",
+              "ru": "Стив Уэст"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Borland W.",
+          "slug": "borland-william",
+          "shortName": "Borland W.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 83,
+          "nameCode": "BOR",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "SX",
+            "alpha3": "SCO",
+            "name": "Scotland",
+            "slug": "scotland"
+          },
+          "id": 287064,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بورلاند، وليام",
+              "bn": "বোরল্যান্ড, উইলিয়াম",
+              "hi": "बोरलैंड, विलियम",
+              "ru": "Борланд, Уильям"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1775330592
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "awayScore.period1"
+          ],
+          "changeTimestamp": 1775331617
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15946786,
+        "bestOfSets": 1,
+        "bestOfLegs": 7,
+        "slug": "borland-west",
+        "startTimestamp": 1775329800,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "firstToServe": 2,
+        "firstToServeInMatch": 1,
+        "tournament": {
+          "name": "Modus Super Series",
+          "slug": "modus-super-series",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Modus Super Series",
+            "slug": "modus-super-series",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 543,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16756,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري مودوس دارتس المباشر عبر الإنترنت",
+                "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+                "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+                "ru": "Суперсерия Modus"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 2,
+          "isGroup": false,
+          "isLive": false,
+          "id": 91878,
+          "endTimestamp": 1798675200,
+          "startTimestamp": 1767225600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+              "ar": "دوري Modus Darts المباشر عبر الإنترنت",
+              "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+              "ru": "Суперсерия Modus"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Modus Super Series 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89749
+        },
+        "customId": "UrhbsoQoc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Borland W.",
+          "slug": "borland-william",
+          "shortName": "Borland W.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 83,
+          "nameCode": "BOR",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "SX",
+            "alpha3": "SCO",
+            "name": "Scotland",
+            "slug": "scotland"
+          },
+          "id": 287064,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بورلاند، وليام",
+              "bn": "বোরল্যান্ড, উইলিয়াম",
+              "hi": "बोरलैंड, विलियम",
+              "ru": "Борланд, Уильям"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Stevenson S.",
+          "slug": "stevenson-simon",
+          "shortName": "Stevenson S.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 35,
+          "playerTeamInfo": {
+            "id": 20369
+          },
+          "nameCode": "STE",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 143394,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ستيفنسون، سيمون",
+              "bn": "স্টিভেনসন, সাইমন",
+              "hi": "स्टीवेंसन, सिमोन",
+              "ru": "Стивенсон, Саймон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1775333132
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "awayScore.period1"
+          ],
+          "changeTimestamp": 1775334122
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15946785,
+        "bestOfSets": 1,
+        "bestOfLegs": 7,
+        "slug": "borland-stevenson",
+        "startTimestamp": 1775332320,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "firstToServe": 1,
+        "firstToServeInMatch": 1,
+        "tournament": {
+          "name": "Modus Super Series",
+          "slug": "modus-super-series",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Modus Super Series",
+            "slug": "modus-super-series",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 543,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16756,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري مودوس دارتس المباشر عبر الإنترنت",
+                "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+                "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+                "ru": "Суперсерия Modus"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 2,
+          "isGroup": false,
+          "isLive": false,
+          "id": 91878,
+          "endTimestamp": 1798675200,
+          "startTimestamp": 1767225600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+              "ar": "دوري Modus Darts المباشر عبر الإنترنت",
+              "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+              "ru": "Суперсерия Modus"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Modus Super Series 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89749
+        },
+        "customId": "hxksoQoc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Borland W.",
+          "slug": "borland-william",
+          "shortName": "Borland W.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 83,
+          "nameCode": "BOR",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "SX",
+            "alpha3": "SCO",
+            "name": "Scotland",
+            "slug": "scotland"
+          },
+          "id": 287064,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بورلاند، وليام",
+              "bn": "বোরল্যান্ড, উইলিয়াম",
+              "hi": "बोरलैंड, विलियम",
+              "ru": "Борланд, Уильям"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Klaasen J.",
+          "slug": "klaasen-jelle",
+          "shortName": "Klaasen J.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 219,
+          "nameCode": "KLA",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "NL",
+            "alpha3": "NLD",
+            "name": "Netherlands",
+            "slug": "netherlands"
+          },
+          "id": 26107,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#7f2259",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كلاسن، ييل",
+              "ru": "Йели Клаасен"
+            },
+            "shortNameTranslation": {
+              "ar": "ي. كلاسن",
+              "bn": "ক্লাসেন জে.",
+              "hi": "क्लासन जे."
+            }
+          }
+        },
+        "homeScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1779095576
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "awayScore.period1"
+          ],
+          "changeTimestamp": 1779096486
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16182321,
+        "bestOfSets": 1,
+        "bestOfLegs": 7,
+        "slug": "borland-klaasen",
+        "startTimestamp": 1779094860,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

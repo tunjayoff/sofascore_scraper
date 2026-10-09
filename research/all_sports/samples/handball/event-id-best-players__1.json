@@ -1,0 +1,787 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16634075/best-players",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:58:28+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/rk-partizan-one-veszprem/DHcsQKc#id:16634075",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "bestHomeTeamPlayer": {
+      "value": "6",
+      "label": "gls",
+      "player": {
+        "name": "Uladzislau Kulesh",
+        "firstName": "Uladzislau",
+        "lastName": "Kulesh",
+        "slug": "uladzislau-kulesh",
+        "shortName": "U. Kulesh",
+        "position": "LB",
+        "jerseyNumber": "19",
+        "height": 206,
+        "userCount": 39,
+        "gender": "M",
+        "sofascoreId": "ttw-8m5",
+        "id": 912570,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 833241600,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كوليش، أولادزيسلاو",
+            "bn": "কুলেশ, উলাদজিসলাউ",
+            "hi": "कुलेश, उलादज़िस्लाऊ",
+            "ru": "Уладзислав Кулеш"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. كوليش",
+            "bn": "ইউ. কুলেশ",
+            "hi": "यू. कुलेश",
+            "ru": "У. Кулеш"
+          }
+        }
+      },
+      "team": {
+        "name": "RK Partizan",
+        "slug": "rk-partizan",
+        "shortName": "RK Partizan",
+        "gender": "M",
+        "sport": {
+          "name": "Handball",
+          "slug": "handball",
+          "id": 6
+        },
+        "userCount": 5134,
+        "nameCode": "PAR",
+        "national": false,
+        "type": 0,
+        "id": 6791,
+        "teamColors": {
+          "primary": "#000000",
+          "secondary": "#ffffff",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "آر كيه بارتيزان",
+            "ru": "Партизан"
+          },
+          "shortNameTranslation": {}
+        }
+      }
+    },
+    "bestAwayTeamPlayer": {
+      "value": "6",
+      "label": "gls",
+      "player": {
+        "name": "Ivan Martinović",
+        "firstName": "Ivan",
+        "lastName": "Martinović",
+        "slug": "martinovic-ivan",
+        "shortName": "I. Martinović",
+        "position": "RB",
+        "jerseyNumber": "5",
+        "height": 194,
+        "userCount": 3840,
+        "gender": "M",
+        "sofascoreId": "iw8-qi6",
+        "id": 941775,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 884044800,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مارتينوفيتش، إيفان",
+            "bn": "মার্টিনোভিক, ইভান",
+            "hi": "मार्टिनोविक, इवान",
+            "ru": "Иван Мартинович"
+          },
+          "shortNameTranslation": {
+            "ar": "إ. مارتينوفيتش",
+            "bn": "আই. মার্টিনোভিচ",
+            "hi": "आई. मार्टिनोविक",
+            "ru": "И. Мартинович"
+          }
+        }
+      },
+      "team": {
+        "name": "One Veszprém",
+        "slug": "telekom-veszprem",
+        "shortName": "Veszprém",
+        "gender": "M",
+        "sport": {
+          "name": "Handball",
+          "slug": "handball",
+          "id": 6
+        },
+        "userCount": 7741,
+        "nameCode": "VEZ",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "id": 6628,
+        "teamColors": {
+          "primary": "#ee1212",
+          "secondary": "#ffffff",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "وان فزبرم",
+            "ru": "Оне Веспрем"
+          },
+          "shortNameTranslation": {
+            "ar": "فزبرم",
+            "bn": "ভেজপ্রেম",
+            "hi": "वेस्प्रेम",
+            "ru": "Веспрем"
+          }
+        }
+      }
+    },
+    "leaderboard": [
+      {
+        "value": "6",
+        "label": "gls",
+        "player": {
+          "name": "Ivan Martinović",
+          "firstName": "Ivan",
+          "lastName": "Martinović",
+          "slug": "martinovic-ivan",
+          "shortName": "I. Martinović",
+          "position": "RB",
+          "jerseyNumber": "5",
+          "height": 194,
+          "userCount": 3840,
+          "gender": "M",
+          "sofascoreId": "iw8-qi6",
+          "id": 941775,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 884044800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مارتينوفيتش، إيفان",
+              "bn": "মার্টিনোভিক, ইভান",
+              "hi": "मार्टिनोविक, इवान",
+              "ru": "Иван Мартинович"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. مارتينوفيتش",
+              "bn": "আই. মার্টিনোভিচ",
+              "hi": "आई. मार्टिनोविक",
+              "ru": "И. Мартинович"
+            }
+          }
+        },
+        "team": {
+          "name": "One Veszprém",
+          "slug": "telekom-veszprem",
+          "shortName": "Veszprém",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 7741,
+          "nameCode": "VEZ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 6628,
+          "teamColors": {
+            "primary": "#ee1212",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وان فزبرم",
+              "ru": "Оне Веспрем"
+            },
+            "shortNameTranslation": {
+              "ar": "فزبرم",
+              "bn": "ভেজপ্রেম",
+              "hi": "वेस्प्रेम",
+              "ru": "Веспрем"
+            }
+          }
+        }
+      },
+      {
+        "value": "6",
+        "label": "gls",
+        "player": {
+          "name": "Uladzislau Kulesh",
+          "firstName": "Uladzislau",
+          "lastName": "Kulesh",
+          "slug": "uladzislau-kulesh",
+          "shortName": "U. Kulesh",
+          "position": "LB",
+          "jerseyNumber": "19",
+          "height": 206,
+          "userCount": 39,
+          "gender": "M",
+          "sofascoreId": "ttw-8m5",
+          "id": 912570,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 833241600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كوليش، أولادزيسلاو",
+              "bn": "কুলেশ, উলাদজিসলাউ",
+              "hi": "कुलेश, उलादज़िस्लाऊ",
+              "ru": "Уладзислав Кулеш"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. كوليش",
+              "bn": "ইউ. কুলেশ",
+              "hi": "यू. कुलेश",
+              "ru": "У. Кулеш"
+            }
+          }
+        },
+        "team": {
+          "name": "RK Partizan",
+          "slug": "rk-partizan",
+          "shortName": "RK Partizan",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 5134,
+          "nameCode": "PAR",
+          "national": false,
+          "type": 0,
+          "id": 6791,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آر كيه بارتيزان",
+              "ru": "Партизан"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "5",
+        "label": "gls",
+        "player": {
+          "name": "Nedim Remili",
+          "firstName": "Nedim",
+          "lastName": "Remili",
+          "slug": "nedim-remili",
+          "shortName": "N. Remili",
+          "position": "CB",
+          "jerseyNumber": "29",
+          "height": 195,
+          "userCount": 362,
+          "gender": "M",
+          "sofascoreId": "kk5-baj",
+          "id": 902801,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 806025600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "رميلي، نديم",
+              "bn": "রেমিলি, নেদিম",
+              "hi": "रेमिली, नेदिम",
+              "ru": "Недим Ремили"
+            },
+            "shortNameTranslation": {
+              "ar": "ن. رميلي",
+              "bn": "এন. রেমিলি",
+              "hi": "एन. रेमिली",
+              "ru": "Н. Ремили"
+            }
+          }
+        },
+        "team": {
+          "name": "One Veszprém",
+          "slug": "telekom-veszprem",
+          "shortName": "Veszprém",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 7741,
+          "nameCode": "VEZ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 6628,
+          "teamColors": {
+            "primary": "#ee1212",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وان فزبرم",
+              "ru": "Оне Веспрем"
+            },
+            "shortNameTranslation": {
+              "ar": "فزبرم",
+              "bn": "ভেজপ্রেম",
+              "hi": "वेस्प्रेम",
+              "ru": "Веспрем"
+            }
+          }
+        }
+      },
+      {
+        "value": "5",
+        "label": "gls",
+        "player": {
+          "name": "Hugo Descat",
+          "firstName": "Hugo",
+          "lastName": "Descat",
+          "slug": "hugo-descat",
+          "shortName": "H. Descat",
+          "position": "LW",
+          "jerseyNumber": "9",
+          "height": 183,
+          "userCount": 346,
+          "gender": "M",
+          "sofascoreId": "ppi-8p7",
+          "id": 902750,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 713923200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديسكات، هوغو",
+              "bn": "ডেসকাট, হুগো",
+              "hi": "डेस्कैट, ह्यूगो",
+              "ru": "Уго Дескат"
+            },
+            "shortNameTranslation": {
+              "ar": "هـ. ديسكات",
+              "bn": "এইচ. ডেসকাট",
+              "hi": "एच. डेसकैट",
+              "ru": "У. Дескат"
+            }
+          }
+        },
+        "team": {
+          "name": "One Veszprém",
+          "slug": "telekom-veszprem",
+          "shortName": "Veszprém",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 7741,
+          "nameCode": "VEZ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 6628,
+          "teamColors": {
+            "primary": "#ee1212",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وان فزبرم",
+              "ru": "Оне Веспрем"
+            },
+            "shortNameTranslation": {
+              "ar": "فزبرم",
+              "bn": "ভেজপ্রেম",
+              "hi": "वेस्प्रेम",
+              "ru": "Веспрем"
+            }
+          }
+        }
+      },
+      {
+        "value": "5",
+        "label": "gls",
+        "player": {
+          "name": "Mate Gancs-Peto",
+          "firstName": "Mate",
+          "lastName": "Gancs-Peto",
+          "slug": "mate-gancs-peto",
+          "shortName": "M. Gáncs-Peto",
+          "position": "LW",
+          "jerseyNumber": "66",
+          "height": 182,
+          "userCount": 19,
+          "gender": "M",
+          "sofascoreId": "zq9-xxy",
+          "id": 2052581,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1191283200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غانس-بيتو، ماتي",
+              "ru": "Матэ Ганчс-Пето"
+            },
+            "shortNameTranslation": {
+              "ar": "م. بيتو",
+              "ru": "М. Ганчс-Пето"
+            }
+          }
+        },
+        "team": {
+          "name": "One Veszprém",
+          "slug": "telekom-veszprem",
+          "shortName": "Veszprém",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 7741,
+          "nameCode": "VEZ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 6628,
+          "teamColors": {
+            "primary": "#ee1212",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وان فزبرم",
+              "ru": "Оне Веспрем"
+            },
+            "shortNameTranslation": {
+              "ar": "فزبرم",
+              "bn": "ভেজপ্রেম",
+              "hi": "वेस्प्रेम",
+              "ru": "Веспрем"
+            }
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Yehia Mohammed Elderaa",
+          "firstName": "Yehia",
+          "lastName": "Elderaa",
+          "slug": "yehia-elderaa",
+          "shortName": "Y. Elderaa",
+          "position": "CB",
+          "jerseyNumber": "39",
+          "height": 190,
+          "userCount": 1197,
+          "gender": "M",
+          "sofascoreId": "b4t-8n5",
+          "id": 2605049,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 805939200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Ехия Эльдераа"
+            },
+            "shortNameTranslation": {
+              "ru": "Е. Эльдераа"
+            }
+          }
+        },
+        "team": {
+          "name": "One Veszprém",
+          "slug": "telekom-veszprem",
+          "shortName": "Veszprém",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 7741,
+          "nameCode": "VEZ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 6628,
+          "teamColors": {
+            "primary": "#ee1212",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وان فزبرم",
+              "ru": "Оне Веспрем"
+            },
+            "shortNameTranslation": {
+              "ar": "فزبرم",
+              "bn": "ভেজপ্রেম",
+              "hi": "वेस्प्रेम",
+              "ru": "Веспрем"
+            }
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Yoav Lumbroso",
+          "firstName": "Yoav",
+          "lastName": "Lumbroso",
+          "slug": "yoav-lumbroso",
+          "shortName": "Y. Lumbroso",
+          "position": "CB",
+          "jerseyNumber": "66",
+          "height": 168,
+          "userCount": 45,
+          "gender": "M",
+          "sofascoreId": "5fd-m2y",
+          "id": 944952,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 963619200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لومبروسو، يوآف",
+              "ru": "Йоав Лумбросо"
+            },
+            "shortNameTranslation": {
+              "ar": "ي. لومبروسو",
+              "ru": "Й. Лумбросо"
+            }
+          }
+        },
+        "team": {
+          "name": "RK Partizan",
+          "slug": "rk-partizan",
+          "shortName": "RK Partizan",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 5134,
+          "nameCode": "PAR",
+          "national": false,
+          "type": 0,
+          "id": 6791,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آر كيه بارتيزان",
+              "ru": "Партизан"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Ali Zeinelabedin Ali",
+          "firstName": "Ali Ismail Mohamed",
+          "lastName": "Zeinelabedin Ali",
+          "slug": "ali-zeinelabedin-ali",
+          "shortName": "A. Zeinelabedin Ali",
+          "position": "LB",
+          "jerseyNumber": "90",
+          "height": 199,
+          "userCount": 3509,
+          "gender": "M",
+          "sofascoreId": "p9c-8g9",
+          "id": 1142878,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 661132800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "علي زين العابدين علي",
+              "bn": "জেইনলাবেদিন আলী, আলী ইসমাইল মো",
+              "hi": "ज़ेइनलाबेदीन अली, अली इस्माइल मोहम्मद",
+              "ru": "Али Зейналабедин Али"
+            },
+            "shortNameTranslation": {
+              "ar": "ع. علي",
+              "bn": "এ. জেইন",
+              "hi": "ए. ज़ेन",
+              "ru": "А. Али"
+            }
+          }
+        },
+        "team": {
+          "name": "One Veszprém",
+          "slug": "telekom-veszprem",
+          "shortName": "Veszprém",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 7741,
+          "nameCode": "VEZ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 6628,
+          "teamColors": {
+            "primary": "#ee1212",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وان فزبرم",
+              "ru": "Оне Веспрем"
+            },
+            "shortNameTranslation": {
+              "ar": "فزبرم",
+              "bn": "ভেজপ্রেম",
+              "hi": "वेस्प्रेम",
+              "ru": "Веспрем"
+            }
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Nikola Crnoglavac",
+          "firstName": "Nikola",
+          "lastName": "Crnoglavac",
+          "slug": "nikola-crnoglavac",
+          "shortName": "N. Crnoglavac",
+          "position": "RB",
+          "jerseyNumber": "5",
+          "height": 195,
+          "userCount": 57,
+          "gender": "M",
+          "sofascoreId": "iip-f9e",
+          "id": 912507,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 703900800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كرنوغلافاتش، نيكولا",
+              "ru": "Никола Черноглавец"
+            },
+            "shortNameTranslation": {
+              "ar": "ن. كرنوغلافاتش",
+              "ru": "Н. Черноглавец"
+            }
+          }
+        },
+        "team": {
+          "name": "RK Partizan",
+          "slug": "rk-partizan",
+          "shortName": "RK Partizan",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 5134,
+          "nameCode": "PAR",
+          "national": false,
+          "type": 0,
+          "id": 6791,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آر كيه بارتيزان",
+              "ru": "Партизан"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Dragan Pechmalbec",
+          "firstName": "Dragan",
+          "lastName": "Pechmalbec",
+          "slug": "dragan-pechmalbec",
+          "shortName": "D. Pechmalbec",
+          "position": "P",
+          "jerseyNumber": "46",
+          "height": 194,
+          "userCount": 109,
+          "gender": "M",
+          "sofascoreId": "66m-xsh",
+          "id": 902855,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 820800000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بيشمالبيك، دراجان",
+              "bn": "পেচমালবেক, ড্রাগান",
+              "hi": "पेचमलबेक, ड्रेगन",
+              "ru": "Драган Пехмальбек"
+            },
+            "shortNameTranslation": {
+              "ar": "د. بيشمالبيك",
+              "bn": "ডি. পেচমালবেক",
+              "hi": "डी. पेचमलबेक",
+              "ru": "Д. Пехмальбек"
+            }
+          }
+        },
+        "team": {
+          "name": "One Veszprém",
+          "slug": "telekom-veszprem",
+          "shortName": "Veszprém",
+          "gender": "M",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 7741,
+          "nameCode": "VEZ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 6628,
+          "teamColors": {
+            "primary": "#ee1212",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "وان فزبرم",
+              "ru": "Оне Веспрем"
+            },
+            "shortNameTranslation": {
+              "ar": "فزبرم",
+              "bn": "ভেজপ্রেম",
+              "hi": "वेस्प्रेम",
+              "ru": "Веспрем"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

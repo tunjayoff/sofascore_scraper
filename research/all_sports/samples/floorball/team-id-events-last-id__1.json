@@ -1,0 +1,722 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/25902/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:02:17+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/acema-sparta-praha-tatran-stresovice/ctkseRr#id:16779060",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Extraliga",
+          "slug": "extraliga",
+          "category": {
+            "name": "Czech Republic",
+            "slug": "czech-republic",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "CZ",
+              "alpha3": "CZE",
+              "name": "Czechia",
+              "slug": "czechia"
+            },
+            "id": 394,
+            "flag": "czech-republic",
+            "alpha2": "CZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جمهورية التشيك",
+                "hi": "चेक गणराज्य",
+                "bn": "চেক প্রজাতন্ত্র",
+                "ru": "Чехия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Superliga",
+            "slug": "superliga",
+            "primaryColorHex": "#0c2e6a",
+            "secondaryColorHex": "#d31820",
+            "category": {
+              "name": "Czech Republic",
+              "slug": "czech-republic",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "CZ",
+                "alpha3": "CZE",
+                "name": "Czechia",
+                "slug": "czechia"
+              },
+              "id": 394,
+              "flag": "czech-republic",
+              "alpha2": "CZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جمهورية التشيك",
+                  "hi": "चेक गणराज्य",
+                  "bn": "চেক প্রজাতন্ত্র",
+                  "ru": "Чехия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 122,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 829,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "hi": "सुपरलिगा",
+                "bn": "সুপারলীগা",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 4840,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "एक्स्ट्रालिगा",
+              "ar": "الدوري الاضافي",
+              "bn": "এক্সট্রালীগা",
+              "ru": "Экстралига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Extraliga 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 76918
+        },
+        "roundInfo": {
+          "round": 15
+        },
+        "customId": "ctksxZfc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Florbal Ústí",
+          "slug": "florbal-usti",
+          "shortName": "Ústí",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 16,
+          "nameCode": "UNL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 264972,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فلوربول أوستي",
+              "ru": "Флорбал Устии"
+            },
+            "shortNameTranslation": {
+              "ar": "أوستي",
+              "ru": "Устии"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Tatran Střešovice",
+          "slug": "tatran-stresovice",
+          "shortName": "Tatran",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 102,
+          "nameCode": "STR",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 25902,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تاتران ستريشوفيتس",
+              "ru": "Татран Омлукс Стрешовице"
+            },
+            "shortNameTranslation": {
+              "ar": "تاتران",
+              "bn": "তাত্রান",
+              "hi": "टाट्रान"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 5,
+          "display": 5,
+          "period1": 3,
+          "period2": 1,
+          "period3": 1,
+          "normaltime": 5
+        },
+        "awayScore": {
+          "current": 8,
+          "display": 8,
+          "period1": 2,
+          "period2": 4,
+          "period3": 2,
+          "normaltime": 8
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 12
+            }
+          ],
+          "changeTimestamp": 1767463271
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14016368,
+        "slug": "florbal-usti-tatran-stresovice",
+        "startTimestamp": 1767456000,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Extraliga",
+          "slug": "extraliga",
+          "category": {
+            "name": "Czech Republic",
+            "slug": "czech-republic",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "CZ",
+              "alpha3": "CZE",
+              "name": "Czechia",
+              "slug": "czechia"
+            },
+            "id": 394,
+            "flag": "czech-republic",
+            "alpha2": "CZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جمهورية التشيك",
+                "hi": "चेक गणराज्य",
+                "bn": "চেক প্রজাতন্ত্র",
+                "ru": "Чехия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Superliga",
+            "slug": "superliga",
+            "primaryColorHex": "#0c2e6a",
+            "secondaryColorHex": "#d31820",
+            "category": {
+              "name": "Czech Republic",
+              "slug": "czech-republic",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "CZ",
+                "alpha3": "CZE",
+                "name": "Czechia",
+                "slug": "czechia"
+              },
+              "id": 394,
+              "flag": "czech-republic",
+              "alpha2": "CZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جمهورية التشيك",
+                  "hi": "चेक गणराज्य",
+                  "bn": "চেক প্রজাতন্ত্র",
+                  "ru": "Чехия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 122,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 829,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "hi": "सुपरलिगा",
+                "bn": "সুপারলীগা",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 4840,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "एक्स्ट्रालिगा",
+              "ar": "الدوري الاضافي",
+              "bn": "এক্সট্রালীগা",
+              "ru": "Экстралига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Extraliga 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 76918
+        },
+        "roundInfo": {
+          "round": 17
+        },
+        "customId": "ctksoRr",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Tatran Střešovice",
+          "slug": "tatran-stresovice",
+          "shortName": "Tatran",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 102,
+          "nameCode": "STR",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 25902,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تاتران ستريشوفيتس",
+              "ru": "Татран Омлукс Стрешовице"
+            },
+            "shortNameTranslation": {
+              "ar": "تاتران",
+              "bn": "তাত্রান",
+              "hi": "टाट्रान"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "FAT PIPE Florbal Chodov",
+          "slug": "fat-pipe-florbal-chodov",
+          "shortName": "Chodov",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 38,
+          "nameCode": "CHO",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 44614,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فات بايب فلوربال تشودوف",
+              "ru": "Йм Ходов"
+            },
+            "shortNameTranslation": {
+              "ar": "تشودوف",
+              "bn": "চোদভ",
+              "hi": "चोडोव"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 13,
+          "display": 13,
+          "period1": 3,
+          "period2": 5,
+          "period3": 5,
+          "normaltime": 13
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 1,
+          "period2": 2,
+          "period3": 0,
+          "normaltime": 3
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 12
+            }
+          ],
+          "changeTimestamp": 1767642608
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14016382,
+        "slug": "fat-pipe-florbal-chodov-tatran-stresovice",
+        "startTimestamp": 1767636000,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Extraliga",
+          "slug": "extraliga",
+          "category": {
+            "name": "Czech Republic",
+            "slug": "czech-republic",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "CZ",
+              "alpha3": "CZE",
+              "name": "Czechia",
+              "slug": "czechia"
+            },
+            "id": 394,
+            "flag": "czech-republic",
+            "alpha2": "CZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جمهورية التشيك",
+                "hi": "चेक गणराज्य",
+                "bn": "চেক প্রজাতন্ত্র",
+                "ru": "Чехия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Superliga",
+            "slug": "superliga",
+            "primaryColorHex": "#0c2e6a",
+            "secondaryColorHex": "#d31820",
+            "category": {
+              "name": "Czech Republic",
+              "slug": "czech-republic",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "CZ",
+                "alpha3": "CZE",
+                "name": "Czechia",
+                "slug": "czechia"
+              },
+              "id": 394,
+              "flag": "czech-republic",
+              "alpha2": "CZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جمهورية التشيك",
+                  "hi": "चेक गणराज्य",
+                  "bn": "চেক প্রজাতন্ত্র",
+                  "ru": "Чехия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 122,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 829,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "hi": "सुपरलिगा",
+                "bn": "সুপারলীগা",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 4840,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "एक्स्ट्रालिगा",
+              "ar": "الدوري الاضافي",
+              "bn": "এক্সট্রালীগা",
+              "ru": "Экстралига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Extraliga 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 76918
+        },
+        "roundInfo": {
+          "round": 18
+        },
+        "customId": "ctksgdbc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "FBC 4CLEAN Česká Lípa",
+          "slug": "fbc-4clean-ceska-lipa",
+          "shortName": "FBC Česká Lípa",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 27,
+          "nameCode": "CEL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 252656,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إف بي سي 4 كلين تشيسكا ليبا",
+              "ru": "ФБК 4КЛИН Ческа Липа"
+            },
+            "shortNameTranslation": {
+              "ar": "إف بي سي تشيسكا ليبا",
+              "bn": "এফবিসি 4চেস্কা লিপা",
+              "hi": "एफबीसी चेस्का लीपा",
+              "ru": "ФБК Ческа Липа"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Tatran Střešovice",
+          "slug": "tatran-stresovice",
+          "shortName": "Tatran",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 102,
+          "nameCode": "STR",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 25902,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تاتران ستريشوفيتس",
+              "ru": "Татран Омлукс Стрешовице"
+            },
+            "shortNameTranslation": {
+              "ar": "تاتران",
+              "bn": "তাত্রান",
+              "hi": "टाट्रान"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 5,
+          "display": 5,
+          "period1": 2,
+          "period2": 2,
+          "period3": 1,
+          "normaltime": 5
+        },
+        "awayScore": {
+          "current": 13,
+          "display": 13,
+          "period1": 4,
+          "period2": 5,
+          "period3": 4,
+          "normaltime": 13
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 12
+            }
+          ],
+          "changeTimestamp": 1768075592
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14016388,
+        "slug": "fbc-4clean-ceska-lipa-tatran-stresovice",
+        "startTimestamp": 1768068000,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

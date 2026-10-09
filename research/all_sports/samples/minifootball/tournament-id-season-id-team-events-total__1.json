@@ -1,0 +1,619 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/168704/season/104839/team-events/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:21:38+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/sahin-united-mfc-baku-juniors/TYjjswRpk#id:17268351",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "teamEvents": {
+      "1176821": [
+        {
+          "tournament": {
+            "name": "Summer Cup Baku, Group A",
+            "slug": "summer-cup-baku-group-a",
+            "category": {
+              "name": "Azerbaijan",
+              "slug": "azerbaijan",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1808,
+              "flag": "azerbaijan",
+              "alpha2": "AZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أذربيجان",
+                  "ru": "Азербайджан"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Summer Cup Baku",
+              "slug": "summer-cup-baku",
+              "category": {
+                "name": "Azerbaijan",
+                "slug": "azerbaijan",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1808,
+                "flag": "azerbaijan",
+                "alpha2": "AZ",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "أذربيجان",
+                    "ru": "Азербайджан"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 54,
+              "liveActivityEnabled": false,
+              "id": 30841,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كأس الصيف باكو",
+                  "ru": "Летний Кубок Баку"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 168704,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كأس الصيف باكو، المجموعة ا",
+                "ru": "Кубок Лета Баку, Группа A"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "TYjjswLvj",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 3,
+          "homeTeam": {
+            "name": "Qarayev MFK",
+            "slug": "qarayev-mfk",
+            "shortName": "Qarayev",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 19,
+            "nameCode": "QMF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 1176821,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "قراييف إم إف كيه",
+                "ru": "Караев МФК"
+              },
+              "shortNameTranslation": {
+                "ar": "قراييف",
+                "ru": "Караев"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Baku Juniors",
+            "slug": "baku-juniors",
+            "shortName": "Baku Juniors",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 32,
+            "nameCode": "BJU",
+            "national": false,
+            "type": 0,
+            "id": 1149943,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "باكو جونيورز",
+                "ru": "Баку Юниорс"
+              },
+              "shortNameTranslation": {
+                "ar": "باكو جونيورز",
+                "ru": "Баку Юниорс"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 6,
+            "display": 6
+          },
+          "awayScore": {
+            "current": 6,
+            "display": 6
+          },
+          "id": 17207528,
+          "slug": "qarayev-mfk-baku-juniors",
+          "startTimestamp": 1791032400,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "Summer Cup Baku, Group A",
+            "slug": "summer-cup-baku-group-a",
+            "category": {
+              "name": "Azerbaijan",
+              "slug": "azerbaijan",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1808,
+              "flag": "azerbaijan",
+              "alpha2": "AZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أذربيجان",
+                  "ru": "Азербайджан"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Summer Cup Baku",
+              "slug": "summer-cup-baku",
+              "category": {
+                "name": "Azerbaijan",
+                "slug": "azerbaijan",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1808,
+                "flag": "azerbaijan",
+                "alpha2": "AZ",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "أذربيجان",
+                    "ru": "Азербайджан"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 54,
+              "liveActivityEnabled": false,
+              "id": 30841,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كأس الصيف باكو",
+                  "ru": "Летний Кубок Баку"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 168704,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كأس الصيف باكو، المجموعة ا",
+                "ru": "Кубок Лета Баку, Группа A"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "wLvjswRpk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Qarayev MFK",
+            "slug": "qarayev-mfk",
+            "shortName": "Qarayev",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 19,
+            "nameCode": "QMF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 1176821,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "قراييف إم إف كيه",
+                "ru": "Караев МФК"
+              },
+              "shortNameTranslation": {
+                "ar": "قراييف",
+                "ru": "Караев"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Şahin United MFC",
+            "slug": "sahin-united-mfc",
+            "shortName": "Şahin United",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 1,
+            "nameCode": "AUM",
+            "national": false,
+            "type": 0,
+            "id": 1289621,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "homeScore": {
+            "current": 6,
+            "display": 6
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3
+          },
+          "id": 17206479,
+          "slug": "sahin-united-mfc-qarayev-mfk",
+          "startTimestamp": 1790593200,
+          "finalResultOnly": false
+        }
+      ],
+      "1289621": [
+        {
+          "tournament": {
+            "name": "Summer Cup Baku, Group A",
+            "slug": "summer-cup-baku-group-a",
+            "category": {
+              "name": "Azerbaijan",
+              "slug": "azerbaijan",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1808,
+              "flag": "azerbaijan",
+              "alpha2": "AZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أذربيجان",
+                  "ru": "Азербайджан"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Summer Cup Baku",
+              "slug": "summer-cup-baku",
+              "category": {
+                "name": "Azerbaijan",
+                "slug": "azerbaijan",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1808,
+                "flag": "azerbaijan",
+                "alpha2": "AZ",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "أذربيجان",
+                    "ru": "Азербайджан"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 54,
+              "liveActivityEnabled": false,
+              "id": 30841,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كأس الصيف باكو",
+                  "ru": "Летний Кубок Баку"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 168704,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كأس الصيف باكو، المجموعة ا",
+                "ru": "Кубок Лета Баку, Группа A"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "wLvjswRpk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Qarayev MFK",
+            "slug": "qarayev-mfk",
+            "shortName": "Qarayev",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 19,
+            "nameCode": "QMF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 1176821,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "قراييف إم إف كيه",
+                "ru": "Караев МФК"
+              },
+              "shortNameTranslation": {
+                "ar": "قراييف",
+                "ru": "Караев"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Şahin United MFC",
+            "slug": "sahin-united-mfc",
+            "shortName": "Şahin United",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 1,
+            "nameCode": "AUM",
+            "national": false,
+            "type": 0,
+            "id": 1289621,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "homeScore": {
+            "current": 6,
+            "display": 6
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3
+          },
+          "id": 17206479,
+          "slug": "sahin-united-mfc-qarayev-mfk",
+          "startTimestamp": 1790593200,
+          "finalResultOnly": false
+        }
+      ],
+      "1149943": [
+        {
+          "tournament": {
+            "name": "Summer Cup Baku, Group A",
+            "slug": "summer-cup-baku-group-a",
+            "category": {
+              "name": "Azerbaijan",
+              "slug": "azerbaijan",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1808,
+              "flag": "azerbaijan",
+              "alpha2": "AZ",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أذربيجان",
+                  "ru": "Азербайджан"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "Summer Cup Baku",
+              "slug": "summer-cup-baku",
+              "category": {
+                "name": "Azerbaijan",
+                "slug": "azerbaijan",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1808,
+                "flag": "azerbaijan",
+                "alpha2": "AZ",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "أذربيجان",
+                    "ru": "Азербайджан"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 54,
+              "liveActivityEnabled": false,
+              "id": 30841,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كأس الصيف باكو",
+                  "ru": "Летний Кубок Баку"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 168704,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كأس الصيف باكو، المجموعة ا",
+                "ru": "Кубок Лета Баку, Группа A"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "TYjjswLvj",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 3,
+          "homeTeam": {
+            "name": "Qarayev MFK",
+            "slug": "qarayev-mfk",
+            "shortName": "Qarayev",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 19,
+            "nameCode": "QMF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 1176821,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "قراييف إم إف كيه",
+                "ru": "Караев МФК"
+              },
+              "shortNameTranslation": {
+                "ar": "قراييف",
+                "ru": "Караев"
+              }
+            }
+          },
+          "awayTeam": {
+            "name": "Baku Juniors",
+            "slug": "baku-juniors",
+            "shortName": "Baku Juniors",
+            "gender": "M",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 32,
+            "nameCode": "BJU",
+            "national": false,
+            "type": 0,
+            "id": 1149943,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "باكو جونيورز",
+                "ru": "Баку Юниорс"
+              },
+              "shortNameTranslation": {
+                "ar": "باكو جونيورز",
+                "ru": "Баку Юниорс"
+              }
+            }
+          },
+          "homeScore": {
+            "current": 6,
+            "display": 6
+          },
+          "awayScore": {
+            "current": 6,
+            "display": 6
+          },
+          "id": 17207528,
+          "slug": "qarayev-mfk-baku-juniors",
+          "startTimestamp": 1791032400,
+          "finalResultOnly": false
+        }
+      ]
+    }
+  }
+}

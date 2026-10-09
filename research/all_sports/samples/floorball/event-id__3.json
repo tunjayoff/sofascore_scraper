@@ -1,0 +1,296 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16779060",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:02:03+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/acema-sparta-praha-tatran-stresovice/ctkseRr#id:16779060",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "Extraliga",
+        "slug": "extraliga",
+        "category": {
+          "name": "Czech Republic",
+          "slug": "czech-republic",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 394,
+          "flag": "czech-republic",
+          "alpha2": "CZ",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جمهورية التشيك",
+              "hi": "चेक गणराज्य",
+              "bn": "চেক প্রজাতন্ত্র",
+              "ru": "Чехия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Superliga",
+          "slug": "superliga",
+          "primaryColorHex": "#0c2e6a",
+          "secondaryColorHex": "#d31820",
+          "category": {
+            "name": "Czech Republic",
+            "slug": "czech-republic",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "CZ",
+              "alpha3": "CZE",
+              "name": "Czechia",
+              "slug": "czechia"
+            },
+            "id": 394,
+            "flag": "czech-republic",
+            "alpha2": "CZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جمهورية التشيك",
+                "hi": "चेक गणराज्य",
+                "bn": "চেক প্রজাতন্ত্র",
+                "ru": "Чехия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 122,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 829,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري الممتاز",
+              "hi": "सुपरलिगा",
+              "bn": "সুপারলীগা",
+              "ru": "Суперлига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 1,
+        "isLive": false,
+        "id": 4840,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "एक्स्ट्रालिगा",
+            "ar": "الدوري الاضافي",
+            "bn": "এক্সট্রালীগা",
+            "ru": "Экстралига"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "Extraliga 26/27",
+        "year": "26/27",
+        "editor": false,
+        "id": 100421
+      },
+      "roundInfo": {
+        "round": 11
+      },
+      "customId": "ctkseRr",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "venue": {
+        "city": {
+          "name": "Prague",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 19090
+        },
+        "hidden": true,
+        "slug": "sh-tatran-stresovice",
+        "name": "SH Tatran Stresovice",
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 10714,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إس إتش تاتران ستريسوفيتشي",
+            "hi": "एसएच टाट्रान स्ट्रेसोविस",
+            "bn": "এসএইচ তাট্রান স্ট্রেসোভাইস"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "SH Tatran Stresovice"
+        }
+      },
+      "homeTeam": {
+        "name": "Tatran Střešovice",
+        "slug": "tatran-stresovice",
+        "shortName": "Tatran",
+        "gender": "M",
+        "sport": {
+          "name": "Floorball",
+          "slug": "floorball",
+          "id": 7
+        },
+        "userCount": 100,
+        "nameCode": "STR",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 25902,
+        "fullName": "Tatran Střešovice",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تاتران ستريشوفيتس",
+            "ru": "Татран Омлукс Стрешовице"
+          },
+          "shortNameTranslation": {
+            "ar": "تاتران",
+            "bn": "তাত্রান",
+            "hi": "टाट्रान"
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "ACEMA Sparta Praha",
+        "slug": "acema-sparta-praha",
+        "shortName": "Sparta Praha",
+        "gender": "M",
+        "sport": {
+          "name": "Floorball",
+          "slug": "floorball",
+          "id": 7
+        },
+        "userCount": 72,
+        "nameCode": "SPA",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 44604,
+        "fullName": "ACEMA Sparta Praha",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أسيما سبارتا براغ",
+            "ru": "АК Спарта Прага"
+          },
+          "shortNameTranslation": {
+            "ar": "سبارتا براغ",
+            "bn": "স্পার্টা প্রাগ",
+            "hi": "स्पार्टा प्राहा"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 5,
+        "display": 5,
+        "period1": 2,
+        "period2": 0,
+        "period3": 3,
+        "normaltime": 5
+      },
+      "awayScore": {
+        "current": 2,
+        "display": 2,
+        "period1": 0,
+        "period2": 2,
+        "period3": 0,
+        "normaltime": 2
+      },
+      "time": {},
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.current",
+          "homeScore.display",
+          "homeScore.period1",
+          "homeScore.period2",
+          "homeScore.period3",
+          "homeScore.normaltime",
+          "awayScore.current",
+          "awayScore.display",
+          "awayScore.period1",
+          "awayScore.period2",
+          "awayScore.period3",
+          "awayScore.normaltime"
+        ],
+        "changeTimestamp": 1791403898
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 16779060,
+      "defaultPeriodCount": 3,
+      "slug": "acema-sparta-praha-tatran-stresovice",
+      "startTimestamp": 1791394200,
+      "periods": {
+        "current": "Score",
+        "period1": "1st period",
+        "period2": "2nd period",
+        "period3": "3rd period",
+        "overtime": "Overtime",
+        "penalties": "Penalty"
+      },
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

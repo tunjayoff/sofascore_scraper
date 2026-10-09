@@ -358,13 +358,15 @@ def test_row11_not_finished_outcome(fake: FakeSofaScore, tmp_path: Path) -> None
     assert _run_plan(in_plan, [NOT_STARTED]) == []
     assert _run_picked(in_picked, [NOT_STARTED]) == []
 
-    assert sorted(_api_paths(fake)) == sorted(_event_paths(NOT_STARTED) * 2)
+    # FX-31: istatistik maç başlamadan istenmez (SliceSpec.phases)
+    pre_match = [name for name in SLICES if name != "statistics"]
+    assert sorted(_api_paths(fake)) == sorted(_event_paths(NOT_STARTED, pre_match) * 2)
     for md in (in_plan, in_picked):
         stored = _stored(md, NOT_STARTED)
         assert stored["basic.json"]["status"]["type"] == "notstarted"
         assert "_unavailable.json" not in stored and "_slice_status.json" not in stored
     # Sayımlar yapılan istekleri anlatır: ön maç evresinde olmayan dilimlerin 404'leri (iki yolda aynı)
-    assert in_plan.last_status_counts == in_picked.last_status_counts == {"404": 6}
+    assert in_plan.last_status_counts == in_picked.last_status_counts == {"404": len(pre_match)}
 
 
 def test_row12_slice_markers(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

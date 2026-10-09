@@ -1,0 +1,295 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15884177/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:08:52+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884177",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "number": 104,
+        "over": 15,
+        "ball": 4,
+        "runs": 1,
+        "zone": "p",
+        "angle": 326,
+        "length": 2,
+        "score": "172/2",
+        "scored": true,
+        "wicket": false,
+        "missed": false,
+        "batsman": {
+          "name": "Shreyas Iyer",
+          "slug": "shreyas-iyer",
+          "shortName": "S Iyer",
+          "position": "BM",
+          "jerseyNumber": "96",
+          "height": 178,
+          "userCount": 3106,
+          "gender": "M",
+          "sofascoreId": "gyp-mei",
+          "id": 793972,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 786672000,
+          "cricketPlayerInfo": {
+            "batting": "Right",
+            "bowling": "Leg break googly"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شرياس آير",
+              "bn": "শ্রেয়াস আইয়ার",
+              "hi": "श्रेयस अय्यर",
+              "ru": "Шрейас Айер"
+            },
+            "shortNameTranslation": {
+              "ar": "شرياس آير",
+              "bn": "শ্রেয়াস আইয়ার",
+              "hi": "श्रेयस अय्यर",
+              "ru": "Ш. Айер"
+            }
+          }
+        },
+        "bowler": {
+          "name": "Roston Chase",
+          "slug": "roston-chase",
+          "shortName": "R Chase",
+          "position": "AR",
+          "jerseyNumber": "10",
+          "height": 195,
+          "userCount": 182,
+          "gender": "M",
+          "sofascoreId": "jwd-9xr",
+          "id": 844291,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 701222400,
+          "cricketPlayerInfo": {
+            "batting": "Right",
+            "bowling": "Off break"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "روستون تشايس",
+              "bn": "রোস্টন চেজ",
+              "hi": "रोस्टन चेस",
+              "ru": "Ростон Чейз"
+            },
+            "shortNameTranslation": {
+              "ar": "ر. تشايس",
+              "bn": "রোস্টন চেজ",
+              "hi": "रोस्टन चेस",
+              "ru": "Р. Чейз"
+            }
+          }
+        },
+        "ballDetails": {
+          "pitchHit": {
+            "x": 18,
+            "y": 29
+          }
+        },
+        "commentary": "India blitz their way home in 14.4 overs and go 1-0 up in the five-match series. Chase pushes it through at the sticks. Iyer taps it to the right of the bowler. Ishan is backing up a bit far, and Chase gets to the ball quickly. He turns around and fires in a throw at the bowling end but misses, conceding an overthrow as the ball rolls towards deep cover.",
+        "id": 6231604,
+        "time": 191,
+        "inningNumber": 2,
+        "battingTeamId": 187765,
+        "incidentClassLabel": "1",
+        "incidentClassColor": "single",
+        "totalRuns": 1,
+        "incidentClass": "REGULAR",
+        "incidentType": "ball"
+      },
+      {
+        "number": 103,
+        "over": 15,
+        "ball": 3,
+        "runs": 6,
+        "zone": "od",
+        "angle": 288,
+        "length": 5,
+        "score": "171/2",
+        "scored": true,
+        "wicket": false,
+        "missed": false,
+        "batsman": {
+          "name": "Shreyas Iyer",
+          "slug": "shreyas-iyer",
+          "shortName": "S Iyer",
+          "position": "BM",
+          "jerseyNumber": "96",
+          "height": 178,
+          "userCount": 3106,
+          "gender": "M",
+          "sofascoreId": "gyp-mei",
+          "id": 793972,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 786672000,
+          "cricketPlayerInfo": {
+            "batting": "Right",
+            "bowling": "Leg break googly"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شرياس آير",
+              "bn": "শ্রেয়াস আইয়ার",
+              "hi": "श्रेयस अय्यर",
+              "ru": "Шрейас Айер"
+            },
+            "shortNameTranslation": {
+              "ar": "شرياس آير",
+              "bn": "শ্রেয়াস আইয়ার",
+              "hi": "श्रेयस अय्यर",
+              "ru": "Ш. Айер"
+            }
+          }
+        },
+        "bowler": {
+          "name": "Roston Chase",
+          "slug": "roston-chase",
+          "shortName": "R Chase",
+          "position": "AR",
+          "jerseyNumber": "10",
+          "height": 195,
+          "userCount": 182,
+          "gender": "M",
+          "sofascoreId": "jwd-9xr",
+          "id": 844291,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 701222400,
+          "cricketPlayerInfo": {
+            "batting": "Right",
+            "bowling": "Off break"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "روستون تشايس",
+              "bn": "রোস্টন চেজ",
+              "hi": "रोस्टन चेस",
+              "ru": "Ростон Чейз"
+            },
+            "shortNameTranslation": {
+              "ar": "ر. تشايس",
+              "bn": "রোস্টন চেজ",
+              "hi": "रोस्टन चेस",
+              "ru": "Р. Чейз"
+            }
+          }
+        },
+        "ballDetails": {
+          "pitchHit": {
+            "x": 14,
+            "y": 30
+          }
+        },
+        "commentary": "SIX! There it is, a maiden T20I ton for Shreyas Iyer. What a way to return to form for the Indian skipper. Right from the outset, the way he struck the ball gave you the feeling that something special was brewing, and it only got better as the innings progressed, with Iyer going through the gears beautifully. Shreyas brings up his hundred in just 42 balls, the fastest by an Indian in a T20I against West Indies, inform the on-air commentators. This is fired across off by Chase from around the wicket. Iyer walks across the off stump and swings it high and handsome over long on for half a dozen. Shreyas takes off his helmet and turns towards the dugout, raising both hands aloft in celebration. A special moment for the Indian skipper.",
+        "id": 6231603,
+        "time": 189,
+        "inningNumber": 2,
+        "battingTeamId": 187765,
+        "incidentClassLabel": "6",
+        "incidentClassColor": "sixes",
+        "totalRuns": 6,
+        "incidentClass": "6",
+        "incidentType": "ball"
+      },
+      {
+        "number": 102,
+        "over": 15,
+        "ball": 2,
+        "runs": 1,
+        "zone": "od",
+        "angle": 287,
+        "length": 4,
+        "score": "165/2",
+        "scored": true,
+        "wicket": false,
+        "missed": false,
+        "batsman": {
+          "name": "Ishan Kishan",
+          "slug": "ishan-kishan",
+          "shortName": "I Kishan",
+          "position": "WK",
+          "jerseyNumber": "23",
+          "height": 168,
+          "userCount": 574,
+          "gender": "M",
+          "sofascoreId": "n3f-2kx",
+          "id": 838386,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 900720000,
+          "cricketPlayerInfo": {
+            "batting": "Left",
+            "bowling": "Leg break"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ايشان كيشان",
+              "bn": "ইশান কিষাণ",
+              "hi": "ईशान किशन",
+              "ru": "Ишан Кишан"
+            },
+            "shortNameTranslation": {
+              "ar": "ايشان كيشان",
+              "bn": "ইশান কিষাণ",
+              "hi": "ईशान किशन",
+              "ru": "И. Кишан"
+            }
+          }
+        },
+        "bowler": {
+          "name": "Roston Chase",
+          "slug": "roston-chase",
+          "shortName": "R Chase",
+          "position": "AR",
+          "jerseyNumber": "10",
+          "height": 195,
+          "userCount": 182,
+          "gender": "M",
+          "sofascoreId": "jwd-9xr",
+          "id": 844291,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 701222400,
+          "cricketPlayerInfo": {
+            "batting": "Right",
+            "bowling": "Off break"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "روستون تشايس",
+              "bn": "রোস্টন চেজ",
+              "hi": "रोस्टन चेस",
+              "ru": "Ростон Чейз"
+            },
+            "shortNameTranslation": {
+              "ar": "ر. تشايس",
+              "bn": "রোস্টন চেজ",
+              "hi": "रोस्टन चेस",
+              "ru": "Р. Чейз"
+            }
+          }
+        },
+        "ballDetails": {
+          "pitchHit": {
+            "x": 19,
+            "y": 37
+          }
+        },
+        "commentary": "Floated up, on middle and leg. Kishan lunges and ease it to long on for a single. He brings Iyer back on strike, who is on 95 and India need 7 more runs for the win.",
+        "id": 6231602,
+        "time": 189,
+        "inningNumber": 2,
+        "battingTeamId": 187765,
+        "incidentClassLabel": "1",
+        "incidentClassColor": "single",
+        "totalRuns": 1,
+        "incidentClass": "REGULAR",
+        "incidentType": "ball"
+      },
+      {
+        "__trimmed__": 202
+      }
+    ]
+  }
+}

@@ -1,0 +1,310 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17057712/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:11:48+00:00",
+  "page": "https://www.sofascore.com/tr/mma/match/summer-onley-alivia-bierley/XFjjscjkk#id:17057712",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "General",
+            "statisticsItems": [
+              {
+                "name": "Statistics time",
+                "home": "900",
+                "away": "900",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 900,
+                "awayValue": 900,
+                "renderType": 1,
+                "key": "time"
+              }
+            ]
+          },
+          {
+            "groupName": "Distance",
+            "statisticsItems": [
+              {
+                "name": "Distance Seconds",
+                "home": "671",
+                "away": "671",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 671,
+                "awayValue": 671,
+                "renderType": 1,
+                "key": "distanceSeconds"
+              },
+              {
+                "name": "Distance Percent",
+                "home": "76.67",
+                "away": "76.67",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 76.67,
+                "awayValue": 76.67,
+                "renderType": 1,
+                "key": "distancePercent"
+              }
+            ]
+          },
+          {
+            "groupName": "Ground",
+            "statisticsItems": [
+              {
+                "name": "Ground Seconds",
+                "home": "210",
+                "away": "210",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 210,
+                "awayValue": 210,
+                "renderType": 1,
+                "key": "groundSeconds"
+              },
+              {
+                "name": "Ground Percent",
+                "home": "23.33",
+                "away": "23.33",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 23.33,
+                "awayValue": 23.33,
+                "renderType": 1,
+                "key": "groundPercent"
+              },
+              {
+                "name": "Ground Clinch Seconds",
+                "home": "206",
+                "away": "206",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 206,
+                "awayValue": 206,
+                "renderType": 1,
+                "key": "groundClinchSeconds"
+              },
+              {
+                "__trimmed__": 18
+              }
+            ]
+          },
+          {
+            "__trimmed__": 2
+          }
+        ]
+      },
+      {
+        "period": "ALL15MIN",
+        "groups": [
+          {
+            "groupName": "General",
+            "statisticsItems": [
+              {
+                "name": "Statistics time",
+                "home": "900",
+                "away": "900",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 900,
+                "awayValue": 900,
+                "renderType": 1,
+                "key": "time"
+              }
+            ]
+          },
+          {
+            "groupName": "Distance",
+            "statisticsItems": [
+              {
+                "name": "Distance Seconds",
+                "home": "671",
+                "away": "671",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 671,
+                "awayValue": 671,
+                "renderType": 1,
+                "key": "distanceSeconds"
+              },
+              {
+                "name": "Distance Percent",
+                "home": "76.67",
+                "away": "76.67",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 76.67,
+                "awayValue": 76.67,
+                "renderType": 1,
+                "key": "distancePercent"
+              }
+            ]
+          },
+          {
+            "groupName": "Ground",
+            "statisticsItems": [
+              {
+                "name": "Ground Seconds",
+                "home": "210",
+                "away": "210",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 210,
+                "awayValue": 210,
+                "renderType": 1,
+                "key": "groundSeconds"
+              },
+              {
+                "name": "Ground Percent",
+                "home": "23.33",
+                "away": "23.33",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 23.33,
+                "awayValue": 23.33,
+                "renderType": 1,
+                "key": "groundPercent"
+              },
+              {
+                "name": "Ground Clinch Seconds",
+                "home": "206",
+                "away": "206",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 206,
+                "awayValue": 206,
+                "renderType": 1,
+                "key": "groundClinchSeconds"
+              },
+              {
+                "__trimmed__": 18
+              }
+            ]
+          },
+          {
+            "__trimmed__": 2
+          }
+        ]
+      },
+      {
+        "period": "1ST",
+        "groups": [
+          {
+            "groupName": "General",
+            "statisticsItems": [
+              {
+                "name": "Statistics time",
+                "home": "300",
+                "away": "300",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 300,
+                "awayValue": 300,
+                "renderType": 1,
+                "key": "time"
+              }
+            ]
+          },
+          {
+            "groupName": "Distance",
+            "statisticsItems": [
+              {
+                "name": "Distance Seconds",
+                "home": "251",
+                "away": "251",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 251,
+                "awayValue": 251,
+                "renderType": 1,
+                "key": "distanceSeconds"
+              },
+              {
+                "name": "Distance Percent",
+                "home": "88.67",
+                "away": "88.67",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 88.67,
+                "awayValue": 88.67,
+                "renderType": 1,
+                "key": "distancePercent"
+              }
+            ]
+          },
+          {
+            "groupName": "Ground",
+            "statisticsItems": [
+              {
+                "name": "Ground Seconds",
+                "home": "34",
+                "away": "34",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 34,
+                "awayValue": 34,
+                "renderType": 1,
+                "key": "groundSeconds"
+              },
+              {
+                "name": "Ground Percent",
+                "home": "11.33",
+                "away": "11.33",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 11.33,
+                "awayValue": 11.33,
+                "renderType": 1,
+                "key": "groundPercent"
+              },
+              {
+                "name": "Ground Clinch Seconds",
+                "home": "32",
+                "away": "32",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 32,
+                "awayValue": 32,
+                "renderType": 1,
+                "key": "groundClinchSeconds"
+              },
+              {
+                "__trimmed__": 18
+              }
+            ]
+          },
+          {
+            "__trimmed__": 2
+          }
+        ]
+      },
+      {
+        "__trimmed__": 2
+      }
+    ]
+  }
+}

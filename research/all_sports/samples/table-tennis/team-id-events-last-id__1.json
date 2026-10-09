@@ -1,0 +1,1114 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/481194/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:05:06+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/junsung-oh-karlsson/QmQsUyRd#id:17257062",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "WTT Contender Zagreb, MD",
+          "slug": "wtt-contender-zagreb-2023-md",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "WTT Contender Zagreb, Double",
+            "slug": "wtt-contender-zagreb-double",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 20648,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة WTT المتنافسة في زغرب، زوجي",
+                "ru": "WTT Contender Загреб, парный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 117548,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة WTT المتنافسة زغرب، فردي الرجال",
+              "ru": "WTT Contender Загреб, парный разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "WTT Contender Zagreb, Double 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 95529
+        },
+        "roundInfo": {
+          "round": 29,
+          "name": "Final",
+          "slug": "final",
+          "cupRoundType": 1
+        },
+        "customId": "nCOisvFRi",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Huang Y / Lin S",
+          "slug": "huang-y-lin-s",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 22,
+          "nameCode": "H/L",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "CN",
+            "alpha3": "CHN",
+            "name": "China",
+            "slug": "china"
+          },
+          "id": 1106520,
+          "subTeams": [
+            {
+              "name": "Huang Y.",
+              "slug": "huang-youzheng",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 49,
+              "nameCode": "HUA",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "CN",
+                "alpha3": "CHN",
+                "name": "China",
+                "slug": "china"
+              },
+              "id": 418882,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "هوانغ، يوزينغ",
+                  "ru": "Хуан, Ючжэн"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Lin Shidong",
+              "slug": "lin-shidong",
+              "shortName": "Lin S.",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 890,
+              "playerTeamInfo": {
+                "id": 27306
+              },
+              "nameCode": "LIN",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "CN",
+                "alpha3": "CHN",
+                "name": "China",
+                "slug": "china"
+              },
+              "id": 409576,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "لين، شيدونغ",
+                  "bn": "লিন, শিডং",
+                  "hi": "लिन, शिडोंग",
+                  "ru": "Линь Шидун"
+                },
+                "shortNameTranslation": {
+                  "ru": "Л. Шидун"
+                }
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هوانغ ي / لين س",
+              "ru": "Хуан И / Линь С"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Lim J / OH J",
+          "slug": "lim-j-oh-j",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 24,
+          "nameCode": "L/O",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "KR",
+            "alpha3": "KOR",
+            "name": "South Korea",
+            "slug": "south-korea"
+          },
+          "id": 1098863,
+          "subTeams": [
+            {
+              "name": "Lim J.",
+              "slug": "lim-jonghoon",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 100,
+              "playerTeamInfo": {
+                "id": 37265
+              },
+              "nameCode": "LIM",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 158498,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ليم، جونغهون",
+                  "bn": "লিম, জংহুন",
+                  "hi": "लिम, जोंगहून",
+                  "ru": "Лим Дж."
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Junsung Oh",
+              "slug": "oh-junsung",
+              "shortName": "Junsung Oh",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 113,
+              "playerTeamInfo": {
+                "id": 21367
+              },
+              "nameCode": "JUN",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 481194,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أوه، جونسونغ",
+                  "bn": "ওহ, জুনসুং",
+                  "hi": "ओएच, जंसुंग",
+                  "ru": "Джунсунг ОХ."
+                },
+                "shortNameTranslation": {
+                  "ru": "Д. ОХ."
+                }
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ليم ج / أوه ج",
+              "ru": "Лим Дж / ОХ Дж"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 13,
+          "period2": 5,
+          "period3": 9,
+          "normaltime": 0
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 15,
+          "period2": 11,
+          "period3": 11,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1781449844
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1781449877
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16324176,
+        "slug": "huang-lin-lim-oh",
+        "startTimestamp": 1781447400,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "WTT Star Contender Ljubljana, XD, Qualifying",
+          "slug": "wtt-star-contender-ljubljana-xd-qualifying",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "WTT Contender Ljubljana, Mixed Doubles",
+            "slug": "wtt-contender-ljubljana-mixed-doubles",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 18,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 20689,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة WTT المتنافسة في ليوبليانا، مزدوج مختلط",
+                "ru": "WTT Contender Любляна, смешанный парный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 188675,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "WTT Star Contender Любляна, XD, квалификация"
+            },
+            "shortNameTranslation": {}
+          },
+          "qualificationOrPreliminary": true
+        },
+        "season": {
+          "name": "WTT Star Contender Ljubljana, XD 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 95973
+        },
+        "customId": "HnFisfAVj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "OH J / Joo C",
+          "slug": "oh-j-joo-c",
+          "gender": "X",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 1,
+          "nameCode": "O/J",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "KR",
+            "alpha3": "KOR",
+            "name": "South Korea",
+            "slug": "south-korea"
+          },
+          "id": 1238755,
+          "subTeams": [
+            {
+              "name": "Joo C.",
+              "slug": "joo-cheonhui",
+              "gender": "F",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 83,
+              "playerTeamInfo": {
+                "id": 32801
+              },
+              "nameCode": "JOO",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 411638,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جو، تشيونهوي",
+                  "bn": "জু, চিওনহুই",
+                  "hi": "जू, चिओन्हुई",
+                  "ru": "Джу, Чхонхуй"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Junsung Oh",
+              "slug": "oh-junsung",
+              "shortName": "Junsung Oh",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 113,
+              "playerTeamInfo": {
+                "id": 21367
+              },
+              "nameCode": "JUN",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 481194,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أوه، جونسونغ",
+                  "bn": "ওহ, জুনসুং",
+                  "hi": "ओएच, जंसुंग",
+                  "ru": "Джунсунг ОХ."
+                },
+                "shortNameTranslation": {
+                  "ru": "Д. ОХ."
+                }
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "ОХ Дж / Джу С"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Yuan L / Qin Y",
+          "slug": "yuan-l-qin-y",
+          "gender": "X",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 3,
+          "nameCode": "Y/Q",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "CN",
+            "alpha3": "CHN",
+            "name": "China",
+            "slug": "china"
+          },
+          "id": 1075682,
+          "subTeams": [
+            {
+              "name": "Qin Y.",
+              "slug": "qin-yuxuan",
+              "gender": "F",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 37,
+              "nameCode": "QIN",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "CN",
+                "alpha3": "CHN",
+                "name": "China",
+                "slug": "china"
+              },
+              "id": 410957,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تشين، يوشوان",
+                  "ru": "Цинь, Юйсюань"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Yuan L.",
+              "slug": "yuan-licen",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 35,
+              "nameCode": "YUA",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "CN",
+                "alpha3": "CHN",
+                "name": "China",
+                "slug": "china"
+              },
+              "id": 333969,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "يوان، ليسين",
+                  "bn": "ইউয়ান, লাইসেন্স",
+                  "hi": "युआन, लाइसेन",
+                  "ru": "Юань, Лицен"
+                },
+                "shortNameTranslation": {}
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يوان ل / تشين ي",
+              "ru": "Юань Л / Цинь Y"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 8,
+          "period2": 11,
+          "period3": 16,
+          "period4": 11,
+          "period5": 11,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 11,
+          "period2": 8,
+          "period3": 18,
+          "period4": 9,
+          "period5": 6,
+          "normaltime": 2
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1781711968
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1781712024
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16343181,
+        "slug": "oh-joo-yuan-qin",
+        "startTimestamp": 1781708400,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "WTT Star Contender Ljubljana, MD",
+          "slug": "wtt-star-contender-ljubljana-2025-md",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "WTT Contender Ljubljana, Doubles",
+            "slug": "wtt-contender-ljubljana-doubles",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 11,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 20688,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة WTT المتنافسة في ليوبليانا، زوجي",
+                "ru": "WTT Contender Любляна, парный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 155509,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة WTT ستار كونتيندر ليوبليانا 2025، زوجي (WTT)",
+              "ru": "Кубок WTT Стар Контендер Любляна 2025, парный разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "WTT Star Contender Ljubljana, MD 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 95971
+        },
+        "roundInfo": {
+          "round": 5,
+          "name": "Round of 16",
+          "slug": "round-of-16",
+          "cupRoundType": 8
+        },
+        "customId": "nCOiscAVj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Chua J / Kwan M H",
+          "slug": "chua-j-kwan-m-h",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 0,
+          "nameCode": "C/K",
+          "national": false,
+          "type": 2,
+          "country": {},
+          "id": 1238752,
+          "subTeams": [
+            {
+              "name": "Chua J.",
+              "slug": "chua-josh-shao-han",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 6,
+              "nameCode": "CHU",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "SG",
+                "alpha3": "SGP",
+                "name": "Singapore",
+                "slug": "singapore"
+              },
+              "id": 312445,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تشوا، جوش شاو هان",
+                  "bn": "চুয়া, জোশ শাও হান",
+                  "hi": "चुआ, जोश शाओ हान",
+                  "ru": "Чуа, Джош Шао Хан"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Kwan M.",
+              "slug": "kwan-man-ho",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 24,
+              "nameCode": "KWA",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "HK",
+                "alpha3": "HKG",
+                "name": "Hong Kong",
+                "slug": "hong-kong"
+              },
+              "id": 148010,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كوان، مان هو",
+                  "bn": "কোয়ান, ম্যান হো",
+                  "hi": "क्वान, मैन हो",
+                  "ru": "Кван, Ман Хо"
+                },
+                "shortNameTranslation": {}
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Чуа Дж / Кван М Х"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Lim J / OH J",
+          "slug": "lim-j-oh-j",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 24,
+          "nameCode": "L/O",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "KR",
+            "alpha3": "KOR",
+            "name": "South Korea",
+            "slug": "south-korea"
+          },
+          "id": 1098863,
+          "subTeams": [
+            {
+              "name": "Lim J.",
+              "slug": "lim-jonghoon",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 100,
+              "playerTeamInfo": {
+                "id": 37265
+              },
+              "nameCode": "LIM",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 158498,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ليم، جونغهون",
+                  "bn": "লিম, জংহুন",
+                  "hi": "लिम, जोंगहून",
+                  "ru": "Лим Дж."
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Junsung Oh",
+              "slug": "oh-junsung",
+              "shortName": "Junsung Oh",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 113,
+              "playerTeamInfo": {
+                "id": 21367
+              },
+              "nameCode": "JUN",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 481194,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أوه، جونسونغ",
+                  "bn": "ওহ, জুনসুং",
+                  "hi": "ओएच, जंसुंग",
+                  "ru": "Джунсунг ОХ."
+                },
+                "shortNameTranslation": {
+                  "ru": "Д. ОХ."
+                }
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ليم ج / أوه ج",
+              "ru": "Лим Дж / ОХ Дж"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 9,
+          "period2": 3,
+          "period3": 8,
+          "normaltime": 0
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 11,
+          "period2": 11,
+          "period3": 11,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1781774725
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1781774772
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16352700,
+        "slug": "chua-kwanh-lim-oh",
+        "startTimestamp": 1781773200,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

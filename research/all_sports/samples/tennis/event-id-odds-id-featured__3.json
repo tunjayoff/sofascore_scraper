@@ -1,0 +1,102 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17218921/odds/1/featured",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:14:33+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/flavio-cobolli-adrian-mannarino/UrgsFyjc#id:17218921",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "featured": {
+      "default": {
+        "sourceId": 202513206,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202513206,
+        "suspended": false,
+        "id": 438625897,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "2/1",
+            "fractionalValue": "163/100",
+            "sourceId": 162910488,
+            "name": "1",
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "2/5",
+            "fractionalValue": "1/2",
+            "sourceId": 162910534,
+            "name": "2",
+            "change": 1
+          }
+        ]
+      },
+      "asian": {
+        "sourceId": 202513206,
+        "structureType": 2,
+        "marketId": 12,
+        "marketName": "Total games won",
+        "choiceGroup": "22.5",
+        "isLive": false,
+        "fid": 202513206,
+        "suspended": false,
+        "id": 438669083,
+        "marketGroup": "Total sets/games",
+        "marketPeriod": "Extra time",
+        "choices": [
+          {
+            "initialFractionalValue": "4/5",
+            "fractionalValue": "10/11",
+            "sourceId": 162953704,
+            "name": "Over",
+            "slipContent": "/?bs=202513206-162953704~10/11~10",
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "10/11",
+            "fractionalValue": "4/5",
+            "sourceId": 162953640,
+            "name": "Under",
+            "slipContent": "/?bs=202513206-162953640~4/5~10",
+            "change": -1
+          }
+        ]
+      },
+      "fullTime": {
+        "sourceId": 202513206,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202513206,
+        "suspended": false,
+        "id": 438625897,
+        "marketGroup": "Home/Away",
+        "marketPeriod": "Match",
+        "choices": [
+          {
+            "initialFractionalValue": "2/1",
+            "fractionalValue": "163/100",
+            "sourceId": 162910488,
+            "name": "1",
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "2/5",
+            "fractionalValue": "1/2",
+            "sourceId": 162910534,
+            "name": "2",
+            "change": 1
+          }
+        ]
+      }
+    },
+    "hasMoreOdds": true,
+    "liveStreamUrl": null
+  }
+}

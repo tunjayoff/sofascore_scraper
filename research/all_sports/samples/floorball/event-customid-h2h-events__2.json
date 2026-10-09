@@ -1,0 +1,677 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/THbsxHj/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:22:17+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/mullsjo-ais-jonkopings-ik/THbsxHj#id:16672337",
+  "cache_control": "max-age=3600, public",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Svenska Superligan",
+          "slug": "svenska-superligan",
+          "category": {
+            "name": "Sweden",
+            "slug": "sweden",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 63,
+            "flag": "sweden",
+            "alpha2": "SE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السويد",
+                "hi": "स्वीडन",
+                "bn": "সুইডেন",
+                "ru": "Швеция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Svenska Superligan",
+            "slug": "svenska-superligan",
+            "secondaryColorHex": "#777777",
+            "category": {
+              "name": "Sweden",
+              "slug": "sweden",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "SE",
+                "alpha3": "SWE",
+                "name": "Sweden",
+                "slug": "sweden"
+              },
+              "id": 63,
+              "flag": "sweden",
+              "alpha2": "SE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "السويد",
+                  "hi": "स्वीडन",
+                  "bn": "সুইডেন",
+                  "ru": "Швеция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 224,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 255,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري السويدي الممتاز",
+                "hi": "स्वेन्स्का सुपरलीगन",
+                "bn": "সভেনস্কা সুপারলীগান",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 111,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "সুইডিশ সুপারলীগা",
+              "hi": "स्वेन्स्का सुपरलीगन",
+              "ar": "الدوري السويدي الممتاز",
+              "ru": "Суперлига Швеции"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Svenska Superligan 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99642
+        },
+        "roundInfo": {
+          "round": 18
+        },
+        "customId": "THbsxHj",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Mullsjö AIS",
+          "slug": "mullsjo-ais",
+          "shortName": "Mullsjö AIS",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 69,
+          "nameCode": "MUL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 24122,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مولشو أي أي أس",
+              "bn": "মুলসজো এআইএস",
+              "hi": "मुल्सजो एआईएस",
+              "ru": "Мулльсйо АИС"
+            },
+            "shortNameTranslation": {
+              "ru": "Мулльсйо АИС"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Jönköpings IK",
+          "slug": "jonkopings-ik",
+          "shortName": "Jönköping",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 80,
+          "nameCode": "JIK",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 4143,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يونشوبينغ آي كيه",
+              "ru": "Йонкёпингс ИК"
+            },
+            "shortNameTranslation": {
+              "ar": "يونشوبينغ",
+              "bn": "জঙ্কোপিং",
+              "hi": "जोंकोपिंग्स "
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16672438,
+        "slug": "mullsjo-ais-jonkopings-ik",
+        "startTimestamp": 1801848600,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Svenska Superligan",
+          "slug": "svenska-superligan",
+          "category": {
+            "name": "Sweden",
+            "slug": "sweden",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 63,
+            "flag": "sweden",
+            "alpha2": "SE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السويد",
+                "hi": "स्वीडन",
+                "bn": "সুইডেন",
+                "ru": "Швеция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Svenska Superligan",
+            "slug": "svenska-superligan",
+            "secondaryColorHex": "#777777",
+            "category": {
+              "name": "Sweden",
+              "slug": "sweden",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "SE",
+                "alpha3": "SWE",
+                "name": "Sweden",
+                "slug": "sweden"
+              },
+              "id": 63,
+              "flag": "sweden",
+              "alpha2": "SE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "السويد",
+                  "hi": "स्वीडन",
+                  "bn": "সুইডেন",
+                  "ru": "Швеция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 224,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 255,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري السويدي الممتاز",
+                "hi": "स्वेन्स्का सुपरलीगन",
+                "bn": "সভেনস্কা সুপারলীগান",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 111,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "সুইডিশ সুপারলীগা",
+              "hi": "स्वेन्स्का सुपरलीगन",
+              "ar": "الدوري السويدي الممتاز",
+              "ru": "Суперлига Швеции"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Svenska Superligan 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99642
+        },
+        "roundInfo": {
+          "round": 5
+        },
+        "customId": "THbsxHj",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Jönköpings IK",
+          "slug": "jonkopings-ik",
+          "shortName": "Jönköping",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 80,
+          "nameCode": "JIK",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 4143,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يونشوبينغ آي كيه",
+              "ru": "Йонкёпингс ИК"
+            },
+            "shortNameTranslation": {
+              "ar": "يونشوبينغ",
+              "bn": "জঙ্কোপিং",
+              "hi": "जोंकोपिंग्स "
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Mullsjö AIS",
+          "slug": "mullsjo-ais",
+          "shortName": "Mullsjö AIS",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 69,
+          "nameCode": "MUL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 24122,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مولشو أي أي أس",
+              "bn": "মুলসজো এআইএস",
+              "hi": "मुल्सजो एआईएस",
+              "ru": "Мулльсйо АИС"
+            },
+            "shortNameTranslation": {
+              "ru": "Мулльсйо АИС"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16672337,
+        "slug": "mullsjo-ais-jonkopings-ik",
+        "startTimestamp": 1791565200,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Svenska Superligan",
+          "slug": "svenska-superligan",
+          "category": {
+            "name": "Sweden",
+            "slug": "sweden",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 63,
+            "flag": "sweden",
+            "alpha2": "SE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السويد",
+                "hi": "स्वीडन",
+                "bn": "সুইডেন",
+                "ru": "Швеция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Svenska Superligan",
+            "slug": "svenska-superligan",
+            "secondaryColorHex": "#777777",
+            "category": {
+              "name": "Sweden",
+              "slug": "sweden",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "SE",
+                "alpha3": "SWE",
+                "name": "Sweden",
+                "slug": "sweden"
+              },
+              "id": 63,
+              "flag": "sweden",
+              "alpha2": "SE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "السويد",
+                  "hi": "स्वीडन",
+                  "bn": "সুইডেন",
+                  "ru": "Швеция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 224,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 255,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري السويدي الممتاز",
+                "hi": "स्वेन्स्का सुपरलीगन",
+                "bn": "সভেনস্কা সুপারলীগান",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 111,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "সুইডিশ সুপারলীগা",
+              "hi": "स्वेन्स्का सुपरलीगन",
+              "ar": "الدوري السويدي الممتاز",
+              "ru": "Суперлига Швеции"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Svenska Superligan 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 78217
+        },
+        "roundInfo": {
+          "round": 23
+        },
+        "customId": "THbsxHj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Mullsjö AIS",
+          "slug": "mullsjo-ais",
+          "shortName": "Mullsjö AIS",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 69,
+          "nameCode": "MUL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 24122,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مولشو أي أي أس",
+              "bn": "মুলসজো এআইএস",
+              "hi": "मुल्सजो एआईएस",
+              "ru": "Мулльсйо АИС"
+            },
+            "shortNameTranslation": {
+              "ru": "Мулльсйо АИС"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Jönköpings IK",
+          "slug": "jonkopings-ik",
+          "shortName": "Jönköping",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 80,
+          "nameCode": "JIK",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 4143,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يونشوبينغ آي كيه",
+              "ru": "Йонкёпингс ИК"
+            },
+            "shortNameTranslation": {
+              "ar": "يونشوبينغ",
+              "bn": "জঙ্কোপিং",
+              "hi": "जोंकोपिंग्स "
+            }
+          }
+        },
+        "homeScore": {
+          "current": 4,
+          "display": 4,
+          "period1": 4,
+          "period2": 0,
+          "period3": 0,
+          "normaltime": 4
+        },
+        "awayScore": {
+          "current": 8,
+          "display": 8,
+          "period1": 0,
+          "period2": 3,
+          "period3": 5,
+          "normaltime": 8
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1772220878
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1772220909
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14157842,
+        "slug": "mullsjo-ais-jonkopings-ik",
+        "startTimestamp": 1772213400,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 28
+      }
+    ]
+  }
+}

@@ -224,13 +224,6 @@
         "state": "empty",
         "unverified_empty_count": 0
        },
-       "statistics": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "team_streaks": {
         "empty_count": 0,
         "error": null,
@@ -446,7 +439,6 @@
       "async /event/9100004/incidents 404",
       "async /event/9100004/lineups 404",
       "async /event/9100004/pregame-form 404",
-      "async /event/9100004/statistics 404",
       "async /event/9100004/team-streaks 404",
       "async /event/9100010 200",
       "async /event/9100010/h2h 200",
@@ -696,13 +688,6 @@
         "unverified_empty_count": 0
        },
        "pregame_form": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "statistics": {
         "empty_count": 0,
         "error": null,
         "sha256": null,
@@ -1189,13 +1174,6 @@
         "state": "empty",
         "unverified_empty_count": 0
        },
-       "statistics": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "team_streaks": {
         "empty_count": 0,
         "error": null,
@@ -1653,13 +1631,6 @@
         "unverified_empty_count": 0
        },
        "pregame_form": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "statistics": {
         "empty_count": 0,
         "error": null,
         "sha256": null,
@@ -2216,13 +2187,6 @@
         "state": "empty",
         "unverified_empty_count": 0
        },
-       "statistics": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "team_streaks": {
         "empty_count": 0,
         "error": null,
@@ -2770,13 +2734,6 @@
         "state": "empty",
         "unverified_empty_count": 0
        },
-       "statistics": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "team_streaks": {
         "empty_count": 0,
         "error": null,
@@ -3314,13 +3271,6 @@
         "state": "empty",
         "unverified_empty_count": 0
        },
-       "statistics": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
        "team_streaks": {
         "empty_count": 0,
         "error": null,
@@ -3784,13 +3734,6 @@
         "unverified_empty_count": 0
        },
        "pregame_form": {
-        "empty_count": 0,
-        "error": null,
-        "sha256": null,
-        "state": "empty",
-        "unverified_empty_count": 0
-       },
-       "statistics": {
         "empty_count": 0,
         "error": null,
         "sha256": null,

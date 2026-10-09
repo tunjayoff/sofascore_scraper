@@ -1,0 +1,393 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15534082/average-positions",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:17+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "home": [
+      {
+        "player": {
+          "name": "Dominik Livaković",
+          "slug": "dominik-livakovic",
+          "shortName": "D. Livaković",
+          "position": "G",
+          "jerseyNumber": "25",
+          "userCount": 43392,
+          "gender": "M",
+          "sofascoreId": "uba-dcn",
+          "id": 190419,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دومينيك ليفاكوفيتش",
+              "bn": "ডমিনিক লিভাকোভিচ",
+              "hi": "डोमिनिक लिवाकोविच",
+              "ru": "Доминик Ливакович"
+            },
+            "shortNameTranslation": {
+              "ar": "د. ليفاكوفيتش",
+              "bn": "ডি. লিভাকোভিচ",
+              "hi": "डी. लिवाकोविच",
+              "ru": "Д. Ливакович"
+            }
+          }
+        },
+        "averageX": 8.4387755102041,
+        "averageY": 54.397959183673,
+        "pointsCount": 49
+      },
+      {
+        "player": {
+          "name": "Mateo Kovačić",
+          "slug": "mateo-kovacic",
+          "shortName": "M. Kovačić",
+          "position": "M",
+          "jerseyNumber": "8",
+          "userCount": 35046,
+          "gender": "M",
+          "sofascoreId": "f9r-6qb",
+          "id": 136710,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماتيو كوفاتشيتش",
+              "bn": "মাতেও কোভাসিক",
+              "hi": "माटेओ कोवासिक",
+              "ru": "Матео Ковачич"
+            },
+            "shortNameTranslation": {
+              "ar": "م. كوفاتشيتش",
+              "bn": "এম. কোভাসিচ",
+              "hi": "एम. कोवासिक",
+              "ru": "М. Ковачич"
+            }
+          }
+        },
+        "averageX": 44.751111111111,
+        "averageY": 69.784444444444,
+        "pointsCount": 45
+      },
+      {
+        "player": {
+          "name": "Igor Matanović",
+          "slug": "igor-matanovic",
+          "shortName": "I. Matanović",
+          "position": "F",
+          "jerseyNumber": "31",
+          "userCount": 5832,
+          "gender": "M",
+          "sofascoreId": "b79-y3g",
+          "id": 1019321,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيغور ماتانوفيتش",
+              "bn": "ইগর মাতানোভিচ",
+              "hi": "इगोर मतानोविक",
+              "ru": "Игорь Матанович"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. ماتانوفيتش",
+              "bn": "আই. মাতানোভিচ",
+              "hi": "आई. मतानोविक",
+              "ru": "И. Матанович"
+            }
+          }
+        },
+        "averageX": 56.174193548387,
+        "averageY": 55.954838709677,
+        "pointsCount": 31
+      },
+      {
+        "__trimmed__": 12
+      }
+    ],
+    "away": [
+      {
+        "player": {
+          "name": "Mikel Oyarzabal",
+          "firstName": "Mikel",
+          "lastName": "Oyarzabal",
+          "slug": "mikel-oyarzabal",
+          "shortName": "M. Oyarzabal",
+          "position": "F",
+          "jerseyNumber": "10",
+          "userCount": 53328,
+          "gender": "M",
+          "sofascoreId": "f5v-p8b",
+          "id": 823622,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميكيل أويارزابال",
+              "bn": "মাইকেল ওয়ারজাবাল",
+              "hi": "मिकेल ओयार्जाबेल",
+              "ru": "Микель Оярсабаль"
+            },
+            "shortNameTranslation": {
+              "ar": "م. أويارزابال",
+              "bn": "এম.ওয়ারজাবাল",
+              "hi": "एम. ओयार्जाबेल",
+              "ru": "М. Оярсабаль"
+            }
+          }
+        },
+        "averageX": 72.522222222222,
+        "averageY": 56.192592592593,
+        "pointsCount": 27
+      },
+      {
+        "player": {
+          "name": "Unai Simón",
+          "firstName": "Unai",
+          "lastName": "Simon",
+          "slug": "unai-simon",
+          "shortName": "U. Simón",
+          "position": "G",
+          "jerseyNumber": "1",
+          "userCount": 16443,
+          "gender": "M",
+          "sofascoreId": "vke-cns",
+          "id": 797291,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوناي سيمون",
+              "bn": "উনাই সাইমন",
+              "hi": "उनाई सिमोन",
+              "ru": "Унай Симон"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. سيمون",
+              "bn": "ইউ. সাইমন",
+              "hi": "यू. सिमोन",
+              "ru": "У. Симон"
+            }
+          }
+        },
+        "averageX": 10.865789473684,
+        "averageY": 49.602631578947,
+        "pointsCount": 38
+      },
+      {
+        "player": {
+          "name": "Alex Baena",
+          "firstName": "Alex",
+          "lastName": "Baena",
+          "slug": "alex-baena",
+          "shortName": "A. Baena",
+          "position": "M",
+          "jerseyNumber": "10",
+          "userCount": 21778,
+          "gender": "M",
+          "sofascoreId": "iif-g6e",
+          "id": 910031,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أليكس باينا",
+              "bn": "আলেজান্দ্রো বেনা",
+              "hi": "एलेजांद्रो बेना",
+              "ru": "Алекс Баэна"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. باينا",
+              "bn": "এ. বেনা",
+              "hi": "ए. बेना",
+              "ru": "А. Баэна"
+            }
+          }
+        },
+        "averageX": 59.397222222222,
+        "averageY": 81.369444444444,
+        "pointsCount": 36
+      },
+      {
+        "__trimmed__": 13
+      }
+    ],
+    "substitutions": [
+      {
+        "playerIn": {
+          "name": "Mikel Merino",
+          "firstName": "Mikel",
+          "lastName": "Merino",
+          "slug": "mikel-merino",
+          "shortName": "M. Merino",
+          "position": "M",
+          "jerseyNumber": "23",
+          "userCount": 41085,
+          "gender": "M",
+          "sofascoreId": "cby-ewg",
+          "id": 592010,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميكيل ميرينو",
+              "bn": "মাইকেল মেরিনো",
+              "hi": "मिकेल मेरिनो",
+              "ru": "Микель Мерино"
+            },
+            "shortNameTranslation": {
+              "ar": "م. ميرينو",
+              "bn": "এম. মেরিনো",
+              "hi": "एम. मेरिनो",
+              "ru": "М. Мерино"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Alex Baena",
+          "firstName": "Alex",
+          "lastName": "Baena",
+          "slug": "alex-baena",
+          "shortName": "A. Baena",
+          "position": "M",
+          "jerseyNumber": "10",
+          "userCount": 21778,
+          "gender": "M",
+          "sofascoreId": "iif-g6e",
+          "id": 910031,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أليكس باينا",
+              "bn": "আলেজান্দ্রো বেনা",
+              "hi": "एलेजांद्रो बेना",
+              "ru": "Алекс Баэна"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. باينا",
+              "bn": "এ. বেনা",
+              "hi": "ए. बेना",
+              "ru": "А. Баэна"
+            }
+          }
+        },
+        "id": 126991072,
+        "time": 46,
+        "injury": false,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 45
+      },
+      {
+        "playerIn": {
+          "name": "Dion Drena Beljo",
+          "slug": "dion-drena-beljo",
+          "shortName": "D. D. Beljo",
+          "position": "F",
+          "jerseyNumber": "9",
+          "userCount": 6746,
+          "gender": "M",
+          "sofascoreId": "kmv-bu6",
+          "id": 995773,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديون درينا بيلجو",
+              "bn": "ডিওন ড্রেনা বেলজো",
+              "hi": "डायोन ड्रेना बेलजो",
+              "ru": "Дион Дрена Белйо"
+            },
+            "shortNameTranslation": {
+              "ar": "د. د. بيلجو",
+              "bn": "ডি. ডি. বেলজো",
+              "hi": "डीडी ड्रेना",
+              "ru": "Д. Белйо"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Igor Matanović",
+          "slug": "igor-matanovic",
+          "shortName": "I. Matanović",
+          "position": "F",
+          "jerseyNumber": "31",
+          "userCount": 5832,
+          "gender": "M",
+          "sofascoreId": "b79-y3g",
+          "id": 1019321,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيغور ماتانوفيتش",
+              "bn": "ইগর মাতানোভিচ",
+              "hi": "इगोर मतानोविक",
+              "ru": "Игорь Матанович"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. ماتانوفيتش",
+              "bn": "আই. মাতানোভিচ",
+              "hi": "आई. मतानोविक",
+              "ru": "И. Матанович"
+            }
+          }
+        },
+        "id": 126991326,
+        "time": 65,
+        "injury": false,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 26
+      },
+      {
+        "playerIn": {
+          "name": "Petar Sučić",
+          "slug": "petar-sucic",
+          "shortName": "P. Sučić",
+          "position": "M",
+          "jerseyNumber": "8",
+          "userCount": 10509,
+          "gender": "M",
+          "sofascoreId": "6gw-dzv",
+          "id": 1091303,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بيتار سوتشيتش",
+              "bn": "পেটার সুসিক",
+              "hi": "पेटर सुचिच",
+              "ru": "Петар Сучич"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. سوتشيتش",
+              "bn": "পি. সুসিক",
+              "hi": "पी. सुचिच",
+              "ru": "П. Сучич"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Luka Modrić",
+          "slug": "luka-modric",
+          "shortName": "L. Modrić",
+          "position": "M",
+          "jerseyNumber": "14",
+          "userCount": 280185,
+          "gender": "M",
+          "sofascoreId": "cz8-6gi",
+          "id": 15466,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوكا مودريتش",
+              "bn": "লুকা মডরিচ",
+              "hi": "लुका मोड्रिक",
+              "ru": "Лука Модрич"
+            },
+            "shortNameTranslation": {
+              "ar": "ل. مودريتش",
+              "bn": "এল. মডরিচ",
+              "hi": "एल. मोड्रिक",
+              "ru": "Л. Модрич"
+            }
+          }
+        },
+        "id": 126991327,
+        "time": 66,
+        "injury": false,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 25
+      },
+      {
+        "__trimmed__": 6
+      }
+    ]
+  }
+}

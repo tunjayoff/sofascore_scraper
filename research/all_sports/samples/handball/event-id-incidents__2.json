@@ -1,0 +1,137 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16634075/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:58:27+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/rk-partizan-one-veszprem/DHcsQKc#id:16634075",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "FT",
+        "homeScore": 26,
+        "awayScore": 37,
+        "isLive": false,
+        "time": 60,
+        "addedTime": 999,
+        "timeSeconds": 3600,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 1800
+      },
+      {
+        "homeScore": 26,
+        "awayScore": 37,
+        "player": {
+          "name": "Ahmed Adel Mesilhy",
+          "firstName": "Ahmed Adel",
+          "lastName": "Mesilhy",
+          "slug": "ahmed-adel-mesilhy",
+          "shortName": "A. Mesilhy",
+          "position": "P",
+          "jerseyNumber": "80",
+          "height": 187,
+          "userCount": 336,
+          "gender": "M",
+          "sofascoreId": "q9w-q3y",
+          "id": 2263780,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 785721600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أحمد عادل مسيلي",
+              "ru": "Ахмед Адель Месильхи"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. مسيلي",
+              "ru": "А. Месильхи"
+            }
+          }
+        },
+        "assist1": {
+          "name": "Ali Zeinelabedin Ali",
+          "firstName": "Ali Ismail Mohamed",
+          "lastName": "Zeinelabedin Ali",
+          "slug": "ali-zeinelabedin-ali",
+          "shortName": "A. Zeinelabedin Ali",
+          "position": "LB",
+          "jerseyNumber": "90",
+          "height": 199,
+          "userCount": 3509,
+          "gender": "M",
+          "sofascoreId": "p9c-8g9",
+          "id": 1142878,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 661132800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "علي زين العابدين علي",
+              "bn": "জেইনলাবেদিন আলী, আলী ইসমাইল মো",
+              "hi": "ज़ेइनलाबेदीन अली, अली इस्माइल मोहम्मद",
+              "ru": "Али Зейналабедин Али"
+            },
+            "shortNameTranslation": {
+              "ar": "ع. علي",
+              "bn": "এ. জেইন",
+              "hi": "ए. ज़ेन",
+              "ru": "А. Али"
+            }
+          }
+        },
+        "id": 364377418,
+        "time": 59,
+        "timeSeconds": 3518,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 82,
+        "periodTimeSeconds": 1718
+      },
+      {
+        "homeScore": 26,
+        "awayScore": 36,
+        "player": {
+          "name": "Yoav Lumbroso",
+          "firstName": "Yoav",
+          "lastName": "Lumbroso",
+          "slug": "yoav-lumbroso",
+          "shortName": "Y. Lumbroso",
+          "position": "CB",
+          "jerseyNumber": "66",
+          "height": 168,
+          "userCount": 45,
+          "gender": "M",
+          "sofascoreId": "5fd-m2y",
+          "id": 944952,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 963619200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لومبروسو، يوآف",
+              "ru": "Йоав Лумбросо"
+            },
+            "shortNameTranslation": {
+              "ar": "ي. لومبروسو",
+              "ru": "Й. Лумбросо"
+            }
+          }
+        },
+        "id": 364377352,
+        "time": 59,
+        "timeSeconds": 3484,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal",
+        "reversedPeriodTime": 2,
+        "reversedPeriodTimeSeconds": 116,
+        "periodTimeSeconds": 1684
+      },
+      {
+        "__trimmed__": 67
+      }
+    ]
+  }
+}

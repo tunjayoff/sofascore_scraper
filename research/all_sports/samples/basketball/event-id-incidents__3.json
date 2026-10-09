@@ -1,0 +1,41 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16685163/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:13:22+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/cleveland-cavaliers-boston-celtics/xtbsHtb#id:16685163",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "2nd quarter",
+        "homeScore": 50,
+        "awayScore": 55,
+        "isLive": true,
+        "period": "period2",
+        "time": 24,
+        "addedTime": 999,
+        "timeSeconds": 1440,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 720
+      },
+      {
+        "text": "Q1",
+        "homeScore": 29,
+        "awayScore": 32,
+        "isLive": false,
+        "period": "period1",
+        "time": 12,
+        "addedTime": 999,
+        "timeSeconds": 720,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 720
+      }
+    ]
+  }
+}
