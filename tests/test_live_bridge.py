@@ -32,7 +32,7 @@ ENDPOINTS = [
 
 
 def test_bridge_fetches_api_headless(monkeypatch):
-    monkeypatch.delenv("SOFASCORE_BROWSER_HEADED", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__BROWSER_HEADED", raising=False)
     bridge = cs.BrowserBridge(profile_dir=tempfile.mkdtemp(prefix="live-bridge-"))
     monkeypatch.setattr(cs.BrowserBridge, "_instance", bridge)
 

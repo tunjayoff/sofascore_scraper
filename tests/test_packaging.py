@@ -140,7 +140,7 @@ def test_compose_runs_serve_with_an_explicit_allow_list_and_watch_only_on_reques
     assert set(services) == {"sofascore-scraper", "sofascore-watch"}
     web, watch = services["sofascore-scraper"], services["sofascore-watch"]
     assert 'command: ["serve"]' in web
-    assert re.search(r'^\s+SOFASCORE_ALLOWED_HOSTS: "localhost,127\.0\.0\.1,\[::1\]"$', web, flags=re.M)
+    assert re.search(r'^\s+SOFASCORE_SERVER__ALLOWED_HOSTS: "localhost,127\.0\.0\.1,\[::1\]"$', web, flags=re.M)
     assert "SOFASCORE_API_TOKEN:" not in web  # yalnızca yorumda: örnek belirteç yayımlanmaz
     # --idle: without a live follow it waits instead of exiting with 2 and being restarted forever
     assert 'command: ["watch", "--idle"]' in watch and 'profiles: ["live"]' in watch
@@ -181,10 +181,9 @@ def test_compose_keeps_every_image_volume_in_a_named_volume():
 def test_image_uses_the_new_setting_name_for_the_browser_profile_and_serve_by_default():
     final_stage = _instructions(_read("Dockerfile"))
     env = " ".join(ln for ln in final_stage if ln.startswith("ENV "))
-    # P09: yeni ad ayardır (yapılandırma dosyası varken eski ad tek başına "legacy name" uyarısı verirdi); eski ad
-    # ayarları yüklemeden ortamı okuyanlar (doctor) için aynı değerle durur
+    # Yalnızca 3.1 adı: 2.x'in SOFASCORE_BROWSER_PROFILE adı okunmaz ve her açılışta uyarı verirdi (P30)
     assert "SOFASCORE_CLIENT__BROWSER_PROFILE=/app/browser-profile" in env
-    assert "SOFASCORE_BROWSER_PROFILE=/app/browser-profile" in env
+    assert "SOFASCORE_BROWSER_PROFILE" not in env
     assert final_stage[-1] == 'CMD ["serve"]'
     # `ssc watch`un kendi profili (<profil>-live) uygulama kullanıcısına ait bir dizindedir
     assert any("/app/browser-profile-live" in ln and "chown app:app" in ln for ln in final_stage)
@@ -237,9 +236,8 @@ def test_entrypoint_starts_serve_on_every_interface_with_the_loopback_names(tmp_
 
 
 @pytest.mark.parametrize("env,files", [
-    ({"SOFASCORE_ALLOWED_HOSTS": "box.lan"}, {}),
     ({"SOFASCORE_SERVER__ALLOWED_HOSTS": "box.lan"}, {}),
-    ({}, {"config/.env": "SOFASCORE_ALLOWED_HOSTS=box.lan\n"}),
+    ({}, {"config/.env": "SOFASCORE_SERVER__ALLOWED_HOSTS=box.lan\n"}),
     ({}, {"sofascore.toml": "schema = 1\n"}),
     ({}, {"config/sofascore.toml": "schema = 1\n"}),
     ({"SOFASCORE_CONFIG": "/somewhere/sofascore.toml"}, {}),

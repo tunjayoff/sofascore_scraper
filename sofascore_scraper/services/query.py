@@ -95,7 +95,7 @@ class RefreshPolicy:
 
     @classmethod
     def current(cls, now: Optional[float] = None) -> "RefreshPolicy":
-        """Ayarların o anki değerleri (REFRESH_WINDOW_HOURS, REFRESH_MIN_INTERVAL_HOURS, REFRESH_LEGACY)."""
+        """Ayarların o anki değerleri (refresh.window_hours, refresh.min_interval_hours, refresh.include_legacy)."""
         return cls(
             now=time.time() if now is None else now,
             window_s=refresh.refresh_window_hours() * 3600,
@@ -260,7 +260,7 @@ class ChangePage:
 
 
 def refresh_window_seconds() -> float:
-    """Yenileme penceresi, saniye (ayar `REFRESH_WINDOW_HOURS`): kayıtların `quality.settlement` hesabı için."""
+    """Yenileme penceresi, saniye (ayar `refresh.window_hours`): kayıtların `quality.settlement` hesabı için."""
     return refresh.refresh_window_hours() * 3600
 
 

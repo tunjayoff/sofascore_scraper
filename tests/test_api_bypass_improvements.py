@@ -60,7 +60,7 @@ def test_headers_always_have_dynamic_xhr():
 def test_token_injected_into_headers():
     """SOFA_CAPTCHA_TOKEN ayarlandığında X-Captcha ve Cookie eklenmeli."""
     from unittest.mock import patch
-    with patch.dict("os.environ", {"SOFA_CAPTCHA_TOKEN": "mock_jwt_token_123"}):
+    with patch.dict("os.environ", {"SOFASCORE_CLIENT__CAPTCHA_TOKEN": "mock_jwt_token_123"}):
         from sofascore_scraper.client.transport import get_request_headers
         headers = get_request_headers()
         assert headers.get("X-Captcha") == "mock_jwt_token_123"

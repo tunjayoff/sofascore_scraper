@@ -5,8 +5,8 @@ Yapılandırma dosyasının (sofascore.toml) JSON Schema'sı: `describe config` 
 listesi yoktur, bu yüzden modelden sapamaz. Dosyayı gerçekte denetleyen kod yükleyicidir
 (sofascore_scraper/config/loader.py); şema aynı kuralların makinece okunur anlatımıdır.
 
-Her sayıl ayarın yanında iki ek alan durur: `x-env` (onu ezen SOFASCORE_<BÖLÜM>__<ANAHTAR> değişkeni) ve,
-varsa, `x-legacy-env` (bir sürüm daha okunan bugünkü ad).
+Her sayıl ayarın yanında `x-env` durur: onu ezen SOFASCORE_<BÖLÜM>__<ANAHTAR> değişkeni. 3.0'ın `x-legacy-env`
+alanı (2.x'in adı) eski adlarla birlikte 3.1'de kalktı (plan maddesi P30).
 """
 from __future__ import annotations
 
@@ -19,9 +19,7 @@ from sofascore_scraper.config.loader import (
     ENV_SCHEDULE_TASKS,
     ENV_SINKS,
     ENV_SLICES,
-    LANGUAGE_ENV,
     LANGUAGE_KEY,
-    LEGACY_BY_KEY,
     env_name,
 )
 from sofascore_scraper.sports import sport_slugs
@@ -86,9 +84,6 @@ def _setting_schema(key: str, f: "Field[Any]") -> Dict[str, Any]:
     if meta["secret"]:
         out["x-secret"] = True
     out["x-env"] = env_name(key)
-    legacy = LANGUAGE_ENV if key == LANGUAGE_KEY else getattr(LEGACY_BY_KEY.get(key), "env", None)
-    if legacy:
-        out["x-legacy-env"] = legacy
     return out
 
 

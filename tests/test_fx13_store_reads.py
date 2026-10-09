@@ -25,7 +25,7 @@ from sofascore_scraper.store import FollowSpec, LayoutError, Store, open_store
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
     path.mkdir()
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return path
 
 

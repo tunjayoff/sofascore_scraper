@@ -11,7 +11,7 @@ komutlarıdır: `--headless --update-all` → `sync`, `--refresh-only` → `refr
 kurar ve süreç kapanırken kaydını dosyaya yazar. Üretim kodu değişmez.
 
 Alt süreç kendi kum havuzunda çalışır (veri, config, .env, log, istek bütçesi, tarayıcı profili ve HOME geçici
-dizinde) ve ortamı sıfırdan kurulur: testi çalıştıranın kabuğundaki ayarlar (PROXY_URL, LOG_LEVEL, ...) sızmaz.
+dizinde) ve ortamı sıfırdan kurulur: testi çalıştıranın kabuğundaki ayarlar (SOFASCORE_CLIENT__PROXY, ...) sızmaz.
 
 Beklenen çıktılar fixtures/cli/*.golden.json'dadır (yeniden üretmek: `UPDATE_GOLDENS=1 python -m pytest
 tests/characterization/test_cli_goldens.py`). Bu dosya bugünkü davranışı olduğu gibi kaydeder; doğru olduğunu
@@ -154,7 +154,7 @@ class Sandbox:
 
     def write_env(self, *lines: str) -> None:
         """`.env`: goldenların dayandığı eşzamanlılık ve senaryonun ayarları."""
-        text = "\n".join(("# cli golden env", "MAX_CONCURRENT=5", *lines)) + "\n"
+        text = "\n".join(("# cli golden env", "SOFASCORE_CLIENT__MAX_CONCURRENT=5", *lines)) + "\n"
         self.env_file.write_text(text, encoding="utf-8", newline="\n")
         # 0600: main.py başlangıçta .env'in izinlerini daraltır ve bunu loglar (yalnızca POSIX); daraltılacak
         # bir şey olmazsa çıktı her platformda aynıdır
@@ -170,16 +170,16 @@ class Sandbox:
             "PYTHONIOENCODING": "utf-8",
             # Dil: açık ayar yok, ileti dili "C" → her makinede İngilizce (sofascore_scraper/language.py)
             "LC_MESSAGES": "C",
-            "DATA_DIR": str(self.data),
+            "SOFASCORE_STORAGE__DATA_DIR": str(self.data),
             "SOFASCORE_CONFIG_DIR": str(self.config),
             "SOFASCORE_ENV_FILE": str(self.env_file),
             # Makinedeki bir sofascore.toml (proje kökünde ya da kullanıcının config dizininde) sızmasın
             "SOFASCORE_CONFIG": "none",
-            "LOG_DIR": str(self.root / "logs"),
+            "SOFASCORE_LOG__DIR": str(self.root / "logs"),
             # Ortak istek bütçesi kapalı ve yalıtılmış (tests/conftest.py ile aynı): fetch goldenları da böyle
-            "REQUEST_RATE_LIMIT": "0",
-            "SOFASCORE_THROTTLE_DIR": str(self.root / "throttle"),
-            "SOFASCORE_BROWSER_PROFILE": str(self.root / "browser-profile"),
+            "SOFASCORE_CLIENT__RATE": "0",
+            "SOFASCORE_CLIENT__THROTTLE_DIR": str(self.root / "throttle"),
+            "SOFASCORE_CLIENT__BROWSER_PROFILE": str(self.root / "browser-profile"),
             "HTTP_PROXY": _DEAD_PROXY,
             "HTTPS_PROXY": _DEAD_PROXY,
             "ALL_PROXY": _DEAD_PROXY,
@@ -549,8 +549,12 @@ def test_doctor_json(box: Sandbox) -> None:
 
 
 def test_doctor_reports_env_problems_with_exit_code_1(new_box: NewBox) -> None:
-    """Geçersiz .env değeri bir hatadır (fail): rapor (metin ya da JSON) stdout'ta, çıkış kodu 1."""
-    box = new_box(env_lines=["REQUEST_TIMEOUT=soon", "USE_PROXY=yes", "API_BASE_URL=https://example.org/api"])
+    """
+    Okunamayan .env satırı bir hatadır (fail); okunmayan 2.x adı (3.1, P30) ve SofaScore'unki olmayan API adresi
+    uyarıdır: rapor (metin ya da JSON) stdout'ta, çıkış kodu 1.
+    """
+    box = new_box(env_lines=["REQUEST_TIMEOUT=soon", "this is not a setting",
+                             "SOFASCORE_CLIENT__BASE_URL=https://example.org/api"])
 
     text = run_cli(box, "doctor", "--only", "env")
     as_json = run_cli(box, "--json", "doctor", "--only", "env")
@@ -603,7 +607,7 @@ def test_usage_errors(new_box: NewBox) -> None:
     # 2.x'in bayrakları 3.1'de kalktı (P30): hiçbir şey çalışmaz, ileti yerine geçen komutu söyler
     cases["removed_headless"] = _new_cli_usage_error(run_cli(new_box("headless"), "--headless"))
     cases["removed_headless_update_all_tr"] = _new_cli_usage_error(run_cli(
-        new_box("headless-tr", env_lines=["APP_LANGUAGE=tr"]), "--headless", "--update-all", "--league-id", "17"))
+        new_box("headless-tr", env_lines=["SOFASCORE_DISPLAY__LANGUAGE=tr"]), "--headless", "--update-all", "--league-id", "17"))
     cases["removed_watch"] = _new_cli_usage_error(
         run_cli(new_box("watch"), "--watch", "--sport", "football", "--event-ids", "9300001"))
     cases["removed_web"] = _new_cli_usage_error(run_cli(new_box("web"), "--web", "--host", "0.0.0.0"))
@@ -720,7 +724,7 @@ def test_headless_update_stopped_by_the_breaker(new_box: NewBox, world: FakeSofa
     world.fail("/event/*", 403)
     runs = {
         name: run_cli(
-            new_box(name, env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=4"]), "sync", *extra,
+            new_box(name, env_lines=["SOFASCORE_BREAKER__RATE_LIMIT_CONSECUTIVE=4"]), "sync", *extra,
             world=world,
         )
         for name, extra in (("all_leagues", []), ("one_league", ["--tournament", str(LEAGUE)]))
@@ -827,7 +831,7 @@ def test_config_flag_names_the_config_file(new_box: NewBox) -> None:
 
 
 def test_data_dir_flag_overrides_the_environment(box: Sandbox, seed: Seed) -> None:
-    """--data-dir, DATA_DIR'in önündedir: aynı istekler, aynı dosyalar, başka dizinde."""
+    """--data-dir, SOFASCORE_STORAGE__DATA_DIR'in önündedir: aynı istekler, aynı dosyalar, başka dizinde."""
     run = run_cli(box, "--data-dir", str(box.root / "alt-data"), "sync")
 
     def moved(text: str) -> str:
@@ -871,7 +875,8 @@ def test_refresh_only_exit_codes(new_box: NewBox, world: FakeSofaScore) -> None:
     all_failed = run_cli(all_failed_box, "refresh", world=gone)
 
     # Maçlar sırayla (P13'ten beri yenileme eşzamanlıdır): devreyi hangi isteğin keseceği belirli kalsın
-    blocked_box = new_box("blocked", data="seed", env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=2", "MAX_CONCURRENT=1"])
+    blocked_box = new_box("blocked", data="seed",
+                          env_lines=["SOFASCORE_BREAKER__RATE_LIMIT_CONSECUTIVE=2", "SOFASCORE_CLIENT__MAX_CONCURRENT=1"])
     for event_id in (9100001, 9100003, 9100010):
         _make_provisional(blocked_box.data, world, event_id)
     world.fail("/event/*", 403)
@@ -1000,7 +1005,7 @@ def test_a_second_writer_is_refused_with_exit_code_6(new_box: NewBox) -> None:
     (`job_running`, "Held by process ... on ... since ...") yazılır.
     """
     box = new_box("en", data="seed")
-    turkish = new_box("tr", data="seed", env_lines=["APP_LANGUAGE=tr"])
+    turkish = new_box("tr", data="seed", env_lines=["SOFASCORE_DISPLAY__LANGUAGE=tr"])
     refused: Dict[str, CliRun] = {}
     cases: Dict[str, Dict[str, Any]] = {}
 

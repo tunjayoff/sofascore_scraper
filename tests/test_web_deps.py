@@ -24,21 +24,21 @@ import json, os, sys
 from sofascore_scraper.web.app import app
 from sofascore_scraper.web import deps
 before = {"leagues": os.path.exists(os.path.join(os.environ["SOFASCORE_CONFIG_DIR"], "leagues.txt")),
-          "state": os.path.exists(os.path.join(os.environ["DATA_DIR"], ".meta", "state.db")),
+          "state": os.path.exists(os.path.join(os.environ["SOFASCORE_STORAGE__DATA_DIR"], ".meta", "state.db")),
           "manager": deps._config_manager is not None, "jobs": deps._job_store is not None}
 deps.job_store()
 after = {"leagues": os.path.exists(os.path.join(os.environ["SOFASCORE_CONFIG_DIR"], "leagues.txt")),
-         "state": os.path.exists(os.path.join(os.environ["DATA_DIR"], ".meta", "state.db"))}
+         "state": os.path.exists(os.path.join(os.environ["SOFASCORE_STORAGE__DATA_DIR"], ".meta", "state.db"))}
 print(json.dumps({"before": before, "after": after}))
 """
 
 
 def test_importing_the_app_creates_no_league_file_and_no_job_store(tmp_path: Path) -> None:
-    env = {k: v for k, v in os.environ.items() if k not in ("SOFASCORE_API_TOKEN",)}
+    env = {k: v for k, v in os.environ.items() if k not in ("SOFASCORE_SERVER__TOKEN",)}
     env.update(
-        DATA_DIR=str(tmp_path / "data"), SOFASCORE_CONFIG_DIR=str(tmp_path / "config"), SOFASCORE_CONFIG="none",
-        SOFASCORE_ENV_FILE=str(tmp_path / ".env"), LOG_DIR=str(tmp_path / "logs"),
-        SOFASCORE_BROWSER_PROFILE=str(tmp_path / "profile"),
+        SOFASCORE_STORAGE__DATA_DIR=str(tmp_path / "data"), SOFASCORE_CONFIG_DIR=str(tmp_path / "config"), SOFASCORE_CONFIG="none",
+        SOFASCORE_ENV_FILE=str(tmp_path / ".env"), SOFASCORE_LOG__DIR=str(tmp_path / "logs"),
+        SOFASCORE_CLIENT__BROWSER_PROFILE=str(tmp_path / "profile"),
     )
     done = subprocess.run([sys.executable, "-c", _IMPORT_APP], cwd=str(ROOT), env=env, capture_output=True,
                           text=True, timeout=120, check=False)

@@ -24,7 +24,7 @@ Kurallar (2.x'in season_fetcher.py ve match_fetcher.py modüllerinden taşındı
     neyin saklandığını değiştirmez. Okuyanlar ayarı okurken uygular (sofascore_scraper/services/query.py).
   * Maçı olmayan tur atlanır ve saklanmaz (ST-27; SAVE_EMPTY_ROUNDS ayarı 3.1'de kalktı). 404 "yok"tur, hata değildir.
   * Deneme sayıları istek katmanınınki gibidir: tur listesi 1, olay sayfası 2, tur ve sezon listesi ayardaki
-    (`MAX_RETRIES`).
+    (`client.retries`).
 
 Tazelik (02-services.md 3.5, yeniden çalıştırma): eşitleme işi bir listeyi, son çekiminin üzerinden belli bir
 süre geçmediyse yeniden istemez (`max_age`; bkz. SEASON_LIST_TTL_SECONDS ve SCHEDULE_TTL_SECONDS). Program için
@@ -100,7 +100,7 @@ SCHEDULE_KEY = planning.LISTING_SCHEDULE
 MAX_ROUND = 50
 # Bir türün (`last` / `next`) en çok bu kadar sayfası istenir
 EVENT_PAGE_LIMIT = 200
-# İstek katmanının deneme sayıları (eski kodla aynı): tur listesi 1, olay sayfası 2; None = ayardaki MAX_RETRIES
+# İstek katmanının deneme sayıları (eski kodla aynı): tur listesi 1, olay sayfası 2; None = ayardaki client.retries
 ROUNDS_RETRIES = 1
 EVENT_PAGE_RETRIES = 2
 
@@ -404,7 +404,7 @@ class ScheduleLister:
     çağrı.
 
     store              sayfaların yazıldığı ve önbellek kararının okunduğu depo
-    only_finished      sonucun `chunks`'ı yalnızca bitmiş maçları sayar (FETCH_ONLY_FINISHED); saklananı değiştirmez
+    only_finished      sonucun `chunks`'ı yalnızca bitmiş maçları sayar (fetch.only_finished); saklananı değiştirmez
     concurrency        aynı anda istenen tur sayısı
     """
 

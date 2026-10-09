@@ -1,37 +1,29 @@
 """
 Ayar yükleyici: katmanları birleştirip bir `Settings` üretir ve her değerin nereden geldiğini söyler
-(docs/design/02-services.md bölüm 4.3; plan maddesi P09).
+(docs/design/02-services.md bölüm 4.3; plan maddeleri P09 ve P30).
 
 Katmanlar, zayıftan güçlüye:
 
     default    koddaki varsayılanlar
-    dotenv     `.env` dosyasından gelen bugünkü adlar (DATA_DIR, MAX_CONCURRENT...). `.env` 2.x'in web
-               arayüzünün yazdığı dosyadır (eski `POST /api/settings` hâlâ yazar); bu yüzden yapılandırma
-               dosyasının ALTINDA durur.
     overrides  CONFIG_DIR/overrides.json (Ayarlar sayfasının, `PATCH /api/v1/settings`in yazdığı dosya;
                yazarı sofascore_scraper/config/overrides.py)
     file       sofascore.toml
-    env        süreç ortamı: bugünkü adlar, sonra SOFASCORE_<BÖLÜM>__<ANAHTAR> (ikisi de verilmişse yenisi kazanır)
+    env        süreç ortamı: SOFASCORE_<BÖLÜM>__<ANAHTAR> ve JSON listeleri (SOFASCORE_FOLLOWS...)
     flag       komut satırı (çağıran `flags` ile verir)
 
-Yapılandırma dosyası yoksa sonuç bugünkü davranışın aynısıdır: bugünkü adların her biri, onu bugün okuyan
-kodun kuralıyla ayrıştırılır (tuhaf olanlar dahil: `USE_PROXY=yes` yanlıştır, `REQUEST_TIMEOUT=10.5`
-varsayılana düşer, `DATA_DIR=` boş dizge döner). Bu kurallar LEGACY tablosundadır; tests/test_config_loader.py
-onları bugünkü okuyucularla ve G-04 goldenıyla karşılaştırır.
+`.env` bir katman değildir: uygulama onu başlangıçta python-dotenv ile süreç ortamına yükler (var olan değeri
+ezmeden); oradaki SOFASCORE_*__* satırları ortam katmanıdır. 2.x'in ortam adları (DATA_DIR, MAX_CONCURRENT,
+APP_LANGUAGE...) 3.0'da bir sürüm daha okunuyordu; 3.1'de okunmaz (plan maddesi P30). Ortamda ya da `.env`'de
+duran eski ad bir uyarıdır (`legacy_name`): ileti yeni adı söyler (LEGACY_NAMES). `ssc doctor` ve
+`ssc config init --from-legacy` aynı tabloyu kullanır.
 
-`.env` ile süreç ortamını ayırmak: python-dotenv `.env`'i ortama yükler, sonrasında ikisi tek bir sözlüktür.
-Bir değişkenin ortamdaki değeri, bu sürecin `.env`'den uyguladığı değerle aynıysa `dotenv`, farklıysa (ya da
-`.env`'de yoksa) `env` sayılır. Kabuktan `.env`'dekiyle aynı değer verilirse o da `dotenv` görünür;
-yapılandırma dosyası yokken sonuç değişmez. Aynı ayrım yeniden yüklemede de kullanılır (`reload`): `.env`
-yalnızca kendi getirdiği değerleri yeniler, süreç ortamından gelen değerin üzerine yazmaz.
-
-Geçiş köprüsü (yalnızca bugünkü adlardan gelmeyen bir değer olduğunda çalışır): ayarı hâlâ doğrudan
-ortamdan okuyan modüller (sofascore_scraper/throttle.py, sofascore_scraper/refresh.py, sofascore_scraper/logger.py...) de dosyaya uysun diye, etkin
-değer bugünkü adıyla ortama yazılır (`_project`). Dosya da SOFASCORE_*__* değişkeni de yoksa ortama hiçbir
-şey yazılmaz. Modüller Settings'e geçtikçe köprü gereksizleşir; 3.1 temizliği (P30) siler.
+Ayarları okuyan modüller (throttle, refresh, logger, köprü sağlığı, devre kesici, istek katmanı...) değeri
+`active_settings()`ten alır; ortamdan doğrudan okumazlar. 3.0'ın geçiş köprüsü (etkin değeri eski adıyla
+ortama yazan `projection`) 3.1'de kalktı.
 
 Yapılandırma dosyası süreç başına bir kez okunur; yeniden okumak açık bir çağrıdır (`reload`,
-ConfigManager.reload_config). Ortam değişkenleri ise bugünkü gibi her okumada güncel görülür.
+ConfigManager.reload_config). Ortam değişkenleri ise her okumada güncel görülür. `.env` yeniden okunmaz:
+değişikliği süreç yeniden başlayınca geçerli olur.
 
 Hata iletileri (ConfigError), uyarılar ve log satırları İngilizcedir: `config_invalid` hatasının `message`
 alanına ve loglara girerler; ikisi de yerelleştirilmez (02-services.md 4.4, plan kuralı 8).
@@ -47,7 +39,7 @@ import threading
 from dataclasses import Field, dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import dotenv
 
@@ -80,20 +72,19 @@ ENV_SLICES = "SOFASCORE_SLICES"
 ENV_SCHEDULE_TASKS = "SOFASCORE_SCHEDULE__TASKS"
 
 LAYER_DEFAULT = "default"
-LAYER_DOTENV = "dotenv"
 LAYER_OVERRIDES = "overrides"
 LAYER_FILE = "file"
 LAYER_ENV = "env"
 LAYER_FLAG = "flag"
-LAYERS: Tuple[str, ...] = (LAYER_DEFAULT, LAYER_DOTENV, LAYER_OVERRIDES, LAYER_FILE, LAYER_ENV, LAYER_FLAG)
+LAYERS: Tuple[str, ...] = (LAYER_DEFAULT, LAYER_OVERRIDES, LAYER_FILE, LAYER_ENV, LAYER_FLAG)
 # Dosya, ortam ya da bayrakla sabitlenen değer arayüzde kilitli görünür (karar D4)
 LOCKED_LAYERS = frozenset({LAYER_FILE, LAYER_ENV, LAYER_FLAG})
 
-DEFAULT_TOKEN_ENV = "SOFASCORE_API_TOKEN"
+# Erişim belirtecinin ortamdaki adı, `[server] token_env` başka bir değişken adı vermediyse
+TOKEN_ENV = "SOFASCORE_SERVER__TOKEN"
 
 _TRUE_WORDS = ("true", "1", "yes", "on")
 _FALSE_WORDS = ("false", "0", "no", "off")
-_OFF_WORDS = ("off", "false", "no", "none", "disabled")   # sofascore_scraper/throttle.py ile aynı
 _SEASON_WORDS = ("current", "all")
 _LAST_N = re.compile(r"^last:([1-9]\d*)$")
 _DURATION = re.compile(r"^(\d+(?:\.\d+)?)\s*([smhd])$")
@@ -108,24 +99,18 @@ class _Auto:
 
 
 AUTO = _Auto()
-_UNSET: Any = object()
 
 
 class _Reject(ValueError):
     """Bir değer anahtarının kuralına uymuyor; ileti çağıran tarafından yer bilgisiyle sarılır."""
 
 
-class _Invalid(Exception):
-    """Bugünkü adla verilmiş, bugünkü okuyucunun da reddedip varsayılana düştüğü değer."""
-
-
 @dataclass(frozen=True)
 class Source:
-    """Bir değerin geldiği yer. `legacy`: bugünkü adlardan biriyle verildi (DATA_DIR gibi)."""
+    """Bir değerin geldiği yer: katman ve kaynağın adı (dosya yolu, ortam değişkeni, bayrak)."""
 
     layer: str
     name: str = ""
-    legacy: bool = False
 
     @property
     def locked(self) -> bool:
@@ -290,186 +275,116 @@ def _resolve_path(value: str, base: Optional[Path]) -> str:
     return os.path.normpath(str(path if path.is_absolute() else base / path))
 
 
-# === bugünkü adlar =================================================================================
-# Her ayrıştırıcı, o değişkeni bugün okuyan kodun kuralıdır (dosya:satır yorumda). Değer döndürür,
-# "verilmemiş say" için _UNSET döndürür ya da bugünkü kod da varsayılana düşüyorsa _Invalid atar.
+# === 2.x'in ortam adları ===========================================================================
+# 3.0'a kadar okunan adlar, 3.1'de okunmaz (plan maddesi P30). Tablo yalnızca kullanıcıya yeni adı söylemek
+# içindir: yükleyicinin uyarısı (`legacy_name`), `ssc doctor` ve `ssc config init --from-legacy`. Eski ad ->
+# ayar anahtarı; anahtar None ise ayar kalktı (yeni adı yok).
 
-
-def _raw(raw: str) -> Any:
-    return raw
-
-
-def _stripped_or_unset(raw: str) -> Any:
-    return raw.strip() or _UNSET
-
-
-def _is_true(raw: str) -> Any:
-    return raw.lower() == "true"
-
-
-def _int(raw: str) -> Any:
-    try:
-        return int(raw)
-    except ValueError:
-        raise _Invalid from None
-
-
-def _float(raw: str) -> Any:
-    try:
-        return float(raw)
-    except ValueError:
-        raise _Invalid from None
-
-
-def _number(minimum: float, cast: Callable[[float], Any] = float) -> Callable[[str], Any]:
-    """sofascore_scraper/logger._env_number ve sofascore_scraper/bridge_health._env_number: boş = verilmemiş; alt sınırın altı = varsayılan."""
-
-    def parse(raw: str) -> Any:
-        text = raw.strip()
-        if not text:
-            return _UNSET
-        try:
-            value = float(text)
-        except ValueError:
-            raise _Invalid from None
-        if not value >= minimum:
-            raise _Invalid
-        try:
-            return cast(value)
-        except (ValueError, OverflowError):   # int(inf)
-            raise _Invalid from None
-
-    return parse
-
-
-def _hours(raw: str) -> Any:
-    """sofascore_scraper/refresh.refresh_window_hours: boş = verilmemiş; negatif = 0."""
-    if raw.strip() == "":
-        return _UNSET
-    try:
-        return max(0.0, float(raw))
-    except ValueError:
-        raise _Invalid from None
-
-
-def _rate(raw: str) -> Any:
-    """sofascore_scraper/throttle.configured_rate."""
-    text = raw.strip().lower()
-    if not text:
-        return _UNSET
-    if text in _OFF_WORDS:
-        return 0.0
-    try:
-        rate = float(text)
-    except ValueError:
-        raise _Invalid from None
-    if not math.isfinite(rate):
-        raise _Invalid
-    return max(0.0, rate)
-
-
-def _log_level(raw: str) -> Any:
-    """sofascore_scraper/logger.resolve_level: boş = INFO; tanınmayan ad = INFO (uyarıyla)."""
-    name = raw.strip().upper() or "INFO"
-    if name not in model.LOG_LEVELS:
-        raise _Invalid
-    return name
-
-
-def _backup_count(raw: str) -> Any:
-    value = _number(0, int)(raw)
-    return value if value is _UNSET else max(1, value)
-
-
-def _event_polls(raw: str) -> Any:
-    """sofascore_scraper/watcher.max_event_polls."""
-    try:
-        return max(1, int(raw))
-    except ValueError:
-        raise _Invalid from None
-
-
-def _hosts(raw: str) -> Any:
-    """sofascore_scraper/web/security.allowed_hosts: boş liste = verilmemiş."""
-    return tuple(h.strip() for h in raw.split(",") if h.strip()) or _UNSET
-
-
-def _bool_text(value: Any) -> str:
-    return "true" if value else "false"
-
-
-def _number_text(value: Any) -> str:
-    return repr(value) if isinstance(value, float) and not value.is_integer() else str(int(value))
-
-
-@dataclass(frozen=True)
-class LegacyVar:
-    """Bugünkü bir ortam değişkeni: hangi ayar, nasıl okunur (`parse`), ortama nasıl geri yazılır (`encode`)."""
-
-    key: str
-    env: str
-    parse: Callable[[str], Any]
-    encode: Callable[[Any], str] = str
-
-
-LEGACY: Tuple[LegacyVar, ...] = (
-    LegacyVar("storage.data_dir", "DATA_DIR", _raw),                                    # config_manager.get_data_dir
-    LegacyVar("storage.durability", "STORE_DURABILITY",                                 # store/files.durability_full
-              lambda raw: "full" if raw.strip().lower() == "full" else "normal"),
-    LegacyVar("client.base_url", "API_BASE_URL", _raw),                                 # config_manager.get_api_base_url
-    LegacyVar("client.rate", "REQUEST_RATE_LIMIT", _rate, _number_text),                # throttle.configured_rate
-    LegacyVar("client.max_concurrent", "MAX_CONCURRENT", _int),                         # config_manager
-    LegacyVar("client.timeout_seconds", "REQUEST_TIMEOUT", _int),
-    LegacyVar("client.retries", "MAX_RETRIES", _int),
-    LegacyVar("client.wait_time_min", "WAIT_TIME_MIN", _float, _number_text),
-    LegacyVar("client.wait_time_max", "WAIT_TIME_MAX", _float, _number_text),
-    LegacyVar("client.use_proxy", "USE_PROXY", _is_true, _bool_text),                   # config_manager, challenge_solver
-    LegacyVar("client.proxy", "PROXY_URL", _raw),
-    LegacyVar("client.captcha_token", "SOFA_CAPTCHA_TOKEN", _stripped_or_unset),        # client/transport
-    LegacyVar("client.browser_profile", "SOFASCORE_BROWSER_PROFILE", _stripped_or_unset),  # paths.browser_profile_dir
-    LegacyVar("client.browser_headed", "SOFASCORE_BROWSER_HEADED",                      # challenge_solver._headless
-              lambda raw: raw.lower() in ("1", "true", "yes"), _bool_text),
-    LegacyVar("client.throttle_dir", "SOFASCORE_THROTTLE_DIR", _stripped_or_unset),     # throttle.state_dir
-    LegacyVar("breaker.rate_limit_consecutive", "RATE_LIMIT_THRESHOLD_CONSECUTIVE", _int),
-    LegacyVar("breaker.rate_limit_ratio", "RATE_LIMIT_THRESHOLD_RATIO", _float, _number_text),
-    LegacyVar("breaker.server_error_consecutive", "SERVER_ERROR_THRESHOLD_CONSECUTIVE", _int),
-    LegacyVar("breaker.ignore", "IGNORE_RATE_LIMIT", _is_true, _bool_text),             # breaker._ignore_rate_limit
-    LegacyVar("bridge.degraded_after", "BRIDGE_DEGRADED_AFTER", _number(1, int)),       # bridge_health.thresholds
-    LegacyVar("bridge.blocked_after", "BRIDGE_BLOCKED_AFTER", _number(1, int)),
-    LegacyVar("bridge.blocked_min_seconds", "BRIDGE_BLOCKED_MIN_SECONDS", _number(0), _number_text),
-    LegacyVar("fetch.only_finished", "FETCH_ONLY_FINISHED", _is_true, _bool_text),      # utils, routes/settings
-    LegacyVar("fetch.save_empty_rounds", "SAVE_EMPTY_ROUNDS", _is_true, _bool_text),
-    LegacyVar("refresh.window_hours", "REFRESH_WINDOW_HOURS", _hours, _number_text),    # refresh.refresh_window_hours
-    LegacyVar("refresh.min_interval_hours", "REFRESH_MIN_INTERVAL_HOURS", _hours, _number_text),
-    LegacyVar("refresh.include_legacy", "REFRESH_LEGACY", _is_true, _bool_text),        # refresh.refresh_legacy_enabled
-    LegacyVar("live.max_event_polls", "WATCH_MAX_EVENT_POLLS", _event_polls),           # watcher.max_event_polls
-    LegacyVar("server.allowed_hosts", "SOFASCORE_ALLOWED_HOSTS", _hosts, ",".join),     # web/security.allowed_hosts
-    LegacyVar("server.token", DEFAULT_TOKEN_ENV, _stripped_or_unset),                   # web/security.api_token
-    LegacyVar("log.level", "LOG_LEVEL", _log_level),                                    # logger.resolve_level
-    LegacyVar("log.debug", "DEBUG",                                                     # logger.resolve_level
-              lambda raw: raw.strip().lower() in ("true", "1", "yes", "t", "y", "on"), _bool_text),
-    LegacyVar("log.dir", "LOG_DIR", _stripped_or_unset),                                # logger.log_dir
-    LegacyVar("log.to_file", "LOG_TO_FILE",                                             # logger.log_to_file_enabled
-              lambda raw: raw.strip().lower() not in ("false", "0", "no", "f", "n", "off"), _bool_text),
-    LegacyVar("log.max_mb", "LOG_MAX_MB", _number(0.001), _number_text),                # logger.log_max_bytes
-    LegacyVar("log.backup_count", "LOG_BACKUP_COUNT", _backup_count),                   # logger.log_backup_count
-    LegacyVar("display.use_color", "USE_COLOR", _is_true, _bool_text),                  # config_manager.get_use_color
-    LegacyVar("display.date_format", "DATE_FORMAT", _raw),
-)
-# Dil ayrı ele alınır: iki ad (APP_LANGUAGE, LANGUAGE) ve sistem dili tek kuralda birleşir (sofascore_scraper/language.py)
 LANGUAGE_KEY = "display.language"
-LANGUAGE_ENV = "APP_LANGUAGE"
 
-LEGACY_BY_KEY: Mapping[str, LegacyVar] = MappingProxyType({var.key: var for var in LEGACY})
-LEGACY_ENV_NAMES: Tuple[str, ...] = tuple(var.env for var in LEGACY) + language.EXPLICIT_KEYS
-# Değeri değişince ayarların yeniden kurulması gereken, önekle bulunamayan adlar
-_WATCHED_ENV: Tuple[str, ...] = tuple(dict.fromkeys(LEGACY_ENV_NAMES + language.LOCALE_KEYS))
+LEGACY_NAMES: Mapping[str, Optional[str]] = MappingProxyType({
+    "DATA_DIR": "storage.data_dir",
+    "STORE_DURABILITY": "storage.durability",
+    "STORE_OPEN_RECONCILE_SECONDS": "storage.open_reconcile_seconds",
+    "API_BASE_URL": "client.base_url",
+    "REQUEST_RATE_LIMIT": "client.rate",
+    "MAX_CONCURRENT": "client.max_concurrent",
+    "REQUEST_TIMEOUT": "client.timeout_seconds",
+    "MAX_RETRIES": "client.retries",
+    "WAIT_TIME_MIN": "client.wait_time_min",
+    "WAIT_TIME_MAX": "client.wait_time_max",
+    "USE_PROXY": "client.use_proxy",
+    "PROXY_URL": "client.proxy",
+    "SOFA_CAPTCHA_TOKEN": "client.captcha_token",
+    "SOFASCORE_BROWSER_PROFILE": "client.browser_profile",
+    "SOFASCORE_BROWSER_HEADED": "client.browser_headed",
+    "SOFASCORE_THROTTLE_DIR": "client.throttle_dir",
+    "RATE_LIMIT_THRESHOLD_CONSECUTIVE": "breaker.rate_limit_consecutive",
+    "RATE_LIMIT_THRESHOLD_RATIO": "breaker.rate_limit_ratio",
+    "SERVER_ERROR_THRESHOLD_CONSECUTIVE": "breaker.server_error_consecutive",
+    "IGNORE_RATE_LIMIT": "breaker.ignore",
+    "BRIDGE_DEGRADED_AFTER": "bridge.degraded_after",
+    "BRIDGE_BLOCKED_AFTER": "bridge.blocked_after",
+    "BRIDGE_BLOCKED_MIN_SECONDS": "bridge.blocked_min_seconds",
+    "FETCH_ONLY_FINISHED": "fetch.only_finished",
+    "SAVE_EMPTY_ROUNDS": None,
+    "REFRESH_WINDOW_HOURS": "refresh.window_hours",
+    "REFRESH_MIN_INTERVAL_HOURS": "refresh.min_interval_hours",
+    "REFRESH_LEGACY": "refresh.include_legacy",
+    "WATCH_MAX_EVENT_POLLS": "live.max_event_polls",
+    "SOFASCORE_ALLOWED_HOSTS": "server.allowed_hosts",
+    "SOFASCORE_API_TOKEN": "server.token",
+    "LOG_LEVEL": "log.level",
+    "DEBUG": "log.debug",
+    "LOG_DIR": "log.dir",
+    "LOG_TO_FILE": "log.to_file",
+    "LOG_MAX_MB": "log.max_mb",
+    "LOG_BACKUP_COUNT": "log.backup_count",
+    "USE_COLOR": "display.use_color",
+    "DATE_FORMAT": "display.date_format",
+    "APP_LANGUAGE": LANGUAGE_KEY,
+})
+LEGACY_ENV_NAMES: Tuple[str, ...] = tuple(LEGACY_NAMES)
+
+# 3.1'de kalkan ayarlar: dosyada, overrides.json'da ya da SOFASCORE_*__* adıyla verilirse hata değil uyarıdır
+# (3.0'ın Ayarlar sayfası onu overrides.json'a yazmış olabilir). Anahtar -> neden.
+RETIRED_SETTINGS: Mapping[str, str] = MappingProxyType({
+    "fetch.save_empty_rounds": "a round without a match is never stored",
+})
+
+# Değeri değişince ayarların yeniden kurulması gereken, önekle bulunamayan adlar: sistem dili
+_WATCHED_ENV: Tuple[str, ...] = tuple(language.LOCALE_KEYS)
 
 
 def env_name(key: str) -> str:
     """'client.rate' -> 'SOFASCORE_CLIENT__RATE'."""
     section, _, name = key.partition(".")
     return f"{ENV_PREFIX}{section.upper()}{ENV_SEPARATOR}{name.upper()}"
+
+
+def legacy_replacement(name: str) -> str:
+    """
+    Eski bir ortam adının yerine geçen ad, iletide yazıldığı gibi: "SOFASCORE_STORAGE__DATA_DIR (or storage.data_dir
+    in the config file)"; yalnızca ortamdan okunan ayar için yalnız değişkenin adı; kalkan ayar için "nothing".
+    """
+    key = LEGACY_NAMES.get(name)
+    if key is None:
+        return "nothing (the setting was removed)"
+    section, _, field_name = key.partition(".")
+    f = model.SETTING_KEYS[section][field_name]
+    if not f.metadata["in_file"]:
+        return env_name(key)
+    return f"{env_name(key)} (or {key} in the config file)"
+
+
+def legacy_names_in(environ: Mapping[str, str], dotenv_values: Mapping[str, str] = MappingProxyType({}),
+                    named: Sequence[str] = ()) -> List[str]:
+    """
+    Ortamda ya da `.env`'de verilmiş (boş olmayan) eski adlar, tablo sırasıyla. `named`: ayarların adını verdiği
+    değişkenler (`proxy_env`, `token_env`; named_variables): onlar okunur, eski ad sayılmaz (`ssc config init
+    --from-legacy` proxy için `proxy_env = "PROXY_URL"` yazar).
+    """
+    return [name for name in LEGACY_NAMES if name not in named
+            and ((environ.get(name) or "").strip() or (dotenv_values.get(name) or "").strip())]
+
+
+def named_variables(settings: Settings) -> Tuple[str, ...]:
+    """Ayarların değerini başka bir değişkenden okuttuğu adlar: `client.proxy_env`, `server.token_env`."""
+    return tuple(name for name in (settings.client.proxy_env.strip(), settings.server.token_env.strip()) if name)
+
+
+def legacy_warnings(environ: Mapping[str, str], dotenv_values: Mapping[str, str] = MappingProxyType({}),
+                    named: Sequence[str] = ()) -> List["ConfigWarning"]:
+    """Her eski ad için bir uyarı (`legacy_name`): okunmadığını ve yerine geçen adı söyler."""
+    out: List[ConfigWarning] = []
+    for name in legacy_names_in(environ, dotenv_values, named):
+        where = ".env" if (dotenv_values.get(name) or "").strip() and environ.get(name) in (None, dotenv_values.get(name)) \
+            else "the environment"
+        out.append(ConfigWarning(
+            "legacy_name",
+            f"{name} (set in {where}) is no longer read since 3.1; use {legacy_replacement(name)}.",
+        ))
+    return out
 
 
 # === dosyalar ======================================================================================
@@ -579,6 +494,8 @@ class _Layer:
     tasks: Optional[List[Mapping[str, Any]]] = None
     # 'slices' / 'follows' / 'sinks' / 'schedule.tasks' -> listenin bu katmandaki kaynağı
     list_sources: Dict[str, Source] = field(default_factory=dict)
+    # Kalkmış ayarlar (RETIRED_SETTINGS): (verildiği yer, anahtar), uyarı için
+    retired: List[Tuple[str, str]] = field(default_factory=list)
 
 
 def _table(value: Any, where: str) -> Mapping[str, Any]:
@@ -685,6 +602,9 @@ def _document_layer(doc: Mapping[str, Any], *, layer: str, name: str, base: Opti
                 out.list_sources["schedule.tasks"] = source
                 continue
             f = keys.get(key)
+            if f is None and f"{section}.{key}" in RETIRED_SETTINGS:
+                out.retired.append((f"{where} {key}", f"{section}.{key}"))
+                continue
             if f is None:
                 raise ConfigError(f"{where}: unknown key {key!r}")
             if not f.metadata["in_file"]:
@@ -912,41 +832,6 @@ def parse_tasks(items: Sequence[Mapping[str, Any]], name: str) -> Tuple[Schedule
 # === ortam =========================================================================================
 
 
-def _legacy_layers(environ: Mapping[str, str], dotenv_values: Mapping[str, str]) -> Tuple[_Layer, _Layer, Dict[str, str]]:
-    """Bugünkü adlar -> (dotenv katmanı, env katmanı, geçersiz değerler: anahtar -> ham değer)."""
-    layers = {LAYER_DOTENV: _Layer({}, {}), LAYER_ENV: _Layer({}, {})}
-    invalid: Dict[str, str] = {}
-
-    def level(name: str) -> str:
-        return LAYER_DOTENV if dotenv_values.get(name) == environ.get(name) else LAYER_ENV
-
-    for var in LEGACY:
-        raw = environ.get(var.env)
-        if raw is None:
-            continue
-        try:
-            value = var.parse(raw)
-        except _Invalid:
-            invalid[var.key] = raw
-            continue
-        if value is _UNSET:
-            continue
-        layer = layers[level(var.env)]
-        layer.values[var.key] = value
-        layer.sources[var.key] = Source(layer=level(var.env), name=var.env, legacy=True)
-
-    # Dil: kural sofascore_scraper/language.py'dedir (APP_LANGUAGE, sonra LANGUAGE; yalnızca desteklenen kod). Burada yalnızca
-    # değeri hangi değişkenin verdiği bulunur: katmanı o belirler.
-    for name in language.EXPLICIT_KEYS:
-        code = language.explicit_language({name: environ.get(name) or ""})
-        if code is not None:
-            layer = layers[level(name)]
-            layer.values[LANGUAGE_KEY] = code
-            layer.sources[LANGUAGE_KEY] = Source(layer=level(name), name=name, legacy=True)
-            break
-    return layers[LAYER_DOTENV], layers[LAYER_ENV], invalid
-
-
 def _json_env(environ: Mapping[str, str], name: str, kind: type) -> Any:
     raw = (environ.get(name) or "").strip()
     if not raw:
@@ -961,13 +846,22 @@ def _json_env(environ: Mapping[str, str], name: str, kind: type) -> Any:
 
 
 def _new_env_layer(environ: Mapping[str, str], base: Optional[Path]) -> _Layer:
-    """SOFASCORE_<BÖLÜM>__<ANAHTAR> değişkenleri ve JSON listeleri (SOFASCORE_FOLLOWS, SOFASCORE_SINKS...)."""
+    """
+    SOFASCORE_<BÖLÜM>__<ANAHTAR> değişkenleri ve JSON listeleri (SOFASCORE_FOLLOWS, SOFASCORE_SINKS...). Boş bırakılmış
+    değişken "verilmemiş"tir (`.env`'deki `SOFASCORE_CLIENT__RATE=` satırı varsayılanı bırakır); boş bir gizli
+    değer de bir belirteç sayılmaz.
+    """
     out = _Layer({}, {})
     for name in sorted(environ):
         if not name.startswith(ENV_PREFIX) or ENV_SEPARATOR not in name or name == ENV_SCHEDULE_TASKS:
             continue
+        if not (environ[name] or "").strip():
+            continue
         section, _, key = name[len(ENV_PREFIX):].lower().partition(ENV_SEPARATOR)
         f = model.SETTING_KEYS.get(section, {}).get(key)
+        if f is None and f"{section}.{key}" in RETIRED_SETTINGS:
+            out.retired.append((name, f"{section}.{key}"))
+            continue
         if f is None:
             raise ConfigError(f"{name}: unknown setting (no [{section}] {key})")
         try:
@@ -977,11 +871,7 @@ def _new_env_layer(environ: Mapping[str, str], base: Optional[Path]) -> _Layer:
         if f.metadata["kind"] == model.KIND_PATH:
             value = _resolve_path(value, base)
         if f.metadata["secret"]:
-            # Boş bırakılmış gizli değer "verilmemiş"tir: boş bir SOFASCORE_SERVER__TOKEN, bugünkü adla verilmiş
-            # belirteci silip korumayı kapatmaz
             value = value.strip()
-            if not value:
-                continue
         out.values[f"{section}.{key}"] = value
         out.sources[f"{section}.{key}"] = Source(LAYER_ENV, name)
 
@@ -1031,8 +921,6 @@ class LoadedSettings:
     config_file: Optional[str] = None
     overrides_file: Optional[str] = None
     warnings: Tuple[ConfigWarning, ...] = ()
-    # Bugünkü adla verilmiş ama okunamamış, varsayılana düşmüş değerler: 'client.max_concurrent' -> ham değer
-    invalid_legacy: Mapping[str, str] = MappingProxyType({})
 
     def source(self, key: str) -> Source:
         return self.sources.get(key, _DEFAULT_SOURCE)
@@ -1110,7 +998,8 @@ def load_settings(
 
     config_file     AUTO = ara (find_config_file); None = dosya yok say; yol = o dosya (`--config`)
     environ         varsayılan os.environ
-    dotenv_values   `.env`'in içeriği; AUTO = SOFASCORE_ENV_FILE / .env okunur; None = `.env` yok say
+    dotenv_values   `.env`'in içeriği, yalnızca eski adların uyarısı için (değerler ortamdan okunur: uygulama
+                    `.env`'i başlangıçta ortama yükler); AUTO = SOFASCORE_ENV_FILE / .env okunur; None = yok say
     overrides_file  AUTO = CONFIG_DIR/overrides.json (varsa); None = yok say
     flags           {'storage.data_dir': '/veri', 'client.rate': 2}: komut satırından gelenler
     """
@@ -1147,15 +1036,13 @@ def _build(
     """Okunmuş belgelerden ve ortamdan ayarları kurar (dosya okumaz)."""
     base = path.parent if path is not None else None
     file_name = str(path) if path is not None else ""
-    dotenv_layer, legacy_env_layer, invalid = _legacy_layers(env, dotenv_values)
-    layers: List[_Layer] = [dotenv_layer]
+    layers: List[_Layer] = []
     if overrides_doc is not None:
         layers.append(
             _document_layer(overrides_doc, layer=LAYER_OVERRIDES, name=str(overrides_path), base=base, lists=False)
         )
     if config_doc is not None:
         layers.append(_document_layer(config_doc, layer=LAYER_FILE, name=file_name, base=base, lists=True))
-    layers.append(legacy_env_layer)
     layers.append(_new_env_layer(env, base))
     layers.append(_flag_layer(flags))
 
@@ -1189,25 +1076,23 @@ def _build(
     proxy_source = sources.get("client.proxy", _DEFAULT_SOURCE)
     proxy_env_source = sources.get("client.proxy_env", _DEFAULT_SOURCE)
     if proxy_env:
-        if values["client.proxy"] and proxy_source.layer == proxy_env_source.layer and not proxy_source.legacy:
+        if values["client.proxy"] and proxy_source.layer == proxy_env_source.layer:
             raise ConfigError(f"{proxy_env_source.name or 'config'}: give [client] proxy or proxy_env, not both")
         if _rank(proxy_env_source) >= _rank(proxy_source):
             values["client.proxy"] = _named_secret(env, proxy_env, f"{proxy_env_source.name}: [client] proxy_env")
             proxy_source = sources["client.proxy"] = Source(proxy_env_source.layer, proxy_env)
-    # Yeni bir kaynaktan (dosya, SOFASCORE_*__*, bayrak) proxy verildiyse ve daha güçlü bir yerde use_proxy
-    # söylenmediyse proxy kullanılır. Bugünkü adlarla (PROXY_URL) kural değişmez: USE_PROXY=true gerekir.
+    # Bir proxy verildiyse ve daha güçlü bir yerde use_proxy söylenmediyse proxy kullanılır (karar D19)
     use_source = sources.get("client.use_proxy", _DEFAULT_SOURCE)
-    if values["client.proxy"] and not proxy_source.legacy and proxy_source.layer != LAYER_DEFAULT \
-            and _rank(use_source) < _rank(proxy_source):
+    if values["client.proxy"] and proxy_source.layer != LAYER_DEFAULT and _rank(use_source) < _rank(proxy_source):
         values["client.use_proxy"] = True
         sources["client.use_proxy"] = proxy_source
 
-    # Erişim belirteci: token_env adı verilmişse o değişkenden; verilmemişse SOFASCORE_API_TOKEN (bugünkü ad)
+    # Erişim belirteci: token_env bir değişken adı verdiyse o değişkenden; vermediyse SOFASCORE_SERVER__TOKEN
     token_env = values["server.token_env"].strip()
     token_env_source = sources.get("server.token_env", _DEFAULT_SOURCE)
     if token_env and _rank(token_env_source) >= _rank(sources.get("server.token", _DEFAULT_SOURCE)):
         values["server.token"] = _named_secret(env, token_env, f"{token_env_source.name}: [server] token_env")
-        sources["server.token"] = Source(token_env_source.layer, token_env, legacy=token_env == DEFAULT_TOKEN_ENV)
+        sources["server.token"] = Source(token_env_source.layer, token_env)
 
     # sofascore_scraper/bridge_health.thresholds: "engelli" eşiği "bozulmuş" eşiğinin altında olamaz
     values["bridge.blocked_after"] = max(values["bridge.blocked_after"], values["bridge.degraded_after"])
@@ -1216,13 +1101,15 @@ def _build(
         warnings.append(ConfigWarning(
             "live_direct_source", f"live.source is \"direct\": {model.LIVE_DIRECT_WARNING}.",
         ))
-    if path is not None:
-        # Yapılandırma dosyası varken süreç ortamındaki bugünkü adlar bir sürüm daha okunur
-        for key, source in sorted(sources.items()):
-            if source.legacy and source.layer == LAYER_ENV:
-                warnings.append(ConfigWarning(
-                    "legacy_name", f"{source.name} is a legacy name; use {env_name(key)} or the config file ({key}).",
-                ))
+    for layer in layers:
+        for where, key in layer.retired:
+            warnings.append(ConfigWarning(
+                "retired_setting", f"{where} is no longer read since 3.1: {RETIRED_SETTINGS[key]}.",
+            ))
+    # 2.x'in ortam adları okunmaz: her biri için yeni adı söyleyen bir uyarı (plan maddesi P30). proxy_env /
+    # token_env'in adını verdiği değişken okunur: eski bir ad olsa da uyarı verilmez
+    named = tuple(name for name in (proxy_env, token_env) if name)
+    warnings.extend(legacy_warnings(env, dotenv_values, named))
 
     sections = {
         section: cls(**{name: values[f"{section}.{name}"] for name in model.SETTING_KEYS[section]})
@@ -1253,13 +1140,12 @@ def _build(
         config_file=file_name or None,
         overrides_file=str(overrides_path) if overrides_doc is not None else None,
         warnings=tuple(warnings),
-        invalid_legacy=MappingProxyType(invalid),
     )
 
 
 # === etkin ayarlar (süreç genelinde) ===============================================================
-# ConfigManager ve ileride servisler buradan okur. Dosyalar bir kez okunur; ortam her çağrıda yoklanır
-# (bugün her getter ortamı çağrı anında okuyor, testler ve ayarlar sayfası buna güvenir).
+# ConfigManager ve servisler buradan okur. Dosyalar bir kez okunur; ortam her çağrıda yoklanır (testler ve
+# ayarları ortamdan alan modüller buna güvenir).
 
 
 @dataclass
@@ -1270,9 +1156,7 @@ class _Files:
     config_doc: Optional[Dict[str, Any]]
     overrides_file: Optional[Path]
     overrides_doc: Optional[Dict[str, Any]]
-    dotenv_path: Path
-    # `.env`'in bu sürecin ortamına uyguladığı değerler. Ortamdaki değer bununla aynıysa `.env`'den gelmiştir;
-    # farklıysa süreç ortamından (ya da bir bayraktan) gelmiştir ve `.env` onu ezmez.
+    # `.env`'in içeriği: yalnızca eski adların uyarısı için (iletinin "set in .env" bilgisi)
     dotenv_values: Dict[str, str]
 
 
@@ -1282,30 +1166,8 @@ _flags: Mapping[str, Any] = MappingProxyType({})
 _files: Optional[_Files] = None
 _fingerprint: Optional[Tuple[Any, ...]] = None
 _loaded: Optional[LoadedSettings] = None
-# Köprünün ortama yazdıkları: ad -> (yazdığımız değer, altındaki değer; yoksa None)
-_projected: Dict[str, Tuple[str, Optional[str]]] = {}
 # Ayarda adı geçen değişkenler (proxy_env, token_env): değerleri değişince de yeniden kurulur
 _named_env: Tuple[str, ...] = ()
-
-# Köprü bu adlardan birini değiştirirse log kurulumu yenilenir (sofascore_scraper/logger.py ortamı kurulurken okur)
-_LOG_LEVEL_ENV = frozenset({"LOG_LEVEL", "DEBUG"})
-_LOG_SETUP_ENV = frozenset({"LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "USE_COLOR"})
-# Köprü bunlardan birini yazarsa loglarda maskelenecek değerler hemen yenilenir (sofascore_scraper/redact.py)
-_SECRET_ENV = frozenset(redact.KNOWN_SECRET_KEYS) | frozenset(redact.KNOWN_URL_KEYS)
-
-
-def _underlying_environ() -> Dict[str, str]:
-    """Ortamın, köprünün yazdıkları geri alınmış hali: katmanlar buna göre belirlenir."""
-    env = dict(os.environ)
-    for name, (ours, under) in list(_projected.items()):
-        if env.get(name) != ours:
-            # Biri (ayarlar sayfası, bir bayrak, bir test) değeri değiştirdi: artık bizim değil
-            del _projected[name]
-        elif under is None:
-            del env[name]
-        else:
-            env[name] = under
-    return env
 
 
 def _env_fingerprint(env: Mapping[str, str]) -> Tuple[Any, ...]:
@@ -1317,7 +1179,6 @@ def _env_fingerprint(env: Mapping[str, str]) -> Tuple[Any, ...]:
 
 
 def _read_files(env: Mapping[str, str]) -> _Files:
-    dotenv_path = Path(env.get("SOFASCORE_ENV_FILE") or ".env")
     overrides = (Path(env.get("SOFASCORE_CONFIG_DIR") or "config") / OVERRIDES_FILE_NAME).absolute()
     overrides_doc = _read_overrides(overrides)
     config_file = find_config_file(_explicit_config, env)
@@ -1326,62 +1187,21 @@ def _read_files(env: Mapping[str, str]) -> _Files:
         config_doc=_read_toml(config_file) if config_file is not None else None,
         overrides_file=overrides if overrides_doc is not None else None,
         overrides_doc=overrides_doc,
-        dotenv_path=dotenv_path,
-        dotenv_values=_read_dotenv(dotenv_path),
+        dotenv_values=_read_dotenv(Path(env.get("SOFASCORE_ENV_FILE") or ".env")),
     )
 
 
-def projection(loaded: LoadedSettings) -> Dict[str, str]:
+def _after_build(loaded: LoadedSettings) -> None:
     """
-    Köprünün ortama yazacağı değerler: bugünkü adı olan ve o adla VERİLMEMİŞ her ayar (dosyadan,
-    overrides.json'dan, SOFASCORE_*__* değişkeninden ya da bayraktan gelenler). Yapılandırma dosyası ve
-    yeni adlar yokken boştur.
+    Yeni ayarlar, onları başlangıçta okumuş modüllere uygulanır: gizli değer maskesi ve log kurulumu (günlükçü
+    yüklenmişse; log ya da renk ayarı son kurulumdakinden farklıysa yenilenir: logger.follow_settings).
     """
-    out: Dict[str, str] = {}
-    for var in LEGACY:
-        source = loaded.source(var.key)
-        if source.layer != LAYER_DEFAULT and not source.legacy:
-            out[var.env] = var.encode(loaded.settings.get(var.key))
-    source = loaded.source(LANGUAGE_KEY)
-    if source.layer != LAYER_DEFAULT and not source.legacy:
-        out[LANGUAGE_ENV] = loaded.settings.display.language
-    return out
+    redact.refresh()
+    import sys
 
-
-def _project(desired: Mapping[str, str], underlying: Mapping[str, str]) -> List[str]:
-    """Ortamı `desired`e getirir; artık istenmeyen eski yazımları geri alır. Değişen adları döndürür."""
-    changed: List[str] = []
-    for name in [n for n in _projected if n not in desired]:
-        ours, under = _projected.pop(name)
-        if os.environ.get(name) != ours:
-            continue
-        if under is None:
-            del os.environ[name]
-        else:
-            os.environ[name] = under
-        changed.append(name)
-    for name, value in desired.items():
-        if os.environ.get(name) != value:
-            os.environ[name] = value
-            changed.append(name)
-        _projected[name] = (value, underlying.get(name))
-    return changed
-
-
-def _after_projection(changed: Sequence[str]) -> None:
-    """Köprünün ortama yazdıkları, onları başlangıçta okumuş modüllere uygulanır: gizli değer maskesi, log kurulumu."""
-    names = set(changed)
-    if names & _SECRET_ENV:
-        # Adı ayarda verilen değişkendeki belirteç / proxy parolası da (token_env, proxy_env) loglarda maskelensin
-        redact.refresh()
-    if not names & (_LOG_LEVEL_ENV | _LOG_SETUP_ENV):
-        return
-    from sofascore_scraper import logger as app_logger  # geç içe aktarma: log modülü ayarlara bağlı değildir
-
-    if names & _LOG_SETUP_ENV:
-        app_logger.setup_logger(force=True)
-    else:
-        app_logger.apply_log_level()
+    app_logger = sys.modules.get("sofascore_scraper.logger")
+    if app_logger is not None:
+        app_logger.follow_settings(loaded.settings)
 
 
 def active() -> LoadedSettings:
@@ -1391,28 +1211,28 @@ def active() -> LoadedSettings:
     """
     global _files, _fingerprint, _loaded, _named_env
     with _lock:
-        env = _underlying_environ()
+        env = dict(os.environ)
         fingerprint = _env_fingerprint(env)
         if _loaded is not None and _files is not None and fingerprint == _fingerprint:
             return _loaded
         if _files is None:
             _files = _read_files(env)
-        first = _loaded is None
+        previous = _loaded
         loaded = _build(
             env, _files.dotenv_values, _files.config_file, _files.config_doc, _files.overrides_file,
             _files.overrides_doc, _flags,
         )
-        changed = _project(projection(loaded), env)
         _named_env = tuple(
             name for name in (loaded.settings.client.proxy_env, loaded.settings.server.token_env) if name
         )
+        # Önce kaydedilir: _after_build'in çağırdıkları (günlükçü) ayarları yeniden okuyabilir
         _loaded, _fingerprint = loaded, _env_fingerprint(env)
-        if first:
+        if previous is None:
             if loaded.config_file:
                 logger.info(f"Config file loaded: {loaded.config_file}")
             for warning in loaded.warnings:
                 logger.warning(warning.message)
-        _after_projection(changed)
+        _after_build(loaded)
         return loaded
 
 
@@ -1420,54 +1240,36 @@ def active_settings() -> Settings:
     return active().settings
 
 
-def _apply_dotenv() -> None:
-    """
-    `.env`'i yeniden okuyup ortama uygular. python-dotenv'in `load_dotenv(override=True)` çağrısının yerini
-    alır; farkı, katman sırasına uymasıdır (süreç ortamı `.env`'in önünde): ortamdaki değeri `.env`'den
-    gelmemiş bir değişkene dokunmaz. Eskiden yeniden yükleme, kabuktan ya da `docker -e` ile verilen değeri
-    `.env`'deki (boş olabilen) satırla eziyordu.
-    """
-    if _files is None:
-        return  # henüz hiçbir şey uygulanmadı: ilk okuma active() içinde yapılır
-    env = _underlying_environ()
-    applied = _files.dotenv_values
-    fresh = _read_dotenv(_files.dotenv_path)
-    for name, value in fresh.items():
-        current = env.get(name)
-        if current is not None and current != applied.get(name):
-            continue
-        projected = _projected.get(name)
-        if projected is not None and os.environ.get(name) == projected[0]:
-            # Ortamda köprünün yazdığı değer duruyor: yalnızca altındaki değer yenilenir
-            _projected[name] = (projected[0], value)
-        else:
-            os.environ[name] = value
-    _files.dotenv_values = fresh
-
-
-def note_dotenv_write(key: str, value: str) -> None:
-    """ConfigManager bir ayarı `.env`'e ve ortama yazdı: o değer artık `.env`'den gelmiş sayılır."""
-    with _lock:
-        if _files is not None:
-            _files.dotenv_values[key] = value
+def current() -> Optional[LoadedSettings]:
+    """Kurulmuş etkin ayarlar; henüz kurulmadıysa None. Kurmaz (log maskesi gibi kurulumu tetiklememesi gerekenler için)."""
+    return _loaded
 
 
 def reload() -> LoadedSettings:
     """
-    `.env`'i (süreç ortamını ezmeden), overrides.json'ı ve yapılandırma dosyasını yeniden okur. Dosyalardan
-    biri geçersizse ConfigError atılır ve önceki ayarlar yürürlükte kalır.
+    overrides.json'ı ve yapılandırma dosyasını yeniden okur. Dosyalardan biri geçersizse ConfigError atılır ve
+    önceki ayarlar yürürlükte kalır. `.env` yeniden okunmaz: süreç ortamına başlangıçta yüklenmiştir.
     """
     global _files, _fingerprint, _loaded
     with _lock:
-        _apply_dotenv()
         previous = (_files, _fingerprint, _loaded)
         _files = None
-        _loaded = None
         try:
-            return active()
+            return _rebuild()
         except Exception:
             _files, _fingerprint, _loaded = previous
             raise
+
+
+def _rebuild() -> LoadedSettings:
+    """
+    Dosyaları okuyup ayarları baştan kurar (active() onları modüllere uygular ve, ilk kurulum gibi, dosyanın
+    adını ve uyarıları log'a yazar).
+    """
+    global _loaded
+    with _lock:
+        _loaded = None
+        return active()
 
 
 def activate(config_file: Union[str, os.PathLike, None] = None,
@@ -1481,17 +1283,18 @@ def activate(config_file: Union[str, os.PathLike, None] = None,
 
 
 def reset() -> None:
-    """Köprünün ortama yazdıklarını geri alır ve etkin ayarları unutur (testler için)."""
+    """Etkin ayarları unutur (testler için): sonraki çağrı dosyaları ve ortamı baştan okur."""
     global _explicit_config, _flags, _files, _fingerprint, _loaded, _named_env
     with _lock:
-        changed = _project({}, {})
+        previous = _loaded
         _explicit_config = None
         _flags = MappingProxyType({})
         _files = None
         _fingerprint = None
         _loaded = None
         _named_env = ()
-        _after_projection(changed)
+        if previous is not None:
+            redact.refresh()
 
 
 __all__ = [
@@ -1501,16 +1304,15 @@ __all__ = [
     "CONFIG_FILE_NAME",
     "LAYERS",
     "LAYER_DEFAULT",
-    "LAYER_DOTENV",
     "LAYER_ENV",
     "LAYER_FILE",
     "LAYER_FLAG",
     "LAYER_OVERRIDES",
-    "LEGACY",
-    "LEGACY_BY_KEY",
     "LEGACY_ENV_NAMES",
+    "LEGACY_NAMES",
+    "RETIRED_SETTINGS",
+    "TOKEN_ENV",
     "OVERRIDES_FILE_NAME",
-    "LegacyVar",
     "LoadedSettings",
     "SINK_KEYS",
     "Source",
@@ -1518,17 +1320,20 @@ __all__ = [
     "active",
     "active_settings",
     "coerce",
+    "current",
     "env_name",
     "find_config_file",
+    "legacy_names_in",
+    "named_variables",
+    "legacy_replacement",
+    "legacy_warnings",
     "load_settings",
     "mask_sink_options",
     "mask_sink_table",
-    "note_dotenv_write",
     "parse_duration",
     "parse_follows",
     "parse_sinks",
     "parse_tasks",
-    "projection",
     "reload",
     "reset",
 ]

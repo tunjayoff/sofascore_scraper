@@ -61,7 +61,7 @@ def _settings(monkeypatch: pytest.MonkeyPatch) -> None:
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Boş bir veri dizini; ConfigManager.get_data_dir() onu döndürür."""
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return path
 
 
@@ -212,7 +212,7 @@ def test_fake_injects_http_errors_through_the_real_request_layer(
         transport.make_api_request("/event/9100001", raise_on_failure=True)
 
     assert raised.value.status_code == status
-    assert [r.outcome for r in fake.requests] == [str(status)] * 3  # MAX_RETRIES varsayılanı
+    assert [r.outcome for r in fake.requests] == [str(status)] * 3  # client.retries varsayılanı
     assert fake.slept(REQUEST_LAYER) == backoff  # geri çekilmeler kaydedilir ama beklenmez
     assert time.monotonic() - started < 2
 
@@ -319,7 +319,7 @@ def test_web_job_full_update(
     runs: Dict[str, Dict[str, Any]] = {}
     for name, payload in FULL_UPDATE_PAYLOADS.items():
         data_dir = tmp_path / name  # her biçim boş bir veri dizininde
-        monkeypatch.setenv("DATA_DIR", str(data_dir))
+        monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
         fake.reset_log()
         final = run_job(**payload)
         runs[name] = {"requests": fake.canonical_log(), "files": snapshot_tree(data_dir), "job": _job_summary(final)}
@@ -492,7 +492,7 @@ def test_refresh_only(fake: FakeSofaScore, data_dir: Path) -> None:
     stats = details.refresh(ids)
 
     request_waits = fake.slept(REQUEST_LAYER)
-    assert all(0.2 <= seconds <= 0.7 for seconds in request_waits)  # WAIT_TIME_MIN + [0, WAIT_TIME_MAX]
+    assert all(0.2 <= seconds <= 0.7 for seconds in request_waits)  # client.wait_time_min + [0, client.wait_time_max]
 
     assert_golden("refresh_only", {
         "due_ids": ids,

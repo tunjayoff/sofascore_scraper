@@ -368,7 +368,7 @@ def test_the_page_requests_are_throttled_or_blocked(url: str, kind: str, since: 
 
 
 def test_the_live_profile_is_next_to_the_bridge_profile(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(tmp_path / "chrome") + "/")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", str(tmp_path / "chrome") + "/")
     assert ps.live_profile_dir() == str(tmp_path / "chrome") + "-live"
 
 
@@ -386,8 +386,8 @@ def test_the_sport_page_and_the_quiet_page_follow_the_bridge_home(monkeypatch: p
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "48")
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "48")
     return path
 
 

@@ -268,8 +268,12 @@ def fsyncs(monkeypatch):
     return recorded
 
 
+# `storage.durability`in ortamdaki adı: Store onu ayar yükleyicisinden okur (sofascore_scraper/store/files.py)
+DURABILITY_ENV = "SOFASCORE_STORAGE__DURABILITY"
+
+
 def test_nothing_is_fsynced_by_default(tmp_path, monkeypatch, fsyncs):
-    monkeypatch.delenv(files.DURABILITY_ENV, raising=False)
+    monkeypatch.delenv(DURABILITY_ENV, raising=False)
 
     files.write_bytes(tmp_path / "a.json.gz", b"x")
 
@@ -279,7 +283,7 @@ def test_nothing_is_fsynced_by_default(tmp_path, monkeypatch, fsyncs):
 
 @pytest.mark.parametrize("value", ["full", "FULL", " full "])
 def test_store_durability_full_fsyncs_the_file_and_its_directory(tmp_path, monkeypatch, fsyncs, value):
-    monkeypatch.setenv(files.DURABILITY_ENV, value)
+    monkeypatch.setenv(DURABILITY_ENV, value)
 
     files.write_bytes(tmp_path / "a.json.gz", b"x")
 
@@ -288,12 +292,19 @@ def test_store_durability_full_fsyncs_the_file_and_its_directory(tmp_path, monke
     assert (tmp_path / "a.json.gz").read_bytes() == b"x"
 
 
+def test_the_2x_durability_name_is_not_read(tmp_path, monkeypatch, fsyncs):
+    monkeypatch.delenv(DURABILITY_ENV, raising=False)
+    monkeypatch.setenv("STORE_DURABILITY", "full")
+    files.write_bytes(tmp_path / "a.json.gz", b"x")
+    assert files.durability_full() is False and fsyncs == []
+
+
 def test_durable_argument_overrides_the_environment(tmp_path, monkeypatch, fsyncs):
-    monkeypatch.setenv(files.DURABILITY_ENV, "full")
+    monkeypatch.setenv(DURABILITY_ENV, "full")
     files.write_bytes(tmp_path / "a.json.gz", b"x", durable=False)
     assert fsyncs == []
 
-    monkeypatch.setenv(files.DURABILITY_ENV, "none")
+    monkeypatch.setenv(DURABILITY_ENV, "normal")
     files.write_bytes(tmp_path / "b.json.gz", b"x", durable=True)
     assert len(fsyncs) == (1 if WINDOWS else 2)
 

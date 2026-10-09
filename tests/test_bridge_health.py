@@ -117,20 +117,20 @@ def test_blocked_stays_blocked_until_a_success():
 
 
 def test_blocked_threshold_never_below_degraded(monkeypatch):
-    monkeypatch.setenv("BRIDGE_DEGRADED_AFTER", "8")
-    monkeypatch.setenv("BRIDGE_BLOCKED_AFTER", "2")
+    monkeypatch.setenv("SOFASCORE_BRIDGE__DEGRADED_AFTER", "8")
+    monkeypatch.setenv("SOFASCORE_BRIDGE__BLOCKED_AFTER", "2")
     assert bridge_health.thresholds()["blocked_after"] == 8
 
 
 @pytest.mark.parametrize("env,expected", [
     ({}, {"degraded_after": 3, "blocked_after": 10, "blocked_min_seconds": 200.0}),
-    ({"BRIDGE_DEGRADED_AFTER": "5", "BRIDGE_BLOCKED_AFTER": "20", "BRIDGE_BLOCKED_MIN_SECONDS": "0"},
+    ({"SOFASCORE_BRIDGE__DEGRADED_AFTER": "5", "SOFASCORE_BRIDGE__BLOCKED_AFTER": "20", "SOFASCORE_BRIDGE__BLOCKED_MIN_SECONDS": "0"},
      {"degraded_after": 5, "blocked_after": 20, "blocked_min_seconds": 0.0}),
-    ({"BRIDGE_DEGRADED_AFTER": "abc", "BRIDGE_BLOCKED_AFTER": "0", "BRIDGE_BLOCKED_MIN_SECONDS": "-1"},
+    ({"SOFASCORE_BRIDGE__DEGRADED_AFTER": "abc", "SOFASCORE_BRIDGE__BLOCKED_AFTER": "0", "SOFASCORE_BRIDGE__BLOCKED_MIN_SECONDS": "-1"},
      {"degraded_after": 3, "blocked_after": 10, "blocked_min_seconds": 200.0}),
 ])
 def test_thresholds_come_from_env(monkeypatch, env, expected):
-    for k in ("BRIDGE_DEGRADED_AFTER", "BRIDGE_BLOCKED_AFTER", "BRIDGE_BLOCKED_MIN_SECONDS"):
+    for k in ("SOFASCORE_BRIDGE__DEGRADED_AFTER", "SOFASCORE_BRIDGE__BLOCKED_AFTER", "SOFASCORE_BRIDGE__BLOCKED_MIN_SECONDS"):
         monkeypatch.delenv(k, raising=False)
     for k, v in env.items():
         monkeypatch.setenv(k, v)
@@ -326,7 +326,7 @@ def test_health_endpoint_keeps_its_fields_and_adds_bridge(client):
 
 
 def test_health_endpoint_reports_a_blocked_bridge_without_failing_liveness(client, monkeypatch):
-    monkeypatch.setenv("BRIDGE_BLOCKED_MIN_SECONDS", "0")
+    monkeypatch.setenv("SOFASCORE_BRIDGE__BLOCKED_MIN_SECONDS", "0")
     for _ in range(10):
         bridge_health.record_failure("forbidden", "HTTP 403: Access denied")
     r = client.get("/health")
@@ -340,8 +340,8 @@ def test_health_endpoint_reports_a_blocked_bridge_without_failing_liveness(clien
 def test_throttle_status_in_health(client, monkeypatch, tmp_path):
     from sofascore_scraper import throttle
 
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "5")
-    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path))
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "5")
+    monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(tmp_path))
     throttle.reset_for_tests()
     try:
         assert client.get("/health").json()["throttle"] == {
@@ -397,7 +397,7 @@ def test_cli_locale_keys_match_between_languages():
 
 
 def test_cli_prints_one_line_to_stderr_per_state_change(capsys, monkeypatch):
-    monkeypatch.setenv("BRIDGE_BLOCKED_MIN_SECONDS", "0")
+    monkeypatch.setenv("SOFASCORE_BRIDGE__BLOCKED_MIN_SECONDS", "0")
     bridge_health.add_listener(bridge_health.print_cli_line)  # main.py terminal modlarında ekler
     for _ in range(12):
         bridge_health.record_failure("challenge", "HTTP 403")

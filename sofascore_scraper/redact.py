@@ -5,11 +5,14 @@ Log dosyası ve tanılama paketi hata bildirimine eklenmek içindir; içlerinde 
 ya da proxy parolası bulunmamalı. Üç katman birlikte çalışır:
 
   1. Bilinen değerler: .env dosyasındaki, adı gizli bir şeye benzeyen anahtarların değerleri
-     (TOKEN, SECRET, PASSWORD, KEY, COOKIE...), ayrıca SOFA_CAPTCHA_TOKEN, web erişim belirteci
-     SOFASCORE_API_TOKEN (yalnızca ortamda ayarlı olsa da) ve URL biçimli
-     değerlerin (PROXY_URL) içindeki kullanıcı adı/parola; adres şemasız yazılmış olsa da
-     ("kullanıcı:parola@host:8080"). Metinde geçtikleri her yerde, hangi biçimde yazılmış
-     olurlarsa olsunlar `***` olur.
+     (TOKEN, SECRET, PASSWORD, KEY, COOKIE...), ayrıca captcha belirteci, web erişim belirteci
+     (SOFASCORE_SERVER__TOKEN; yalnızca ortamda ayarlı olsa da) ve URL biçimli değerlerin (proxy
+     adresi) içindeki kullanıcı adı/parola; adres şemasız yazılmış olsa da ("kullanıcı:parola@host:8080").
+     Etkin ayarların gizli değerleri de (overrides.json'daki ya da `proxy_env` / `token_env`in adını
+     verdiği değişkendeki proxy adresi ve belirteç) bunlara katılır: ayar yükleyicisi süreçte kurulmuşsa
+     içe aktarılmadan okunur. 2.x'in adları (PROXY_URL, SOFASCORE_API_TOKEN...) 3.1'de okunmasa da
+     ortamda durabilir: onların değerleri de maskelenir. Metinde geçtikleri her yerde, hangi biçimde
+     yazılmış olurlarsa olsunlar `***` olur.
   2. Çalışma anında öğrenilen, hiçbir ayarın adı olmayan değerler (add_runtime_secret): `direct` canlı
      kaynağının sitenin sayfasından okuduğu push kimlik bilgisi gibi. Yalnızca süreç belleğindedir.
   3. Kalıplar: `scheme://kullanıcı:parola@host`, JWT (sofa_captcha böyle bir token),
@@ -35,9 +38,10 @@ from sofascore_scraper.paths import env_file_path
 MASK = "***"
 
 # .env'de adı ne olursa olsun gizli sayılan uygulama anahtarları (ortamdan da okunur: Docker -e)
-KNOWN_SECRET_KEYS = ("SOFA_CAPTCHA_TOKEN", "SOFASCORE_API_TOKEN")
+KNOWN_SECRET_KEYS = ("SOFASCORE_SERVER__TOKEN", "SOFASCORE_CLIENT__CAPTCHA_TOKEN", "SOFA_CAPTCHA_TOKEN",
+                     "SOFASCORE_API_TOKEN")
 # Değeri URL olan ve içinde kimlik bilgisi taşıyabilen uygulama anahtarları
-KNOWN_URL_KEYS = ("PROXY_URL", "API_BASE_URL")
+KNOWN_URL_KEYS = ("SOFASCORE_CLIENT__PROXY", "SOFASCORE_CLIENT__BASE_URL", "PROXY_URL", "API_BASE_URL")
 # Değeri [[sink]] tablolarının JSON listesi olan anahtarlar: webhook adresinin yolu ve sorgusu da belirteç
 # taşıyabilir (Slack, Discord...), bu yüzden `url` alanları mask_webhook_url ile gösterilir
 KNOWN_SINK_LIST_KEYS = ("SOFASCORE_SINKS",)
@@ -193,16 +197,37 @@ def _env_file_values() -> Dict[str, str]:
     return _file_cache[1]
 
 
+def _settings_secrets() -> List[Tuple[str, str]]:
+    """
+    Etkin ayarların gizli değerleri, (anahtar gibi bir ad, değer): proxy adresi, erişim ve captcha belirteci. Ayar
+    yükleyicisi bu süreçte kurulmamışsa boş; içe aktarılmaz ve kurulum tetiklenmez (bu modül günlükçünün altındadır).
+    """
+    import sys
+
+    loader = sys.modules.get("sofascore_scraper.config.loader")
+    loaded = loader.current() if loader is not None else None
+    if loaded is None:
+        return []
+    settings = loaded.settings
+    return [
+        ("SOFASCORE_CLIENT__PROXY", settings.client.proxy or ""),
+        ("SOFASCORE_SERVER__TOKEN", settings.server.token or ""),
+        ("SOFASCORE_CLIENT__CAPTCHA_TOKEN", settings.client.captcha_token or ""),
+    ]
+
+
 def _collect_values() -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
     """(metinde aranacak gizli değerler, URL değerlerindeki "kullanıcı bilgisi@" parçaları)."""
     file_values = _env_file_values()
     values = set()
     userinfo = set()
-    # .env'deki her anahtar için hem dosyadaki hem ortamdaki (çalışma anında değişmiş olabilir) değer
-    for key in set(file_values) | set(KNOWN_SECRET_KEYS) | set(KNOWN_URL_KEYS):
-        for value in (file_values.get(key), os.environ.get(key)):
-            if not value:
-                continue
+    # .env'deki her anahtar için hem dosyadaki hem ortamdaki (çalışma anında değişmiş olabilir) değer; ardından
+    # etkin ayarların gizli değerleri
+    pairs = [(key, value) for key in set(file_values) | set(KNOWN_SECRET_KEYS) | set(KNOWN_URL_KEYS)
+             for value in (file_values.get(key), os.environ.get(key))]
+    pairs += _settings_secrets()
+    for key, value in pairs:
+        if value:
             if is_secret_key(key):
                 values.add(value)
             pieces = _url_credentials(value)

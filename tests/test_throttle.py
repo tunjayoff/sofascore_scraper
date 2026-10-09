@@ -42,8 +42,8 @@ class Clock:
 def shared_dir(tmp_path, monkeypatch):
     """Ortak bütçe açık, durum dosyaları bu teste özel."""
     d = tmp_path / "throttle"
-    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(d))
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "10")
+    monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(d))
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "10")
     throttle.reset_for_tests()
     yield d
     throttle.reset_for_tests()
@@ -116,42 +116,54 @@ def test_very_low_rates_still_space_requests():
     ("0", 0.0),
     ("off", 0.0),
     ("OFF", 0.0),
-    ("-3", 0.0),
-    ("abc", throttle.DEFAULT_RATE_LIMIT),
-    ("nan", throttle.DEFAULT_RATE_LIMIT),
-    ("inf", throttle.DEFAULT_RATE_LIMIT),
 ])
 def test_configured_rate(monkeypatch, raw, expected):
-    monkeypatch.delenv("MAX_CONCURRENT", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__MAX_CONCURRENT", raising=False)
     if raw is None:
-        monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+        monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     else:
-        monkeypatch.setenv("REQUEST_RATE_LIMIT", raw)
+        monkeypatch.setenv("SOFASCORE_CLIENT__RATE", raw)
     assert throttle.configured_rate() == expected
+
+
+@pytest.mark.parametrize("raw", ["-3", "abc", "nan", "inf", "false", "none", "disabled"])
+def test_an_invalid_rate_is_a_config_error(monkeypatch, raw):
+    """3.1: bütçe `client.rate` ayarından okunur; geçersiz değer sessizce varsayılana dönmez, ayarlar kurulamaz."""
+    from sofascore_scraper.exceptions import ConfigError
+
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", raw)
+    with pytest.raises(ConfigError, match="SOFASCORE_CLIENT__RATE"):
+        throttle.configured_rate()
+
+
+def test_the_2x_rate_name_is_not_read(monkeypatch):
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
+    assert throttle.configured_rate() == throttle.DEFAULT_RATE_LIMIT
 
 
 def test_default_is_five_requests_per_second():
     assert throttle.DEFAULT_RATE_LIMIT == 5.0
 
 
-@pytest.mark.parametrize("max_concurrent", [None, "1", "10", "30", "50", "0", "abc"])
+@pytest.mark.parametrize("max_concurrent", [None, "1", "10", "30", "50"])
 def test_default_rate_does_not_depend_on_max_concurrent(monkeypatch, max_concurrent):
-    """Varsayılan sabittir (5 istek/sn): MAX_CONCURRENT'i yükseltmek toplam hızı artırmaz."""
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    """Varsayılan sabittir (5 istek/sn): `client.max_concurrent`i yükseltmek toplam hızı artırmaz."""
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     if max_concurrent is None:
-        monkeypatch.delenv("MAX_CONCURRENT", raising=False)
+        monkeypatch.delenv("SOFASCORE_CLIENT__MAX_CONCURRENT", raising=False)
     else:
-        monkeypatch.setenv("MAX_CONCURRENT", max_concurrent)
+        monkeypatch.setenv("SOFASCORE_CLIENT__MAX_CONCURRENT", max_concurrent)
     assert throttle.configured_rate() == 5.0
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "7")  # açıkça verilen değer aynen kullanılır
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "7")  # açıkça verilen değer aynen kullanılır
     assert throttle.configured_rate() == 7.0
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "100")  # eski varsayılanı elle yazmış kullanıcı etkilenmez
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "100")  # eski varsayılanı elle yazmış kullanıcı etkilenmez
     assert throttle.configured_rate() == 100.0
 
 
 def test_unset_limit_paces_requests_at_five_per_second(tmp_path, monkeypatch):
     """Ayar yokken: bir saniyelik pay (5 istek) beklemeden geçer, sonrası 0,2 sn aralıklıdır."""
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     clock = Clock()
     t = RequestThrottle("api", throttle.configured_rate, clock=clock, directory=str(tmp_path))
     delays = [t.reserve() for _ in range(10)]  # on istek aynı anda gelir
@@ -162,11 +174,11 @@ def test_unset_limit_paces_requests_at_five_per_second(tmp_path, monkeypatch):
     assert slots[-1] - slots[4] == pytest.approx(120.0)
 
 
-@pytest.mark.parametrize("raw", ["0", "off", "OFF", "false", "none", "disabled"])
+@pytest.mark.parametrize("raw", ["0", "off", "OFF"])
 def test_off_switch_removes_the_limit(tmp_path, monkeypatch, raw):
     """0 / off: hiçbir istek bekletilmez, durum dosyası da yazılmaz."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", raw)
-    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", raw)
+    monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(tmp_path / "t"))
     throttle.reset_for_tests()
     try:
         assert [throttle.reserve() for _ in range(200)] == [0.0] * 200
@@ -177,8 +189,8 @@ def test_off_switch_removes_the_limit(tmp_path, monkeypatch, raw):
 
 
 def test_default_shows_in_status(tmp_path, monkeypatch):
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
-    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
+    monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(tmp_path / "t"))
     throttle.reset_for_tests()
     try:
         assert throttle.status() == {"enabled": True, "requests_per_second": 5.0, "shared": True, "error": None}
@@ -207,9 +219,9 @@ def test_rate_is_read_on_every_call(shared_dir, monkeypatch):
     """Ayarlar sayfası .env'i değiştirince çalışan süreç yeniden başlatılmadan uyar."""
     clock = Clock()
     t = RequestThrottle("api", throttle.configured_rate, burst=1, clock=clock)
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "2")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "2")
     assert [t.reserve(), t.reserve()] == [0.0, 0.5]
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0")
     assert t.reserve() == 0.0
 
 
@@ -675,7 +687,7 @@ def test_module_level_give_back_ignores_plain_numbers(shared_dir):
 
 
 def test_interrupted_block_gives_the_slot_back_and_a_finished_one_keeps_it(shared_dir, monkeypatch):
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")
     assert throttle.reserve() == 0.0
     kept = throttle.reserve()
     with throttle.give_back_if_interrupted(kept):
@@ -838,7 +850,7 @@ def test_browser_first_request_passes_the_limiter_once(monkeypatch):
 
 def test_real_limiter_spaces_bridge_requests_across_callers(shared_dir, monkeypatch):
     """Gerçek sınırlayıcıyla uçtan uca: köprü ve curl aynı şeridi kullanır."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "1")
     stamps = []
 
     async def evaluate(script, arg=None):
@@ -984,7 +996,7 @@ def _queued_seconds():
 
 
 def test_cancelled_sync_request_gives_its_slot_back(shared_dir, monkeypatch):
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")  # 10 sn'de bir istek
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")  # 10 sn'de bir istek
     assert throttle.reserve() == 0.0
     answers = iter([False])  # deneme başındaki kontrol geçer, sıra beklenirken iptal gelir
 
@@ -1006,7 +1018,7 @@ def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
     gelsin, burada (1 istek/sn) 69 sn, varsayılan 5 istek/sn ile 13 sn beklerdi. Şimdi hiçbiri gönderilmez
     ve kuyrukta sıra kalmaz.
     """
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "1")
     session = MagicMock()
     session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
     stopped = []
@@ -1079,7 +1091,7 @@ def test_stopped_bulk_job_sends_nothing_however_slow_the_reservations_are(
     ayırmalarla bu 1 sn'yi (bir aralığı) aşıyor, sırası gelmiş bulunan istek de gidiyordu. Kontrol
     varken yalnızca durdurmadan önce semaforu almış olanlar sıra ayırır.
     """
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "1")
     session = MagicMock()
     session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
     real_reserve = throttle.api_throttle().reserve
@@ -1161,7 +1173,7 @@ def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatc
     aralığı içinde kesilir, istek gönderilmez ve sıra geri verilir. Eskiden sync yolda çağıran thread
     bekleme bitene kadar (burada 10 sn) köprüde kalırdı.
     """
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")
     assert throttle.reserve() == 0.0
     bridge = _bridge(AsyncMock(return_value=_OK))
     stop_at = time.monotonic() + 0.1
@@ -1183,7 +1195,7 @@ def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatc
 
 
 def test_bridge_slot_wait_without_a_cancel_check_is_unchanged(shared_dir, monkeypatch):
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "4")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "4")
     monkeypatch.setattr(throttle.api_throttle(), "_burst", 1)
     bridge = _bridge(AsyncMock(return_value=_OK))
     with request_context(), patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
@@ -1194,7 +1206,7 @@ def test_bridge_slot_wait_without_a_cancel_check_is_unchanged(shared_dir, monkey
 
 def test_cancelled_bridge_call_gives_its_slot_back(shared_dir, monkeypatch):
     """Sıra beklerken asyncio iptali (zaman aşımı, kapanan çağıran) da sırayı geri verir."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")
     assert throttle.reserve() == 0.0
 
     async def run():
@@ -1267,7 +1279,7 @@ def test_watch_lanes_of_separate_processes_share_one_second_spacing(shared_dir, 
 
 def test_watch_lanes_keep_one_second_spacing_with_the_default_budget(shared_dir, tmp_path, monkeypatch):
     """REQUEST_RATE_LIMIT verilmemişken (5 istek/sn) şerit değişmez: toplamda ≥ 1 sn, ortak dosya."""
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     clock = Clock()
     stamps = []
     lanes = [_watch_lane(clock), _watch_lane(clock)]
@@ -1280,8 +1292,8 @@ def test_watch_lanes_keep_one_second_spacing_with_the_default_budget(shared_dir,
 
 
 def test_the_watch_lane_keeps_private_spacing_when_the_shared_budget_is_off(shared_dir, tmp_path, monkeypatch):
-    """REQUEST_RATE_LIMIT=0: ortak dosya yok, ama 1 sn aralık (eski davranış) sürer."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
+    """client.rate = 0: ortak dosya yok, ama 1 sn aralık (eski davranış) sürer."""
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0")
     clock = Clock()
     lane = _watch_lane(clock)
     for _ in range(3):
@@ -1332,7 +1344,7 @@ def test_settings_show_the_default_when_unset_and_update_the_rate(monkeypatch, e
     from sofascore_scraper.web.app import app
 
     client = TestClient(app)
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)  # ortamın değeri ayarı kilitlerdi
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)  # ortamın değeri ayarı kilitlerdi
     try:
         assert _rate_row(client) == 5.0
         assert client.patch("/api/v1/settings", json={"values": {"client.rate": 2.5}}).status_code == 200

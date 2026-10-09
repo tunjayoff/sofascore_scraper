@@ -2,10 +2,10 @@
 Yapılandırma dosyalarını yöneten modül.
 Lig bilgilerini okur ve yönetir.
 
-Ayar getter'ları (get_data_dir, get_max_concurrent...) etkin `Settings`ten okur (sofascore_scraper/config; plan maddesi
-P09). Yapılandırma dosyası (sofascore.toml) yokken her değer eskisi gibi `.env` ve ortam değişkenlerinden,
-aynı kurallarla çözülür; dosya varsa onun değerleri de hesaba katılır. `.env` yazımı ve lig dosyası
-(leagues.txt) işlemleri değişmedi.
+Ayar getter'ları (get_data_dir, get_max_concurrent...) etkin `Settings`ten okur (sofascore_scraper/config; plan maddeleri
+P09 ve P30). `.env` süreç ortamına yüklenir ve oradaki SOFASCORE_<BÖLÜM>__<ANAHTAR> satırları ortam katmanıdır;
+2.x'in ortam adları 3.1'de okunmaz. Uygulama `.env`'i yazmaz (2.x'in `update_env_variable`i 3.1'de kalktı:
+Ayarlar sayfası overrides.json'a yazar).
 
 Lig dosyası doğruluk kaynağı olmayı sürdürür: bugünkü gibi okunur ve yazılır. Her yüklemeden ve her
 değişiklikten sonra içeriği (league_sports.json'daki sporlarla birlikte) veri dizininin `follows` tablosuna
@@ -15,17 +15,15 @@ yazılmaz; ayna yazılamazsa lig işlemleri etkilenmez.
 
 import os
 import dotenv
-from typing import TYPE_CHECKING, Dict, List, Tuple, Optional, Set, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Optional, Set
 from dataclasses import dataclass
 
 from sofascore_scraper.config import Settings
 from sofascore_scraper.config import loader as settings_loader
 from sofascore_scraper.exceptions import ConfigError, StorageError
 from sofascore_scraper.config_files import atomic_write_text, file_lock
-from sofascore_scraper import redact
-from sofascore_scraper.logger import apply_log_level, get_logger
+from sofascore_scraper.logger import get_logger
 from sofascore_scraper.paths import default_league_config_path, env_file_path
-from sofascore_scraper.private_files import PRIVATE_FILE_MODE, create_private_file, restrict_permissions
 
 if TYPE_CHECKING:
     from sofascore_scraper.store import ApplyResult, FollowSpec
@@ -33,23 +31,11 @@ if TYPE_CHECKING:
 # .env dosyasını yükle
 dotenv.load_dotenv(env_file_path())
 # Etkin ayarları kur. sofascore.toml varsa burada okunur; bozuksa uygulama burada, açık bir ConfigError ile
-# durur (yarım uygulanmış bir yapılandırmayla çalışmaz). Dosya yoksa ortama dokunulmaz, log yazılmaz.
+# durur (yarım uygulanmış bir yapılandırmayla çalışmaz). Ortama hiçbir şey yazılmaz.
 settings_loader.active()
 
 # Logger'ı alın
 logger = get_logger("ConfigManager")
-
-_SECRET_KEYS = ("PROXY_URL", "SOFA_CAPTCHA_TOKEN")
-# Değişince log seviyesi çalışırken yeniden uygulanan anahtarlar
-_LOG_LEVEL_KEYS = ("LOG_LEVEL", "DEBUG")
-
-
-def mask_secret(key: str, value: str) -> str:
-    """Log'a yazılacak değeri maskeler (proxy kimlik bilgisi, captcha token, adı gizli görünen her anahtar)."""
-    if key in _SECRET_KEYS and value:
-        return redact.MASK
-    return redact.mask_value(key, value)
-
 
 @dataclass
 class League:
@@ -409,17 +395,6 @@ class ConfigManager:
         """Etkin ayarlar (sofascore_scraper/config). Ortam değişkeni değişmişse yeni bir nesne döner."""
         return settings_loader.active_settings()
 
-    def _number(self, key: str, env_name: str) -> Any:
-        """
-        Sayısal bir ayar. Ortamdaki / .env'deki değer okunamadıysa eskisi gibi her çağrıda uyarı yazılır
-        (değer başka bir kaynaktan, ör. yapılandırma dosyasından geliyorsa uyarı yanlış olurdu, yazılmaz).
-        """
-        loaded = settings_loader.active()
-        value = loaded.settings.get(key)
-        if key in loaded.invalid_legacy and loaded.source(key).layer == settings_loader.LAYER_DEFAULT:
-            logger.warning(f"{env_name} is not valid; using the default {value}.")
-        return value
-
     def get_data_dir(self) -> str:
         """
         Veri dizinini döndürür.
@@ -486,45 +461,39 @@ class ConfigManager:
 
     def get_max_concurrent(self) -> int:
         """Maksimum paralel istek sayısını döndürür."""
-        return self._number("client.max_concurrent", "MAX_CONCURRENT")
+        return self.get_settings().client.max_concurrent
 
     def get_request_rate_limit(self) -> float:
         """Tüm süreçlerin paylaştığı istek bütçesi (istek/sn); 0 = kapalı. Bkz. sofascore_scraper/throttle.py."""
-        loaded = settings_loader.active()
-        if "client.rate" in loaded.invalid_legacy:
-            # Geçersiz değerin uyarısını (değer başına bir kez) bütçenin kendisi yazar
-            from sofascore_scraper.throttle import configured_rate
-
-            configured_rate()
-        return loaded.settings.client.rate
+        return self.get_settings().client.rate
 
     def get_wait_time_min(self) -> float:
         """İstekler arası minimum bekleme süresini döndürür."""
-        return self._number("client.wait_time_min", "WAIT_TIME_MIN")
+        return self.get_settings().client.wait_time_min
 
     def get_wait_time_max(self) -> float:
         """İstekler arası maksimum ek bekleme süresini döndürür."""
-        return self._number("client.wait_time_max", "WAIT_TIME_MAX")
+        return self.get_settings().client.wait_time_max
 
     def get_request_timeout(self) -> int:
         """İstek zaman aşımı değerini döndürür."""
-        return self._number("client.timeout_seconds", "REQUEST_TIMEOUT")
+        return self.get_settings().client.timeout_seconds
 
     def get_max_retries(self) -> int:
         """Maksimum yeniden deneme sayısını döndürür."""
-        return self._number("client.retries", "MAX_RETRIES")
+        return self.get_settings().client.retries
 
     def get_rate_limit_threshold_consecutive(self) -> int:
         """Arka arkaya rate-limit hatası eşiğini döndürür."""
-        return self._number("breaker.rate_limit_consecutive", "RATE_LIMIT_THRESHOLD_CONSECUTIVE")
+        return self.get_settings().breaker.rate_limit_consecutive
 
     def get_rate_limit_threshold_ratio(self) -> float:
         """Rate-limit hata oranı eşiğini döndürür."""
-        return self._number("breaker.rate_limit_ratio", "RATE_LIMIT_THRESHOLD_RATIO")
+        return self.get_settings().breaker.rate_limit_ratio
 
     def get_server_error_threshold_consecutive(self) -> int:
         """Arka arkaya 5xx hataları için eşik döndürür."""
-        return self._number("breaker.server_error_consecutive", "SERVER_ERROR_THRESHOLD_CONSECUTIVE")
+        return self.get_settings().breaker.server_error_consecutive
 
     def get_language(self) -> str:
         """
@@ -534,18 +503,6 @@ class ConfigManager:
             str: Dil kodu (tr, en, vs.)
         """
         return self.get_settings().display.language
-
-    def set_language(self, lang_code: str) -> bool:
-        """
-        Uygulama dilini ayarlar.
-
-        Args:
-            lang_code: Dil kodu (tr, en)
-
-        Returns:
-            bool: Başarılı olursa True
-        """
-        return self.update_env_variable("APP_LANGUAGE", lang_code)
 
     def reload_config(self) -> bool:
         """
@@ -562,16 +519,10 @@ class ConfigManager:
             # Ligleri yeniden yükle
             self._load_leagues()
 
-            try:
-                # .env, overrides.json ve yapılandırma dosyası yeniden okunur. .env'deki değerler ortama
-                # uygulanır, ama süreç ortamından (kabuk, docker -e, bayrak) gelen bir değerin üzerine
-                # yazılmaz: eskiden load_dotenv(override=True) onu .env'deki (boş olabilen) satırla eziyordu.
-                # Yapılandırma dosyası bozuksa önceki ayarlar yürürlükte kalır ve hata aşağıda loglanır.
-                settings_loader.reload()
-            finally:
-                # .env değişmiş olabilir: maskelenecek değerler ve log seviyesi hemen güncellensin
-                redact.refresh()
-                apply_log_level()
+            # overrides.json ve yapılandırma dosyası yeniden okunur; yükleyici yeni ayarları log kurulumuna ve
+            # maskelenecek değerlere kendisi uygular. Yapılandırma dosyası bozuksa önceki ayarlar yürürlükte kalır
+            # ve hata aşağıda loglanır.
+            settings_loader.reload()
 
             # Debug için ligleri logla
             logger.debug(f"Configuration reloaded: {len(self.leagues)} leagues")
@@ -678,41 +629,6 @@ class ConfigManager:
         finally:
             if changed:
                 self._mirror_follows()
-
-    def update_env_variable(self, key: str, value: str) -> bool:
-        """
-        Çevre değişkenini günceller ve .env dosyasına kaydeder.
-
-        Args:
-            key: Değişken adı
-            value: Yeni değer
-
-        Returns:
-            bool: Başarılı olursa True, değilse False
-        """
-        if any(c in value for c in "\r\n\x00"):
-            # .env satır tabanlı: yeni satır başka bir değişken enjekte eder
-            logger.error(f"Environment variable refused (control character): {key}")
-            return False
-        try:
-            os.environ[key] = value
-            # set_key yalnızca ilgili satırı değiştirir; yorumlar ve diğer satırlar korunur
-            env_path = env_file_path()
-            # .env gizli değer taşır (proxy parolası, belirteçler): yalnızca sahibince okunur (0600).
-            # set_key dosyayı yeniden yazar; python-dotenv sürümüne göre izinler korunmayabilir.
-            create_private_file(env_path)
-            dotenv.set_key(env_path, key, value)
-            settings_loader.note_dotenv_write(key, value)
-            restrict_permissions(env_path, PRIVATE_FILE_MODE)
-            redact.refresh()
-            if key in _LOG_LEVEL_KEYS:
-                # Seviye yeniden başlatmayı beklemeden uygulanır
-                apply_log_level()
-            logger.info(f"Environment variable updated: {key}={mask_secret(key, value)}")
-            return True
-        except Exception as e:
-            logger.error(f"The environment variable could not be updated: {str(e)}")
-            return False
 
 
 def mirror_league_follows(league_config_path: str) -> None:

@@ -16,9 +16,9 @@ maç için istek atılmaya (ve her biri yeniden deneme + geri çekilme yakmaya) 
     o işin thread'ini, onun asyncio.run / asyncio.to_thread çağrılarını etkiler. Aynı anda gelen
     diğer web istekleri (lig arama, tek maç çekme) etkilenmez.
 
-Eşikler ve .env anahtarları aynıdır (ConfigManager): RATE_LIMIT_THRESHOLD_CONSECUTIVE (20),
-RATE_LIMIT_THRESHOLD_RATIO (0,9; 50 denemeden sonra), SERVER_ERROR_THRESHOLD_CONSECUTIVE (50).
-Birim artık "maç denemesi" değil "istek"tir. IGNORE_RATE_LIMIT=true kesiciyi kapatır.
+Eşikler aynıdır (`[breaker]`, ConfigManager): rate_limit_consecutive (20), rate_limit_ratio (0,9; 50 denemeden
+sonra), server_error_consecutive (50).
+Birim artık "maç denemesi" değil "istek"tir. `breaker.ignore` (`--ignore-breaker`) kesiciyi kapatır.
 
 Tarayıcı köprüsünün sağlık durumu (sofascore_scraper/bridge_health.py) kopyalanmaz, okunur: köprü "blocked"
 diyorsa (art arda reddedilen challenge/403, en az bir yeniden çözüm denemesi dahil), bu iş
@@ -29,7 +29,6 @@ from __future__ import annotations
 import contextlib
 import contextvars
 import datetime as dt
-import os
 import threading
 import time
 from collections import Counter
@@ -105,7 +104,10 @@ def _number(getter: Callable[[], Any], default: float) -> float:
 
 
 def _ignore_rate_limit() -> bool:
-    return os.getenv("IGNORE_RATE_LIMIT", "false").lower() == "true"
+    """`breaker.ignore` (`--ignore-breaker`), ayar yükleyicisinden çağrı anında."""
+    from sofascore_scraper.config import loader
+
+    return bool(loader.active_settings().breaker.ignore)
 
 
 def _bridge_blocked_after(consecutive_failures: int, since: float) -> bool:

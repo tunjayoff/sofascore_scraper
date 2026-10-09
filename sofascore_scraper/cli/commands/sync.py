@@ -125,7 +125,7 @@ def option(inv: Invocation, name: str, default: Any = None) -> Any:
 
 
 def data_dir_of_settings() -> str:
-    """Etkin ayarların veri dizini (mutlak yol): `--data-dir` > yapılandırma dosyası > DATA_DIR > `data`."""
+    """Etkin ayarların veri dizini (mutlak yol): `--data-dir` > ortam > yapılandırma dosyası > `data`."""
     from sofascore_scraper.config import loader
 
     return os.path.abspath(loader.active_settings().storage.data_dir)
@@ -462,10 +462,17 @@ def sync_result(inv: Invocation, run: JobRun) -> CommandResult:
     return CommandResult(data=run_data(run), text=text, exit_code=code, notes=notes)
 
 
-def _include_legacy(enabled: bool) -> None:
-    """`--include-legacy`: gözlemi olmayan eski kayıtlar bu çalıştırmada bir kez yenilenir (REFRESH_LEGACY)."""
-    if enabled:
-        os.environ["REFRESH_LEGACY"] = "true"
+def _include_legacy(inv: Invocation, enabled: bool) -> None:
+    """
+    `--include-legacy`: gözlemi olmayan eski kayıtlar bu çalıştırmada bir kez yenilenir (`refresh.include_legacy`;
+    ayarların bayrak katmanına girer, ortama yazılmaz).
+    """
+    if not enabled:
+        return
+    from sofascore_scraper.config import loader
+
+    inv.flags = {**dict(inv.flags), "refresh.include_legacy": True}
+    loader.activate(config_file=inv.config_file, flags=dict(inv.flags))
 
 
 # --- kuru çalıştırma ------------------------------------------------------------------------------
@@ -688,7 +695,7 @@ def sync(inv: Invocation) -> CommandResult:
         raise UsageError("--recheck-unavailable changes the data folder; it cannot be part of --dry-run")
     if args.only == "seasons" and args.recheck:
         raise UsageError("--recheck-unavailable resets match details; it cannot be used with --only seasons")
-    _include_legacy(args.include_legacy)
+    _include_legacy(inv, args.include_legacy)
     mode = {"events": "details", "seasons": "seasons"}.get(args.only or "", "full")
     if args.follows and args.tournament:
         raise UsageError("Give only one of --tournament and --follow")
@@ -782,7 +789,7 @@ def refresh(inv: Invocation) -> CommandResult:
     from sofascore_scraper.services.sync import SyncSpec
 
     args = inv.args
-    _include_legacy(args.include_legacy)
+    _include_legacy(inv, args.include_legacy)
     spec = SyncSpec(mode="refresh", league_id=args.tournament)
     return _download(inv, spec, kind="refresh", purpose="refresh", dry_run=args.dry_run,
                      plan=lambda ctx: plan_refresh(ctx, args.tournament), describe=refresh_result)

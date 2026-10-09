@@ -51,7 +51,7 @@ V3_EVENT = 990001
 
 def _fixture(name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> sf.LegacyFixture:
     fixture = sf.build_fixture(name, tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     return fixture
 
 
@@ -193,7 +193,7 @@ def test_legacy_folders_are_the_directory_names(path: str, expected: Any) -> Non
 
 
 def test_a_v3_event_gets_the_names_of_the_legacy_writer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path))
     store = open_store(tmp_path)
     basic = sf.basic_payload(sf.PL_ARS)
     basic["id"] = V3_EVENT
@@ -266,7 +266,7 @@ def test_the_league_filter_keeps_every_row_when_no_row_has_a_league_folder() -> 
 
 
 def test_an_empty_data_dir_is_an_empty_export(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path))
     service = ExportService(open_store(tmp_path))
 
     assert service.prepare().rows == 0 and service.prepare(ExportSpec(league_id=17)).available == 0

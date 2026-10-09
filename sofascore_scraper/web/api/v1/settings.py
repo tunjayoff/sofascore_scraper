@@ -9,11 +9,11 @@ değerler maskelenir: belirteçler `***` olarak, proxy adresi parolası maskelen
 
 Katmanlar ve kilit. Bir değer yapılandırma dosyasından, süreç ortamından ya da bir bayraktan geliyorsa
 kilitlidir (`locked`): arayüzden yazılan değer onun altında kalır ve etkisi olmaz. PATCH kilitli bir anahtarı
-reddeder (400 `invalid_request`, `details.locked`) ve hiçbir şey yazmaz. Eski `POST /api/settings` böyle bir
-değeri `.env`'e yazıp başarı bildiriyordu.
+reddeder (400 `invalid_request`, `details.locked`) ve hiçbir şey yazmaz. `.env`'deki SOFASCORE_*__* satırları süreç
+ortamıdır, onlar da kilitlidir (2.x'in `.env` katmanı ve ortam adları 3.1'de kalktı, plan maddesi P30).
 
-Yazma. PATCH, `CONFIG_DIR/overrides.json`'a yazar (sofascore_scraper/config/overrides.py): `.env`'in üstünde, yapılandırma
-dosyasının altında duran, makinenin yazdığı katman. `null` anahtarı oradan siler (alttaki katmanın değeri
+Yazma. PATCH, `CONFIG_DIR/overrides.json`'a yazar (sofascore_scraper/config/overrides.py): varsayılanların üstünde,
+yapılandırma dosyasının altında duran, makinenin yazdığı katman. `null` anahtarı oradan siler (alttaki katmanın değeri
 geçerli olur). İstek ya bütünüyle uygulanır ya da hiç uygulanmaz.
 
 Buradan değiştirilebilen anahtarlar WRITABLE tablosundadır: bugünkü Ayarlar sayfasının düzenlediği ayarlar.
@@ -156,7 +156,6 @@ WRITABLE: Mapping[str, Rule] = {
     "fetch.only_finished": Rule(),
     # Seçilecek dilimler: anahtarlar ya da grup adları (boş liste: yalnızca maç sayfası)
     DEFAULTS_SLICES_KEY: Rule(check=_slice_names),
-    "fetch.save_empty_rounds": Rule(),
     "refresh.window_hours": Rule(maximum=720),
     "log.level": Rule(),
     "log.debug": Rule(),
@@ -200,7 +199,7 @@ class SettingMetadata(BaseModel):
 class Setting(BaseModel):
     key: str = Field(description="`section.key`, as in the config file.")
     value: Any = Field(description="The value in force. Secrets are masked.")
-    source: Literal["default", "dotenv", "overrides", "file", "env", "flag"] = Field(
+    source: Literal["default", "overrides", "file", "env", "flag"] = Field(
         description="The layer the value comes from, weakest to strongest in this order.",
     )
     source_name: str = Field(description="The file or the environment variable, when there is one.")
@@ -213,7 +212,7 @@ class SportSliceSelection(BaseModel):
     sport: str = Field(description="Registered sport slug.")
     enable: List[str] = Field(description="Slice keys or groups added to `defaults.slices` for this sport.")
     disable: List[str] = Field(description="Slice keys or groups removed for this sport (applied after `enable`).")
-    source: Literal["default", "dotenv", "overrides", "file", "env", "flag"] = Field(
+    source: Literal["default", "overrides", "file", "env", "flag"] = Field(
         description="The layer the sport's selection comes from; `default` when none is set.",
     )
     source_name: str

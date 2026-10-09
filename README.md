@@ -170,14 +170,14 @@ ssc config init         # prints a commented starter file
 ssc describe config     # every section and key as JSON Schema
 ```
 
-- **Layers**, the later one wins: built-in default → `.env` → `config/overrides.json` (what the web app's **Settings** page saves) → `sofascore.toml` → environment variables → command-line flags. A value fixed by the file, the environment or a flag shows as locked on the Settings page.
-- **Environment overrides**: every key as `SOFASCORE_<SECTION>__<KEY>`, for example `SOFASCORE_CLIENT__RATE=2` or `SOFASCORE_LIVE__SOURCE=poll`. The variable names of 2.x (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `APP_LANGUAGE`, …, in `.env.example`) still work.
-- **Secrets** come from the environment only: the access token `SOFASCORE_API_TOKEN` and webhook secrets (`secret_env` names the variable).
-- **Language**: `APP_LANGUAGE=en|tr` (or `[display] language`) pins it; otherwise Turkish systems and browsers get Turkish and everyone else English. `--lang` sets it for one command; JSON output is never translated.
+- **Layers**, the later one wins: built-in default → `config/overrides.json` (what the web app's **Settings** page saves) → `sofascore.toml` → environment variables (`.env` is loaded into the environment) → command-line flags. A value fixed by the file, the environment or a flag shows as locked on the Settings page.
+- **Environment overrides**: every key as `SOFASCORE_<SECTION>__<KEY>`, for example `SOFASCORE_CLIENT__RATE=2` or `SOFASCORE_LIVE__SOURCE=poll` (`.env.example` lists them). The variable names of 2.x (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `APP_LANGUAGE`, …) are not read since 3.1; `ssc doctor` and `ssc config show` name the new name of each one still set.
+- **Secrets** come from the environment only: the access token `SOFASCORE_SERVER__TOKEN` and webhook secrets (`secret_env` names the variable).
+- **Language**: `SOFASCORE_DISPLAY__LANGUAGE=en|tr` (or `[display] language`) pins it; otherwise Turkish systems and browsers get Turkish and everyone else English. `--lang` sets it for one command; JSON output is never translated.
 
 ## Data and exports
 
-All data lives in one folder, `data/` by default (`DATA_DIR`, `[storage] data_dir`, `--data-dir`):
+All data lives in one folder, `data/` by default (`[storage] data_dir`, `SOFASCORE_STORAGE__DATA_DIR`, `--data-dir`):
 
 ```text
 data/
@@ -231,8 +231,8 @@ Sinks are `[[sink]]` tables in `sofascore.toml` (`stdout`, `file`, or `webhook` 
 
 The web app has **no user accounts** and listens on `127.0.0.1` by default. Opening it to a network is the installer's decision and responsibility:
 
-- set `SOFASCORE_API_TOKEN` to a long random value (every `/api` request then needs `Authorization: Bearer <token>`, or the web app's session cookie);
-- list the names it is reached by in `SOFASCORE_ALLOWED_HOSTS` (`ssc serve --host 0.0.0.0` refuses to start without it);
+- set `SOFASCORE_SERVER__TOKEN` to a long random value (every `/api` request then needs `Authorization: Bearer <token>`, or the web app's session cookie);
+- list the names it is reached by in `SOFASCORE_SERVER__ALLOWED_HOSTS` (`ssc serve --host 0.0.0.0` refuses to start without it);
 - put a firewall or VPN and TLS (a reverse proxy) in front of it.
 
 The app itself answers only to allowed host names, refuses state-changing requests sent by other sites, sends a strict Content-Security-Policy, warns when it is exposed without a token, and keeps `.env`, the settings file and the browser profile readable by their owner only. Details: [docs/deploy](docs/deploy/README.md#access-token).
@@ -250,8 +250,8 @@ ssc migrate --dry-run     # optional: what would move to the new layout
 - **Data**: nothing is moved on its own. Old data is read where it is; new writes use the new layout. `ssc migrate` converts and verifies the old folders and keeps them; `ssc migrate --delete-legacy --yes` removes verified old copies later.
 - **The terminal menu is gone.** `python main.py` without arguments prints a short help and exits with `2`. Use the web app, or `ssc` for scripts.
 - **The import package is `sofascore_scraper`** (it was `src`, and there is no alias): your own systemd units and scripts run `python -m sofascore_scraper.cli.main` instead of `python -m src.cli.main`, and library code imports `sofascore_scraper`.
-- **Deprecated in 3.0.0, removed in 3.1**: the `main.py` flags (`--headless --update-all` runs `ssc sync`, `--refresh-only` runs `ssc refresh`, `--watch` runs `ssc watch --source poll --stdout`, `--web` runs `ssc serve`, …; each prints the command it ran), the 2.x routes under `/api/...`, which answer with a `Deprecation` header and a `Link` to their `/api/v1` successor, and the backup scopes `config`, `seasons`, `matches` and `match_details` (use `all`, `state` or `data`). Exit codes follow the new table (a breaker stop is `4`, no longer `2`).
-- **Settings**: `.env` keeps working; `ssc config init --from-legacy > sofascore.toml` writes today's `.env` and `config/leagues.txt` as a config file. Leagues in `config/leagues.txt` are still downloaded; **Move to here** on a league's page moves one into the app.
+- **Removed in 3.1** (deprecated in 3.0.0): the `main.py` flags (a usage error names the command that replaces each one: `--headless --update-all` is `ssc sync`, `--refresh-only` is `ssc refresh`, `--watch` is `ssc watch --source poll --stdout`, `--web` is `ssc serve`, …), the 2.x routes under `/api/...` (use `/api/v1`), the backup scopes `config`, `seasons`, `matches` and `match_details` (use `all`, `state` or `data`; old backups still restore) and the 2.x environment names. Exit codes follow the new table (a breaker stop is `4`, no longer `2`).
+- **Settings**: rename the 2.x names in `.env` (`ssc doctor` lists each one with its new name), or run `ssc config init --from-legacy > sofascore.toml`, which writes the old `.env` and `config/leagues.txt` as a config file. Leagues in `config/leagues.txt` are still downloaded; **Move to here** on a league's page moves one into the app.
 
 The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
 

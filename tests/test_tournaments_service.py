@@ -81,7 +81,7 @@ def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Testin veri dizini; web katmanı ve Store sınırının çalışma zamanı denetimi de ona bakar (DATA_DIR)."""
     path = tmp_path / "data"
     path.mkdir()
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return path
 
 
@@ -428,7 +428,7 @@ def _files_say(data_dir: Path, league_id: int, league_name: Optional[str], seaso
 def test_on_a_directory_written_by_todays_code_nothing_changes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """canonical: sezon listeleri dosyadakiyle, sayfa sayıları ve "indirilmiş" yanıtı dizindekiyle aynı."""
     fx = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fx.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fx.data_dir))
     store = open_store(fx.data_dir)
     fetcher = Seasons(Leagues(fx.leagues), str(fx.data_dir))
     checked = 0

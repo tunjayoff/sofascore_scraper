@@ -15,6 +15,8 @@ from rich.console import Console
 from sofascore_scraper.web import deps
 from sofascore_scraper import logger as app_logger
 from sofascore_scraper import redact
+from sofascore_scraper.config import loader
+from sofascore_scraper.exceptions import ConfigError
 from sofascore_scraper.paths import env_file_path
 
 JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3OTAwMDAwMDAsInN1YiI6InNvZmEifQ.c2lnbmF0dXJlLXZhbHVlLTEyMw"
@@ -23,7 +25,7 @@ SECRETS = ("Pr0xy-P4ss!word", "scraper:", JWT, "abc123def", "sk-live-0123456789a
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-_ENV_KEYS = ("LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "LOG_LEVEL", "DEBUG")
+_ENV_KEYS = ("SOFASCORE_LOG__DIR", "SOFASCORE_LOG__TO_FILE", "SOFASCORE_LOG__MAX_MB", "SOFASCORE_LOG__BACKUP_COUNT", "SOFASCORE_LOG__LEVEL", "SOFASCORE_LOG__DEBUG")
 
 # Windows'ta bilinen sınırlar (CI'da görüldü; Windows "elden geldiğince" desteklenen platformdur).
 # Açık bir dosya Windows'ta yeniden adlandırılamaz ve silinemez; sofascore_scraper/config_files.file_lock da orada
@@ -85,7 +87,7 @@ def reconfigure():
             os.environ.pop(key, None)
         else:
             os.environ[key] = value
-    for key in ("LOG_LEVEL", "DEBUG"):
+    for key in ("SOFASCORE_LOG__LEVEL", "SOFASCORE_LOG__DEBUG"):
         dotenv.unset_key(env_file_path(), key, quote_mode="never")
     app_logger.setup_logger(force=True)
     logging.getLogger().setLevel(saved_level)
@@ -254,8 +256,8 @@ def test_secrets_never_reach_the_file(make_logger, tmp_path, monkeypatch):
     env = tmp_path / ".env"
     env.write_text("THIRD_PARTY_API_KEY=sk-live-0123456789abcdef\n", encoding="utf-8")
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
-    monkeypatch.setenv("SOFA_CAPTCHA_TOKEN", JWT)
-    monkeypatch.setenv("PROXY_URL", PROXY)
+    monkeypatch.setenv("SOFASCORE_CLIENT__CAPTCHA_TOKEN", JWT)
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", PROXY)
     redact.refresh()
     try:
         log, path = make_logger()
@@ -406,7 +408,7 @@ def test_console_on_a_terminal_uses_rich_without_markup(monkeypatch):
 # --- kurulum: konum, kapatma, yazılamayan dizin -------------------------------------------
 
 def test_log_dir_and_file_are_configurable(reconfigure, tmp_path):
-    reconfigure(LOG_DIR=str(tmp_path / "custom-logs"), LOG_TO_FILE=None)
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "custom-logs"), SOFASCORE_LOG__TO_FILE=None)
     expected = str(tmp_path / "custom-logs" / app_logger.LOG_FILE_NAME)
     assert app_logger.log_file_path() == expected
     logging.getLogger("WebAPI").warning("özel dizine yazıldı")
@@ -416,14 +418,14 @@ def test_log_dir_and_file_are_configurable(reconfigure, tmp_path):
 
 def test_relative_log_dir_is_anchored_to_the_project_not_the_cwd(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("LOG_DIR", "logs-relative")
+    monkeypatch.setenv("SOFASCORE_LOG__DIR", "logs-relative")
     assert app_logger.log_dir() == str(app_logger._REPO_ROOT / "logs-relative")
-    monkeypatch.delenv("LOG_DIR")
+    monkeypatch.delenv("SOFASCORE_LOG__DIR")
     assert app_logger.log_dir() == str(app_logger._REPO_ROOT / "logs")
 
 
 def test_file_logging_can_be_turned_off(reconfigure, tmp_path):
-    reconfigure(LOG_DIR=str(tmp_path / "off"), LOG_TO_FILE="false")
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "off"), SOFASCORE_LOG__TO_FILE="false")
     logging.getLogger("WebAPI").warning("yalnızca konsol")
     assert app_logger.log_file_path() is None
     assert app_logger.log_files() == []
@@ -433,7 +435,7 @@ def test_file_logging_can_be_turned_off(reconfigure, tmp_path):
 def test_unwritable_log_dir_does_not_break_the_app(reconfigure, tmp_path, capsys):
     blocker = tmp_path / "not-a-dir"
     blocker.write_text("x")
-    reconfigure(LOG_DIR=str(blocker / "logs"), LOG_TO_FILE="true")
+    reconfigure(SOFASCORE_LOG__DIR=str(blocker / "logs"), SOFASCORE_LOG__TO_FILE="true")
     assert app_logger.log_file_path() is None
     assert app_logger.log_file_error()
     logging.getLogger("WebAPI").warning("konsola yazılmaya devam")  # hata fırlatmaz
@@ -444,7 +446,7 @@ def test_console_handler_is_added_only_when_nobody_configured_the_root_logger(re
     # Kendi logging.basicConfig'ini çağıran betik (ya da pytest): konsola ikinci handler eklenmez,
     # dosya handler'ı yine eklenir. Kök boşsa (main.py, uvicorn) konsol handler'ı bizimkidir.
     root = logging.getLogger()
-    reconfigure(LOG_DIR=str(tmp_path / "host"))
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "host"))
     assert root.handlers and app_logger._console_handler is None  # pytest'in handler'ları var
     assert app_logger._file_handler in root.handlers
 
@@ -469,7 +471,7 @@ def test_console_handler_is_added_only_when_nobody_configured_the_root_logger(re
 
 
 def test_setup_does_not_duplicate_handlers(reconfigure, tmp_path):
-    reconfigure(LOG_DIR=str(tmp_path / "dup"))
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "dup"))
     before = list(logging.getLogger().handlers)
     app_logger.setup_logger()
     app_logger.setup_logger(force=True)
@@ -480,7 +482,7 @@ def test_setup_does_not_duplicate_handlers(reconfigure, tmp_path):
 
 
 def test_size_and_count_come_from_the_environment(reconfigure, tmp_path):
-    reconfigure(LOG_DIR=str(tmp_path / "caps"), LOG_MAX_MB="0.002", LOG_BACKUP_COUNT="1")
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "caps"), SOFASCORE_LOG__MAX_MB="0.002", SOFASCORE_LOG__BACKUP_COUNT="1")
     assert app_logger.log_max_bytes() == int(0.002 * 1024 * 1024)
     assert app_logger.log_backup_count() == 1
     log = logging.getLogger("WebAPI")
@@ -490,7 +492,7 @@ def test_size_and_count_come_from_the_environment(reconfigure, tmp_path):
     assert names == [app_logger.LOG_FILE_NAME, app_logger.LOG_FILE_NAME + ".1"]
 
 
-@pytest.mark.parametrize("key, value", [("LOG_MAX_MB", "abc"), ("LOG_MAX_MB", "-1"), ("LOG_BACKUP_COUNT", "x")])
+@pytest.mark.parametrize("key, value", [("SOFASCORE_LOG__MAX_MB", "abc"), ("SOFASCORE_LOG__MAX_MB", "-1"), ("SOFASCORE_LOG__BACKUP_COUNT", "x")])
 def test_invalid_caps_fall_back_to_defaults(monkeypatch, key, value):
     monkeypatch.setenv(key, value)
     assert app_logger.log_max_bytes() == int(app_logger.DEFAULT_MAX_MB * 1024 * 1024)
@@ -498,13 +500,15 @@ def test_invalid_caps_fall_back_to_defaults(monkeypatch, key, value):
 
 
 def test_backup_count_is_at_least_one(monkeypatch):
-    # 0 eski dosya = standart handler hiç çevirmez, dosya sınırsız büyür
-    monkeypatch.setenv("LOG_BACKUP_COUNT", "0")
-    assert app_logger.log_backup_count() == 1
+    # 0 eski dosya = standart handler hiç çevirmez, dosya sınırsız büyür: ayar en az 1'dir (`log.backup_count`)
+    monkeypatch.setenv("SOFASCORE_LOG__BACKUP_COUNT", "0")
+    with pytest.raises(ConfigError, match="SOFASCORE_LOG__BACKUP_COUNT"):
+        loader.load_settings(config_file=None, dotenv_values={}, overrides_file=None)
+    assert app_logger.log_backup_count() == app_logger.DEFAULT_BACKUP_COUNT
 
 
 def test_propagating_logger_is_not_given_a_second_file_handler(reconfigure, tmp_path):
-    reconfigure(LOG_DIR=str(tmp_path / "attach"))
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "attach"))
     silent = logging.getLogger("test_logger.uvicorn_like")
     silent.propagate = False
     try:
@@ -521,12 +525,12 @@ def test_propagating_logger_is_not_given_a_second_file_handler(reconfigure, tmp_
 
 
 def test_attached_logger_follows_a_reconfiguration(reconfigure, tmp_path):
-    reconfigure(LOG_DIR=str(tmp_path / "first"))
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "first"))
     silent = logging.getLogger("test_logger.uvicorn_like2")
     silent.propagate = False
     try:
         app_logger.attach_file_handler("test_logger.uvicorn_like2")
-        reconfigure(LOG_DIR=str(tmp_path / "second"))
+        reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "second"))
         silent.error("yeni dosyaya")
         assert "yeni dosyaya" in _read(str(tmp_path / "second" / app_logger.LOG_FILE_NAME))
         assert len(silent.handlers) == 1 or all(
@@ -542,24 +546,24 @@ def test_attached_logger_follows_a_reconfiguration(reconfigure, tmp_path):
 # --- seviye: çalışırken ------------------------------------------------------------------
 
 def test_resolve_level(monkeypatch):
-    monkeypatch.delenv("DEBUG", raising=False)
-    monkeypatch.setenv("LOG_LEVEL", "warning")
+    monkeypatch.delenv("SOFASCORE_LOG__DEBUG", raising=False)
+    monkeypatch.setenv("SOFASCORE_LOG__LEVEL", "warning")
     assert app_logger.resolve_level() == logging.WARNING
-    monkeypatch.setenv("DEBUG", "true")
+    monkeypatch.setenv("SOFASCORE_LOG__DEBUG", "true")
     assert app_logger.resolve_level() == logging.DEBUG
-    monkeypatch.setenv("DEBUG", "false")
-    monkeypatch.setenv("LOG_LEVEL", "LOUD")
+    monkeypatch.setenv("SOFASCORE_LOG__DEBUG", "false")
+    monkeypatch.setenv("SOFASCORE_LOG__LEVEL", "LOUD")
     assert app_logger.resolve_level() == logging.INFO
 
 
 def test_apply_log_level_changes_the_running_level(reconfigure, tmp_path):
-    reconfigure(LOG_DIR=str(tmp_path / "lvl"), LOG_LEVEL="INFO", DEBUG="false")
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "lvl"), SOFASCORE_LOG__LEVEL="INFO", SOFASCORE_LOG__DEBUG="false")
     log = logging.getLogger("WebAPI")
     log.debug("debug-1 görünmez")
-    os.environ["LOG_LEVEL"] = "DEBUG"
+    os.environ["SOFASCORE_LOG__LEVEL"] = "DEBUG"
     assert app_logger.apply_log_level() == logging.DEBUG
     log.debug("debug-2 görünür")
-    os.environ["LOG_LEVEL"] = "ERROR"
+    os.environ["SOFASCORE_LOG__LEVEL"] = "ERROR"
     app_logger.apply_log_level()
     log.warning("warning-3 görünmez")
     log.error("error-4 görünür")
@@ -569,25 +573,30 @@ def test_apply_log_level_changes_the_running_level(reconfigure, tmp_path):
     assert "Log level changed: INFO -> DEBUG" in text
 
 
-def test_config_manager_applies_log_level_without_restart(reconfigure, tmp_path):
-
-    reconfigure(LOG_DIR=str(tmp_path / "cm"), LOG_LEVEL="INFO", DEBUG="false")
+def test_a_changed_log_setting_is_applied_without_restart(reconfigure, tmp_path):
+    """Ayarlar yeniden kurulunca (ortam değişti, dosya yeniden yüklendi) yükleyici seviyeyi günlükçüye uygular."""
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "cm"), SOFASCORE_LOG__LEVEL="INFO", SOFASCORE_LOG__DEBUG="false")
     assert logging.getLogger().level == logging.INFO
-    assert deps.config_manager().update_env_variable("LOG_LEVEL", "DEBUG") is True
+    handler = app_logger._file_handler
+    os.environ["SOFASCORE_LOG__LEVEL"] = "DEBUG"
+    deps.config_manager().get_settings()
     assert logging.getLogger().level == logging.DEBUG
-    assert deps.config_manager().update_env_variable("LOG_LEVEL", "WARNING") is True
+    os.environ["SOFASCORE_LOG__LEVEL"] = "WARNING"
+    loader.active()
     assert logging.getLogger().level == logging.WARNING
+    assert app_logger._file_handler is handler                   # yalnızca seviye: dosya handler'ı yenilenmez
+    assert "Log level changed: INFO -> DEBUG" in _read(app_logger.log_file_path())
 
 
 def test_settings_endpoint_applies_log_level_at_runtime(reconfigure, tmp_path, monkeypatch, settings_overrides):
     from sofascore_scraper.web.app import app
 
-    reconfigure(LOG_DIR=str(tmp_path / "web"), LOG_LEVEL="INFO", DEBUG="false")
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "web"), SOFASCORE_LOG__LEVEL="INFO", SOFASCORE_LOG__DEBUG="false")
     client = TestClient(app)
     log = logging.getLogger("WebAPI")
 
-    monkeypatch.delenv("LOG_LEVEL", raising=False)  # ortamın değeri ayarı kilitlerdi
-    monkeypatch.delenv("DEBUG", raising=False)
+    monkeypatch.delenv("SOFASCORE_LOG__LEVEL", raising=False)  # ortamın değeri ayarı kilitlerdi
+    monkeypatch.delenv("SOFASCORE_LOG__DEBUG", raising=False)
     r = client.patch("/api/v1/settings", json={"values": {"log.level": "ERROR", "log.debug": False}})
     assert r.status_code == 200, r.text
     rows = {row["key"]: row["value"] for row in client.get("/api/v1/settings").json()["data"]["settings"]}
@@ -610,21 +619,16 @@ def test_settings_endpoint_applies_log_level_at_runtime(reconfigure, tmp_path, m
     assert "ayar sonrası debug" in text
 
 
-def test_secret_setting_is_masked_in_the_change_log_line(reconfigure, tmp_path):
-
-    reconfigure(LOG_DIR=str(tmp_path / "mask"), LOG_LEVEL="INFO", DEBUG="false")
-    saved = os.environ.get("PROXY_URL")
+def test_the_proxy_password_of_the_settings_is_masked_in_log_lines(reconfigure, tmp_path, monkeypatch):
+    reconfigure(SOFASCORE_LOG__DIR=str(tmp_path / "mask"), SOFASCORE_LOG__LEVEL="INFO", SOFASCORE_LOG__DEBUG="false")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", PROXY)
+    redact.refresh()
     try:
-        assert deps.config_manager().update_env_variable("PROXY_URL", PROXY) is True
         logging.getLogger("Utils").error(f"Proxy/Bağlantı hatası: {PROXY}")
         text = _read(app_logger.log_file_path())
     finally:
-        dotenv.unset_key(env_file_path(), "PROXY_URL", quote_mode="never")
-        if saved is None:
-            os.environ.pop("PROXY_URL", None)
-        else:
-            os.environ["PROXY_URL"] = saved
+        monkeypatch.undo()
         redact.refresh()
-    assert "PROXY_URL=***" in text
+    assert "Proxy/Bağlantı hatası" in text
     assert "Pr0xy-P4ss!word" not in text
 

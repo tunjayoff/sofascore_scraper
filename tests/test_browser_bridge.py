@@ -120,15 +120,15 @@ def test_profile_dir_treats_empty_setting_as_unset(monkeypatch):
     from sofascore_scraper.paths import browser_profile_dir
 
     default = os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile")
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "")
     assert browser_profile_dir() == default
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "   ")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "   ")
     assert browser_profile_dir() == default
-    monkeypatch.delenv("SOFASCORE_BROWSER_PROFILE")
+    monkeypatch.delenv("SOFASCORE_CLIENT__BROWSER_PROFILE")
     assert browser_profile_dir() == default
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "/srv/profile")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "/srv/profile")
     assert browser_profile_dir() == "/srv/profile"
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "~/elsewhere")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "~/elsewhere")
     assert browser_profile_dir() == os.path.expanduser("~/elsewhere")
 
 
@@ -140,7 +140,10 @@ def test_env_example_names_the_profile_setting_the_bridge_reads():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     with open(os.path.join(root, ".env.example"), encoding="utf-8") as f:
         example = f.read()
+    from sofascore_scraper.config import loader
+
+    # 3.1: profil `client.browser_profile` ayarından okunur (sofascore_scraper/paths.browser_profile_dir)
     with open(os.path.join(root, "sofascore_scraper", "paths.py"), encoding="utf-8") as f:
-        read_by_code = set(re.findall(r'os\.getenv\("(SOFASCORE_[A-Z_]*PROFILE)"', f.read()))
-    assert read_by_code == {"SOFASCORE_BROWSER_PROFILE"}
-    assert "SOFASCORE_BROWSER_PROFILE=" in example and "SOFASCORE_CHROME_PROFILE" not in example
+        assert "client.browser_profile" in f.read()
+    assert re.search(r"^# " + loader.env_name("client.browser_profile") + "=", example, flags=re.M)
+    assert "SOFASCORE_CLIENT__BROWSER_PROFILE=" in example and "SOFASCORE_CHROME_PROFILE" not in example

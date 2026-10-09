@@ -291,13 +291,13 @@ def test_launcher_messages_follow_the_app_language(launcher, monkeypatch, capsys
 
 
 def test_launcher_language_comes_from_the_shared_rule(launcher, monkeypatch, tmp_path):
-    for key in ("APP_LANGUAGE", "LANGUAGE"):  # başka bir testin ortamda bıraktığı ayar .env'in önüne geçmesin
+    for key in ("SOFASCORE_DISPLAY__LANGUAGE", "LANGUAGE"):  # başka bir testin ortamda bıraktığı ayar .env'in önüne geçmesin
         monkeypatch.delenv(key, raising=False)
     env_file = tmp_path / ".env"
-    env_file.write_text("APP_LANGUAGE=tr\n", encoding="utf-8")
+    env_file.write_text("SOFASCORE_DISPLAY__LANGUAGE=tr\n", encoding="utf-8")
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env_file))
     monkeypatch.setattr(launcher, "_messages", None)
     assert launcher._t("ready", url="http://x") == "Hazır: http://x"
-    env_file.write_text("APP_LANGUAGE=\n", encoding="utf-8")
+    env_file.write_text("SOFASCORE_DISPLAY__LANGUAGE=\n", encoding="utf-8")
     monkeypatch.setattr(launcher, "_messages", None)
     assert launcher._t("ready", url="http://x") == "Ready: http://x"

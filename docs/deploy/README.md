@@ -51,7 +51,7 @@ of the live service.
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now sofascore-serve
-journalctl -u sofascore-serve -f        # logs (also in logs/sofascore_scraper.log unless LOG_TO_FILE=false)
+journalctl -u sofascore-serve -f        # logs (also in logs/sofascore_scraper.log unless [log] to_file = false)
 curl -s http://127.0.0.1:8000/health    # {"status": "ok", ...}
 ```
 
@@ -79,8 +79,10 @@ settings, unless an access token is set:
 python -c "import secrets; print(secrets.token_urlsafe(32))"   # a long random value
 ```
 
-Set it as `SOFASCORE_API_TOKEN` in the service's environment (an `EnvironmentFile` with mode 0600, or `.env`),
-or name another variable with `[server] token_env` in the config file. Restart the service after changing it.
+Set it as `SOFASCORE_SERVER__TOKEN` in the service's environment (an `EnvironmentFile` with mode 0600, or
+`.env`), or name another variable with `[server] token_env` in the config file. Restart the service after
+changing it. The 2.x name `SOFASCORE_API_TOKEN` is not read since 3.1 (`ssc doctor` warns about it; keep it by
+setting `token_env = "SOFASCORE_API_TOKEN"` under `[server]`).
 Programs send `Authorization: Bearer <token>`; the web app asks for it once and keeps a session cookie.
 `GET /health` stays open for health checks and says only `{"status": "ok"}` without the token.
 
@@ -107,8 +109,8 @@ an attack that comes through your own browser and that no firewall stops. The ru
 | any of the above with names set | exactly the names you set, never widened |
 
 Set the names with `--allowed-hosts localhost,127.0.0.1,scraper.example.org`, `[server] allowed_hosts` in the
-config file, `SOFASCORE_SERVER__ALLOWED_HOSTS` or `SOFASCORE_ALLOWED_HOSTS` in the environment or `.env`
-(the flag wins over the others). Include every name and address clients use, and keep `127.0.0.1` when
+config file, or `SOFASCORE_SERVER__ALLOWED_HOSTS` in the environment or `.env` (the flag wins over the others;
+the 2.x name `SOFASCORE_ALLOWED_HOSTS` is not read since 3.1). Include every name and address clients use, and keep `127.0.0.1` when
 something on the machine checks `/health`. `--allow-any-host` (or the value `*`) answers to any name: it turns
 the protection off and is only for a server that is reachable through a trusted proxy alone.
 

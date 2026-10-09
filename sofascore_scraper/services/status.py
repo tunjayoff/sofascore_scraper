@@ -9,7 +9,7 @@ tamlığını yine katalogdan hesaplar (plan maddesi P15; eski dosya analizi rap
 
 Sayım kuralları (katalogdaki her maç ve her sezon listesi bir kez sayılır):
 
-  * matches   turnuvanın katalogdaki maçları. "Yalnızca bitmiş maçlar" ayarı açıkken (FETCH_ONLY_FINISHED,
+  * matches   turnuvanın katalogdaki maçları. "Yalnızca bitmiş maçlar" ayarı açıkken (fetch.only_finished,
               varsayılan) bitmiş olanlar (durum sınıfı completed / decided_without_play) ile detayı indirilmiş
               olanların birleşimi: programda görünen ama henüz bitmemiş, detayı da olmayan maç sayılmaz. Ayar
               kapalıyken bütün maçlar. Bugünkü yazıcıların sezon özetine koyduğu satırların karşılığıdır;
@@ -58,7 +58,6 @@ Servis yazdırmaz, kilit almaz ve dosya sistemine dokunmaz.
 """
 from __future__ import annotations
 
-import os
 import threading
 import time
 import weakref
@@ -84,10 +83,13 @@ _NOT_FINISHED: Tuple[str, ...] = tuple(member.value for member in StatusClass if
 
 def only_finished_setting() -> bool:
     """
-    "Yalnızca bitmiş maçlar" ayarının o anki değeri. Yazıcılarla aynı kaynaktan ve aynı kuralla okunur
-    (FETCH_ONLY_FINISHED, varsayılan açık); çağrı anında okunur.
+    "Yalnızca bitmiş maçlar" ayarının o anki değeri (`fetch.only_finished`, varsayılan açık), ayar yükleyicisinden
+    çağrı anında (plan maddesi RD-4). Anlamı FX-26'nınkidir: bir lig indirmesinde hangi maçların detayının
+    indirileceğine (QueryService.detail_candidates) ve genel bakış sayılarına karar verir.
     """
-    return os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true"
+    from sofascore_scraper.config import loader
+
+    return bool(loader.active_settings().fetch.only_finished)
 
 
 @dataclass(frozen=True)

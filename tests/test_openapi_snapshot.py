@@ -297,9 +297,9 @@ def test_the_program_prints_only_the_document_and_leaves_nothing_behind(tmp_path
     (tmp_path / "sofascore.toml").write_text('[server]\ntoken_env = "A_VARIABLE_NOBODY_SETS"\n', encoding="utf-8")
     env = {
         name: value for name, value in os.environ.items()
-        if name not in openapi._ISOLATED_PATHS and name not in ("SOFASCORE_CONFIG", "SOFASCORE_ALLOWED_HOSTS")
+        if name not in openapi._ISOLATED_PATHS and name not in ("SOFASCORE_CONFIG", "SOFASCORE_SERVER__ALLOWED_HOSTS")
     }
-    env.update(PYTHONPATH=str(openapi.ROOT), SOFASCORE_API_TOKEN="short", PYTHONIOENCODING="utf-8")
+    env.update(PYTHONPATH=str(openapi.ROOT), SOFASCORE_SERVER__TOKEN="short", PYTHONIOENCODING="utf-8")
 
     done = subprocess.run(
         [sys.executable, "-m", "sofascore_scraper.web.openapi"], cwd=str(tmp_path), env=env, capture_output=True, timeout=120,

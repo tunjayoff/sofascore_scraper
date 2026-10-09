@@ -967,7 +967,7 @@ def test_diagnostics_reads_state_db_and_falls_back_to_a_2x_jobs_db(tmp_path, mon
     # 3.x'in henüz açmadığı 2.x dizini: yalnızca jobs.db var; okumak state.db oluşturmaz
     data_dir = tmp_path / "data"
     legacy = _make_legacy_db(data_dir / ".meta" / "jobs.db")
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     jobs = diagnostics._jobs()
     assert jobs["db"] == legacy and jobs["exists"] is True
     assert [j["id"] for j in jobs["recent"]] == ["job-old-3", "job-old-2", "job-old-1"]

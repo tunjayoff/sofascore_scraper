@@ -40,7 +40,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, cast
 
-from sofascore_scraper.store import layout
+from sofascore_scraper.store import files, layout
 from sofascore_scraper.store.errors import LeaseHeld, StoreError
 from sofascore_scraper.store.lease import EXPORT, MAINTENANCE, WRITER, Lease, LeaseManager
 from sofascore_scraper.store.state import APPLICATION_ID, BUSY_TIMEOUT_MS, StateDb
@@ -1106,7 +1106,7 @@ def get_job_store(data_dir: Optional[str] = None) -> JobStore:
     global _store
     with _store_lock:
         if _store is None:
-            root = data_dir or os.getenv("DATA_DIR", "data")
+            root = data_dir or files.default_data_dir()
             if not os.path.isabs(root):
                 root = os.path.abspath(root)
             _store = JobStore(default_db_path(root))

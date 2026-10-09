@@ -661,7 +661,7 @@ def test_missing_slices_equal_today_s_refill_need(fx: sf.LegacyFixture, monkeypa
     """
     from sofascore_scraper.store import open_store
 
-    for key in ("REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS", "REFRESH_LEGACY"):
+    for key in ("SOFASCORE_REFRESH__WINDOW_HOURS", "SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "SOFASCORE_REFRESH__INCLUDE_LEGACY"):
         monkeypatch.delenv(key, raising=False)
     events, _ = scan(fx.data_dir)
     fetcher = fetcher_for(fx.data_dir)

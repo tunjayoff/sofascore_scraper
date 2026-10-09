@@ -6,8 +6,8 @@ Atomik yazma: içerik önce aynı dizinde `.<ad>.<rastgele>.tmp` adlı geçici d
 os.replace ile yerine konur. Okuyan taraf ya eski ya yeni dosyayı görür, yarım dosyayı görmez; aynı
 dosyaya aynı anda yazan iki süreç birbirinin geçici dosyasını ezmez.
 
-Her OSError bir StoreError'a çevrilir (`fatal` errno'dan hesaplanır) ve STORE_DURABILITY=full ise dosya ve
-dizini fsync edilir. Veri dizini dışındaki yapılandırma dosyaları (leagues.txt, league_sports.json,
+Her OSError bir StoreError'a çevrilir (`fatal` errno'dan hesaplanır) ve `storage.durability` "full" ise dosya ve
+dizini fsync edilir (`durability_full`). Veri dizini dışındaki yapılandırma dosyaları (leagues.txt, league_sports.json,
 overrides.json) bu modülle değil sofascore_scraper/config_files.py ile yazılır.
 
 Dosya izinleri (karar S12): Store katmanının yazdığı dosyalar (yükler, manifestler, .meta/schema.json)
@@ -26,9 +26,10 @@ import contextlib
 import errno
 import os
 import shutil
+import sys
 import time
 import uuid
-from typing import Callable, Collection, Optional, Tuple, Union
+from typing import Any, Callable, Collection, Optional, Tuple, Union
 
 from sofascore_scraper.store import layout
 from sofascore_scraper.store.errors import PayloadMissing, StoreError
@@ -37,7 +38,9 @@ PathLike = Union[str, "os.PathLike[str]"]
 
 REPLACE_RETRIES = 10
 REPLACE_RETRY_PAUSE = 0.02  # saniye
-DURABILITY_ENV = "STORE_DURABILITY"
+# Karar S17: aynı dizinin bir açılışı eski düzen maç dizinlerini bu kadar saniye önce taradıysa sonraki açılış
+# o taramayı atlar (`storage.open_reconcile_seconds`; sofascore_scraper/store/api.py `Store._reconcile_on_open`)
+OPEN_RECONCILE_SECONDS = 60.0
 # Store katmanının dosyaları bu izinle açılır; çekirdek sürecin umask'ini kendisi düşer (022 → 0644)
 STORE_FILE_MODE = 0o666
 TMP_NAME_ATTEMPTS = 100
@@ -49,9 +52,37 @@ class ReplaceBusy(PermissionError):
     """Yerine koyma, yeniden denemelere rağmen başarısız: hedef başka bir süreçte açık (Windows)."""
 
 
+def _storage_settings() -> Any:
+    """
+    Uygulamanın `[storage]` ayarları; ayar yükleyicisi bu süreçte yüklenmemişse None. Store ayar yükleyicisini içe
+    aktaramaz (katman kuralı; ayarlar Store'un üstündedir): değerler yükleyicinin modülünden, yüklenmişse,
+    `sys.modules` üzerinden okunur. Yükleyicisi olmayan bir süreç (yönetim aracı, test) varsayılanlarla çalışır.
+    """
+    loader = sys.modules.get("sofascore_scraper.config.loader")
+    if loader is None:
+        return None
+    try:
+        return loader.active_settings().storage
+    except Exception:  # geçersiz yapılandırma: yazma durmasın, varsayılanlar
+        return None
+
+
+def default_data_dir() -> str:
+    """Veri dizini verilmeyen açılışın dizini: `storage.data_dir`, yükleyici yoksa "data"."""
+    storage = _storage_settings()
+    return (storage.data_dir if storage is not None else "") or "data"
+
+
 def durability_full() -> bool:
-    """STORE_DURABILITY=full: her dosya ve dizini fsync edilir. Varsayılan: fsync yok (bugünkü davranış)."""
-    return os.environ.get(DURABILITY_ENV, "").strip().lower() == "full"
+    """`storage.durability` "full": her dosya ve dizini fsync edilir. Varsayılan: fsync yok."""
+    storage = _storage_settings()
+    return storage is not None and storage.durability == "full"
+
+
+def open_reconcile_seconds() -> float:
+    """Karar S17'nin süresi (saniye): `storage.open_reconcile_seconds`, yoksa OPEN_RECONCILE_SECONDS."""
+    storage = _storage_settings()
+    return OPEN_RECONCILE_SECONDS if storage is None else max(0.0, float(storage.open_reconcile_seconds))
 
 
 def _retry_while_busy(operation: Callable[[str, str], None], src: str, dst: str) -> None:
@@ -153,7 +184,7 @@ def read_bytes(path: PathLike) -> bytes:
 def write_bytes(path: PathLike, data: bytes, *, durable: Optional[bool] = None,
                 mode: int = STORE_FILE_MODE) -> None:
     """
-    Atomik yazma. durable=None → STORE_DURABILITY ortam değişkeni karar verir.
+    Atomik yazma. durable=None → `storage.durability` ayarı karar verir (`durability_full`).
 
     Dosyanın izni sürecin umask'ine uyar (karar S12), hedef daha önce başka bir izinle var olsa bile:
     yerine konan dosya yeni dosyadır. `mode` umask'ten önceki izindir: 0o600 dosyayı yalnızca sahibinin

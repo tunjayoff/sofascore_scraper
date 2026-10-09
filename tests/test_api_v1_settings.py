@@ -62,7 +62,7 @@ def sandbox(monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     loader.reload()
     redact.refresh()
     store.rebind(default_db_path(conftest.DATA_DIR))
-    assert os.environ["DATA_DIR"] == conftest.DATA_DIR
+    assert os.environ["SOFASCORE_STORAGE__DATA_DIR"] == conftest.DATA_DIR
 
 
 def rows() -> Dict[str, Dict[str, Any]]:
@@ -99,13 +99,13 @@ def test_get_lists_every_setting_of_the_model_with_its_source(sandbox: Path) -> 
     assert [row["key"] for row in listed] == [key for key, _f in model.iter_settings()]
     assert all(list(row) == ["key", "value", "source", "source_name", "locked", "writable", "secret"] for row in listed)
     found = {row["key"]: row for row in listed}
-    # conftest: REQUEST_RATE_LIMIT süreç ortamında, MAX_CONCURRENT .env'de, MAX_RETRIES hiçbir yerde
+    # conftest: client.rate süreç ortamında (SOFASCORE_CLIENT__RATE), client.max_concurrent hiçbir yerde
     assert found["client.rate"] == {
-        "key": "client.rate", "value": 0.0, "source": "env", "source_name": "REQUEST_RATE_LIMIT", "locked": True,
+        "key": "client.rate", "value": 0.0, "source": "env", "source_name": "SOFASCORE_CLIENT__RATE", "locked": True,
         "writable": False, "secret": False,
     }
     assert found["client.max_concurrent"] == {
-        "key": "client.max_concurrent", "value": 5, "source": "dotenv", "source_name": "MAX_CONCURRENT",
+        "key": "client.max_concurrent", "value": 10, "source": "default", "source_name": "",
         "locked": False, "writable": True, "secret": False,
     }
     assert found["client.retries"] == {
@@ -130,8 +130,8 @@ def test_writable_is_the_table_minus_the_locked_keys(sandbox: Path) -> None:
 
 
 def test_secrets_are_masked(sandbox: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("SOFA_CAPTCHA_TOKEN", "captcha-value-123")
-    monkeypatch.setenv("PROXY_URL", PROXY_URL)
+    monkeypatch.setenv("SOFASCORE_CLIENT__CAPTCHA_TOKEN", "captcha-value-123")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", PROXY_URL)
 
     found = rows()
 
@@ -159,9 +159,9 @@ def test_patch_writes_the_overrides_file_and_the_value_is_in_force_at_once(sandb
     assert found["display.language"]["value"] == "tr"
     assert json.loads(sandbox.read_text(encoding="utf-8")) == {"client": {"retries": 7}, "display": {"language": "tr"}}
     assert sandbox.read_text(encoding="utf-8").endswith("}\n")
-    # Uygulamanın geri kalanı da yeni değeri görür: yapılandırma yöneticisi, ortamı okuyan modüller
+    # Uygulamanın geri kalanı da yeni değeri görür (etkin ayarlardan); ortama bir şey yazılmaz (3.1)
     assert deps.config_manager().get_max_retries() == 7
-    assert os.environ["MAX_RETRIES"] == "7"
+    assert "SOFASCORE_CLIENT__RETRIES" not in os.environ
     assert rows() == found
 
 
@@ -171,17 +171,18 @@ def test_the_overrides_file_is_private(sandbox: Path) -> None:
     assert stat.S_IMODE(os.stat(sandbox).st_mode) == 0o600
 
 
-def test_a_value_written_here_beats_the_env_file_and_null_gives_it_back(sandbox: Path) -> None:
-    assert rows()["client.max_concurrent"]["source"] == "dotenv"
+def test_a_value_written_here_beats_the_default_and_null_gives_it_back(sandbox: Path) -> None:
+    """3.1: `.env`'deki değer ortamdır ve ayarı kilitler; yalnızca varsayılan ve overrides.json yazılabilir katmandır."""
+    assert rows()["client.max_concurrent"]["source"] == "default"
 
     assert patch({"client.max_concurrent": 9}).status_code == 200
     assert rows()["client.max_concurrent"]["value"] == 9 and deps.config_manager().get_max_concurrent() == 9
 
     assert patch({"client.max_concurrent": None}).status_code == 200
     row = rows()["client.max_concurrent"]
-    assert (row["value"], row["source"]) == (5, "dotenv")
+    assert (row["value"], row["source"]) == (10, "default")
     assert json.loads(sandbox.read_text(encoding="utf-8")) == {}
-    assert os.environ["MAX_CONCURRENT"] == "5"
+    assert "SOFASCORE_CLIENT__MAX_CONCURRENT" not in os.environ
 
 
 def test_an_empty_patch_changes_nothing(sandbox: Path) -> None:
@@ -208,7 +209,7 @@ def test_values_are_normalised_as_the_config_file_would(sandbox: Path) -> None:
 def test_a_key_pinned_by_the_environment_is_refused_and_nothing_is_written(sandbox: Path) -> None:
     refused = error(patch({"client.rate": 3, "client.retries": 7}), 400)
 
-    assert refused["details"] == {"locked": [{"key": "client.rate", "source": "env", "source_name": "REQUEST_RATE_LIMIT"}]}
+    assert refused["details"] == {"locked": [{"key": "client.rate", "source": "env", "source_name": "SOFASCORE_CLIENT__RATE"}]}
     assert "pinned" in refused["message"]
     assert not sandbox.exists() and rows()["client.retries"]["value"] == 3
 
@@ -235,9 +236,9 @@ def test_a_key_pinned_by_the_config_file_is_refused(sandbox: Path, tmp_path: Pat
 
 def test_an_override_of_a_locked_key_can_still_be_removed(sandbox: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert patch({"client.retries": 7}).status_code == 200
-    monkeypatch.setenv("MAX_RETRIES", "4")  # sonradan ortamda sabitlendi
+    monkeypatch.setenv("SOFASCORE_CLIENT__RETRIES", "4")  # sonradan ortamda sabitlendi
     assert rows()["client.retries"] == {
-        "key": "client.retries", "value": 4, "source": "env", "source_name": "MAX_RETRIES", "locked": True,
+        "key": "client.retries", "value": 4, "source": "env", "source_name": "SOFASCORE_CLIENT__RETRIES", "locked": True,
         "writable": False, "secret": False,
     }
     error(patch({"client.retries": 8}), 400)
@@ -292,10 +293,10 @@ def test_unknown_keys_are_rejected(sandbox: Path) -> None:
 ])
 def test_values_that_break_a_rule_are_rejected(sandbox: Path, monkeypatch: pytest.MonkeyPatch, key: str, value: Any,
                                                expected: str) -> None:
-    # Bu testte hiçbir anahtar ortamdan sabitlenmiş olmasın (kilit, değer denetiminden önce gelir)
-    for name in ("REQUEST_RATE_LIMIT", "DATA_DIR"):
-        with open(conftest.ENV_FILE, "a", encoding="utf-8") as f:
-            f.write(f"\n{name}={os.environ[name]}\n")
+    # Bu testte hiçbir anahtar ortamdan sabitlenmiş olmasın (kilit, değer denetiminden önce gelir). İstek
+    # reddedilir: varsayılan veri dizinine (./data) hiçbir şey yazılmaz
+    for name in ("SOFASCORE_CLIENT__RATE", "SOFASCORE_STORAGE__DATA_DIR"):
+        monkeypatch.delenv(name)
     loader.reload()
 
     found = issues(patch({key: value, "client.wait_time_min": 0.3}))
@@ -352,22 +353,30 @@ def test_the_masked_proxy_keeps_the_stored_password_only_for_the_same_endpoint(s
 @pytest.fixture
 def data_dir_sandbox(sandbox: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """
-    Veri dizinini gerçekten değiştiren testler. DATA_DIR `.env`'den gelir (süreç ortamından gelseydi kilitli
-    olurdu) ve doğrulayıcı tmp_path altını kabul eder. Geri alma `sandbox` fixture'ındadır.
+    Veri dizinini gerçekten değiştiren testler. Veri dizini overrides.json'dan gelir (ortamdan ya da `.env`'den
+    gelseydi kilitli olurdu) ve doğrulayıcı tmp_path altını kabul eder. Geri alma `sandbox` fixture'ındadır.
     """
-    with open(conftest.ENV_FILE, "a", encoding="utf-8") as f:
-        f.write(f"\nDATA_DIR={conftest.DATA_DIR}\n")
+    sandbox.write_text(json.dumps(DATA_DIR_OVERRIDES), encoding="utf-8")
+    monkeypatch.delenv("SOFASCORE_STORAGE__DATA_DIR")
     loader.reload()
     monkeypatch.setattr(settings_v1, "REPO_ROOT", tmp_path)
     if store.snapshot().get("is_running"):
         store.update(status="Cancelled", finished=True)
-    assert rows()["storage.data_dir"]["source"] == "dotenv"
+    assert rows()["storage.data_dir"]["source"] == "overrides"
     return tmp_path
+
+
+DATA_DIR_OVERRIDES = {"storage": {"data_dir": conftest.DATA_DIR}}
+
+
+def _overrides_untouched() -> bool:
+    """data_dir_sandbox'ın yazdığı overrides.json değişmedi: reddedilen istek hiçbir şey yazmadı."""
+    return json.loads(overrides.overrides_path().read_text(encoding="utf-8")) == DATA_DIR_OVERRIDES
 
 
 def test_a_data_dir_pinned_by_the_environment_cannot_be_changed(sandbox: Path, tmp_path: Path) -> None:
     refused = error(patch({"storage.data_dir": str(tmp_path / "other")}), 400)
-    assert refused["details"]["locked"][0] == {"key": "storage.data_dir", "source": "env", "source_name": "DATA_DIR"}
+    assert refused["details"]["locked"][0] == {"key": "storage.data_dir", "source": "env", "source_name": "SOFASCORE_STORAGE__DATA_DIR"}
 
 
 def test_a_data_dir_change_moves_the_job_store(data_dir_sandbox: Path) -> None:
@@ -449,7 +458,7 @@ def test_a_data_dir_outside_the_project_and_the_home_folder_is_rejected(data_dir
     for bad in ("/etc", str(Path.home()), str(data_dir_sandbox)):
         found = issues(patch({"storage.data_dir": bad}))
         assert "inside the project or your home directory" in found["storage.data_dir"], bad
-    assert not overrides.overrides_path().exists()
+    assert _overrides_untouched()
 
 
 def test_a_data_dir_change_is_refused_while_a_job_runs(data_dir_sandbox: Path) -> None:
@@ -457,7 +466,7 @@ def test_a_data_dir_change_is_refused_while_a_job_runs(data_dir_sandbox: Path) -
     try:
         response = patch({"storage.data_dir": str(data_dir_sandbox / "other"), "client.retries": 7})
         assert response.status_code == 409 and response.json()["error"]["code"] == "job_running"
-        assert not overrides.overrides_path().exists() and rows()["client.retries"]["value"] == 3
+        assert _overrides_untouched() and rows()["client.retries"]["value"] == 3
         assert store.db_path == default_db_path(conftest.DATA_DIR)
         # Diğer ayarlar iş çalışırken de kaydedilir
         assert patch({"client.retries": 7}).status_code == 200
@@ -476,7 +485,7 @@ def test_an_unusable_data_dir_is_a_storage_error_and_nothing_changes(data_dir_sa
     body = response.json()["error"]
     assert body["code"] == "storage_error" and body["message"].startswith("storage error: ")
     assert body["details"]["path"] == target and body["details"]["reason"]
-    assert not overrides.overrides_path().exists() and rows()["client.retries"]["value"] == 3
+    assert _overrides_untouched() and rows()["client.retries"]["value"] == 3
     assert store.db_path == default_db_path(conftest.DATA_DIR)
     # Yuva bırakıldı: sonraki istek çalışır
     assert patch({"client.retries": 9}).status_code == 200
@@ -508,7 +517,7 @@ def test_the_cause_of_an_unusable_data_dir_is_in_the_code_and_the_details(
     assert held.status_code == 409 and held.json()["error"]["code"] == "job_running"
     assert held.json()["error"]["details"]["holder"]["pid"] == 99
 
-    assert not overrides.overrides_path().exists() and store.db_path == default_db_path(conftest.DATA_DIR)
+    assert _overrides_untouched() and store.db_path == default_db_path(conftest.DATA_DIR)
 
 
 def test_the_job_store_returns_when_the_setting_cannot_be_written(

@@ -1060,14 +1060,14 @@ def test_hook_follows_the_data_dir_environment_variable(tmp_path: Path, monkeypa
     exec(compile(source, str(tmp_path / "sofascore_scraper" / "reader.py"), "exec"), namespace)
     conftest.BOUNDARY_RECORDERS.append(recorder)
     try:
-        monkeypatch.setenv("DATA_DIR", str(tmp_path / "elsewhere"))
+        monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "elsewhere"))
         namespace["names"](str(other))
         assert recorder.records == {}
-        monkeypatch.setenv("DATA_DIR", str(other))
+        monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(other))
         namespace["names"](str(other))
         namespace["names"](str(fixed))  # sabit dizin her zaman izlenir
         assert len(recorder.records) == 1 and {path for _test, path in recorder.records.values()} == {str(other)}
-        monkeypatch.delenv("DATA_DIR")
+        monkeypatch.delenv("SOFASCORE_STORAGE__DATA_DIR")
         recorder.records.clear()
         namespace["names"](str(other))
         namespace["names"](str(fixed))

@@ -6,9 +6,9 @@ Bu bozulduğunda işler yalnızca yavaşça başarısız oluyordu; kullanıcıya
 şey yoktu. Burada köprüden geçen her isteğin SONUCU sayılır ve üç durumdan biri tutulur:
 
   ok        son istek başarılı (ya da henüz istek yok)
-  degraded  art arda BRIDGE_DEGRADED_AFTER istek reddedildi
-  blocked   art arda BRIDGE_BLOCKED_AFTER istek reddedildi VE seri en az
-            BRIDGE_BLOCKED_MIN_SECONDS sürdü
+  degraded  art arda `bridge.degraded_after` istek reddedildi
+  blocked   art arda `bridge.blocked_after` istek reddedildi VE seri en az
+            `bridge.blocked_min_seconds` sürdü
 
 Durum adları köprünün durumunu anlatır; nedeni son hatanın türü söyler (SofaScore reddediyor mu,
 yoksa tarayıcı mı açılamıyor) ve mesajlar buna göre seçilir.
@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
-import os
 import sys
 import threading
 import time
@@ -66,26 +65,20 @@ BridgeHealthSnapshot = Dict[str, Any]
 HealthChangeCallback = Callable[[Mapping[str, Any]], None]
 
 
-def _env_number(key: str, default: float, minimum: float) -> float:
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return default
-    try:
-        value = float(raw)
-    except ValueError:
-        return default
-    return value if value >= minimum else default
-
-
 def thresholds() -> Dict[str, float]:
-    """Eşikler (.env): BRIDGE_DEGRADED_AFTER, BRIDGE_BLOCKED_AFTER, BRIDGE_BLOCKED_MIN_SECONDS."""
-    degraded = int(_env_number("BRIDGE_DEGRADED_AFTER", DEFAULT_DEGRADED_AFTER, 1))
-    blocked = int(_env_number("BRIDGE_BLOCKED_AFTER", DEFAULT_BLOCKED_AFTER, 1))
-    return {
-        "degraded_after": degraded,
-        "blocked_after": max(blocked, degraded),
-        "blocked_min_seconds": _env_number("BRIDGE_BLOCKED_MIN_SECONDS", DEFAULT_BLOCKED_MIN_SECONDS, 0),
-    }
+    """
+    Eşikler (`[bridge]`: degraded_after, blocked_after, blocked_min_seconds), ayar yükleyicisinden çağrı anında.
+    Ayarlar kurulamıyorsa (geçersiz yapılandırma; `config validate` bildirir) varsayılanlar: köprünün sağlık
+    kaydı bir isteğin hata yolunda da çağrılır ve düşmemelidir.
+    """
+    from sofascore_scraper.config import loader
+
+    try:
+        bridge = loader.active_settings().bridge
+        degraded, blocked, seconds = int(bridge.degraded_after), int(bridge.blocked_after), float(bridge.blocked_min_seconds)
+    except Exception:
+        degraded, blocked, seconds = DEFAULT_DEGRADED_AFTER, DEFAULT_BLOCKED_AFTER, float(DEFAULT_BLOCKED_MIN_SECONDS)
+    return {"degraded_after": degraded, "blocked_after": max(blocked, degraded), "blocked_min_seconds": seconds}
 
 
 def _iso(ts: Optional[float]) -> Optional[str]:
@@ -180,7 +173,7 @@ class BridgeHealth:
             advice = (
                 "Check the browser install: `ssc doctor`."
                 if browser
-                else "Wait a while; a lower request rate (REQUEST_RATE_LIMIT) may help."
+                else "Wait a while; a lower request rate (client.rate) may help."
             )
             logger.warning(
                 f"{subject}: {snap['consecutive_failures']} requests failed in a row, none succeeded since "

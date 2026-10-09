@@ -121,8 +121,8 @@ class Stop:
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))  # çalışma zamanı sınır denetimi bu dizine erişimleri izler
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "48")
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))  # çalışma zamanı sınır denetimi bu dizine erişimleri izler
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "48")
     return path
 
 

@@ -44,9 +44,9 @@ def _iso(ts: float) -> str:
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    monkeypatch.delenv("REFRESH_WINDOW_HOURS", raising=False)
-    monkeypatch.delenv("REFRESH_LEGACY", raising=False)
-    monkeypatch.delenv("REFRESH_MIN_INTERVAL_HOURS", raising=False)
+    monkeypatch.delenv("SOFASCORE_REFRESH__WINDOW_HOURS", raising=False)
+    monkeypatch.delenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", raising=False)
+    monkeypatch.delenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", raising=False)
 
 
 @contextlib.contextmanager
@@ -132,14 +132,14 @@ def test_need_after_window_is_none(tmp_path):
 
 
 def test_need_with_policy_off_is_none(tmp_path, monkeypatch):
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "0")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "0")
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
     assert f.need(MID) == "none"
 
 
 def test_window_is_configurable(tmp_path, monkeypatch):
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "6")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "6")
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=7)
     assert f.need(MID) == "none"
@@ -153,7 +153,7 @@ def test_window_is_configurable(tmp_path, monkeypatch):
 ])
 def test_min_interval_between_refreshes(tmp_path, monkeypatch, hours_since_observed, min_interval, expected):
     if min_interval is not None:
-        monkeypatch.setenv("REFRESH_MIN_INTERVAL_HOURS", min_interval)
+        monkeypatch.setenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", min_interval)
     f = _fetcher(tmp_path)
     basic = _fixture("football/F2_penalties__16950622")
     now = dt.datetime.now(dt.timezone.utc).timestamp()
@@ -254,7 +254,7 @@ def test_a_record_of_the_old_layout_is_promoted_by_its_refresh_and_its_folder_is
     Eski düzendeki kayıt yenilenirken önce v3'e yükseltilir (karar S3); eski dizine dokunulmaz (karar 4): mantıksal
     döküm yükseltmeden önceki kaydın aynısıdır, yalnızca gözlem ve olay yükü yenidir.
     """
-    monkeypatch.setenv("REFRESH_LEGACY", "true")
+    monkeypatch.setenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", "true")
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
     match_dir = _store(f, old)
@@ -304,7 +304,7 @@ def test_legacy_record_is_untouched_without_flag(tmp_path):
 
 
 def test_legacy_record_refreshes_once_with_flag(tmp_path, monkeypatch):
-    monkeypatch.setenv("REFRESH_LEGACY", "true")
+    monkeypatch.setenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", "true")
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
     _store(f, old)
@@ -378,5 +378,5 @@ def test_settings_expose_refresh_window(monkeypatch):
 
     assert window() == 72
     assert client.patch("/api/v1/settings", json={"values": {"refresh.window_hours": -1}}).status_code == 422
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "24")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "24")
     assert window() == 24

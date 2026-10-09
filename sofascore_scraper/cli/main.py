@@ -106,7 +106,8 @@ class GlobalOptions:
 
 def translator(lang: Optional[str] = None) -> Tuple[Translator, str]:
     """
-    (çeviri işlevi, dil). Dil kuralı uygulamanınkidir: `--lang` > APP_LANGUAGE (.env dahil) > sistem dili >
+    (çeviri işlevi, dil). Dil kuralı uygulamanınkidir: `--lang` > `display.language` (SOFASCORE_DISPLAY__LANGUAGE,
+    .env dahil; sofascore.toml, overrides.json) > sistem dili >
     İngilizce. locales/*.json'ı sofascore_scraper/doctor.py'nin bağlamı okur: yalnızca standart kütüphaneyi ister (paketler
     kurulmadan da çalışır) ve `.env`'deki dil ayarını hesaba katar.
     """
@@ -372,7 +373,7 @@ def _setting_flags(options: GlobalOptions, data_dir: Optional[str]) -> Dict[str,
     if options.ignore_breaker:
         flags["breaker.ignore"] = True
     if options.log_level is not None:
-        # `log.debug` (DEBUG=true) seviyeyi DEBUG'a zorlar; açıkça istenen seviye onun da önündedir
+        # `log.debug` seviyeyi DEBUG'a zorlar; açıkça istenen seviye onun da önündedir
         flags["log.level"] = options.log_level
         flags["log.debug"] = False
     if options.log_format is not None:

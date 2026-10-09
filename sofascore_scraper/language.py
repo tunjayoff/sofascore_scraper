@@ -5,12 +5,11 @@ bunu kullanır; kurulum betikleri (scripts/install.sh, install.ps1) ve web aray�
 
     açık ayar  >  algılanan sistem dili  >  İngilizce
 
-  açık ayar     APP_LANGUAGE (.env ya da ortam). Eski LANGUAGE değişkeni yalnızca tam olarak
-                desteklenen bir koda eşitse sayılır: aynı ad GNU gettext'in değişkenidir
-                ("en_US:en" gibi değerler kabuktan gelir ve ayar değildir). sofascore.toml'daki ve
-                Ayarlar sayfasındaki dil (overrides.json) de açık ayardır: ayar yükleyicisi onu
-                APP_LANGUAGE olarak ortama yansıtır; yükleyiciyi yüklemeyen başlatıcı ve başlatma
-                betikleri aynı sırayı sofascore_scraper/doctor.py'nin Context'inden alır (FX-22).
+  açık ayar     `display.language`: SOFASCORE_DISPLAY__LANGUAGE (ortam ya da .env), sofascore.toml'daki
+                ya da Ayarlar sayfasındaki dil (overrides.json). Uygulama onu ayar yükleyicisinden okur
+                (sofascore_scraper/i18n.py); yükleyiciyi yüklemeyen başlatıcı ve başlatma betikleri aynı
+                sırayı sofascore_scraper/doctor.py'nin Context'inden alır (FX-22). 2.x'in APP_LANGUAGE ve
+                LANGUAGE adları 3.1'de okunmaz (plan maddesi P30).
   sistem dili   POSIX önceliğiyle LC_ALL, LC_MESSAGES, LANG: ilk dolu olan belirler. Hiçbiri
                 yoksa Windows'ta kullanıcının arayüz dili.
   İngilizce     desteklenmeyen her dil (de_DE, C, POSIX, ...) için de geçerli.
@@ -29,7 +28,8 @@ from typing import Callable, Mapping, Optional
 SUPPORTED_LANGUAGES = ("en", "tr")
 DEFAULT_LANGUAGE = "en"
 
-EXPLICIT_KEYS = ("APP_LANGUAGE", "LANGUAGE")
+# Açık ayarın ortamdaki adı (sofascore_scraper/config/loader.env_name("display.language"))
+EXPLICIT_KEYS = ("SOFASCORE_DISPLAY__LANGUAGE",)
 LOCALE_KEYS = ("LC_ALL", "LC_MESSAGES", "LANG")
 ENV_KEYS = EXPLICIT_KEYS + LOCALE_KEYS
 

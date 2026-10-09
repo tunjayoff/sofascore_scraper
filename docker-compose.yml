@@ -16,9 +16,9 @@ services:
     command: ["serve"]
 
     # The web app has no user accounts. Published on this machine only; change the left side to
-    # "8000:8000" to open it to your network, and then also set SOFASCORE_API_TOKEN (without it
+    # "8000:8000" to open it to your network, and then also set SOFASCORE_SERVER__TOKEN (without it
     # anyone who can reach the port can read and delete data and change settings) and add the
-    # name or IP you use to reach it to SOFASCORE_ALLOWED_HOSTS below (other Host headers are
+    # name or IP you use to reach it to SOFASCORE_SERVER__ALLOWED_HOSTS below (other Host headers are
     # rejected). Keep 127.0.0.1 in that list: the health check uses it.
     #
     # Inside the container the server listens on 0.0.0.0, so it cannot tell how the port is
@@ -29,13 +29,15 @@ services:
 
     environment:
       # The host names the server answers to (DNS rebinding protection), used as written.
-      SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"
-      # Optional: APP_LANGUAGE pins the language (en or tr). A setting given here wins over the Settings
-      # page, which then shows it as fixed and cannot change it. Left out, each browser's language decides.
-      # APP_LANGUAGE: tr
-      # SOFASCORE_API_TOKEN: "a-long-random-value"
-      # USE_PROXY: "true"
-      # PROXY_URL: "http://user:pass@host:port"
+      # (Settings are SOFASCORE_<SECTION>__<KEY>; the 2.x names such as SOFASCORE_ALLOWED_HOSTS,
+      # APP_LANGUAGE or PROXY_URL are not read since 3.1.)
+      SOFASCORE_SERVER__ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"
+      # Optional: SOFASCORE_DISPLAY__LANGUAGE pins the language (en or tr). A setting given here wins over
+      # the Settings page, which then shows it as fixed and cannot change it. Left out, each browser's
+      # language decides.
+      # SOFASCORE_DISPLAY__LANGUAGE: tr
+      # SOFASCORE_SERVER__TOKEN: "a-long-random-value"
+      # SOFASCORE_CLIENT__PROXY: "http://user:pass@host:port"   # a proxy given here is used
 
     # Chromium needs more shared memory than Docker's 64 MB default
     shm_size: "1gb"

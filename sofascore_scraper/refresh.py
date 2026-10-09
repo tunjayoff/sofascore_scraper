@@ -1,14 +1,15 @@
 """
-Yenileme politikası: bitmiş bir maçın kaydı, başlangıcından REFRESH_WINDOW_HOURS geçene kadar geçicidir.
+Yenileme politikası: bitmiş bir maçın kaydı, başlangıcından `refresh.window_hours` geçene kadar geçicidir.
 
 Dayanak: docs/status-matrix/README.md "Geriye dönük: bitiş sonrası güncellemeler" (alt lig basketbolda
 nihai skor başlangıçtan 66,4 sa sonrasına kadar değişti). `changes` önceki değeri vermediği için
-değişimin kendisi score_changes.jsonl'a eski ve yeni değeriyle yazılır.
+değişimin kendisi değişiklik günlüğüne eski ve yeni değeriyle yazılır.
+
+Ayarlar (`[refresh]`) ayar yükleyicisinden çağrı anında okunur; 2.x'in REFRESH_* adları 3.1'de okunmaz.
 """
 from __future__ import annotations
 
 import datetime as dt
-import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -24,31 +25,25 @@ SCORE_CHANGES_FILE = "score_changes.jsonl"
 _STATUS_FIELDS = ("type", "code", "description")
 
 
+def _settings() -> Any:
+    from sofascore_scraper.config import loader
+
+    return loader.active_settings().refresh
+
+
 def refresh_window_hours() -> float:
-    """REFRESH_WINDOW_HOURS (.env); 0 politikayı kapatır. Çağrı anında okunur (ayarlar sayfası değiştirebilir)."""
-    raw = os.getenv("REFRESH_WINDOW_HOURS")
-    if raw is None or raw.strip() == "":
-        return DEFAULT_REFRESH_WINDOW_HOURS
-    try:
-        return max(0.0, float(raw))
-    except ValueError:
-        return DEFAULT_REFRESH_WINDOW_HOURS
+    """`refresh.window_hours`; 0 politikayı kapatır. Çağrı anında okunur (Ayarlar sayfası değiştirebilir)."""
+    return max(0.0, float(_settings().window_hours))
 
 
 def refresh_min_interval_hours() -> float:
-    """REFRESH_MIN_INTERVAL_HOURS (.env, ileri düzey): son gözlemden bu kadar süre geçmediyse yenileme yok."""
-    raw = os.getenv("REFRESH_MIN_INTERVAL_HOURS")
-    if raw is None or raw.strip() == "":
-        return DEFAULT_REFRESH_MIN_INTERVAL_HOURS
-    try:
-        return max(0.0, float(raw))
-    except ValueError:
-        return DEFAULT_REFRESH_MIN_INTERVAL_HOURS
+    """`refresh.min_interval_hours` (ileri düzey): son gözlemden bu kadar süre geçmediyse yenileme yok."""
+    return max(0.0, float(_settings().min_interval_hours))
 
 
 def refresh_legacy_enabled() -> bool:
-    """observation.json'ı olmayan eski kayıtlar da bir kez yenilensin mi (--refresh-legacy)."""
-    return os.getenv("REFRESH_LEGACY", "false").lower() == "true"
+    """Gözlemi olmayan eski kayıtlar da bir kez yenilensin mi (`refresh.include_legacy`, `--include-legacy`)."""
+    return bool(_settings().include_legacy)
 
 
 def _parse_utc(value: Optional[str]) -> Optional[float]:
@@ -63,7 +58,7 @@ def _parse_utc(value: Optional[str]) -> Optional[float]:
 def refresh_due(basic: Dict[str, Any], observation: Dict[str, Any], now: Optional[float] = None) -> bool:
     """
     Kayıt geçici mi ve yenileme zamanı geldi mi? Kesin: observed_at_utc ≥ startTimestamp + pencere.
-    Geçici kayıt, son gözlemden REFRESH_MIN_INTERVAL_HOURS geçmeden yeniden çekilmez.
+    Geçici kayıt, son gözlemden refresh.min_interval_hours geçmeden yeniden çekilmez.
     observation yoksa (eski kayıt) kesin sayılır; --refresh-legacy ile bir kez yenilenir.
     """
     window = refresh_window_hours()

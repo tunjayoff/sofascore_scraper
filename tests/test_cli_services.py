@@ -394,7 +394,7 @@ def test_the_refusal_names_the_holder_in_the_app_language(
     def refuse(self: Any, *args: Any, **kwargs: Any) -> Any:
         raise JobStoreConflict("busy") from held
 
-    monkeypatch.setenv("APP_LANGUAGE", lang)
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", lang)
     monkeypatch.setattr("sofascore_scraper.jobs.manager.JobManager.start", refuse)
 
     assert run_cli("refresh") == 6

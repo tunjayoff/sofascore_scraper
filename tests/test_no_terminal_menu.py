@@ -68,7 +68,7 @@ def test_main_without_a_command_lists_the_commands_and_exits_2(
     argv: List[str], capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("APP_LANGUAGE", "en")
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "en")
 
     assert cli.main(argv) == exit_codes.USAGE_ERROR
 
@@ -85,7 +85,7 @@ def test_an_old_flag_without_an_action_is_a_usage_error(
     argv: List[str], capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("APP_LANGUAGE", "en")
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "en")
 
     assert cli.main(argv) == exit_codes.USAGE_ERROR
 
@@ -96,7 +96,7 @@ def test_an_old_flag_without_an_action_is_a_usage_error(
 
 def test_the_command_list_is_in_the_app_language(capsys: pytest.CaptureFixture[str],
                                                  monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("APP_LANGUAGE", "tr")
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "tr")
 
     assert cli.main([]) == exit_codes.USAGE_ERROR
 

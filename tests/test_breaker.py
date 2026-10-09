@@ -63,7 +63,7 @@ def _active(breaker: CircuitBreaker):
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_BREAKER__IGNORE", raising=False)
 
 
 def _never_blocked(_consecutive: int, _since: float) -> bool:
@@ -118,7 +118,7 @@ def test_server_error_rule_counts_only_consecutive_5xx():
 
 
 def test_ignore_rate_limit_disables_the_breaker(monkeypatch):
-    monkeypatch.setenv("IGNORE_RATE_LIMIT", "true")
+    monkeypatch.setenv("SOFASCORE_BREAKER__IGNORE", "true")
     b = _breaker(consecutive=2)
     for _ in range(10):
         b.record("403")
@@ -188,7 +188,7 @@ def test_open_breaker_is_not_fed_by_its_own_refusals():
 # --- köprü sağlığıyla eşgüdüm --------------------------------------------------------------
 
 def _block_bridge(monkeypatch, failures: int = 10) -> None:
-    monkeypatch.setenv("BRIDGE_BLOCKED_MIN_SECONDS", "0")
+    monkeypatch.setenv("SOFASCORE_BRIDGE__BLOCKED_MIN_SECONDS", "0")
     for _ in range(failures):
         bridge_health.record_failure(bridge_health.KIND_CHALLENGE, "HTTP 403")
     assert bridge_health.snapshot()["state"] == bridge_health.BLOCKED

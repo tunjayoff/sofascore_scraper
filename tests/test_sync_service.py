@@ -117,7 +117,7 @@ def test_loading_the_web_job_does_not_load_the_terminal_ui(tmp_path: Path) -> No
         " if m == 'sofascore_scraper.SofaScoreUi' or m == 'sofascore_scraper.ui' or m.startswith('sofascore_scraper.ui.'))))\n"
     )
     # Kendi veri dizini: rotalar yüklenirken açılan iş deposu testlerin ortak dizinine dokunmasın
-    env = {**os.environ, "DATA_DIR": str(tmp_path / "data")}
+    env = {**os.environ, "SOFASCORE_STORAGE__DATA_DIR": str(tmp_path / "data")}
     done = subprocess.run(
         [sys.executable, "-c", code], cwd=str(ROOT), env=env, capture_output=True, text=True, timeout=120, check=False
     )
@@ -154,7 +154,7 @@ def test_build_context_creates_the_data_directories(
 def test_build_context_uses_the_configured_data_dir(
     tmp_path: Path, config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "configured"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "configured"))
 
     ctx = build_context(config)
 
@@ -196,7 +196,7 @@ def test_build_context_leaves_the_colour_switch_to_the_logger(
     P15: bağlam NO_COLOR'a dokunmaz. Süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); eskiden bağlam da her işte
     kuruyordu, ilerleme çubuğu (P14'te kalktı) renksiz yazsın diye.
     """
-    monkeypatch.setenv("USE_COLOR", use_color)
+    monkeypatch.setenv("SOFASCORE_DISPLAY__USE_COLOR", use_color)
     monkeypatch.setenv("NO_COLOR", "untouched")
 
     build_context(config, data_dir=str(tmp_path))
@@ -725,7 +725,7 @@ def _trip(breaker: request_breaker.CircuitBreaker) -> None:
 def test_an_open_breaker_stops_every_later_phase_and_is_reported_once(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
+    monkeypatch.setenv("SOFASCORE_BREAKER__RATE_LIMIT_CONSECUTIVE", "3")
     seasons = FakeSeasons({17: [{"id": 1}, {"id": 2}], 8: [{"id": 3}]})
     schedule = FakeSchedule()
     details = FakeDetails({17: ["a"]})

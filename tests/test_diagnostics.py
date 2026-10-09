@@ -36,14 +36,14 @@ client = TestClient(app)
 @pytest.fixture
 def log_dir(tmp_path):
     """Kök logger'ı geçici bir log dizinine yönlendirir (INFO), sonunda eski haline döndürür."""
-    keys = ("LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "LOG_LEVEL", "DEBUG")
+    keys = ("SOFASCORE_LOG__DIR", "SOFASCORE_LOG__TO_FILE", "SOFASCORE_LOG__MAX_MB", "SOFASCORE_LOG__BACKUP_COUNT", "SOFASCORE_LOG__LEVEL", "SOFASCORE_LOG__DEBUG")
     saved = {k: os.environ.get(k) for k in keys}
     saved_level = logging.getLogger().level
 
     def _apply(**env):
-        os.environ["LOG_DIR"] = str(tmp_path / "logs")
-        os.environ["LOG_LEVEL"] = "DEBUG"
-        os.environ.pop("DEBUG", None)
+        os.environ["SOFASCORE_LOG__DIR"] = str(tmp_path / "logs")
+        os.environ["SOFASCORE_LOG__LEVEL"] = "DEBUG"
+        os.environ.pop("SOFASCORE_LOG__DEBUG", None)
         for key, value in env.items():
             os.environ[key] = str(value)
         app_logger.setup_logger(force=True)
@@ -62,17 +62,17 @@ def log_dir(tmp_path):
 
 @pytest.fixture
 def secrets_everywhere(tmp_path, monkeypatch):
-    """Gizli değerler ortamda ve .env'de; ayrıca uygulamanın tanımadığı bir anahtar."""
+    """Gizli değerler ortamda ve .env'de; ayrıca uygulamanın tanımadığı bir anahtar ve 2.x'ten kalmış bir ad."""
     env = tmp_path / ".env"
     env.write_text(
         f"MAX_CONCURRENT=7\nTHIRD_PARTY_API_KEY={API_KEY}\nSOME_OTHER_SETTING={PLAIN_UNKNOWN}\nEMPTY_ONE=\n",
         encoding="utf-8",
     )
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
-    monkeypatch.setenv("SOFA_CAPTCHA_TOKEN", JWT)
-    monkeypatch.setenv("USE_PROXY", "true")
-    monkeypatch.setenv("PROXY_URL", PROXY)
-    monkeypatch.setenv("MAX_CONCURRENT", "7")
+    monkeypatch.setenv("SOFASCORE_CLIENT__CAPTCHA_TOKEN", JWT)
+    monkeypatch.setenv("SOFASCORE_CLIENT__USE_PROXY", "true")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", PROXY)
+    monkeypatch.setenv("SOFASCORE_CLIENT__MAX_CONCURRENT", "7")
     redact.refresh()
     yield
     monkeypatch.undo()
@@ -144,7 +144,7 @@ def test_limit_keeps_the_newest_and_is_bounded(log_dir):
 
 
 def test_older_rotated_files_are_read_when_needed(log_dir):
-    log_dir(LOG_MAX_MB="0.002", LOG_BACKUP_COUNT="3")
+    log_dir(SOFASCORE_LOG__MAX_MB="0.002", SOFASCORE_LOG__BACKUP_COUNT="3")
     log = logging.getLogger("WebAPI")
     for i in range(60):
         log.info("dönen %02d %s", i, "x" * 40)
@@ -204,7 +204,7 @@ def test_secrets_already_in_the_file_are_masked_on_read(log_dir, secrets_everywh
 
 
 def test_no_log_file_means_empty_result_not_an_error(log_dir):
-    log_dir(LOG_TO_FILE="false")
+    log_dir(SOFASCORE_LOG__TO_FILE="false")
     out = diagnostics.read_log_entries()
     assert out == {"enabled": False, "file": None, "level": "DEBUG", "min_level": None, "count": 0, "entries": []}
     assert diagnostics.log_tail_text() == ""
@@ -248,14 +248,17 @@ def test_setup_check_is_included_without_starting_a_browser(log_dir, monkeypatch
 
 
 def test_setup_check_problems_reach_the_summary_masked(log_dir, secrets_everywhere, monkeypatch):
-    monkeypatch.setenv("MAX_CONCURRENT", "çok")  # geçersiz sayı: .env denetimi hata verir
+    monkeypatch.setenv("SOFASCORE_CLIENT__MAX_CONCURRENT", "çok")  # geçersiz sayı: ayar denetimi (config) hata verir
     # Ayrıştırılamayan satır ('=' yok): doctor terminalde metnini gösterir, pakete metni girmez
     with open(os.environ["SOFASCORE_ENV_FILE"], "a", encoding="utf-8") as f:
         f.write("VENDOR_LICENSE unparsed-line-secret-value\n")
     doc = diagnostics.collect()
-    env = next(check for check in doc["doctor"]["checks"] if check["id"] == "env")
+    checks = {check["id"]: check for check in doc["doctor"]["checks"]}
+    env = checks["env"]
     assert env["status"] == "fail" and env["code"] == "env_invalid"
-    assert {p["setting"] for p in env["detail"]["problems"]} == {"MAX_CONCURRENT", "line 5"}
+    # .env'deki 2.x adı (MAX_CONCURRENT) okunmaz: uyarı; okunamayan satır: hata
+    assert {p["setting"]: p["status"] for p in env["detail"]["problems"]} == {"MAX_CONCURRENT": "warn", "line 5": "fail"}
+    assert checks["config"]["status"] == "fail" and checks["config"]["code"] == "config_invalid"
     assert doc["doctor"]["ok"] is False
     flat = json.dumps(doc, ensure_ascii=False)
     for secret in SECRETS + ("unparsed-line-secret-value", "VENDOR_LICENSE"):
@@ -272,14 +275,18 @@ def test_bridge_health_is_reported(log_dir):
 
 
 def test_settings_are_reported_with_secrets_masked(log_dir, secrets_everywhere, monkeypatch):
-    monkeypatch.delenv("WAIT_TIME_MIN", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__WAIT_TIME_MIN", raising=False)
     doc = diagnostics.collect()
-    values = doc["settings"]["values"]
-    assert values["MAX_CONCURRENT"] == "7"
-    assert values["USE_PROXY"] == "true"
-    assert values["SOFA_CAPTCHA_TOKEN"] == "***"
-    assert values["PROXY_URL"] == "http://***@proxy.example.com:8080"
-    assert values["WAIT_TIME_MIN"] is None  # ayarlanmamış: varsayılan
+    values, sources = doc["settings"]["values"], doc["settings"]["sources"]
+    # `config show` ile aynı satırlar: ayarın anahtarı, değeri ve katmanı
+    assert values["client.max_concurrent"] == 7 and sources["client.max_concurrent"] == "env: SOFASCORE_CLIENT__MAX_CONCURRENT"
+    assert values["client.use_proxy"] is True
+    assert values["client.captcha_token"] == "***"
+    assert values["client.proxy"] == "http://***@proxy.example.com:8080"
+    assert sources["client.wait_time_min"] == "default"  # ayarlanmamış: varsayılan
+    assert doc["settings"]["error"] is None
+    # .env'deki 2.x adı okunmaz; yalnızca adı yazılır
+    assert doc["settings"]["legacy_names"] == ["MAX_CONCURRENT"]
     # Uygulamanın tanımadığı anahtarlar: yalnızca adları
     env_file = doc["settings"]["env_file"]
     assert env_file["other_keys_set"] == ["SOME_OTHER_SETTING", "THIRD_PARTY_API_KEY"]
@@ -301,7 +308,7 @@ def test_home_directory_is_not_exposed(log_dir, monkeypatch, tmp_path):
 
 
 def test_bundle_masks_the_value_of_an_unknown_sink_option_in_the_environment(log_dir, monkeypatch):
-    # Paket bütün SOFASCORE_ değişkenlerini yazar. SOFASCORE_SINKS'te sink'lerin tanımadığı bir anahtar
+    # Paket etkin ayarları yazar. SOFASCORE_SINKS'te sink'lerin tanımadığı bir anahtar
     # (yanlış yazılmış `url`, uydurulmuş bir anahtar, başka türün anahtarı) `ssc config show`daki gibi `***` olur.
     # Değerler sahtedir ve çalışırken parçalardan kurulur.
     path_part, signing = "-".join(("fake", "path", "part")), "-".join(("fake", "signing", "value"))
@@ -313,26 +320,26 @@ def test_bundle_masks_the_value_of_an_unknown_sink_option_in_the_environment(log
     ]))
     files = _unzip(diagnostics.build_bundle(source="cli"))
     values = json.loads(files["diagnostics.json"])["settings"]["values"]
-    assert json.loads(values["SOFASCORE_SINKS"]) == [
-        {"name": "ops", "type": "webhook", "url": "https://hooks.example.org/***", "allow_unsigned": True,
-         "batch_size": 50, "webhook_url": "***", "note": "***", "keep": "***"},
-        {"name": "feed", "type": "file", "path": "out/live.ndjson", "keep": 7, "sports": ["football"],
-         "batch_size": "***"},
+    assert [sink["options"] for sink in values["sinks"]] == [
+        {"batch_size": 50, "webhook_url": "***", "note": "***", "keep": "***"},
+        {"keep": 7, "sports": ["football"], "batch_size": "***"},
     ]
+    assert values["sinks"][0]["url"] == "https://hooks.example.org/***"
     for private in (path_part, signing, "/services/"):
         assert private not in files["diagnostics.json"], private
-    # Tablo listesi olmayan değer, eskisi gibi, tümüyle maskelenir
-    monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([address]))
-    assert diagnostics._settings()["values"]["SOFASCORE_SINKS"] == "***"
-    monkeypatch.setenv("SOFASCORE_SINKS", f"not json {address}")
-    assert diagnostics._settings()["values"]["SOFASCORE_SINKS"] == "***"
+    # Tablo listesi olmayan değer ayarları kurdurmaz: pakette yalnızca hata, değer yok
+    for raw in (json.dumps([address]), f"not json {address}"):
+        monkeypatch.setenv("SOFASCORE_SINKS", raw)
+        section = diagnostics._settings()
+        assert section["error"].startswith("ConfigError: SOFASCORE_SINKS") and section["values"] == {}
+        assert path_part not in json.dumps(section)
 
 
 # --- son iş ------------------------------------------------------------------------------
 
 def test_last_job_summary_comes_from_the_job_store(log_dir, monkeypatch, tmp_path):
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     store = JobStore(default_db_path(str(data_dir)))
     store.create_running({"mode": "full", "selections": [{"league_id": 17}]})
     store.update(append_log=f"403 alındı, proxy {PROXY}", matches_total=10, matches_done=7, matches_failed=3)
@@ -356,7 +363,7 @@ def test_last_job_summary_comes_from_the_job_store(log_dir, monkeypatch, tmp_pat
 def test_collecting_does_not_touch_a_running_job(log_dir, monkeypatch, tmp_path):
     # CLI'dan paket üretmek, çalışan web sunucusunun işini "interrupted" yapmamalı
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     db = default_db_path(str(data_dir))
     JobStore(db).create_running({"mode": "details"})
     before = os.stat(db).st_mtime_ns
@@ -373,7 +380,7 @@ def test_collecting_does_not_touch_a_running_job(log_dir, monkeypatch, tmp_path)
 
 
 def test_missing_job_db_is_not_created(log_dir, monkeypatch, tmp_path):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "nowhere"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "nowhere"))
     jobs = diagnostics.collect()["jobs"]
     assert jobs["exists"] is False and jobs["recent"] == []
     assert not (tmp_path / "nowhere").exists()
@@ -404,7 +411,7 @@ def test_job_history_leaves_out_the_host_name_secrets_and_home_paths(log_dir, mo
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     monkeypatch.setattr(socket, "gethostname", lambda: HOST)
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     store = JobStore(default_db_path(str(data_dir)))
     store.create_running(
         {"mode": "full"},
@@ -462,7 +469,7 @@ def test_job_history_leaves_out_the_host_name_secrets_and_home_paths(log_dir, mo
 def test_job_origin_keeps_the_face_and_the_pid_only(log_dir, monkeypatch, tmp_path, origin, expected):
     monkeypatch.setattr(socket, "gethostname", lambda: HOST)
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     store = JobStore(default_db_path(str(data_dir)))
     store.create_running({"mode": "details"}, origin=origin)
     store.update(finished=True)
@@ -504,7 +511,7 @@ def test_log_tail_of_the_bundle_masks_this_machine_and_the_hosts_of_the_listed_j
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.setattr(socket, "gethostname", lambda: HOST)
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     store = JobStore(default_db_path(str(data_dir)))
     store.create_running({"mode": "full"}, kind="fetch", origin={"face": "cli", "pid": 4242, "host": ORIGIN_HOST})
     store.update(
@@ -543,7 +550,7 @@ def test_log_tail_of_the_bundle_masks_this_machine_and_the_hosts_of_the_listed_j
 
 def test_log_tail_masks_this_machine_without_a_job_history(log_dir, monkeypatch, tmp_path):
     monkeypatch.setattr(socket, "gethostname", lambda: "pc.lan")
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "nowhere"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "nowhere"))
     logging.getLogger("WebAPI").info("3 upcoming on pc, PC-4242 and pc.lan; 10 left")
     assert "3 upcoming on ***, ***-4242 and ***; 10 left" in diagnostics.log_tail_text(50)
     assert not (tmp_path / "nowhere").exists()
@@ -567,7 +574,7 @@ def test_job_history_without_the_job_manager_columns_is_still_read(log_dir, monk
     # origin_json, spec_json, error_json, heartbeat_at ve created_at sütunları yok
     data_dir = tmp_path / "data"
     (data_dir / ".meta").mkdir(parents=True)
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     conn = sqlite3.connect(str(data_dir / ".meta" / db_name))
     try:
         conn.execute("CREATE TABLE jobs ({})".format(", ".join(JOB_COLUMNS + extra)))
@@ -595,7 +602,7 @@ def test_job_history_without_the_job_manager_columns_is_still_read(log_dir, monk
 
 def test_a_column_added_to_the_jobs_table_later_does_not_reach_the_bundle(log_dir, monkeypatch, tmp_path):
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     db = default_db_path(str(data_dir))
     store = JobStore(db)
     store.create_running({"mode": "details"})
@@ -619,7 +626,7 @@ def test_setup_check_does_not_carry_the_host_name_of_a_profile_lock(log_dir, mon
     # Chromium'un profil kilidi "<makine adı>-<pid>" bağıdır; doctor bunu ayrıntıya (ve başka makineyse özete) yazar
     profile = tmp_path / "profile"
     profile.mkdir()
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(profile))
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", str(profile))
     host = "old-container" if other_host else socket.gethostname()
     os.symlink(f"{host}-4242", profile / "SingletonLock")
     check = next(c for c in diagnostics.collect()["doctor"]["checks"] if c["id"] == "profile")
@@ -665,7 +672,7 @@ def test_bundle_log_tail_is_bounded(log_dir):
 
 def test_bundle_never_contains_secrets(log_dir, secrets_everywhere, monkeypatch, tmp_path):
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     store = JobStore(default_db_path(str(data_dir)))
     store.create_running({"mode": "full", "proxy": PROXY, "token": JWT})
     store.update(append_log=f"Cookie: sofa_captcha=abc123def; proxy={PROXY}", finished=True)
@@ -768,7 +775,7 @@ def test_diagnostics_endpoint(log_dir, secrets_everywhere):
     assert r.status_code == 200
     doc = r.json()["data"]
     assert doc["source"] == "web"
-    assert doc["settings"]["values"]["SOFA_CAPTCHA_TOKEN"] == "***"
+    assert doc["settings"]["values"]["client.captcha_token"] == "***"
     for secret in SECRETS:
         assert secret not in r.text, secret
 
@@ -809,7 +816,7 @@ def test_cli_messages_exist_in_both_languages(lang):
 
 def test_cli_command_writes_the_bundle(tmp_path):
     # Göreli yol, komutun çalıştırıldığı dizine göre çözülür (main.py proje köküne chdir eder)
-    env = dict(os.environ, LOG_DIR=str(tmp_path / "logs"), APP_LANGUAGE="en", PROXY_URL=PROXY, USE_PROXY="true")
+    env = dict(os.environ, SOFASCORE_LOG__DIR=str(tmp_path / "logs"), SOFASCORE_DISPLAY__LANGUAGE="en", SOFASCORE_CLIENT__PROXY=PROXY, SOFASCORE_CLIENT__USE_PROXY="true")
     proc = subprocess.run(
         [sys.executable, os.path.join(ROOT, "main.py"), "diagnostics", "--out", "report.zip"],
         cwd=tmp_path, env=env, capture_output=True, text=True, timeout=120,
@@ -821,5 +828,5 @@ def test_cli_command_writes_the_bundle(tmp_path):
     files = _unzip(target.read_bytes())
     doc = json.loads(files["diagnostics.json"])
     assert doc["source"] == "cli"
-    assert doc["settings"]["values"]["PROXY_URL"] == "http://***@proxy.example.com:8080"
+    assert doc["settings"]["values"]["client.proxy"] == "http://***@proxy.example.com:8080"
     assert "Pr0xy-P4ss!word" not in "".join(files.values())

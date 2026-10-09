@@ -105,7 +105,7 @@ def _cancel(fake: FakeSofaScore, event_id: int) -> None:
 def test_detail_writers_leave_the_recorded_logical_dump(
         fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     md = _details(data_dir)
     single = Details(data_dir)
     _add_no_tournament_event(fake)
@@ -140,16 +140,16 @@ def test_detail_writers_leave_the_recorded_logical_dump(
     record("refill_async", {"success": done})
 
     # 4. yenileme: pencere açık, alt sınır kapalı; 9100010 skor düzeltmesi, 9100003 iptal, 9100001 aynı
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "10000000")
-    monkeypatch.setenv("REFRESH_MIN_INTERVAL_HOURS", "0")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "10000000")
+    monkeypatch.setenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "0")
     _change_score(fake, 9100010, home=3)
     _cancel(fake, 9100003)
     md = _details(data_dir)  # yeni iş: ihtiyaç önbelleği boş
     due = md.refresh_due(LEAGUE)
     stats = md.refresh([mid for mid in due if mid in ("9100001", "9100003", "9100010")])
     record("refresh", {"due": due, "stats": stats})
-    monkeypatch.delenv("REFRESH_WINDOW_HOURS")
-    monkeypatch.delenv("REFRESH_MIN_INTERVAL_HOURS")
+    monkeypatch.delenv("SOFASCORE_REFRESH__WINDOW_HOURS")
+    monkeypatch.delenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS")
 
     # 5. işaretlerin yeniden denetimi: varsayılan (doğrulanmış sayımlar kalır), sonra hepsi
     record("reset_default", md.reset_markers(LEAGUE))

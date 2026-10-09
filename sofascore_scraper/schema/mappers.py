@@ -459,7 +459,7 @@ def event_from_row(row: Union["EventRow", RowLike], *,
     """
     `EventRow` (ya da `derive.event_row` sözlüğü) → Event.
 
-    refresh_window_s: yenileme penceresi, saniye (ayar `REFRESH_WINDOW_HOURS` × 3600; 0 = politika kapalı).
+    refresh_window_s: yenileme penceresi, saniye (ayar `refresh.window_hours` × 3600; 0 = politika kapalı).
         `quality.settlement` ve `quality.provisional` buna göre hesaplanır; katalog bayrağı saklamaz.
 
     Satırın kimliği yoksa ValueError.

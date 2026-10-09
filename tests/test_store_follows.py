@@ -692,7 +692,7 @@ def setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Setup]:
     """ConfigManager tekilini kenara alır; DATA_DIR bu testin veri dizinidir."""
     saved = ConfigManager._instance
     box = Setup(tmp_path)
-    monkeypatch.setenv("DATA_DIR", str(box.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(box.data_dir))
     yield box
     ConfigManager._instance = saved
 

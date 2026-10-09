@@ -52,7 +52,7 @@ _STATUS = {
 @pytest.fixture(autouse=True)
 def _settings(monkeypatch: pytest.MonkeyPatch) -> None:
     pin_default_settings(monkeypatch)
-    monkeypatch.delenv("FETCH_ONLY_FINISHED", raising=False)
+    monkeypatch.delenv("SOFASCORE_FETCH__ONLY_FINISHED", raising=False)
 
 
 def _listed(event: Dict[str, Any], event_id: int) -> Dict[str, Any]:
@@ -154,7 +154,7 @@ def test_downloads_fetch_finished_matches_only_whatever_the_setting(
     Bitmiş maç başına istekler değişmez (/event ve seçili dilimler); yalnızca listeden bilinen bitmemiş maç
     indirilmez (maç bitince liste satırı değişir). Ayar kapalıyken de: ayar yalnızca okurken uygulanır.
     """
-    monkeypatch.setenv("FETCH_ONLY_FINISHED", "true" if only_finished else "false")
+    monkeypatch.setenv("SOFASCORE_FETCH__ONLY_FINISHED", "true" if only_finished else "false")
     _list(store, ROUND_SEASON, only_finished=only_finished)
     _list(store, PAGED_SEASON, only_finished=only_finished)
     fake.reset_log()

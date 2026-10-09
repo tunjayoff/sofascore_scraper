@@ -206,7 +206,7 @@ def scenario_results(tmp_path: Path, runner: Callable[[Path, str, List[Step]], L
 
 @pytest.fixture
 def fixed_window(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", WINDOW_HOURS)
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", WINDOW_HOURS)
 
 
 def check_golden(actual: Dict[str, Any]) -> None:

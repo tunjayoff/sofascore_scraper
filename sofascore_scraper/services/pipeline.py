@@ -8,11 +8,11 @@ yenileme yollarının yerini alır.
 Her çağıran buradan geçer: eşitleme servisinin detay aşaması, kimliğiyle seçilen maçlar, tek maç uç noktası,
 refill ve yalnızca yenileme. Böylece:
 
-  * istek politikası tektir: istek katmanının yeniden denemesi (`MAX_RETRIES`); maç başına ek deneme döngüsü yoktur;
+  * istek politikası tektir: istek katmanının yeniden denemesi (`client.retries`); maç başına ek deneme döngüsü yoktur;
   * her yol aynı dilimleri ister: sporun seçilen bütün dilimleri, isteğe bağlılar dahil (`select_slices`);
   * her durumdaki maç saklanır (plan maddesi ST-27): bitmemiş maçın olay yükü ve gövdesi gelen dilimleri yazılır,
     "veri yok" yanıtları sayılmaz. Hangi maçın indirileceğine planlayıcı karar verir (sofascore_scraper/services/planning.py:
-    yalnızca listeden bilinen bitmemiş maç indirilmez); "yalnızca bitmiş maçlar" ayarı (FETCH_ONLY_FINISHED)
+    yalnızca listeden bilinen bitmemiş maç indirilmez); "yalnızca bitmiş maçlar" ayarı (fetch.only_finished)
     artık yalnızca okurken uygulanır (sofascore_scraper/services/query.py);
   * bitmiş maçta istenen her dilimin "veri yok" yanıtı sayılır ve hata kaydı tutulur (isteğe bağlılar dahil);
   * yanıt gelen dilimin gövdesi her zaman dilimin kuralıyla okunur (sofascore_scraper.slices.slice_body_state): veri var →

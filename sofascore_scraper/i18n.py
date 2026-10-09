@@ -10,9 +10,16 @@ logger = get_logger("I18n")
 
 def app_language(default: str = DEFAULT_LANGUAGE) -> str:
     """
-    Uygulama dili: açık ayar (APP_LANGUAGE) > sistem dili > İngilizce. Kural sofascore_scraper/language.py'de.
+    Uygulama dili: açık ayar (`display.language`: ortam, sofascore.toml ya da overrides.json) > sistem dili >
+    İngilizce. Ayarlar yükleyiciden okunur; kurulamıyorsa (geçersiz yapılandırma) kural ortama uygulanır
+    (sofascore_scraper/language.py).
     """
-    return resolve_language(default=default)
+    try:
+        from sofascore_scraper.config import loader
+
+        return loader.active_settings().display.language
+    except Exception:
+        return resolve_language(default=default)
 
 
 def _default_locale_dir() -> str:

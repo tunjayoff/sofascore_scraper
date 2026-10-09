@@ -291,7 +291,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Tuple[Any
 
     pin_default_settings(monkeypatch)
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     with FakeSofaScore.from_file(WORLD) as fake:
         yield fake, data_dir
 

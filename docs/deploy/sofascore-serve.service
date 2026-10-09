@@ -21,7 +21,7 @@ User=sofascore
 Group=sofascore
 # The project folder: .env, config/, sofascore.toml and (by default) data/ and logs/ are found from here
 WorkingDirectory=/opt/sofascore_scraper
-# Secrets such as SOFASCORE_API_TOKEN (mode 0600, owned by root). Optional: the leading "-" allows it to be missing.
+# Secrets such as SOFASCORE_SERVER__TOKEN (mode 0600, owned by root). Optional: the leading "-" allows it to be missing.
 EnvironmentFile=-/etc/sofascore/sofascore.env
 # Listen on this computer only and let a reverse proxy be the way in (README.md, "Behind a reverse proxy").
 # To listen on the network instead: --host 0.0.0.0 --allowed-hosts <names>, and set the access token.

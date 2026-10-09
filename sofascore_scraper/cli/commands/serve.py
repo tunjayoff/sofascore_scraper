@@ -11,12 +11,12 @@ maddesi P25). 2.x'in `main.py --web`inin (3.1'de kalktı) ve doğrudan uvicorn b
 Host izin listesi (DNS rebinding; kurallar PR #43'ündür, sofascore_scraper/web/security.allowed_hosts_for_bind):
 
   * Kullanıcının verdiği liste (`--allowed-hosts`, `[server] allowed_hosts`, SOFASCORE_SERVER__ALLOWED_HOSTS,
-    SOFASCORE_ALLOWED_HOSTS, `.env`) yazıldığı gibi kullanılır; hiçbir zaman üzerine yazılmaz.
+    `.env`) yazıldığı gibi kullanılır; hiçbir zaman üzerine yazılmaz.
   * Yerel adres (127.0.0.1, localhost, ::1): yalnızca yerel adlar.
   * Belirli bir yerel olmayan adres (192.168.1.5): yerel adlar ve o adres.
   * Her arayüz (0.0.0.0, ::): liste verilmeden başlamaz (çıkış kodu 2); `--allow-any-host` açık ve güvensiz
     seçenektir ("*").
-  * Yerel olmayan bir adreste erişim belirteci yoksa (`[server] token` / `token_env`, SOFASCORE_API_TOKEN) bir
+  * Yerel olmayan bir adreste erişim belirteci yoksa (SOFASCORE_SERVER__TOKEN ya da `[server] token_env`) bir
     uyarı yazılır. Uygulama, adresin dışarıya nasıl yayımlandığını göremez (Docker `-p 127.0.0.1:...`): uyarı
     o durumda da yazılır; dağıtım belgesi (docs/deploy/) ne zaman yok sayılabileceğini söyler (karar D17).
 
@@ -165,10 +165,11 @@ def _explicit_hosts(inv: Invocation, loaded: Any) -> Optional[str]:
 
 def _apply_allowed_hosts(inv: Invocation, bind: Bind) -> None:
     """
-    İzin listesini web uygulamasının okuduğu yere yazar (SOFASCORE_ALLOWED_HOSTS; sofascore_scraper/web/app.py başlarken
-    okur). Ayarlardan gelen liste orada zaten durur (yükleyici yazar); yerel adreste hiçbir şey yazılmaz
-    (varsayılan: yerel adlar). `--allowed-hosts` ayarların en güçlü katmanına (bayrak) girer: yükleyici aynı
-    değeri ortama kendisi yazar ve bir yapılandırma dosyasının değeri onu sonradan ezmez.
+    Türetilen ya da `--allowed-hosts` ile verilen izin listesini ayarlara verir: web uygulaması onu
+    `server.allowed_hosts`ten okur (sofascore_scraper/web/security.py). `--allowed-hosts` ayarların en güçlü katmanına
+    (bayrak) girer; adresten türetilen liste ve bayrak ayrıca ortama da yazılır (SOFASCORE_SERVER__ALLOWED_HOSTS):
+    `--dev`in yeniden yükleyen alt süreci uygulamayı yeniden kurar ve listeyi ortamdan alır. Ayarlardan gelen
+    listeye ve yerel adrese (varsayılan: yerel adlar) dokunulmaz.
     """
     from sofascore_scraper.config import loader
     from sofascore_scraper.web import security
@@ -178,7 +179,7 @@ def _apply_allowed_hosts(inv: Invocation, bind: Bind) -> None:
         inv.flags = {**dict(inv.flags), "server.allowed_hosts": value}
         loader.activate(config_file=inv.config_file, flags=dict(inv.flags))
     if bind.origin in (FROM_FLAG, FROM_BIND) and os.environ.get(security.ALLOWED_HOSTS_ENV) != value:
-        os.environ[security.ALLOWED_HOSTS_ENV] = value
+        os.environ[security.ALLOWED_HOSTS_ENV] = value  # yükleyici ortamın değişimini görür
 
 
 def _token_warning(inv: Invocation, bind: Bind, token: str) -> List[CliWarning]:
@@ -187,7 +188,7 @@ def _token_warning(inv: Invocation, bind: Bind, token: str) -> List[CliWarning]:
         return []
     message = (
         f"the web app is listening on {bind.host}:{bind.port} without an access token: anyone who can reach this "
-        f"port can read and delete the data and change the settings. Set SOFASCORE_API_TOKEN (or [server] "
+        f"port can read and delete the data and change the settings. Set SOFASCORE_SERVER__TOKEN (or [server] "
         f"token_env), or keep the port behind a firewall or a reverse proxy you control"
     )
     logged = logger.isEnabledFor(logging.WARNING)

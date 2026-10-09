@@ -48,7 +48,7 @@ UNKNOWN_ID = 1
 
 @pytest.fixture(autouse=True)
 def _settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key in ("REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS", "REFRESH_LEGACY", "FETCH_ONLY_FINISHED"):
+    for key in ("SOFASCORE_REFRESH__WINDOW_HOURS", "SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "SOFASCORE_REFRESH__INCLUDE_LEGACY", "SOFASCORE_FETCH__ONLY_FINISHED"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(time, "time", lambda: float(NOW))  # yenileme kararı: saat FIXTURE_NOW'da durur
 
@@ -94,9 +94,9 @@ def test_needs_from_the_catalog_equal_the_file_based_ones(tmp_path: Path, monkey
                                                           seed: int) -> None:
     rng = random.Random(1000 + seed)
     window_h, min_interval_h = rng.choice([(72, 6), (1, 0), (24, 12), (200, 1)])
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", str(window_h))
-    monkeypatch.setenv("REFRESH_MIN_INTERVAL_HOURS", str(min_interval_h))
-    monkeypatch.setenv("REFRESH_LEGACY", "true" if rng.random() < 0.5 else "false")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", str(window_h))
+    monkeypatch.setenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", str(min_interval_h))
+    monkeypatch.setenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", "true" if rng.random() < 0.5 else "false")
     builder = sf._Builder("random", tmp_path / "data", (sf.PL, sf.FA_CUP, sf.NBA, sf.WIMBLEDON, sf.LALIGA))
     for detail in _random_details(rng, window_h * HOUR, min_interval_h * HOUR):
         builder.detail(detail)
@@ -162,8 +162,8 @@ def test_refresh_reaches_every_old_form_and_the_league_filter_reads_the_tourname
     öteki ikisine lig süzgeciyle ulaşmıyordu. Pencere çok geniş: gözlemi olan her kayıt geçicidir.
     """
     fx = sf.build_fixture("legacy", tmp_path / "data")
-    monkeypatch.setenv("REFRESH_LEGACY", "true")
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "100000")
+    monkeypatch.setenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", "true")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "100000")
     details = details_of(fx.data_dir)
     store = open_store(fx.data_dir)
     due = details.refresh_due()
@@ -203,7 +203,7 @@ def test_the_only_finished_setting_applies_when_reading(tmp_path: Path, monkeypa
     fx = sf.build_fixture("canonical", tmp_path / "data")
     details = details_of(fx.data_dir)
     finished_or_stored = details.candidates(8)
-    monkeypatch.setenv("FETCH_ONLY_FINISHED", "false")
+    monkeypatch.setenv("SOFASCORE_FETCH__ONLY_FINISHED", "false")
     everything = details.candidates(8)
     assert everything is not None and finished_or_stored is not None
     assert set(everything) == {str(i) for i in fx.listed[(8, 97532)]}
@@ -249,9 +249,9 @@ def test_no_plan_from_a_catalog_that_is_not_current(tmp_path: Path, monkeypatch:
 
 
 def test_refresh_policy_reads_the_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "1.5")
-    monkeypatch.setenv("REFRESH_MIN_INTERVAL_HOURS", "0")
-    monkeypatch.setenv("REFRESH_LEGACY", "true")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "1.5")
+    monkeypatch.setenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "0")
+    monkeypatch.setenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", "true")
     assert RefreshPolicy.current(now=5.0) == RefreshPolicy(now=5.0, window_s=5400.0, min_interval_s=0.0,
                                                           include_unobserved=True)
     assert RefreshPolicy.current().now == float(NOW)

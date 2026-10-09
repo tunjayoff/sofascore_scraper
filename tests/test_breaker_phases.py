@@ -62,8 +62,8 @@ def _request_layer():
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
-    for key in ("REFRESH_WINDOW_HOURS", "REFRESH_LEGACY", "REFRESH_MIN_INTERVAL_HOURS"):
+    monkeypatch.delenv("SOFASCORE_BREAKER__IGNORE", raising=False)
+    for key in ("SOFASCORE_REFRESH__WINDOW_HOURS", "SOFASCORE_REFRESH__INCLUDE_LEGACY", "SOFASCORE_REFRESH__MIN_INTERVAL_HOURS"):
         monkeypatch.delenv(key, raising=False)
 
 
@@ -207,9 +207,9 @@ def test_cli_refresh_exits_with_4_when_the_breaker_trips(tmp_path, monkeypatch, 
 
     f = _fetcher(tmp_path)
     _store_provisional(f, list(range(4001, 4031)))
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
-    monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
-    monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", os.environ["SOFASCORE_STORAGE__DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
+    monkeypatch.setenv("SOFASCORE_BREAKER__RATE_LIMIT_CONSECUTIVE", "3")
+    monkeypatch.setenv("SOFASCORE_CLIENT__MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
     monkeypatch.setattr("sys.argv", ["main.py", "--data-dir", str(tmp_path), "refresh"])
     with _request_layer():
         assert cli.main() == 4  # P19: devre kesici 4 (önce 2)
@@ -249,8 +249,8 @@ def job_env(tmp_path, monkeypatch):
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
-    monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
-    monkeypatch.setenv("RATE_LIMIT_THRESHOLD_RATIO", "2")
+    monkeypatch.setenv("SOFASCORE_BREAKER__RATE_LIMIT_CONSECUTIVE", "3")
+    monkeypatch.setenv("SOFASCORE_BREAKER__RATE_LIMIT_RATIO", "1")
     return context, store
 
 
@@ -372,7 +372,7 @@ def test_explicit_match_selection_reports_the_breaker(job_env, monkeypatch, tmp_
     md = DetailPhase(open_store(str(tmp_path / "data")), deps.config_manager())
     ui = SimpleNamespace(details=md)
     payload = {"mode": "details", "selections": [{"league_id": 17, "match_ids": list(range(1, 11))}]}
-    monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
+    monkeypatch.setenv("SOFASCORE_CLIENT__MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
     with blocked_world() as fake:
         final = _run_job(fj, store, monkeypatch, ui, payload)
 

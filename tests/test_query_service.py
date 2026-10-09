@@ -45,14 +45,14 @@ UNKNOWN = 1
 
 @pytest.fixture(autouse=True)
 def _default_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key in ("REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS", "REFRESH_LEGACY", "FETCH_ONLY_FINISHED"):
+    for key in ("SOFASCORE_REFRESH__WINDOW_HOURS", "SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "SOFASCORE_REFRESH__INCLUDE_LEGACY", "SOFASCORE_FETCH__ONLY_FINISHED"):
         monkeypatch.delenv(key, raising=False)
 
 
 def _fixture(name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> sf.LegacyFixture:
     """Taze kurulmuş veri dizini; web katmanı ve Store sınırı kaydedicisi (DATA_DIR) ona çevrilir."""
     fixture = sf.build_fixture(name, tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     return fixture
 
 
@@ -175,7 +175,7 @@ def test_separate_file_wins_over_the_combined_copy(tmp_path: Path, monkeypatch: 
     Dilim önce kendi dosyasından okunur; birleşik dosyadaki tanınmayan anahtarlar yanıtta yer almaz. Eski okuyucu
     birleşik dosya varsa yalnızca onu, olduğu gibi döndürüyordu.
     """
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path))
     base = tmp_path / "match_details" / "7"
     base.mkdir(parents=True)
     event = {"id": 7, "startTimestamp": sf.FIXTURE_NOW}
@@ -306,7 +306,7 @@ def test_the_job_cache_keeps_only_the_needs(old_forms: sf.LegacyFixture, frozen_
 
 def test_match_saved_during_a_job_is_found_at_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Yazma kataloğu aynı işlemde günceller: kaydedilen maçın yeri (v3) ve ihtiyacı hemen doğru okunur."""
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path))
     details = details_for(tmp_path)
     event = sf.basic_payload(sf.PL_ARS)
     assert details.location(str(ARS)) is None and details.need(str(ARS)) == "full"

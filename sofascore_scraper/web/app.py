@@ -25,22 +25,12 @@ attach_file_handler("uvicorn")
 harden_secret_paths()
 
 
-def _token_from_settings() -> str:
-    """
-    Erişim belirtecini Settings'ten okur (`[server] token_env` bir değişken adı verebilir; varsayılan ad
-    SOFASCORE_API_TOKEN) ve güvenlik modülünün süreç boyunca kullandığı değer yapar. Güvenlik modülü belirteci
-    ortamdan kendisi okur (P30'a kadar); adı ayarda verilen bir değişkendeki belirteci tek başına göremez.
-    Adı verilen değişken boşsa ConfigError fırlar ve sunucu başlamaz: koruma sessizce kapanmaz.
-    """
-    token = deps.server_token()
-    if security.api_token() != token:
-        security._startup_token = token
-    return token
-
-
-if 0 < len(_token_from_settings()) < security.MIN_TOKEN_LENGTH:
+# Erişim belirteci ayarlardan okunur (sofascore_scraper/web/security.py `api_token`). `[server] token_env`in adını verdiği
+# değişken boşsa ConfigError fırlar ve sunucu başlamaz: koruma bir yazım hatasıyla sessizce kapanmaz.
+if 0 < len(security.api_token()) < security.MIN_TOKEN_LENGTH:
     logger.warning(
-        f"{security.TOKEN_ENV} is short and guessable: use at least {security.MIN_TOKEN_LENGTH} random characters."
+        f"{security.token_variable()} is short and guessable: use at least {security.MIN_TOKEN_LENGTH} random "
+        "characters."
     )
 
 app = FastAPI(
@@ -54,7 +44,7 @@ REPO_ROOT = BASE_DIR.parent.parent
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 
 # DNS rebinding: yalnızca bilinen Host adlarına yanıt verilir (varsayılan: yerel adlar). Liste
-# açıktır: SOFASCORE_ALLOWED_HOSTS ne diyorsa odur; hiçbir başlatma yolu onu sessizce "*" yapmaz
+# açıktır: `server.allowed_hosts` ne diyorsa odur; hiçbir başlatma yolu onu sessizce "*" yapmaz
 # (bkz. security.allowed_hosts_for_bind).
 ALLOWED_HOSTS = security.allowed_hosts()
 if "*" in ALLOWED_HOSTS:

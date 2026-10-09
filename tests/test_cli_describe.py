@@ -56,7 +56,7 @@ def test_describe_is_always_json_and_never_localised(cli: CliRunner, monkeypatch
     assert list(plain.data) == TOPIC_KEYS
     assert cli("describe", "--json").json == plain.json
     assert cli("describe", "--lang", "tr").json == plain.json
-    monkeypatch.setenv("APP_LANGUAGE", "tr")
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "tr")
     assert cli("describe").json == plain.json
     assert "genel seçenekler" not in plain.stdout
 
@@ -243,7 +243,7 @@ def test_config_is_the_schema_of_the_settings_model(described: Dict[str, Any]):
     doc = described["config"]
     assert doc["schema"] == config_schema()
     assert doc["file_name"] == loader.CONFIG_FILE_NAME == "sofascore.toml"
-    assert doc["precedence"] == list(loader.LAYERS) == ["default", "dotenv", "overrides", "file", "env", "flag"]
+    assert doc["precedence"] == list(loader.LAYERS) == ["default", "overrides", "file", "env", "flag"]
     assert doc["environment_only"] == environment_only_keys()
     assert doc["search_order"] == ["--config", "SOFASCORE_CONFIG", "./sofascore.toml", "<config dir>/sofascore.toml"]
     # Canlı kaynak seçenekleri ve `direct` uyarısı şemada (02-services.md 8.3)

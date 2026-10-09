@@ -42,12 +42,12 @@ SAMPLE_SHORT = "Zq7"  # tek başına aranmayacak kadar kısa: adresin içinde yi
 @pytest.fixture
 def app_log(tmp_path):
     """Uygulamanın gerçek log kurulumu (kök logger + dosya), geçici bir dizine ve DEBUG seviyesinde."""
-    keys = ("LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "LOG_LEVEL", "DEBUG")
+    keys = ("SOFASCORE_LOG__DIR", "SOFASCORE_LOG__TO_FILE", "SOFASCORE_LOG__MAX_MB", "SOFASCORE_LOG__BACKUP_COUNT", "SOFASCORE_LOG__LEVEL", "SOFASCORE_LOG__DEBUG")
     saved = {k: os.environ.get(k) for k in keys}
     saved_level = logging.getLogger().level
-    os.environ["LOG_DIR"] = str(tmp_path / "logs")
-    os.environ["LOG_LEVEL"] = "DEBUG"
-    for key in ("LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "DEBUG"):
+    os.environ["SOFASCORE_LOG__DIR"] = str(tmp_path / "logs")
+    os.environ["SOFASCORE_LOG__LEVEL"] = "DEBUG"
+    for key in ("SOFASCORE_LOG__TO_FILE", "SOFASCORE_LOG__MAX_MB", "SOFASCORE_LOG__BACKUP_COUNT", "SOFASCORE_LOG__DEBUG"):
         os.environ.pop(key, None)
     app_logger.setup_logger(force=True)
     yield tmp_path / "logs"
@@ -76,8 +76,8 @@ def _restore_env(monkeypatch, settings_overrides):
     with open(path, encoding="utf-8") as f:
         before = f.read()
     # Ortamdan verilmiş proxy ayarı kilitli olurdu: Ayarlar API'si onu yazamazdı
-    monkeypatch.delenv("PROXY_URL", raising=False)
-    monkeypatch.delenv("USE_PROXY", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__PROXY", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__USE_PROXY", raising=False)
     redact.refresh()
     yield
     with open(path, "w", encoding="utf-8") as f:
@@ -98,13 +98,14 @@ def _failing_requests_through(proxy_url: str, extra: str = "") -> dict:
         seen.append(kwargs.get("proxies"))
         raise ConnectionError(f"curl: (56) CONNECT tunnel failed, response 407 via {proxy_url}{extra}")
 
+    # Bağlantı denetimi de aynı sahte curl'ü kullanır (ağa çıkılmaz); tarayıcı başlatılamaz (conftest), proxy ayarı
+    # tarayıcıya da verilecekti
     with patch.object(transport, "_sleep"), patch.object(transport.cffi_requests, "get", side_effect=curl):
         search = client.post("/api/v1/tournaments/search", json={"q": "premier"})
+        check = client.post("/api/v1/status/check", json={"target": "sofascore"})
     # İstekler gerçekten kayıtlı proxy ile (parolası tam) gönderildi: maskelenen şey kullanılan değer
     assert seen and all(p == {"http": proxy_url, "https": proxy_url} for p in seen), seen
     assert search.status_code == 502 and search.json()["error"]["details"]["reason"] == "network"
-    # Bağlantı denetimi: tarayıcı başlatılamaz (conftest), proxy ayarı tarayıcıya da verilecekti
-    check = client.post("/api/v1/status/check", json={"target": "sofascore"})
     assert check.status_code == 200
     return {"search": search.text, "status check": check.text}
 
@@ -180,17 +181,17 @@ def test_proxy_password_saved_in_settings_never_reaches_logs_or_diagnostics(app_
     assert f"***@{HOST}" in outputs["web bundle log_tail.txt"]
     for name in ("GET /api/v1/diagnostics", "web bundle diagnostics.json", "cli bundle diagnostics.json"):
         values = json.loads(outputs[name])["settings"]["values"]
-        assert values["PROXY_URL"] == f"http://***@{HOST}", name
-        assert values["USE_PROXY"] == "true", name
+        assert values["client.proxy"] == f"http://***@{HOST}", name
+        assert values["client.use_proxy"] is True, name
 
 
 def test_hand_written_proxy_without_a_scheme_never_reaches_logs_or_diagnostics(app_log, tmp_path, monkeypatch):
     # Arayüz şemasız adresi kabul etmez; .env'e elle yazılabilir ve curl bunu kullanır
     url = f"scraper:{SAMPLE_PLAIN}@{HOST}"
     with open(env_file_path(), "a", encoding="utf-8") as f:
-        f.write(f"USE_PROXY=true\nPROXY_URL={url}\n")
-    monkeypatch.setenv("USE_PROXY", "true")
-    monkeypatch.setenv("PROXY_URL", url)
+        f.write(f"SOFASCORE_CLIENT__USE_PROXY=true\nSOFASCORE_CLIENT__PROXY={url}\n")
+    monkeypatch.setenv("SOFASCORE_CLIENT__USE_PROXY", "true")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", url)
     config_manager.reload_config()  # uygulama açılışında olduğu gibi .env okunur
 
     outputs = _failing_requests_through(url)
@@ -200,4 +201,4 @@ def test_hand_written_proxy_without_a_scheme_never_reaches_logs_or_diagnostics(a
 
     assert f"***@{HOST}" in outputs["log file sofascore_scraper.log"]
     for name in ("GET /api/v1/diagnostics", "web bundle diagnostics.json", "cli bundle diagnostics.json"):
-        assert json.loads(outputs[name])["settings"]["values"]["PROXY_URL"] == f"***@{HOST}", name
+        assert json.loads(outputs[name])["settings"]["values"]["client.proxy"] == f"***@{HOST}", name

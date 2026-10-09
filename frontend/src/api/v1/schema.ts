@@ -1099,7 +1099,7 @@ export interface Setting {
   /** The value in force. Secrets are masked. */
   value: unknown
   /** The layer the value comes from, weakest to strongest in this order. */
-  source: "default" | "dotenv" | "overrides" | "file" | "env" | "flag"
+  source: "default" | "overrides" | "file" | "env" | "flag"
   /** The file or the environment variable, when there is one. */
   source_name: string
   /** Pinned by the config file, the environment or a flag: a change made here would have no effect. */
@@ -1310,7 +1310,7 @@ export interface SportSliceSelection {
   /** Slice keys or groups removed for this sport (applied after `enable`). */
   disable: string[]
   /** The layer the sport's selection comes from; `default` when none is set. */
-  source: "default" | "dotenv" | "overrides" | "file" | "env" | "flag"
+  source: "default" | "overrides" | "file" | "env" | "flag"
   source_name: string
   /** Pinned by the config file or the environment ([slices.<sport>]). */
   locked: boolean

@@ -57,7 +57,7 @@ def fake() -> Iterator[FakeSofaScore]:
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return path
 
 
@@ -75,8 +75,8 @@ def request_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[
         return waits[-1]
 
     def enable(rate: str) -> List[float]:
-        monkeypatch.setenv("REQUEST_RATE_LIMIT", rate)
-        monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "throttle"))
+        monkeypatch.setenv("SOFASCORE_CLIENT__RATE", rate)
+        monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(tmp_path / "throttle"))
         monkeypatch.setattr(throttle, "reserve", spy)
         throttle.reset_for_tests()
         return waits
@@ -196,7 +196,7 @@ def test_row02_slices_requested(fake: FakeSofaScore, tmp_path: Path) -> None:
 
 def test_row03_unfinished_events(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    ST-27: her durumdaki maç saklanır; FETCH_ONLY_FINISHED yalnızca okurken uygulanır. Ayar açık da olsa kapalı
+    ST-27: her durumdaki maç saklanır; `fetch.only_finished` yalnızca okurken uygulanır. Ayar açık da olsa kapalı
     da olsa iki yol da oynanan maçı gövdesi gelen dilimleriyle kaydeder (P13'te açıkken atlanıyordu).
     """
     for only_finished in (True, False):
@@ -213,7 +213,7 @@ def test_row03_unfinished_events(fake: FakeSofaScore, tmp_path: Path, monkeypatc
 
 def test_row04_event_failure(fake: FakeSofaScore, tmp_path: Path) -> None:
     """
-    /event başarısız olursa iki yolda da yalnızca istek katmanı yeniden dener (MAX_RETRIES: 3 istek, aralarında
+    /event başarısız olursa iki yolda da yalnızca istek katmanı yeniden dener (`client.retries`: 3 istek, aralarında
     3 ve 6 sn); maç başına ek deneme döngüsü ve bekleme yoktur. Maç başarısız sayılır.
     """
     in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")

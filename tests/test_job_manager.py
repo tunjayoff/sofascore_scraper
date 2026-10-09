@@ -659,8 +659,8 @@ def test_an_unexpected_error_is_internal_and_its_secrets_are_masked(
 ) -> None:
     from sofascore_scraper import redact
 
-    monkeypatch.setenv("USE_PROXY", "true")
-    monkeypatch.setenv("PROXY_URL", "http://user:hunter2secret@proxy.example:8080")
+    monkeypatch.setenv("SOFASCORE_CLIENT__USE_PROXY", "true")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", "http://user:hunter2secret@proxy.example:8080")
     redact.refresh()
     try:
         def body(handle: JobHandle) -> None:
@@ -1156,7 +1156,7 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
     from web_job import run_sync_job
 
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     jobs = JobStore(default_db_path(str(data_dir)))  # web sunucusunun iş deposu: yalnızca state.db kurar
     monkeypatch.setattr(deps, "job_store", lambda: jobs)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
@@ -1202,7 +1202,7 @@ def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch, restore_cli_process: No
     import main as cli_main
     from sofascore_scraper.services.sync import RefreshCounts, SyncResult, SyncService
 
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", os.environ["SOFASCORE_STORAGE__DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     state: Dict[str, Any] = {"breaker": None, "error": None, "failed": 0, "cancel": False, "seen": []}
 
     def run(self: SyncService, spec: Any, *, handle: Any = None) -> SyncResult:

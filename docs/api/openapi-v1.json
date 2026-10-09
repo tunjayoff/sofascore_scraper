@@ -9656,7 +9656,6 @@
             "type": "string",
             "enum": [
               "default",
-              "dotenv",
               "overrides",
               "file",
               "env",
@@ -10483,7 +10482,6 @@
             "type": "string",
             "enum": [
               "default",
-              "dotenv",
               "overrides",
               "file",
               "env",

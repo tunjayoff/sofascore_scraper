@@ -85,7 +85,7 @@ from sofascore_scraper.web.app import app
 from sofascore_scraper.web.api.v1 import settings as settings_v1
 
 # Veri klasörü ortamdan gelseydi kilitli olurdu: Ayarlar sayfasının dosyasından (overrides.json) gelir
-os.environ.pop("DATA_DIR", None)
+os.environ.pop("SOFASCORE_STORAGE__DATA_DIR", None)
 with open(os.path.join(conftest.CONFIG_DIR, "overrides.json"), "w", encoding="utf-8") as f:
     json.dump({"storage": {"data_dir": conftest.DATA_DIR}}, f)
 loader.reload()

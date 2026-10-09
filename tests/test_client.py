@@ -589,7 +589,7 @@ def test_the_client_writes_nothing_under_the_data_directory(
     fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     monkeypatch.chdir(tmp_path)
     fake.fail("/event/2", 403)
     health = _bridge_health()
@@ -799,9 +799,9 @@ def test_the_bridge_fallback_gets_the_full_address(
 )
 def test_the_api_base_setting_is_normalised(monkeypatch: pytest.MonkeyPatch, value: Any, expected: str) -> None:
     if value is None:
-        monkeypatch.delenv("API_BASE_URL", raising=False)
+        monkeypatch.delenv("SOFASCORE_CLIENT__BASE_URL", raising=False)
     else:
-        monkeypatch.setenv("API_BASE_URL", value)
+        monkeypatch.setenv("SOFASCORE_CLIENT__BASE_URL", value)
 
     assert transport._configured_base_url() == expected
 

@@ -197,9 +197,9 @@ def test_one_store_per_directory_per_process(data_dir, tmp_path, monkeypatch):
 
 
 def test_default_directory_comes_from_the_environment(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "from-env"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "from-env"))
     assert open_store().data_dir == tmp_path / "from-env"
-    monkeypatch.delenv("DATA_DIR")
+    monkeypatch.delenv("SOFASCORE_STORAGE__DATA_DIR")
     monkeypatch.chdir(tmp_path)
     assert os.path.samefile(open_store().data_dir, tmp_path / "data")
 

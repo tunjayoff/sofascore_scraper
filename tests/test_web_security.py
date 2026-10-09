@@ -6,7 +6,6 @@ import asyncio
 import pytest
 from fastapi.testclient import TestClient
 
-from sofascore_scraper.web import deps
 from sofascore_scraper.web.app import FRONTEND_DIST, app
 
 client = TestClient(app)
@@ -59,10 +58,6 @@ def test_same_origin_write_allowed():
 def test_backup_download_rejects_other_names():
     assert client.get("/api/v1/backups/..%2F..%2F.env").status_code == 404
     assert client.get("/api/v1/backups/leagues.txt").status_code == 404
-
-
-def test_env_writer_rejects_newlines():
-    assert deps.config_manager().update_env_variable("PROXY_URL", "a\nB=c") is False
 
 
 def test_event_id_must_be_numeric():

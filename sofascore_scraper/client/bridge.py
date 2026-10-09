@@ -28,7 +28,6 @@ import concurrent.futures
 import contextvars
 import hashlib
 import json
-import os
 import re
 import threading
 import time
@@ -134,9 +133,15 @@ def _api_url(path: str) -> str:
     return api_url(path)
 
 
+def _client_settings() -> Any:
+    from sofascore_scraper.config import loader
+
+    return loader.active_settings().client
+
+
 def _headless() -> bool:
-    # Her ortamda aynı yol: headless. Hata ayıklamak için pencereyi görmek isterseniz 1 yapın.
-    return os.getenv("SOFASCORE_BROWSER_HEADED", "").lower() not in ("1", "true", "yes")
+    # Her ortamda aynı yol: headless. Hata ayıklamak için pencereyi görmek isterseniz `client.browser_headed` açılır.
+    return not _client_settings().browser_headed
 
 
 class _SlotWait:
@@ -596,10 +601,11 @@ def _get_background_loop() -> asyncio.AbstractEventLoop:
 
 
 def _proxy_settings() -> Optional[Dict[str, str]]:
-    """curl_cffi ile aynı proxy: tarayıcı da gerçek IP'yi göstermesin."""
-    if os.getenv("USE_PROXY", "false").lower() != "true":
+    """curl_cffi ile aynı proxy (`client.use_proxy`, `client.proxy`): tarayıcı da gerçek IP'yi göstermesin."""
+    client = _client_settings()
+    if not client.use_proxy:
         return None
-    url = os.getenv("PROXY_URL", "").strip()
+    url = (client.proxy or "").strip()
     if not url:
         return None
     from urllib.parse import urlparse

@@ -60,7 +60,7 @@ class ClientSettings:
     İstemcinin ayarları.
 
     base_url         API kökü; her yola yalnızca Client.url'de eklenir
-    retries          istek başına deneme sayısı; None: MAX_RETRIES ayarı (her istekte okunur)
+    retries          istek başına deneme sayısı; None: client.retries ayarı (her istekte okunur)
     timeout_seconds  istek zaman aşımı; None: REQUEST_TIMEOUT ayarı (her istekte okunur)
 
     Proxy, istek sonrası bekleme, eşzamanlı istek sınırı ve ortak istek bütçesi henüz buradan geçmez: istek

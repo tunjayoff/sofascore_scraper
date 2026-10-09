@@ -44,7 +44,6 @@ def _fresh_limiter() -> Iterator[None]:
 @pytest.fixture
 def token(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
     monkeypatch.setenv(security.TOKEN_ENV, ACCESS)
-    monkeypatch.setattr(security, "_startup_token", ACCESS)
     redact.refresh()
     yield ACCESS
     monkeypatch.undo()
@@ -53,13 +52,13 @@ def token(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
 
 @pytest.fixture
 def no_token(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
+    monkeypatch.delenv(security.TOKEN_ENV, raising=False)
 
 
 @pytest.fixture
 def canonical(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> sf.LegacyFixture:
     fixture = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     return fixture
 
 
@@ -194,7 +193,7 @@ def test_a_folder_written_by_3_0_has_a_disk_total(tmp_path: Path, monkeypatch: p
     """G21: `summary.disk.total` bir 3.0 dizininde 0 değildir (önceden yalnızca 2.x ağaçlarını sayıyordu)."""
     from sofascore_scraper.services.status import forget_sizes
 
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "fresh"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "fresh"))
     store = open_store(tmp_path / "fresh")
     (Path(store.data_dir) / "v3" / "events").mkdir(parents=True, exist_ok=True)
     (Path(store.data_dir) / "v3" / "events" / "probe.bin").write_bytes(b"x" * 1000)

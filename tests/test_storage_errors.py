@@ -217,7 +217,7 @@ def test_cli_sync_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, cap
     boom = StorageError.from_exception(
         OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), str(tmp_path / "match_details" / "17_PL")
     )
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", os.environ["SOFASCORE_STORAGE__DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.delenv("APP_EXIT_CODE", raising=False)
     monkeypatch.setattr("sys.argv", [
         "main.py", "--data-dir", str(tmp_path), "sync", "--only", "events", "--tournament", "17",

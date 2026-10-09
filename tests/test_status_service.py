@@ -42,7 +42,7 @@ NOT_STARTED_CASE = "football/A_notstarted-0-not-started__17184998"
 @pytest.fixture(autouse=True)
 def _default_setting(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Ayar kabuktan gelmesin (varsayılan: yalnızca bitmiş maçlar); saklanan disk ölçümleri testler arasında taşınmasın."""
-    monkeypatch.delenv("FETCH_ONLY_FINISHED", raising=False)
+    monkeypatch.delenv("SOFASCORE_FETCH__ONLY_FINISHED", raising=False)
     status_module.forget_sizes()
     yield
     status_module.forget_sizes()
@@ -303,7 +303,7 @@ def test_the_setting_is_read_at_call_time(canonical: sf.LegacyFixture, monkeypat
                                           value: Optional[str], expected: bool) -> None:
     """Varsayılan kural FETCH_ONLY_FINISHED'dan gelir; yazıcılarla aynı okuma (sofascore_scraper/utils.py)."""
     if value is not None:
-        monkeypatch.setenv("FETCH_ONLY_FINISHED", value)
+        monkeypatch.setenv("SOFASCORE_FETCH__ONLY_FINISHED", value)
     assert status_module.only_finished_setting() is expected
     summary = summarise(canonical, sizes=False)
     assert summary.only_finished is expected

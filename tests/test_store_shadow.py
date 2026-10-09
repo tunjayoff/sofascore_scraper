@@ -88,10 +88,14 @@ def no_check(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(api_mod.SHADOW_CHECK_ENV)
 
 
+# `storage.open_reconcile_seconds`in ortamdaki adı (Store onu ayar yükleyicisinden okur)
+OPEN_RECONCILE_ENV = "SOFASCORE_STORAGE__OPEN_RECONCILE_SECONDS"
+
+
 @pytest.fixture
 def every_open_reconciles(monkeypatch: pytest.MonkeyPatch) -> None:
     """Karar S17'nin sınırı kapalı: her açılış eski düzen maç dizinlerini tarar (uzlaştırmanın kendisini sınayanlar)."""
-    monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, "0")
+    monkeypatch.setenv(OPEN_RECONCILE_ENV, "0")
 
 
 def differences(store: Store) -> List[str]:
@@ -911,7 +915,7 @@ def test_the_pass_runs_whenever_the_shortcut_is_not_safe(canonical: sf.LegacyFix
         shutil.copytree(data, tmp_path / "copy")
         data = tmp_path / "copy"
     if case == "window_zero":
-        monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, "0")
+        monkeypatch.setenv(OPEN_RECONCILE_ENV, "0")
     if case == "clock_went_back":
         now = time.time()
         monkeypatch.setattr(api_mod.time, "time", lambda: now - 3600)
@@ -923,10 +927,14 @@ def test_the_pass_runs_whenever_the_shortcut_is_not_safe(canonical: sf.LegacyFix
     assert differences(store) == []
 
 
-def test_the_window_can_be_set_through_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    for raw, seconds in (("", 60.0), ("5", 5.0), ("-3", 0.0), ("soon", 60.0)):
-        monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, raw)
+def test_the_window_comes_from_the_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`storage.open_reconcile_seconds` (ST-19); geçersiz değer ayarları kurdurmaz, Store varsayılanla açılır."""
+    for raw, seconds in (("", 60.0), ("5", 5.0), ("0", 0.0), ("-3", 60.0), ("soon", 60.0)):
+        monkeypatch.setenv(OPEN_RECONCILE_ENV, raw)
         assert api_mod._open_reconcile_seconds() == seconds
+    monkeypatch.delenv(OPEN_RECONCILE_ENV)
+    monkeypatch.setenv("STORE_OPEN_RECONCILE_SECONDS", "5")  # 2.x'in (yalnızca ortamdan okunan) adı
+    assert api_mod._open_reconcile_seconds() == 60.0
 
 
 # --- iki gerçek süreç: birinde yazar, ötekinde açılış ----------------------------------------------------

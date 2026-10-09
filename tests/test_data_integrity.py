@@ -518,7 +518,7 @@ def test_recheck_cli_command_resets_and_exits_without_network(tmp_path, monkeypa
     f = _fetcher(tmp_path)
     match_dir = _legacy_record(f, {"basic": _basic()})
     _legacy_markers(match_dir, {"lineups": 2, "incidents": 1})
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", os.environ["SOFASCORE_STORAGE__DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.setattr("sys.argv", ["main.py", "--data-dir", str(tmp_path), "data", "recheck-unavailable"])
     with patch.object(transport.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
         assert cli.main() == 0

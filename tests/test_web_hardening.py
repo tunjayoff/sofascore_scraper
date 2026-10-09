@@ -86,7 +86,6 @@ def _start_with_token(monkeypatch, value: str) -> None:
         monkeypatch.setenv(security.TOKEN_ENV, value)
     else:
         monkeypatch.delenv(security.TOKEN_ENV, raising=False)
-    monkeypatch.setattr(security, "_startup_token", value)
 
 
 @pytest.fixture
@@ -435,7 +434,7 @@ def _run_web(monkeypatch, argv, lang="en"):
         calls.append((a, k))
         _server_hosts.append(os.environ.get(security.ALLOWED_HOSTS_ENV))
 
-    monkeypatch.setenv("APP_LANGUAGE", lang)
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", lang)
     monkeypatch.setattr("uvicorn.run", run)
     monkeypatch.setattr("sys.argv", ["main.py", "serve", *argv])
     return cli.main(), calls
@@ -459,7 +458,7 @@ def test_web_on_loopback_keeps_the_default_allow_list(monkeypatch, hosts_env, ca
     assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
 
 
-@pytest.mark.parametrize("lang,expected", [("en", "SOFASCORE_ALLOWED_HOSTS"), ("tr", "SOFASCORE_ALLOWED_HOSTS")])
+@pytest.mark.parametrize("lang,expected", [("en", "SOFASCORE_SERVER__ALLOWED_HOSTS"), ("tr", "SOFASCORE_SERVER__ALLOWED_HOSTS")])
 def test_web_on_every_interface_refuses_to_start_without_an_allow_list(monkeypatch, hosts_env, capsys, lang, expected):
     code, calls = _run_web(monkeypatch, ["--host", "0.0.0.0"], lang)
     err = capsys.readouterr().err
@@ -660,7 +659,6 @@ def test_token_is_read_at_startup_and_a_settings_save_cannot_switch_it_off(monke
     kopyalanmış). Ayar kaydı ayarları yeniden yükler; koruma yine de açık kalmalı.
     """
     monkeypatch.setenv(security.TOKEN_ENV, TOKEN)
-    monkeypatch.setattr(security, "_startup_token", None)  # süreç yeni başlıyor
     with open(env_backup, "a", encoding="utf-8") as f:
         f.write(f"\n{security.TOKEN_ENV}=\n")
     auth = {"authorization": f"Bearer {TOKEN}"}
@@ -1009,46 +1007,21 @@ def test_api_docs_pages_get_the_policy_they_need(path):
 
 # --- 5. Dosya izinleri ----------------------------------------------------------------------
 
-@posix_only
-def test_env_file_is_created_private(tmp_path, monkeypatch):
-    env = tmp_path / "conf" / ".env"
-    monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
-    monkeypatch.setenv("DATE_FORMAT", os.environ.get("DATE_FORMAT", ""))  # update_env_variable ortamı da yazar
-    old_umask = os.umask(0o022)
-    try:
-        assert deps.config_manager().update_env_variable("DATE_FORMAT", "%Y-%m-%d")
-    finally:
-        os.umask(old_umask)
-        redact.refresh()
-    assert env.read_text(encoding="utf-8").strip() == "DATE_FORMAT='%Y-%m-%d'"
-    assert _mode(env) == 0o600
-
-
-@posix_only
-def test_writing_a_setting_tightens_an_existing_env_file(tmp_path, monkeypatch):
-    env = tmp_path / ".env"
-    env.write_text("MAX_RETRIES=3\n", encoding="utf-8")
-    os.chmod(env, 0o644)
-    monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
-    monkeypatch.setenv("DATE_FORMAT", os.environ.get("DATE_FORMAT", ""))
-    try:
-        assert deps.config_manager().update_env_variable("DATE_FORMAT", "%d.%m.%Y")
-    finally:
-        redact.refresh()
-    assert "MAX_RETRIES=3" in env.read_text(encoding="utf-8")
-    assert _mode(env) == 0o600
+def test_the_app_no_longer_writes_the_env_file() -> None:
+    """3.1: ConfigManager'ın `.env` yazıcısı (`update_env_variable`) kalktı; Ayarlar sayfası overrides.json'a yazar."""
+    assert not hasattr(deps.config_manager(), "update_env_variable")
 
 
 @posix_only
 def test_startup_tightens_existing_env_and_browser_profile(tmp_path, monkeypatch, caplog):
     env = tmp_path / ".env"
-    env.write_text("PROXY_URL=http://u:p@h:1\n", encoding="utf-8")
+    env.write_text("SOFASCORE_CLIENT__PROXY=http://u:p@h:1\n", encoding="utf-8")
     profile = tmp_path / "profile"
     (profile / "Default").mkdir(parents=True)
     os.chmod(env, 0o664)
     os.chmod(profile, 0o755)
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(profile))
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", str(profile))
 
     with caplog.at_level(logging.INFO):
         assert private_files.harden_secret_paths() == [str(env), str(profile)]
@@ -1068,7 +1041,7 @@ def test_startup_tightens_existing_env_and_browser_profile(tmp_path, monkeypatch
 @posix_only
 def test_startup_with_nothing_to_tighten_is_quiet(tmp_path, monkeypatch):
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(tmp_path / "no.env"))
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(tmp_path / "no-profile"))
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", str(tmp_path / "no-profile"))
     assert private_files.harden_secret_paths() == []
     assert not (tmp_path / "no.env").exists() and not (tmp_path / "no-profile").exists()
 
@@ -1115,8 +1088,8 @@ def test_the_app_and_the_cli_tighten_permissions_at_startup():
 
 @pytest.fixture
 def proxy(monkeypatch):
-    monkeypatch.setenv("USE_PROXY", "true")
-    monkeypatch.setenv("PROXY_URL", PROXY_URL)
+    monkeypatch.setenv("SOFASCORE_CLIENT__USE_PROXY", "true")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", PROXY_URL)
     redact.refresh()
     yield PROXY_URL
     monkeypatch.undo()

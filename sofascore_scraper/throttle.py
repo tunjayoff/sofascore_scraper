@@ -2,7 +2,7 @@
 Süreçler arası ortak istek bütçesi (issue #16).
 
 Her kod yolu kendi isteklerini kendi sınırlıyordu (izleyici: istekler arası ≥ 1 sn; toplu
-indirme: MAX_CONCURRENT; program çekme: kendi semaforu). Aynı anda çalışan süreçler (spor
+indirme: `client.max_concurrent`; program çekme: kendi semaforu). Aynı anda çalışan süreçler (spor
 başına bir `--watch`, web işi, cron'dan `--refresh-only`) birbirini görmediği için toplam
 hız süreç sayısıyla çarpılıyordu. Buradaki sınırlayıcı, SofaScore'a giden her isteğin
 geçtiği en alt noktalardan çağrılır (sofascore_scraper/client/transport.py: curl istekleri;
@@ -37,9 +37,11 @@ Dayanıklılık:
   - Dosya bozuksa ya da sistem saati geri alınmışsa durum sıfırlanır; hiçbir istek
     _MAX_WAIT_SECONDS'tan uzun bekletilmez.
 
-Ayar (.env): REQUEST_RATE_LIMIT = tüm süreçlerin toplamı için saniyede istek; boş = 5
-(varsayılan); 0 ya da "off" = kapalı. Varsayılanın üstü ve "kapalı", SofaScore'un engelleme
-riskini bilerek üstlenmek demektir.
+Ayar: `client.rate` (sofascore.toml, Ayarlar sayfası ya da SOFASCORE_CLIENT__RATE) = tüm süreçlerin
+toplamı için saniyede istek; varsayılan 5; 0 ya da "off" = kapalı. Varsayılanın üstü ve "kapalı",
+SofaScore'un engelleme riskini bilerek üstlenmek demektir. Durum dosyalarının dizini `client.throttle_dir`.
+Değerler ayar yükleyicisinden çağrı anında okunur (2.x'in REQUEST_RATE_LIMIT ve SOFASCORE_THROTTLE_DIR adları
+3.1'de okunmaz).
 """
 from __future__ import annotations
 
@@ -56,21 +58,17 @@ from typing import Any, Callable, Dict, Iterator, List, NamedTuple, Optional, Tu
 
 logger = logging.getLogger(__name__)
 
-ENV_RATE = "REQUEST_RATE_LIMIT"
-ENV_DIR = "SOFASCORE_THROTTLE_DIR"
-
 # Varsayılan: tüm süreçlerin toplamı için saniyede 5 istek (boşta geçen süreden sonra bir
 # saniyelik, yani 5 isteklik patlama payıyla). Bilinçli olarak toplu indirmenin kendi tavanının
 # çok altında: scripts/bench_bulk_rate.py (ağ yok; taşıyıcı sahte) varsayılan ayarlarla
-# (MAX_CONCURRENT=10, WAIT_TIME_MIN=0.2, WAIT_TIME_MAX=0.5; 100 futbol maçı = 700 istek)
+# (client.max_concurrent = 10, wait_time_min = 0.2, wait_time_max = 0.5; 100 futbol maçı = 700 istek)
 # sınırlayıcı kapalıyken ortalama 19-62 istek/sn (11-37 sn) ölçüyor; varsayılan bütçeyle
 # sahte gecikmeden bağımsız olarak 5,0 istek/sn (140 sn; en yoğun saniyede 9 istek: baştaki
-# patlama payı). Toplu indirme artık MAX_CONCURRENT'ten bağımsız ~5 istek/sn ile ilerler:
-# 380 maçlık bir futbol sezonu ≈ 2700 istek ≈ 9 dakika. Daha hızlısı için REQUEST_RATE_LIMIT
+# patlama payı). Toplu indirme artık `client.max_concurrent`ten bağımsız ~5 istek/sn ile ilerler:
+# 380 maçlık bir futbol sezonu ≈ 2700 istek ≈ 9 dakika. Daha hızlısı için `client.rate`
 # yükseltilir ya da 0/off ile kapatılır; ikisi de SofaScore'un engelleme riskini artırır.
 DEFAULT_RATE_LIMIT = 5.0
 
-_OFF_WORDS = ("off", "false", "no", "none", "disabled")
 _LOCK_TIMEOUT_SECONDS = 1.0
 _LOCK_POLL_SECONDS = 0.001
 # Kilit alınamadıysa dosya bu süre boyunca yeniden denenmez (her istek 1 sn beklemesin)
@@ -117,34 +115,21 @@ def is_interactive() -> bool:
     """Bu bağlamdaki istek öncelik şeridinde mi."""
     return _priority.get()
 
-_warned_invalid_rate: Optional[str] = None
-
-
 def configured_rate() -> float:
-    """REQUEST_RATE_LIMIT (istek/sn). 0 ya da "off" = sınırlayıcı kapalı; boş/geçersiz = varsayılan."""
-    global _warned_invalid_rate
-    raw = os.getenv(ENV_RATE, "").strip().lower()
-    if not raw:
-        return DEFAULT_RATE_LIMIT
-    if raw in _OFF_WORDS:
-        return 0.0
-    try:
-        rate = float(raw)
-    except ValueError:
-        rate = math.nan
-    if not math.isfinite(rate):
-        if _warned_invalid_rate != raw:
-            _warned_invalid_rate = raw
-            logger.warning(f"{ENV_RATE} is not valid ({raw!r}); the default {DEFAULT_RATE_LIMIT:g} is used.")
-        return DEFAULT_RATE_LIMIT
-    return max(0.0, rate)
+    """`client.rate` (istek/sn); 0 = sınırlayıcı kapalı. Çağrı anında ayar yükleyicisinden okunur."""
+    from sofascore_scraper.config import loader
+
+    return max(0.0, float(loader.active_settings().client.rate))
+
+
+DEFAULT_STATE_DIR = os.path.join("~", ".cache", "sofascore_scraper", "throttle")
 
 
 def state_dir() -> str:
-    """Durum dosyalarının dizini: aynı kullanıcının tüm süreçleri için ortak."""
-    return os.getenv(ENV_DIR, "").strip() or os.path.join(
-        os.path.expanduser("~"), ".cache", "sofascore_scraper", "throttle"
-    )
+    """Durum dosyalarının dizini (`client.throttle_dir`, boşsa varsayılan): aynı kullanıcının tüm süreçleri için ortak."""
+    from sofascore_scraper.config import loader
+
+    return os.path.expanduser(loader.active_settings().client.throttle_dir.strip() or DEFAULT_STATE_DIR)
 
 
 # --- işletim sistemi kilidi ---------------------------------------------------------------
@@ -651,7 +636,7 @@ _api_lock = threading.Lock()
 
 
 def api_throttle() -> RequestThrottle:
-    """SofaScore'a giden her isteğin geçtiği ortak bütçe (REQUEST_RATE_LIMIT)."""
+    """SofaScore'a giden her isteğin geçtiği ortak bütçe (`client.rate`)."""
     global _api
     with _api_lock:
         if _api is None:
@@ -742,7 +727,7 @@ def lane(
 ) -> RequestThrottle:
     """
     Kendi alt bütçesi olan çağıranlar için (ör. izleyici: istekler arası ≥ 1 sn). Şerit,
-    ortak bütçe açıkken süreçler arasıdır; REQUEST_RATE_LIMIT=0 ile ortak bütçe kapatılırsa
+    ortak bütçe açıkken süreçler arasıdır; `client.rate` 0 ile ortak bütçe kapatılırsa
     aralık yine uygulanır ama yalnızca süreç içinde (eski davranış).
     """
     return RequestThrottle(
@@ -768,7 +753,6 @@ def status() -> Dict[str, Any]:
 
 
 def reset_for_tests() -> None:
-    global _api, _warned_invalid_rate
+    global _api
     with _api_lock:
         _api = None
-    _warned_invalid_rate = None

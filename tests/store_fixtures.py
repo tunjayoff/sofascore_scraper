@@ -23,7 +23,7 @@ Dizinler (`FIXTURE_NAMES`):
   canonical       bugünkü yazıcıların ürettiği biçimler: L1, tur dosyaları (`_complete` ile), olay
                   sayfaları, özet JSON/CSV, `observation.json` / `_unavailable.json` /
                   `_slice_status.json`'ın sekiz birleşimi, `score_changes.jsonl`, izleyici dosyaları.
-                  Bir sezon FETCH_ONLY_FINISHED=false ile yazılmıştır (özette bitmemiş maçlar var).
+                  Bir sezon fetch.only_finished = false ile yazılmıştır (özette bitmemiş maçlar var).
                   Okuyucuların birbiriyle çeliştiği hiçbir durum yok.
   legacy          eski biçimler ve çelişen durumlar: L2-L5, tek dosyalı kayıt, `_complete`'siz tur
                   dosyası, eski `_matches.csv` (iki konumda), dört sezon listesi adı,
@@ -135,7 +135,7 @@ class Listing:
     slug: Optional[str] = None  # kupa turu: round_<n>_<slug>.json
     complete: Optional[bool] = None  # tur: `_complete` değeri; None: anahtar yok (eski, süzülmüş dosya)
     has_next: bool = False
-    filtered: bool = True  # False: FETCH_ONLY_FINISHED=false ile yazıldı (sayfada ve özette her durum var)
+    filtered: bool = True  # False: fetch.only_finished = false ile yazıldı (sayfada ve özette her durum var)
 
 
 @dataclass(frozen=True)
@@ -553,7 +553,7 @@ class _Builder:
 def summary_of(listings: Sequence[Listing]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     Listelerden sezon özeti: (summary.json içeriği, summary.csv satırları). Yalnızca bitmiş maçlar girer;
-    FETCH_ONLY_FINISHED=false ile yazılmış listelerde (`filtered=False`) hepsi.
+    fetch.only_finished = false ile yazılmış listelerde (`filtered=False`) hepsi.
     """
     results: List[Dict[str, Any]] = []
     rows: List[Dict[str, Any]] = []
@@ -652,7 +652,7 @@ WIM_DOUBLES = Ev("tennis/T7_doubles__17207542", WIMBLEDON, WIM_2026, "Granollers
 # Canlı maç: yalnızca izleyici dosyalarında geçer
 WIM_LIVE = Ev("tennis/A_inprogress-10-3rd-set__17202152", WIMBLEDON, WIM_2026, "Lorenzo Musetti", "Tommy Paul")
 
-# LaLiga 26/27: FETCH_ONLY_FINISHED=false ile indirilmiş sezon (sayfalarda ve özette bitmemiş maçlar da var)
+# LaLiga 26/27: fetch.only_finished = false ile indirilmiş sezon (sayfalarda ve özette bitmemiş maçlar da var)
 LIGA_FIN = Ev("football/B6_finished_regular__17099711", LALIGA, LALIGA_2627, "Real Madrid", "Barcelona",
               eid=16990001, shift=3 * DAY)
 LIGA_POSTPONED = Ev("football/A_postponed-60-postponed__16599919", LALIGA, LALIGA_2627, "Villarreal", "Osasuna")
@@ -729,7 +729,7 @@ CANONICAL_DETAILS: Tuple[Detail, ...] = (
     Detail(WIM_RET, slices=(), observed="2026-09-19T08:00:00+00:00", unavailable={k: 2 for k in REQUIRED_SLICES}),
     Detail(WIM_TB, slices=("statistics", "h2h")),
     Detail(LIGA_FIN, observed="2026-09-22T04:00:00+00:00"),
-    # başlamamış maçın detayı (FETCH_ONLY_FINISHED=false): maç öncesi dilimler var, işaret dosyası yazılmaz
+    # başlamamış maçın detayı (fetch.only_finished = false): maç öncesi dilimler var, işaret dosyası yazılmaz
     Detail(LIGA_NEXT, slices=("team_streaks", "pregame_form", "h2h")),
 )
 

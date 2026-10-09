@@ -67,7 +67,7 @@ def _settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Store:
     path = tmp_path / "data"
     path.mkdir()
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return open_store(path)
 
 

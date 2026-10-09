@@ -1615,7 +1615,7 @@ def test_config_show_never_prints_a_webhook_address_beyond_its_host(cli: CliRunn
 
 
 def test_the_diagnostics_bundle_never_contains_a_webhook_address_beyond_its_host(monkeypatch: pytest.MonkeyPatch):
-    """Sink'ler ortamdan da gelir (SOFASCORE_SINKS); paket bütün SOFASCORE_ değişkenlerini yazar."""
+    """Sink'ler ortamdan da gelir (SOFASCORE_SINKS); paket etkin ayarları ve SOFASCORE_ değişkenlerini yazar."""
     from sofascore_scraper import diagnostics, redact
 
     monkeypatch.setenv("SOFASCORE_HOOK_SECRET", SECRET)
@@ -1627,8 +1627,8 @@ def test_the_diagnostics_bundle_never_contains_a_webhook_address_beyond_its_host
     document = json.dumps(diagnostics.collect("cli"))
     for private in PRIVATE_PARTS:
         assert private not in document, private
-    shown = diagnostics._settings()["values"]["SOFASCORE_SINKS"]
-    assert "https://***@hooks.example.org/***" in shown and '"name":"ops"' in shown and "out/live.ndjson" in shown
+    shown = json.dumps(diagnostics._settings()["values"]["sinks"])
+    assert "https://***@hooks.example.org/***" in shown and '"name": "ops"' in shown and "out/live.ndjson" in shown
     # Ayrıştırılamayan değer tümüyle maskelenir: içinde adres olabilir
     assert redact.mask_value("SOFASCORE_SINKS", f"not json {HOOK_URL}") == "***"
     assert redact.mask_value("SOFASCORE_SINKS", json.dumps([HOOK_URL])) == "***"

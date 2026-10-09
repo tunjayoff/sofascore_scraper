@@ -556,7 +556,7 @@ def configured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path
     (config / "leagues.txt").write_text("17: Premier League\n", encoding="utf-8")
     (config / "league_sports.json").write_text('{"17": "football"}\n', encoding="utf-8")
     env = tmp_path / "test.env"
-    env.write_text("MAX_CONCURRENT=5\n", encoding="utf-8")
+    env.write_text("SOFASCORE_CLIENT__MAX_CONCURRENT=5\n", encoding="utf-8")
     monkeypatch.setenv("SOFASCORE_CONFIG_DIR", str(config))
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
     monkeypatch.setenv("SOFASCORE_CONFIG", "none")

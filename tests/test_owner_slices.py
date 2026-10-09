@@ -62,7 +62,7 @@ def fake() -> Iterator[FakeSofaScore]:
 
 @pytest.fixture
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Store:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "data"))
     return open_store(tmp_path / "data")
 
 

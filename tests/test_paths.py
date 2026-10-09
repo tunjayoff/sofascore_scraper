@@ -46,15 +46,15 @@ def test_test_suite_itself_is_redirected_away_from_real_config():
 # --- tarayıcı profili ---------------------------------------------------------------------------
 
 def test_browser_profile_dir_defaults_to_the_user_cache(monkeypatch):
-    monkeypatch.delenv("SOFASCORE_BROWSER_PROFILE", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__BROWSER_PROFILE", raising=False)
     assert paths.browser_profile_dir() == os.path.expanduser(paths.DEFAULT_BROWSER_PROFILE_DIR)
     assert not paths.browser_profile_dir().startswith("~")
 
 
 def test_browser_profile_dir_follows_the_environment_and_ignores_a_blank_value(monkeypatch, tmp_path):
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(tmp_path / "profile"))
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", str(tmp_path / "profile"))
     assert paths.browser_profile_dir() == str(tmp_path / "profile")
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "  ")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "  ")
     assert paths.browser_profile_dir() == os.path.expanduser(paths.DEFAULT_BROWSER_PROFILE_DIR)
 
 

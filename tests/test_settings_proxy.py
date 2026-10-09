@@ -26,7 +26,7 @@ MASKED = f"http://scraper:{PROXY_PASSWORD_MASK}@proxy.example:8080"
 @pytest.fixture(autouse=True)
 def _no_proxy(monkeypatch, settings_overrides):
     """Proxy ortamdan verilmez (ortamın değeri ayarı kilitlerdi); test sonunda overrides.json'dan silinir."""
-    for name in ("PROXY_URL", "USE_PROXY"):
+    for name in ("SOFASCORE_CLIENT__PROXY", "SOFASCORE_CLIENT__USE_PROXY"):
         monkeypatch.delenv(name, raising=False)
     yield
     assert _patch({"client.proxy": None, "client.use_proxy": None}).status_code == 200

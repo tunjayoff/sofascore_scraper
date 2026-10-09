@@ -524,7 +524,7 @@ def test_config_writes_never_fsync(tmp_path, monkeypatch):
     """STORE_DURABILITY yalnızca Store'un kendi yazmalarını etkiler; config dosyaları bugünkü gibi yazılır."""
     fsyncs: list[int] = []
     monkeypatch.setattr(config_files.os, "fsync", fsyncs.append)
-    monkeypatch.setenv("STORE_DURABILITY", "full")
+    monkeypatch.setenv("SOFASCORE_STORAGE__DURABILITY", "full")
 
     atomic_write_text(str(tmp_path / "leagues.txt"), "x")
     atomic_write_json(str(tmp_path / "league_sports.json"), {"x": 1})

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import os
 import random
 import time
 import weakref
@@ -28,7 +27,7 @@ from sofascore_scraper import breaker, throttle
 from sofascore_scraper.client.context import FetchCancelled, _notify_wait, raise_if_cancelled
 from sofascore_scraper.client.endpoints import DEFAULT_BASE_URL
 
-# .env bu import sırasında yüklenir (sofascore_scraper/config_manager.py); aşağıdaki os.getenv ondan sonra okunmalı
+# .env bu import sırasında ortama yüklenir (sofascore_scraper/config_manager.py); ayarlar ondan sonra okunur
 from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.exceptions import (
     APIError,
@@ -46,8 +45,16 @@ from sofascore_scraper.slices import OutcomeVia
 logger = get_logger("Utils")
 
 def _configured_base_url() -> str:
-    """API_BASE_URL ayarı. Boş bırakılan ayar varsayılan köktür; sondaki "/" atılır (yollar "/" ile başlar)."""
-    return (os.getenv("API_BASE_URL") or "").strip().rstrip("/") or DEFAULT_BASE_URL
+    """
+    `client.base_url` ayarı (`effective_base_url`): boş bırakılan ayar varsayılan köktür; sondaki "/" atılır
+    (yollar "/" ile başlar). Ayarlar kurulamıyorsa (geçersiz yapılandırma) varsayılan kök.
+    """
+    from sofascore_scraper.config import loader
+
+    try:
+        return loader.active_settings().client.effective_base_url or DEFAULT_BASE_URL
+    except Exception:
+        return DEFAULT_BASE_URL
 
 
 # API kökü: süreç başlarken bir kez okunur ve her isteğe uygulanır (base_url / api_url)
@@ -164,10 +171,12 @@ def get_sofascore_hash() -> str:
 
 def get_sofa_captcha_token() -> Optional[str]:
     """
-    Geçerli sofa_captcha JWT tokenini döndürür.
-    Önce .env (SOFA_CAPTCHA_TOKEN), sonra önbellekten bakar.
+    Geçerli sofa_captcha JWT tokenini döndürür: önce elle verilen `client.captcha_token`
+    (SOFASCORE_CLIENT__CAPTCHA_TOKEN), sonra köprünün önbelleği.
     """
-    env_token = os.getenv("SOFA_CAPTCHA_TOKEN", "").strip()
+    from sofascore_scraper.config import loader
+
+    env_token = (loader.active_settings().client.captcha_token or "").strip()
     if env_token:
         return env_token
     try:

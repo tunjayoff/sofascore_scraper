@@ -558,7 +558,7 @@ def test_status_route_shows_the_scheduler_and_its_next_runs(tmp_path: Path, monk
 
     from sofascore_scraper.web.app import app
 
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "data"))
     client = TestClient(app)
     status = client.get("/api/v1/status").json()["data"]
     assert status["schedule"] == {"enabled": False, "next_runs": []}

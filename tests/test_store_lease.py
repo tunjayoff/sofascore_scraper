@@ -1131,7 +1131,7 @@ def test_web_api_answers_409_job_running_while_another_process_holds_the_writer_
 
     jobs = deps.job_store()
     # Silme reddedilmezse ortak test verisine değil bu boş dizine dokunsun
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "scratch"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "scratch"))
     if jobs.snapshot().get("is_running"):
         jobs.update(status="Cancelled", finished=True)
     client = TestClient(app)

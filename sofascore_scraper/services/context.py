@@ -147,7 +147,7 @@ def _client_for(data_dir: str) -> Optional[Client]:
     _health_data_dir = data_dir
     try:
         return Client(on_health_change=_record_bridge_health)
-    except ValueError as e:  # API_BASE_URL http(s) değil: istekler zaten başarısız olur, bağlam yine kurulur
+    except ValueError as e:  # `client.base_url` http(s) değil: istekler zaten başarısız olur, bağlam yine kurulur
         logger.warning("SofaScore client could not be built: %s", e)
         return None
 
@@ -156,10 +156,10 @@ def build_context(config_manager: ConfigManager, *, data_dir: Optional[str] = No
     """
     Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler ve istemciyi kurar.
 
-    data_dir verilmezse yapılandırmadaki DATA_DIR kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni bir
+    data_dir verilmezse ayarlardaki veri dizini (`storage.data_dir`) kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni bir
     bağlamdır; bir bağlam tek bir işe ya da tek bir isteğe aittir.
 
-    USE_COLOR kapalıyken NO_COLOR'ı süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); bağlam ortama dokunmaz.
+    display.use_color kapalıyken NO_COLOR'ı süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); bağlam ortama dokunmaz.
     """
     data_dir = data_dir or config_manager.get_data_dir()
     _ensure_directory(data_dir)

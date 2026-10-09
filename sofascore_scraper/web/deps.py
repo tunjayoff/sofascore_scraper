@@ -7,7 +7,7 @@ bölüm 6). 2.x'in `/api` bağdaştırıcıları 3.1'de kalktı (P30).
     uyar. Nesneler ilk kullanımda kurulur (içe aktarma anında değil:
     uygulamayı içe aktarmak artık lig dosyasını ve iş deposunu oluşturmaz) ve çağrı anında okunur: testler
     `job_store` / `config_manager` işlevlerini değiştirebilir, veri dizini değişimi iş deposunu taşır (`rebind`).
-  * erişim belirteci: Settings'ten (`[server] token_env`, varsayılan ad SOFASCORE_API_TOKEN) okunur.
+  * erişim belirteci: Settings'ten (`[server] token_env`, varsayılan ad SOFASCORE_SERVER__TOKEN) okunur.
   * başarısız giriş sınırı: aynı istemciden art arda gelen yanlış belirteçler bir süre reddedilir.
 
 Bu modül hafiftir: istek katmanını, indiricileri ve FastAPI'yi içe aktarmaz.
@@ -135,7 +135,7 @@ def loaded_settings() -> "LoadedSettings":
 def server_token() -> str:
     """
     Erişim belirteci, Settings'ten ("" = kapalı): `[server] token_env` bir değişken adı veriyorsa onun
-    değeri, vermiyorsa SOFASCORE_API_TOKEN. Adı verilen değişken boşsa ConfigError fırlar (koruma bir yazım
+    değeri, vermiyorsa SOFASCORE_SERVER__TOKEN. Adı verilen değişken boşsa ConfigError fırlar (koruma bir yazım
     hatasıyla sessizce kapanmaz).
     """
     return loaded_settings().settings.server.token

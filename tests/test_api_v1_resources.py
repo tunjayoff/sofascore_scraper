@@ -38,7 +38,7 @@ PL, LALIGA, NBA, WIMBLEDON, FA_CUP = sf.PL.id, sf.LALIGA.id, sf.NBA.id, sf.WIMBL
 @pytest.fixture
 def canonical(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> sf.LegacyFixture:
     fixture = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     return fixture
 
 
@@ -429,7 +429,7 @@ def test_changes_by_sport_and_regressed_with_the_names(store: Store) -> None:
 
 
 def test_an_empty_change_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "empty"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "empty"))
     assert page_of(client.get("/api/v1/changes")) == {"data": [], "page": {"limit": 50, "next_cursor": None}}
     assert page_of(client.get("/api/v1/changes", params={"order": "desc"}))["data"] == []
     assert page_of(client.get("/api/v1/events"))["data"] == []

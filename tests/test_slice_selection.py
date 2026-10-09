@@ -428,7 +428,7 @@ def leagues(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     (config / "leagues.txt").write_text("# leagues\nPremier League: 17\n", encoding="utf-8")
     (config / "league_sports.json").write_text(json.dumps({"17": "football"}), encoding="utf-8")
     data = tmp_path / "follows-data"
-    monkeypatch.setenv("DATA_DIR", str(data))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data))
     open_store(data)
     manager = ConfigManager()
     monkeypatch.setattr(manager, "league_config_path", str(config / "leagues.txt"))
@@ -525,7 +525,7 @@ def test_lists_show_every_status_and_filter_by_status(fake: FakeSofaScore, tmp_p
     data = tmp_path / "lists"
     store = open_store(data)
     ListingService(store, only_finished=True, concurrency=1).schedule(LEAGUE, 61627)  # 9100001-9100003 bitmiş, 9100004 başlamamış
-    monkeypatch.setenv("DATA_DIR", str(data))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data))
 
     def listed(**params: Any) -> List[int]:
         response = client.get("/api/v1/events", params=params)
@@ -540,6 +540,6 @@ def test_lists_show_every_status_and_filter_by_status(fake: FakeSofaScore, tmp_p
     # İndirme planının listesi: FETCH_ONLY_FINISHED okurken uygulanan varsayılan süzgeçtir
     query = QueryService(store)
     for value, expected in (("true", [9100001, 9100002, 9100003]), ("false", [9100001, 9100002, 9100003, 9100004])):
-        monkeypatch.setenv("FETCH_ONLY_FINISHED", value)
+        monkeypatch.setenv("SOFASCORE_FETCH__ONLY_FINISHED", value)
         rows = query.listed_events(tournament_ids=(LEAGUE,), season_ids=(61627,), only_finished=only_finished_setting())
         assert sorted(row.id for row in rows) == expected

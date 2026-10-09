@@ -130,7 +130,7 @@ LISTING_ONLY = {14025002, 16346148, 16425949, 16539815, 16599919, 16837399, 1705
 
 @pytest.fixture(autouse=True)
 def _default_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key in ("REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS", "REFRESH_LEGACY", "FETCH_ONLY_FINISHED"):
+    for key in ("SOFASCORE_REFRESH__WINDOW_HOURS", "SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "SOFASCORE_REFRESH__INCLUDE_LEGACY", "SOFASCORE_FETCH__ONLY_FINISHED"):
         monkeypatch.delenv(key, raising=False)
 
 
@@ -1137,17 +1137,17 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
         scoped = catalog(scope=Scope(tournament_ids=[league_id]))
         assert differences(scoped, fetcher.refresh_due(league_id)) <= known
     with monkeypatch.context() as patch:
-        patch.setenv("REFRESH_LEGACY", "true")
+        patch.setenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", "true")
         legacy_only = differences(catalog(include_unobserved=True), fetcher.refresh_due())
         # düz dizinler (biri yalnızca birleşik dosya): RD-3'e kadar ağaç gezintisi bunlara ulaşmıyordu
         assert legacy_only == set()
     with monkeypatch.context() as patch:
-        patch.setenv("REFRESH_WINDOW_HOURS", "0")
+        patch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "0")
         assert [] == store.events.refresh_candidates(now=NOW, window_s=0, min_interval_s=MIN_INTERVAL_S)
         # ST-27: politika kapalıyken de bayat kayıt yenilenir (listeden gelen düzeltme, pencereye bağlı değil)
         assert fetcher.refresh_due() == [str(event_id) for event_id in store.events.stale()]
     with monkeypatch.context() as patch:
-        patch.setenv("REFRESH_MIN_INTERVAL_HOURS", "0")
+        patch.setenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "0")
         found = [str(i) for i in store.events.refresh_candidates(now=NOW, window_s=WINDOW_S, min_interval_s=0,
                                                                  status_classes=SETTLED)
                  if i not in refill] + [str(i) for i in store.events.stale()]
@@ -1203,9 +1203,9 @@ def test_needs_from_the_catalog_equal_the_file_based_ones_for_random_states(
     window_h, min_interval_h = rng.choice([(72, 6), (1, 0), (24, 12), (200, 1)])
     window_s, min_interval_s = window_h * HOUR, min_interval_h * HOUR
     legacy_too = rng.random() < 0.5
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", str(window_h))
-    monkeypatch.setenv("REFRESH_MIN_INTERVAL_HOURS", str(min_interval_h))
-    monkeypatch.setenv("REFRESH_LEGACY", "true" if legacy_too else "false")
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", str(window_h))
+    monkeypatch.setenv("SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", str(min_interval_h))
+    monkeypatch.setenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", "true" if legacy_too else "false")
     builder = sf._Builder("random", tmp_path / "data", (sf.PL, sf.FA_CUP, sf.NBA, sf.WIMBLEDON, sf.LALIGA))
     for detail in _random_details(rng, window_s, min_interval_s):
         builder.detail(detail)

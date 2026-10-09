@@ -73,7 +73,6 @@ def raising(monkeypatch: pytest.MonkeyPatch) -> Any:
 def token(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
     """Uygulama bu erişim belirteciyle başlamış gibi."""
     monkeypatch.setenv(security.TOKEN_ENV, TOKEN)
-    monkeypatch.setattr(security, "_startup_token", TOKEN)
     redact.refresh()
     yield TOKEN
     monkeypatch.undo()
@@ -342,7 +341,6 @@ V1_READS = ("/api/v1/health", "/api/v1/status", "/api/v1/sports", "/api/v1/jobs"
 
 
 def test_without_a_token_v1_is_open(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
     for path in V1_READS:
         assert client.get(path).status_code == 200, path
     assert client.get("/api/v1/status").json()["data"]["auth_required"] is False
@@ -524,7 +522,6 @@ def test_every_v1_route_is_behind_the_host_check(token: str, reached: List[str],
 
 
 def test_the_host_check_covers_v1_without_a_token_too(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
     for method, path in V1_OPERATIONS:
         r = client.request(method, path, headers={"host": "192.168.1.5:8000"}, json=WRITE_BODIES.get(path))
         assert (r.status_code, r.text) == (400, "Invalid host header"), (method, path)
@@ -614,10 +611,10 @@ def _run_app(tmp_path: Path, config: str, extra_env: Dict[str, str]) -> subproce
     (tmp_path / ".env").write_text("", encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if k not in (security.TOKEN_ENV, "MY_SCRAPER_TOKEN")}
     env.update(
-        SOFASCORE_CONFIG=str(config_file), DATA_DIR=str(tmp_path / "data"),
+        SOFASCORE_CONFIG=str(config_file), SOFASCORE_STORAGE__DATA_DIR=str(tmp_path / "data"),
         SOFASCORE_CONFIG_DIR=str(tmp_path / "config"), SOFASCORE_ENV_FILE=str(tmp_path / ".env"),
-        LOG_DIR=str(tmp_path / "logs"), SOFASCORE_BROWSER_PROFILE=str(tmp_path / "profile"),
-        SOFASCORE_ALLOWED_HOSTS="testserver", **extra_env,
+        SOFASCORE_LOG__DIR=str(tmp_path / "logs"), SOFASCORE_CLIENT__BROWSER_PROFILE=str(tmp_path / "profile"),
+        SOFASCORE_SERVER__ALLOWED_HOSTS="testserver", **extra_env,
     )
     return subprocess.run(
         [sys.executable, "-c", _TOKEN_ENV_PROBE], cwd=str(ROOT), env=env, capture_output=True, text=True,
@@ -643,13 +640,19 @@ def test_a_token_env_that_names_an_unset_variable_stops_the_start(tmp_path: Path
     assert "MY_SCRAPER_TOKEN is not set" in done.stderr
 
 
-def test_the_default_token_variable_still_works_without_a_config_file(monkeypatch: pytest.MonkeyPatch) -> None:
-    from sofascore_scraper.web import app as app_module
-
+def test_the_default_token_variable_works_without_a_config_file(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(security.TOKEN_ENV, f"  {TOKEN} ")
-    monkeypatch.setattr(security, "_startup_token", None)  # süreç yeni başlıyor
-    assert app_module._token_from_settings() == TOKEN
     assert security.api_token() == TOKEN == deps.server_token()
+    assert security.token_variable() == "SOFASCORE_SERVER__TOKEN"
+
+
+def test_the_2x_token_variable_is_not_read(monkeypatch: pytest.MonkeyPatch) -> None:
+    """3.1: SOFASCORE_API_TOKEN okunmaz (koruma onunla açılmaz); `token_env` onu adıyla verebilir."""
+    monkeypatch.delenv(security.TOKEN_ENV, raising=False)
+    monkeypatch.setenv("SOFASCORE_API_TOKEN", TOKEN)
+    assert security.api_token() == ""
+    monkeypatch.setenv("SOFASCORE_SERVER__TOKEN_ENV", "SOFASCORE_API_TOKEN")
+    assert security.api_token() == TOKEN and security.token_variable() == "SOFASCORE_API_TOKEN"
 
 
 # --- başarısız deneme sınırı -------------------------------------------------------------------------
@@ -795,7 +798,6 @@ def test_requests_without_credentials_and_sessions_are_not_counted_or_locked(tok
 
 
 def test_without_a_token_nothing_is_counted(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
     c = TestClient(app)
     for _ in range(deps.attempt_limiter.free_attempts + 2):
         assert c.post(LOGIN_PATH, json={"token": "anything"}).status_code == 200

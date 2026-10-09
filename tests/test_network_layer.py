@@ -184,7 +184,7 @@ def _api(answer):
 
 
 def test_breaker_trips_on_repeated_403(tmp_path, monkeypatch):
-    monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_BREAKER__IGNORE", raising=False)
     f = _detail_fetcher(tmp_path)
     calls = []
 
@@ -217,7 +217,7 @@ def test_a_failed_event_request_is_not_retried_per_match(tmp_path, monkeypatch):
     Maç başına ek deneme döngüsü (1 sn, 2 sn + rastgele aralarla üç deneme) P13'te kalktı: yeniden denemeyi yalnızca
     istek katmanı yapar (MAX_RETRIES, kendi geri çekilmesiyle; tests/characterization/test_pipeline_divergence.py).
     """
-    monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_BREAKER__IGNORE", raising=False)
     f = _detail_fetcher(tmp_path, threshold=1000)
     calls = []
 
