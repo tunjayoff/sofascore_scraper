@@ -64,8 +64,20 @@ the Settings › Data texts; the chosen day in words under the date fields), FX-
 for a match that is not finished is shown as "No data at SofaScore"; the WTA list in the tennis rankings)
 and FX-16 (#176: the data types of football, basketball and tennis after the owner's decision). FX-28 (the
 last small findings M21 to M23: the Matches list's default order, an unknown score in "Recent score
-changes", and local suggestions by word start) is in progress and not described as built. The screen
+changes", and local suggestions by word start) was in progress then; the seventh check describes it. The screen
 sections say "As built (FX-26)", "(FX-27)" or "(FX-16)" where they changed them; section 11 items 72 to 84.
+
+Checked a seventh time at `216c2f9` (2026-10-09, the tenth revision), after FX-28 (#177: local suggestions
+by word start, the Played / Upcoming / All switch on every match list, "no score → 4-3"), the 3.0.0 release
+(#179, tagged on 2026-10-08) and the first work for 3.1: P30 (#186: the 2.x routes, flags and environment
+names removed; the strict Content-Security-Policy everywhere except `/docs` and `/redoc`; a `.env` line is
+an `env` source of Settings), FX-33 (#188: the `dotenv` label and the `sofascore-csp` marker removed), B1
+(#190: the team record route behind a team follow's header, the registry's `individual` flag, export by team
+and player), B2 (#191: every follow's coverage from `/status`, a player follow's Matches tab, request
+counters and season names in Job detail, the connection state by the last outcome, the token check under a
+root path) and B3 (#189: e-sports maps in the match header, single-set darts as legs). The screen sections
+say "As built (FX-28)", "(B1)", "(B2)", "(B3)" or "(B4)" where they changed them; section 11 items 85 to 95. B4
+(#192, merged after `216c2f9`, at `ff6fd7c`) names the odds providers.
 
 ## Contents
 
@@ -294,7 +306,10 @@ Desktop (from 1024 px):
   list (6.3): places and players of individual sports, "No team" hidden, "Women" / "National team", and the
   number only for same-named hits that nothing else tells apart. **As built (FX-26, #174):** the "On
   SofaScore" hits come in SofaScore's own order across kinds, each with its kind in the hint ("Player ·
-  Tennis · Italy"), at most 15 suggestions, as in the editor (6.3).
+  Tennis · Italy"), at most 15 suggestions, as in the editor (6.3). **As built (FX-28, #177):** the
+  follows and the stored tournaments are ranked by word start, at most five (`rankLocal`, 6.3), and the
+  stored tournaments come from the catalog suggestions (`GET /catalog/suggest`, tournaments only) instead of
+  `GET /tournaments?q=`, so the server's word-start ranking applies there too.
 - **As built: the Sinks warning dot is not shown** (#132). The shell does not poll `/sinks`, so the rail
   cannot know that a sink fails or lags; Overview and the Sinks screen show it. FX-13 (#152) added the sink
   state to `/status` (`sinks`: `served`, `max_lag_events` and more; `sofascore_scraper/web/api/v1/meta.py:255-284` at
@@ -555,8 +570,8 @@ One `DataTable` for every list.
   ("mm/dd/yyyy" in a Turkish UI on a US system), so the chosen day is written in words under each date field
   and in the filter chips ("7 Ekim 2026"; `dayText`, `frontend/src/ui/time.ts:49`), on Matches, Score
   changes and the export dialog, and the fields carry the UI's `lang`. The picker itself still follows the
-  browser: a localized date picker would need a dependency and is left for after 3.0.0
-  (`03-implementation-plan.md` section 17).
+  browser: a localized date picker would need a dependency, and the owner decided on 2026-10-09 not to add
+  one now (the native picker stays; not in 3.1; `03-implementation-plan.md` section 13).
 
 ## 5. Shared behaviour: loading, errors, the token, refusals
 
@@ -570,6 +585,11 @@ One `DataTable` for every list.
 - Polling, only while the browser tab is visible: `/status` every 15 s; the job list every 10 s while Jobs
   or Overview is open; a running job's progress through its event stream (`/jobs/{id}/events`, SSE). Other
   lists load when opened and on "Refresh".
+- The UI is served at the root of its host: it loads `/assets/…` and calls `/api/v1/…` from the root, so it
+  cannot run under a path prefix behind a proxy (`docs/deploy/README.md`; supporting one would need a base
+  path in the frontend build). The API honours an ASGI root path, and since B2 (#191) the access token is
+  checked on the routed path there too (it was not under a root path). The job stream answers with
+  `X-Accel-Buffering: no` and `Cache-Control: no-store`, so a proxy does not buffer it.
 
 ### 5.2 Error codes and what the UI does
 
@@ -673,7 +693,7 @@ screen differs say so ("As built"). Section 7 lists the state of every route and
 | Scheduler | next run | `/status` (P29) | `schedule.next_runs`. As built (#132): on or off from `capabilities.scheduler` only. P29 (#128) has added `schedule.enabled` and `schedule.next_runs[]` to `/status`, but the screen still does not read them at `b6caf2f` (`frontend/src/screens/OverviewScreen.vue:247-248`); FX-14b did not wire them (7.3, open after FX-14b) |
 | Running now | the active job with progress; Open, Stop | `/status`; `/jobs/{id}/events`; `POST /jobs/{id}/cancel` | `active_job` (Job), `progress`. As built (FX-24, #170): the counts name the unit of every phase ("0 / 1 season lists", "2 / 5 match lists", "2 / 49 matches"; `countsText`), where the end-to-end test saw a bare "0 / 1" (F25); the time left is the longer of the server's `eta_seconds` and the pace of the last three minutes measured from the status reads (`frontend/src/app/eta.ts`, 6.9). Since FX-26 (#174) the server's estimate itself is the longest of three (6.9), so the UI's rule is unchanged |
 | Recent jobs | last 5 jobs | `GET /jobs?limit=5` | `kind`, `state`, `origin.face`, `started_at`, `finished_at` |
-| Recent corrections | last 5 changes | `GET /changes` (P21) | `event_id`, `fields`, `recorded_at_utc`. The card is titled "Recent score changes". In progress (FX-28; finding M22 of the live validation): a change from an unknown score read "Score – – – → 4-3"; it is to read "— → 4-3" |
+| Recent corrections | last 5 changes | `GET /changes` (P21) | `event_id`, `fields`, `recorded_at_utc`. The card is titled "Recent score changes". As built (FX-28, #177; finding M22 of the live validation): a change from a score with neither side known reads "no score → 4-3" ("skor yok → 4-3"; it read "– – – → 4-3"); one unknown side stays a dash ("1-– → 1-0"); the same rule holds on the Score changes screen and in a match's corrections (`ChangeFields`) |
 
 **States.** Loading: skeleton tiles. First run (no follows): the whole page is one empty state "Follow
 your first league" with the button to the Follow editor and one line on what the platform does. `/status`
@@ -727,7 +747,7 @@ row menu ⋯ : Sync now · Edit · Disable · Remove
 | Table | one row per follow | `GET /api/v1/follows` (P21), `?q=` for the name search | `kind`, `entity_id`, `name`, `sport`, `seasons`, `slices`, `live`, `enabled`, `origin` |
 | Data column | "Defaults" when `slices` is null; "Custom" otherwise; a chip "+odds" when the odds group is on | same | `slices` |
 | Live column (optional column) | "Watched by `ssc watch`" when `live` is true | same | `live` |
-| Coverage | details / matches of the tournament | `/status` data summary by tournament (P21) | `summary.tournaments[].coverage`. As built (FX-24, #170): a team's "Matches with details" is counted from its stored matches (`GET /events?participant=`, at most 5 pages of 200, with the summary's only-finished rule; `frontend/src/screens/follows/followCoverage.ts` at `48e4c4c`), a single match's from its record, in the list and in the follow's facts; a player's shows "—" with the reason on hover, because stored matches do not say who played (end-to-end finding F23; per-follow coverage in `/status` is open after 3.0.0, 7.3). As built (FX-26, #174; findings M12 and M12b of the live validation): **one rule for every kind, finished matches only**: a league's coverage is `finished_details / finished` of its summary row (`summary.tournaments[].finished_details`, new; `leagueCoverage`), a team's and a match's count only their finished stored matches (`followCoverage`, without the only-finished setting); a follow with no finished match yet shows "No finished match yet" ("Henüz bitmiş maç yok"). The validation had seen a team at 100 % next to "0/6" fixtures and a handball league at 67 % because 14 matches not yet played counted as missing |
+| Coverage | details / matches of the tournament | `/status` data summary by tournament (P21) | `summary.tournaments[].coverage`. As built (FX-24, #170): a team's "Matches with details" is counted from its stored matches (`GET /events?participant=`, at most 5 pages of 200, with the summary's only-finished rule; `frontend/src/screens/follows/followCoverage.ts` at `48e4c4c`), a single match's from its record, in the list and in the follow's facts; a player's shows "—" with the reason on hover, because stored matches do not say who played (end-to-end finding F23; per-follow coverage in `/status` came with B2, below). As built (FX-26, #174; findings M12 and M12b of the live validation): **one rule for every kind, finished matches only**: a league's coverage is `finished_details / finished` of its summary row (`summary.tournaments[].finished_details`, new; `leagueCoverage`), a team's and a match's count only their finished stored matches (`followCoverage`, without the only-finished setting); a follow with no finished match yet shows "No finished match yet" ("Henüz bitmiş maç yok"). The validation had seen a team at 100 % next to "0/6" fixtures and a handball league at 67 % because 14 matches not yet played counted as missing. As built (B2, #191; G40): **the server counts every follow** in `/status` (`summary.follows[]`: `follow_id`, stored `events`, `finished`, `finished_details`, `coverage`, `counted`), by the same rule; the list and a follow's facts read that row (`serverCoverage`), a player's too, from the match ids of the player's last match list. A player not counted yet (`counted: false`, before its first download on this version) shows "—" with "Counted after the player's next download" on hover. The counting from stored matches above is kept only for an older server without `summary.follows`, and then sends the `/events` requests as before |
 | Last sync | end of the newest sync job that included this follow | `GET /jobs?kind=sync` (target matching: P13) | `finished_at`. As built (#133): the newest finished sync whose spec names this tournament or every follow |
 | Sync now | sync of this follow | `POST /jobs {kind: "sync", spec: {follows: [...]}}` (spec of P13) | — As built (#133): P13 (#113) did not add a spec by follow, so Sync now was offered for tournament follows only (G23). FX-13 (#152) added `sync {follows: [...]}` and FX-19 (#156) made team, player and event follows download; since FX-14b (#161) **"Download now"** sends `sync {follows: [id]}` for every kind, with the follow's own season choice, where a league's used to download every season through `league_id` (`frontend/src/screens/follows/FollowActions.vue:128` at `b6caf2f`) |
 | Disable / enable | | `PATCH /follows/{id}` (P21) | `enabled` |
@@ -817,9 +837,11 @@ section 13). FX-26 (#174) replaced the grouping by one relevance-ordered list (b
 As built after the end-to-end test (FX-24 #170, FX-23 #171, FX-25 #172). **The hits say what they are.**
 A "team" of tennis, badminton, table tennis, padel, darts, snooker or MMA is shown under **Players** with
 the player icon, in the editor and in Ctrl K; it is still followed as a team (`team:<id>`), and the editor
-says so ("SofaScore lists tennis players as teams: this one is added as a team, …"); the list of these sports is
-`INDIVIDUAL_SPORTS` in `frontend/src/app/sports.ts` (`:40` at `48e4c4c`), because `GET /sports` has no
-field for it (7.3). SofaScore's placeholder team **"No team"** is never shown as a player's team. A team
+says so ("SofaScore lists tennis players as teams: this one is added as a team, …"). These sports were a
+list in the frontend (`INDIVIDUAL_SPORTS`); since B1 (#190; G36) the sport registry says it (`individual` on
+`GET /sports`), `isIndividual()` (`frontend/src/app/sports.ts:40` at `216c2f9`) reads the loaded registry
+(false until it is read; the editor, Ctrl K, the follow page and the export dialog load it), and a test
+guards that the frontend keeps no list. SofaScore's placeholder team **"No team"** is never shown as a player's team. A team
 hit shows **"Women"** ("Kadın") for `gender: "F"` and **"National team"** ("Milli takım") for
 `national: true`, from the two fields FX-23 added to the search hits (`TournamentHit.gender`, `national`;
 null for tournaments, players and stored names): "Fenerbahçe · Volleyball · Turkey · Women". A men's team
@@ -858,10 +880,20 @@ On the real site (live validation, 2026-10-08), the 2-letter prefixes of item 57
 "la" 20 hits in 0.44 s (Messi, Juventus, Lamine Yamal, UEFA Champions League, FIFA World Cup, LaLiga sixth),
 "ba" 20 (FC Barcelona, Bayern, …), "fe" 19 (Fenerbahçe, Feyenoord, …); "la" again took 0.0 s from the
 server's cache; typing on to "la liga" put LaLiga first; one SofaScore request went out per settled text.
-Not checked: the cancel of an aborted fetch behind a reverse proxy. **In progress (FX-28; finding M23):**
-the local suggestions match anywhere in a name, so "la" filled the list with Los Angeles Lakers, Alanya
-Belediye, Alanyaspor and Atalanta before SofaScore's hits and LaLiga was out of view; FX-28 is to match
-local names by the start of a word and cap them, so that SofaScore's hits stay visible.
+The cancel of an aborted fetch behind a reverse proxy was checked offline by B2 (#191) with a proxy-like
+client: the server sees the disconnect; on a real proxy it relies on the proxy closing its upstream
+connection (nginx's default, Caddy; `docs/deploy/README.md`).
+
+**As built (FX-28, #177; finding M23): local names by word start.** The local suggestions matched anywhere
+in a name, so "la" filled the list with Los Angeles Lakers, Alanya Belediye, Alanyaspor and Atalanta before
+SofaScore's hits and LaLiga was out of view. Now the follows and the stored names are ranked together
+(`rankLocal`, `frontend/src/app/suggest.ts:131` at `216c2f9`): names that start with the text, then names
+with a word that starts with it (after any mark that is not a letter or digit), follows before stored names
+in each; names that hold the text only inside a word come only when nothing better exists ("on" → Everton),
+and at most `MAX_LOCAL` = 5 local rows are shown before SofaScore's hits. `fold` folds like the server
+(`İ`/`ı`, `ø`, `ł`, every combining mark). `GET /catalog/suggest` ranks the same way on the server and reads
+its candidate pool word-start first. Ctrl K ranks follows and stored tournaments by the same rule, with the
+stored tournaments from the catalog suggestions (3.3).
 
 **Names with "/", as built (FX-26, #174; M4).** A follow's name is 1 to 80 characters without a line
 break, ":" or "\\"; since FX-26 a team, player or single-match follow may contain "/", which the doubles of
@@ -1011,7 +1043,10 @@ bar and the age of the season's schedule ("Fixtures read: 5 min ago" / "not read
 tournament's own season list has no route (G27). The **Jobs tab** reads `GET /jobs?target=<kind>:<id>`
 (FX-13, FX-19) merged with the downloads of every follow, shown as "Download · Arsenal". A **team follow**
 has a Matches tab with its stored matches (`/events?participant=`); a single-match follow links to its
-match. When a download of the follow ends, the page reads its last download, its counts and its seasons
+match. **As built (B2, #191; G40):** a **player follow** has a Matches tab too: the matches of the player's
+last match list (`GET /events?follow=player:<id>`, from the match ids a download keeps in `state.db`); a
+player not downloaded on this version yet has an empty list and its coverage says "Counted after the
+player's next download". When a download of the follow ends, the page reads its last download, its counts and its seasons
 again (FX-14a).
 
 **As built after the end-to-end test (FX-24 #170, FX-23 #171, FX-25 #172).**
@@ -1022,9 +1057,13 @@ again (FX-14a).
   when its download ends, since the first download is what stores its category. A team follow's header
   adds "Women" or "National team" when a hit of that team was seen in a search on this page (`seenTeam` in
   `frontend/src/app/suggest.ts:132` at `48e4c4c`, kept in memory, at most 500, no extra request): "Volleyball
-  · Turkey · Team · Women". Without such a hit it stays "Football · Team": `FollowRecord` has no gender and
-  there is no team record route (7.3), so after a reload the word comes back only once the team is seen in
-  a search again (FX-25).
+  · Turkey · Team · Women". **As built (B1, #190; G35):** a team follow's header reads the stored team
+  record (`GET /api/v1/teams/{team_id}`: sport, type, country, gender, national team, followed), again after
+  a job of the follow ends, so the words survive a reload: "Voleybol · Türkiye · Takım · Kadın", a national
+  team "Futbol · Türkiye · Milli takım", a tennis player "Tenis · İtalya · Oyuncu" (also when the record's
+  `type` is player or pair). The route answers 404 until a match of the team is stored; then the header
+  falls back to a search hit seen on the page, and without one it stays "Football · Team". It never shows
+  the number.
 - **Seasons tab.** Completeness is labelled **"with all data: N %"** ("tüm verisi inen: %N"), with an
   explanation on hover, and the missing data types are listed by name ("missing: Pre-game form (1)", from
   `counts.missing`). The test had seen "%0 tamam" with every match detailed (F6): a data type that
@@ -1044,7 +1083,8 @@ again (FX-14a).
   when the counts include matches of seasons not followed here: "Includes 27 matches of seasons not
   followed here, brought by other follows (a team, a player, a match) or by a download of one season."
   (F28: a team follow had filled 27 matches of a league season.)
-- **Coverage** of a team or a single match is counted from its matches (6.2, F23).
+- **Coverage** of a team or a single match is counted from its matches (6.2, F23); since B2 (#191) the
+  server counts it, a player's too (`summary.follows[]`, 6.2).
 
 **As built after the live validation (FX-26, #174).**
 - **Finished matches only.** The coverage in the facts follows the one rule of 6.2 for every kind
@@ -1118,10 +1158,14 @@ its hover text (4.6). A team's or a player's list starts with the played matches
 ones (6.4, `?when=`), and with a follow's fixed sport there is no sport filter. Under the From and To fields
 the chosen day is written in words (4.10, M13).
 
-**In progress (FX-28; finding M21 of the live validation).** The default order is start time, newest first
-(the Sort row), which puts far-future fixtures first once a league with a full fixture list is followed (the
-validation saw May 2027 Süper Lig matches at the top). FX-28 is to make the default "recent first" among
-started and finished matches, like the played/upcoming switch of a team's page.
+**As built (FX-28, #177; finding M21 of the live validation).** The order newest first put far-future
+fixtures first once a league with a full fixture list was followed (the validation saw May 2027 Süper Lig
+matches at the top). The Played / Upcoming / All switch of a team's page (6.4) is now on **every match
+list**: the Matches screen and a league's, a team's and a player's page. The default is **Played** (in
+progress, finished and decided without play, newest first); Upcoming is soonest first; All is every status,
+newest first. The choice is kept in the address (`when=upcoming|all`, none for Played); a status chip
+replaces the switch's choice, "All statuses" equals All, and an older `status=any` link opens All. So the
+default status filter of FX-14a above (every status) is the All view, not the first one shown.
 
 **States.** Empty with filters: "No stored match matches these filters." and "Clear filters". Empty without
 data: "No matches stored yet. Follow a league and sync it." 409 `job_running` on Fetch: 5.2. A filter that the
@@ -1224,9 +1268,12 @@ reader's language, others SofaScore's English marked `lang="en"`; the line, for 
 2.5"; suspended or in play), each outcome with its decimal price (the fraction under it), the opening
 price, the direction of the last change (word and arrow; the arrow only on a phone) and the winner. A
 market that the featured list names twice (`default`, `fullTime`) is shown once. The stored odds slices
-with their raw view follow under "SofaScore's answer". The bookmaker is shown as "Bookmaker 1": `Odds`
-carries only `provider_id`, and a provider name is open after 3.0.0 (7.3). The end-to-end test had found
-only the raw viewer with "readable view coming soon" (F11).
+with their raw view follow under "SofaScore's answer". The end-to-end test had found only the raw viewer
+with "readable view coming soon" (F11). **As built (B4, #192; G38; finding M20 of the live validation):**
+the heading names the bookmaker ("bet365"), from `GET /api/v1/odds/providers`, read once per page; an id
+with no known name, or every id when the list cannot be read, stays numbered ("Bookmaker 5"). `Odds` still
+carries only `provider_id`. The sub-key of an odds slice in the raw list and in the Data table shows the
+name too. No betting link, campaign field or colour of SofaScore's provider listing is stored or shown.
 
 **As built (FX-26, #174): the score of every sport.** The multi-sport pass of the live validation
 (2026-10-08, one finished match of each of 20 sports) found headers that showed less than the record holds
@@ -1237,10 +1284,16 @@ only the raw viewer with "readable view coming soon" (F11).
   marked `lang="en"`), which is not in schema v1 and comes from `GET /events/{id}/extra`.
 - **Baseball**: a line score under the score, innings 1 to 9 (extra innings keep their number) with R, H and
   E, and the series of a postseason from `/extra` ("Seri 1 – 2" / "Series 1 – 2").
-- **Sets**: the label of the count follows `score.format`: sets for `games` and `points` and for `legs` with
-  sets, "Leg" / "Legs" for `legs_won` and for `legs` without a set list, "Frame" / "Frames" for `frames`,
-  "Harita (oyun)" / "Maps (games)" for `games_won` (`setsLabelKey`); before, every set-like sport said "Sets". Tennis and padel sets show the
-  tie-break points of the set's loser: "6-7(7) 7-6(2) 6-3 6-4".
+- **Sets**: the label of the count follows `score.format` alone (`setsLabelKey`,
+  `frontend/src/screens/events/scoreText.ts:53` at `216c2f9`): sets for `games`, `points` and `legs` (darts
+  played in sets, also before its first set has a score), "Leg" / "Legs" for `legs_won`, "Frame" / "Frames"
+  for `frames`, "Harita (oyun)" / "Maps (games)" for `games_won`; before, every set-like sport said "Sets".
+  FX-26 guessed "Legs" for a `legs` score with an empty set list; since B3 (#189) the server maps a darts
+  match played as one set (`bestOfSets` 1) as `legs_won`, and the guess is gone. Tennis and padel sets show
+  the tie-break points of the set's loser: "6-7(7) 7-6(2) 6-3 6-4". **E-sports maps, as built (B3, #189;
+  G43):** the games of a series follow the games won: "Maps (games) 1 – 2 · 7-13 13-9 11-13", each game as
+  SofaScore sends it in `periodN` (the round score of a finished CS2 series, else 1-0 for the game's winner;
+  games not played are left out; `04-schema-v1.md` `SetsScore`).
 - **MMA**: the method as SofaScore abbreviates it and the round in the centre ("UD · 3. raunt"), and under it
   the winner, the method in words and the round ("Alivia Bierley kazandı · Hakem kararı (oybirliği) · 3.
   raunt"; UD, SD, MD, TD, KO, TKO, SUB, DQ and NC in both languages, an unknown code as given). The header
@@ -1260,10 +1313,8 @@ only the raw viewer with "readable view coming soon" (F11).
 The re-check on real data after FX-26 confirmed every case: cricket with its note, the baseball line score
 with "Seri 1 – 2", the MMA result, darts "Leg 4 – 0", snooker "Frame 1 – 3", e-sports "Harita (oyun) 1 –
 2", a futsal cup match without an empty aggregate and with "Çeyrek final", tennis "6-7(7) 7-6(2)", and no
-provisional badge in the header. Not shown: the map scores of an e-sports match (`period1` to `period3` of
-the payload are not in the model; after 3.0.0). A darts match played as one set (`bestOfSets: 1`) is
-mapped as `legs` with an empty set list, so it reads "Leg 4 – 0", which is what was played; changing the
-mapper is after 3.0.0 (`03-implementation-plan.md` section 17).
+provisional badge in the header. The map scores of an e-sports match and the darts mapping of a single set,
+which the re-check left for after 3.0.0, are built by B3 (#189; above).
 
 **Navigation.** Back to the list keeps its filters. A job toast after Fetch again; when it finishes the page
 reloads the event.
@@ -1368,17 +1419,28 @@ older than 30 s: "No sign of life for 45 s; the process may have stopped."
   okunuyor…", F8), because the log parameters carry `league_id` and `season_id` only. Job detail reads
   the stored season list of the job's league and of any league a log line names (once per page, this
   server only) and writes the season's year ("… 2025 sezonunun …"); a season the stored list lacks keeps
-  "#id". A `season_name` in the parameters would spare that read (open after 3.0.0, 7.3).
+  "#id". As built (B2, #191; G37): sync log lines that carry a league or season id also carry
+  `league_name`, `season_name` and `season_year` (`resolved_name`, `resolved_year` for an outdated season)
+  from the stored season list; Job detail writes those, and reads a season list only for a line without
+  them (an older server's).
 - **Time left.** The server's ETA is the phase's average since the phase began (`JobProgress.eta_seconds`),
   which the first, faster matches make optimistic (about twice in the test: "about 1 min left" at 33 of
   70 matches, then 2.5 minutes; F17). Job detail (from the job's events) and Overview (from the status
   reads) measure the pace of the last three minutes (`frontend/src/app/eta.ts`, `ETA_WINDOW_MS`) and show
-  the longer of the two estimates. A pace in requests is not possible: the progress has no request
-  counter (7.3). As built (FX-26, #174; finding M14 of the live validation): the server's `eta_seconds` is
+  the longer of the two estimates. As built (FX-26, #174; finding M14 of the live validation): the server's `eta_seconds` is
   now the longest of the phase's average pace, the pace of the last 3 minutes and, for team, player and
   match follows, the requests still to send at the job's measured request rate (`02-services.md`). The
   validation had seen 69 s left for 97 matches of a team at 2 requests per second (about 7 minutes); the UI
-  rule is unchanged, so the shown time never drops below the server's.
+  rule is unchanged, so the shown time never drops below the server's. Since B2 (#191) the league detail
+  phase plans its matches by need (full, refill, refresh), so the request-based estimate covers a league
+  download too.
+- **Requests, as built (B2, #191; G41, F17).** A download's progress and result carry request counters
+  (`progress.requests`, `result.requests`: `sent`, every request to SofaScore including retries, bridge
+  fetches and the session warm-up; `budget_wait_seconds` and `backoff_seconds`, summed over the requests).
+  Job detail shows them under the progress and in the result: "312 requests to SofaScore · each waited
+  1.2 s on average for the request budget", and the time spent waiting because SofaScore asked to slow down
+  only when there was one (`requestsText`, `frontend/src/screens/jobs/jobText.ts:242` at `216c2f9`); the
+  hover text says that the shared request budget, not SofaScore, sets the pace when the wait is long.
 - **Units.** Counts name the unit of the phase (6.1, F25).
 - **New lines.** "The season list of … is up to date; it is not read again." and "The matches of …, season
   … are up to date; they are not read again." (`sync_season_list_fresh`, `sync_schedule_fresh`, FX-23:
@@ -1412,8 +1474,8 @@ also reads `capabilities.parquet` (`frontend/src/screens/exports/ExportDialog.vu
 (#130) was merged meanwhile: `POST /jobs {kind: "export"}` now writes the normalized datasets `events`,
 `slices` and `changes` as JSONL, CSV, Parquet (with pyarrow) and SQLite, so the disabled choices can be
 enabled; FX-14b (#161) wired them (below). The export filter (`ExportFilter`) is not "the same filter controls as Events":
-it has sport, tournaments, seasons, events, status classes and from/to, and no participant, text,
-followed or has-details filter (SC-2, #130); the dialog offers sport, followed tournaments, season ids and
+it has sport, tournaments, seasons, events, status classes and from/to, and no text, followed or
+has-details filter (SC-2, #130; the participant fields `team_ids` and `player_ids` came with B1, below); the dialog offers sport, followed tournaments, season ids and
 event ids (the wide CSV takes tournaments and events only, as the API checks).
 
 **As built (FX-14b, #161), the dialog offers what the API writes.** Three kinds
@@ -1441,12 +1503,17 @@ readable file names of FX-19 (`<league or dataset>_<UTC date>_<last 8 characters
 progress and a link to the job.
 
 **As built after the end-to-end test (FX-24 #170, FX-23 #171).** The filter's added follows include
-**teams and single matches**, not only leagues (F13: a followed team could not be chosen). `ExportFilter`
-has no participant field, so a single match is sent as its match number and a team as the numbers of its
-stored matches, read when it is chosen (`GET /events?participant=`, up to 2,000; the dialog waits and shows
-"70 stored matches"). A note says that the choices narrow each other (the filter is AND). Players cannot be
-chosen, and the dialog says why (stored matches do not say who played; an `ExportFilter` participant is
-open after 3.0.0, 7.3). **An export starts while a download runs** (FX-23, the `export` lease; 5.4): the
+**teams and single matches**, not only leagues (F13: a followed team could not be chosen). FX-24 sent a
+single match as its match number and a team as the numbers of its stored matches, read when it was chosen
+(`GET /events?participant=`, up to 2,000). **As built (B1, #190; G39):** `ExportFilter` has participant
+fields, and the dialog lists the added teams, **players** and single matches: teams go to `team_ids`,
+players to `player_ids`, matches to `event_ids` (`frontend/src/screens/exports/ExportDialog.vue:97-104` at
+`216c2f9`). The server resolves teams and players when it writes the file (a team: the matches with it on
+either side; a player: the matches whose stored line-ups name the player, so a match stored without
+line-ups is not found), and the dialog reads no match list; the FX-24 workaround is gone. Teams and players
+together are one filter (a match of any of them), and every filter narrows the others (AND): a chosen team
+and a chosen single match now intersect, where FX-24 added them together. The dialog's note says so. The
+list's Filter column names them ("2 teams · 1 player"). **An export starts while a download runs** (FX-23, the `export` lease; 5.4): the
 test had been refused with "Another job is writing to the data folder" for the whole download (F14); in
 the re-test a CSV export of 161 rows finished while the Süper Lig 25/26 download ran. Exports written
 before FX-23 keep the old extra-time score of a match that went straight to penalties
@@ -1568,7 +1635,7 @@ row ⋯ : Download · Check (dry run) · Restore…
 
 | Element | Shows / does | Route | Field |
 |---|---|---|---|
-| Connection | | `GET /api/v1/status` | `bridge.state`, `consecutive_failures`, `last_success_at`, `last_failure_at`, `failing_since`, `last_error.kind`, `last_error.at`. As built (FX-14a, FX-14b): "Not tried yet" (grey) while nothing has answered, "Last request failed" and "Last check failed" (amber), from `/status.connection` (`state`: `never_tried`, `ok`, `failed`; `last_check`; FX-19), plus "Last failed request" (the reason in words, the time) and "Last connection check". FX-14a found that `bridge.last_success_at` was set only by the browser bridge, so a download through the direct path still showed "Not tried yet"; FX-19 records every transport. The state is kept per process: requests of `ssc` commands and `ssc watch` do not count in the web server's `/status` (G28) |
+| Connection | | `GET /api/v1/status` | `bridge.state`, `consecutive_failures`, `last_success_at`, `last_failure_at`, `failing_since`, `last_error.kind`, `last_error.at`. As built (FX-14a, FX-14b): "Not tried yet" (grey) while nothing has answered, "Last request failed" and "Last check failed" (amber), from `/status.connection` (`state`: `never_tried`, `ok`, `failed`; `last_check`; FX-19), plus "Last failed request" (the reason in words, the time) and "Last connection check". FX-14a found that `bridge.last_success_at` was set only by the browser bridge, so a download through the direct path still showed "Not tried yet"; FX-19 records every transport. The state is kept per process: requests of `ssc` commands and `ssc watch` do not count in the web server's `/status` (G28). As built (B2, #191): the state is the **last recorded outcome** (every record takes a sequence number), so a failure in the same second as an answer reads "Last request failed" (on whole-second times a tie read `ok` before); `last_check.superseded` says that an answer came after a failed check, and the card then no longer shows "Last check failed" (`frontend/src/ui/status.ts:57` at `216c2f9`; an older server without the flag is judged by the times) |
 | Request rate | | same | `throttle.enabled`, `requests_per_second`, `shared`, `error` |
 | Run connection check | one request through the bridge, on click only | `POST /api/v1/status/check` (P21) | result: success, events count, browser ready, challenge. Built (P21 #122): `ok`, `reason`, `message`, `events_count`, `checked_at_utc`, `bridge` |
 | Live service | read-only; no start or stop in the UI (R2) | `/status` live fields (P21, from `live_status(store)`) | `running`, `pid`, `host`, `source`, `sports`, `leaders` (per sport: `page`, `direct` or `poll`), `last_switch`, `heartbeat_at`, `blocked`, `last` (the last run when not running) |
@@ -1675,7 +1742,7 @@ The prompt covers the app whenever an API call answers 401 `unauthorized`.
 | Element | Does | Route | Field |
 |---|---|---|---|
 | Need for a token | | `GET /api/v1/status` (open) / `GET /api/v1/auth` (P21) | `auth_required`; `required`, `authenticated`. As built: FE-2a (#107) used the legacy `/api/auth*` routes; since #132 the prompt and Sign out use `/api/v1/auth*` (P21 #122) |
-| Sign in | sends the token once; the server sets an HttpOnly cookie; the app reloads its data | `POST /api/v1/auth/login` (P21; today `/api/auth/login`) | — |
+| Sign in | sends the token once; the server sets an HttpOnly cookie; the app reloads its data | `POST /api/v1/auth/login` (P21; the 2.x `/api/auth/login` was removed by P30, #186) | — |
 | Wrong token | "Wrong token." | 401 `unauthorized` | |
 | Too many attempts | "Too many wrong tokens. Try again in 27 s." with a countdown; the button waits | 401 with `details.reason = "too_many_attempts"`, `Retry-After` | `details.retry_after`. The legacy login answers 429 with `detail.retry_after`; the client reads both shapes (#107) |
 | Sign out | in `⋯` and in Settings; only when a token is in use | `POST /api/v1/auth/logout` (P21) | — |
@@ -1706,7 +1773,10 @@ from.
 ```
 
 Sections: **Requests** (`client.*`, `breaker.*`), **Data** (`fetch.only_finished`; the default data
-selection `defaults.slices` and `slices.<sport>` with the SlicePicker, from P27; the odds provider, P28),
+selection `defaults.slices` and `slices.<sport>` with the SlicePicker, from P27; the odds provider, P28,
+which since B4 (#192) has a "Known bookmakers" select next to the number, with options like "bet365 · 1";
+free entry of any id still works and the select then says "Another number", and a locked row reads
+"1528 · bet365 Türkiye"),
 **Refresh** (`refresh.window_hours`), **Display** (`display.language`, `display.date_format`), **Logging**
 (`log.level`, `log.debug`), **Storage** (`storage.data_dir`), **Server (read-only)** (bind address, allowed
 hosts, token in use yes/no, live source, sinks, schedule, config file path), **This browser** (language of
@@ -1714,7 +1784,7 @@ this browser, theme, density, time display; stored in the browser only; Sign out
 
 | Element | Shows / does | Route | Field |
 |---|---|---|---|
-| Every row | value, source chip, lock | `GET /api/v1/settings` | `key`, `value`, `source` (`default`, `dotenv`, `overrides`, `file`, `env`, `flag`), `source_name`, `locked`, `writable`, `secret` |
+| Every row | value, source chip, lock | `GET /api/v1/settings` | `key`, `value`, `source` (`default`, `overrides`, `file`, `env`, `flag`), `source_name`, `locked`, `writable`, `secret`. As built (P30, #186; FX-33, #188): there is no `dotenv` source any more; a line of `.env` is part of the environment layer, so it reports `env` with the variable as `source_name` and is locked like any environment value; the page writes `config/overrides.json` only |
 | Lock reason | `file`: "Set in <config_file>. Change it there."; `env`: "Set by environment variable <source_name>."; `flag`: "Set by a command-line flag when the server started." | same | `source`, `source_name`, document `config_file` |
 | Read-only (not locked, not writable) | "Can be changed only in sofascore.toml." | same | `writable` false |
 | Secret | masked, with "Replace" (never shows the stored value) | same | `secret` |
@@ -1736,8 +1806,8 @@ shortening it is FX-20 (G32). `fetch.save_empty_rounds` is still a control, and 
 (`settingsMeta.ts:46-47`, `frontend/src/locales/ui/en.ts:1567` and `:1625` at `b6caf2f`; ST-27 retired the
 setting and made the other a read filter; G33, FX-20; P30 removes the setting). As built (FX-20, #167): the
 followed sports come first and the others are in one closed "Other sports" group; the "Keep empty rounds"
-control is gone, and "Show finished matches only" says that it only filters the lists (P30 still removes
-the setting itself). The review found Settings hard for a newcomer (every field
+control is gone, and "Show finished matches only" says that it only filters the lists (P30, #186, retired
+the setting: a value still given is a warning, not an error). The review found Settings hard for a newcomer (every field
 shows its config key, the API address is the first field, many keys are `sofascore.toml`-only, and the
 screen does not say whether a change needs a restart); #161's recheck still rates it hard.
 
@@ -1752,7 +1822,8 @@ test had found the SofaScore address first (F20). The wireframe's "Base address"
 **"Finished matches only in a league download"** ("Lig indirmesinde yalnızca bitmiş maçlar"). FX-20's text
 said that it only filters the lists and does not change what is downloaded, which was wrong: with it on, a
 league download fetches the details of finished matches only (`QueryService.detail_candidates`), and the
-Overview counts and the old `/api` lists count finished (or detailed) matches. The help says so, and that
+Overview counts count finished (or detailed) matches (and so did the 2.x `/api` lists until P30 removed
+them; the help text in `frontend/src/locales/ui/en.ts:1838` at `216c2f9` still names them). The help says so, and that
 the Matches screen and team, player and match follows are not affected; the setting's description in
 `sofascore_scraper/config/settings.py` says the same. It stays in the UI, because it changes downloads. In
 the defaults for all sports, an optional data type says "not available in every sport" ("her sporda
@@ -1763,6 +1834,11 @@ tennis `rankings` data type **"Tennis rankings (ATP, WTA)"** ("Tenis sıralamala
 reads the WTA list next to the ATP list. Since FX-16 (#176) the sport blocks of football, basketball and
 tennis follow the new registry rows: pre-game form is marked "not always available for this sport" in all
 three, and tennis lists no line-ups or incidents and counts point-by-point.
+
+**As built (B2, #191; F29).** Settings › Data has **"Wait before confirming “no data” (seconds)"**
+(`fetch.confirm_empty_after_seconds`, default 60, 0 to 86400) under the Advanced fold: a finished match's
+data type with one "no data" answer younger than that is left out of a download, and the first download
+after the wait confirms it (`02-services.md` 3.2).
 
 **States.** Save refused 400 `invalid_request` with `details.locked` or `details.read_only`: the key's row
 shows the reason and nothing is saved (all or nothing). 409 `job_running` for a data-folder change: 5.2. 507:
@@ -1777,7 +1853,7 @@ gave the state at `b3cb819` and proposed FX-13 (API) and FX-14 (frontend) for ev
 This version, the sixth, gives the state at `b6caf2f` (checked in `sofascore_scraper/web/api/v1/*.py`,
 `docs/api/openapi-v1.json` and `frontend/src`): P27 (#134), P28 (#140), FX-13 (#152, #153) and FX-19 (#156)
 built the routes, and FX-14, split on 2026-10-06 into FX-14a (#154) and FX-14b (#161), built the screens on
-them. What is still open has an owner in `03-implementation-plan.md` (FX-20, P30, or section 17 there).
+them. What is still open has an owner in `03-implementation-plan.md` (section 17, or section 19 for 3.1).
 
 ### 7.1 Exists
 
@@ -1823,15 +1899,29 @@ Added since, at `43ecdfc` (FX-26, #174):
 |---|---|---|
 | `GET /events/{event_id}/extra` (`EventExtra`: `note`, `series`, `venue`, `referee`; G42); `finished_details` in `/status.summary.tournaments[]` and in the season counts, with `completion_rate = complete / finished_details` | FX-26 (#174) | Event detail; Follows, Follow detail |
 
+Added since, at `216c2f9` (FX-28 and the 3.1 work):
+
+| Route or field | Built by | Screens |
+|---|---|---|
+| `GET /catalog/suggest` ranks by word start (start, then a word start, mid-word only as a fallback) | FX-28 (#177) | Follow editor, quick search |
+| `GET /teams/{team_id}` (`TeamRecord`, G35); `individual` on `Sport` (G36); `ExportFilter.team_ids`, `player_ids` (G39); `gender` and `national` on catalog team hits; a "No team" placeholder reported as `team: null` | B1 (#190) | Follow detail, Follow editor, quick search, Exports |
+| `/status.summary.follows[]` (G40); `GET /events?follow=kind:id`; `progress.requests` and `result.requests` (G41); `league_name`, `season_name`, `season_year` in sync log parameters (G37); `last_check.superseded` in `/status.connection`; setting `fetch.confirm_empty_after_seconds` | B2 (#191) | Follows, Follow detail, Job detail, Health, Settings › Data |
+| `SetsScore.sets` of e-sports (`games_won`) and `legs_won` for darts in one set (G43) | B3 (#189) | Event detail, Events |
+| `GET /odds/providers` (`OddsProviderInfo`: `id`, `name`, `country`, `configured`; G38) | B4 (#192) | Event detail (Odds), Data table, Settings |
+
+P30 (#186) removed the 2.x `/api` routes; a 2.x path answers 404. No screen used them.
+
 ### 7.2 Planned by a remaining plan item
 
 FX-20 (#167) built all four rows below, so no remaining plan item has a route or a screen of this document
-left; P30 removes the legacy routes and the retired setting. The UI findings of the end-to-end test were
+left. The UI findings of the end-to-end test were
 fixed by FX-24 (#170) and FX-25 (#172) and the API ones it needed by FX-23 (#171); what they left is in 7.3
-(G34 to G41), after 3.0.0. The UI findings of the live validation were fixed by FX-26 (#174) and FX-27
-(#175), except M21 to M23, which FX-28 takes (in progress: the Matches list's default order, an unknown
-score in "Recent score changes", local suggestions by word start; 6.1, 6.3, 6.5); what FX-26 left is G43
-and the localized date picker (4.10), after 3.0.0.
+(G34 to G41). The UI findings of the live validation were fixed by FX-26 (#174), FX-27 (#175) and FX-28
+(#177: the Matches list's default order, an unknown score in "Recent score changes", local suggestions by
+word start; 6.1, 6.3, 6.5); FX-26 left G43 and the localized date picker (4.10). After 3.0.0, B1 (#190), B2
+(#191) and B3 (#189) closed G35 to G37 and G39 to G41 and G43; G38 (bookmaker names) is open for 3.1, and
+the owner decided on 2026-10-09 not to add a localized date picker now. P30 (#186) removed the legacy
+routes and retired the setting.
 
 | Need | Plan item | Screens |
 |---|---|---|
@@ -1851,7 +1941,8 @@ end-to-end test's UI findings; G42 and G43 by FX-26 (#174), from the multi-sport
 validation. "Built" means the route exists at `b6caf2f`; "UI" says whether a screen uses
 it. The rows of G25, G26, G29 and G31 to G33 give the state at `6f79344`, after FX-20 (#167), and the rows
 of G34 to G41 the state at `48e4c4c`, after FX-23 (#171) and FX-25 (#172); G29, G33, G42 and G43 give the
-state at `43ecdfc`.
+state at `43ecdfc`. The rows of G33, G35 to G41 and G43 give the state at `216c2f9`, after B1 (#190), B2
+(#191) and B3 (#189) of the 3.1 work.
 
 | # | Need | State at `b6caf2f` | Owner |
 |---|---|---|---|
@@ -1887,17 +1978,17 @@ state at `43ecdfc`.
 | G30 | Restore of an uploaded archive | Not a gap: decision 15 (no upload) stands; the archive must be in the server's backups folder. | — |
 | G31 | The live switch of the editor is offered for player follows, which `ssc watch` skips (`live_follow_skipped`) | **Built** by FX-20 (#167): not offered for player follows; shown on a player's edit page only when already on. | done |
 | G32 | Settings › Data lists all 21 registered sports, collapsed | **Built** by FX-20 (#167): followed sports first, the others in one closed "Other sports" group. | done |
-| G33 | The retired `fetch.save_empty_rounds` is still a control, and the texts of it and of `fetch.only_finished` still describe the old write-time meaning (`settingsMeta.ts:46-47`; `frontend/src/locales/ui/en.ts:1567`, `:1625`) | **Built** by FX-20 (#167): the control is gone, and "Show finished matches only" says that it only filters the lists. That text was wrong (the setting decides which matches of a league download get details); FX-26 (#174) relabelled it "Finished matches only in a league download" with a help that says what it affects (6.16). | done (FX-20, FX-26); P30 removes `fetch.save_empty_rounds` |
+| G33 | The retired `fetch.save_empty_rounds` is still a control, and the texts of it and of `fetch.only_finished` still describe the old write-time meaning (`settingsMeta.ts:46-47`; `frontend/src/locales/ui/en.ts:1567`, `:1625`) | **Built** by FX-20 (#167): the control is gone, and "Show finished matches only" says that it only filters the lists. That text was wrong (the setting decides which matches of a league download get details); FX-26 (#174) relabelled it "Finished matches only in a league download" with a help that says what it affects (6.16). | done (FX-20, FX-26); P30 (#186) retired `fetch.save_empty_rounds` (a warning when still given) |
 | G34 | A search hit's gender and national flag, to tell same-named teams apart (F26; FX-24 gap 1) | **Built** by FX-23 (#171): `TournamentHit.gender` (`M`/`F` as SofaScore gives it) and `national`, from `/search/all`; null for tournaments, players and stored names. UI: "Women" and "National team" in the editor, Ctrl K and the picked line (FX-25, #172; 6.3). Not stored in the catalog. | done |
-| G35 | A team record route with gender and country (`GET /teams/{id}` or a participant route; `FollowRecord` has neither), for a team follow's header (F5, F26; FX-24 gap 2) | **Missing.** The header uses a team hit seen in a search on the page (FX-25, `seenTeam`; 6.4). | after 3.0.0 (`03` section 17) |
-| G36 | Whether a sport's participants are players (`participants: "individual" \| "team"` on `Sport`, F31; FX-24 gap 3) | **Missing.** The UI keeps a list of slugs (`INDIVIDUAL_SPORTS` in `frontend/src/app/sports.ts:40`), against R4 (sport lists come from the API). | after 3.0.0 (`03` section 17) |
-| G37 | The season's name in the log parameters of `sync_schedule` and `sync_season_outdated` (F8; FX-24 gap 4) | **Missing.** Job detail reads the stored season lists to name seasons (6.9). | after 3.0.0 (`03` section 17) |
-| G38 | An odds provider's name (F11; FX-24 gap 5) | **Missing**: `Odds.provider_id` only; the Odds tab says "Bookmaker 1" (6.6). | after 3.0.0 (`03` section 17) |
-| G39 | Export by team or player: a participant field on `ExportFilter` (F13; FX-24 gap 6) | **Missing.** The dialog sends a team as up to 2,000 match numbers and offers no players (6.10). | after 3.0.0 (`03` section 17) |
-| G40 | Coverage per follow in `/status` (`summary.follows[]` or `FollowRecord.coverage`), and a way to count a player's matches (F23; FX-24 gap 7) | **Missing**: `/status.summary.tournaments[]` only; a team takes up to 5 requests of `/events`, a player cannot be counted (6.2). | after 3.0.0 (`03` section 17) |
-| G41 | Request counters in job progress (requests sent, expected requests per match), for an ETA in requests (F17; FX-24 gap 8) | **Missing.** The UI measures the recent pace instead (6.9). | after 3.0.0 (`03` section 17) |
+| G35 | A team record route with gender and country (`GET /teams/{id}` or a participant route; `FollowRecord` has neither), for a team follow's header (F5, F26; FX-24 gap 2) | **Built** by B1 (#190): `GET /api/v1/teams/{team_id}` → `TeamRecord` (the stored participant: `sport`, `type`, `name`, `country_code`, `gender`, `national`, … and `followed`), from the catalog, no SofaScore request; 404 `not_found` until a match of the team is stored. `/catalog/suggest` team hits carry `gender` and `national` too. UI: the header of a team follow (6.4), with the search hit as the fallback. | done (B1) |
+| G36 | Whether a sport's participants are players (`participants: "individual" \| "team"` on `Sport`, F31; FX-24 gap 3) | **Built** by B1 (#190) as a required boolean `individual` on `Sport` (`SportSpec.individual`: tennis, badminton, table tennis, padel, snooker, darts, MMA; e-sports is a team sport). UI: `isIndividual()` reads the registry; `INDIVIDUAL_SPORTS` is gone (6.3), so R4 holds. | done (B1) |
+| G37 | The season's name in the log parameters of `sync_schedule` and `sync_season_outdated` (F8; FX-24 gap 4) | **Built** by B2 (#191): sync log lines carry `league_name`, `season_name`, `season_year` (`resolved_name`, `resolved_year` for an outdated season). UI: Job detail writes them and reads a season list only for an older server's lines (6.9). | done (B2) |
+| G38 | An odds provider's name (F11; FX-24 gap 5) | **Built** by B4 (#192): `GET /odds/providers` (`listOddsProviders`: `id`, `name`, `country`, `configured`) from the built-in table `sports.ODDS_PROVIDERS`, no SofaScore request; the Odds tab, the Data table and the Settings row name the bookmaker (6.6, 6.16). `Odds.provider_id` stays the only field of the record; a `provider_name` in schema v1 and a fetch of SofaScore's provider listing are open (`03` section 19). | B4 (#192) |
+| G39 | Export by team or player: a participant field on `ExportFilter` (F13; FX-24 gap 6) | **Built** by B1 (#190): `ExportFilter.team_ids`, `player_ids` (one filter, ANDed with the others; a player's matches are those whose stored line-ups name the player), also `ssc export --team/--player`. UI: the export dialog sends teams and players as such (6.10). | done (B1) |
+| G40 | Coverage per follow in `/status` (`summary.follows[]` or `FollowRecord.coverage`), and a way to count a player's matches (F23; FX-24 gap 7) | **Built** by B2 (#191): `/status.summary.follows[]` (`events`, `finished`, `finished_details`, `coverage`, `counted`) for every follow; a player's from the match ids of the player's last match list, kept in `state.db` (`follow_events:player:<id>`); `GET /events?follow=kind:id`. UI: the Follows list, a follow's facts and a player's Matches tab (6.2, 6.4); the `/events` counting stays only for an older server. | done (B2) |
+| G41 | Request counters in job progress (requests sent, expected requests per match), for an ETA in requests (F17; FX-24 gap 8) | **Built** by B2 (#191): `progress.requests` and `result.requests` (`sent`, `budget_wait_seconds`, `backoff_seconds`); the league detail phase plans by need, so the server's request-based ETA covers league downloads (no expected-requests field). UI: Job detail (6.9); the recent-pace rule stays. | done (B2) |
 | G42 | SofaScore's result note (cricket), the series score of a postseason, the venue and the referee of a match, none of which is in schema v1 (M7, M8; the raw route's unwrapped event object) | **Built** by FX-26 (#174): `GET /api/v1/events/{event_id}/extra` → `EventExtra` (`note`, `series`, `venue`, `referee`), read from the stored event payload, every field null without one, 404 for an unknown match; a separate route because the single-resource envelope is `{"data"}` only. UI: the header's note and series, the Overview tab's venue and referee (6.6). | done |
-| G43 | The map scores of an e-sports match (`period1` to `period3` of the payload) | **Missing**: not in the model, so not shown (6.6; FX-26 Not done). | after 3.0.0 (`03` section 17) |
+| G43 | The map scores of an e-sports match (`period1` to `period3` of the payload) | **Built** by B3 (#189): `SetsScore.sets` of `games_won` lists the games from `periodN` (the round score, or 1-0 for the game's winner; 0-0 left out); `DERIVE_VERSION` 8. UI: "Maps (games) 1 – 2 · 7-13 13-9 11-13" in the header (6.6). | done (B3) |
 
 **Open after FX-14b, not gaps of the API.** `/status.schedule` (P29) is not read by Overview and Health
 (6.1, 6.12; the comment at `frontend/src/screens/HealthScreen.vue:28` still says the next runs are not
@@ -1934,7 +2025,7 @@ added as a dev dependency for the accessibility checks. The stack at `b6caf2f`: 
 |---|---|---|
 | `frontend/src/api/client.ts` error parsing (`parseError`, `apiError`) | handles three error shapes and the 401 hook | reduce to the v1 shape `{error: {code, message, details, request_id}}`; generate the types from `docs/api/openapi-v1.json` (for example `openapi-typescript`, a dev dependency, with a CI check that the generated file is current). As built (#107): `openapi-typescript` cannot be installed next to TypeScript 6 (its peer is `typescript@^5`), so `frontend/scripts/gen-api-types.mjs` (`npm run gen:api`) generates `frontend/src/api/v1/schema.ts`; it fails loudly on a JSON Schema form it does not know, and `frontend/tests/apiTypes.test.ts` fails when the committed file differs |
 | `frontend/src/i18n.ts` (`langOf`, `resolveLang`, server language) | the language rule of R6, already tested | keep; replace the server-language source with `/api/v1/settings` `display.language` |
-| `frontend/vite.config.ts` `__INTLIFY_JIT_COMPILATION__` and the `<meta name="sofascore-csp" content="no-eval">` marker (#43) | the server's Content-Security-Policy has no `'unsafe-eval'` | keep as is; `frontend/tests/csp.test.ts` keeps it so. As built: vue-i18n 10 and later compile messages without `eval` always, so #137 (vue-i18n 11) removed the define from `frontend/vite.config.ts`; the marker stays. `frontend/tests/csp.test.ts` now renders messages in a child Node process started with `--disallow-code-generation-from-strings` and scans the built `dist` for `eval` and `new Function` (`:68-82` at `b6caf2f`), and `tests/test_web_hardening.py:1041-1042` asserts vue-i18n 10 or later. The comment above `CSP_MARKER` in `sofascore_scraper/web/security.py` named the define until FX-15 (#155) |
+| `frontend/vite.config.ts` `__INTLIFY_JIT_COMPILATION__` and the `<meta name="sofascore-csp" content="no-eval">` marker (#43) | the server's Content-Security-Policy has no `'unsafe-eval'` | keep as is; `frontend/tests/csp.test.ts` keeps it so. As built: vue-i18n 10 and later compile messages without `eval` always, so #137 (vue-i18n 11) removed the define from `frontend/vite.config.ts`; the marker stayed until 3.1. P30 (#186) removed the server's `'unsafe-eval'` path for builds without the marker (every page except `/docs` and `/redoc` gets the strict policy; an older build must be rebuilt), and FX-33 (#188) removed the marker from `index.html`, which nothing read any more. `frontend/tests/csp.test.ts` now renders messages in a child Node process started with `--disallow-code-generation-from-strings` and scans the built `dist` for `eval` and `new Function` (`:68-82` at `b6caf2f`), and `tests/test_web_hardening.py:1041-1042` asserts vue-i18n 10 or later. The comment above `CSP_MARKER` in `sofascore_scraper/web/security.py` named the define until FX-15 (#155); `CSP_MARKER` itself is gone since P30 |
 | `TokenPrompt.vue` and `lib/auth.ts` | session cookie flow, no token in page storage | move to the v1 auth routes; add the countdown for `too_many_attempts` |
 | `lib/theme.ts` | light / dark / system with storage guarded by try/catch | keep; add density |
 | `lib/upstream.ts` | translated reasons of an upstream refusal | keep for the buttons that call SofaScore |
@@ -1951,7 +2042,7 @@ Order proposal (each part leaves a working UI; decision 22):
    Corrections, Exports, Backups (without restore until G2), Maintenance, Logs.
 3. After P27: data selection in the follow editor and in Settings; status filters.
 4. After P28: odds tab and the odds and season-data groups.
-5. Remove today's views and the legacy client calls; P30 then removes the legacy routes.
+5. Remove today's views and the legacy client calls; P30 then removes the legacy routes (done: #186).
 
 As built: part 1 is FE-2a (#107); part 2 is FE-2b, in two pull requests (#132: Exports, Backups with the
 restore check, Maintenance, Logs, Sinks, Overview and Health on the P21 fields; #133: Follows, the editor,
@@ -2381,6 +2472,43 @@ per second); the M and V numbers are its findings:
     change from an unknown score (M22), and local suggestions that match anywhere in a name and push
     SofaScore's hits out of view (M23). After 3.0.0: a localized date picker, the map scores of an e-sports
     match (G43), bookmaker names (G38), and the mapping of a darts match played as one set.
+
+Corrections after FX-28, the 3.0.0 release and the first 3.1 work (2026-10-09, the tenth revision; checked
+at `216c2f9`). FX-28 (#177) merged before the release; 3.0.0 was tagged on 2026-10-08; P30 (#186), FX-33
+(#188) and the post-3.0 batch B1 (#190), B2 (#191) and B3 (#189) are on main for 3.1:
+
+85. **FX-28 as built** (3.3, 6.1, 6.3, 6.5; M21 to M23). Item 84 had it in progress. Local suggestions rank
+    by word start, at most five, in the editor and in Ctrl K, which reads stored tournaments from the
+    catalog suggestions; every match list has the Played / Upcoming / All switch with Played first; a change
+    from an unknown score reads "no score → 4-3".
+86. **Team record and individual sports** (6.3, 6.4, 7.3 G35, G36; F5, F26, F31). The team follow's header
+    needed a search hit seen on the page; B1 reads `GET /teams/{id}` and keeps the hit as the fallback. The
+    frontend's list of individual sports is gone; the registry's `individual` flag replaces it.
+87. **Export by team and player** (6.10, 7.3 G39; F13). FX-24 sent a team as up to 2,000 match numbers and
+    offered no players; B1 sends `team_ids` and `player_ids`, and every filter of the dialog narrows the
+    others, so a team and a single match now intersect.
+88. **Coverage of every follow and a player's matches** (6.2, 6.4, 7.3 G40; F23). The UI counted a team from
+    up to five `/events` pages and could not count a player; B2 counts every follow in `/status` and gives a
+    player follow a Matches tab from its last match list.
+89. **Requests and season names in Job detail** (6.9, 7.3 G37, G41; F8, F17). A pace in requests was not
+    possible and seasons were named by reading season lists; B2 adds request counters and the names to the
+    job record and log parameters.
+90. **Connection state** (6.12). A failure in the same second as an answer read "ok"; since B2 the state is
+    the last recorded outcome, and `last_check.superseded` replaces the time comparison of the card.
+91. **E-sports maps and single-set darts** (6.6, 7.3 G43). The header showed the games won only, and the darts
+    label guessed "Legs" from an empty set list; B3 maps both on the server (`DERIVE_VERSION` 8), and the label
+    follows `score.format` alone.
+92. **Settings after P30** (6.16, 8, 7.3 G33). The `dotenv` source label, the `sofascore-csp` marker and the
+    `'unsafe-eval'` path for old builds are gone; a `.env` line is an `env` source; `fetch.save_empty_rounds`
+    is retired; the wait before a confirming "no data" request is a setting of Settings › Data (B2).
+93. **Behind a proxy** (5.1, 6.3). The UI runs at the root of its host only; under an ASGI root path the
+    access token was not checked on `/…/api/v1`, which B2 fixed; the cancel of an aborted search and the job
+    stream were checked offline with a proxy-like client.
+94. **Open** (4.10, 7.3). The owner decided on 2026-10-09 against a localized date picker for now (the native
+    picker stays; not in 3.1).
+95. **Bookmaker names** (6.6, 6.16, 7.3 G38). The Odds tab said "Bookmaker 1". B4 (#192) names the known
+    providers from a built-in table (`GET /odds/providers`), in the Odds tab, the Data table and the Settings
+    row of `client.odds_provider`; unknown ids stay numbered.
 
 The words, as built (FX-14a, #154; design word → Turkish → English):
 

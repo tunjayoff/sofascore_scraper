@@ -59,6 +59,20 @@ meaning of `live.score_changed` after the validation found no event for games wo
 `GET /api/v1/events/{event_id}/extra`, which serves a few values of the stored event payload that version 1
 does not map; it is part of API v1, not a record of this schema (section 7).
 
+Revised on 2026-10-09 (the tenth revision, checked against `origin/main` at `216c2f9`), after the 3.0.0
+release and the first 3.1 work. No definition changed, so `schema_version` stays 1. B3 (#189) corrected two
+score sheets of the `sets` family ("SetsScore"): darts is `legs` only when `bestOfSets` is more than 1, and a
+single-set match is `legs_won` with no sets; e-sports (`games_won`) lists its games in `sets`, from `periodN`
+in the form SofaScore sends (the game's own score, or 1-0 for its winner), without 0-0 pairs. An always-empty
+list starting to carry values is free (section 3); the generated `SetsScore` and `SetScore` tables were
+regenerated from the models (`REGEN_SCHEMA_DOC=1`), and the catalog re-derives stored matches on its first
+open (`DERIVE_VERSION` 7 by P30's catalog schema, 8 by B3; `sofascore_scraper/store/derive.py:54`). FX-31
+(#185) changed the detail slices of ten sports after the repaired research tool's run (section 5 and the
+slice keys in "Slice"). B1 (#190) changed API v1 next to this schema, not the schema: `GET
+/api/v1/teams/{team_id}` returns a stored team as a [Participant](#participant) plus `followed` ("Participant"),
+the API's registry item of `/sports` has an `individual` flag ("Sport"), and a search hit no longer reports
+SofaScore's placeholder team "No team" as a player's team.
+
 ## 1. What the schema is, and what it is not
 
 The platform stores SofaScore's responses as they are (one file per response, see `01-storage.md`). The
@@ -209,6 +223,11 @@ since SP-3 (PR #118), listed by `ssc describe sports` and `/sports`.
 {"slug": "football", "name": "Football", "id": 1, "score_family": "football"}
 ```
 
+The items of `GET /api/v1/sports` are the registry's view of a sport, not this record: besides `slug`,
+`name` and `score_family` they carry `i18n_key`, the slices and, since B1 (PR #190), `individual`, true for
+the sports whose players SofaScore lists as teams (tennis, badminton, table tennis, padel, snooker, darts and
+MMA; `SportSpec.individual` in `sofascore_scraper/sports.py`). The flag is not a field of this record.
+
 ### Category
 
 A country or region, or a tour such as ATP, that groups tournaments. In football and basketball a category is
@@ -295,6 +314,11 @@ player and a doubles pair; `type` says which it is.
 | any other number | `other` | not seen |
 
 The two persons of a pair are not part of version 1 (section 9, point 13).
+
+Since B1 (PR #190) `GET /api/v1/teams/{team_id}` returns one stored competitor as this record plus
+`followed` (whether a team follow names it; the API model `TeamRecord`), read from the catalog only and
+answered `not_found` until an event of the competitor is stored. A search hit of SofaScore whose player has the
+placeholder team "No team" reports `team: null`; search hits are API records, not records of this schema.
 
 ```json example:Participant
 {"id": 54, "sport": "football", "type": "team", "name": "Peterborough United", "short_name": "Peterborough Utd",
@@ -502,8 +526,8 @@ away value. A pair is null when SofaScore gave neither value.
 | volleyball, badminton, table tennis | `sets` | sets won | `period1`–`period7` points per set, `current` sets won |
 | padel | `sets` | sets won | as tennis: games per set, `periodNTieBreak`, a possible match tie-break |
 | snooker | `sets` | frames won | `current` frames won; `period1` repeats `current` and is not a set |
-| darts | `sets` | sets won, or legs won when the match has no sets | `periodN` legs won in set N when the event has a positive `bestOfSets`; otherwise `current` legs won |
-| e-sports | `sets` | games won | `current` games won; `periodN` only marks the winner of game N (1 or 0, 0-0 for an unplayed game) |
+| darts | `sets` | sets won, or legs won when the match is not played in sets | `periodN` legs won in set N when the event's `bestOfSets` is more than 1; otherwise (legs only, or a single set) `current` legs won |
+| e-sports | `sets` | games won | `current` games won; `periodN` game N, either its own score (rounds, in finished CS2 series) or 1-0 for its winner; 0-0 for an unplayed game or the one being played |
 | baseball | `innings` | runs including extra innings | `innings.inningN.run`, else `periodN`; `normaltime`, `overtime`; `inningsBaseball.hits`, `.errors` |
 | cricket | `cricket` | runs of all innings | `innings.inningN` with `score`, `wickets`, `overs` per side |
 | MMA | `fight` | none (SofaScore gives no score) | `winType`, `finalRound`; the winner in `winnerCode` |
@@ -639,22 +663,32 @@ cannot know it from the sport alone:
 |---|---|---|---|
 | `games` | tennis, padel | sets won | games per set, with `tiebreak`; `match_tiebreak` can be true |
 | `points` | volleyball, badminton, table tennis | sets won | points per set; no `tiebreak`, `match_tiebreak` always false |
-| `legs` | darts played in sets (a positive `bestOfSets`) | sets won | legs per set |
+| `legs` | darts played in sets (`bestOfSets` more than 1) | sets won | legs per set |
 | `frames` | snooker | frames won | empty: `period1` only repeats `current` (all 8 recorded samples) |
-| `legs_won` | darts without sets | legs won | empty |
-| `games_won` | e-sports | games won | empty: `periodN` only marks who won game N; the games are in the slice `esports_games` |
+| `legs_won` | darts in legs only or in a single set (`bestOfSets` 1, 0 or missing) | legs won | empty |
+| `games_won` | e-sports | games won | the games (maps) from `periodN`, each as SofaScore sends it: the game's own score (rounds) or 1-0 for its winner; 0-0 games are left out; the details are in the slice `esports_games` |
 
 The units of `home`, `away` and `sets_won` stay `sets`, and those of `SetScore` games, because changing a
 unit would need a new schema version; since FX-21 (#164) their texts say what they count: for the formats
 `frames`, `legs_won` and `games_won` the frames, legs or games won, and per set games in tennis and padel,
-points in volleyball, badminton and table tennis and legs in darts played in sets. Snooker has no set list
+points in volleyball, badminton and table tennis, legs in darts played in sets and a game's score in
+e-sports. Snooker has no set list
 (`period1` repeats `current`), so a set is never a frame. `format` is the field to read. For the sports of SP-2 and SP-3 up to
 `period7` is read (a table tennis match can have seven sets; tennis keeps its 2.x sheet and `period5`), and
 a set keeps its number: a live table tennis payload that carries only the
 current set (`period4` alone) gives one set numbered 4. Only `bestOfSets` tells the two darts formats apart
-(`bestOfLegs` is present in both); the legs-only rule is not verified on a real legs-only `/event` payload,
-because the recorded compact records lost `bestOf*` (the not-started fixture 17099320 therefore maps to
-`legs_won`).
+(`bestOfLegs` is present in both). Since B3 (PR #189) a match of a single set (`bestOfSets: 1`) is `legs_won`:
+SofaScore gives the legs won in `current` and, while live, repeats them in `period1` (recorded matches
+17236047, 17278936 and the live 17225298); before, the rule "a positive `bestOfSets`" showed those legs as
+sets won. The legs-only rule without any `bestOfSets` is not verified on a real `/event` payload, because the
+recorded compact records lost `bestOf*` (the not-started fixture 17099320 therefore maps to `legs_won`).
+E-sports games have carried their scores since B3 too: `periodN` comes in two forms, kept as sent and never
+converted into each other. Finished CS2 series give the game's own round score (17264020: 7-13, 13-9, 11-13,
+the `display` of the games in its `esports_games` slice); live payloads and titles without a round score give
+1 for the game's winner and 0 for the other. A best-of-five carries `period4` and `period5` as 0-0 until they
+are played, so 0-0 pairs are not games. A list that was always empty starting to carry values is free like
+a field that was always null (section 3), so `schema_version` stays 1; the catalog re-derives the stored matches
+(`DERIVE_VERSION` 8).
 
 #### SetScore
 
@@ -771,20 +805,23 @@ Keys of an event today (the slice registry, `ssc describe slices`):
 | `key` | SofaScore endpoint | Sports |
 |---|---|---|
 | `event` | `/event/{id}` | all |
-| `statistics` | `/event/{id}/statistics` | all |
+| `statistics` | `/event/{id}/statistics` | all (live and finished matches) |
 | `team_streaks` | `/event/{id}/team-streaks` | all |
 | `pregame_form` | `/event/{id}/pregame-form` | all |
 | `h2h` | `/event/{id}/h2h` | all |
-| `lineups` | `/event/{id}/lineups` | all but darts, MMA, padel and snooker |
-| `incidents` | `/event/{id}/incidents` | all but darts, e-sports, MMA, padel and snooker |
-| `point_by_point` | `/event/{id}/point-by-point` | tennis, darts |
+| `lineups` | `/event/{id}/lineups` | all but tennis, badminton, table tennis, darts, MMA, padel and snooker |
+| `incidents` | `/event/{id}/incidents` | all but tennis, baseball, darts, e-sports, MMA, padel and snooker |
+| `point_by_point` | `/event/{id}/point-by-point` | tennis, badminton, table tennis, darts (live and finished matches) |
 | `esports_games` | `/event/{id}/esports-games` | e-sports (live and finished matches) |
 | `innings` | `/event/{id}/innings` | cricket (live and finished matches) |
 
 "All" includes a sport that is not registered. The sports a slice is not requested in, and those where it is
 requested but does not count for completeness, come from PR #121 (`not_in` and `optional_in` of the slice
-registry; `docs/all-sports/README.md`, "Maç detay dilimleri, spor başına"), on the evidence of one match page
-per sport. The known values of `Slice.key` in the field table above list every key of the registry,
+registry; `docs/all-sports/README.md`, "Maç detay dilimleri, spor başına"), on the evidence of the match pages
+the research tool recorded, as revised by FX-16 (#176) for football, basketball and tennis and by FX-31 (#185)
+after the repaired tool's run of 2026-10-09 (`tests/fixtures/sport_slices/evidence.json`). "Live and finished
+matches" is the slice's phase: it is not requested before kick-off (`statistics` and `point_by_point` since
+FX-31). The known values of `Slice.key` in the field table above list every key of the registry,
 `innings` included, since FX-21 (#164); `tests/test_schema_v1.py::test_slice_key_lists_every_registered_slice`
 fails when a registry key is missing from them (the only known values outside the registry are `event`,
 `seasons` and `schedule`). The field stays an open set: a new key adds an example, not a version.
@@ -935,7 +972,9 @@ It follows the headline score of [Score](#score): for the `sets` family that is 
 legs or games won for the formats without sets), so a game or a point won inside a set is not a
 `live.score_changed`, while the `score` field of every live event carries the score of each set. The live
 validation of 2026-10-08 saw no event in five minutes of a live tennis set (finding V7); FX-27 (#175) kept the
-rule, and `ssc watch --help` states it.
+rule, and `ssc watch --help` states it. Since B3 (#189) a darts match of a single set (`legs_won`) therefore
+gives one `live.score_changed` per leg, a darts match played in sets one per set won and none for a leg inside
+a set, and the `score` of an e-sports event carries the score of each game.
 The same transition is stored once: the stream log keeps one event per stream and `dedup_key` (an append
 with a key that the stream already holds stores nothing), and the key is
 `<id>:<type>:<from>><to>:<change_ts>` for the two change types (`-` for a missing `change_ts`) and
@@ -1153,24 +1192,33 @@ unknown.
 
 The eighteen sports added by SP-1 (PR #112), SP-2 (PR #115) and SP-3 (PR #118) rest on the research
 recordings of `docs/all-sports/README.md`: status examples, compact event records and one match page per
-sport, and no live payload for most of them. What differs, in short (the score columns are section 4,
+sport, and no live payload for most of them; the run of 2026-10-09 (PR #183) added a finished and a
+not-started match page for most sports. What differs, in short (the score columns are section 4,
 "Score"):
 
-| Sport | `score.family`, format | Headline score | `Participant.type` | Extra or missing slices (PR #121) |
+| Sport | `score.family`, format | Headline score | `Participant.type` | Extra or missing slices (PR #121, FX-31) |
 |---|---|---|---|---|
-| American football, Aussie rules | `periods`, `quarters` | points incl. overtime | `team` | |
+| American football, Aussie rules | `periods`, `quarters` | points incl. overtime | `team` | American football: `pregame_form` optional |
 | ice hockey, floorball | `periods`, `thirds` | goals incl. overtime | `team` | ice hockey: `pregame_form` optional |
 | handball | `periods`, `halves` | goals incl. overtime and the shoot-out | `team` | |
 | rugby | `periods`, `halves` | points incl. overtime | `team` | |
-| futsal, minifootball | `periods`, `halves` | goals incl. overtime | `team` | futsal: `statistics`, `lineups`, `pregame_form` optional; minifootball: `lineups` optional |
-| volleyball, badminton, table tennis | `sets`, `points` | sets won | volleyball `team`; badminton `player` or `pair`; table tennis `player` | |
+| futsal, minifootball | `periods`, `halves` | goals incl. overtime | `team` | futsal: `statistics`, `lineups`, `incidents`, `pregame_form` optional; minifootball: `lineups` optional |
+| volleyball, badminton, table tennis | `sets`, `points` | sets won | volleyball `team`; badminton `player` or `pair`; table tennis `player` | badminton, table tennis: `point_by_point`; no `lineups`; `pregame_form` optional |
 | padel | `sets`, `games` | sets won | `pair` | no `lineups`, `incidents`; `statistics`, `pregame_form` optional |
 | snooker | `sets`, `frames` | frames won | `player` | no `lineups`, `incidents`; `statistics`, `pregame_form` optional |
 | darts | `sets`, `legs` or `legs_won` | sets or legs won | `player` | `point_by_point`; no `lineups`, `incidents`; `pregame_form` optional |
-| e-sports | `sets`, `games_won` | games won | `team` | `esports_games` (optional); no `incidents`; `statistics`, `pregame_form` optional |
-| baseball | `innings` | runs incl. extra innings | `team` | |
+| e-sports | `sets`, `games_won` | games won | `team` | `esports_games`; no `incidents`; `statistics`, `pregame_form` optional |
+| baseball | `innings` | runs incl. extra innings | `team` | no `incidents`; `pregame_form` optional |
 | cricket | `cricket` | runs of all innings | `team` | `innings`; `statistics`, `pregame_form` optional |
-| MMA | `fight` | none | `player` | no `lineups`, `incidents` |
+| MMA | `fight` | none | `player` | no `lineups`, `incidents`; `pregame_form` optional |
+
+The slice column follows the registry after FX-31 (PR #185), which regenerated
+`tests/fixtures/sport_slices/evidence.json` from the repaired research tool's run of 2026-10-09 (20 finished
+and 19 not-started match pages) together with the older recordings: an answer counts from every run, the
+absence of a request only from the repaired run, and a match's state is the one it had when the page asked.
+`statistics` and `point_by_point` are requested for live and finished matches only. A proposal for rugby,
+floorball, volleyball and minifootball (some of their common slices optional or not requested) is not
+applied; it waits for more evidence and the owner's decision (`docs/all-sports/README.md`).
 
 Codes 91 and 92 give `decided_without_play` in every sport (which of these sports use them was not
 checked), and only football and handball fill `aggregate`. The `Participant.type` of darts and MMA (`player`) and of

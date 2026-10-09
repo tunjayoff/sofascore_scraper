@@ -148,13 +148,19 @@ bazında sıklığı: `docs/all-sports/summary.json` → `score_structure`.
   - Canlı kodlar 28/29 ("8th/9th Inning") bilinen kümede yok; tip sayesinde LIVE.
 - **Dart:** aynı sporda iki biçim. `current`'ın birimi (set mi leg mi) turnuvaya göre değişiyor; olayın
   `bestOfSets` / `bestOfLegs` alanlarına bakan bir mantık gerekiyor
-  (`research/all_sports/samples/darts/event-id__1.json`: `bestOfSets: 5`). Yapılan (SP-3): yalnızca
-  `bestOfSets` belirler; pozitifse set, değilse yalnız leg. `bestOfSets: 1` olan bir maç (17236047) bugün leg
-  olarak eşlenir; kuralın değişmesi 3.0.0 sonrasına kaldı.
+  (`research/all_sports/samples/darts/event-id__1.json`: `bestOfSets: 5`). Yapılan (SP-3, B3 #189): yalnızca
+  `bestOfSets` belirler; 1'den büyükse set (`legs`: `periodN` o setteki leg'ler), değilse yalnız leg
+  (`legs_won`). Tek setlik maç (`bestOfSets: 1`; 17236047, 17278936) set usulü değildir: `current` kazanılan
+  leg'lerdir, canlıda `period1` `current`'ı tekrarlar. SP-3'ün "pozitifse set" kuralı bu leg'leri kazanılan set
+  diye veriyordu; B3 düzeltti (`DERIVE_VERSION` 8).
 - **E-spor:**
   - Maç düzeyinde kodlar 1001/1002 ("First game"/"Second game").
   - Her oyun (harita) kendi `status`, `winnerCode` ve yarı skorlarına sahip bir alt nesne:
     `/event/{id}/esports-games` (`research/all_sports/samples/esports/event-id-esports-games__1.json`).
+  - Maç düzeyindeki `periodN` N. oyundur, iki biçimde: bitmiş CS2 serilerinde oyunun kendi raunt skoru
+    (17264020: 7-13, 13-9, 11-13; `esports-games`'teki `display`'ler), canlı yüklerde ve raunt skoru vermeyen
+    oyunlarda kazanan 1, kaybeden 0. Oynanmamış ya da o an süren oyun 0-0 gelir. B3'ten (#189) beri `score.sets`
+    bu oyunları verir (0-0 olanlar hariç, biçim olduğu gibi).
   - Bu çalışmanın olay toplayıcısı bu oyun nesnelerini de olay saydı (id 588243 gibi küçük id'ler).
 - **MMA:**
   - Bitmiş dövüşte `homeScore`/`awayScore` boş.
@@ -548,8 +554,8 @@ baktığı için öneride yok.
   HTTP koduna bakar, bu yüzden team_streaks her sporda zorunlu kalır ve bu sporların bitmiş maçları onun için
   bir doğrulama turu açabilir; kuralın gövdeye bakması ayrı bir karardır.
 - Kayıt defterinde dilimi olmayan yeni uç noktalar: voleybol `/graph/sequence` ve tenis `/tennis-power` (bitmiş
-  maçta 200); beyzbol `/umpires`, `/weather`, `/comments` artık bitmiş ve canlı maçta 200 (`OTHER_ENDPOINTS`,
-  öneri).
+  maçta 200); beyzbol `/umpires`, `/weather`, `/comments` artık bitmiş ve canlı maçta 200, `/at-bats` başlamamış
+  maçta da (`OTHER_ENDPOINTS`, öneri).
 - Hiç kanıtı olmayan ya da yetmeyen: aussie-rules (yalnızca başlamamış maç); Amerikan futbolunun canlı maçı.
   Kayıtlı olmayan bandy ve su topu yalnızca #121'in başlamamış sayfalarında.
 
@@ -566,7 +572,8 @@ baktığı için öneride yok.
 5. **Challenge sonrası ülke kodu `XX`:** `/config/top-unique-tournaments/XX/football`
    (`research/all_sports/requests.jsonl`).
 6. **Futbolda `code 100` ama `display` ≠ `normaltime`:** `extract_scores` uyarısı (`summary.json` → `checks.football.extract_warnings`).
-7. **Beyzbolda `/event/{id}/comments` 404 döndü;** gövde yok, anlamı belirsiz.
+7. **Beyzbolda `/event/{id}/comments` 404 döndü;** gövde yok, anlamı belirsiz. 09.10.2026'nın koşusunda
+   (`lv-20261009`) bitmiş ve canlı maçta 200 döndü (yukarıda, "Bulgular").
 
 ## Açık sorular
 
