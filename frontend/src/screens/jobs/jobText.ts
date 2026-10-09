@@ -3,6 +3,7 @@ import { i18n } from '@/i18n'
 import type { BackupJobSpec, ExportJobSpec, FollowRecord, Job, JobKind, JobState } from '@/api/v1/schema'
 import type { StartJobBody } from '@/api/v1/client'
 import { seasonName, tournamentNames } from '@/screens/events/eventText'
+import { duration } from '@/ui/time'
 
 /**
  * Jobs in words (05-web-ui.md 6.8, 6.9). Everything shown is built from codes and numbers of the job
@@ -218,6 +219,36 @@ export function scopeText(scope: string): string {
   return textOr(`ui.scope.${scope}`, scope)
 }
 
+/**
+ * The request counters of a download (B2, F17; `progress.requests` and `result.requests`): requests sent to
+ * SofaScore and the seconds they waited, summed over the requests, for the shared request budget and for
+ * SofaScore's back-off. Null for a job without them (another kind, or an older server).
+ */
+export type RequestCounts = { sent: number; budgetWait: number; backoff: number }
+
+export function readRequests(raw: unknown): RequestCounts | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  const sent = num(r.sent)
+  if (sent == null) return null
+  return { sent, budgetWait: num(r.budget_wait_seconds) ?? 0, backoff: num(r.backoff_seconds) ?? 0 }
+}
+
+/**
+ * "312 requests to SofaScore · each waited 1.2 s on average for the request budget": why a job is slow. The
+ * average is per request, since requests wait at the same time; the back-off is named only when there was one.
+ */
+export function requestsText(r: RequestCounts, num: (n: number) => string = String): string {
+  const parts = [t('ui.job.requests', { n: num(r.sent) })]
+  if (r.sent > 0) {
+    const avg = Math.round((r.budgetWait / r.sent) * 10) / 10
+    parts.push(t('ui.job.requestsWait', { time: t('ui.time.s', { n: num(avg) }) }))
+  }
+  if (r.backoff > 0) parts.push(t('ui.job.requestsBackoff', { time: duration(r.backoff) }))
+  return parts.join(' · ')
+}
+
 /** The progress object of a job (JobProgress.detail() + percent), read defensively. */
 export type ProgressView = {
   percent: number | null
@@ -233,6 +264,7 @@ export type ProgressView = {
   breaker: string | null
   leagueName: string | null
   seasonName: string | null
+  requests: RequestCounts | null
 }
 
 const n = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
@@ -255,6 +287,7 @@ export function readProgress(raw: unknown): ProgressView {
     breaker: s(p.breaker),
     leagueName: s(p.league_name),
     seasonName: s(p.season_name),
+    requests: readRequests(p.requests),
   }
 }
 

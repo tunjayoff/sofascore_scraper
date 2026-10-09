@@ -538,3 +538,36 @@ def test_recheck_unavailable(fake: FakeSofaScore, run_job: RunJob, data_dir: Pat
     result["requests_after_all"] = fake.canonical_log()
 
     assert_golden("recheck_unavailable", result)
+
+
+def test_a_league_download_plans_its_matches_by_need(
+        fake: FakeSofaScore, run_job: RunJob, data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    B2 (bulgu F17): lig indirmesinin detay aşaması da maçlarını ihtiyaçlarına göre planlar ve biten her maçın
+    gönderdiği isteği bildirir; tahmini süre ilk maçlar ucuz dilim tamamlamalarıysa iyimser kalmaz. Sayaçlar
+    işin sonucunda da durur.
+    """
+    from sofascore_scraper.jobs.progress import JobProgress
+
+    planned: List[Dict[str, int]] = []
+    noted: List[Any] = []
+    real_plan, real_note = JobProgress.plan_costs, JobProgress.note_cost
+    monkeypatch.setattr(JobProgress, "plan_costs", lambda self, counts: planned.append(dict(counts))
+                        or real_plan(self, counts))
+    monkeypatch.setattr(JobProgress, "note_cost", lambda self, kind, requests: noted.append((kind, requests))
+                        or real_note(self, kind, requests))
+    run_job(mode="full", league_id=LEAGUE)
+    assert len(planned) == 1 and set(planned[0]) == {"full"}
+    assert sorted(kind for kind, _ in noted) == ["full"] * planned[0]["full"]
+    assert all(requests > 1 for _, requests in noted)
+
+    planned.clear()
+    noted.clear()
+    detail_records.drop_slices(data_dir, 9100001, "statistics")  # kısmi → refill
+    final = run_job(mode="details", league_id=LEAGUE)
+    assert planned == [{"refill": 2}]  # 9100001 ve "veri yok" yanıtları doğrulanacak 9100002
+    assert sorted(kind for kind, _ in noted) == ["refill", "refill"]
+    from sofascore_scraper.jobs.manager import JobManager
+
+    job = JobManager(deps.job_store()).get(final["job_id"])
+    assert job is not None and job.result["requests"]["sent"] == sum(requests for _, requests in noted) + 1  # +ısıtma

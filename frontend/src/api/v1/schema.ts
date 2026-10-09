@@ -651,8 +651,9 @@ export interface Job {
   origin: JobOrigin
   /** What the job was started with. A download (`sync`, `fetch`, `refresh`) has the fields of its request body (`only: "events"`: a `sync` of event details only, from `ssc sync --only events`); one by `event_ids` also has `selections`, the leagues of those events (league 0: an event not stored); `names` maps the follows and leagues it names to their names when it started (`{"team:42": "Arsenal"}`). */
   spec: Record<string, unknown>
-  /** Phase, counters and failed items; the last progress event for a job of another process. */
+  /** Phase, counters and failed items; the last progress event for a job of another process. A download has `requests`: `sent` (requests sent to SofaScore, every retry, browser fetch and session warm-up included), `budget_wait_seconds` (the time they waited for the shared request budget, `client.rate`) and `backoff_seconds` (the time they waited because SofaScore asked to slow down or refused); both times are summed over the requests, which can wait at the same time. The progress events carry the same object. */
   progress?: Record<string, unknown> | null
+  /** The outcome of a finished job; a download keeps its `requests` counters here. */
   result?: Record<string, unknown> | null
   error?: JobError | null
   /** ISO-8601, UTC. */

@@ -11,7 +11,17 @@ Tahmini süre (`eta_seconds`, FX-26, canlı doğrulama M14) üç ölçümün en 
     "yalnızca olay" okunan gelecek fikstür ile tam okunan maç) ve biten her maçın gönderdiği isteği bildiriyorsa
     (`note_cost`): kalan maçların sınıflarının şimdiye dek ölçülen maç başına isteğiyle beklenen istek sayısı,
     bu işin ölçülen istek hızına bölünür. Celtics indirmesi (31/128 maç) "69 sn" demişti: ilk maçlar tek istekli
-    fikstürlerdi, kalan 97 maçın çoğu ~9 istekliydi; 2 istek/sn'de ~7 dakika sürdü.
+    fikstürlerdi, kalan 97 maçın çoğu ~9 istekliydi; 2 istek/sn'de ~7 dakika sürdü. Lig indirmesinin detay
+    aşaması da maçlarını ihtiyaçlarına göre sınıflar (B2: `full` ~7 istek, `refill` 1-2, `refresh` 1); ilk
+    maçlar ucuz dilim tamamlamalarıysa ortalama yine iyimser kalırdı.
+
+İstek sayaçları (`requests`, B2; bulgu F17, 05-web-ui.md G41): işin SofaScore'a gönderdiği istekler (her deneme,
+köprünün fetch'i ve oturum ısıtması dahil; sofascore_scraper/client/context.py `notify_request`), bunların ortak
+istek bütçesinde (sofascore_scraper/throttle.py, `client.rate`) bekledikleri toplam süre ve SofaScore'un geri
+çekilme istekleri (429/403) yüzünden bekledikleri toplam süre. Süreler isteklerin toplamıdır: eşzamanlı istekler
+aynı anda bekler, toplam işin süresini geçebilir; istek başına ortalama (`budget_wait_seconds / sent`) okunur.
+Her istek ilerlemeyi yazmaz: bildirim köprünün thread'inden de gelir ve iş satırını oradan yazmamalıdır;
+sayaçlar bir sonraki yayınla (ilerleme, aşama, bekleme) çıkar. İş bitince sonuçta da durur (`result()["requests"]`).
 """
 from __future__ import annotations
 
@@ -69,6 +79,10 @@ class JobProgress:
         self._details_total = 0
         self._wait: Optional[Dict[str, Any]] = None
         self._breaker: Optional[str] = None
+        # İstek sayaçları: gönderilen istek, bütçe beklemesi ve geri çekilme beklemesi (saniye, isteklerin toplamı)
+        self._requests = 0
+        self._budget_wait = 0.0
+        self._backoff = 0.0
         # Tahmini süre: aşamanın (an, biten) örnekleri; sınıf → planlanan maç; sınıf → [biten maç, istek]
         self._samples: Deque[Tuple[float, int]] = deque()
         self._planned: Dict[str, int] = {}
@@ -180,9 +194,28 @@ class JobProgress:
             self._refresh_changed += int(bool(changed))
             self._emit()
 
+    def note_request(self, waited: float = 0.0) -> None:
+        """
+        İşin bir isteği SofaScore'a gidiyor (istek bağlamının `on_request` bildirimi); `waited`: ortak istek
+        bütçesinde beklediği saniye. Yayımlamaz: sayaçlar bir sonraki yayınla çıkar (modül belgesi).
+        """
+        with self._lock:
+            self._requests += 1
+            self._budget_wait += max(0.0, float(waited))
+
+    def requests(self) -> Dict[str, Any]:
+        """İstek sayaçları (modül belgesi): sent, budget_wait_seconds, backoff_seconds."""
+        with self._lock:
+            return {
+                "sent": self._requests,
+                "budget_wait_seconds": round(self._budget_wait, 1),
+                "backoff_seconds": round(self._backoff, 1),
+            }
+
     def wait(self, reason: str, seconds: float) -> None:
         """SofaScore geri çekilmesi: kart "{n} sn bekleniyor" gösterir. Daha uzun olan bekleme kazanır."""
         with self._lock:
+            self._backoff += max(0.0, float(seconds))
             until = self._wall() + max(0.0, float(seconds))
             if self._wait and self._wait["until"] >= until:
                 return
@@ -258,6 +291,7 @@ class JobProgress:
                 "breaker": self._breaker,
                 "refreshed": self._refreshed,
                 "refresh_changed": self._refresh_changed,
+                "requests": self.requests(),
             }
 
     def result(self) -> Dict[str, Any]:
@@ -271,6 +305,7 @@ class JobProgress:
                 "breaker": self._breaker,
                 "refreshed": self._refreshed,
                 "refresh_changed": self._refresh_changed,
+                "requests": self.requests(),
             }
 
     def _emit(self, **extra: Any) -> None:

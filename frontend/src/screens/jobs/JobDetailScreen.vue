@@ -23,7 +23,7 @@ import { JobStream, type JobEventMessage } from './jobStream'
 import { logLine, codeText, seasonsWanted, type LogLine } from './eventText'
 import { loadSeasons, loadTournaments } from '@/screens/events/eventText'
 import { etaSeconds, noteProgress } from '@/app/eta'
-import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobLeague, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
+import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobLeague, jobTarget, phaseText, readProgress, readRequests, requestsText, rerunBody, waitText, type ProgressView } from './jobText'
 
 /**
  * Job detail (6.9): state, origin and times; the live progress with phase, counts, ETA and SofaScore's
@@ -67,6 +67,8 @@ watch(progress, (p) => {
 })
 const eta = computed(() => etaSeconds(job.value?.id, progress.value))
 const result = computed(() => (job.value?.result ?? null) as Record<string, unknown> | null)
+/** The requests a finished download sent (B2, F17): from its result, else from its last progress. */
+const resultRequests = computed(() => readRequests(result.value?.requests) ?? readProgress(job.value?.progress).requests)
 const failedList = computed(() => {
   const r = result.value?.failed
   return Array.isArray(r) ? (r as { match_id?: string | number }[]) : progress.value.failed
@@ -305,6 +307,7 @@ onUnmounted(() => {
           <span v-if="eta" data-testid="job-eta">{{ t('ui.job.eta', { time: duration(eta) }) }}</span>
           <span v-if="progress.failedCount" style="color: var(--danger)">{{ t('ui.jobs.failedCount', { n: num(progress.failedCount) }) }}</span>
         </p>
+        <p v-if="progress.requests" class="m-0 u-small u-muted" :title="t('ui.job.requestsHelp')" data-testid="job-requests">{{ requestsText(progress.requests, num) }}</p>
         <p v-if="waitLeft && progress.wait" class="m-0 u-small flex items-center gap-2" style="color: var(--warn-fg)">
           <UiIcon name="pause" :size="14" />{{ t('ui.job.waiting', { n: waitLeft, why: waitText(progress.wait.reason) }) }}
         </p>
@@ -332,6 +335,10 @@ onUnmounted(() => {
           <template v-if="result.refreshed != null">
             <dt>{{ t('ui.job.refreshed') }}</dt>
             <dd class="u-num">{{ t('ui.job.refreshedText', { n: num(Number(result.refreshed) || 0), changed: num(Number(result.refresh_changed) || 0) }) }}</dd>
+          </template>
+          <template v-if="resultRequests">
+            <dt>{{ t('ui.job.requestsLabel') }}</dt>
+            <dd class="u-num" :title="t('ui.job.requestsHelp')" data-testid="job-result-requests">{{ requestsText(resultRequests, num) }}</dd>
           </template>
           <template v-if="result.breaker">
             <dt>{{ t('ui.job.stoppedBy') }}</dt>

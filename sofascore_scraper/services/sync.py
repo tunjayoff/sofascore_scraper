@@ -429,7 +429,8 @@ class SyncService:
         Eşitlemeyi çağıranın thread'inde baştan sona çalıştırır.
 
         İşin istekleri (ve yeniden denemeler arasındaki beklemeler) blok boyunca tutamacın iptal sorusuna bakar,
-        uzun beklemeleri ilerlemeye bildirir ve tek bir devre kesiciyi besler; çıkışta üçü de geri alınır.
+        uzun beklemeleri ve gönderilen her isteği (bütçe beklemesiyle; işin istek sayaçları, B2) ilerlemeye
+        bildirir ve tek bir devre kesiciyi besler; çıkışta hepsi geri alınır.
         StorageError fırlatır; iptal bir sonuçtur ("cancelled"), hata değil.
         """
         job: JobHandle = handle if handle is not None else DetachedHandle(spec)
@@ -437,7 +438,8 @@ class SyncService:
         # sayaçları besler; açıldığında istek katmanı bu iş için yeni istek göndermez.
         breaker = request_breaker.CircuitBreaker.from_config(self._ctx.config)
         run = _SyncRun(self._ctx, spec, job, breaker)
-        with request_context(cancel=job.cancelled, on_wait=job.progress.wait, breaker=breaker):
+        with request_context(cancel=job.cancelled, on_wait=job.progress.wait, breaker=breaker,
+                             on_request=getattr(job.progress, "note_request", None)):
             try:
                 return run.execute()
             except FetchCancelled:
@@ -1075,23 +1077,36 @@ class _SyncRun:
             if pending:
                 work.append((lid, pending))
         tracker.set_total(sum(len(p) for _, p in work))
+        # Tahmini süre maç başına istekten de (B2, F17; FX-26'nın takip kuralı): baştan indirilen maç (`full`)
+        # birkaç istek, eksik dilim tamamlaması (`refill`) ve yenileme (`refresh`) bir ya da iki istektir; ilk
+        # maçlar ucuzsa ortalama hız iyimser kalır
+        needs_of = getattr(details, "needs", None)
+        planned = Counter(str(need) for _, pending in work for need in needs_of(pending).values()) \
+            if callable(needs_of) else Counter()
+        if planned:
+            tracker.plan_costs(planned)
+            details.result_listener = lambda result: tracker.note_cost(_cost_class(result.item),
+                                                                       _requests_of(result))
 
         offset = 0
-        for lid, pending in work:
-            if cancelled():
-                break
-            tracker.set_context(league_id=lid, league_name=self.lname(lid))
-            self.log(
-                f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…",
-                "sync_details", **self.where(lid), count=len(pending),
-            )
-            details.fetch(
-                pending,
-                progress=lambda done, _t, _m, _o=offset: tracker.advance(_o + done),
-                cancelled=cancelled,
-                failed=lambda mid, _l=lid: tracker.add_failed(mid, _l),
-            )
-            offset += len(pending)
-            if details.breaker_tripped:
-                self.report_breaker(self.details_breaker_reason(), "match details")
-                break
+        try:
+            for lid, pending in work:
+                if cancelled():
+                    break
+                tracker.set_context(league_id=lid, league_name=self.lname(lid))
+                self.log(
+                    f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…",
+                    "sync_details", **self.where(lid), count=len(pending),
+                )
+                details.fetch(
+                    pending,
+                    progress=lambda done, _t, _m, _o=offset: tracker.advance(_o + done),
+                    cancelled=cancelled,
+                    failed=lambda mid, _l=lid: tracker.add_failed(mid, _l),
+                )
+                offset += len(pending)
+                if details.breaker_tripped:
+                    self.report_breaker(self.details_breaker_reason(), "match details")
+                    break
+        finally:
+            details.result_listener = None
