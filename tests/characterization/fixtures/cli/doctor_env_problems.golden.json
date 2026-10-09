@@ -62,16 +62,19 @@
        {
         "key": "line 4",
         "message": "line 4 cannot be parsed and is ignored: this is not a setting",
+        "origin": "env_file",
         "status": "fail"
        },
        {
         "key": "REQUEST_TIMEOUT",
-        "message": "REQUEST_TIMEOUT is no longer read (the 2.x names were removed in 3.1): use SOFASCORE_CLIENT__TIMEOUT_SECONDS (or client.timeout_seconds in the config file)",
+        "message": "REQUEST_TIMEOUT (set in .env) is no longer read (the 2.x names were removed in 3.1): use SOFASCORE_CLIENT__TIMEOUT_SECONDS (or client.timeout_seconds in the config file)",
+        "origin": "env_file",
         "status": "warn"
        },
        {
         "key": "SOFASCORE_CLIENT__BASE_URL",
         "message": "SOFASCORE_CLIENT__BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
+        "origin": "env_file",
         "status": "warn"
        }
       ]
@@ -79,7 +82,7 @@
      "fix": "Edit <SANDBOX>/.env (.env.example lists the names; `ssc config init --from-legacy` turns 2.x settings into a config file)",
      "fix_command": null,
      "id": "env",
-     "label": "Settings (.env)",
+     "label": "Settings (environment and .env)",
      "status": "fail",
      "summary": "3 problems: line 4, REQUEST_TIMEOUT, SOFASCORE_CLIENT__BASE_URL"
     }
@@ -149,9 +152,9 @@
   "stdout": [
    "SofaScore Scraper — environment check",
    "",
-   "[FAIL] Settings (.env): 3 problems: line 4, REQUEST_TIMEOUT, SOFASCORE_CLIENT__BASE_URL",
+   "[FAIL] Settings (environment and .env): 3 problems: line 4, REQUEST_TIMEOUT, SOFASCORE_CLIENT__BASE_URL",
    "       - line 4 cannot be parsed and is ignored: this is not a setting",
-   "       - REQUEST_TIMEOUT is no longer read (the 2.x names were removed in 3.1): use SOFASCORE_CLIENT__TIMEOUT_SECONDS (or client.timeout_seconds in the config file)",
+   "       - REQUEST_TIMEOUT (set in .env) is no longer read (the 2.x names were removed in 3.1): use SOFASCORE_CLIENT__TIMEOUT_SECONDS (or client.timeout_seconds in the config file)",
    "       - SOFASCORE_CLIENT__BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
    "       Fix: Edit <SANDBOX>/.env (.env.example lists the names; `ssc config init --from-legacy` turns 2.x settings into a config file)",
    "",

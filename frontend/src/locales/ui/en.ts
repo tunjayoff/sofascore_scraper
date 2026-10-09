@@ -1695,7 +1695,6 @@ const en = {
     },
     source: {
       default: 'default',
-      dotenv: '.env',
       overrides: 'set here',
       file: 'config file',
       env: 'environment',

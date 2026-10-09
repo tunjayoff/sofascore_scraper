@@ -63,7 +63,7 @@ describe('first visit and the language set on the server', () => {
     localStorage.clear()
   })
 
-  it('follows APP_LANGUAGE when it is set', async () => {
+  it('follows the language set on the server', async () => {
     await adoptServerLanguage(async () => ({ language: 'tr', language_explicit: true }))
     expect(i18n.global.locale.value).toBe('tr')
     expect(document.documentElement.lang).toBe('tr')

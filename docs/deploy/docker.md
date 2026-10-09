@@ -24,8 +24,8 @@ docker compose run --rm --no-deps sofascore-scraper status      # any command of
 
 | Arguments after the image name | Runs |
 |---|---|
-| none, `serve [options]` (or the old `web`) | `ssc serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000} [options]` |
-| anything else | `python main.py …`: a command of the CLI (`sync`, `watch`, `status`, `backup create`, …), `--version`, or, for one more release, the old flags (`--headless --update-all`, …) with their deprecation line |
+| none, `serve [options]` | `ssc serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000} [options]` |
+| anything else | `python -m sofascore_scraper.cli.main …`: a command of the CLI (`sync`, `watch`, `status`, `backup create`, …), `--version` or `--help`. The 2.x flags (`--headless --update-all`, `--web`, …) were removed in 3.1: each is a usage error (exit code 2) that names the command replacing it |
 
 ## Host allow-list and the access token
 

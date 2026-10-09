@@ -154,6 +154,26 @@ def test_cli_migrate_mirrors_the_configured_leagues_first(tmp_path: Path, cli: C
     assert result.exit_code == 0, result.stdout
     assert result.data["season_lists"] == 1 and result.data["unconvertible"] == []
     assert [s.id for s in open_store(data).entities.seasons(sf.PL.id)] == [sf.PL_2627.id]
+    # Taşıma yalnızca var olan eski dizinleri okur: bağlam 2.x'in alt dizinlerini artık kurmaz (ST-28, P30)
+    assert not (data / "match_details").exists() and not (data / "datasets").exists()
+
+
+def test_cli_migrate_reads_old_folders_that_exist_and_creates_none(canonical: Tuple[sf.LegacyFixture, Store],
+                                                                   tmp_path: Path, cli: CliRunner) -> None:
+    """
+    Bağlam `match_details/` ve `datasets/` kurmaz (ST-28, P30): var olan eski ağaç yine okunur ve taşınır; eski
+    dizini olmayan bir veri dizininde taşıma boş geçer ve eski dizin kurmaz.
+    """
+    fx, _store = canonical
+    assert (Path(fx.data_dir) / "match_details").is_dir()  # eski ağaç önceden vardı
+    ran = cli("--data-dir", fx.data_dir, "--json", "migrate")
+    assert ran.exit_code == 0 and ran.data["events"] == CANONICAL_EVENTS, ran.stdout
+    assert layouts(open_store(fx.data_dir)).get("legacy", 0) == 0
+
+    empty = tmp_path / "empty"
+    result = cli("--data-dir", empty, "--json", "migrate")
+    assert result.exit_code == 0 and result.data["events"] == 0, result.stdout
+    assert not (empty / "match_details").exists() and not (empty / "datasets").exists()
 
 
 # --- CLI: catalog (eski scripts/catalog_tool.py'nin testleri) ---------------------------------------------

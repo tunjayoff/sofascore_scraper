@@ -3,23 +3,20 @@
 cd "$(dirname "$0")" || exit 1
 chmod +x "scripts/start_web.py" 2>/dev/null || true
 
-# Language: explicit setting (APP_LANGUAGE in the environment or in .env) > system language
+# Language: explicit setting (SOFASCORE_DISPLAY__LANGUAGE in the environment or in .env) > system language
 # (LC_ALL, LC_MESSAGES, LANG) > English. Same rule as the app (sofascore_scraper/language.py) and
 # scripts/install.sh; repeated here because this runs before Python is known to exist.
-# The legacy LANGUAGE variable counts only when it is exactly tr / en: GNU gettext uses the same name.
 # The app also reads the language from sofascore.toml and from the Settings page (config/overrides.json);
 # this script cannot, so once Python is known to exist it asks the app instead (app_lang below).
 detect_lang() {
-  local value="${APP_LANGUAGE:-}"
+  local value="${SOFASCORE_DISPLAY__LANGUAGE:-}"
   if [[ -z "$value" && -f .env ]]; then
-    value="$(sed -n 's/^[[:space:]]*APP_LANGUAGE[[:space:]]*=//p' .env | tail -n 1 | sed 's/[[:space:]]#.*$//' | tr -d "\"'[:space:]")"
+    value="$(sed -n 's/^[[:space:]]*SOFASCORE_DISPLAY__LANGUAGE[[:space:]]*=//p' .env | tail -n 1 | sed 's/[[:space:]]#.*$//' | tr -d "\"'[:space:]")"
   fi
-  for value in "$value" "${LANGUAGE:-}"; do
-    case "$(printf '%s' "$value" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
-      tr) echo tr; return ;;
-      en) echo en; return ;;
-    esac
-  done
+  case "$(printf '%s' "$value" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
+    tr) echo tr; return ;;
+    en) echo en; return ;;
+  esac
   value="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
   case "$(printf '%s' "$value" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
     tr | tr[_.@-]*) echo tr ;;

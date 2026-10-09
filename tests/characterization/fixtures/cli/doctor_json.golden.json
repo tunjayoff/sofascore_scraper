@@ -106,7 +106,7 @@
     "fix": null,
     "fix_command": null,
     "id": "env",
-    "label": "Settings (.env)",
+    "label": "Settings (environment and .env)",
     "status": "ok",
     "summary": "<SANDBOX>/.env: 1 settings, all valid"
    }

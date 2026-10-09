@@ -864,19 +864,41 @@ def _legacy_names(ctx: Context) -> List[Tuple[str, str]]:
             for name in loader.legacy_names_in(ctx.environ, ctx.file_env, named)]
 
 
-def _env_problems(ctx: Context) -> List[Tuple[str, str, str]]:
+# Bir değişkenin bulunduğu yer: `.env` dosyası ya da sürecin ortamı (kabuk, hizmet dosyası, konteyner)
+ORIGIN_FILE = "env_file"
+ORIGIN_ENVIRON = "environment"
+
+
+def _origin(ctx: Context, key: str) -> str:
     """
-    (status, anahtar, ileti) listesi. Ayarların değerlerini yükleyici denetler (`config` denetimi); burada `.env`'in
-    okunamayan satırları, okunmayan 2.x adları ve yükleyicinin görmediği birkaç durum denetlenir.
+    Değişkenin değeri `.env`'den mi geliyor, ortamdan mı (yükleyicinin `legacy_warnings` kuralı): `.env`'de dolu ve
+    ortamda yok ya da aynı değerle (uygulama `.env`'i ortama yükler) ise `.env`; değilse ortam.
     """
-    problems: List[Tuple[str, str, str]] = []
+    in_file = (ctx.file_env.get(key) or "").strip()
+    if in_file and ctx.environ.get(key) in (None, ctx.file_env.get(key)):
+        return ORIGIN_FILE
+    return ORIGIN_ENVIRON
+
+
+def _env_problems(ctx: Context) -> List[Tuple[str, str, str, str]]:
+    """
+    (status, anahtar, ileti, yer) listesi; yer ORIGIN_FILE ya da ORIGIN_ENVIRON. Ayarların değerlerini yükleyici
+    denetler (`config` denetimi); burada `.env`'in okunamayan satırları, okunmayan 2.x adları ve yükleyicinin
+    görmediği birkaç durum denetlenir.
+    """
+    problems: List[Tuple[str, str, str, str]] = []
 
     for number, text in ctx.env_bad_lines:
-        problems.append((FAIL, "line {}".format(number), ctx.t("doctor_env_bad_line", line=number, text=text)))
+        problems.append((FAIL, "line {}".format(number), ctx.t("doctor_env_bad_line", line=number, text=text),
+                         ORIGIN_FILE))
 
-    # 2.x'in adları 3.1'de okunmaz (plan maddesi P30): her biri yeni adıyla söylenir
+    # 2.x'in adları 3.1'de okunmaz (plan maddesi P30): her biri bulunduğu yer ve yeni adıyla söylenir
     for name, replacement in _legacy_names(ctx):
-        problems.append((WARN, name, ctx.t("doctor_env_legacy_name", name=name, new=replacement)))
+        origin = _origin(ctx, name)
+        where = (ctx.t("doctor_env_in_file", file=ctx.env_file.name) if origin == ORIGIN_FILE
+                 else ctx.t("doctor_env_in_environ"))
+        problems.append((WARN, name, ctx.t("doctor_env_legacy_name", name=name, where=where, new=replacement),
+                         origin))
 
     api = ctx.get(_ENV_BASE_URL)
     if api:
@@ -886,16 +908,28 @@ def _env_problems(ctx: Context) -> List[Tuple[str, str, str]]:
         except ValueError:
             api_ok = False
         if not api_ok:
-            problems.append((WARN, _ENV_BASE_URL, ctx.t("doctor_env_api_url", value=api)))
+            problems.append((WARN, _ENV_BASE_URL, ctx.t("doctor_env_api_url", value=api), _origin(ctx, _ENV_BASE_URL)))
 
     if ctx.get("SOFASCORE_CHROME_PROFILE"):
-        problems.append((WARN, "SOFASCORE_CHROME_PROFILE", ctx.t("doctor_env_legacy_profile")))
+        problems.append((WARN, "SOFASCORE_CHROME_PROFILE", ctx.t("doctor_env_legacy_profile"),
+                         _origin(ctx, "SOFASCORE_CHROME_PROFILE")))
 
     headed = ctx.get(_ENV_BROWSER_HEADED).lower() in _TRUTHY
     if headed and ctx.platform.startswith("linux") and not (ctx.get("DISPLAY") or ctx.get("WAYLAND_DISPLAY")):
-        problems.append((WARN, _ENV_BROWSER_HEADED, ctx.t("doctor_env_headed")))
+        problems.append((WARN, _ENV_BROWSER_HEADED, ctx.t("doctor_env_headed"), _origin(ctx, _ENV_BROWSER_HEADED)))
 
     return problems
+
+
+def _env_fix(ctx: Context, problems: List[Tuple[str, str, str, str]]) -> str:
+    """Çözüm satırı: `.env`'i yalnızca sorunlardan biri oradaysa gösterir; ortamdakileri adlarıyla söyler."""
+    in_environ = [key for _s, key, _m, origin in problems if origin == ORIGIN_ENVIRON]
+    if not in_environ:
+        return ctx.t("doctor_env_fix", path=ctx.env_file)
+    names = ", ".join(in_environ)
+    if len(in_environ) == len(problems):
+        return ctx.t("doctor_env_fix_environ", names=names)
+    return ctx.t("doctor_env_fix_both", path=ctx.env_file, names=names)
 
 
 def check_env(ctx: Context) -> CheckResult:
@@ -911,13 +945,13 @@ def check_env(ctx: Context) -> CheckResult:
     problems = _env_problems(ctx)
     if problems:
         status = max((p[0] for p in problems), key=_SEVERITY.__getitem__)
-        detail["problems"] = [{"status": s, "key": k, "message": m} for s, k, m in problems]
+        detail["problems"] = [{"status": s, "key": k, "message": m, "origin": o} for s, k, m, o in problems]
         if len(problems) == 1:
             summary = problems[0][2]
         else:
             summary = ctx.t("doctor_env_problems", count=len(problems), keys=", ".join(p[1] for p in problems))
         return _result(
-            ctx, "env", status, "env_invalid", summary, fix=ctx.t("doctor_env_fix", path=path), detail=detail
+            ctx, "env", status, "env_invalid", summary, fix=_env_fix(ctx, problems), detail=detail
         )
     if not path.is_file():
         return _result(ctx, "env", OK, "env_missing", ctx.t("doctor_env_missing", path=path), detail=detail)

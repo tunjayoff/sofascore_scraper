@@ -633,7 +633,7 @@ def test_doctor_with_a_failed_check_exits_1(cli, tmp_path, monkeypatch):
     env_file.write_text("this is not a setting\n", encoding="utf-8")
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env_file))
     text = cli("doctor", "--only", "env")
-    assert text.exit_code == 1 and "[FAIL] Settings (.env)" in text.stdout and text.stderr == ""
+    assert text.exit_code == 1 and "[FAIL] Settings (environment and .env)" in text.stdout and text.stderr == ""
     as_json = cli("doctor", "--only", "env", "--json")
     assert as_json.exit_code == 1
     assert (as_json.json["ok"], as_json.data["ok"], as_json.data["status"]) == (True, False, "fail")

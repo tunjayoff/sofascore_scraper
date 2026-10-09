@@ -11,22 +11,19 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Dil: açık ayar (APP_LANGUAGE; ortamda ya da .env'de) > sistem dili (LC_ALL, LC_MESSAGES, LANG; yoksa
-# Windows arayüz dili) > İngilizce. Uygulamanın kuralıyla aynı (sofascore_scraper\language.py); betik depo
-# klonlanmadan önce de çalıştığı için burada yinelenir.
+# Dil: açık ayar (SOFASCORE_DISPLAY__LANGUAGE; ortamda ya da .env'de) > sistem dili (LC_ALL, LC_MESSAGES,
+# LANG; yoksa Windows arayüz dili) > İngilizce. Uygulamanın kuralıyla aynı (sofascore_scraper\language.py); betik
+# depo klonlanmadan önce de çalıştığı için burada yinelenir.
 function Get-UiLanguage {
-    $value = $env:APP_LANGUAGE
+    $value = $env:SOFASCORE_DISPLAY__LANGUAGE
     if ([string]::IsNullOrWhiteSpace($value) -and (Test-Path ".env")) {
         foreach ($line in Get-Content ".env") {
-            if ($line -match '^\s*APP_LANGUAGE\s*=\s*["'']?([A-Za-z]+)') { $value = $Matches[1] }
+            if ($line -match '^\s*SOFASCORE_DISPLAY__LANGUAGE\s*=\s*["'']?([A-Za-z]*)') { $value = $Matches[1] }
         }
     }
-    # Eski LANGUAGE değişkeni yalnızca tam olarak tr / en ise ayar sayılır (GNU gettext de aynı adı kullanır)
-    foreach ($candidate in @($value, $env:LANGUAGE)) {
-        if ($candidate) {
-            $code = $candidate.Trim().ToLowerInvariant()
-            if ($code -ceq "tr" -or $code -ceq "en") { return $code }
-        }
+    if ($value) {
+        $code = $value.Trim().ToLowerInvariant()
+        if ($code -ceq "tr" -or $code -ceq "en") { return $code }
     }
     foreach ($name in @("LC_ALL", "LC_MESSAGES", "LANG")) {
         $locale = [Environment]::GetEnvironmentVariable($name)
@@ -118,7 +115,7 @@ if (-not $root) {
 }
 
 Set-Location $root
-# Var olan bir kurulumda .env'deki APP_LANGUAGE de sayılır
+# Var olan bir kurulumda .env'deki SOFASCORE_DISPLAY__LANGUAGE de sayılır
 $UiLang = Get-UiLanguage
 Write-Host (L "→ Project folder: $root" "→ Proje dizini: $root")
 
@@ -222,7 +219,7 @@ else {
 }
 
 Write-Host ""
-Write-Host (L "→ Checking the installation (python main.py --doctor)…" "→ Kurulum denetleniyor (python main.py --doctor)…")
+Write-Host (L "→ Checking the installation (doctor)…" "→ Kurulum denetleniyor (doctor)…")
 Write-Host ""
 & $venvPy -m sofascore_scraper.doctor
 $doctorStatus = $LASTEXITCODE
@@ -231,11 +228,11 @@ Write-Host ""
 if ($doctorStatus -ne 0) {
     Write-Host (L "The installation is not complete: apply the fixes on the [FAIL] lines above, then check again:" `
             "Kurulum tamamlanmadı: yukarıdaki [FAIL] satırlarındaki çözümleri uygulayın, sonra yeniden denetleyin:") -ForegroundColor Red
-    Write-Host "  cd `"$root`" ; .\.venv\Scripts\python.exe main.py --doctor" -ForegroundColor Red
+    Write-Host "  cd `"$root`" ; .\.venv\Scripts\python.exe -m sofascore_scraper.cli.main doctor" -ForegroundColor Red
     exit 1
 }
 Write-Host (L "Installation complete." "Kurulum tamam.") -ForegroundColor Green
 Write-Host "  Web:      cd `"$root`" ; .\.venv\Scripts\python.exe scripts\start_web.py  → http://127.0.0.1:8000"
 Write-Host "  $(L 'CLI:    ' 'Komutlar:')  cd `"$root`" ; .\.venv\Scripts\python.exe -m sofascore_scraper.cli.main --help"
-Write-Host "  $(L 'Check:  ' 'Denetim:')  cd `"$root`" ; .\.venv\Scripts\python.exe main.py --doctor"
+Write-Host "  $(L 'Check:  ' 'Denetim:')  cd `"$root`" ; .\.venv\Scripts\python.exe -m sofascore_scraper.cli.main doctor"
 Write-Host ""

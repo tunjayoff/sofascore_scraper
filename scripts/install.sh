@@ -11,21 +11,18 @@ set -euo pipefail
 DEFAULT_REMOTE_REPO="${SOFASCORE_SCRAPER_DEFAULT_REPO:-https://github.com/tunjayoff/sofascore_scraper.git}"
 INSTALL_DIR="${SOFASCORE_SCRAPER_DIR:-sofascore_scraper}"
 
-# Dil: açık ayar (APP_LANGUAGE; ortamda ya da .env'de) > sistem dili (LC_ALL, LC_MESSAGES, LANG) >
-# İngilizce. Uygulamanın kuralıyla aynı (sofascore_scraper/language.py); betik depo klonlanmadan önce de
+# Dil: açık ayar (SOFASCORE_DISPLAY__LANGUAGE; ortamda ya da .env'de) > sistem dili (LC_ALL, LC_MESSAGES,
+# LANG) > İngilizce. Uygulamanın kuralıyla aynı (sofascore_scraper/language.py); betik depo klonlanmadan önce de
 # çalıştığı için burada yinelenir (start-sofascore.sh ve "Start SofaScore.command" ile aynı işlev).
-# Eski LANGUAGE değişkeni yalnızca tam olarak tr / en ise ayar sayılır: GNU gettext de aynı adı kullanır.
 detect_lang() {
-  local value="${APP_LANGUAGE:-}"
+  local value="${SOFASCORE_DISPLAY__LANGUAGE:-}"
   if [[ -z "$value" && -f .env ]]; then
-    value="$(sed -n 's/^[[:space:]]*APP_LANGUAGE[[:space:]]*=//p' .env | tail -n 1 | sed 's/[[:space:]]#.*$//' | tr -d "\"'[:space:]")"
+    value="$(sed -n 's/^[[:space:]]*SOFASCORE_DISPLAY__LANGUAGE[[:space:]]*=//p' .env | tail -n 1 | sed 's/[[:space:]]#.*$//' | tr -d "\"'[:space:]")"
   fi
-  for value in "$value" "${LANGUAGE:-}"; do
-    case "$(printf '%s' "$value" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
-      tr) echo tr; return ;;
-      en) echo en; return ;;
-    esac
-  done
+  case "$(printf '%s' "$value" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
+    tr) echo tr; return ;;
+    en) echo en; return ;;
+  esac
   value="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
   case "$(printf '%s' "$value" | LC_ALL=C tr '[:upper:]' '[:lower:]')" in
     tr | tr[_.@-]*) echo tr ;;
@@ -102,7 +99,7 @@ resolve_root() {
 
 ROOT="$(resolve_root "${@:-}")"
 cd "$ROOT"
-# Var olan bir kurulumda .env'deki APP_LANGUAGE de sayılır
+# Var olan bir kurulumda .env'deki SOFASCORE_DISPLAY__LANGUAGE de sayılır
 UI_LANG="$(detect_lang)"
 msg "→ Project folder: $ROOT" "→ Proje dizini: $ROOT"
 
@@ -192,7 +189,7 @@ else
 fi
 
 echo ""
-msg "→ Checking the installation (python main.py --doctor)…" "→ Kurulum denetleniyor (python main.py --doctor)…"
+msg "→ Checking the installation (doctor)…" "→ Kurulum denetleniyor (doctor)…"
 echo ""
 DOCTOR_STATUS=0
 python -m sofascore_scraper.doctor || DOCTOR_STATUS=$?
@@ -201,7 +198,7 @@ echo ""
 if [[ "$DOCTOR_STATUS" -ne 0 ]]; then
   msg "The installation is not complete: apply the fixes on the [FAIL] lines above, then check again:" \
     "Kurulum tamamlanmadı: yukarıdaki [FAIL] satırlarındaki çözümleri uygulayın, sonra yeniden denetleyin:" >&2
-  echo "  cd \"$ROOT\" && .venv/bin/python main.py --doctor" >&2
+  echo "  cd \"$ROOT\" && .venv/bin/python -m sofascore_scraper.cli.main doctor" >&2
   exit 1
 fi
 msg "Installation complete." "Kurulum tamam."
@@ -209,6 +206,6 @@ msg "  Web UI:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000"
   "  Web arayüzü:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000"
 msg "  CLI:     cd \"$ROOT\" && .venv/bin/python -m sofascore_scraper.cli.main --help" \
   "  Komutlar:     cd \"$ROOT\" && .venv/bin/python -m sofascore_scraper.cli.main --help"
-msg "  Check:   cd \"$ROOT\" && .venv/bin/python main.py --doctor" \
-  "  Denetim:      cd \"$ROOT\" && .venv/bin/python main.py --doctor"
+msg "  Check:   cd \"$ROOT\" && .venv/bin/python -m sofascore_scraper.cli.main doctor" \
+  "  Denetim:      cd \"$ROOT\" && .venv/bin/python -m sofascore_scraper.cli.main doctor"
 echo ""

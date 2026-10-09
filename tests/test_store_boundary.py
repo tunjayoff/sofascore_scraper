@@ -84,8 +84,6 @@ NAMED_EXCEPTIONS: Dict[Tuple[str, str], str] = {
     ("sofascore_scraper/diagnostics.py", "_jobs"):
         "tanılama paketi iş veritabanını (state.db ya da 2.x jobs.db) salt okunur açar; depo kilidi ve "
         "uzlaştırma istemez. Bir Store yöntemine taşınabilir.",
-    ("sofascore_scraper/services/context.py", "_ensure_directory"):
-        "bağlam kurulurken veri dizini ve 2.x alt dizinleri var edilir (bugünkü davranış). P30'la gider.",
     ("sofascore_scraper/cli/commands/export.py", "export"):
         "`ssc export`'un varsayılan çıktı dizini (match_details/processed) yoksa kurulur (3.1'e kadar "
         "sofascore_scraper/utils.py `ensure_directory`; P30). Dışa aktarma servisine taşınabilir.",

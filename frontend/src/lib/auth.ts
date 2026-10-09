@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
 /**
- * True once the server answered 401 `auth_required`: an access token (SOFASCORE_API_TOKEN) is set on
+ * True once the server answered 401 `auth_required`: an access token (SOFASCORE_SERVER__TOKEN) is set on
  * the server and this browser has no session yet. App.vue then shows the token prompt over the app.
  */
 export const authNeeded = ref(false)

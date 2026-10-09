@@ -43,8 +43,9 @@ function browserLanguages(): readonly string[] {
 }
 
 /**
- * First visit in this browser: when a language is set on the server (APP_LANGUAGE, which the
- * CLI shares and the Settings page writes), follow it instead of the browser's language.
+ * First visit in this browser: when a language is set on the server (`display.language`:
+ * SOFASCORE_DISPLAY__LANGUAGE, sofascore.toml or the Settings page; the CLI shares it), follow it
+ * instead of the browser's language.
  * A choice made in this browser always wins afterwards.
  */
 export async function adoptServerLanguage(
