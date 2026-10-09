@@ -159,8 +159,8 @@ that names the command replacing it (`sofascore_scraper/cli/removed_flags.py`; 4
 detail phase through `services/detail_phase.py` (`DetailPhase`, 2.3, 3.3), the request layer is
 `sofascore_scraper/client/`, the live service `services/live/`, and the job store and progress are the Store's
 and `sofascore_scraper/jobs/progress.py`. `sofascore_scraper/challenge_solver.py`, the alias of the bridge,
-went with FX-32 (#187). `services/stats.py` (81 lines) stays; only its `format_size` has a caller (`ssc status`), and the
-legacy-shape functions next to it are dead code.
+went with FX-32 (#187). `services/stats.py` went with FX-34: its one used function, `format_size`, is in
+`sofascore_scraper/cli/commands/status.py` (`ssc status`), and the dead legacy-shape functions were deleted.
 
 ### 1.2 `sofascore_scraper/match_data_fetcher.py`: twelve responsibilities in one class
 

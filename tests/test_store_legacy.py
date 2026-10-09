@@ -36,7 +36,6 @@ from detail_fetch import Details
 from sofascore_scraper import refresh, slices, sports, status
 from sofascore_scraper.store import watch
 from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS
-from sofascore_scraper.services import stats as stats_service
 from sofascore_scraper.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
 from sofascore_scraper.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
 from sofascore_scraper.store.legacy import LegacyEvent, LegacyProblem, LegacyReader, LegacyReport, LegacySliceError
@@ -1288,10 +1287,10 @@ def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[st
     `season_*` dizinlerine bakıyor ve olay yükü olmayan dizini de sayıyordu.
     """
     events, _ = scan(fx.data_dir)
-    system = stats_service.system_counts(stats_service.data_summary(str(fx.data_dir), fx.leagues), fx.leagues)
-    assert system["details"] == len(events)
     from sofascore_scraper.services.status import StatusService
 
+    summary = StatusService(open_store(fx.data_dir)).summary(tournament_ids=tuple(fx.leagues))
+    assert summary.details == len(events)
     report = StatusService(open_store(fx.data_dir)).coverage()
     assert capsys.readouterr().out == ""
     assert report.matches == len(events)

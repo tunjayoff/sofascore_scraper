@@ -31,6 +31,15 @@ from sofascore_scraper.cli.commands.sync import data_dir_of_settings
 from sofascore_scraper.cli.output import Translator
 
 
+def format_size(size: float) -> str:
+    """Bayt sayısı okunur biçimde (1024'lük birimler, dil bağımsız): 0.0 B, 6.6 MB (`ssc status --disk`)."""
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024:
+            return f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
+
+
 def _arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--check", action="store_true", help=t("ssc_help_status_check"))
     parser.add_argument("--coverage", action="store_true", help=t("ssc_help_status_coverage"))
@@ -162,8 +171,6 @@ def status(inv: Invocation) -> CommandResult:
         lines.append(t("ssc_status_unhealthy", reason=info.catalog_rebuild_reason))
     lines.append(t("ssc_status_data", matches=summary.matches, details=summary.details, seasons=summary.seasons))
     if data.get("disk"):
-        from sofascore_scraper.services.stats import format_size
-
         lines.append(t("ssc_status_disk", total=format_size(data["disk"]["total"]), v3=format_size(data["disk"]["v3"])))
     migration = data["last_migration"]
     if migration is not None:
