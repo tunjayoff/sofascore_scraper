@@ -223,7 +223,7 @@
     "family": "sets",
     "home": 4,
     "away": 0,
-    "format": "legs",
+    "format": "legs_won",
     "sets_won": {
      "home": 4,
      "away": 0
@@ -291,7 +291,26 @@
      "home": 1,
      "away": 2
     },
-    "sets": [],
+    "sets": [
+     {
+      "number": 1,
+      "home": 7,
+      "away": 13,
+      "tiebreak": null
+     },
+     {
+      "number": 2,
+      "home": 13,
+      "away": 9,
+      "tiebreak": null
+     },
+     {
+      "number": 3,
+      "home": 11,
+      "away": 13,
+      "tiebreak": null
+     }
+    ],
     "match_tiebreak": false
    },
    "winner": "away",

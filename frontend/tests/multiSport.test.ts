@@ -67,20 +67,34 @@ describe('score text by sport', () => {
   it('the second line names what is counted: legs, frames, maps (games), sets', () => {
     expect(scoreDetail(ev('darts__17236047'))).toEqual(['Legs 4 – 0'])
     expect(scoreDetail(ev('snooker__17264352'))).toEqual(['Frames 1 – 3'])
-    expect(scoreDetail(ev('esports__17264020'))).toEqual(['Maps (games) 1 – 2'])
+    expect(scoreDetail(ev('esports__17264020'))).toEqual(['Maps (games) 1 – 2', '7-13 13-9 11-13'])
     expect(scoreDetail(ev('tennis__16385361'))).toEqual(['Sets 3 – 1'])
     setLocale('tr')
     expect(scoreDetail(ev('darts__17236047'))).toEqual(['Leg 4 – 0'])
     expect(scoreDetail(ev('snooker__17264352'))).toEqual(['Frame 1 – 3'])
-    expect(scoreDetail(ev('esports__17264020'))).toEqual(['Harita (oyun) 1 – 2'])
+    expect(scoreDetail(ev('esports__17264020'))).toEqual(['Harita (oyun) 1 – 2', '7-13 13-9 11-13'])
     expect(scoreDetail(ev('tennis__16385361'))).toEqual(['Setler 3 – 1'])
   })
 
-  it('a darts match played in sets keeps "Sets"', () => {
+  it('a darts match played in sets keeps "Sets", also before its first set has a score', () => {
     const e = ev('darts__17236047')
     if (e.score.family !== 'sets') throw new Error('family')
+    expect(e.score.format).toBe('legs_won') // bestOfSets 1: the legs won, no sets
+    e.score.format = 'legs'
+    expect(scoreDetail(e)).toEqual(['Sets 4 – 0'])
     e.score.sets = [{ number: 1, home: 3, away: 1, tiebreak: null }]
     expect(scoreDetail(e)).toEqual(['Sets 4 – 0'])
+    expect(scoreText(e)).toBe('3-1')
+  })
+
+  it('e-sports: the score of each game, also when SofaScore gives only who won it', () => {
+    const e = ev('esports__17264020')
+    expect(scoreText(e)).toBe('1 – 2')
+    if (e.score.family !== 'sets') throw new Error('family')
+    e.score.sets = [{ number: 1, home: 1, away: 0, tiebreak: null }]
+    expect(scoreDetail(e)).toEqual(['Maps (games) 1 – 2', '1-0'])
+    e.score.sets = []
+    expect(scoreDetail(e)).toEqual(['Maps (games) 1 – 2'])
   })
 
   it('tennis: the tie-break points of the set loser in brackets', () => {
@@ -172,7 +186,7 @@ describe('the match header of every sport', () => {
     w.unmount()
     expect((await open('snooker__17264352')).find('[data-testid="score-detail"]').text()).toBe('Frames 1 – 3')
     w.unmount()
-    expect((await open('esports__17264020')).find('[data-testid="score-detail"]').text()).toBe('Maps (games) 1 – 2')
+    expect((await open('esports__17264020')).find('[data-testid="score-detail"]').text()).toBe('Maps (games) 1 – 2 · 7-13 13-9 11-13')
   })
 
   it('tennis: tie-break points in the set scores', async () => {

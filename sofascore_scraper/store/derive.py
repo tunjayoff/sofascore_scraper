@@ -48,7 +48,10 @@ logger = logging.getLogger(__name__)
 #    Sürüm değiştiği için eski kataloglar ilk açılışta dosyalardan yeniden kurulur ve düzelir.
 # 7: 2.x liste ve CSV biçimlerinin `home_score_current` / `away_score_current` sütunları kalktı (3.1, P30;
 #    katalog şeması da 2'ye çıktı)
-DERIVE_VERSION = 7
+# 8: tek setlik dart maçı (`bestOfSets: 1`) `legs` değil `legs_won`: kazanılan leg'ler set diye verilmez; e-spor
+#    maçının çizelgesi oyun (harita) başına skoru taşır (`sets`; 0-0 oynanmamış oyunlar olmadan). Eski kataloglar
+#    ilk açılışta dosyalardan yeniden kurulur (3.1, B3)
+DERIVE_VERSION = 8
 
 Row = Dict[str, Any]
 Timestamp = Union[datetime, int, float, None]

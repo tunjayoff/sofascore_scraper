@@ -83,7 +83,8 @@ def golden() -> dict:
 def test_golden_covers_every_status_fixture_and_names_the_derive_version(golden):
     assert sorted(golden["rows"]) == sorted(_key(p) for p in PATHS)
     # 154 + 25 örnek: SP-1'in sekiz periyot sporu; + 24: SP-2'nin beş set sporu; + 28: SP-3'ün beş B sınıfı sporu
-    assert len(PATHS) == 231
+    # + 2: tek setlik dart ve harita skorlu bitmiş e-spor maçı (B3)
+    assert len(PATHS) == 233
     # Sürüm artınca altın dosya yeniden üretilir; altın dosya değişince sürüm artırılır
     assert golden["derive_version"] == derive.DERIVE_VERSION
 

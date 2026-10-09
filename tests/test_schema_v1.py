@@ -484,7 +484,8 @@ def _expected_score(event: Mapping[str, Any], sport: str) -> Dict[str, Any]:
     if family == "fight":  # MMA (SP-3): skor yok
         return {"family": "fight", **common, "method": event.get("winType"), "final_round": event.get("finalRound")}
     unit = set_format(sport)  # None: tenis
-    if unit == "legs" and not event.get("bestOfSets"):  # dart: setsiz maç yalnızca leg sayar
+    best_of_sets = event.get("bestOfSets")
+    if unit == "legs" and not (type(best_of_sets) is int and best_of_sets > 1):  # dart: setsiz / tek setlik maç
         unit = "legs_won"
     sets = []
     for n in range(1, 6 if unit is None else 8):
@@ -492,8 +493,10 @@ def _expected_score(event: Mapping[str, Any], sport: str) -> Dict[str, Any]:
         tiebreak = _expected_pair(home, away, f"period{n}TieBreak") if unit in (None, "games") else None
         if unit is None and games is None:  # tenis: ilk boş sette durur
             break
-        # snooker, setsiz dart, e-spor: periodN bir set değildir
-        if unit in ("frames", "legs_won", "games_won") or (games is None and tiebreak is None):
+        # snooker, setsiz dart: periodN bir set değildir; e-spor: 0-0 oyun oynanmamıştır (ya da o an oynanıyor)
+        if unit in ("frames", "legs_won") or (games is None and tiebreak is None):
+            continue
+        if unit == "games_won" and not (games["home"] or games["away"]):
             continue
         sets.append({"number": n, **(games or {"home": None, "away": None}), "tiebreak": tiebreak})
     last = sets[-1] if len(sets) in (3, 5) and unit in (None, "games") else None

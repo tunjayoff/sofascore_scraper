@@ -1,0 +1,35 @@
+{
+  "case_id": "D3_single_set",
+  "event_id": 17278936,
+  "fetched_at_utc": "2026-10-09T00:10:22+00:00",
+  "source_file": "research/all_sports/samples/darts/event-id__2.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "normaltime": 1
+  },
+  "awayScore": {
+    "current": 4,
+    "display": 4,
+    "normaltime": 4
+  },
+  "startTimestamp": 1791473700,
+  "time": {
+    "currentPeriodStartTimestamp": 1791474350
+  },
+  "changes": {
+    "changes": [
+      "homeScore.period1",
+      "awayScore.period1"
+    ],
+    "changeTimestamp": 1791475325
+  },
+  "bestOfSets": 1,
+  "bestOfLegs": 7
+}

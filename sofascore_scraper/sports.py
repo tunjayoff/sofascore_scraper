@@ -43,11 +43,12 @@ PeriodFormat = Literal["quarters", "halves", "thirds"]
 #   games:  oyun; set tie-break'i ve match tie-break olabilir (padel; tenis kendi çizelgesini kullanır)
 #   points: sayı (voleybol, badminton, masa tenisi); tie-break yok
 #   frames: yalnızca kazanılan frame sayısı (snooker); periodN set skoru değildir
-#   legs:   set başına leg (dart, set usulü maç: olayda bestOfSets var)
-#   legs_won:  yalnızca kazanılan leg sayısı (dart, setsiz maç). Kayıt defterinde durmaz: sofascore_scraper/status.py olayın
-#              bestOfSets alanı yoksa `legs`'i buna çevirir
-#   games_won: yalnızca kazanılan oyun (harita) sayısı (e-spor). periodN yalnızca oyunu kimin aldığını (1 / 0)
-#              söyler ve oynanmamış oyunlar da 0-0 gelir; oyunların skoru /event/{id}/esports-games dilimindedir
+#   legs:   set başına leg (dart, set usulü maç: olayda bestOfSets > 1)
+#   legs_won:  yalnızca kazanılan leg sayısı (dart, setsiz ya da tek setlik maç). Kayıt defterinde durmaz:
+#              sofascore_scraper/status.py olayın bestOfSets alanı yoksa ya da 1 ise `legs`'i buna çevirir
+#   games_won: kazanılan oyun (harita) sayısı (e-spor); set listesi oyun başına skordur. periodN ya oyunun skoru
+#              (CS2'nin bitmiş serilerinde raunt) ya da oyunu kimin aldığı (1 / 0; canlı yük, raunt skoru vermeyen
+#              oyunlar); oynanmamış oyunlar 0-0 gelir ve sayılmaz (sofascore_scraper/status.py _esports_games)
 SetFormat = Literal["games", "points", "frames", "legs", "legs_won", "games_won"]
 
 # Bitişe yakınlık kuralı (sofascore_scraper/services/live/reducer.py NEAR_END_RULES):

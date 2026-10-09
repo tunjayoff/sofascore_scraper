@@ -220,6 +220,9 @@ class SetsScores(ScoreSheet):
       - match tie-break sezgisi yalnızca oyunla sayılan sette (padel) uygulanır; sayıyla sayılan sporlarda bir
         set her zaman 10'u geçer.
       - snooker (frames): `current` kazanılan frame'dir; period1 `current`'ı tekrarladığı için set sayılmaz.
+      - dart: set usulü maçta (bestOfSets > 1) `legs`, setsiz ya da tek setlik maçta `legs_won` (set listesi boş).
+      - e-spor (games_won): `current` kazanılan oyun (harita); `sets` oyun başına skor, 0-0 oyunlar olmadan
+        (_esports_games).
     """
     # "games" | "points" | "frames" | "legs" | "legs_won" | "games_won" (sofascore_scraper/sports.py SetFormat)
     format: Optional[str] = None
@@ -309,19 +312,43 @@ def _cricket_innings(side: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
 
 def _set_unit(event: Dict[str, Any], sport: Optional[str]) -> Optional[str]:
     """
-    Set ailesinde setin birimi (sofascore_scraper/sports.py set_format). Dart'ta maç olaya göre değişir: bestOfSets varsa set
-    usulüdür (`legs`: periodN o setteki leg'ler), yoksa yalnızca leg sayılır (`legs_won`).
+    Set ailesinde setin birimi (sofascore_scraper/sports.py set_format). Dart'ta maç olaya göre değişir: bestOfSets 1'den
+    büyükse set usulüdür (`legs`: periodN o setteki leg'ler), yoksa yalnızca leg sayılır (`legs_won`).
+
+    Tek setlik maç (`bestOfSets: 1`) set usulü değildir: SofaScore `current`'ta kazanılan leg'i verir (bitmiş maç
+    17236047: bestOfSets 1, bestOfLegs 7, current 4-0, periodN yok; 17278936: current 1-4), canlı yükte period1
+    `current`'ı tekrarlar (17225298: period1 = current = 1-3). Eski kural (bestOfSets > 0) bu leg'leri kazanılan set
+    diye verirdi ("Setler 4 – 0").
     """
     unit = set_format(sport)
     if unit == "legs":
         best_of_sets = event.get("bestOfSets")
-        if not (isinstance(best_of_sets, int) and not isinstance(best_of_sets, bool) and best_of_sets > 0):
+        if not (isinstance(best_of_sets, int) and not isinstance(best_of_sets, bool) and best_of_sets > 1):
             return "legs_won"
     return unit
 
 
 # Set listesi olmayan birimler: başlık skoru sayının kendisidir, periodN bir set skoru değildir
-_COUNT_ONLY_UNITS = frozenset({"frames", "legs_won", "games_won"})
+_COUNT_ONLY_UNITS = frozenset({"frames", "legs_won"})
+
+
+def _esports_games(home: Dict[str, Any], away: Dict[str, Any]) -> Dict[int, Pair]:
+    """
+    E-sporda oyun (harita) başına skor: periodN → N. oyun. SofaScore periodN'i iki biçimde yollar
+    (research/all_sports/events/esports.jsonl, research/all_sports/samples/esports):
+      - oyunun kendi skoru: CS2'nin bitmiş serilerinde raunt (ESL Pro League 17264020: 7-13, 13-9, 11-13; aynı
+        sayılar /event/{id}/esports-games diliminde oyunların `display`'idir);
+      - oyunu kimin aldığı (kazanan 1, kaybeden 0): canlı yükler (17223320, CS2) ve raunt skoru vermeyen oyunlar
+        (PGL Masters, FISSURE PLAYGROUND).
+    Oynanmamış oyunlar ve canlıda o an süren oyun 0-0 gelir (Bo5 serisinde period4 / period5 hep yükte): 0-0 çift oyun
+    sayılmaz. Biçim olduğu gibi kalır; birinden ötekine çevrilmez.
+    """
+    games: Dict[int, Pair] = {}
+    for n in range(1, _MAX_SETS + 1):
+        pair = _pair(home, away, f"period{n}")
+        if pair is not None and (pair.home or pair.away):
+            games[n] = pair
+    return games
 
 
 def _is_match_tiebreak(games: List[Pair]) -> bool:
@@ -419,8 +446,12 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
         )
 
     if family == "sets" and (unit := _set_unit(event, sport)) is not None:
-        by_set = {} if unit in _COUNT_ONLY_UNITS else {
-            n: p for n in range(1, _MAX_SETS + 1) if (p := _pair(home, away, f"period{n}"))}
+        if unit in _COUNT_ONLY_UNITS:
+            by_set: Dict[int, Pair] = {}
+        elif unit == "games_won":
+            by_set = _esports_games(home, away)
+        else:
+            by_set = {n: p for n in range(1, _MAX_SETS + 1) if (p := _pair(home, away, f"period{n}"))}
         set_tiebreaks = {} if unit != "games" else {
             n: p for n in range(1, _MAX_SETS + 1) if (p := _pair(home, away, f"period{n}TieBreak"))}
         return SetsScores(

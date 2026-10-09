@@ -60,8 +60,11 @@ def test_esports_games_are_a_slice_of_the_match_not_events(tmp_path: Path) -> No
     assert (info.state, info.has_payload) == ("ok", True)
     record = schema.event_from_row(store.events.get(17223320)).to_dict()
     assert record["sport"] == "esports" and record["status"]["class"] == "live"
+    # canlı yükte periodN oyunu kimin aldığıdır (1 / 0); süren 2. oyun 0-0 gelir ve listede yoktur (B3)
     assert record["score"] == {"family": "sets", "home": 1, "away": 0, "format": "games_won",
-                               "sets_won": {"home": 1, "away": 0}, "sets": [], "match_tiebreak": False}
+                               "sets_won": {"home": 1, "away": 0},
+                               "sets": [{"number": 1, "home": 1, "away": 0, "tiebreak": None}],
+                               "match_tiebreak": False}
     assert schema.slice_from_info(info).to_dict()["key"] == "esports_games"
     _consistent(store)
 

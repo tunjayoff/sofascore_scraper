@@ -322,11 +322,15 @@ class SetScore(Model):
     home: Optional[int] = spec(
         "What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when "
         "the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played "
-        "in sets.", unit="games", source="`homeScore.periodN`")
+        "in sets. In e-sports (`games_won`) the set is a game (map) and this is its score as SofaScore gives it: "
+        "rounds in titles played in rounds (CS2), else 1 for the side that won the game and 0 for the other.",
+        unit="games", source="`homeScore.periodN`")
     away: Optional[int] = spec(
         "What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when "
         "the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played "
-        "in sets.", unit="games", source="`awayScore.periodN`")
+        "in sets. In e-sports (`games_won`) the set is a game (map) and this is its score as SofaScore gives it: "
+        "rounds in titles played in rounds (CS2), else 1 for the side that won the game and 0 for the other.",
+        unit="games", source="`awayScore.periodN`")
     tiebreak: Optional[ScorePair] = spec(
         "Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel.",
         unit="points", source="`periodNTieBreak`")
@@ -335,16 +339,18 @@ class SetScore(Model):
 @dataclass(frozen=True)
 class SetsScore(Model):
     """
-    Set ailesi skoru: tenis, padel (oyun), voleybol, badminton, masa tenisi (sayı), dart (set usulünde leg) ve
-    yalnızca bir sayı veren snooker (frame), setsiz dart (leg) ve e-spor (oyun); bu üçünde set listesi boştur.
+    Set ailesi skoru: tenis, padel (oyun), voleybol, badminton, masa tenisi (sayı), dart (set usulünde leg),
+    yalnızca bir sayı veren snooker (frame) ve setsiz ya da tek setlik dart (leg); bu ikisinde set listesi boştur.
+    E-sporda (oyun) her set bir oyundur (harita), skoru SofaScore'un verdiği gibi (raunt ya da kazanana 1).
     Alan tabloları belgeyle bağlı olduğundan birimler tenisin birimleri kalır (SP-2); neyin sayıldığını `format`
     söyler (SP-3).
     """
 
     SUMMARY: ClassVar[str] = (
         "Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, "
-        "badminton and table tennis count points; darts played in sets counts legs per set; snooker, darts "
-        "played in legs only and e-sports give only the frames, legs or games won and no sets.")
+        "badminton and table tennis count points; darts played in sets counts legs per set; snooker and darts "
+        "played in legs only give only the frames or legs won and no sets; e-sports give the games (maps) won "
+        "and the score of each game.")
 
     family: Literal["sets"] = spec("Always `sets`.", source="sport registry")
     home: Optional[int] = spec(
@@ -355,16 +361,20 @@ class SetsScore(Model):
         "`legs_won` and `games_won`.", unit="sets", source="`awayScore.display`, else `awayScore.current`")
     format: Optional[SetsFormat] = spec(
         "What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), "
-        "points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, "
-        "`games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played "
-        "in legs only) or games (e-sports) won. Null when the record has no score sheet.",
-        source="sport registry (`sofascore_scraper/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won`",
+        "points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`: no "
+        "sets; `sets_won` and the headline score are the frames (snooker) or legs (darts played in legs only or "
+        "in a single set) won. `games_won`: `sets_won` and the headline score are the games (maps) won in "
+        "e-sports, and each set is a game. Null when the record has no score sheet.",
+        source="sport registry (`sofascore_scraper/sports.py`); darts: `legs` when the event's `bestOfSets` is more "
+               "than 1, else `legs_won`",
         open_enum=True)
     sets_won: Optional[ScorePair] = spec(
         "Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and "
         "`games_won`.", unit="sets", source="`current`")
     sets: Tuple[SetScore, ...] = spec(
-        "The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`.",
+        "The sets that have a score, in order. Empty with the formats `frames` and `legs_won`. With `games_won` "
+        "the games (maps) that have a score; a game SofaScore gives as 0-0 (not played, or the one being played "
+        "while live) is left out.",
         source="`period1` to `period7` (tennis: to `period5`); tie-breaks from `period1TieBreak` to "
                "`period7TieBreak` (tennis: to `period5TieBreak`), in tennis and padel only")
     match_tiebreak: bool = spec(
