@@ -84,17 +84,25 @@ _KNOWN_FORMATS = {"csv": "csv", "jsonl": "jsonl", "parquet": "parquet", "sqlite"
 
 
 def _file_record(name: str, size: int, modified_at: float) -> ExportRecord:
-    """`exports/`taki bir işin olmayan dosyası: veri kümesi adın ilk parçasından, biçim uzantıdan."""
+    """
+    `exports/`taki bir işin olmayan dosyası: veri kümesi adın ilk parçasından (`export_label`: veri kümesi ya da
+    turnuva/takım/oyuncu adı, ham dışa aktarmada `-raw` ekiyle), biçim uzantıdan. Ad bir veri kümesiyle
+    başlamıyorsa (FX-34'ten beri `ssc export` dosyaya ligin, takımın ya da oyuncunun adını verir) veri kümesi
+    "unknown"dır; web arayüzü onu göstermez.
+    """
     from sofascore_scraper.services.data_jobs import DATASETS, MEDIA_TYPES
 
     stem, _, ext = name.rpartition(".")
     fmt = _KNOWN_FORMATS.get(ext.lower(), "unknown")
     head = (stem or name).split("_", 1)[0].lower()
-    dataset = head if head in DATASETS else "unknown"
+    raw = head.endswith("-raw")
+    base = head[: -len("-raw")] if raw else head
+    dataset = base if base in DATASETS else "unknown"
+    schema = "raw" if raw else ("normalized" if dataset != "unknown" else "unknown")
     when = dt.datetime.fromtimestamp(modified_at, dt.timezone.utc).isoformat(timespec="seconds")
     return ExportRecord(
         id=f"{FILE_PREFIX}{name}", source="file", job_id=None, state=JobState.SUCCEEDED, dataset=dataset,
-        format=fmt, schema="normalized" if dataset != "unknown" else "unknown", profile=None, filter=ExportFilter(),
+        format=fmt, schema=schema, profile=None, filter=ExportFilter(),
         created_at=when, finished_at=when, bytes=size, file=name,
         media_type=MEDIA_TYPES.get(fmt, "application/octet-stream"), available=True,
     )

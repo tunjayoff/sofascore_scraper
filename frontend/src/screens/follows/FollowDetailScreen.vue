@@ -350,7 +350,13 @@ onMounted(() => {
 
             <template v-else-if="tab === 'events'">
               <EventsList v-if="isTournament" :fixed-tournament="entityId" :fixed-sport="follow.sport" table-id="follow-events" />
-              <EventsList v-else-if="kind === 'player'" :fixed-follow="followId" :fixed-sport="follow.sport" table-id="follow-player-events" />
+              <EventsList
+                v-else-if="kind === 'player'"
+                :fixed-follow="followId"
+                :fixed-sport="follow.sport"
+                table-id="follow-player-events"
+                :empty-text="followRow?.counted === false ? t('ui.followDetail.playerMatchesPending') : null"
+              />
               <EventsList v-else :fixed-participant="entityId" :fixed-sport="follow.sport" table-id="follow-team-events" />
             </template>
 
