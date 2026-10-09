@@ -36,12 +36,12 @@ import legacy_writer
 import sofascore_scraper.store
 import store_fixtures as sf
 from schedule_runner import list_schedule, list_schedule_async
+from sofascore_scraper import doctor
 from sofascore_scraper.exceptions import StorageError
 from detail_fetch import Details
 from legacy_writer import SCORE_CHANGES_FILE, UNAVAILABLE_FILE
 from sofascore_scraper.services.detail_phase import DetailPhase
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
-from sofascore_scraper.services.context import _ensure_directory
 from sofascore_scraper.store import (
     CatalogAdmin,
     EventQuery,
@@ -1154,8 +1154,9 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
     os.utime(basic_file, ns=(stamp, stamp))
     assert store.events.get(ARS).home_score != 9 and api_mod.shadow_unsynced()
 
-    # Ürün kodu dizine dokunur (Store'un dışında: bağlam kurulurken veri dizinleri var edilir, services/context.py)
-    _ensure_directory(str(data / "datasets-p30"))
+    # Ürün kodu dizine dokunur (Store'un dışında: doctor veri dizininin yazılabilirliğini bir yoklama dosyasıyla
+    # sınar, sofascore_scraper/doctor.py `_dir_state`; tests/test_store_boundary.py NAMED_EXCEPTIONS)
+    assert doctor._dir_state(Path(data)) == ("ok", None)
 
     assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score == 9
     assert differences(store) == [] and api_mod.shadow_check() == []

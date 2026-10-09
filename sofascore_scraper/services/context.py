@@ -1,7 +1,7 @@
 """
 Servis bağlamı: bir servisin çalışmak için ihtiyaç duyduğu nesneler (docs/design/02-services.md 2.3).
 
-`build_context` bir servisin bağlamını kurar (veri dizinleri, takiplerin eşitlenmesi, istemci); web, CLI ve
+`build_context` bir servisin bağlamını kurar (takiplerin eşitlenmesi, istemci); web, CLI ve
 zamanlayıcı aynı bağlamı kurar. Eskiden bu iş terminal arayüzünün kurucusundaydı (P08 taşıdı, P26 arayüzü kaldırdı).
 
 Bağlam SofaScore istemcisini ve veri dizininin deposuna giden yolu taşır:
@@ -24,7 +24,6 @@ depoyu açmaz: tablo kısa ömürlü bir bağlantıyla güncellenir.
 """
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional, Set, Tuple
 
@@ -36,11 +35,6 @@ from sofascore_scraper.logger import get_logger
 from sofascore_scraper.store import FollowSpec, JobStore, Store, apply_follows, open_store
 
 logger = get_logger("Services")
-
-# Veri dizini altında her bağlam kuruluşunda var edilen dizinler. Sezon listeleri ve programlar v3/tournaments/
-# altına yazılır (plan maddesi ST-22); boş `seasons/` ve `matches/` artık kurulmaz (plan maddesi FX-15).
-DATA_SUBDIRECTORIES = ("match_details", "datasets")
-
 
 @dataclass(frozen=True)
 class ServiceContext:
@@ -70,13 +64,6 @@ class ServiceContext:
     def jobs(self) -> JobManager:
         """Deponun iş yöneticisi. Aynı depo için hep aynı iş deposunu kullanır (çalışan iş onda durur)."""
         return JobManager(JobStore.for_store(self.store))
-
-
-def _ensure_directory(directory: str) -> None:
-    """Dizin yoksa oluşturur; oluşturulamıyorsa OSError çağırana çıkar (iş başlamadan durur)."""
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        logger.info("Created directory: %s", directory)
 
 
 # Uygulanamayan bir [[follow]] girdisi süreç başına bir kez bildirilir (bağlam her işte ve istekte kurulur)
@@ -154,7 +141,9 @@ def _client_for(data_dir: str) -> Optional[Client]:
 
 def build_context(config_manager: ConfigManager, *, data_dir: Optional[str] = None) -> ServiceContext:
     """
-    Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler ve istemciyi kurar.
+    Takipleri `follows` tablosuna eşitler ve istemciyi kurar. Veri dizinini depo ilk açılışta kurar (`open_store`);
+    2.x'in `match_details/` ve `datasets/` alt dizinleri 3.1'de artık kurulmaz (ST-28, P30). Var olanları `ssc migrate`
+    okur.
 
     data_dir verilmezse ayarlardaki veri dizini (`storage.data_dir`) kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni bir
     bağlamdır; bir bağlam tek bir işe ya da tek bir isteğe aittir.
@@ -162,8 +151,5 @@ def build_context(config_manager: ConfigManager, *, data_dir: Optional[str] = No
     display.use_color kapalıyken NO_COLOR'ı süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); bağlam ortama dokunmaz.
     """
     data_dir = data_dir or config_manager.get_data_dir()
-    _ensure_directory(data_dir)
-    for name in DATA_SUBDIRECTORIES:
-        _ensure_directory(os.path.join(data_dir, name))
     _sync_follows(config_manager, data_dir)
     return ServiceContext(config=config_manager, data_dir=data_dir, client=_client_for(data_dir))

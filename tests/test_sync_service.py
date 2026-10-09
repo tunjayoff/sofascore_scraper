@@ -37,7 +37,7 @@ from sofascore_scraper.client import context as request_ctx
 from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.exceptions import StorageError
 from sofascore_scraper.jobs.progress import JobProgress
-from sofascore_scraper.services.context import DATA_SUBDIRECTORIES, ServiceContext, build_context
+from sofascore_scraper.services.context import ServiceContext, build_context
 from sofascore_scraper.services.listing import ListingResult
 from sofascore_scraper.services.sync import (
     DETAILS_PHASES,
@@ -133,20 +133,24 @@ def config() -> ConfigManager:
     return ConfigManager()
 
 
-def test_build_context_creates_the_data_directories(
+def test_build_context_creates_no_2x_directories(
     tmp_path: Path, config: ConfigManager
 ) -> None:
+    """
+    3.1 2.x'in alt dizinlerini kurmaz (ST-28, P30): `match_details/` ve `datasets/` yok; veri dizinini depo ilk
+    açılışta kurar. Listeler v3/tournaments/ altına yazılır: boş `seasons/` ve `matches/` de kurulmaz (FX-15).
+    """
     data_dir = tmp_path / "new" / "data"
 
     ctx = build_context(config, data_dir=str(data_dir))
 
     assert isinstance(ctx, ServiceContext)
     assert ctx.config is config and ctx.data_dir == str(data_dir)
-    assert DATA_SUBDIRECTORIES == ("match_details", "datasets")
-    for name in DATA_SUBDIRECTORIES:
-        assert (data_dir / name).is_dir(), name
-    # Listeler v3/tournaments/ altına yazılır: boş `seasons/` ve `matches/` kurulmaz (FX-15)
-    assert not (data_dir / "seasons").exists() and not (data_dir / "matches").exists()
+    for name in ("match_details", "datasets", "seasons", "matches"):
+        assert not (data_dir / name).exists(), name
+    ctx.store  # noqa: B018 - ilk erişim depoyu açar
+    assert data_dir.is_dir()
+    assert not (data_dir / "match_details").exists() and not (data_dir / "datasets").exists()
     # 2.x'in indiricileri (P15'ten beri eski adlı yüzler) 3.1'de kalktı (P30): bağlam onları taşımaz
     assert not {"season_fetcher", "match_fetcher", "match_data_fetcher"} & set(dir(ctx))
 
@@ -159,7 +163,7 @@ def test_build_context_uses_the_configured_data_dir(
     ctx = build_context(config)
 
     assert ctx.data_dir == str(tmp_path / "configured")
-    assert (tmp_path / "configured" / "match_details").is_dir()
+    assert ctx.store.data_dir == tmp_path / "configured"
 
 
 def test_every_run_builds_its_own_detail_phase(tmp_path: Path, config: ConfigManager) -> None:
@@ -173,13 +177,17 @@ def test_every_run_builds_its_own_detail_phase(tmp_path: Path, config: ConfigMan
     assert sync.detail_phase(first).store is sync.detail_phase(second).store  # aynı veri dizini, aynı depo
 
 
-def test_build_context_raises_when_a_directory_cannot_be_created(tmp_path: Path, config: ConfigManager) -> None:
-    """Terminal arayüzünün kurucusu gibi: dizin oluşturulamıyorsa iş başlamadan hata çıkar."""
+def test_the_store_raises_when_the_data_directory_cannot_be_created(tmp_path: Path, config: ConfigManager) -> None:
+    """
+    Veri dizinini bağlam değil depo kurar (ST-28, P30): kurulamıyorsa depoya ilk erişim, iş bir şey yazmadan önce,
+    bir StorageError fırlatır.
+    """
     blocker = tmp_path / "file"
     blocker.write_text("not a directory", encoding="utf-8")
 
-    with pytest.raises(OSError):
-        build_context(config, data_dir=str(blocker / "data"))
+    ctx = build_context(config, data_dir=str(blocker / "data"))
+    with pytest.raises(StorageError):
+        ctx.store  # noqa: B018 - ilk erişim depoyu açar
 
 
 def test_build_context_is_frozen(tmp_path: Path, config: ConfigManager) -> None:

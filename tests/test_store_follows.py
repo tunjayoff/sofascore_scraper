@@ -1075,7 +1075,10 @@ def test_build_context_is_idempotent(setup: Setup, config_file):
 
 
 def test_build_context_without_follows_does_not_create_a_store(setup: Setup, config_file):
-    """Bugünkü kurulum (yapılandırma dosyası yok) ve `[[follow]]` içermeyen dosya: `.meta/` kurulmaz."""
+    """
+    Yapılandırma dosyası yok ya da `[[follow]]` içermiyor: `.meta/` kurulmaz. Bağlam 2.x'in alt dizinlerini de
+    kurmaz (ST-28, P30): veri dizini hiç oluşmaz.
+    """
     setup.write_leagues("Premier League: 17\n")
     cm = setup.manager()
 
@@ -1083,7 +1086,7 @@ def test_build_context_without_follows_does_not_create_a_store(setup: Setup, con
     config_file("[client]\nretries = 2\n")
     build_context(cm, data_dir=str(setup.data_dir))
 
-    assert sorted(p.name for p in setup.data_dir.iterdir()) == ["datasets", "match_details"]
+    assert not setup.data_dir.exists()
     assert api_mod._registry == {}
 
 

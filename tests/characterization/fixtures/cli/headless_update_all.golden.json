@@ -5,8 +5,6 @@
  "exit_code": 0,
  "files": {
   "added": {
-   "data/datasets/": "<empty dir>",
-   "data/match_details/": "<empty dir>",
    "data/v3/events/9/100/9100001/event.json.gz": "<binary>",
    "data/v3/events/9/100/9100001/h2h.json.gz": "<binary>",
    "data/v3/events/9/100/9100001/incidents.json.gz": "<binary>",
@@ -462,9 +460,6 @@
  "stderr": [
   "LOG INFO ConfigManager: 1 leagues loaded",
   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
-  "LOG INFO Services: Created directory: <SANDBOX>/data",
-  "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
-  "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
   "LOG INFO Store: state.db migration applied: 0001_initial",
   "LOG INFO Store: state.db migration applied: 0002_job_manager",
   "LOG INFO SyncService: Refreshing season list for league 17...",
