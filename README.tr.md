@@ -10,11 +10,11 @@
 
 Tek çekirdek, üç yüz: bir **Python kütüphanesi**, sunucular ve otomasyon için **`ssc` komut satırı** ve üzerinde bir **web arayüzü** bulunan sürümlü bir **HTTP API**. Kendi bilgisayarınızda ya da sunucunuzda çalışır.
 
-> **3.0.0 kaynaktan kurulan bir sürüm olarak yayımlandı.** Bir checkout'tan kurun (aşağıdaki Docker ya da pip adımları); GitHub'daki her sürümde derlenmiş web arayüzünü içeren bir kaynak arşivi de vardır, Docker imajı ise `ghcr.io/tunjayoff/sofascore_scraper`'dır. PyPI'de paket yoktur. 2.x'ten geçiyorsanız: [2.x'ten yükseltme](#2xten-yükseltme).
+> **3.1.0 kaynaktan kurulan bir sürüm olarak yayımlandı.** Bir checkout'tan kurun (aşağıdaki Docker ya da pip adımları); GitHub'daki her sürümde derlenmiş web arayüzünü içeren bir kaynak arşivi de vardır, Docker imajı ise `ghcr.io/tunjayoff/sofascore_scraper`'dır. PyPI'de paket yoktur. 3.0'dan geçiyorsanız: [3.0'dan yükseltme](#30dan-yükseltme); 2.x'ten geçiyorsanız: [2.x'ten yükseltme](#2xten-yükseltme).
 
 Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#sorumluluk-reddi).
 
-**İçindekiler:** [Özellikler](#özellikler) · [Ekran görüntüleri](#ekran-görüntüleri) · [Hızlı başlangıç](#hızlı-başlangıç) · [Komut satırı](#komut-satırı-ssc) · [HTTP API](#http-api) · [Python kütüphanesi](#python-kütüphanesi) · [Yapılandırma](#yapılandırma) · [Veri ve dışa aktarma](#veri-ve-dışa-aktarma) · [Canlı izleme](#canlı-izleme) · [Güvenlik modeli](#güvenlik-modeli) · [2.x'ten yükseltme](#2xten-yükseltme) · [SSS](#sss) · [Belgeler](#belgeler) · [Katkı](#katkı-ve-geliştirme) · [Lisans](#lisans)
+**İçindekiler:** [Özellikler](#özellikler) · [Ekran görüntüleri](#ekran-görüntüleri) · [Hızlı başlangıç](#hızlı-başlangıç) · [Komut satırı](#komut-satırı-ssc) · [HTTP API](#http-api) · [Python kütüphanesi](#python-kütüphanesi) · [Yapılandırma](#yapılandırma) · [Veri ve dışa aktarma](#veri-ve-dışa-aktarma) · [Canlı izleme](#canlı-izleme) · [Güvenlik modeli](#güvenlik-modeli) · [3.0'dan yükseltme](#30dan-yükseltme) · [2.x'ten yükseltme](#2xten-yükseltme) · [SSS](#sss) · [Belgeler](#belgeler) · [Katkı](#katkı-ve-geliştirme) · [Lisans](#lisans)
 
 ## Özellikler
 
@@ -23,7 +23,7 @@ Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#soru
 - **Neyin indirileceğini siz seçersiniz**: maç ayrıntıları, istatistikler, kadrolar, olaylar, karşılıklı maçlar, form ve seriler varsayılan olarak açıktır; bahis oranları, puan durumu, sezon verileri, liderler, sıralamalar ve oyuncu istatistikleri siz seçene kadar kapalıdır. Seçim her spor için, spor başına ya da takip başına yapılır.
 - **İstek bütçesiyle geçmiş indirme**: varsayılan olarak tüm süreçler için toplam saniyede 5 istek; SofaScore istekleri reddetmeyi sürdürürse işi durduran bir devre kesici.
 - **Depolama**: sıkıştırılmış ham yanıtlar ve yeniden kurulabilen bir katalog (SQLite); her maç durumu saklanır, SofaScore'un sonradan düzelttiği sonuçlar yeniden okunur ve kaydedilir.
-- **Dışa aktarma**: normalleştirilmiş veri kümeleri (maçlar, veri türleri, skor değişiklikleri, oranlar, puan durumu) CSV, JSONL, Parquet ya da SQLite olarak; ham yanıtlar olduğu gibi; 2.x'in geniş CSV'si. Dosya adı lig ya da veri kümesi adından ve tarihten oluşur.
+- **Dışa aktarma**: normalleştirilmiş veri kümeleri (maçlar, veri türleri, skor değişiklikleri, oranlar, puan durumu) CSV, JSONL, Parquet ya da SQLite olarak; ham yanıtlar olduğu gibi; 2.x'in geniş CSV'si. Dosya adı ligin, takımın ya da oyuncunun veya veri kümesinin adından ve tarihten oluşur.
 - **Yedekleme ve geri yükleme**: veri klasörünün yedeği, web arayüzünden ya da komut satırından.
 - **`ssc watch` ile canlı izleme**: canlı maçlardaki değişiklikler bir olay günlüğüne ve hedeflere (stdout'a JSON satırları, bir dosya, bir webhook) gider. Web arayüzünde canlı görünüm bilerek yoktur.
 - **Otomasyon**: soru sormayan, JSON çıktılı ve anlamlı çıkış kodları olan bir CLI; ortam değişkenleriyle ezilebilen bildirimsel bir yapılandırma dosyası (`sofascore.toml`); systemd birimleri ve bir Docker imajı. Uygulama içi zamanlayıcı vardır, varsayılan olarak kapalıdır.
@@ -171,7 +171,7 @@ ssc describe config     # her bölüm ve anahtar, JSON Schema olarak
 ```
 
 - **Katmanlar**, sonraki kazanır: yerleşik varsayılan → `config/overrides.json` (web arayüzündeki **Ayarlar** sayfasının kaydettikleri) → `sofascore.toml` → ortam değişkenleri (`.env` ortama yüklenir) → komut satırı seçenekleri. Dosyanın, ortamın ya da bir seçeneğin sabitlediği değer Ayarlar sayfasında kilitli görünür.
-- **Ortamla ezme**: her anahtar `SOFASCORE_<BÖLÜM>__<ANAHTAR>` biçiminde, örneğin `SOFASCORE_CLIENT__RATE=2` ya da `SOFASCORE_LIVE__SOURCE=poll` (`.env.example` hepsini listeler). 2.x'in değişken adları (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `APP_LANGUAGE`, …) 3.1'den beri okunmaz; `ssc doctor` ve `ssc config show` hâlâ duran her birinin yeni adını söyler.
+- **Ortamla ezme**: her anahtar `SOFASCORE_<BÖLÜM>__<ANAHTAR>` biçiminde, örneğin `SOFASCORE_CLIENT__RATE=2` ya da `SOFASCORE_LIVE__SOURCE=poll` (`.env.example` hepsini listeler). 2.x'in değişken adları (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `APP_LANGUAGE`, …) 3.1.0'dan beri okunmaz; `ssc doctor` ve `ssc config show` hâlâ duran her birinin yeni adını söyler.
 - **Gizli değerler** yalnızca ortamdan okunur: erişim anahtarı `SOFASCORE_SERVER__TOKEN` ve webhook imza anahtarları (`secret_env` değişkenin adını verir).
 - **Dil**: `SOFASCORE_DISPLAY__LANGUAGE=en|tr` (ya da `[display] language`) dili sabitler; sabitlenmemişse Türkçe sistemler ve tarayıcılar Türkçe, diğerleri İngilizce görür. `--lang` tek bir komut için ayarlar; JSON çıktı hiçbir zaman çevrilmez.
 
@@ -238,6 +238,25 @@ Web arayüzünde **kullanıcı hesabı yoktur** ve varsayılan olarak `127.0.0.1
 
 Uygulama yalnızca izin verilen sunucu adlarına yanıt verir, başka sitelerin gönderdiği durum değiştiren istekleri reddeder, sıkı bir Content-Security-Policy gönderir, anahtarsız açıldığında uyarır ve `.env`'i, ayar dosyasını ve tarayıcı profilini yalnızca sahibinin okuyabileceği biçimde tutar. Ayrıntılar: [docs/deploy](docs/deploy/README.md#access-token) (İngilizce).
 
+## 3.0'dan yükseltme
+
+```bash
+git pull
+pip install -r requirements.txt -c constraints.txt
+pip install -e .
+cd frontend && npm install && npm run build && cd ..
+ssc doctor                # hâlâ verilmiş her 2.x ayar adını söyler
+```
+
+Docker Compose ile: `git pull`, ardından `docker compose pull` (ya da `docker compose build`) ve `docker compose up -d`.
+
+- **2.x ortam adlarını yeniden adlandırın.** 3.1.0 `DATA_DIR`, `REQUEST_RATE_LIMIT`, `PROXY_URL`, `APP_LANGUAGE`, `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `LOG_LEVEL` ve öteki 2.x adlarını, nerede verilmiş olurlarsa olsunlar (`.env`, kabuk, bir servis dosyası, konteyner ayarları), artık okumaz; yerlerine varsayılan geçerlidir: eski bir `DATA_DIR` uygulamayı varsayılan veri klasöründe, eski bir `SOFASCORE_API_TOKEN` onu erişim belirteci olmadan bırakır. `SOFASCORE_<BÖLÜM>__<ANAHTAR>` adlarını kullanın (`SOFASCORE_STORAGE__DATA_DIR`, `SOFASCORE_SERVER__TOKEN`, …). `ssc doctor` ve `ssc config show` hâlâ verilmiş her eski adı yeni adıyla ve nerede verildiğiyle listeler; `ssc config init --from-legacy > sofascore.toml` eski ayarları bir yapılandırma dosyası olarak yazar.
+- **Katalog ilk açılışta yeniden kurulur** (katalog şeması 2): `catalog.db` saklanan dosyalardan bir kez, SofaScore'a istek göndermeden yeniden kurulur; büyük bir veri klasöründe ilk başlangıç bu yüzden daha uzun sürer.
+- **Kaldırılanlar**: `main.py` seçenekleri (eski bir seçenek, yerine geçen `ssc` komutunu söyleyen bir kullanım hatasıdır), `/api/...` altındaki 2.x yolları (404 döner; yerine `/api/v1`) ve `config`, `seasons`, `matches`, `match_details` yedek kapsamları (yerlerine `all`, `state` ya da `data`; eski yedekler yine geri yüklenir). 3.0.0'dan önce derlenmiş bir web arayüzü sıkı Content-Security-Policy altında çalışmaz: yeniden derleyin.
+- **`ssc export` dosya adları**: `--out` verilmezse dosya bir web dışa aktarması gibi adlandırılır (`exports/premier-league_2026-10-09_142530.jsonl`); geniş CSV `all_matches_<epoch>.csv` yerine `match_details/processed/events-wide_<tarih>_<saat>.csv` olur.
+
+Tam liste [CHANGELOG.md](CHANGELOG.md#310---2026-10-09) dosyasındadır (İngilizce).
+
 ## 2.x'ten yükseltme
 
 ```bash
@@ -251,7 +270,7 @@ ssc migrate --dry-run     # isteğe bağlı: yeni düzene neyin taşınacağı
 - **Veriler**: hiçbir şey kendiliğinden taşınmaz. Eski veriler bulundukları yerden okunur; yeni yazmalar yeni düzeni kullanır. `ssc migrate` eski klasörleri dönüştürüp doğrular ve eskilerini korur; `ssc migrate --delete-legacy --yes` doğrulanmış eski kopyaları sonradan siler.
 - **Terminal menüsü kaldırıldı.** `python main.py` argümansız çalıştırılınca kısa bir yardım yazar ve `2` ile çıkar. Web arayüzünü ya da betikler için `ssc`'yi kullanın.
 - **İçe aktarılan paket `sofascore_scraper`'dır** (önceden `src`'ydi ve takma adı yoktur): kendi systemd birimleriniz ve betikleriniz `python -m src.cli.main` yerine `python -m sofascore_scraper.cli.main` çalıştırır, kütüphane kodu `sofascore_scraper`'ı içe aktarır.
-- **3.1'de kaldırılanlar** (3.0.0'da kullanımdan kalkmıştı): `main.py` seçenekleri (kullanım hatası her birinin yerine geçen komutu söyler: `--headless --update-all` `ssc sync`, `--refresh-only` `ssc refresh`, `--watch` `ssc watch --source poll --stdout`, `--web` `ssc serve`, …), `/api/...` altındaki 2.x yolları (yerine `/api/v1`), `config`, `seasons`, `matches`, `match_details` yedek kapsamları (yerlerine `all`, `state` ya da `data`; eski yedekler yine geri yüklenir) ve 2.x'in ortam adları. Çıkış kodları yeni tabloya uyar (devre kesicinin durdurduğu iş artık `2` değil `4`).
+- **3.1.0'da kaldırılanlar** (3.0.0'da kullanımdan kalkmıştı): `main.py` seçenekleri (kullanım hatası her birinin yerine geçen komutu söyler: `--headless --update-all` `ssc sync`, `--refresh-only` `ssc refresh`, `--watch` `ssc watch --source poll --stdout`, `--web` `ssc serve`, …), `/api/...` altındaki 2.x yolları (yerine `/api/v1`), `config`, `seasons`, `matches`, `match_details` yedek kapsamları (yerlerine `all`, `state` ya da `data`; eski yedekler yine geri yüklenir) ve 2.x'in ortam adları. Çıkış kodları yeni tabloya uyar (devre kesicinin durdurduğu iş artık `2` değil `4`).
 - **Ayarlar**: `.env`'deki 2.x adlarını yeniden adlandırın (`ssc doctor` her birini yeni adıyla listeler) ya da eski `.env`'i ve `config/leagues.txt`'yi bir yapılandırma dosyası olarak yazan `ssc config init --from-legacy > sofascore.toml` komutunu çalıştırın. `config/leagues.txt`'deki ligler indirilmeye devam eder; ligin sayfasındaki **Buraya taşı** onu uygulamaya taşır.
 
 Değişikliklerin tam listesi [CHANGELOG.md](CHANGELOG.md) dosyasındadır (İngilizce).
