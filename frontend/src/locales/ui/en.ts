@@ -1430,7 +1430,7 @@ const en = {
       allTournaments: 'None chosen: every league.',
       follows: 'Added teams, players and matches',
       followsNote: 'The matches of any chosen team or player. A chosen match, a league and the other filters narrow them: a team and a league export the team’s matches in that league.',
-      playersNote: 'A player’s matches are those whose stored lineups name the player; a match downloaded without its lineups is not found.',
+      playersNote: 'A player’s matches are those of the player follow’s last match list and those whose stored lineups name the player; a match of an unfollowed player downloaded without its lineups is not found.',
       seasonIds: 'Season numbers (optional, separated by commas)',
       eventIds: 'Match numbers (optional, separated by commas)',
       badIds: 'Numbers are whole numbers above zero, separated by commas.',

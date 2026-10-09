@@ -1509,8 +1509,8 @@ single match as its match number and a team as the numbers of its stored matches
 fields, and the dialog lists the added teams, **players** and single matches: teams go to `team_ids`,
 players to `player_ids`, matches to `event_ids` (`frontend/src/screens/exports/ExportDialog.vue:97-104` at
 `216c2f9`). The server resolves teams and players when it writes the file (a team: the matches with it on
-either side; a player: the matches whose stored line-ups name the player, so a match stored without
-line-ups is not found), and the dialog reads no match list; the FX-24 workaround is gone. Teams and players
+either side; a player: the matches whose stored line-ups name the player and, since FX-34, those of the
+player follow's stored match list, so only a match outside both is not found), and the dialog reads no match list; the FX-24 workaround is gone. Teams and players
 together are one filter (a match of any of them), and every filter narrows the others (AND): a chosen team
 and a chosen single match now intersect, where FX-24 added them together. The dialog's note says so. The
 list's Filter column names them ("2 teams · 1 player"). **An export starts while a download runs** (FX-23, the `export` lease; 5.4): the

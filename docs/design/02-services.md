@@ -1820,14 +1820,15 @@ As built at `216c2f9` (P30 #186, B1 #190, B2 #191). Where the blocks above diffe
 - **The participant filter of an export (B1).** `ExportSpec` and `DatasetFilter` have `team_ids` and
   `player_ids` (`sofascore_scraper/services/export.py:105-106`, `:593`). A team selects the events with it on
   either side (the catalog's event participants); a player the events whose stored line-ups name him
-  (`lineups`, starters and substitutes; missing players do not count), because a player follow's match list
-  is not a stored record. The two are one filter (an event of any of them), combined with the other filters
+  (`lineups`, starters and substitutes; missing players do not count), and since FX-34 first the events of
+  the player follow's stored match list (B2, `follow_events:player:<id>`), so a followed player's events
+  are found without line-ups. The two are one filter (an event of any of them), combined with the other filters
   (AND). They are resolved to event ids before the export (`ExportService.participant_events`, `:305`),
   reading only the line-ups of the events inside the other filters' scope; no match exports nothing, never
   everything. Every dataset, the raw export and the `legacy-wide-csv` profile take it. The export job's
   `ExportFilter` takes both (ids above 0, else 422), and one team or player without a league names the file
-  after the follow (or the team's catalog name). An event downloaded without its line-ups is not found by a
-  player filter, and with no other filter a large data folder means one payload read per event with
+  after the follow (or the team's catalog name). An event downloaded without its line-ups and outside a
+  player follow's stored list is not found by a player filter, and with no other filter a large data folder means one payload read per event with
   line-ups (logged as "Player filter: N stored lineups read").
 - **Counts per follow and a player's matches (B2).** `StatusService.follow_counts(follows, tournaments=)`
   (`sofascore_scraper/services/status.py:547-580`) gives for every follow its stored events, finished events

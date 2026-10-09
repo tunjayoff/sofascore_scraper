@@ -28,6 +28,7 @@ from sofascore_scraper.errors import NotFoundError
 from sofascore_scraper.services.data_jobs import ExportRequest, export_name, run_export
 from sofascore_scraper.services.export import (DatasetFilter, DatasetSpec, ExportService, ExportSpec,
                                                lineup_players)
+from sofascore_scraper.services.follow_sync import PLAYER, listed_key
 from sofascore_scraper.slices import SLICE_OK, Outcome
 from sofascore_scraper.store import FollowSpec, JobStore, Store, default_db_path, open_store
 from sofascore_scraper.web import deps
@@ -94,6 +95,28 @@ def test_a_player_stands_for_the_events_whose_stored_lineups_name_him(store: Sto
     assert sorted(ids(store, player_ids=(A_STARTER,))) == [E1, E4]
     assert sorted(ids(store, player_ids=(A_SUB,))) == [E1, E4]  # yedekler de sayılır
     assert ids(store, player_ids=(424242,)) == []
+
+
+def test_a_player_follows_stored_match_list_comes_before_the_lineups(store: Store) -> None:
+    """
+    FX-34: oyuncu takibinin saklanan maç listesi (B2, `follow_events:player:<kimlik>`) önce okunur ve kadrolarla
+    birleşir: kadrosu saklanmamış maç (E2) da bulunur; katalogda olmayan kimlik ve öteki süzgeçler dışı kalır.
+    """
+    def remember(player: int, events: List[int]) -> None:
+        store.runtime.set(listed_key(PLAYER, player), {"events": events, "listed_at": 0, "complete": True})
+
+    remember(A_STARTER, [E2, 9799999])
+    assert sorted(ids(store, player_ids=(A_STARTER,))) == [E1, E2, E4]
+    assert sorted(ids(store, player_ids=(A_STARTER,), tournament_ids=(sf.PL.id,))) == [E1, E2]
+    assert ids(store, player_ids=(A_STARTER,), event_ids=(E2, E3)) == [E2]
+    assert ids(store, player_ids=(A_STARTER,), sport="basketball") == []
+    # kadroda adı geçmeyen oyuncu: yalnızca listesi
+    remember(424242, [E3])
+    assert ids(store, player_ids=(424242,)) == [E3]
+    assert sorted(ids(store, player_ids=(424242, D_STARTER))) == [E3, E4]
+    # okunamayan liste (bozuk biçim) yalnızca kadrolara düşer
+    store.runtime.set(listed_key(PLAYER, A_SUB), {"events": "broken"})
+    assert sorted(ids(store, player_ids=(A_SUB,))) == [E1, E4]
 
 
 def test_teams_and_players_are_one_filter_and_the_others_still_apply(store: Store) -> None:

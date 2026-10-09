@@ -361,7 +361,7 @@
     "ssc_help_export_tournament": "yalnızca bu turnuvanın maçları (yinelenebilir)",
     "ssc_help_export_event": "yalnızca bu maç (yinelenebilir)",
     "ssc_help_export_team": "yalnızca bu takımın maçları; bireysel sporlarda oyuncu (yinelenebilir; --player ile tek süzgeç)",
-    "ssc_help_export_player": "yalnızca saklanan kadrosunda bu oyuncunun adı geçen maçlar (yinelenebilir; --team ile tek süzgeç)",
+    "ssc_help_export_player": "yalnızca bu oyuncunun maçları: oyuncu takibinin son maç listesindekiler ve saklanan kadrosunda adı geçenler (yinelenebilir; --team ile tek süzgeç)",
     "ssc_help_export_force": "var olan hedefin üzerine yaz (veri kümeleri ve --schema raw)",
     "ssc_export_written": "Dışa aktarma yazıldı: {path} ({rows} maç)",
     "ssc_export_streamed": "Dışa aktarma stdout'a yazıldı: {rows} maç",

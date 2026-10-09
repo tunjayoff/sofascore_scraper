@@ -1432,7 +1432,7 @@ const tr: typeof en = {
       allTournaments: 'Seçim yoksa: tüm ligler.',
       follows: 'Eklenen takımlar, oyuncular ve maçlar',
       followsNote: 'Seçilen takımlardan ya da oyunculardan birinin maçları. Seçilen bir maç, bir lig ve öteki süzgeçler bunları daraltır: bir takımla bir lig, takımın o ligdeki maçlarını verir.',
-      playersNote: 'Bir oyuncunun maçları, kayıtlı kadrosunda adı geçen maçlardır; kadrosu indirilmemiş maç bulunmaz.',
+      playersNote: 'Bir oyuncunun maçları, oyuncu takibinin son maç listesindeki ve kayıtlı kadrosunda adı geçen maçlardır; takip edilmeyen oyuncunun kadrosu indirilmemiş maçı bulunmaz.',
       seasonIds: 'Sezon numaraları (isteğe bağlı, virgülle ayrılmış)',
       eventIds: 'Maç numaraları (isteğe bağlı, virgülle ayrılmış)',
       badIds: 'Numaralar sıfırdan büyük tam sayılardır, virgülle ayrılır.',

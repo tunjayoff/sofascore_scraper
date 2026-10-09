@@ -24,7 +24,8 @@
     zamanıdır.
   * `--team ID` ve `--player ID` (tekrarlanabilir; B1) katılımcı süzgecidir: bu takımlardan ya da oyunculardan
     birinin maçları (ikisi tek süzgeç). Takım, maçın iki tarafından biridir (takım takibinin kimliği; bireysel
-    sporlarda oyuncu); oyuncu, maçın saklanan kadrosunda adı geçendir (oyuncu takibinin kimliği).
+    sporlarda oyuncu); oyuncunun maçları, oyuncu takibinin saklanan maç listesindekiler ve saklanan kadrosunda
+    adı geçenlerdir (oyuncu takibinin kimliği; sofascore_scraper/services/export.py).
   * Yazılacak kayıt yoksa hiçbir dosya yazılmaz ve komut `not_found` ile biter (çıkış kodu 1). Ham dışa aktarma
     ve geniş CSV yalnızca detayı (olay yükü) saklanan maçları yazar.
   * Dışa aktarma kilit almaz: bir indirme sürerken de çalışır, o anki katalogdan okur.
