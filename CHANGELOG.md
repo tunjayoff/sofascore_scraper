@@ -8,6 +8,196 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-09
+
+3.1.0 removes what 3.0.0 deprecated (the `main.py` flags, the 2.x `/api` routes, the 2.x
+environment names and the old backup scopes) and adds what the first use of 3.0.0 asked for:
+team records and a team and player filter for exports, counts for every follow, request counters
+in the job progress, odds providers by name, single-set darts and e-sports game scores, and slice
+rows from new evidence for several sports.
+
+Like 3.0.0 it is installed from source: a checkout of the `v3.1.0` tag with `pip install -e .`,
+the release archive (the source with the built web app), or the Docker image
+`ghcr.io/tunjayoff/sofascore_scraper:3.1.0`. It is not published on PyPI.
+
+**Upgrading from 3.0** (also in the README, "Upgrading from 3.0"):
+
+- **The 2.x environment names are no longer read.** A value set as `DATA_DIR`,
+  `REQUEST_RATE_LIMIT`, `PROXY_URL`, `APP_LANGUAGE`, `SOFASCORE_API_TOKEN`,
+  `SOFASCORE_ALLOWED_HOSTS`, `LOG_LEVEL`, … (in `.env`, the shell, a service file or the container
+  settings) is ignored, and the default applies: an old `DATA_DIR` leaves the app on the default
+  data folder, an old `SOFASCORE_API_TOKEN` leaves the server without an access token. Rename
+  each to `SOFASCORE_<SECTION>__<KEY>` (`SOFASCORE_STORAGE__DATA_DIR`, `SOFASCORE_CLIENT__RATE`,
+  `SOFASCORE_SERVER__TOKEN`, …). `ssc doctor` and `ssc config show` list every old name still set,
+  with its new name and where it is set; `ssc config init --from-legacy > sofascore.toml` writes the
+  old `.env` and `config/leagues.txt` as a config file.
+- **The catalog is rebuilt on its first open** (catalog schema 2, derive version 8). `catalog.db`
+  is rebuilt from the stored files once, without a request to SofaScore; on a large data folder
+  the first start takes longer.
+- **Rebuild the web app** of a checkout (`cd frontend && npm install && npm run build`). A build
+  made before 3.0.0 does not work under the strict Content-Security-Policy: the `'unsafe-eval'`
+  policy it needed is gone. The release archive and the Docker image carry a built web app.
+- **The `main.py` flags, the 2.x `/api/...` routes and the backup scopes `config`, `seasons`,
+  `matches` and `match_details` are removed** (see Removed). An old flag is a usage error (exit 2)
+  that names the `ssc` command replacing it; a 2.x route answers 404; backups made with an old
+  scope still restore.
+- **`ssc export` names its files differently** when `--out` is not given: like a web export
+  (`exports/premier-league_2026-10-09_142530.jsonl`), and the wide CSV in
+  `match_details/processed/` is `events-wide_<date>_<time>.csv`, no longer
+  `all_matches_<epoch>.csv`. Scripts that look for `all_matches_*.csv` must follow, or pass `--out`.
+- Run `pip install -e .` again after updating a checkout, as after every update.
+
+### Added
+
+- **Team record.** `GET /api/v1/teams/{team_id}` returns a stored team (or, in tennis, darts,
+  MMA, …, a player or pair) with its gender, national-team flag, country and sport, and whether it
+  is followed; no request to SofaScore. The follow page of a team shows them in its header
+  ("Volleyball · Türkiye · Team · Women") instead of telling same-named teams apart only by
+  number, and the catalog suggestions carry gender and national team too (#190).
+- The sport registry flag `individual` (`GET /api/v1/sports`): the sports whose players SofaScore
+  lists as teams (tennis, badminton, table tennis, padel, snooker, darts, MMA). The web UI reads
+  it instead of keeping its own list (#190).
+- **Exports by team and player.** `team_ids` and `player_ids` in the export filter (API and
+  jobs), `ssc export --team ID --player ID`, and the added teams and players in the web export
+  dialog. A player's matches are those of the player follow's stored match list and those whose
+  stored line-ups name the player. Teams and players form one filter (a match of any of them),
+  combined with the other filters (#190, #194).
+- **Counts for every follow.** `/api/v1/status` has `summary.follows[]` (stored, finished and
+  detailed events and the coverage of each follow, a player follow's too), and
+  `GET /api/v1/events?follow=kind:id` lists a follow's matches. A sync keeps the match ids of a
+  player's last match list, so a player follow's page has a Matches tab; before the player's first
+  counted download it says that the next download stores the matches of the player's list (#191).
+- **Request counters.** The job progress and result carry `requests` (`sent`,
+  `budget_wait_seconds`, `backoff_seconds`), and Job detail says how many requests a download sent
+  and how long they waited for the request budget (#191).
+- Sync log lines carry the league and season names (`league_name`, `season_name`,
+  `season_year`) (#191).
+- The setting `fetch.confirm_empty_after_seconds` (default 60; see Changed) (#191).
+- **E-sports game (map) scores.** `score.sets` of an e-sports match lists each game: the round
+  score where SofaScore gives one (finished CS2 series), else 1-0 for the game's winner; games not
+  played yet are left out. The match header shows them under the games won, and the normalized
+  exports carry them in `score_sets` (#189).
+- **Odds providers by name.** The Odds tab, the raw odds list and the Data table name the
+  bookmaker ("bet365") instead of "Bookmaker 1"; an id without a known name stays numbered.
+  `GET /api/v1/odds/providers` lists the known bookmakers from a built-in table (`id`, `name`,
+  `country`, `configured`; no request to SofaScore, no betting link stored), and the Settings row
+  of `client.odds_provider` offers them next to the free entry of an id (#192).
+- `connection.last_check.superseded` in `/api/v1/status`: an answer came after a failed
+  connection check (#191).
+
+### Changed
+
+- **Slice rows from new evidence.** The repaired research explorer recorded the match pages of
+  21 sports (finished and not started; run `lv-20261009`), and the slice registry follows it
+  (#183, #185):
+  - baseball no longer requests incidents, and badminton and table tennis no longer request
+    line-ups: their pages never ask for them;
+  - badminton and table tennis request point-by-point, which counts for a finished match's
+    completeness (as in tennis);
+  - pre-game form is optional in American football, badminton, table tennis, baseball and MMA,
+    and incidents are optional in futsal: a "no data" answer no longer keeps a match incomplete;
+  - e-sports games count for completeness;
+  - statistics and point-by-point are no longer requested before kick-off, in any sport.
+
+  A finished baseball match costs one request fewer per download, badminton and table tennis ask
+  for point-by-point instead of line-ups, and a not-started match no longer asks for statistics
+  (nor, in tennis, badminton and table tennis, for point-by-point).
+- **`.env` lines are part of the environment layer**: they win over `sofascore.toml` and pin the
+  setting on the Settings page, which writes `config/overrides.json` only. An invalid value in the
+  environment stops the app with a configuration error instead of being ignored (#186).
+- `STORE_OPEN_RECONCILE_SECONDS` is the setting `storage.open_reconcile_seconds` (#186).
+- The catalog schema is 2 (the two unused current-score columns are dropped) and the derive
+  version 8 (darts and e-sports, see Fixed and Added): the first open after the upgrade rebuilds
+  `catalog.db` from the files (#186, #189).
+- Slice summaries, the `not_requested` slices of an event, the coverage report and the season
+  counts follow the configured slice selection and the follows table (#186).
+- The Docker entrypoint runs `python -m sofascore_scraper.cli.main`; its `web` alias is gone
+  (#186).
+- The installers and start scripts choose their language from `SOFASCORE_DISPLAY__LANGUAGE` (no
+  longer `APP_LANGUAGE` or `LANGUAGE`) and print `python -m sofascore_scraper.cli.main doctor` as
+  the check command (#188).
+- `ssc doctor` says whether a 2.x name is set in the environment or in `.env`, and points at
+  `.env` only for what is there (#188).
+- The app no longer creates the empty 2.x folders `match_details/` and `datasets/` in the data
+  folder; the Store creates the data folder on its first open (#188).
+- Search hits no longer report SofaScore's placeholder team "No team" as a player's team (`team`
+  is null) (#190).
+- The web export dialog sends chosen teams as `team_ids` instead of their stored match numbers; a
+  chosen team and a chosen single match now narrow each other like every other filter (before,
+  the team's matches and the match were added together) (#190).
+- **The request that confirms a "no data" answer waits** at least
+  `fetch.confirm_empty_after_seconds` (60 s; `0` asks at the next download as before). It is a
+  planning rule, not a sleep: nothing is sent while it waits. A job resumed right after a stop no
+  longer asks again for the matches it just stored (#191).
+- The ETA of a league download counts its matches' requests by need (full download, refill or
+  refresh) (#191).
+- `catalog verify`, the scans and the circuit breaker's cause report in English; the CLI's text
+  output adds a description in the user's language (#191).
+- **`ssc export` without `--out`** names its file like a web export: the league, the single team
+  or player, or the dataset, then the UTC date and time
+  (`exports/premier-league_2026-10-09_142530.jsonl`), instead of epoch seconds. The wide CSV in
+  `match_details/processed/` is `events-wide_<date>_<time>.csv`, no longer
+  `all_matches_<epoch>.csv` (#194). Such a file's name does not say its dataset: the web Exports
+  list shows it by its format instead of "unknown", and a raw export's file
+  (`events-raw_…`) is listed as the raw dataset.
+- A sync that cannot read the follows table logs an error (it still downloads the leagues of
+  `leagues.txt`) (#194).
+- **Research tooling** (developer scripts, not the app): `scripts/explore_all_sports.py` intercepts
+  SofaScore requests over CDP, answers images locally, checks that a held request is still alive
+  before and after its slot, runs a self-check (`probe`) at start and has a budget per run
+  (`--new-run`, `--max-requests`, `--max-hours`). Everything it writes passes a redaction of the
+  client's location and IP addresses and of push server addresses, and a test guards
+  `research/**`. The research and push scripts use the 3.1 environment names and keep their own
+  browser profile under `~/.cache/sofascore_research/` (#181, #182, #184, #187).
+
+### Fixed
+
+- **Darts played in a single set** (`bestOfSets: 1`) show the legs won: `score.format` is
+  `legs_won` with no sets. Before, they were `legs` with the legs presented as sets won. Stored
+  matches are corrected on the first open (derive version 8) (#189).
+- The connection state read "ok" when a failure followed an answer in the same second; it is now
+  the last recorded outcome (#191). `POST /api/v1/status/check` stamps `checked_at_utc` with the
+  moment it recorded, so it matches `last_check.at` (#180).
+- The web UI help for "Finished matches only in a league download" no longer names the removed
+  `/api` match lists (#194).
+- The research explorer recorded no SofaScore request (finding V3 of the 3.0.0 live validation):
+  Playwright disposed of the held requests while they waited for the research lock, and the
+  requests of a page that replaced its document starved the queue (#181, #182).
+
+### Removed
+
+- **The 2.x flags of `python main.py`** (`--headless`, `--update-all`, `--refresh-only`,
+  `--watch`, `--web`, `--doctor`, `--diagnostics`, …): an old flag is a usage error (exit 2) that
+  names the command that replaces it (#186).
+- **The 2.x `/api/...` routes** and their response shapes, `POST /api/export/csv` among them (use
+  `/api/v1`; a 2.x path answers 404) (#186).
+- **The 2.x environment names** (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `MAX_CONCURRENT`, `PROXY_URL`,
+  `APP_LANGUAGE`, `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `LOG_LEVEL`, …): use
+  `SOFASCORE_<SECTION>__<KEY>`. Each old name still set gives a `legacy_name` warning that names
+  its replacement, in `ssc config show` (also `--json`), `ssc config validate`, `ssc doctor` and
+  the diagnostics bundle; a variable named by `proxy_env` or `token_env` is still read. GNU
+  `LANGUAGE` no longer chooses the language (#186, #188).
+- **The backup scopes `config`, `seasons`, `matches` and `match_details`** (use `all`, `state` or
+  `data`); backups made with them still restore (#186).
+- The setting `fetch.save_empty_rounds` (a warning when it is still given) (#186).
+- The `'unsafe-eval'` Content-Security-Policy for frontend builds made before 3.0.0: every page
+  but `/docs` and `/redoc` gets the strict policy; rebuild an old build (#186).
+- `sofascore_scraper.utils`, `sofascore_scraper.web.jobs`, `sofascore_scraper.web.progress`, the
+  2.x watcher (`watch_events.jsonl` is no longer written) and the fetcher modules (#186); the
+  `sofascore_scraper.challenge_solver` alias (use `sofascore_scraper.client.bridge`) (#187);
+  `sofascore_scraper/services/stats.py` (`format_size` moved to the `ssc status` command) (#194).
+
+### Security
+
+- **The access token under a root path.** When the app ran with an ASGI root path (uvicorn
+  `--root-path`, behind a proxy that strips a path prefix), `/<prefix>/api/v1/…` routes were
+  answered without the access token. The security layer and the error handlers now use the path
+  the router matches. Default installs were not affected: `ssc serve` and the Docker image never
+  set a root path (#191).
+- `ssc config show` and the diagnostics bundle print `***` for the value of a schedule task
+  option that the task does not define, as they do for sink options; the key stays visible
+  (#194).
+
 ## [3.0.0] - 2026-10-08
 
 The first tagged release: everything since the version number was set to 2.0.0 (2026-07-27,
@@ -1360,5 +1550,6 @@ terminal tool; the web interface arrived in April 2026 (reported as 1.0.0 by `/h
 was replaced by the Vue app on 2026-07-27, when the number became 2.0.0. See `git log` for
 details.
 
-[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/tunjayoff/sofascore_scraper/releases/tag/v3.0.0
