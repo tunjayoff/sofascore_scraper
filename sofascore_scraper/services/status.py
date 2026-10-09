@@ -435,11 +435,13 @@ class StatusService:
         by_tournament: Dict[Optional[int], _Tally] = {}
         by_season: Dict[Optional[int], Dict[Optional[int], _Tally]] = {}
         if info.rows.get("catalog"):
+            # Planlayıcının seçimi: yapılandırma ve takip tablosu (API'den eklenen takiplerin seçimi; P27)
+            policy = planning.configured_policy(store)
             for state in store.events.states(scope):
                 row = state.event
                 if not row.has_event_payload:
                     continue
-                missing = planning.unresolved_slice_keys(state, threshold=threshold)
+                missing = planning.unresolved_slice_keys(state, policy, threshold=threshold)
                 total.add(missing)
                 by_tournament.setdefault(row.tournament_id, _Tally()).add(missing)
                 by_season.setdefault(row.tournament_id, {}).setdefault(row.season_id, _Tally()).add(missing)
@@ -482,6 +484,7 @@ class StatusService:
             int(row.id): {} for row in store.entities.seasons(int(tournament_id)) if row.id is not None}
         tallies: Dict[Optional[int], _Tally] = {}
         events: Dict[Optional[int], List[int]] = {}
+        policy = planning.configured_policy(store)  # yapılandırma ve takip tablosu (P27, FX-13)
         for state in store.events.states(Scope(tournament_ids=(int(tournament_id),))):
             row = state.event
             counts = events.setdefault(row.season_id, [0, 0, 0])
@@ -493,7 +496,7 @@ class StatusService:
                 counts[2] += 1
             if row.has_event_payload and finished:
                 tallies.setdefault(row.season_id, _Tally()).add(
-                    planning.unresolved_slice_keys(state, threshold=threshold))
+                    planning.unresolved_slice_keys(state, policy, threshold=threshold))
         out: List[SeasonCounts] = []
         for season_id in sorted(seasons, key=_season_order):
             fetched: Optional[float] = None

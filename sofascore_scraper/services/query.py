@@ -37,7 +37,7 @@ from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List
 
 from sofascore_scraper import refresh
 from sofascore_scraper.logger import get_logger
-from sofascore_scraper.sports import slices_for, sport_slugs
+from sofascore_scraper.sports import sport_slugs
 from sofascore_scraper.status import StatusClass
 from sofascore_scraper.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreError
 
@@ -68,16 +68,21 @@ DEFAULT_EMPTY_THRESHOLD = 2
 _ID_CHUNK = 500  # bir sorgunun kapsamına yazılan en çok kimlik
 
 
-def required_detail_keys() -> Dict[str, Tuple[str, ...]]:
+def required_detail_keys(selection: Any = None, store: Optional["Store"] = None) -> Dict[str, Tuple[str, ...]]:
     """
     `Store.events.missing`'in `required` argümanı (`exclusive=True` ile): `""` altında sporu kayıt defterinde
     olmayan ya da bilinmeyen maçın beklediği dilimler, kayıtlı her sporun altında o sporun bütün beklediği
-    dilimler. Kural `slices_for(spor, required_only=True)`'dur (dilim tablosu, sofascore_scraper/sports.py). Bir spor ortak
-    bir dilimi beklemeyebildiği (`not_in`, `optional_in`) için sporlar `""`'nin üstüne eklenmez, onun yerine geçer.
+    dilimler. Kural planlayıcınınkidir (`planning.expected_slice_keys`): seçilmiş dilimlerden o sporda tamlık
+    hesabına girenler. selection: None = yapılandırmanın seçimi (`planning.configured_policy(store)`; sporun
+    seçimi, maç ya da turnuva takibininki değil). Bir spor ortak bir dilimi beklemeyebildiği (`not_in`,
+    `optional_in`) için sporlar `""`'nin üstüne eklenmez, onun yerine geçer.
     """
-    required: Dict[str, Tuple[str, ...]] = {"": tuple(detail.key for detail in slices_for(None, required_only=True))}
+    from sofascore_scraper.services import planning
+
+    chosen = planning.configured_policy(store) if selection is None else selection
+    required: Dict[str, Tuple[str, ...]] = {"": planning.expected_slice_keys(None, chosen)}
     for sport in sport_slugs():
-        required[sport] = tuple(detail.key for detail in slices_for(sport, required_only=True))
+        required[sport] = planning.expected_slice_keys(sport, chosen)
     return required
 
 
@@ -366,15 +371,18 @@ class QueryService:
         return EventPage(items, page.next_cursor, summaries)
 
     def _slice_summaries(self, event_ids: Sequence[int]) -> Dict[int, SliceSummary]:
+        """`selected`: planlayıcının seçimi (yapılandırma ve takip tablosu; plan maddesi P27), maçın evresinde."""
         from sofascore_scraper.services import planning
         from sofascore_scraper.sports import select_slices
 
         out: Dict[int, SliceSummary] = {}
         if not event_ids:
             return out
+        policy = planning.configured_policy(self._store)
         for state in self._store.events.states(Scope(event_ids=tuple(event_ids))):
             row = state.event
-            specs = select_slices("event", row.sport or None, None, phase=planning.phase_of(row.status_class))
+            chosen = planning.selection_for(policy, sport=row.sport or None, row=row)
+            specs = select_slices("event", row.sport or None, chosen, phase=planning.phase_of(row.status_class))
             states = [state.slice(spec.key).state for spec in specs]
             out[row.id] = SliceSummary(selected=len(specs), ok=states.count("ok"), empty=states.count("empty"),
                                        error=states.count("error"))
@@ -405,11 +413,11 @@ class QueryService:
 
     def event_slices(self, event_id: int) -> Optional[List["schema.Slice"]]:
         """
-        Maçın dilimleri (yük olmadan): katalogdaki her dilim satırı ve sporunun varsayılan seçiminde olup satırı
-        olmayan dilimler (`not_requested`), (anahtar, alt anahtar) sırasıyla. Maç bilinmiyorsa None.
+        Maçın dilimleri (yük olmadan): katalogdaki her dilim satırı ve planlayıcının bu maç için seçtiği ama satırı
+        olmayan dilimler (`not_requested`; alt anahtarlı dilimde her alt anahtarı, ör. bahis sağlayıcısı), (anahtar,
+        alt anahtar) sırasıyla. Maç bilinmiyorsa None.
         """
         from sofascore_scraper import schema
-        from sofascore_scraper.sports import select_slices
         from sofascore_scraper.store import Ref
 
         if not _valid_id(event_id):
@@ -418,10 +426,23 @@ class QueryService:
         if row is None:
             return None
         infos = {(info.key, info.sub): info for info in self._store.events.slices(event_id)}
-        for spec in select_slices("event", row.sport or None, None):
-            if (spec.key, "") not in infos:
-                infos[(spec.key, "")] = _not_requested(Ref.event(event_id), spec.key)
+        for key, sub in self._selected_slices(row):
+            if (key, sub) not in infos:
+                infos[(key, sub)] = _not_requested(Ref.event(event_id), key, sub)
         return [schema.slice_from_info(infos[key]) for key in sorted(infos)]
+
+    def _selected_slices(self, row: "EventRow") -> Tuple[Tuple[str, str], ...]:
+        """
+        Planlayıcının bu maç için seçtiği (anahtar, alt anahtar) çiftleri, tablo sırasıyla: yapılandırmanın ve takip
+        tablosunun seçimi (`planning.configured_policy`; plan maddeleri P27, P28), evreden bağımsız.
+        """
+        from sofascore_scraper.services import planning
+        from sofascore_scraper.sports import select_slices
+
+        policy = planning.configured_policy(self._store)
+        chosen = planning.selection_for(policy, sport=row.sport or None, row=row)
+        return tuple((spec.key, sub) for spec in select_slices("event", row.sport or None, chosen)
+                     for sub in spec.sub_keys(policy.provider))
 
     def event_slice(self, event_id: int, key: str, sub: str = "") -> Optional["schema.Slice"]:
         """
@@ -429,7 +450,6 @@ class QueryService:
         var ne de sporunun seçiminde geçiyorsa None. Depo düzenine uymayan dilim adı ValueError.
         """
         from sofascore_scraper import schema
-        from sofascore_scraper.sports import select_slices
 
         if not _valid_id(event_id):
             return None
@@ -437,8 +457,7 @@ class QueryService:
         if row is None:
             return None
         info = _slice_info(lambda: self._store.events.slice(event_id, key, sub))
-        if info.state == "not_requested" and (sub or key not in {
-                spec.key for spec in select_slices("event", row.sport or None, None)}):
+        if info.state == "not_requested" and (key, sub) not in self._selected_slices(row):
             return None
         payload = self._payload(event_id, key, sub) if info.has_payload else None
         return schema.slice_from_info(info, payload=payload)
@@ -722,10 +741,10 @@ def _slice_info(read: Callable[[], Any]) -> Any:
         raise ValueError(f"not a valid slice name: {e}") from None
 
 
-def _not_requested(ref: Any, key: str) -> Any:
+def _not_requested(ref: Any, key: str, sub: str = "") -> Any:
     from sofascore_scraper.store import SliceInfo
 
-    return SliceInfo(ref=ref, key=key, sub="", state="not_requested", has_payload=False, fetched_at=None,
+    return SliceInfo(ref=ref, key=key, sub=sub, state="not_requested", has_payload=False, fetched_at=None,
                      checked_at=None, empty_count=0, unverified_empty_count=0, error=None, stored_bytes=None,
                      raw_bytes=None, history_count=0)
 
