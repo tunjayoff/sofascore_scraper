@@ -7,14 +7,15 @@ sofascore_scraper/web/api/v1/ (GET /api/v1/sports), `ssc watch` (--sport seçene
 (bir maçın ihtiyacı: beklenen dilimler).
 
 Yeni spor eklemek:
-  1. SPORTS'a bir SportSpec (periyot ailesindeyse `period_format`, set ailesindeyse `set_format` ile).
+  1. SPORTS'a bir SportSpec (periyot ailesindeyse `period_format`, set ailesindeyse `set_format` ile; oyuncuları
+     SofaScore'da takım olarak listelenen bireysel bir sporsa `individual=True`).
   2. Skor biçimi mevcut ailelerden (docs/all-sports/README.md, "Sınıf gerekçeleri") biri değilse
      sofascore_scraper/status.py'de yeni bir extract_scores dalı ve sofascore_scraper/schema'da yeni bir skor modeli.
   3. Spora özel detay uç noktası varsa DETAIL_SLICES'a bir satır (ya da var olan satırın `sports` kümesine ekleme);
      ortak bir dilim o sporda yoksa `not_in`, veri hep gelmiyorsa `optional_in` kümesine (DETAIL_SLICES'ın
      üstündeki kurallar; kanıt tests/fixtures/sport_slices/evidence.json'a girer).
-  4. Web arayüzü listeyi henüz buradan almıyor: frontend/src/lib/sport.ts ve locales/{tr,en}.ts
-     (tests/test_sports_registry.py ikisinin eşit kaldığını denetler).
+  4. Web arayüzü listeyi ve bayrakları GET /api/v1/sports'tan okur; sporun adı frontend/src/locales/{tr,en}.ts'e
+     yazılır (tests/test_sports_registry.py her kayıtlı sporun adı olduğunu denetler).
 
 Bu modül başka hiçbir sofascore_scraper modülünü içe aktarmaz (döngüsel bağımlılık olmasın).
 """
@@ -88,6 +89,10 @@ class SportSpec:
     period_format: Optional[PeriodFormat] = None
     # Set ailesinde setin birimi. None: tenis (2.x çizelgesi TennisScores, retired / walkover bayraklarıyla)
     set_format: Optional[SetFormat] = None
+    # Bireysel spor: bir kişiye (ya da çifte) karşı bir kişi. SofaScore bu sporların oyuncularını (ve çiftlerini)
+    # takım olarak listeler (`homeTeam`, `/search/all`'da `type: team`); okur için onlar oyuncudur (e2e F31).
+    # GET /api/v1/sports `individual` alanıyla verir; web arayüzü böyle bir "takımı" oyuncu diye gösterir.
+    individual: bool = False
 
     @property
     def detail_slices(self) -> Tuple[str, ...]:
@@ -119,6 +124,7 @@ SPORTS: Tuple[SportSpec, ...] = (
         # startTimestamp planlanan saattir (aynı kortta sıra, yağmur); retro verisinde bitmiş 60 maçın 5'i
         # başlangıçtan > 4 sa sonra bitti (maks 5,46 sa). Ölçü gerçek oyun başlangıcı, eşik 6 sa.
         watcher=WatcherParams(near_end_rule="last_set", stuck_after_seconds=6 * 3600, stuck_from_play_start=True),
+        individual=True,
     ),
     # --- A sınıfı, periyot tabanlı sporlar (docs/all-sports/README.md, "Sınıf gerekçeleri"; plan maddesi SP-1) ---
     # Ad: SofaScore'un tournament.category.sport.name değeri (research/all_sports/samples). Skorlar basketbolun
@@ -210,6 +216,7 @@ SPORTS: Tuple[SportSpec, ...] = (
         score_family="sets",
         set_format="points",
         watcher=WatcherParams(near_end_rule="last_set"),
+        individual=True,
     ),
     SportSpec(
         slug="table-tennis",
@@ -218,6 +225,7 @@ SPORTS: Tuple[SportSpec, ...] = (
         score_family="sets",
         set_format="points",
         watcher=WatcherParams(near_end_rule="last_set"),
+        individual=True,
     ),
     SportSpec(
         slug="padel",
@@ -227,6 +235,7 @@ SPORTS: Tuple[SportSpec, ...] = (
         set_format="games",
         # Tenis gibi sıralı kort programı: startTimestamp planlanan saattir; ölçü gerçek oyun başlangıcı, eşik 6 sa
         watcher=WatcherParams(near_end_rule="last_set", stuck_after_seconds=6 * 3600, stuck_from_play_start=True),
+        individual=True,
     ),
     SportSpec(
         slug="snooker",
@@ -236,6 +245,7 @@ SPORTS: Tuple[SportSpec, ...] = (
         set_format="frames",
         # Uzun maçlar oturumlara bölünür; bitmiş 4 maçın birinde son değişiklik başlangıçtan 4,27 sa sonra
         watcher=WatcherParams(stuck_after_seconds=6 * 3600),
+        individual=True,
     ),
     # --- B sınıfı: kendi durum ya da skor mantığı olan sporlar (docs/all-sports/README.md; plan maddesi SP-3) ---
     # Bitişe yakınlık kuralı hiçbirinde yok (`never`): inning, oyun ve raunt kodları için kural tanımlı değil.
@@ -275,12 +285,14 @@ SPORTS: Tuple[SportSpec, ...] = (
         # Set usulü maç (bestOfSets); setsiz maç sofascore_scraper/status.py'de `legs_won` olur. Bitmiş 9 maçın en uzunu
         # başlangıçtan 0,85 sa sonra bitti: varsayılan takılı eşiği (4 sa) yeter.
         set_format="legs",
+        individual=True,
     ),
     SportSpec(
         slug="mma",
         name="Mixed Martial Arts",  # SofaScore'un adı (research/all_sports/samples/mma)
         i18n_key="sport.mma",
         score_family="fight",
+        individual=True,
     ),
 )
 
@@ -358,6 +370,12 @@ def set_format(slug: object) -> Optional[SetFormat]:
     """Set ailesindeki sporun set birimi; tenis (kendi çizelgesi) ya da kayıtlı olmayan sporda None."""
     spec = get_sport(slug)
     return spec.set_format if spec else None
+
+
+def is_individual(slug: object) -> bool:
+    """Sporun oyuncuları SofaScore'da takım olarak mı listeleniyor (bireysel spor); kayıtlı olmayan sporda False."""
+    spec = get_sport(slug)
+    return spec.individual if spec else False
 
 
 def watcher_params(slug: object) -> WatcherParams:

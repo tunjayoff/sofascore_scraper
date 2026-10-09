@@ -353,6 +353,10 @@ class Sport(BaseModel):
     name: str = Field(description="SofaScore's English name.")
     i18n_key: str = Field(description="Translation key of the name for clients.")
     score_family: str
+    individual: bool = Field(
+        description="One against one (or a pair against a pair): SofaScore lists the players of this sport as teams "
+                    "(`homeTeam`, search hits of kind `team`), so such a team is a player for the reader.",
+    )
     slices: List[SportSlice] = Field(description="Every slice that applies to the sport, disabled ones included.")
 
 
@@ -420,6 +424,7 @@ def _sport(spec: sports.SportSpec) -> Sport:
         name=spec.name,
         i18n_key=spec.i18n_key,
         score_family=spec.score_family,
+        individual=spec.individual,
         slices=[
             SportSlice(
                 key=s.key, path=s.path, required=s.counts_in(spec.slug), default_enabled=s.default_enabled,

@@ -10,7 +10,7 @@ import { NAV } from '@/app/nav'
 import { jobKindText, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
 import { loadTournaments } from '@/screens/events/eventText'
 import { MIN_CHARS, noteFollows, normalize, rankLocal, useSuggest } from '@/app/suggest'
-import { sportName } from '@/app/sports'
+import { loadSports, sportName } from '@/app/sports'
 import { hitPlace, hitTraits, kindIcon, playerTeam } from '@/screens/follows/followText'
 
 /**
@@ -207,6 +207,8 @@ onMounted(() => {
     .catch(() => {})
   // names for the leagues of the recent jobs
   void loadTournaments()
+  // the registry says which sports list their players as teams (B1): such a hit is shown as a player
+  void loadSports().catch(() => {})
 })
 onUnmounted(() => {
   if (timer) clearTimeout(timer)

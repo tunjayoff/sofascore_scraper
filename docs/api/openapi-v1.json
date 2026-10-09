@@ -10315,6 +10315,11 @@
             "type": "string",
             "title": "Score Family"
           },
+          "individual": {
+            "type": "boolean",
+            "title": "Individual",
+            "description": "One against one (or a pair against a pair): SofaScore lists the players of this sport as teams (`homeTeam`, search hits of kind `team`), so such a team is a player for the reader."
+          },
           "slices": {
             "items": {
               "$ref": "#/components/schemas/SportSlice"
@@ -10330,6 +10335,7 @@
           "name",
           "i18n_key",
           "score_family",
+          "individual",
           "slices"
         ],
         "title": "Sport"

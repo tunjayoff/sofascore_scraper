@@ -108,6 +108,25 @@ def test_set_formats():
     assert sports.set_format("waterpolo") is None and sports.set_format(None) is None
 
 
+def test_individual_sports():
+    """
+    Bireysel sporlar (B1, e2e F31): oyuncuları SofaScore'da takım olarak listelenenler. Web arayüzü bu listeyi
+    artık kendisi tutmaz, GET /api/v1/sports'un `individual` alanını okur.
+    """
+    assert [s.slug for s in sports.SPORTS if s.individual] == [
+        "tennis", "badminton", "table-tennis", "padel", "snooker", "darts", "mma"]
+    assert sports.is_individual("tennis") and sports.is_individual("mma")
+    assert not sports.is_individual("football") and not sports.is_individual("esports")
+    assert not sports.is_individual("waterpolo") and not sports.is_individual(None)
+    # takım sporlarının hiçbiri bireysel değil; e-spor takımları gerçek takımdır
+    assert all(not s.individual for s in sports.SPORTS if s.score_family in ("football", "periods", "innings"))
+
+
+def test_frontend_keeps_no_list_of_individual_sports():
+    src = (REPO / "frontend" / "src" / "app" / "sports.ts").read_text(encoding="utf-8")
+    assert "INDIVIDUAL_SPORTS" not in src and "'table-tennis'" not in src
+
+
 # --- ad normalizasyonu ------------------------------------------------------------------
 
 @pytest.mark.parametrize("raw,expected", [

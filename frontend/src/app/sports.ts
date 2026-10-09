@@ -33,14 +33,12 @@ export function resetSports() {
 }
 
 /**
- * Sports of one against one (or a pair), whose players SofaScore lists as teams: a "team" of these sports is
- * a player for the reader (FX-24 F31). The registry does not say which sports these are (`GET /sports` has
- * no such field), so the list is kept here; a sport missing from it only keeps the word "team".
+ * A sport of one against one (or a pair), whose players SofaScore lists as teams: a "team" of it is a player
+ * for the reader (FX-24 F31). The registry says which sports these are (`GET /sports`, `individual`; B1); until
+ * it is read (`loadSports`), or for a sport it does not know, the word "team" stays.
  */
-export const INDIVIDUAL_SPORTS: readonly string[] = ['tennis', 'badminton', 'table-tennis', 'padel', 'darts', 'snooker', 'mma']
-
 export function isIndividual(slug: string | null | undefined): boolean {
-  return !!slug && INDIVIDUAL_SPORTS.includes(slug)
+  return !!slug && sports.value.some((s) => s.slug === slug && s.individual)
 }
 
 /** A sport's name inside a sentence: lower case unless it is an abbreviation ("tennis", but "MMA"). */

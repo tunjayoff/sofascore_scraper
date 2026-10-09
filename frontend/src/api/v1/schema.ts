@@ -1267,6 +1267,8 @@ export interface Sport {
   /** Translation key of the name for clients. */
   i18n_key: string
   score_family: string
+  /** One against one (or a pair against a pair): SofaScore lists the players of this sport as teams (`homeTeam`, search hits of kind `team`), so such a team is a player for the reader. */
+  individual: boolean
   /** Every slice that applies to the sport, disabled ones included. */
   slices: SportSlice[]
 }

@@ -14,7 +14,7 @@ import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1, V1Error } from '@/api/v1/client'
 import type { FollowRecord, Job, SeasonEntry, TournamentRecord } from '@/api/v1/schema'
-import { isIndividual, sportName } from '@/app/sports'
+import { isIndividual, loadSports, sportName } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
 import { onJobEnded } from '@/app/jobWatch'
 import { num, pct } from '@/ui/time'
@@ -249,7 +249,11 @@ const facts = computed(() => {
 })
 
 watch(followId, () => void load())
-onMounted(() => void load())
+onMounted(() => {
+  void load()
+  // bireysel sporun "takımı" oyuncudur (B1): kayıt defteri söyler
+  void loadSports().catch(() => {})
+})
 </script>
 
 <template>
