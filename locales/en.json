@@ -95,6 +95,8 @@
     "doctor_env_in_environ": "the environment",
     "doctor_env_bad_line": "line {line} cannot be parsed and is ignored: {text}",
     "doctor_env_legacy_name": "{name} (set in {where}) is no longer read (the 2.x names were removed in 3.1): use {new}",
+    "doctor_env_deprecated_name": "{name} (set in {where}) is deprecated; still read in 3.1, removed in 3.2: use {new}",
+    "doctor_env_deprecated_ignored": "{name} (set in {where}) is ignored because {winner} is also set; {name} is deprecated and removed in 3.2: remove it",
     "doctor_env_api_url": "SOFASCORE_CLIENT__BASE_URL={value}: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
     "doctor_env_legacy_profile": "SOFASCORE_CHROME_PROFILE is not read by the app; the setting is called SOFASCORE_CLIENT__BROWSER_PROFILE",
     "doctor_env_headed": "SOFASCORE_CLIENT__BROWSER_HEADED is set but there is no display (DISPLAY / WAYLAND_DISPLAY): the browser cannot open a window",

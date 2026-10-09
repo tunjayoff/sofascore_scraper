@@ -13,8 +13,10 @@
 # volume'undaki .env, yapılandırma dosyası) giriş noktası yalnızca yerel adları verir
 # (SOFASCORE_SERVER__ALLOWED_HOSTS=localhost,127.0.0.1,[::1]): DNS rebinding koruması, doğrudan uvicorn ile
 # başlatılan eski imajdaki gibi açık kalır. Arayüze başka bir adla ya da IP ile erişilecekse o adlar
-# SOFASCORE_SERVER__ALLOWED_HOSTS ile verilir (Compose örneği bunu açıkça yapar). 2.x'in SOFASCORE_ALLOWED_HOSTS,
-# SOFASCORE_API_TOKEN ve SOFASCORE_BROWSER_PROFILE adları 3.1'de okunmaz (`ssc doctor` yeni adı söyler).
+# SOFASCORE_SERVER__ALLOWED_HOSTS ile verilir (Compose örneği bunu açıkça yapar). 2.x'in SOFASCORE_ALLOWED_HOSTS
+# ve SOFASCORE_API_TOKEN adları kullanımdan kalktı: 3.1'de bir uyarıyla hâlâ okunur, 3.2'de kalkar (plan maddesi
+# FX-35); eski adla verilmiş izin listesi de "verilmiş" sayılır. SOFASCORE_BROWSER_PROFILE 3.1'de okunmaz
+# (`ssc doctor` yeni adları söyler).
 #
 # Erişim belirteci yoksa `serve` her başlangıçta uyarır: uygulama `-p 127.0.0.1:8000:8000` ile yalnızca bu
 # makineye yayımlandığını göremez. O durumda uyarı yok sayılabilir; port ağa açıksa SOFASCORE_SERVER__TOKEN
@@ -62,12 +64,15 @@ unlock_stale_profile() {
 # --- Host izin listesi -------------------------------------------------------------------
 # Kullanıcı bir yerde verdiyse (ortamda, config volume'undaki .env'de ya da bir
 # yapılandırma dosyası varsa onda) hiçbir şey yapılmaz: `serve` onu yazıldığı gibi kullanır, dosyada da
-# yoksa açıkça söyleyip başlamaz. Hiçbir yerde verilmemişse yalnızca yerel adlar.
+# yoksa açıkça söyleyip başlamaz. Hiçbir yerde verilmemişse yalnızca yerel adlar. Kullanımdan kalkan
+# SOFASCORE_ALLOWED_HOSTS 3.1'de hâlâ okunur (3.2'de kalkar): onunla verilmiş liste de korunur, yoksa giriş
+# noktasının yazdığı yeni ad onu ezerdi.
 allowed_hosts_given() {
     [ -n "${SOFASCORE_SERVER__ALLOWED_HOSTS:-}" ] && return 0
+    [ -n "${SOFASCORE_ALLOWED_HOSTS:-}" ] && return 0
     env_file="${SOFASCORE_ENV_FILE:-.env}"
     if [ -f "$env_file" ] &&
-        grep -Eq '^[[:space:]]*(export[[:space:]]+)?SOFASCORE_SERVER__ALLOWED_HOSTS[[:space:]]*=[[:space:]]*[^[:space:]#]' "$env_file"; then
+        grep -Eq '^[[:space:]]*(export[[:space:]]+)?SOFASCORE_(SERVER__)?ALLOWED_HOSTS[[:space:]]*=[[:space:]]*[^[:space:]#]' "$env_file"; then
         return 0
     fi
     # Yapılandırma dosyası (sofascore_scraper/config/loader.find_config_file ile aynı yerler): varsa karar onundur

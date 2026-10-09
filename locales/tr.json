@@ -96,6 +96,8 @@
     "doctor_env_bad_line": "{line}. satır ayrıştırılamıyor ve yok sayılıyor: {text}",
     "doctor_env_api_url": "SOFASCORE_CLIENT__BASE_URL={value}: https ile başlayan bir SofaScore adresi değil (varsayılan: https://www.sofascore.com/api/v1)",
     "doctor_env_legacy_name": "{name} ({where} tanımlı) artık okunmuyor (2.x adları 3.1'de kalktı): yerine {new}",
+    "doctor_env_deprecated_name": "{name} ({where} tanımlı) kullanımdan kalktı; 3.1'de hâlâ okunuyor, 3.2'de kaldırılacak: yerine {new}",
+    "doctor_env_deprecated_ignored": "{name} ({where} tanımlı) yok sayılıyor, çünkü {winner} de verilmiş; {name} kullanımdan kalktı ve 3.2'de kaldırılacak: silin",
     "doctor_env_legacy_profile": "SOFASCORE_CHROME_PROFILE uygulama tarafından okunmuyor; ayarın adı SOFASCORE_CLIENT__BROWSER_PROFILE",
     "doctor_env_headed": "SOFASCORE_CLIENT__BROWSER_HEADED açık ama ekran yok (DISPLAY / WAYLAND_DISPLAY): tarayıcı pencere açamaz",
     "doctor_budget_ok": "saniyede {rate} istek (varsayılan {default})",

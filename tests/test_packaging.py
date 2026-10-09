@@ -241,6 +241,9 @@ def test_entrypoint_starts_serve_on_every_interface_with_the_loopback_names(tmp_
     ({}, {"sofascore.toml": "schema = 1\n"}),
     ({}, {"config/sofascore.toml": "schema = 1\n"}),
     ({"SOFASCORE_CONFIG": "/somewhere/sofascore.toml"}, {}),
+    # Kullanımdan kalkan 2.x adı 3.1'de hâlâ okunur (FX-35): giriş noktası yeni adı yazıp onu ezmemeli
+    ({"SOFASCORE_ALLOWED_HOSTS": "box.lan"}, {}),
+    ({}, {"config/.env": "SOFASCORE_ALLOWED_HOSTS=box.lan\n"}),
 ])
 def test_entrypoint_leaves_an_allow_list_given_anywhere_alone(tmp_path: Path, env: Dict[str, str],
                                                               files: Dict[str, str]) -> None:

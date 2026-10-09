@@ -722,7 +722,8 @@ def test_config_show_prints_every_value_with_its_source(cli, tmp_path, monkeypat
     data = run.data
     assert (run.exit_code, run.json["command"], data["config_file"]) == (0, "config show", str(config))
     rows = {row["key"]: row for row in data["values"]}
-    assert rows["client.rate"] == {"key": "client.rate", "value": 2.0, "source": "file", "from": str(config), "locked": True}
+    assert rows["client.rate"] == {"key": "client.rate", "value": 2.0, "source": "file", "from": str(config), "locked": True,
+                                   "replaced_by": None}
     assert rows["storage.data_dir"]["value"] == str(tmp_path / "data") and rows["storage.data_dir"]["source"] == "flag"
     assert rows["client.proxy"]["value"] == "***" and "hunter2" not in run.stdout  # gizli değerler maskeli
     assert rows["follows"]["value"][0]["id"] == 17 and rows["follows"]["source"] == "file"

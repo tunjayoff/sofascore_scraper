@@ -206,6 +206,11 @@ class Setting(BaseModel):
     locked: bool = Field(description="Pinned by the config file, the environment or a flag: a change made here would have no effect.")
     writable: bool = Field(description="Whether PATCH accepts this key right now.")
     secret: bool
+    replaced_by: Optional[str] = Field(
+        default=None,
+        description="When the value comes from a deprecated 2.x environment variable (`source_name`; still read "
+                    "in 3.1, removed in 3.2), the variable to use instead; otherwise null.",
+    )
 
 
 class SportSliceSelection(BaseModel):
@@ -288,6 +293,7 @@ def _document() -> SettingsDocument:
             locked=source.locked,
             writable=key in WRITABLE and not source.locked,
             secret=secret,
+            replaced_by=loaded.replaced_by(key),
         ))
     return SettingsDocument(config_file=loaded.config_file, overrides_file=loaded.overrides_file, settings=rows,
                             metadata=metadata, slices=_sport_selections(loaded))

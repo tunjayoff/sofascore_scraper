@@ -1707,6 +1707,7 @@ const en = {
     lock: {
       file: 'Set in {file}. Change it there.',
       env: 'Set by the environment variable {name}.',
+      envDeprecated: 'Set by the old environment variable {name}. It is deprecated: still read in 3.1, removed in 3.2. Rename it to {replacement}.',
       flag: 'Set by a command-line flag when the server started.',
       other: 'Pinned by a stronger setting.',
       readOnly: 'Can be changed only in sofascore.toml.',

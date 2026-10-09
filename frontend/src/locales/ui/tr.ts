@@ -1709,6 +1709,7 @@ const tr: typeof en = {
     lock: {
       file: '{file} içinde ayarlı. Orada değiştirin.',
       env: '{name} ortam değişkeniyle ayarlı.',
+      envDeprecated: 'Eski {name} ortam değişkeniyle ayarlı. Bu ad kullanımdan kalktı: 3.1’de hâlâ okunuyor, 3.2’de kaldırılacak. Adını {replacement} olarak değiştirin.',
       flag: 'Sunucu başlarken bir komut satırı seçeneğiyle ayarlandı.',
       other: 'Daha güçlü bir ayar tarafından sabitlendi.',
       readOnly: 'Yalnızca sofascore.toml içinde değiştirilebilir.',

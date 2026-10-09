@@ -626,7 +626,9 @@ def test_env_proxy_password_never_reaches_the_report(make_ctx):
         ("MAX_CONCURRENT=4", "MAX_CONCURRENT", "SOFASCORE_CLIENT__MAX_CONCURRENT (or client.max_concurrent in the config file)"),
         ("DATA_DIR=data", "DATA_DIR", "SOFASCORE_STORAGE__DATA_DIR (or storage.data_dir in the config file)"),
         ("APP_LANGUAGE=tr", "APP_LANGUAGE", "SOFASCORE_DISPLAY__LANGUAGE (or display.language in the config file)"),
-        ("SOFASCORE_API_TOKEN=x", "SOFASCORE_API_TOKEN", "SOFASCORE_SERVER__TOKEN"),
+        # Yalnızca ortamdan okunan ayar: yalnız değişkenin adı. (Kullanımdan kalkan SOFASCORE_API_TOKEN 3.1'de
+        # okunur: tests/test_fx35_deprecated_names.py)
+        ("SOFA_CAPTCHA_TOKEN=x", "SOFA_CAPTCHA_TOKEN", "SOFASCORE_CLIENT__CAPTCHA_TOKEN"),
         ("SAVE_EMPTY_ROUNDS=true", "SAVE_EMPTY_ROUNDS", "nothing (the setting was removed)"),
     ],
 )

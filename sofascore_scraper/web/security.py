@@ -12,7 +12,8 @@ duranlar o kararı zayıflatmayan ve kullanıcının kendi tarayıcısı üzerin
 
 İzin listesi ve belirteç ayar yükleyicisinden okunur (sofascore_scraper/config/loader.py; işlev içinde içe aktarılır):
 `ssc serve` adrese göre türettiği listeyi ayarlara verir (bayrak ve ortam katmanı), uygulama oradan okur.
-2.x'in SOFASCORE_ALLOWED_HOSTS ve SOFASCORE_API_TOKEN adları 3.1'de okunmaz (plan maddesi P30).
+2.x'in SOFASCORE_ALLOWED_HOSTS ve SOFASCORE_API_TOKEN adları 3.1'de kullanımdan kalkmış olarak, bir uyarıyla hâlâ
+okunur; yeni adları verilmişse yeni adlar geçerlidir. 3.2'de kalkarlar (plan maddesi FX-35; loader.DEPRECATED_NAMES).
 """
 from __future__ import annotations
 
@@ -137,10 +138,17 @@ def api_token() -> str:
 
 
 def token_variable() -> str:
-    """Belirtecin okunduğu değişkenin adı (iletilerde): `token_env`, verilmediyse SOFASCORE_SERVER__TOKEN."""
+    """
+    Belirtecin okunduğu değişkenin adı (iletilerde): `token_env`, verilmediyse SOFASCORE_SERVER__TOKEN; belirteç
+    kullanımdan kalkan SOFASCORE_API_TOKEN'dan okunduysa o (plan maddesi FX-35).
+    """
     from sofascore_scraper.config import loader
 
-    return loader.active_settings().server.token_env.strip() or TOKEN_ENV
+    loaded = loader.active()
+    source = loaded.source("server.token")
+    if source.deprecated:
+        return source.name
+    return loaded.settings.server.token_env.strip() or TOKEN_ENV
 
 
 def _equal(a: str, b: str) -> bool:

@@ -97,20 +97,20 @@ def test_get_lists_every_setting_of_the_model_with_its_source(sandbox: Path) -> 
     assert (body["config_file"], body["overrides_file"]) == (None, None)
     listed = body["settings"]
     assert [row["key"] for row in listed] == [key for key, _f in model.iter_settings()]
-    assert all(list(row) == ["key", "value", "source", "source_name", "locked", "writable", "secret"] for row in listed)
+    assert all(list(row) == ["key", "value", "source", "source_name", "locked", "writable", "secret", "replaced_by"] for row in listed)
     found = {row["key"]: row for row in listed}
     # conftest: client.rate süreç ortamında (SOFASCORE_CLIENT__RATE), client.max_concurrent hiçbir yerde
     assert found["client.rate"] == {
         "key": "client.rate", "value": 0.0, "source": "env", "source_name": "SOFASCORE_CLIENT__RATE", "locked": True,
-        "writable": False, "secret": False,
+        "writable": False, "secret": False, "replaced_by": None,
     }
     assert found["client.max_concurrent"] == {
         "key": "client.max_concurrent", "value": 10, "source": "default", "source_name": "",
-        "locked": False, "writable": True, "secret": False,
+        "locked": False, "writable": True, "secret": False, "replaced_by": None,
     }
     assert found["client.retries"] == {
         "key": "client.retries", "value": 3, "source": "default", "source_name": "", "locked": False,
-        "writable": True, "secret": False,
+        "writable": True, "secret": False, "replaced_by": None,
     }
     assert found["server.allowed_hosts"]["value"] == ["localhost", "127.0.0.1", "testserver"]
 
@@ -154,7 +154,7 @@ def test_patch_writes_the_overrides_file_and_the_value_is_in_force_at_once(sandb
     found = {row["key"]: row for row in document["settings"]}
     assert found["client.retries"] == {
         "key": "client.retries", "value": 7, "source": "overrides", "source_name": str(sandbox), "locked": False,
-        "writable": True, "secret": False,
+        "writable": True, "secret": False, "replaced_by": None,
     }
     assert found["display.language"]["value"] == "tr"
     assert json.loads(sandbox.read_text(encoding="utf-8")) == {"client": {"retries": 7}, "display": {"language": "tr"}}
@@ -223,7 +223,7 @@ def test_a_key_pinned_by_the_config_file_is_refused(sandbox: Path, tmp_path: Pat
 
     row = rows()["client.retries"]
     assert row == {"key": "client.retries", "value": 9, "source": "file", "source_name": str(config), "locked": True,
-                   "writable": False, "secret": False}
+                   "writable": False, "secret": False, "replaced_by": None}
     assert client.get(URL).json()["data"]["config_file"] == str(config)
     refused = error(patch({"client.retries": 2}), 400)
     assert refused["details"]["locked"] == [{"key": "client.retries", "source": "file", "source_name": str(config)}]
@@ -239,7 +239,7 @@ def test_an_override_of_a_locked_key_can_still_be_removed(sandbox: Path, monkeyp
     monkeypatch.setenv("SOFASCORE_CLIENT__RETRIES", "4")  # sonradan ortamda sabitlendi
     assert rows()["client.retries"] == {
         "key": "client.retries", "value": 4, "source": "env", "source_name": "SOFASCORE_CLIENT__RETRIES", "locked": True,
-        "writable": False, "secret": False,
+        "writable": False, "secret": False, "replaced_by": None,
     }
     error(patch({"client.retries": 8}), 400)
 

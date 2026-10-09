@@ -29,8 +29,9 @@ services:
 
     environment:
       # The host names the server answers to (DNS rebinding protection), used as written.
-      # (Settings are SOFASCORE_<SECTION>__<KEY>; the 2.x names such as SOFASCORE_ALLOWED_HOSTS,
-      # APP_LANGUAGE or PROXY_URL are not read since 3.1.)
+      # (Settings are SOFASCORE_<SECTION>__<KEY>; the 2.x names such as APP_LANGUAGE are not read
+      # since 3.1. SOFASCORE_ALLOWED_HOSTS, SOFASCORE_API_TOKEN, USE_PROXY and PROXY_URL are deprecated:
+      # still read in 3.1 with a warning, removed in 3.2.)
       SOFASCORE_SERVER__ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"
       # Optional: SOFASCORE_DISPLAY__LANGUAGE pins the language (en or tr). A setting given here wins over
       # the Settings page, which then shows it as fixed and cannot change it. Left out, each browser's

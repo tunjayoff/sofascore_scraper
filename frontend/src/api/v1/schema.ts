@@ -1154,6 +1154,8 @@ export interface Setting {
   /** Whether PATCH accepts this key right now. */
   writable: boolean
   secret: boolean
+  /** When the value comes from a deprecated 2.x environment variable (`source_name`; still read in 3.1, removed in 3.2), the variable to use instead; otherwise null. */
+  replaced_by?: string | null
 }
 
 /** How a setting can be changed (05-web-ui.md G4). One row per setting, in the order of `settings`. */

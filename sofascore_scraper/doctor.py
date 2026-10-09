@@ -842,25 +842,29 @@ def check_frontend(ctx: Context, node_version: Callable[[], Optional[Tuple[int, 
 # --- .env -------------------------------------------------------------------------------------
 
 
-def _legacy_names(ctx: Context) -> List[Tuple[str, str]]:
+def _legacy_names(ctx: Context) -> List[Tuple[str, str, str, str]]:
     """
-    Ortamda ya da `.env`'de duran 2.x adları ve yerlerine geçen adlar (sofascore_scraper/config/loader.py
-    `LEGACY_NAMES`): 3.1 onları okumaz. Yükleyici içe aktarılamıyorsa (paketler eksik) boş: eksik paketi
-    `packages` denetimi bildirir.
+    Ortamda ya da `.env`'de duran 2.x adları (sofascore_scraper/config/loader.py `LEGACY_NAMES`): (ad, yerine geçen
+    ad, durum, yerine okunan kaynak). Durum loader.LEGACY_REMOVED (3.1 okumaz), LEGACY_READ (kullanımdan kalktı,
+    3.1'de hâlâ okunur, 3.2'de kalkar: `DEPRECATED_NAMES`) ya da LEGACY_IGNORED (kullanımdan kalktı; yeni adı da
+    verildiği için okunmadı). Yükleyici içe aktarılamıyorsa (paketler eksik) boş: eksik paketi `packages` denetimi
+    bildirir.
     """
     try:
         from sofascore_scraper.config import loader
     except Exception:
         return []
     named: Tuple[str, ...] = ()
+    sources = None
     try:  # proxy_env / token_env'in adını verdiği değişken okunur: eski bir ad olsa da sorun değildir
         path, _disabled = _config_file(ctx)
-        named = loader.named_variables(loader.load_settings(
+        loaded = loader.load_settings(
             config_file=path, environ={**ctx.file_env, **ctx.environ}, dotenv_values=ctx.file_env,
-            overrides_file=ctx.config_dir() / loader.OVERRIDES_FILE_NAME).settings)
+            overrides_file=ctx.config_dir() / loader.OVERRIDES_FILE_NAME)
+        named, sources = loader.named_variables(loaded.settings), loaded.sources
     except Exception:  # ayarlar kurulamıyor: `config` denetimi bildirir
         pass
-    return [(name, loader.legacy_replacement(name))
+    return [(name, loader.legacy_replacement(name), *loader.legacy_state(name, sources))
             for name in loader.legacy_names_in(ctx.environ, ctx.file_env, named)]
 
 
@@ -892,13 +896,19 @@ def _env_problems(ctx: Context) -> List[Tuple[str, str, str, str]]:
         problems.append((FAIL, "line {}".format(number), ctx.t("doctor_env_bad_line", line=number, text=text),
                          ORIGIN_FILE))
 
-    # 2.x'in adları 3.1'de okunmaz (plan maddesi P30): her biri bulunduğu yer ve yeni adıyla söylenir
-    for name, replacement in _legacy_names(ctx):
+    # 2.x'in adları 3.1'de okunmaz (plan maddesi P30): her biri bulunduğu yer ve yeni adıyla söylenir. Kullanımdan
+    # kalkan dördü 3.1'de hâlâ okunur (FX-35): ileti bunu ve 3.2'de kalkacaklarını, ya da yok sayıldıklarını söyler
+    for name, replacement, state, winner in _legacy_names(ctx):
         origin = _origin(ctx, name)
         where = (ctx.t("doctor_env_in_file", file=ctx.env_file.name) if origin == ORIGIN_FILE
                  else ctx.t("doctor_env_in_environ"))
-        problems.append((WARN, name, ctx.t("doctor_env_legacy_name", name=name, where=where, new=replacement),
-                         origin))
+        if state == "read":
+            message = ctx.t("doctor_env_deprecated_name", name=name, where=where, new=replacement)
+        elif state == "ignored":
+            message = ctx.t("doctor_env_deprecated_ignored", name=name, where=where, winner=winner)
+        else:
+            message = ctx.t("doctor_env_legacy_name", name=name, where=where, new=replacement)
+        problems.append((WARN, name, message, origin))
 
     api = ctx.get(_ENV_BASE_URL)
     if api:
