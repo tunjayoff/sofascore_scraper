@@ -426,10 +426,9 @@
  "job": {
   "circuit_breaker_triggered": false,
   "log": [
-   "[Running] Starting fetch for 17",
    "[Running] Checking which matches need details...",
    "[Running] Fetching match details: league 17 (4 matches)…",
-   "[Completed] Background Task Completed Successfully."
+   "[Completed] Finished"
   ],
   "matches_done": 4,
   "matches_failed": 0,
@@ -444,6 +443,7 @@
    "details_total": 4,
    "failed": [],
    "failed_count": 0,
+   "failed_listings": [],
    "refresh_changed": 1,
    "refreshed": 1,
    "schedule_empty_seasons": 0

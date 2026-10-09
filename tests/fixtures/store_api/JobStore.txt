@@ -9,7 +9,6 @@ class JobStore:
     @classmethod
     def wait_for_finishing_job(cls, store: 'Store') -> bool
     def writer_busy(self) -> bool
-    def mark_stale_running_interrupted(self) -> int
     def reap_stale(self) -> int
     @contextlib.contextmanager
     def exclusive(self, operation: str) -> Iterator[None]

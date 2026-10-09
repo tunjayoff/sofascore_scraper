@@ -1,6 +1,7 @@
 {
  "argv": [
-  "--diagnostics",
+  "diagnostics",
+  "--out",
   "out/bundle.zip"
  ],
  "exit_code": 0,
@@ -13,9 +14,7 @@
  "request_layer_loaded": false,
  "requests": [],
  "sleeps": {},
- "stderr": [
-  "main.py flags are deprecated and will be removed; this run is: ssc diagnostics --out <SANDBOX>/cwd/out/bundle.zip"
- ],
+ "stderr": [],
  "stdout": [
   "Diagnostics bundle written: <SANDBOX>/cwd/out/bundle.zip"
  ]

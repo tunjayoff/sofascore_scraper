@@ -36,7 +36,7 @@ REQUIRED = planning.expected_slice_keys("football")
 
 @pytest.fixture(autouse=True)
 def _default_setting(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    monkeypatch.delenv("FETCH_ONLY_FINISHED", raising=False)
+    monkeypatch.delenv("SOFASCORE_FETCH__ONLY_FINISHED", raising=False)
     status_module.forget_sizes()
     yield
     status_module.forget_sizes()

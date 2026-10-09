@@ -31,7 +31,8 @@ class BackupRecord(BaseModel):
     """A backup zip in the data directory's `backups/`."""
 
     name: str
-    scope: str = Field(description="all, state, data, config, seasons, matches or match_details.")
+    scope: str = Field(description="all, state or data; a backup taken before 3.1 can also say config, seasons, "
+                                   "matches or match_details.")
     created_at_utc: Optional[str] = Field(default=None, description="The time in the file name, as UTC.")
     bytes: int
     format: Optional[int] = Field(default=None, description="2 (with backup.json), 1 (2.x), null: unreadable zip.")

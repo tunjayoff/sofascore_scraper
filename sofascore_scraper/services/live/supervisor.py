@@ -94,7 +94,7 @@ logger = logging.getLogger(__name__)
 LIVE_LEASE = "live"
 LEASE_PURPOSE = "watch"
 RUNTIME_KEY = "live"
-WATCH_THROTTLE_LANE = "watch"  # sofascore_scraper/watcher.py ile aynı şerit: izleyiciler toplamda ≥ 1 sn aralıkla istek atar
+WATCH_THROTTLE_LANE = "watch"  # 2.x izleyicisiyle aynı şerit: canlı süreçler toplamda ≥ 1 sn aralıkla istek atar
 MIN_REQUEST_SPACING_SECONDS = 1.0
 DEFAULT_SPORT = "football"  # sporu belirtilmemiş takip (yapılandırmanın varsayılanı)
 
@@ -979,7 +979,7 @@ def _default_fetch(path: str) -> Optional[Dict[str, Any]]:
     """Gerçek istek: 404 → None; 429, 403 ve açık devre kesici → Blocked; başka hata olduğu gibi."""
     from sofascore_scraper.client import api_url
     from sofascore_scraper.exceptions import APIError, CircuitOpenError, RateLimitError, ResourceNotFoundError
-    from sofascore_scraper.utils import make_api_request
+    from sofascore_scraper.client.transport import make_api_request
 
     try:
         return make_api_request(api_url(path), raise_on_failure=True)

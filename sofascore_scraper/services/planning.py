@@ -4,7 +4,7 @@ Planlama: bir maçın neye ihtiyacı olduğu (docs/design/02-services.md 3.2).
 Kural tek yerdedir ve saftır: `compute_need` bir maçın katalogdaki durumuna (`EventState`: maç satırı ve dilim
 satırları), dilim seçimine ve yenileme politikasına bakar; dosya okumaz, depoya sormaz, saate bakmaz (an
 politikadadır). Depodan durumları okuyan sarmalayıcılar (`event_needs`, `refresh_due_events`) ve sıralama
-(`order_by_need`) da buradadır; sofascore_scraper/match_data_fetcher.py'deki planlayıcılar bunlara devreder.
+(`order_by_need`) da buradadır; işin detay aşaması (sofascore_scraper/services/detail_phase.py) bunları çağırır.
 
 İhtiyaçlar, öncelik sırasıyla (tasarım tablosu; ilk uyan kural kazanır):
 

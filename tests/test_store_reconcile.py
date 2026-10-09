@@ -231,7 +231,7 @@ def test_reconcile_follows_removed_files(canonical: sf.LegacyFixture, make_admin
     # sayfaları silinen kupa sezonu özet CSV'sinden dizinlenir: olay yükü olan maç tur sütunundan listed_in alır
     assert (event_row(cat, cup)["row_source"], event_row(cat, cup)["listed_in"]) == ("event", "round_28")
     second = event_row(cat, sf.event_id(sf.CUP_PEN_2))
-    assert (second["row_source"], second["listed_in"], second["home_id"], second["home_score_current"]) == (
+    assert (second["row_source"], second["listed_in"], second["home_id"], second["home_score"]) == (
         "listing", "round_28", None, 6)
     assert schedule_slices(cat, 97110) == {} and schedule_slices(cat, 80229) == {}
     void = event_row(cat, sf.event_id(sf.NBA_VOID))  # lig dizini gitti: bayrak da düşer
@@ -363,7 +363,7 @@ def test_summary_only_season_follows_its_league_directory(old_forms: sf.LegacyFi
           BASE + 40)
     report = admin.reconcile()
     assert summary(report) == {**UNCHANGED, "seasons": [(17, 76986)]}
-    assert event_row(admin.catalog, old_a)["home_score_current"] == 9 and event_row(admin.catalog, old_b) is None
+    assert event_row(admin.catalog, old_a)["home_score"] == 9 and event_row(admin.catalog, old_b) is None
     assert facts(snapshot(admin.catalog)) == facts(rebuilt(data, tmp_path, league_names=names))
 
     # sezonun tur dosyası gelir: satırlar artık sayfadan

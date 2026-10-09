@@ -60,7 +60,7 @@ def error(response: Any, status: int, code: str) -> Dict[str, Any]:
 @pytest.fixture
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Store:
     fixture = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     return open_store(fixture.data_dir)
 
 
@@ -434,11 +434,11 @@ def test_no_secret_value_reaches_the_diagnostics(monkeypatch: pytest.MonkeyPatch
     from sofascore_scraper import redact
 
     proxy = "http://" + "user:" + "-".join(("fake", "proxy", "word")) + "@proxy.example:8080"
-    monkeypatch.setenv("PROXY_URL", proxy)
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", proxy)
     redact.refresh()
     try:
         text = client.get("/api/v1/diagnostics").text
         assert "fake-proxy-word" not in text
     finally:
-        monkeypatch.delenv("PROXY_URL")
+        monkeypatch.delenv("SOFASCORE_CLIENT__PROXY")
         redact.refresh()

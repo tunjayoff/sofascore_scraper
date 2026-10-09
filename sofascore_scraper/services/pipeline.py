@@ -8,11 +8,11 @@ yenileme yollarının yerini alır.
 Her çağıran buradan geçer: eşitleme servisinin detay aşaması, kimliğiyle seçilen maçlar, tek maç uç noktası,
 refill ve yalnızca yenileme. Böylece:
 
-  * istek politikası tektir: istek katmanının yeniden denemesi (`MAX_RETRIES`); maç başına ek deneme döngüsü yoktur;
+  * istek politikası tektir: istek katmanının yeniden denemesi (`client.retries`); maç başına ek deneme döngüsü yoktur;
   * her yol aynı dilimleri ister: sporun seçilen bütün dilimleri, isteğe bağlılar dahil (`select_slices`);
   * her durumdaki maç saklanır (plan maddesi ST-27): bitmemiş maçın olay yükü ve gövdesi gelen dilimleri yazılır,
     "veri yok" yanıtları sayılmaz. Hangi maçın indirileceğine planlayıcı karar verir (sofascore_scraper/services/planning.py:
-    yalnızca listeden bilinen bitmemiş maç indirilmez); "yalnızca bitmiş maçlar" ayarı (FETCH_ONLY_FINISHED)
+    yalnızca listeden bilinen bitmemiş maç indirilmez); "yalnızca bitmiş maçlar" ayarı (fetch.only_finished)
     artık yalnızca okurken uygulanır (sofascore_scraper/services/query.py);
   * bitmiş maçta istenen her dilimin "veri yok" yanıtı sayılır ve hata kaydı tutulur (isteğe bağlılar dahil);
   * yanıt gelen dilimin gövdesi her zaman dilimin kuralıyla okunur (sofascore_scraper.slices.slice_body_state): veri var →
@@ -91,7 +91,6 @@ ITEM_SKIPPED: ItemStatus = "skipped"
 
 # `skipped` nedenleri
 SKIP_BREAKER = request_breaker.BREAKER_OPEN  # "breaker": devre kesici açık, istek gönderilmedi
-SKIP_NOT_DUE = "not_due"  # ST-27'den beri üretilmez (bitmemiş maç da yazılır); eski çağıranlar için durur
 SKIP_CANCELLED = "cancelled"  # iş durduruldu, birim başlamadı
 # `failed` nedenleri (istek nedenleri "403", "429", "5xx", "timeout", "network", "parse", "other" dışında)
 FAIL_NOT_FOUND = "not_found"  # SofaScore'da böyle bir maç yok (404 ya da içinde olay olmayan yanıt)
@@ -125,7 +124,7 @@ class ItemResult:
     Bir iş biriminin sonucu.
 
     status   ok: maç yazıldı (dilimlerin bazıları başarısız olabilir); failed: yazılmadı ya da /event alınamadı;
-             skipped: hiç denenmedi ya da bilerek yazılmadı (`reason`: breaker | not_due | cancelled)
+             skipped: hiç denenmedi ya da bilerek yazılmadı (`reason`: breaker | cancelled)
     reason   failed / skipped nedeni; ok'ta None
     event    /event isteğinin sonucu (gönderilmediyse None). İçinde olay olmayan 200 `empty` / `empty` olarak
     slices   bu birimde istenen dilimlerin sonuçları, istek sırasıyla (anahtar → sonuç)
@@ -247,7 +246,6 @@ class FetchPipeline:
     store          yazmaların ve okumaların deposu
     client         istemci; verilmezse ortamın ayarlarıyla yenisi. Oturum çalıştırma başına açılır ve kapanır.
     concurrency    aynı anda işlenen birim sayısı (uçuşan istekleri istek katmanının semaforu sınırlar)
-    only_finished  emekli (ST-27): eski çağıranlar için kabul edilir, etkisi yoktur; her durumdaki maç yazılır
     selection      dilim seçimi: CONFIGURED (varsayılan) = etkin ayarların ve takip tablosunun seçimi, maç maç
                    (`planning.SelectionPolicy.for_payload`: maçın sporu, turnuvası, takımları); None = kayıt
                    defterinin varsayılanları; bir SliceSelection ya da ad listesi her maça aynen. Seçilmeyen dilim
@@ -259,7 +257,7 @@ class FetchPipeline:
     """
 
     def __init__(self, store: "Store", *, client: Optional[Client] = None, concurrency: int = 5,
-                 only_finished: Optional[bool] = None, selection: Any = CONFIGURED,
+                 selection: Any = CONFIGURED,
                  threshold: int = UNAVAILABLE_AFTER_ATTEMPTS, writer_queue: int = DEFAULT_WRITER_QUEUE,
                  source: str = "job", listing: Optional[ListingHandler] = None) -> None:
         self._store = store
@@ -767,7 +765,7 @@ __all__ = [
     "CHANGE_RECORDED", "CHANGE_STREAM", "EVENT_KEY", "FAIL_NOT_FOUND", "FAIL_NOT_STORED", "FAIL_STORAGE",
     "FetchPipeline", "ITEM_FAILED", "ITEM_OK", "ITEM_SKIPPED", "ItemResult", "ListingGet", "ListingHandler",
     "ListingWrite", "PipelineSummary", "SKIP_BREAKER",
-    "SKIP_CANCELLED", "SKIP_NOT_DUE", "STORE_BUSY_ATTEMPTS", "STORE_BUSY_FIRST_WAIT", "UNAVAILABLE_AFTER_ATTEMPTS",
+    "SKIP_CANCELLED", "STORE_BUSY_ATTEMPTS", "STORE_BUSY_FIRST_WAIT", "UNAVAILABLE_AFTER_ATTEMPTS",
     "answered_outcome", "is_finished", "put_retrying", "upstream_failure",
     "body_state", "owner_path_ids", "run_extras", "slice_label", "with_provenance",
 ]

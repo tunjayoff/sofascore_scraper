@@ -1,6 +1,5 @@
 """
-API v1'in OpenAPI kaydı ve eski yolların kullanımdan kaldırılma işaretleri (plan maddesi P20;
-docs/design/02-services.md bölüm 6 ve 6.1).
+API v1'in OpenAPI kaydı (plan maddesi P20; docs/design/02-services.md bölüm 6 ve 6.1).
 
 `docs/api/openapi-v1.json` sözleşmenin kaydıdır: bu test onu uygulamanın ürettiği belgeyle karşılaştırır ve
 bildirilmemiş her değişiklikte düşer. Sözleşme bilerek değiştirildiyse dosya şöyle yeniden üretilir:
@@ -10,9 +9,8 @@ bildirilmemiş her değişiklikte düşer. Sözleşme bilerek değiştirildiyse 
 Karşılaştırma ayrıştırılmış JSON üzerindedir (nesnelerde anahtar sırası sayılmaz, listelerde sayılır). Belgeyi
 FastAPI ve pydantic üretir; kayıt `constraints.txt`'deki sürümlerle alınmıştır.
 
-Eski yolların kaydı ayrıdır (tests/characterization/test_openapi_legacy_snapshot.py); buradaki testler iki
-belgenin birbirine karışmadığını, eski her işlemin `deprecated` olduğunu ve yanıtlarının `Deprecation` ile
-halefi gösteren `Link` başlıklarını taşıdığını sınar.
+2.x'in `/api` yolları 3.0'da kullanımdan kalktı ve 3.1'de silindi (P30): uygulamanın `/api` altındaki her yolu
+v1'dedir ve hiçbir yanıt `Deprecation` başlığı taşımaz.
 """
 from __future__ import annotations
 
@@ -23,12 +21,11 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, Tuple
 
 import pytest
 from fastapi.testclient import TestClient
 
-from sofascore_scraper import sports
 from sofascore_scraper.web import api as api_paths
 from sofascore_scraper.web import openapi
 from sofascore_scraper.web.app import app
@@ -159,14 +156,13 @@ def test_there_is_no_live_resource(document: Dict[str, Any], full_document: Dict
     assert streams == ["/api/v1/jobs/{job_id}/events"]
 
 
-def test_v1_and_the_legacy_contract_share_no_schema(document: Dict[str, Any], full_document: Dict[str, Any]) -> None:
-    """Aynı adlı iki model, FastAPI'nin ikisini de yeniden adlandırmasına ve eski kaydın değişmesine yol açardı."""
-    legacy = json.loads((Path(openapi.ROOT) / "tests" / "snapshots" / "openapi-legacy.json").read_text(encoding="utf-8"))
-    assert not set(document["components"]["schemas"]) & set(legacy["components"]["schemas"])
-    assert not [path for path in legacy["paths"] if api_paths.is_v1(path)]
-    assert set(document["components"]["schemas"]) | set(legacy["components"]["schemas"]) == set(
-        full_document["components"]["schemas"]
-    )
+def test_every_api_path_is_v1(document: Dict[str, Any], full_document: Dict[str, Any]) -> None:
+    """2.x'in yolları 3.1'de kalktı: `/api` altında yalnızca v1 vardır ve belgenin her modeli v1'indir."""
+    assert [path for path in full_document["paths"] if api_paths.is_api(path) and not api_paths.is_v1(path)] == []
+    # FastAPI'nin kendi doğrulama modelleri, v1 dışındaki tek yolun (arayüzün `/{full_path}`) yanıtında
+    assert set(full_document["components"]["schemas"]) - set(document["components"]["schemas"]) <= {
+        "HTTPValidationError", "ValidationError"}
+    assert not [op for _m, _p, op in operations(full_document) if op.get("deprecated")]
 
 
 # --- her rota modelini bildirir ----------------------------------------------------------------------
@@ -301,9 +297,9 @@ def test_the_program_prints_only_the_document_and_leaves_nothing_behind(tmp_path
     (tmp_path / "sofascore.toml").write_text('[server]\ntoken_env = "A_VARIABLE_NOBODY_SETS"\n', encoding="utf-8")
     env = {
         name: value for name, value in os.environ.items()
-        if name not in openapi._ISOLATED_PATHS and name not in ("SOFASCORE_CONFIG", "SOFASCORE_ALLOWED_HOSTS")
+        if name not in openapi._ISOLATED_PATHS and name not in ("SOFASCORE_CONFIG", "SOFASCORE_SERVER__ALLOWED_HOSTS")
     }
-    env.update(PYTHONPATH=str(openapi.ROOT), SOFASCORE_API_TOKEN="short", PYTHONIOENCODING="utf-8")
+    env.update(PYTHONPATH=str(openapi.ROOT), SOFASCORE_SERVER__TOKEN="short", PYTHONIOENCODING="utf-8")
 
     done = subprocess.run(
         [sys.executable, "-m", "sofascore_scraper.web.openapi"], cwd=str(tmp_path), env=env, capture_output=True, timeout=120,
@@ -354,107 +350,8 @@ def test_v1_view_keeps_only_v1_paths_and_their_schemas() -> None:
 # --- eski yollar: deprecated ve başlıklar ------------------------------------------------------------
 
 
-def _legacy_operations(full_document: Dict[str, Any]) -> List[Tuple[str, str, Dict[str, Any]]]:
-    return [
-        (method, path, op) for method, path, op in operations(full_document)
-        if api_paths.is_api(path) and not api_paths.is_v1(path)
-    ]
-
-
-def test_every_legacy_operation_is_marked_deprecated(full_document: Dict[str, Any]) -> None:
-    legacy = _legacy_operations(full_document)
-    assert len(legacy) == 38
-    assert all(op.get("deprecated") is True for _m, _p, op in legacy)
-    # Sürümsüz /health ve arayüzün kendisi yerinde kalır
-    assert "deprecated" not in full_document["paths"]["/health"]["get"]
-    assert "deprecated" not in full_document["paths"]["/{full_path}"]["get"]
-
-
-def _example(path: str) -> str:
-    return re.sub(r"\{[a-z_]+\}", "1", path)
-
-
-def test_every_legacy_operation_has_a_successor_and_the_table_has_no_stale_row(full_document: Dict[str, Any]) -> None:
-    legacy = _legacy_operations(full_document)
-    for method, path, _op in legacy:
-        successor = api_paths.successor_of(_example(path), method)
-        assert successor is not None and successor.startswith("/api/v1/"), (method, path)
-    templates = {path for _m, path, _op in legacy}
-    assert {template for _method, template, _successor in api_paths.LEGACY_SUCCESSORS} == templates
-    methods = {(method, path) for method, path, _op in legacy}
-    for rule_method, template, _successor in api_paths.LEGACY_SUCCESSORS:
-        assert rule_method == api_paths.ANY_METHOD or (rule_method, template) in methods, (rule_method, template)
-
-
-@pytest.mark.parametrize("method,path,successor", [
-    ("GET", "/api/leagues", "/api/v1/follows"),
-    ("GET", "/api/leagues/search", "/api/v1/follows"),
-    ("PATCH", "/api/leagues/17", "/api/v1/follows"),
-    ("GET", "/api/leagues/17/seasons", "/api/v1/tournaments/17/seasons"),
-    ("POST", "/api/leagues/17/seasons/refresh", "/api/v1/jobs"),
-    ("GET", "/api/matches/9000001", "/api/v1/events/9000001"),
-    ("GET", "/api/jobs/abc", "/api/v1/jobs/abc"),
-    ("GET", "/api/scrape/status", "/api/v1/jobs"),
-    ("POST", "/api/scrape/cancel", "/api/v1/jobs"),
-    ("GET", "/api/settings", "/api/v1/settings"),
-    ("POST", "/api/settings", "/api/v1/settings"),
-    ("GET", "/api/export/csv", "/api/v1/exports"),
-    ("POST", "/api/export/csv", "/api/v1/jobs"),
-    ("GET", "/api/data/backups/backup_all_20260101_000000.zip", "/api/v1/backups/backup_all_20260101_000000.zip"),
-    ("POST", "/api/bypass/test", "/api/v1/status/check"),
-    ("GET", "/api/auth", "/api/v1/auth"),
-])
-def test_successor_of_a_legacy_path(method: str, path: str, successor: str) -> None:
-    assert api_paths.successor_of(path, method) == successor
-    assert api_paths.deprecation_headers(path, method) == [
-        ("Deprecation", "true"), ("Link", f'<{successor}>; rel="successor-version"'),
-    ]
-
-
-def test_paths_that_are_not_legacy_routes_have_no_successor() -> None:
-    for path in ("/api/v1/jobs", "/api/v1", "/health", "/", "/settings", "/api", "/api/nope", "/api/jobs/a/b",
-                 "/apiary", "/api/leagues/17/unknown"):
-        assert api_paths.successor_of(path) is None, path
-        assert api_paths.deprecation_headers(path) == []
-
-
-def test_path_parameters_are_percent_encoded_in_the_link() -> None:
-    """Yol çözülmüş gelir; değeri bir yanıt başlığına yazılır."""
-    assert api_paths.successor_of('/api/jobs/a b">\r\nX: y') == "/api/v1/jobs/a%20b%22%3E%0D%0AX%3A%20y"
-
-
-def test_legacy_responses_carry_the_deprecation_headers() -> None:
-    cases = [
-        ("GET", "/api/status", 200, "/api/v1/status"),
-        ("GET", "/api/jobs", 200, "/api/v1/jobs"),
-        ("GET", "/api/jobs/unknown", 404, "/api/v1/jobs/unknown"),
-        ("GET", "/api/sports", 200, "/api/v1/sports"),
-        ("GET", "/api/leagues/17/seasons", 200, "/api/v1/tournaments/17/seasons"),
-        ("POST", "/api/scrape/cancel", 400, "/api/v1/jobs"),
-        ("GET", "/api/auth", 200, "/api/v1/auth"),
-    ]
-    for method, path, status, successor in cases:
-        r = client.request(method, path)
-        assert r.status_code == status, (path, r.text)
-        assert r.headers["deprecation"] == "true", path
-        assert r.headers["link"] == f'<{successor}>; rel="successor-version"', path
-    # Reddedilen istek de eski bir rotaya gelmiştir
-    refused = client.post("/api/scrape/cancel", headers={"sec-fetch-site": "cross-site"})
-    assert refused.status_code == 403 and refused.headers["deprecation"] == "true"
-
-
-def test_legacy_bodies_are_unchanged_by_the_headers() -> None:
-    # v1'in dilimleri P27'nin seçim alanlarını da taşır; eski uç yalnızca ilk dördünü. P28'in dilimleri (oranlar,
-    # maç dışı dilimler) yalnızca v1'dedir
-    legacy_fields = ("key", "path", "required", "default_enabled")
-    detail_keys = {s.key for s in sports.DETAIL_SLICES}
-    assert client.get("/api/sports").json() == [
-        {**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"] if s["key"] in detail_keys]}
-        for sport in client.get("/api/v1/sports").json()["data"]]
-    assert list(client.get("/api/status").json()) == ["version", "leagues_count", "language"]
-
-
-def test_other_responses_carry_no_deprecation_headers() -> None:
-    for path in ("/api/v1/health", "/api/v1/jobs", "/api/v1/nope", "/health", "/", "/api/nope", "/openapi.json"):
+def test_no_response_carries_deprecation_headers() -> None:
+    for path in ("/api/v1/health", "/api/v1/jobs", "/api/v1/nope", "/health", "/", "/api/nope", "/openapi.json",
+                 "/api/status", "/api/jobs"):
         headers = client.get(path).headers
         assert "deprecation" not in headers and "link" not in headers, path

@@ -1,4 +1,5 @@
--- catalog.db şeması, sürüm 1 (PRAGMA user_version = CATALOG_SCHEMA, sofascore_scraper/store/catalog.py).
+-- catalog.db şeması, sürüm 2 (PRAGMA user_version = CATALOG_SCHEMA, sofascore_scraper/store/catalog.py). Sürüm 2
+-- (3.1, plan maddesi P30): 2.x liste ve CSV biçimlerinin `home_score_current` / `away_score_current` sütunları kalktı.
 -- Kaynak: docs/design/01-storage.md, bölüm 3.3. Aşağıdaki DDL belgede basıldığı haliyle durur.
 -- tests/test_store_catalog.py ikisini karşılaştırır.
 -- Katalog tümüyle türetilmiştir ve göç betiği yoktur: buradaki her değişiklik CATALOG_SCHEMA artırılarak
@@ -96,8 +97,6 @@ CREATE TABLE events (
   away_name          TEXT,
   home_score         INTEGER,                      -- homeScore.display, else .current
   away_score         INTEGER,
-  home_score_current INTEGER,                      -- homeScore.current as given (legacy list and CSV shapes)
-  away_score_current INTEGER,
   winner_code        INTEGER,
   scores_json        TEXT,                         -- normalised score sheet (sofascore_scraper/status.extract_scores)
   slug               TEXT,

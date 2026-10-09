@@ -510,14 +510,12 @@ def test_event_pages_keep_unfinished_matches(store: Any) -> None:
 
 
 def test_empty_rounds_are_never_stored(store: Any) -> None:
-    """ST-27: SAVE_EMPTY_ROUNDS emekli; eski çağıranların argümanı kabul edilir ve bir şey değiştirmez."""
+    """ST-27: maçı olmayan tur saklanmaz (SAVE_EMPTY_ROUNDS ayarı ve argümanı 3.1'de kalktı)."""
     base = f"{BASE}/season/1"
     api = _Api({f"{base}/rounds": _ok({"rounds": [{"round": 1}]}),
                 f"{base}/events/round/1": _ok({"events": [], "hasNextPage": False})})
 
     _list(store, api)
-    assert _pages(store, 1) == {}
-    _list(store, api, save_empty_rounds=True)
     assert _pages(store, 1) == {}
 
 

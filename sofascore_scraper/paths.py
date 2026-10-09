@@ -29,9 +29,11 @@ DEFAULT_BROWSER_PROFILE_DIR = "~/.cache/sofascore_scraper/chrome_profile"
 
 def browser_profile_dir() -> str:
     """
-    Köprü tarayıcısının profil dizini (cookie'ler, çözülmüş challenge): SOFASCORE_BROWSER_PROFILE,
-    yoksa varsayılan. Boş değer de "yok" sayılır: `.env`'deki `SOFASCORE_BROWSER_PROFILE=` satırı
-    profil dizinini "" yapıp tarayıcının başlamasını engellemesin.
+    Köprü tarayıcısının profil dizini (cookie'ler, çözülmüş challenge): `client.browser_profile`, yoksa
+    varsayılan. Boş değer de "yok" sayılır. Ayar yükleyicisinden çağrı anında okunur (2.x'in
+    SOFASCORE_BROWSER_PROFILE adı 3.1'de okunmaz).
     """
-    raw = (os.getenv("SOFASCORE_BROWSER_PROFILE") or "").strip()
+    from sofascore_scraper.config import loader
+
+    raw = (loader.active_settings().client.browser_profile or "").strip()
     return os.path.expanduser(raw or DEFAULT_BROWSER_PROFILE_DIR)

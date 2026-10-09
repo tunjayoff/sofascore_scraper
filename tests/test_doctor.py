@@ -31,7 +31,7 @@ def make_ctx(tmp_path):
         root.mkdir(exist_ok=True)
         if env_text is not None:
             (root / ".env").write_text(env_text, encoding="utf-8")
-        env = {"SOFASCORE_BROWSER_PROFILE": str(tmp_path / "profile")}
+        env = {"SOFASCORE_CLIENT__BROWSER_PROFILE": str(tmp_path / "profile")}
         env.update(environ or {})
         kwargs.setdefault("hostname", "thishost")
         kwargs.setdefault("platform", "linux")
@@ -296,12 +296,12 @@ def test_profile_existing_without_lock(make_ctx):
 
 
 def test_profile_empty_setting_means_default(make_ctx):
-    ctx = make_ctx(environ={"SOFASCORE_BROWSER_PROFILE": ""})
+    ctx = make_ctx(environ={"SOFASCORE_CLIENT__BROWSER_PROFILE": ""})
     assert ctx.profile_dir() == Path(os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile"))
 
 
 def test_profile_setting_from_env_file(tmp_path):
-    (tmp_path / ".env").write_text(f"SOFASCORE_BROWSER_PROFILE={tmp_path / 'from-file'}\n", encoding="utf-8")
+    (tmp_path / ".env").write_text(f"SOFASCORE_CLIENT__BROWSER_PROFILE={tmp_path / 'from-file'}\n", encoding="utf-8")
     ctx = Context(root=tmp_path, environ={}, lang="en")  # süreç ortamında yok: .env'deki değer geçerli
     assert ctx.profile_dir() == tmp_path / "from-file"
 
@@ -366,7 +366,7 @@ def test_profile_not_writable_fails(make_ctx):
     finally:
         path.chmod(0o700)
     assert (res.status, res.code) == (FAIL, "profile_not_writable")
-    assert "SOFASCORE_BROWSER_PROFILE" in res.fix
+    assert "SOFASCORE_CLIENT__BROWSER_PROFILE" in res.fix
 
 
 def test_profile_path_is_a_file_fails(make_ctx, tmp_path):
@@ -387,7 +387,7 @@ def test_pid_alive_for_this_process_and_a_dead_one():
 
 
 def test_data_dir_relative_to_project_root_and_created_later(make_ctx):
-    ctx = make_ctx(environ={"DATA_DIR": "mydata"})
+    ctx = make_ctx(environ={"SOFASCORE_STORAGE__DATA_DIR": "mydata"})
     res = doctor.check_data_dir(ctx)
     assert (res.status, res.code) == (OK, "data_dir_ok")
     assert res.detail["path"] == str(ctx.root / "mydata") and not (ctx.root / "mydata").exists()
@@ -396,27 +396,28 @@ def test_data_dir_relative_to_project_root_and_created_later(make_ctx):
 
 
 def test_data_dir_comes_from_env_file_and_process_env_wins(make_ctx, tmp_path):
-    ctx = make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n")
+    ctx = make_ctx(env_text=f"SOFASCORE_STORAGE__DATA_DIR={tmp_path / 'from-file'}\n")
     assert ctx.data_dir() == tmp_path / "from-file"
-    ctx = make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n", environ={"DATA_DIR": str(tmp_path / "from-env")})
+    ctx = make_ctx(env_text=f"SOFASCORE_STORAGE__DATA_DIR={tmp_path / 'from-file'}\n", environ={"SOFASCORE_STORAGE__DATA_DIR": str(tmp_path / "from-env")})
     assert ctx.data_dir() == tmp_path / "from-env"
 
 
 def test_data_dir_comes_from_the_configuration_file_like_ssc_status(make_ctx, tmp_path):
     """F1 (FX-23): `ssc doctor` sofascore.toml'daki storage.data_dir'i görmüyor, ./data gösteriyordu."""
-    ctx = make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n")
+    ctx = make_ctx(env_text="")
     (ctx.root / "sofascore.toml").write_text(f"[storage]\ndata_dir = {json.dumps(str(tmp_path / 'from-toml'))}\n",
                                             encoding="utf-8")
-    ctx = make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n")
-    assert ctx.data_dir() == tmp_path / "from-toml"  # dosya .env'in önünde
+    ctx = make_ctx()
+    assert ctx.data_dir() == tmp_path / "from-toml"
     res = doctor.check_data_dir(ctx)
     assert res.detail["path"] == str(tmp_path / "from-toml")
-    # Süreç ortamı dosyanın da önünde (yükleyicinin katman sırası)
-    ctx = make_ctx(environ={"DATA_DIR": str(tmp_path / "from-env")})
+    # Ortam (uygulama `.env`'i ortama yükler) dosyanın önünde (yükleyicinin katman sırası)
+    ctx = make_ctx(environ={"SOFASCORE_STORAGE__DATA_DIR": str(tmp_path / "from-env")})
     assert ctx.data_dir() == tmp_path / "from-env"
+    assert make_ctx(env_text=f"SOFASCORE_STORAGE__DATA_DIR={tmp_path / 'from-file'}\n").data_dir() == tmp_path / "from-file"
     # Geçersiz bir yapılandırma dosyası: config denetimi bildirir, veri dizini ortamdan ve .env'den
     (ctx.root / "sofascore.toml").write_text("[storage\n", encoding="utf-8")
-    assert make_ctx(env_text=f"DATA_DIR={tmp_path / 'from-file'}\n").data_dir() == tmp_path / "from-file"
+    assert make_ctx(env_text=f"SOFASCORE_STORAGE__DATA_DIR={tmp_path / 'from-file'}\n").data_dir() == tmp_path / "from-file"
 
 
 @posix_only
@@ -432,7 +433,7 @@ def test_data_and_config_dir_not_writable_fail(make_ctx):
     finally:
         for name in ("data", "config"):
             (ctx.root / name).chmod(0o700)
-    assert (data.status, data.code) == (FAIL, "data_dir_not_writable") and "DATA_DIR" in data.fix
+    assert (data.status, data.code) == (FAIL, "data_dir_not_writable") and "SOFASCORE_STORAGE__DATA_DIR" in data.fix
     assert (config.status, config.code) == (FAIL, "config_dir_not_writable") and "leagues.txt" in config.fix
 
 
@@ -445,7 +446,7 @@ def test_dir_that_cannot_be_created_fails(make_ctx):
     locked.mkdir()
     locked.chmod(0o500)
     try:
-        res = doctor.check_data_dir(make_ctx(environ={"DATA_DIR": str(locked / "deep" / "data")}))
+        res = doctor.check_data_dir(make_ctx(environ={"SOFASCORE_STORAGE__DATA_DIR": str(locked / "deep" / "data")}))
     finally:
         locked.chmod(0o700)
     assert res.status == FAIL
@@ -559,73 +560,91 @@ def test_env_missing_file_is_ok(make_ctx):
 
 
 def test_env_example_passes_its_own_check(make_ctx):
-    """.env.example'ı kopyalayan yeni kurulum uyarısız başlamalı."""
+    """.env.example'ı kopyalayan yeni kurulum uyarısız başlamalı: yalnızca 3.1 adları, hepsi geçerli."""
     ctx = make_ctx(env_text=(REPO / ".env.example").read_text(encoding="utf-8"))
     res = doctor.check_env(ctx)
     assert (res.status, res.code) == (OK, "env_ok"), res.detail
-    assert "SOFASCORE_BROWSER_PROFILE" in ctx.file_env and "SOFASCORE_CHROME_PROFILE" not in ctx.file_env
+    assert doctor.check_config(ctx).status == OK
+    assert set(ctx.file_env) == {"SOFASCORE_CLIENT__CAPTCHA_TOKEN", "SOFASCORE_SERVER__TOKEN"}  # geri kalanı yorum
 
 
 @pytest.mark.parametrize(
     "line, key",
     [
-        ("MAX_CONCURRENT=abc", "MAX_CONCURRENT"),
-        ("MAX_CONCURRENT=0", "MAX_CONCURRENT"),
-        ("MAX_CONCURRENT=2.5", "MAX_CONCURRENT"),
-        ("REQUEST_TIMEOUT=-1", "REQUEST_TIMEOUT"),
-        ("WAIT_TIME_MIN=fast", "WAIT_TIME_MIN"),
-        ("RATE_LIMIT_THRESHOLD_RATIO=1.5", "RATE_LIMIT_THRESHOLD_RATIO"),
-        ("RATE_LIMIT_THRESHOLD_RATIO=0", "RATE_LIMIT_THRESHOLD_RATIO"),
-        ("REFRESH_WINDOW_HOURS=nan", "REFRESH_WINDOW_HOURS"),
-        ("BRIDGE_DEGRADED_AFTER=0", "BRIDGE_DEGRADED_AFTER"),
-        ("USE_PROXY=1", "USE_PROXY"),
-        ("FETCH_ONLY_FINISHED=yes", "FETCH_ONLY_FINISHED"),
-        ("REQUEST_RATE_LIMIT=fast", "REQUEST_RATE_LIMIT"),
+        ("SOFASCORE_CLIENT__MAX_CONCURRENT=abc", "SOFASCORE_CLIENT__MAX_CONCURRENT"),
+        ("SOFASCORE_CLIENT__MAX_CONCURRENT=0", "SOFASCORE_CLIENT__MAX_CONCURRENT"),
+        ("SOFASCORE_CLIENT__MAX_CONCURRENT=2.5", "SOFASCORE_CLIENT__MAX_CONCURRENT"),
+        ("SOFASCORE_CLIENT__TIMEOUT_SECONDS=-1", "SOFASCORE_CLIENT__TIMEOUT_SECONDS"),
+        ("SOFASCORE_CLIENT__WAIT_TIME_MIN=fast", "SOFASCORE_CLIENT__WAIT_TIME_MIN"),
+        ("SOFASCORE_BREAKER__RATE_LIMIT_RATIO=1.5", "SOFASCORE_BREAKER__RATE_LIMIT_RATIO"),
+        ("SOFASCORE_BRIDGE__DEGRADED_AFTER=0", "SOFASCORE_BRIDGE__DEGRADED_AFTER"),
+        ("SOFASCORE_CLIENT__USE_PROXY=maybe", "SOFASCORE_CLIENT__USE_PROXY"),
+        ("SOFASCORE_CLIENT__RATE=fast", "SOFASCORE_CLIENT__RATE"),
+        ("SOFASCORE_CLIENT__RATEE=1", "SOFASCORE_CLIENT__RATEE"),
     ],
 )
-def test_env_invalid_value_fails_and_names_the_key(make_ctx, line, key):
-    res = doctor.check_env(make_ctx(env_text=line + "\n"))
-    assert (res.status, res.code) == (FAIL, "env_invalid")
-    assert key in res.summary and ".env" in res.fix
-    assert [p["key"] for p in res.detail["problems"]] == [key]
+def test_env_invalid_value_fails_the_config_check_and_names_the_key(make_ctx, line, key):
+    """Değerleri ayar yükleyicisi denetler (`config` denetimi; uygulamanın açılışta vereceği hata)."""
+    ctx = make_ctx(env_text=line + "\n")
+    res = doctor.check_config(ctx)
+    assert (res.status, res.code) == (FAIL, "config_invalid")
+    assert key in res.summary
+    assert doctor.check_env(ctx).status == OK
 
 
 @pytest.mark.parametrize(
     "line",
     [
-        "MAX_CONCURRENT=10", "MAX_CONCURRENT=", "MAX_RETRIES=0", "WAIT_TIME_MIN=0.2", "RATE_LIMIT_THRESHOLD_RATIO=1",
-        "USE_PROXY=False", "USE_COLOR=TRUE", "REQUEST_RATE_LIMIT=", "REQUEST_RATE_LIMIT=off", "REQUEST_RATE_LIMIT=0",
-        "REQUEST_RATE_LIMIT=2.5", "REFRESH_WINDOW_HOURS=0", "APP_LANGUAGE=en", "LOG_LEVEL=debug",
-        "PROXY_URL=socks5://user:pw@127.0.0.1:1080\nUSE_PROXY=true", "API_BASE_URL=https://www.sofascore.com/api/v1",
-        "SOMETHING_ELSE=whatever",
+        "SOFASCORE_CLIENT__MAX_CONCURRENT=10", "SOFASCORE_CLIENT__MAX_CONCURRENT=", "SOFASCORE_CLIENT__RETRIES=0",
+        "SOFASCORE_CLIENT__WAIT_TIME_MIN=0.2", "SOFASCORE_BREAKER__RATE_LIMIT_RATIO=1", "SOFASCORE_CLIENT__USE_PROXY=False",
+        "SOFASCORE_DISPLAY__USE_COLOR=TRUE", "SOFASCORE_CLIENT__RATE=", "SOFASCORE_CLIENT__RATE=off",
+        "SOFASCORE_CLIENT__RATE=0", "SOFASCORE_CLIENT__RATE=2.5", "SOFASCORE_REFRESH__WINDOW_HOURS=0",
+        "SOFASCORE_DISPLAY__LANGUAGE=en", "SOFASCORE_LOG__LEVEL=debug",
+        "SOFASCORE_CLIENT__PROXY=socks5://user:pw@127.0.0.1:1080\nSOFASCORE_CLIENT__USE_PROXY=true",
+        "SOFASCORE_CLIENT__BASE_URL=https://www.sofascore.com/api/v1", "SOMETHING_ELSE=whatever",
     ],
 )
 def test_env_valid_values_pass(make_ctx, line):
-    res = doctor.check_env(make_ctx(env_text=line + "\n"))
+    ctx = make_ctx(env_text=line + "\n")
+    res = doctor.check_env(ctx)
     assert res.status == OK, res.detail
+    assert doctor.check_config(ctx).status == OK
 
 
-def test_env_proxy_enabled_without_url_fails(make_ctx):
-    res = doctor.check_env(make_ctx(env_text="USE_PROXY=true\nPROXY_URL=\n"))
-    assert res.status == FAIL and "PROXY_URL" in res.summary
-
-
-def test_env_bad_proxy_url_fails_without_leaking_it(make_ctx):
+def test_env_proxy_password_never_reaches_the_report(make_ctx):
     secret = "user:hunter2@proxy.example"
-    res = doctor.check_env(make_ctx(env_text=f"USE_PROXY=true\nPROXY_URL={secret}\n"))
-    assert res.status == FAIL
-    assert "hunter2" not in json.dumps(res.to_dict())
-    # proxy kapalıyken aynı değer yalnızca uyarıdır
-    off = doctor.check_env(make_ctx(env_text=f"USE_PROXY=false\nPROXY_URL={secret}\n"))
-    assert off.status == WARN and "hunter2" not in json.dumps(off.to_dict())
+    for text in (f"SOFASCORE_CLIENT__PROXY={secret}\n", f"SOFASCORE_CLIENT__USE_PROXY=false\nSOFASCORE_CLIENT__PROXY={secret}\n",
+                 f"SOFASCORE_CLIENT__PROXY={secret}\nSOFASCORE_CLIENT__RETRIES=many\n", f"PROXY_URL={secret}\n"):
+        ctx = make_ctx(env_text=text)
+        for res in (doctor.check_env(ctx), doctor.check_config(ctx)):
+            assert "hunter2" not in json.dumps(res.to_dict()), text
+
+
+@pytest.mark.parametrize(
+    "line, name, new",
+    [
+        ("MAX_CONCURRENT=4", "MAX_CONCURRENT", "SOFASCORE_CLIENT__MAX_CONCURRENT (or client.max_concurrent in the config file)"),
+        ("DATA_DIR=data", "DATA_DIR", "SOFASCORE_STORAGE__DATA_DIR (or storage.data_dir in the config file)"),
+        ("APP_LANGUAGE=tr", "APP_LANGUAGE", "SOFASCORE_DISPLAY__LANGUAGE (or display.language in the config file)"),
+        ("SOFASCORE_API_TOKEN=x", "SOFASCORE_API_TOKEN", "SOFASCORE_SERVER__TOKEN"),
+        ("SAVE_EMPTY_ROUNDS=true", "SAVE_EMPTY_ROUNDS", "nothing (the setting was removed)"),
+    ],
+)
+def test_env_legacy_names_are_warnings_that_name_the_new_name(make_ctx, line, name, new):
+    """3.1 2.x'in adlarını okumaz (plan maddesi P30): eski .env'i olan kullanıcıya neyi yeniden adlandıracağı söylenir."""
+    for ctx in (make_ctx(env_text=line + "\n"), make_ctx(environ=dict([line.split("=", 1)]))):
+        res = doctor.check_env(ctx)
+        assert (res.status, res.code) == (WARN, "env_invalid")
+        assert res.summary == f"{name} is no longer read (the 2.x names were removed in 3.1): use {new}"
+        assert [p["key"] for p in res.detail["problems"]] == [name]
+    # Boş bırakılmış eski ad (2.x'in .env.example'ı böyle kopyalanmış olabilir) sessiz
+    assert doctor.check_env(make_ctx(env_text=line.split("=")[0] + "=\n")).status == OK
 
 
 def test_env_soft_problems_are_warnings(make_ctx):
     for line, key in [
-        ("APP_LANGUAGE=de", "APP_LANGUAGE"),
-        ("LOG_LEVEL=LOUD", "LOG_LEVEL"),
-        ("API_BASE_URL=http://localhost:9000/api", "API_BASE_URL"),
-        ("SOFASCORE_CHROME_PROFILE=/tmp/p", "SOFASCORE_BROWSER_PROFILE"),  # eski, hiç okunmayan ad
+        ("SOFASCORE_CLIENT__BASE_URL=http://localhost:9000/api", "SOFASCORE_CLIENT__BASE_URL"),
+        ("SOFASCORE_CHROME_PROFILE=/tmp/p", "SOFASCORE_CLIENT__BROWSER_PROFILE"),  # eski, hiç okunmayan ad
     ]:
         res = doctor.check_env(make_ctx(env_text=line + "\n"))
         assert (res.status, res.code) == (WARN, "env_invalid"), line
@@ -633,23 +652,26 @@ def test_env_soft_problems_are_warnings(make_ctx):
 
 
 def test_env_headed_browser_without_display_warns_only_on_linux(make_ctx):
-    assert doctor.check_env(make_ctx(env_text="SOFASCORE_BROWSER_HEADED=1\n", platform="linux")).status == WARN
-    with_display = make_ctx(env_text="SOFASCORE_BROWSER_HEADED=1\n", environ={"DISPLAY": ":0"}, platform="linux")
+    headed = "SOFASCORE_CLIENT__BROWSER_HEADED=true\n"
+    assert doctor.check_env(make_ctx(env_text=headed, platform="linux")).status == WARN
+    with_display = make_ctx(env_text=headed, environ={"DISPLAY": ":0"}, platform="linux")
     assert doctor.check_env(with_display).status == OK
-    assert doctor.check_env(make_ctx(env_text="SOFASCORE_BROWSER_HEADED=1\n", platform="darwin")).status == OK
+    assert doctor.check_env(make_ctx(env_text=headed, platform="darwin")).status == OK
 
 
 def test_env_unparsable_line_fails_with_its_line_number(make_ctx):
-    res = doctor.check_env(make_ctx(env_text="DATA_DIR=data\nthis is not a setting\nMAX_RETRIES=3\n"))
+    res = doctor.check_env(make_ctx(
+        env_text="SOFASCORE_STORAGE__DATA_DIR=data\nthis is not a setting\nSOFASCORE_CLIENT__RETRIES=3\n",
+    ))
     assert (res.status, res.code) == (FAIL, "env_invalid")
     assert "2" in res.summary and "this is not a setting" in res.summary
 
 
 def test_env_several_problems_are_all_listed_and_worst_status_wins(make_ctx):
-    ctx = make_ctx(env_text="APP_LANGUAGE=de\nMAX_CONCURRENT=abc\nUSE_COLOR=maybe\n")
+    ctx = make_ctx(env_text="APP_LANGUAGE=de\nnot a setting\nSOFASCORE_CHROME_PROFILE=/x\n")
     res = doctor.check_env(ctx)
     assert res.status == FAIL
-    assert {p["key"] for p in res.detail["problems"]} == {"APP_LANGUAGE", "MAX_CONCURRENT", "USE_COLOR"}
+    assert {p["key"] for p in res.detail["problems"]} == {"APP_LANGUAGE", "line 2", "SOFASCORE_CHROME_PROFILE"}
     assert {p["status"] for p in res.detail["problems"]} == {WARN, FAIL}
     text = doctor.render_text([res], ctx)
     assert text.count("\n       - ") == 3  # her sorun kendi satırında
@@ -657,23 +679,9 @@ def test_env_several_problems_are_all_listed_and_worst_status_wins(make_ctx):
 
 def test_env_process_environment_overrides_the_file(make_ctx):
     """Uygulama load_dotenv'i override'sız çağırır: geçerli olan ortamdaki değerdir."""
-    res = doctor.check_env(make_ctx(env_text="MAX_CONCURRENT=abc\n", environ={"MAX_CONCURRENT": "4"}))
-    assert res.status == OK
-    res = doctor.check_env(make_ctx(env_text="MAX_CONCURRENT=4\n", environ={"MAX_CONCURRENT": "abc"}))
-    assert res.status == FAIL
-
-
-@posix_only
-def test_env_file_read_only_is_a_warning(make_ctx):
-    if os.geteuid() == 0:
-        pytest.skip("root her yere yazar")
-    ctx = make_ctx(env_text="MAX_RETRIES=3\n")
-    ctx.env_file.chmod(0o400)
-    try:
-        res = doctor.check_env(ctx)
-    finally:
-        ctx.env_file.chmod(0o600)
-    assert res.status == WARN and "cannot be saved" in res.summary
+    name = "SOFASCORE_CLIENT__MAX_CONCURRENT"
+    assert doctor.check_config(make_ctx(env_text=f"{name}=abc\n", environ={name: "4"})).status == OK
+    assert doctor.check_config(make_ctx(env_text=f"{name}=4\n", environ={name: "abc"})).status == FAIL
 
 
 def test_env_file_is_read_without_python_dotenv(make_ctx, monkeypatch):
@@ -693,7 +701,7 @@ def test_env_file_parsed_like_the_app_does(make_ctx):
 
 def test_env_file_path_follows_the_override(make_ctx, tmp_path):
     other = tmp_path / "elsewhere.env"
-    other.write_text("MAX_CONCURRENT=abc\n", encoding="utf-8")
+    other.write_text("not a setting\n", encoding="utf-8")
     ctx = make_ctx(environ={"SOFASCORE_ENV_FILE": str(other)})
     assert ctx.env_file == other and doctor.check_env(ctx).status == FAIL
 
@@ -706,7 +714,7 @@ def _ok_probe(python):
 
 
 def test_run_checks_returns_every_check_once_and_never_the_live_one(make_ctx, monkeypatch):
-    import sofascore_scraper.challenge_solver as cs
+    from sofascore_scraper.client import bridge as cs
 
     monkeypatch.setattr(cs, "fetch_api_via_browser_sync", lambda *a, **k: pytest.fail("canlı istek atılmamalı"))
     results = doctor.run_checks(make_ctx(), browser_probe=_ok_probe)
@@ -767,14 +775,15 @@ def test_text_output_in_both_languages(make_ctx):
 
 def test_language_follows_app_language_like_the_app(make_ctx):
     assert make_ctx(lang=None).lang == "en"  # sofascore_scraper/language.py ile aynı varsayılan
-    assert make_ctx(lang=None, environ={"APP_LANGUAGE": "tr"}).lang == "tr"
+    assert make_ctx(lang=None, environ={"SOFASCORE_DISPLAY__LANGUAGE": "tr"}).lang == "tr"
+    assert make_ctx(lang=None, environ={"APP_LANGUAGE": "tr"}).lang == "en"  # 2.x adı: 3.1 okumaz
     assert make_ctx(lang=None, environ={"LANGUAGE": "tr_TR:tr"}).lang == "en"  # gettext değişkeni: yok sayılır
     # Açık ayar yoksa sistem dili; .env'deki açık ayar sistem dilinin önündedir
     assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}).lang == "tr"
     assert make_ctx(lang=None, environ={"LANG": "de_DE.UTF-8"}).lang == "en"
-    assert make_ctx(lang=None, env_text="APP_LANGUAGE=tr\n").lang == "tr"
-    assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}, env_text="APP_LANGUAGE=en\n").lang == "en"
-    assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}, env_text="APP_LANGUAGE=\n").lang == "tr"
+    assert make_ctx(lang=None, env_text="SOFASCORE_DISPLAY__LANGUAGE=tr\n").lang == "tr"
+    assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}, env_text="SOFASCORE_DISPLAY__LANGUAGE=en\n").lang == "en"
+    assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}, env_text="SOFASCORE_DISPLAY__LANGUAGE=\n").lang == "tr"
 
 
 def test_locale_keys_exist_in_both_languages_and_cover_the_code():
@@ -799,71 +808,72 @@ def test_budget_at_or_below_the_default_is_ok(make_ctx):
     assert (res.status, res.code, res.fix) == (OK, "budget_ok", None)
     assert res.detail == {"rate": 5.0, "default": 5.0, "source": "default"}
     assert res.summary == "5 requests per second (the default is 5)" and res.label == "Request budget"
-    for line in ("REQUEST_RATE_LIMIT=5", "REQUEST_RATE_LIMIT=2.5", "REQUEST_RATE_LIMIT="):
+    for line in ("SOFASCORE_CLIENT__RATE=5", "SOFASCORE_CLIENT__RATE=2.5", "SOFASCORE_CLIENT__RATE="):
         assert doctor.check_budget(make_ctx(env_text=line + "\n")).status == OK, line
-    slow = doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=2.5\n"))
-    assert slow.detail == {"rate": 2.5, "default": 5.0, "source": "REQUEST_RATE_LIMIT"}
+    slow = doctor.check_budget(make_ctx(env_text="SOFASCORE_CLIENT__RATE=2.5\n"))
+    assert slow.detail == {"rate": 2.5, "default": 5.0, "source": "SOFASCORE_CLIENT__RATE"}
 
 
 def test_budget_default_is_the_default_of_the_throttle():
     from sofascore_scraper import throttle
+    from sofascore_scraper.config.settings import Settings
 
-    assert doctor.DEFAULT_REQUEST_RATE == throttle.DEFAULT_RATE_LIMIT
-    assert doctor._RATE_OFF_WORDS == throttle._OFF_WORDS
+    assert doctor.DEFAULT_REQUEST_RATE == throttle.DEFAULT_RATE_LIMIT == Settings().client.rate
 
 
 def test_budget_above_the_default_is_a_warning(make_ctx):
-    res = doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=12\n"))
+    res = doctor.check_budget(make_ctx(env_text="SOFASCORE_CLIENT__RATE=12\n"))
     assert (res.status, res.code) == (WARN, "budget_above_default")
     assert res.summary.startswith("12 requests per second is above the default of 5")
     assert "SofaScore is more likely to block you" in res.summary
-    assert "REQUEST_RATE_LIMIT=5" in res.fix and "rate = 5" in res.fix
-    assert res.detail == {"rate": 12.0, "default": 5.0, "source": "REQUEST_RATE_LIMIT"}
-    assert doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=5.5\n")).code == "budget_above_default"
+    assert "SOFASCORE_CLIENT__RATE=5" in res.fix and "rate = 5" in res.fix
+    assert res.detail == {"rate": 12.0, "default": 5.0, "source": "SOFASCORE_CLIENT__RATE"}
+    assert doctor.check_budget(make_ctx(env_text="SOFASCORE_CLIENT__RATE=5.5\n")).code == "budget_above_default"
 
 
-@pytest.mark.parametrize("value", ["0", "off", "OFF", "false", "none", "disabled", "-3"])
+@pytest.mark.parametrize("value", ["0", "off", "OFF"])
 def test_budget_off_is_a_warning(make_ctx, value):
-    """0, kapatma sözcükleri ve negatif sayı sınırlayıcıyı kapatır (sofascore_scraper/throttle.configured_rate ile aynı kural)."""
-    res = doctor.check_budget(make_ctx(environ={"REQUEST_RATE_LIMIT": value}))
+    """0 ve "off" sınırlayıcıyı kapatır (`client.rate`; sofascore_scraper/throttle.configured_rate ile aynı kural)."""
+    res = doctor.check_budget(make_ctx(environ={"SOFASCORE_CLIENT__RATE": value}))
     assert (res.status, res.code, res.detail["rate"]) == (WARN, "budget_off", 0.0)
     assert res.summary.startswith("the limit is off") and res.fix
 
 
-@pytest.mark.parametrize("value", ["fast", "nan", "inf"])
+@pytest.mark.parametrize("value", ["fast", "nan", "inf", "false", "-3"])
 def test_budget_invalid_value_means_the_default(make_ctx, value):
-    # Geçersiz değeri `env` denetimi bildirir; uygulama varsayılanı kullanır
-    ctx = make_ctx(env_text=f"REQUEST_RATE_LIMIT={value}\n")
-    assert doctor.check_budget(ctx).detail == {"rate": 5.0, "default": 5.0, "source": "default"}
-    assert doctor.check_env(ctx).status == FAIL
+    # Geçersiz değeri `config` denetimi bildirir (uygulama açılmaz); bütçe denetimi varsayılanı gösterir
+    ctx = make_ctx(env_text=f"SOFASCORE_CLIENT__RATE={value}\n")
+    if value != "-3":
+        assert doctor.check_budget(ctx).detail == {"rate": 5.0, "default": 5.0, "source": "default"}
+    assert doctor.check_config(ctx).status == FAIL
 
 
 def test_budget_matches_what_the_throttle_would_use(make_ctx, monkeypatch):
     from sofascore_scraper import throttle
 
-    for value in ("", "0", "off", "no", "3", "5", "7.5", "-1", "fast", "inf", " 12 "):
-        monkeypatch.setenv("REQUEST_RATE_LIMIT", value)
-        rate = doctor.check_budget(make_ctx(environ={"REQUEST_RATE_LIMIT": value})).detail["rate"]
+    for value in ("", "0", "off", "3", "5", "7.5", " 12 "):
+        monkeypatch.setenv("SOFASCORE_CLIENT__RATE", value)
+        rate = doctor.check_budget(make_ctx(environ={"SOFASCORE_CLIENT__RATE": value})).detail["rate"]
         assert rate == throttle.configured_rate(), value
 
 
-def test_budget_new_name_wins_and_process_environment_beats_the_file(make_ctx):
-    res = doctor.check_budget(make_ctx(environ={"SOFASCORE_CLIENT__RATE": "3", "REQUEST_RATE_LIMIT": "20"}))
-    assert (res.status, res.detail["rate"], res.detail["source"]) == (OK, 3.0, "SOFASCORE_CLIENT__RATE")
-    res = doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=20\n", environ={"REQUEST_RATE_LIMIT": "4"}))
-    assert (res.status, res.detail["rate"]) == (OK, 4.0)
+def test_budget_process_environment_beats_the_file_and_the_2x_name_is_not_read(make_ctx):
+    res = doctor.check_budget(make_ctx(env_text="SOFASCORE_CLIENT__RATE=20\n", environ={"SOFASCORE_CLIENT__RATE": "4"}))
+    assert (res.status, res.detail["rate"], res.detail["source"]) == (OK, 4.0, "SOFASCORE_CLIENT__RATE")
+    res = doctor.check_budget(make_ctx(env_text="", environ={"REQUEST_RATE_LIMIT": "20"}))
+    assert (res.status, res.detail["rate"], res.detail["source"]) == (OK, 5.0, "default")
 
 
 def test_budget_uses_the_rate_the_caller_resolved(make_ctx):
     """Yeni CLI geçerli değeri (yapılandırma dosyası ve bayraklar dahil) kendisi verir."""
-    ctx = make_ctx(env_text="REQUEST_RATE_LIMIT=2\n", request_rate=20.0, request_rate_source="/etc/sofascore.toml")
+    ctx = make_ctx(env_text="SOFASCORE_CLIENT__RATE=2\n", request_rate=20.0, request_rate_source="/etc/sofascore.toml")
     res = doctor.check_budget(ctx)
     assert (res.code, res.detail) == ("budget_above_default", {"rate": 20.0, "default": 5.0, "source": "/etc/sofascore.toml"})
     assert doctor.check_budget(make_ctx(request_rate=0.0)).detail == {"rate": 0.0, "default": 5.0, "source": "settings"}
 
 
 def test_budget_in_turkish(make_ctx):
-    res = doctor.check_budget(make_ctx(lang="tr", environ={"REQUEST_RATE_LIMIT": "0"}))
+    res = doctor.check_budget(make_ctx(lang="tr", environ={"SOFASCORE_CLIENT__RATE": "0"}))
     assert res.label == "İstek bütçesi" and res.summary.startswith("sınır kapalı")
 
 
@@ -873,7 +883,7 @@ def test_budget_is_a_regular_check(make_ctx, capsys):
     noktasının denetimleri aynıdır. `extra=True` eski çağıranlar için durur ve bir şey eklemez.
     """
     assert doctor.CHECK_IDS[-1] == "budget" and doctor.EXTRA_CHECK_IDS == ()
-    ctx = make_ctx(environ={"REQUEST_RATE_LIMIT": "0"})
+    ctx = make_ctx(environ={"SOFASCORE_CLIENT__RATE": "0"})
     plain = doctor.run_checks(ctx, skip=["browser"])
     assert [r.id for r in plain] == [i for i in doctor.CHECK_IDS if i != "browser"]
     assert plain[-1].code == "budget_off"
@@ -885,20 +895,20 @@ def test_budget_is_a_regular_check(make_ctx, capsys):
 
 def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
     """
-    `python -S` site-packages'ı kapatır: hiçbir bağımlılık kurulu değilken de `main.py --doctor`
+    `python -S` site-packages'ı kapatır: hiçbir bağımlılık kurulu değilken de `main.py doctor`
     çalışmalı, eksik paketleri bildirmeli ve 1 ile çıkmalı (main.py'nin kendi import'ları çökmeden).
     """
-    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "APP_LANGUAGE")}
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "SOFASCORE_DISPLAY__LANGUAGE")}
     env_file = tmp_path / ".env"
-    env_file.write_text("MAX_CONCURRENT=5\nAPP_LANGUAGE=tr\n", encoding="utf-8")
+    env_file.write_text("SOFASCORE_CLIENT__MAX_CONCURRENT=5\nSOFASCORE_DISPLAY__LANGUAGE=tr\n", encoding="utf-8")
     env["SOFASCORE_ENV_FILE"] = str(env_file)
-    env["DATA_DIR"] = str(tmp_path / "data")
+    env["SOFASCORE_STORAGE__DATA_DIR"] = str(tmp_path / "data")
     proc = subprocess.run(
-        [sys.executable, "-S", str(REPO / "main.py"), "--doctor", "--json", "--only", "python,packages,data_dir,env"],
+        [sys.executable, "-S", str(REPO / "main.py"), "--json", "doctor", "--only", "python,packages,data_dir,env"],
         cwd=str(tmp_path), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120,
     )
     assert proc.returncode == 1, proc.stderr.decode()
-    envelope = json.loads(proc.stdout.decode())  # `ssc doctor --json`un zarfı (P19: --doctor bir takma addır)
+    envelope = json.loads(proc.stdout.decode())  # `ssc doctor --json`un zarfı
     assert envelope["command"] == "doctor" and envelope["ok"] is True
     out = envelope["data"]
     by_id = {c["id"]: c for c in out["checks"]}
@@ -910,9 +920,9 @@ def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
 
 def test_main_py_lists_doctor_in_help():
     proc = subprocess.run(
-        [sys.executable, str(REPO / "main.py"), "--doctor", "--help"],
+        [sys.executable, str(REPO / "main.py"), "doctor", "--help"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120,
-        env={**os.environ, "APP_LANGUAGE": "en"},
+        env={**os.environ, "SOFASCORE_DISPLAY__LANGUAGE": "en"},
     )
     out = proc.stdout.decode()
     assert proc.returncode == 0 and "--json" in out and "--live" in out and "--strict" in out

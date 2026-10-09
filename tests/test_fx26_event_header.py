@@ -43,7 +43,7 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Store]:
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     conftest.STORE_BOUNDARY.add_data_dir(str(data_dir))
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     found = open_store(data_dir)
     for event in payloads().values():
         found.events.put(int(event["id"]), {"event": Outcome(SLICE_OK, data=event)})

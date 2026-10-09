@@ -1,7 +1,40 @@
 {
- "doctor_with_another_flag": {
+ "invalid_choice": {
   "argv": [
-   "--headless",
+   "sync",
+   "--only",
+   "everything"
+  ],
+  "exit_code": 2,
+  "files": {},
+  "request_layer_loaded": false,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Usage error: argument --only: invalid choice: 'everything' (choose from 'events', 'seasons')",
+   "Run 'ssc --help' for the commands and options."
+  ],
+  "stdout": []
+ },
+ "invalid_recheck_mode": {
+  "argv": [
+   "sync",
+   "--recheck-unavailable",
+   "some"
+  ],
+  "exit_code": 2,
+  "files": {},
+  "request_layer_loaded": false,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Usage error: argument --recheck-unavailable: invalid choice: 'some' (choose from 'legacy', 'all')",
+   "Run 'ssc --help' for the commands and options."
+  ],
+  "stdout": []
+ },
+ "removed_doctor": {
+  "argv": [
    "--doctor",
    "--json"
   ],
@@ -10,170 +43,98 @@
   "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
-  "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc doctor --headless --json"
-  ],
+  "stderr": [],
   "stdout": [
    "{",
    "  \"ok\": false,",
-   "  \"command\": \"doctor\",",
+   "  \"command\": null,",
    "  \"schema\": \"sofascore.cli/1\",",
    "  \"version\": \"3.0.0\",",
    "  \"error\": {",
    "    \"code\": \"invalid_request\",",
-   "    \"message\": \"unrecognized arguments: --headless\",",
+   "    \"message\": \"--doctor: the flags of `python main.py` were removed in 3.1 (deprecated in 3.0.0); use `ssc doctor` (`ssc --help` lists the commands)\",",
    "    \"details\": {",
-   "      \"usage\": \"usage: python main.py doctor [global options] [--strict] [--live] [--only IDS] [--skip IDS]\"",
+   "      \"removed\": [",
+   "        \"--doctor\"",
+   "      ]",
    "    }",
    "  },",
    "  \"exit_code\": 2",
    "}"
   ]
  },
- "headless_without_an_action": {
+ "removed_headless": {
   "argv": [
    "--headless"
   ],
   "exit_code": 2,
-  "files": {
-   "added": {
-    "logs/": "<empty dir>"
-   }
-  },
+  "files": {},
   "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "--headless needs --update-all and/or --csv-export. Examples:",
-   "  python main.py --headless --update-all",
-   "  python main.py --headless --update-all --fetch-mode details --league-id 52",
-   "  python main.py --headless --csv-export --data-dir ./data"
+   "Usage error: --headless: the flags of `python main.py` were removed in 3.1 (deprecated in 3.0.0) (`ssc --help` lists the commands)",
+   "Run 'ssc --help' for the commands and options."
   ],
   "stdout": []
  },
- "headless_without_an_action_tr": {
-  "argv": [
-   "--headless"
-  ],
-  "exit_code": 2,
-  "files": {
-   "added": {
-    "logs/": "<empty dir>"
-   }
-  },
-  "request_layer_loaded": false,
-  "requests": [],
-  "sleeps": {},
-  "stderr": [
-   "--headless için --update-all ve/veya --csv-export gerekir. Örnekler:",
-   "  python main.py --headless --update-all",
-   "  python main.py --headless --update-all --fetch-mode details --league-id 52",
-   "  python main.py --headless --csv-export --data-dir ./data"
-  ],
-  "stdout": []
- },
- "invalid_choice": {
-  "argv": [
-   "--headless",
-   "--fetch-mode",
-   "everything"
-  ],
-  "exit_code": 2,
-  "files": {
-   "added": {
-    "logs/": "<empty dir>"
-   }
-  },
-  "request_layer_loaded": false,
-  "requests": [],
-  "sleeps": {},
-  "stderr": [
-   "main.py: error: argument --fetch-mode: invalid choice: 'everything'"
-  ],
-  "stdout": []
- },
- "invalid_recheck_mode": {
-  "argv": [
-   "--recheck-unavailable",
-   "some"
-  ],
-  "exit_code": 2,
-  "files": {
-   "added": {
-    "logs/": "<empty dir>"
-   }
-  },
-  "request_layer_loaded": false,
-  "requests": [],
-  "sleeps": {},
-  "stderr": [
-   "main.py: error: argument --recheck-unavailable: invalid choice: 'some'"
-  ],
-  "stdout": []
- },
- "unknown_flag": {
+ "removed_headless_update_all_tr": {
   "argv": [
    "--headless",
    "--update-all",
-   "--no-such-flag"
+   "--league-id",
+   "17"
   ],
   "exit_code": 2,
-  "files": {
-   "added": {
-    "logs/": "<empty dir>"
-   }
-  },
+  "files": {},
   "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "main.py: error: unrecognized arguments: --no-such-flag"
+   "Kullanım hatası: --headless --update-all --league-id: the flags of `python main.py` were removed in 3.1 (deprecated in 3.0.0); use `ssc sync --tournament` (`ssc --help` lists the commands)",
+   "Komutlar ve seçenekler için: 'ssc --help'"
   ],
   "stdout": []
  },
- "watch_without_scope": {
+ "removed_watch": {
   "argv": [
    "--watch",
    "--sport",
-   "football"
-  ],
-  "exit_code": 2,
-  "files": {
-   "added": {
-    "logs/": "<empty dir>"
-   }
-  },
-  "request_layer_loaded": false,
-  "requests": [],
-  "sleeps": {},
-  "stderr": [
-   "--watch needs --sport and --league-ids or --event-ids. Example: python main.py --watch --sport football --league-ids 17,8"
-  ],
-  "stdout": []
- },
- "watch_without_sport": {
-  "argv": [
-   "--watch",
+   "football",
    "--event-ids",
    "9300001"
   ],
   "exit_code": 2,
-  "files": {
-   "added": {
-    "logs/": "<empty dir>"
-   }
-  },
+  "files": {},
   "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "--watch needs --sport and --league-ids or --event-ids. Example: python main.py --watch --sport football --league-ids 17,8"
+   "Usage error: --watch --event-ids: the flags of `python main.py` were removed in 3.1 (deprecated in 3.0.0); use `ssc watch --source poll --stdout --event` (`ssc --help` lists the commands)",
+   "Run 'ssc --help' for the commands and options."
   ],
   "stdout": []
  },
- "web_public_host_without_allow_list": {
+ "removed_web": {
   "argv": [
    "--web",
+   "--host",
+   "0.0.0.0"
+  ],
+  "exit_code": 2,
+  "files": {},
+  "request_layer_loaded": false,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Usage error: --web: the flags of `python main.py` were removed in 3.1 (deprecated in 3.0.0); use `ssc serve` (`ssc --help` lists the commands)",
+   "Run 'ssc --help' for the commands and options."
+  ],
+  "stdout": []
+ },
+ "serve_public_host_without_allow_list": {
+  "argv": [
+   "serve",
    "--host",
    "0.0.0.0",
    "--port",
@@ -189,13 +150,28 @@
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc serve --host 0.0.0.0 --port 0",
    "The web server was asked to listen on every network interface (0.0.0.0), but it was not told which host names it may answer to.",
    "List the names or IP addresses you open the app with, for example:",
    "  python main.py serve --host 0.0.0.0 --allowed-hosts localhost,127.0.0.1,my-server.lan",
-   "or set [server] allowed_hosts in the config file, or SOFASCORE_ALLOWED_HOSTS in .env or the environment.",
+   "or set [server] allowed_hosts in the config file, or SOFASCORE_SERVER__ALLOWED_HOSTS in .env or the environment.",
    "Or pass --allow-any-host to answer to any name. That is insecure: it turns off the protection against DNS rebinding.",
-   "Usage error: --host 0.0.0.0 listens on every network interface, but no allowed host names are set: give --allowed-hosts, [server] allowed_hosts or SOFASCORE_ALLOWED_HOSTS, or --allow-any-host (insecure: it turns off the protection against DNS rebinding)",
+   "Usage error: --host 0.0.0.0 listens on every network interface, but no allowed host names are set: give --allowed-hosts, [server] allowed_hosts or SOFASCORE_SERVER__ALLOWED_HOSTS, or --allow-any-host (insecure: it turns off the protection against DNS rebinding)",
+   "Run 'ssc --help' for the commands and options."
+  ],
+  "stdout": []
+ },
+ "unknown_flag": {
+  "argv": [
+   "sync",
+   "--no-such-flag"
+  ],
+  "exit_code": 2,
+  "files": {},
+  "request_layer_loaded": false,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Usage error: unrecognized arguments: --no-such-flag",
    "Run 'ssc --help' for the commands and options."
   ],
   "stdout": []

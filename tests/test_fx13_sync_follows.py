@@ -24,6 +24,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 import pytest
 
 import conftest
+import sync_fakes
 import test_cli_skeleton as skeleton
 from sofascore_scraper.jobs.progress import JobProgress
 from sofascore_scraper.services.follows import ConfigLeagues, FollowsService
@@ -90,24 +91,20 @@ class FakeSchedule:
 
 
 class FakeDetails:
+    """Detay aşamasının (DetailPhase) servisin kullandığı yüzü."""
+
     def __init__(self) -> None:
-        self.collected: List[Tuple[Optional[str], Optional[List[int]]]] = []
-        self.rate_limit_breaker_triggered = False
-        self.last_status_counts: Dict[str, int] = {}
+        self.collected: List[Tuple[Optional[int], Optional[List[int]]]] = []
+        self.breaker_tripped = False
+        self.status_counts: Dict[str, int] = {}
         self.refresh_listener: Any = None
 
-    def begin_job_cache(self) -> None:
-        pass
-
-    def end_job_cache(self) -> None:
-        pass
-
-    def collect_detail_match_ids(self, league_id: Optional[str] = None, max_seasons: int = 0,
-                                 only_season_ids: Optional[List[int]] = None) -> List[str]:
+    def candidates(self, league_id: Optional[int] = None, *,
+                   only_season_ids: Optional[List[int]] = None) -> List[str]:
         self.collected.append((league_id, only_season_ids))
         return []
 
-    def pending_detail_ids(self, ids: List[str]) -> List[str]:
+    def pending(self, ids: List[str]) -> List[str]:
         return []
 
 
@@ -138,17 +135,23 @@ class OldHandle(Handle):
         self.lines.append({"message": message})
 
 
+@pytest.fixture(autouse=True)
+def _fakes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Servisin listeleri ve detay aşaması sahte bağlamdan (tests/sync_fakes.py)."""
+    sync_fakes.install(monkeypatch)
+
+
 @pytest.fixture
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Store:
     path = tmp_path / "data"
     path.mkdir()
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return open_store(path)
 
 
 def context(store: Optional[Store], leagues: Optional[Dict[int, str]] = None) -> SimpleNamespace:
     ctx = SimpleNamespace(config=FakeConfig(leagues), data_dir=str(store.data_dir) if store else "unused",
-                          season_fetcher=FakeSeasons(), match_fetcher=FakeSchedule(), match_data_fetcher=FakeDetails())
+                          seasons=FakeSeasons(), schedule=FakeSchedule(), details=FakeDetails())
     if store is not None:
         ctx.store = store
     return ctx
@@ -207,9 +210,9 @@ def test_a_sync_downloads_each_follow_with_its_season_choice(store: Store) -> No
     result = SyncService(ctx).run(spec, handle=handle)  # type: ignore[arg-type]
 
     assert result.state == "succeeded"
-    assert [lid for lid, _ in ctx.season_fetcher.listed] == [8, 17, 23]
-    assert ctx.match_fetcher.calls == [(8, 840), (8, 83), (17, 175), (17, 174), (17, 173), (17, 172), (23, 235)]
-    assert ctx.match_data_fetcher.collected == [(None, None)]  # detay aşaması bugünkü gibi bütün katalog
+    assert [lid for lid, _ in ctx.seasons.listed] == [8, 17, 23]
+    assert ctx.schedule.calls == [(8, 840), (8, 83), (17, 175), (17, 174), (17, 173), (17, 172), (23, 235)]
+    assert ctx.details.collected == [(None, None)]  # detay aşaması bugünkü gibi bütün katalog
 
 
 def test_a_single_tournament_keeps_every_season(store: Store) -> None:
@@ -218,7 +221,7 @@ def test_a_single_tournament_keeps_every_season(store: Store) -> None:
     ctx = context(store)
     spec = SyncSpec(mode="full", league_id=23)
     SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
-    assert ctx.match_fetcher.calls == [(23, 235), (23, 234)]
+    assert ctx.schedule.calls == [(23, 235), (23, 234)]
 
 
 def test_named_follows_only(store: Store) -> None:
@@ -230,9 +233,9 @@ def test_named_follows_only(store: Store) -> None:
 
     SyncService(ctx).run(spec, handle=handle)  # type: ignore[arg-type]
 
-    assert [lid for lid, _ in ctx.season_fetcher.listed] == [23]
-    assert ctx.match_fetcher.calls == [(23, 235)]
-    assert ctx.match_data_fetcher.collected == [("23", None)]
+    assert [lid for lid, _ in ctx.seasons.listed] == [23]
+    assert ctx.schedule.calls == [(23, 235)]
+    assert ctx.details.collected == [(23, None)]
     skipped = [line for line in handle.lines if line.get("code") == "sync_follow_skipped"]
     assert [line["params"]["follow"] for line in skipped] == ["tournament:5", "team:42"]
 
@@ -248,8 +251,8 @@ def test_season_lists_only(store: Store) -> None:
     result = SyncService(ctx).run(spec, handle=handle)  # type: ignore[arg-type]
 
     assert result.state == "succeeded"
-    assert ctx.season_fetcher.listed == [(8, None), (17, None)]  # tazelik süresine bakılmaz
-    assert ctx.match_fetcher.calls == [] and ctx.match_data_fetcher.collected == []
+    assert ctx.seasons.listed == [(8, None), (17, None)]  # tazelik süresine bakılmaz
+    assert ctx.schedule.calls == [] and ctx.details.collected == []
     assert [line["code"] for line in handle.lines] == ["sync_season_list", "sync_season_list"]
     assert handle.lines[0]["params"] == {"league_id": 8}
 
@@ -259,10 +262,10 @@ class FakeRefresh(FakeDetails):
         super().__init__()
         self.refreshed: List[List[str]] = []
 
-    def refresh_due_ids(self, league_id: Optional[int] = None) -> List[str]:
+    def refresh_due(self, league_id: Optional[int] = None) -> List[str]:
         return ["1", "2"]
 
-    def refresh_matches(self, ids: List[str], progress_callback: Any = None, should_cancel: Any = None) -> Dict[str, Any]:
+    def refresh(self, ids: List[str], *, progress: Any = None, cancelled: Any = None) -> Dict[str, Any]:
         self.refreshed.append(list(ids))
         return {"refreshed": len(ids), "changed": 0, "failed": 0}
 
@@ -270,16 +273,16 @@ class FakeRefresh(FakeDetails):
 def test_a_refresh_of_named_events_ignores_what_is_due(store: Store) -> None:
     """05-web-ui.md G23: `refresh` + seçimler yalnızca o maçların /event'ini okur (Fetch again)."""
     ctx = context(store)
-    ctx.match_data_fetcher = FakeRefresh()
+    ctx.details = FakeRefresh()
     spec = SyncSpec(mode="refresh", selections=(SyncSelection(0, match_ids=(7, 9, 7)),
                                                               SyncSelection(17, match_ids=(5,))))
     result = SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
-    assert ctx.match_data_fetcher.refreshed == [["7", "9", "5"]]
+    assert ctx.details.refreshed == [["7", "9", "5"]]
     assert result.refresh is not None and (result.refresh.due, result.refresh.refreshed) == (3, 3)
 
     spec = SyncSpec(mode="refresh")
     SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
-    assert ctx.match_data_fetcher.refreshed[-1] == ["1", "2"]
+    assert ctx.details.refreshed[-1] == ["1", "2"]
 
 
 def test_log_lines_carry_codes_and_an_old_handle_gets_the_text_only(store: Store) -> None:

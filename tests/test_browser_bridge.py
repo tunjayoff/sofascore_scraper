@@ -5,12 +5,12 @@ BrowserBridge ve Turnstile çözücü testleri.
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from sofascore_scraper.challenge_solver import (
+from sofascore_scraper.client.bridge import (
     BrowserBridge,
     apply_token_to_headers,
     fetch_api_via_browser,
 )
-from sofascore_scraper.utils import make_api_request, make_api_request_async
+from sofascore_scraper.client.transport import make_api_request, make_api_request_async
 
 
 def test_apply_token_to_headers_adds_cookie_and_header():
@@ -63,8 +63,8 @@ def test_make_api_request_falls_back_to_browser_bridge_on_challenge():
 
     expected_data = {"seasons": [{"id": 1, "name": "Test Season"}]}
 
-    with patch("sofascore_scraper.utils.cffi_requests.get", return_value=mock_response), \
-         patch("sofascore_scraper.challenge_solver.fetch_api_via_browser_sync", return_value=expected_data):
+    with patch("sofascore_scraper.client.transport.cffi_requests.get", return_value=mock_response), \
+         patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", return_value=expected_data):
         res = make_api_request("/unique-tournament/17/seasons")
         assert res == expected_data
 
@@ -82,7 +82,7 @@ async def test_make_api_request_async_falls_back_to_browser_bridge_on_challenge(
 
     expected_data = {"events": [{"id": 12345}]}
 
-    with patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", new_callable=AsyncMock, return_value=expected_data):
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser", new_callable=AsyncMock, return_value=expected_data):
         res = await make_api_request_async(mock_session, "/sport/football/events/live")
         assert res == expected_data
 
@@ -90,7 +90,7 @@ async def test_make_api_request_async_falls_back_to_browser_bridge_on_challenge(
 def test_browser_calls_share_one_event_loop_across_callers():
     """Async çağrılar çağıranın döngüsünde değil, sync yol ile aynı arka plan döngüsünde çalışmalı."""
     import asyncio
-    from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync
+    from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
 
     loops = []
 
@@ -120,15 +120,15 @@ def test_profile_dir_treats_empty_setting_as_unset(monkeypatch):
     from sofascore_scraper.paths import browser_profile_dir
 
     default = os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile")
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "")
     assert browser_profile_dir() == default
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "   ")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "   ")
     assert browser_profile_dir() == default
-    monkeypatch.delenv("SOFASCORE_BROWSER_PROFILE")
+    monkeypatch.delenv("SOFASCORE_CLIENT__BROWSER_PROFILE")
     assert browser_profile_dir() == default
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "/srv/profile")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "/srv/profile")
     assert browser_profile_dir() == "/srv/profile"
-    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "~/elsewhere")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_PROFILE", "~/elsewhere")
     assert browser_profile_dir() == os.path.expanduser("~/elsewhere")
 
 
@@ -140,7 +140,10 @@ def test_env_example_names_the_profile_setting_the_bridge_reads():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     with open(os.path.join(root, ".env.example"), encoding="utf-8") as f:
         example = f.read()
+    from sofascore_scraper.config import loader
+
+    # 3.1: profil `client.browser_profile` ayarından okunur (sofascore_scraper/paths.browser_profile_dir)
     with open(os.path.join(root, "sofascore_scraper", "paths.py"), encoding="utf-8") as f:
-        read_by_code = set(re.findall(r'os\.getenv\("(SOFASCORE_[A-Z_]*PROFILE)"', f.read()))
-    assert read_by_code == {"SOFASCORE_BROWSER_PROFILE"}
-    assert "SOFASCORE_BROWSER_PROFILE=" in example and "SOFASCORE_CHROME_PROFILE" not in example
+        assert "client.browser_profile" in f.read()
+    assert re.search(r"^# " + loader.env_name("client.browser_profile") + "=", example, flags=re.M)
+    assert "SOFASCORE_CLIENT__BROWSER_PROFILE=" in example and "SOFASCORE_CHROME_PROFILE" not in example

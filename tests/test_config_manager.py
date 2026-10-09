@@ -147,15 +147,15 @@ def test_external_edit_is_picked_up(make_cm):
 @pytest.mark.parametrize(
     "env,expected",
     [
-        ({"APP_LANGUAGE": "en"}, "en"),
+        ({"SOFASCORE_DISPLAY__LANGUAGE": "en"}, "en"),
         ({"LANGUAGE": "en"}, "en"),
         ({"LANGUAGE": "tr_TR:tr"}, "en"),  # GNU gettext değeri yok sayılır
-        ({"APP_LANGUAGE": "tr", "LANGUAGE": "en"}, "tr"),
+        ({"SOFASCORE_DISPLAY__LANGUAGE": "tr", "LANGUAGE": "en"}, "tr"),
         ({}, "en"),  # açık ayar yok, sistem dili desteklenmiyor: İngilizce (kuralın tamamı: test_language.py)
     ],
 )
 def test_app_language(monkeypatch, env, expected):
-    monkeypatch.delenv("APP_LANGUAGE", raising=False)
+    monkeypatch.delenv("SOFASCORE_DISPLAY__LANGUAGE", raising=False)
     monkeypatch.delenv("LANGUAGE", raising=False)
     for k, v in env.items():
         monkeypatch.setenv(k, v)

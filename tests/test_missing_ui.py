@@ -50,9 +50,9 @@ def test_help_page_is_self_contained():
 def test_api_and_health_keep_working_without_the_build(no_build):
     health = client.get("/health")
     assert health.status_code == 200 and health.json()["status"] == "ok"
-    leagues = client.get("/api/leagues")
-    assert leagues.status_code == 200 and isinstance(leagues.json(), list)
-    assert client.get("/api/settings").status_code == 200
+    follows = client.get("/api/v1/follows")
+    assert follows.status_code == 200 and isinstance(follows.json()["data"], list)
+    assert client.get("/api/v1/settings").status_code == 200
     assert client.get("/openapi.json").status_code == 200
     # bilinmeyen API yolu yardım sayfası değil, JSON 404
     missing = client.get("/api/no-such-route")

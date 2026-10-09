@@ -27,6 +27,8 @@ from typing import Any, Dict, Iterator, List, Optional
 import conftest
 import pytest
 
+import sync_fakes
+
 from sofascore_scraper.web import deps
 from sofascore_scraper import bridge_health
 from sofascore_scraper.exceptions import StorageError
@@ -402,13 +404,6 @@ def test_the_own_running_job_is_never_reaped_and_an_orphan_is(store: JobStore) -
     store.update(finished=True)
 
 
-def test_legacy_sweep_still_interrupts_everything(store: JobStore) -> None:
-    job_id = store.create_running({})
-    assert store.mark_stale_running_interrupted() == 1
-    assert store.get_job(job_id)["status"] == "interrupted" and store.snapshot()["status"] == "Idle"
-    assert store._leases.holder("writer") is None
-
-
 # --- Store'a bağlı iş deposu -------------------------------------------------------------------------
 
 
@@ -664,8 +659,8 @@ def test_an_unexpected_error_is_internal_and_its_secrets_are_masked(
 ) -> None:
     from sofascore_scraper import redact
 
-    monkeypatch.setenv("USE_PROXY", "true")
-    monkeypatch.setenv("PROXY_URL", "http://user:hunter2secret@proxy.example:8080")
+    monkeypatch.setenv("SOFASCORE_CLIENT__USE_PROXY", "true")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", "http://user:hunter2secret@proxy.example:8080")
     redact.refresh()
     try:
         def body(handle: JobHandle) -> None:
@@ -1058,55 +1053,53 @@ def test_a_health_change_that_cannot_be_stored_does_not_break_the_request(
 
 @pytest.fixture
 def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    """
+    Web işini (`POST /api/v1/jobs`un gövdesi) kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis
+    bağlamıyla çalıştırır.
+    """
+    from sofascore_scraper.services import context
+    from web_job import run_sync_job
 
     jobs = JobStore(str(tmp_path / "web" / ".meta" / "state.db"))
     monkeypatch.setattr(deps, "job_store", lambda: jobs)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
 
     class Details:
-        rate_limit_breaker_triggered = False
-        last_status_counts: Dict[str, int] = {}
+        breaker_tripped = False
+        status_counts: Dict[str, int] = {}
         refresh_listener = None
         breaker_on: Optional[str] = None
         failing: List[str] = []
 
-        def begin_job_cache(self) -> None: ...
-        def end_job_cache(self) -> None: ...
-
-        def collect_detail_match_ids(self, league_id: Any = None, max_seasons: int = 0, only_season_ids: Any = None) -> List[str]:
+        def candidates(self, league_id: Any = None, *, only_season_ids: Any = None) -> List[str]:
             return ["a", "b", "c"]
 
-        def pending_detail_ids(self, ids: List[str]) -> List[str]:
+        def pending(self, ids: List[str]) -> List[str]:
             return list(ids)
 
-        def fetch_detail_ids(self, ids: List[str], progress_callback: Any = None, should_cancel: Any = None,
-                             failed_callback: Any = None) -> int:
+        def fetch(self, ids: List[str], *, progress: Any = None, cancelled: Any = None,
+                  failed: Any = None) -> int:
             for n, match_id in enumerate(ids, start=1):
                 if match_id in self.failing:
-                    failed_callback(match_id)
-                progress_callback(n, len(ids), "")
+                    failed(match_id)
+                progress(n, len(ids), "")
             if self.breaker_on:
-                self.rate_limit_breaker_triggered = True
-                self.last_status_counts = {self.breaker_on: 9}
+                self.breaker_tripped = True
+                self.status_counts = {self.breaker_on: 9}
             return len(ids)
 
     details = Details()
-    ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
-    monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
+    ctx = SimpleNamespace(config=deps.config_manager(), details=details)
+    sync_fakes.install(monkeypatch)
+    monkeypatch.setattr(context, "build_context", lambda config_manager: ctx)
+    manager = JobManager(jobs)
 
     def run(**payload: Any) -> Job:
-        request = FetchRequest(**payload)
-        import dataclasses
+        job = manager.get(run_sync_job(jobs, payload)["job_id"])
+        assert job is not None
+        return job
 
-        job = fj.job_manager().start(JobKind.FETCH, dataclasses.asdict(fj._spec_from_payload(request)),
-                                     origin=local_origin("api"), payload=request.model_dump())
-        fj.run_fetch_job(job.id, request)
-        return fj.job_manager().get(job.id)
-
-    yield SimpleNamespace(run=run, details=details, jobs=jobs, fj=fj)
+    yield SimpleNamespace(run=run, details=details, jobs=jobs, manager=manager)
     jobs.close()
 
 
@@ -1115,13 +1108,10 @@ def test_web_job_is_recorded_with_its_kind_origin_and_spec(web: Any) -> None:
 
     assert (job.kind, job.state) == (JobKind.FETCH, JobState.SUCCEEDED)
     assert job.origin == Origin(face="api", pid=os.getpid(), host=job.origin.host) and job.origin.host
-    assert job.spec == {"mode": "details", "league_id": 17, "selections": []}
+    assert job.spec == {"mode": "details", "league_id": 17}
     assert job.result["details_done"] == 3 and job.result["schedule_empty_seasons"] == 0
-    row = web.jobs.get_job(job.id)
-    assert row["payload"] == {"league_id": 17, "mode": "details", "selections": None}
-    assert row["log"][0] == "[Running] Starting fetch for 17"
-    assert row["log"][-1] == "[Completed] Background Task Completed Successfully."
-    types = [event.type for event in web.fj.job_manager().events(job.id)]
+    assert web.jobs.get_job(job.id)["log"][-1] == "[Completed] Finished"
+    types = [event.type for event in web.manager.events(job.id)]
     assert types[0] == "started" and types[-1] == "finished" and types.count("phase") == 1  # details (EX-1: export yok)
 
 
@@ -1134,7 +1124,7 @@ def test_web_job_stopped_by_the_breaker_is_partial_and_still_renders_completed(w
     row = web.jobs.get_job(job.id)
     assert (row["status"], row["circuit_breaker_triggered"]) == ("completed", True)
     assert web.jobs.snapshot()["status"] == "Completed"
-    finished = [event.data for event in web.fj.job_manager().events(job.id) if event.type == "finished"][0]
+    finished = [event.data for event in web.manager.events(job.id) if event.type == "finished"][0]
     # Sunucunun diline çevrilmiş kart metni yerine kod: istemci metni kendisi üretir
     assert (finished["code"], finished["params"]) == ("fetch_stopped_by_breaker", {"reason": "429"})
     assert finished["message"] == row["current_task"]
@@ -1151,24 +1141,22 @@ def test_web_job_that_cannot_write_fails_with_the_storage_code(web: Any, monkeyp
     def full_disk(ids: List[str], **kwargs: Any) -> int:
         raise StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/match_details/17")
 
-    monkeypatch.setattr(web.details, "fetch_detail_ids", full_disk)
+    monkeypatch.setattr(web.details, "fetch", full_disk)
     job = web.run(mode="details", league_id=17)
 
     assert job.state is JobState.FAILED and job.error.code == "storage_error"
-    assert job.result["error"] == "storage" and job.result["error_path"] == "/data/match_details/17"
-    finished = [event.data for event in web.fj.job_manager().events(job.id) if event.type == "finished"][0]
-    assert finished["code"] == "storage_error_abort" and finished["params"]["path"] == "/data/match_details/17"
+    assert job.error.details["path"] == "/data/match_details/17"
 
 
 def test_a_web_job_makes_its_data_directory_a_full_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Gerçek bağlamla: iş, deposunu açar; `.meta/` altında schema.json ve catalog.db de oluşur."""
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    from sofascore_scraper.services import context
+    from web_job import run_sync_job
 
     data_dir = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     jobs = JobStore(default_db_path(str(data_dir)))  # web sunucusunun iş deposu: yalnızca state.db kurar
     monkeypatch.setattr(deps, "job_store", lambda: jobs)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
@@ -1176,7 +1164,7 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
         with pytest.raises(StoreError):
             open_store(data_dir, create=False)  # henüz bir depo değil: schema.json yok
 
-        fj.run_fetch_job(jobs.create_running({"mode": "details"}), FetchRequest(mode="details", league_id=17))
+        run_sync_job(jobs, {"mode": "details", "league_id": 17})
 
         assert jobs.snapshot()["status"] == "Completed"
         assert {"schema.json", "state.db", "catalog.db"} <= set(os.listdir(data_dir / ".meta"))
@@ -1185,83 +1173,36 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
         # Depo açılamazsa iş yine çalışır
         class NoStore:
             def __init__(self, ctx: Any) -> None:
-                self.config, self.match_data_fetcher = ctx.config, ctx.match_data_fetcher
+                # Detay aşaması deposunu kendisi açar (bağlamın deposu açılamasa da iş çalışır)
+                self.config = ctx.config
+                self.details = DetailPhase(open_store(str(data_dir)), ctx.config)
 
             @property
             def store(self) -> Any:
                 raise StoreError("state.db bu koddan yeni")
 
-        real = fj.build_context
-        monkeypatch.setattr(fj, "build_context", lambda config_manager: NoStore(real(config_manager)))
-        fj.run_fetch_job(jobs.create_running({"mode": "details"}), FetchRequest(mode="details", league_id=17))
+        from sofascore_scraper.services.detail_phase import DetailPhase
+
+        real = context.build_context
+        sync_fakes.install(monkeypatch)
+        monkeypatch.setattr(context, "build_context", lambda config_manager: NoStore(real(config_manager)))
+        run_sync_job(jobs, {"mode": "details", "league_id": 17})
         assert jobs.snapshot()["status"] == "Completed"
         assert any("could not be opened" in record.getMessage() for record in caplog.records)
     finally:
         jobs.close()
 
 
-def test_a_job_finished_before_its_thread_started_is_left_alone(web: Any, caplog: pytest.LogCaptureFixture) -> None:
-    from sofascore_scraper.web.api.legacy import FetchRequest
-
-    job_id = web.jobs.create_running({})
-    web.jobs.update(status="Cancelled", finished=True)
-    web.fj.run_fetch_job(job_id, FetchRequest(mode="details", league_id=17))
-    assert web.jobs.get_job(job_id)["status"] == "cancelled"
-    assert any("no longer the running job" in record.getMessage() for record in caplog.records)
-
-
-def test_api_fetch_starts_a_job_through_the_manager_and_cancel_reaches_another_stores_job(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from fastapi.testclient import TestClient
-
-    from sofascore_scraper.web.api import legacy as fetch_job
-    from sofascore_scraper.web.app import app
-
-    jobs = deps.job_store()
-    monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
-    if jobs.snapshot().get("is_running"):
-        jobs.update(status="Cancelled", finished=True)
-    client = TestClient(app)
-
-    started = client.post("/api/fetch", json={"mode": "full", "league_id": 17})
-    assert started.status_code == 200, started.text
-    job_id = started.json()["job_id"]
-    try:
-        record = jobs.get_record(job_id)
-        assert len(job_id) == 26 and record["kind"] == "fetch" and record["origin"]["face"] == "api"
-        assert record["spec"] == {"mode": "full", "league_id": 17, "selections": []}
-        assert record["payload"] == {"league_id": 17, "mode": "full", "selections": None}
-    finally:
-        jobs.update(status="Cancelled", finished=True)
-
-    # Bu süreçte çalışan iş yokken iptal: veri dizininde başka bir deponun (sürecin) çalışan işi iptal edilir
-    assert client.post("/api/scrape/cancel").status_code == 400
-    other = JobStore(jobs.db_path)
-    try:
-        foreign = other.create_running({"mode": "full"}, kind="sync", origin={"face": "cli", "pid": 1, "host": "x"})
-        listed = client.get("/api/jobs").json()["jobs"][0]
-        assert (listed["id"], listed["status"], listed["is_running"]) == (foreign, "running", True)
-        assert client.get("/api/scrape/status").json()["is_running"] is False  # yansı süreç içidir
-        cancelled = client.post("/api/scrape/cancel")
-        assert cancelled.status_code == 200 and cancelled.json()["status"] == "cancelling"
-        assert other.poll_cancel(foreign) is True
-        other.update(finished=True)
-        assert client.get(f"/api/jobs/{foreign}").json()["status"] == "cancelled"
-    finally:
-        other.close()
-
-
 # === komut satırı ====================================================================================
 
 
 @pytest.fixture
-def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """`main.py <argv> --data-dir <geçici dizin>`i bu süreçte çalıştırır; SyncService.run sahtedir."""
+def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch, restore_cli_process: None) -> Any:
+    """`main.py --data-dir <geçici dizin> <argv>`i bu süreçte çalıştırır; SyncService.run sahtedir."""
     import main as cli_main
     from sofascore_scraper.services.sync import RefreshCounts, SyncResult, SyncService
 
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", os.environ["SOFASCORE_STORAGE__DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     state: Dict[str, Any] = {"breaker": None, "error": None, "failed": 0, "cancel": False, "seen": []}
 
     def run(self: SyncService, spec: Any, *, handle: Any = None) -> SyncResult:
@@ -1295,7 +1236,7 @@ def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(SyncService, "run", run)
 
     def call(*argv: str) -> int:
-        monkeypatch.setattr("sys.argv", ["main.py", *argv, "--data-dir", str(data_dir)])
+        monkeypatch.setattr("sys.argv", ["main.py", "--data-dir", str(data_dir), *argv])
         return cli_main.main()
 
     def jobs() -> List[Job]:
@@ -1305,9 +1246,9 @@ def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 @pytest.mark.parametrize("argv, kind, spec", [
-    (["--headless", "--update-all", "--league-id", "17"], JobKind.SYNC,
+    (["sync", "--tournament", "17"], JobKind.SYNC,
      {"league_id": 17, "selections": [], "follows": [], "only": None, "event_ids": []}),
-    (["--refresh-only"], JobKind.REFRESH, {"league_id": None, "event_ids": []}),
+    (["refresh"], JobKind.REFRESH, {"league_id": None, "event_ids": []}),
 ])
 def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List[str], kind: JobKind, spec: Dict[str, Any]) -> None:
     assert cli.call(*argv) == 0
@@ -1319,13 +1260,12 @@ def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List
     assert job.origin == Origin(face="cli", pid=os.getpid(), host=job.origin.host) and job.origin.host
     assert job.result["details_total"] == 2 and job.finished_at
 
-    # Web sunucusunun iş deposu aynı satırı eski biçimde gösterir (kartın başlığı istek gövdesinden üretilir)
+    # Web sunucusunun iş deposu aynı satırı gösterir
     web_store = JobStore(default_db_path(str(data_dir)))
     try:
         (row,) = web_store.list_jobs()
         assert (row["id"], row["status"], row["is_running"]) == (job.id, "completed", False)
-        mode = {JobKind.SYNC: "full", JobKind.REFRESH: "refresh"}[kind]  # the legacy card keeps the service's mode
-        assert row["payload"] == {"league_id": spec["league_id"], "mode": mode, "selections": None}
+        assert "mode" not in row["payload"]  # 2.x arayüzünün iş kartı başlığı 3.1'de yazılmaz (P30)
         assert row["log"][0] == "[Running] Checking which matches need details..."
     finally:
         web_store.close()
@@ -1333,14 +1273,14 @@ def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List
 
 def test_cli_job_stopped_by_the_breaker_is_partial_and_exits_with_4(cli: Any) -> None:
     cli.state["breaker"] = "403"
-    assert cli.call("--headless", "--update-all") == 4  # P19: devre kesici 4 (önce 2)
+    assert cli.call("sync") == 4  # P19: devre kesici 4 (önce 2)
     (job,) = cli.jobs()
     assert job.state is JobState.PARTIAL and job.error.code == "blocked"
 
 
 def test_cli_job_with_a_storage_error_is_failed_and_exits_with_5(cli: Any, capsys: pytest.CaptureFixture[str]) -> None:
     cli.state["error"] = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/x")
-    assert cli.call("--headless", "--update-all") == 5  # P19: depolama hatası 5 (önce 1)
+    assert cli.call("sync") == 5  # P19: depolama hatası 5 (önce 1)
     (job,) = cli.jobs()
     assert job.state is JobState.FAILED and job.error.code == "storage_error"
     assert "/data/x" in capsys.readouterr().err
@@ -1352,18 +1292,18 @@ def test_cli_job_is_refused_with_exit_code_6_while_another_job_runs(
     web_store = JobStore(default_db_path(str(data_dir)))
     try:
         web_store.create_running({"mode": "full"})
-        assert cli.call("--headless", "--update-all") == 6
-        assert cli.call("--refresh-only") == 6
+        assert cli.call("sync") == 6
+        assert cli.call("refresh") == 6
         err = capsys.readouterr().err
         assert err.count(f"Held by process {os.getpid()} on ") == 2 and "(job)" in err
         assert cli.state["seen"] == [] and len(cli.jobs()) == 1  # yalnızca web işi kayıtlı
         web_store.update(finished=True)
-        assert cli.call("--refresh-only") == 0
+        assert cli.call("refresh") == 0
     finally:
         web_store.close()
 
 
-@pytest.mark.parametrize("argv", [["--headless", "--update-all"], ["--refresh-only"]])
+@pytest.mark.parametrize("argv", [["sync"], ["refresh"]])
 def test_cli_job_cancelled_from_another_store_ends_like_ctrl_c(
     cli: Any, capsys: pytest.CaptureFixture[str], argv: List[str]
 ) -> None:

@@ -32,7 +32,8 @@ kullanılamaz). Uzlaştırma kilit almaz: tek bir yazma işlemidir ve kancalarla
 Kataloğun güncellenememesi `open_store`'u düşürmez; uyarı yazılır. Açılıştaki uzlaştırmanın özet satırı DEBUG
 düzeyindedir (komut çıktısı değişmez); kurulum, dizinde veri varsa tek bir INFO satırı yazar. Karar S17:
 aynı dizinin bir açılışı eski düzen maç dizinlerini bir dakikadan kısa süre önce taradıysa açılış o taramayı
-atlar (`Store._reconcile_on_open`; `STORE_OPEN_RECONCILE_SECONDS`).
+atlar (`Store._reconcile_on_open`; ayarı `storage.open_reconcile_seconds`, sofascore_scraper/store/files.py
+`open_reconcile_seconds`).
 
 Gölge kip (plan maddesi ST-11): eski düzen yazıcıları dosyalarını yazdıktan sonra buradaki kancalarla kataloğu
 güncelliyordu. Yazıcıların hepsi Store'a geçti (ST-21, ST-22; terminal menüsü P26 ile gitti) ve çağıranı kalmayan
@@ -103,9 +104,8 @@ _CATALOG_ERRORS = (StoreError, sqlite3.Error, OSError)
 
 # Karar S17: açılıştaki uzlaştırmanın sınırı. Aynı dizinin bir açılışı eski düzen maç dizinlerini bundan kısa
 # süre önce taradıysa sonraki açılış o taramayı atlar (liste yarısı yine çalışır). `catalog reconcile` her
-# zaman tarar. Ortam değişkeni süreyi saniye olarak değiştirir; "0" her açılışta taratır.
-OPEN_RECONCILE_SECONDS = 60.0
-OPEN_RECONCILE_ENV = "STORE_OPEN_RECONCILE_SECONDS"
+# zaman tarar. Süre `storage.open_reconcile_seconds` ayarıdır (files.open_reconcile_seconds); 0 her açılışta taratır.
+OPEN_RECONCILE_SECONDS = files.OPEN_RECONCILE_SECONDS
 META_OPEN_RECONCILED = "open_reconciled_at"  # katalogun `meta`'sı: son tam açılış taramasının bittiği an (epoch)
 
 # `Store.clear` kapsamları ve sildikleri eski düzen ağaçları, silme sırasıyla (bugünkü web API'sinin sırası)
@@ -162,14 +162,8 @@ class ClearReport:
 
 
 def _open_reconcile_seconds() -> float:
-    """Karar S17'nin süresi (saniye): ortam değişkeni ya da OPEN_RECONCILE_SECONDS; geçersiz değer varsayılandır."""
-    raw = os.environ.get(OPEN_RECONCILE_ENV, "").strip()
-    if not raw:
-        return OPEN_RECONCILE_SECONDS
-    try:
-        return max(0.0, float(raw))
-    except ValueError:
-        return OPEN_RECONCILE_SECONDS
+    """Karar S17'nin süresi (saniye): `storage.open_reconcile_seconds` (sofascore_scraper/store/files.py)."""
+    return files.open_reconcile_seconds()
 
 
 def _utc_now() -> str:
@@ -707,7 +701,7 @@ def open_store(data_dir: Optional[PathLike] = None, *, create: bool = True, read
     """
     Veri dizininin deposunu açar; aynı süreçte aynı dizin (ve aynı `readonly`) için hep aynı nesne döner.
 
-    data_dir=None → DATA_DIR ortam değişkeni, o da yoksa "data". create=True: `.meta/`, `schema.json`,
+    data_dir=None → `storage.data_dir` ayarı (files.default_data_dir), o da yoksa "data". create=True: `.meta/`, `schema.json`,
     `state.db` ve `catalog.db` eksikse kurulur; create=False: bunlar yoksa StoreError. Dizin daha yeni bir
     düzenle ya da state şemasıyla yazılmışsa SchemaTooNew.
 
@@ -717,7 +711,7 @@ def open_store(data_dir: Optional[PathLike] = None, *, create: bool = True, read
     içindir (doğrulama, sayımlar). Öyle açılmış bir depoyu `sync_catalog=True` ile isteyen sonraki çağrı ve
     ilk yazıcı kancası kataloğu günceller.
     """
-    root = os.fspath(data_dir) if data_dir is not None else (os.getenv("DATA_DIR") or "data")
+    root = os.fspath(data_dir) if data_dir is not None else files.default_data_dir()
     path = os.path.abspath(root)
     key = (os.path.normcase(os.path.realpath(path)), bool(readonly))
     with _registry_lock:

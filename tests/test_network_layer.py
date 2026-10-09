@@ -9,11 +9,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import bridge as cs
+from sofascore_scraper.client import transport
 from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
-from sofascore_scraper.utils import FetchCancelled
+from sofascore_scraper.services.detail_phase import DetailPhase
+from sofascore_scraper.store import open_store
+from sofascore_scraper.client.context import FetchCancelled
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
 
@@ -40,10 +41,10 @@ def _patched(sleeper="_asleep"):
     def fake_sleep(sec):
         sleeps.append(sec)
 
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_asleep", side_effect=fake_asleep), \
-            patch.object(utils, "_sleep", side_effect=fake_sleep):
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_asleep", side_effect=fake_asleep), \
+            patch.object(transport, "_sleep", side_effect=fake_sleep):
         yield sleeps
 
 
@@ -62,7 +63,7 @@ def _run(coro):
 def test_async_403_raises_after_last_attempt_without_final_sleep():
     session = _session(*[Resp(403, text="blocked")] * 3)
     with _patched() as sleeps, pytest.raises(APIError) as ei:
-        _run(utils.make_api_request_async(session, "/x"))
+        _run(transport.make_api_request_async(session, "/x"))
     assert ei.value.status_code == 403
     assert session.get.call_count == 3
     assert len(sleeps) == 2  # son denemeden sonra beklenmez
@@ -71,14 +72,14 @@ def test_async_403_raises_after_last_attempt_without_final_sleep():
 def test_async_429_raises_rate_limit_error():
     session = _session(*[Resp(429)] * 3)
     with _patched(), pytest.raises(RateLimitError) as ei:
-        _run(utils.make_api_request_async(session, "/x"))
+        _run(transport.make_api_request_async(session, "/x"))
     assert ei.value.status_code == 429
 
 
 def test_async_permanent_4xx_is_not_retried():
     session = _session(Resp(400))
     with _patched() as sleeps, pytest.raises(APIError) as ei:
-        _run(utils.make_api_request_async(session, "/x"))
+        _run(transport.make_api_request_async(session, "/x"))
     assert ei.value.status_code == 400
     assert session.get.call_count == 1 and sleeps == []
 
@@ -86,21 +87,21 @@ def test_async_permanent_4xx_is_not_retried():
 def test_async_5xx_retried_then_succeeds():
     session = _session(Resp(502), Resp(200, {"ok": 1}))
     with _patched():
-        assert _run(utils.make_api_request_async(session, "/x")) == {"ok": 1}
+        assert _run(transport.make_api_request_async(session, "/x")) == {"ok": 1}
 
 
 def test_async_network_error_raises_network_error():
     s = MagicMock()
     s.get = AsyncMock(side_effect=RuntimeError("curl: (7) Failed to connect"))
     with _patched(), pytest.raises(NetworkError):
-        _run(utils.make_api_request_async(s, "/x"))
+        _run(transport.make_api_request_async(s, "/x"))
 
 
 def test_async_sends_fresh_headers_per_request():
     session = _session(Resp(200, {}), Resp(200, {}))
-    with _patched(), patch.object(utils, "get_sofascore_hash", side_effect=["aaaaaa", "bbbbbb"]):
-        _run(utils.make_api_request_async(session, "/a"))
-        _run(utils.make_api_request_async(session, "/b"))
+    with _patched(), patch.object(transport, "get_sofascore_hash", side_effect=["aaaaaa", "bbbbbb"]):
+        _run(transport.make_api_request_async(session, "/a"))
+        _run(transport.make_api_request_async(session, "/b"))
     sent = [c.kwargs["headers"]["X-Requested-With"] for c in session.get.call_args_list]
     assert sent == ["aaaaaa", "bbbbbb"]
 
@@ -119,9 +120,9 @@ def test_async_requests_respect_max_concurrent():
     session.get = slow_get
 
     async def many():
-        await asyncio.gather(*[utils.make_api_request_async(session, f"/{i}") for i in range(12)])
+        await asyncio.gather(*[transport.make_api_request_async(session, f"/{i}") for i in range(12)])
 
-    with _patched(), patch.object(utils._cm, "get_max_concurrent", return_value=3):
+    with _patched(), patch.object(transport._cm, "get_max_concurrent", return_value=3):
         _run(many())
     assert state["peak"] == 3
 
@@ -129,14 +130,14 @@ def test_async_requests_respect_max_concurrent():
 # --- senkron istek ---------------------------------------------------------------
 
 def test_sync_403_returns_none_without_final_sleep():
-    with _patched() as sleeps, patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
-        assert utils.make_api_request("/x") is None
+    with _patched() as sleeps, patch.object(transport.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
+        assert transport.make_api_request("/x") is None
     assert get.call_count == 3 and len(sleeps) == 2
 
 
 def test_sync_permanent_4xx_not_retried():
-    with _patched() as sleeps, patch.object(utils.cffi_requests, "get", return_value=Resp(401)) as get:
-        assert utils.make_api_request("/x") is None
+    with _patched() as sleeps, patch.object(transport.cffi_requests, "get", return_value=Resp(401)) as get:
+        assert transport.make_api_request("/x") is None
     assert get.call_count == 1 and sleeps == []
 
 
@@ -147,12 +148,13 @@ async def _fake_session():
     yield MagicMock()
 
 
-def _detail_fetcher(tmp_path, threshold=3):
+def _detail_fetcher(tmp_path, threshold=3, concurrency=1) -> DetailPhase:
     cfg = MagicMock()
+    cfg.get_max_concurrent.return_value = concurrency
     cfg.get_rate_limit_threshold_consecutive.return_value = threshold
     cfg.get_rate_limit_threshold_ratio.return_value = 0.99
     cfg.get_server_error_threshold_consecutive.return_value = 100
-    return MatchDataFetcher(cfg, data_dir=str(tmp_path))
+    return DetailPhase(open_store(str(tmp_path)), cfg)
 
 
 def _event(mid) -> dict:
@@ -178,11 +180,11 @@ def _api(answer):
         breaker.report_ok()
         return data
 
-    return patch("sofascore_scraper.utils.make_api_request_async", new=fake)
+    return patch("sofascore_scraper.client.transport.make_api_request_async", new=fake)
 
 
 def test_breaker_trips_on_repeated_403(tmp_path, monkeypatch):
-    monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_BREAKER__IGNORE", raising=False)
     f = _detail_fetcher(tmp_path)
     calls = []
 
@@ -190,24 +192,23 @@ def test_breaker_trips_on_repeated_403(tmp_path, monkeypatch):
         calls.append(mid)
         raise APIError("blocked", status_code=403)
 
-    with _api(always_403), patch("sofascore_scraper.utils.create_session_async", _fake_session):
-        _run(f.fetch_matches_batch_async(list(range(1, 40)), max_concurrent=1))
-    assert f.rate_limit_breaker_triggered is True
-    assert f.last_status_counts.get("403", 0) >= 3
+    with _api(always_403), patch("sofascore_scraper.client.transport.create_session_async", _fake_session):
+        f.fetch_selected(list(range(1, 40)))
+    assert f.breaker_tripped is True
+    assert f.status_counts.get("403", 0) >= 3
     assert len(calls) < 39  # tüm maçları denemeden durdu
 
 
 def test_no_fixed_pause_in_a_bulk_download(tmp_path):
     """100'lük batch'ler ve aralarındaki 1 sn'lik bekleme kalktı: hızı ortak istek bütçesi belirler."""
-    f = _detail_fetcher(tmp_path, threshold=1000)
+    f = _detail_fetcher(tmp_path, threshold=1000, concurrency=10)
 
     async def answer(mid, url):
         return {"event": _event(mid)} if url.endswith(f"/event/{mid}") else {}
 
-    with _api(answer), patch("sofascore_scraper.utils.create_session_async", _fake_session), \
+    with _api(answer), patch("sofascore_scraper.client.transport.create_session_async", _fake_session), \
             patch("sofascore_scraper.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
-        results = _run(f.fetch_matches_batch_async(list(range(1, 251)), max_concurrent=10))
-    assert len(results) == 250
+        assert f.fetch_selected(list(range(1, 251))) == 250
     sleep.assert_not_awaited()
 
 
@@ -216,7 +217,7 @@ def test_a_failed_event_request_is_not_retried_per_match(tmp_path, monkeypatch):
     Maç başına ek deneme döngüsü (1 sn, 2 sn + rastgele aralarla üç deneme) P13'te kalktı: yeniden denemeyi yalnızca
     istek katmanı yapar (MAX_RETRIES, kendi geri çekilmesiyle; tests/characterization/test_pipeline_divergence.py).
     """
-    monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_BREAKER__IGNORE", raising=False)
     f = _detail_fetcher(tmp_path, threshold=1000)
     calls = []
 
@@ -224,15 +225,19 @@ def test_a_failed_event_request_is_not_retried_per_match(tmp_path, monkeypatch):
         calls.append(url)
         raise APIError("boom", status_code=500)
 
-    with _api(always_500), patch("sofascore_scraper.utils.create_session_async", _fake_session), \
+    with _api(always_500), patch("sofascore_scraper.client.transport.create_session_async", _fake_session), \
             patch("sofascore_scraper.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
-        assert _run(f.fetch_matches_batch_async([1], max_concurrent=1)) == {}
+        assert f.fetch_selected([1]) == 0
     assert len(calls) == 1
     sleep.assert_not_awaited()
 
 
 def test_cancel_propagates_and_leaves_no_pending_tasks(tmp_path):
-    f = _detail_fetcher(tmp_path, threshold=1000)
+    from sofascore_scraper.services.pipeline import FetchPipeline
+    from sofascore_scraper.services.planning import WorkItem
+    from sofascore_scraper.store import Ref
+
+    store = open_store(str(tmp_path))
     started = []
 
     async def answer(mid, url):
@@ -243,11 +248,12 @@ def test_cancel_propagates_and_leaves_no_pending_tasks(tmp_path):
 
     async def run():
         with pytest.raises(FetchCancelled):
-            await f.fetch_matches_batch_async([1, 2, 3], max_concurrent=5)
+            await FetchPipeline(store, concurrency=5).run(
+                [WorkItem(Ref.event(i), "full", (), None, "full") for i in (1, 2, 3)])
         others = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         assert not [t for t in others if not t.done()]
 
-    with _api(answer), patch("sofascore_scraper.utils.create_session_async", _fake_session):
+    with _api(answer), patch("sofascore_scraper.client.transport.create_session_async", _fake_session):
         _run(run())
 
 
@@ -343,11 +349,11 @@ def test_browser_first_mode_skips_curl(monkeypatch):
     """curl challenge'a takılıp tarayıcı başardıysa sonraki istek doğrudan tarayıcıya gider."""
     session = _session(Resp(403, text="challenge"))
     browser = AsyncMock(return_value={"ok": 1})
-    monkeypatch.setattr(utils, "_browser_first_until", 0.0)
-    with _patched(), patch("sofascore_scraper.challenge_solver.fetch_api_via_browser", browser):
-        assert _run(utils.make_api_request_async(session, "/a")) == {"ok": 1}
-        assert utils._browser_first()
-        assert _run(utils.make_api_request_async(session, "/b")) == {"ok": 1}
+    monkeypatch.setattr(transport, "_browser_first_until", 0.0)
+    with _patched(), patch("sofascore_scraper.client.bridge.fetch_api_via_browser", browser):
+        assert _run(transport.make_api_request_async(session, "/a")) == {"ok": 1}
+        assert transport._browser_first()
+        assert _run(transport.make_api_request_async(session, "/b")) == {"ok": 1}
     assert session.get.call_count == 1  # ikinci istek curl'e hiç gitmedi
     assert browser.await_count == 2
 

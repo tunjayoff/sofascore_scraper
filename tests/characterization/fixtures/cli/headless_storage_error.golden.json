@@ -1,10 +1,9 @@
 {
  "all_leagues": {
   "argv": [
-   "--headless",
-   "--update-all",
-   "--fetch-mode",
-   "details"
+   "sync",
+   "--only",
+   "events"
   ],
   "exit_code": 5,
   "files": {
@@ -32,14 +31,13 @@
    "sofascore_scraper.client.transport": 1
   },
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc sync --only events",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for all leagues",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
+   "LOG INFO Details: Details will be fetched for 1 matches",
    {
     "concurrent": []
    },
@@ -54,11 +52,10 @@
  },
  "one_league": {
   "argv": [
-   "--headless",
-   "--update-all",
-   "--fetch-mode",
-   "details",
-   "--league-id",
+   "sync",
+   "--only",
+   "events",
+   "--tournament",
    "17"
   ],
   "exit_code": 5,
@@ -87,14 +84,13 @@
    "sofascore_scraper.client.transport": 1
   },
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17 --only events",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for league 17",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for league 17",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league 17 (1 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
+   "LOG INFO Details: Details will be fetched for 1 matches",
    {
     "concurrent": []
    },

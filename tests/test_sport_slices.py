@@ -425,7 +425,7 @@ _BODIES: Dict[str, Any] = {
 
 def _run(store: Any, event_ids: List[int]) -> Any:
     items = [planning.WorkItem(Ref.event(event_id), "full", (), None, "test") for event_id in event_ids]
-    return FetchPipeline(store, concurrency=5, only_finished=True).run_sync(items)
+    return FetchPipeline(store, concurrency=5).run_sync(items)
 
 
 @pytest.mark.parametrize("sport", sports.sport_slugs())

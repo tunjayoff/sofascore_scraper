@@ -20,28 +20,22 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Sequence, Tuple
 
 import pytest
-from fastapi import HTTPException
 
 import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper import bridge_health
-from sofascore_scraper.match_data_fetcher import (
-    SLICE_EMPTY,
-    SLICE_FAILED,
-    SLICE_OK,
-    UNAVAILABLE_AFTER_ATTEMPTS,
-    MatchDataFetcher,
-    SliceOutcome,
-)
-from sofascore_scraper.web import upstream
+from detail_fetch import Details
+from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS, DetailPhase
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SliceOutcome
+from sofascore_scraper.store import open_store
 
 # tests/characterization/fixtures/fetch/world.json
 FINISHED = 9100001  # futbol, bitti, altı `required` dilimi de dolu
 TENNIS = 9200001  # bitti; statistics, h2h ve point-by-point var
 REQUIRED = ["statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents"]
-FETCHER_PAUSES = "sofascore_scraper.match_data_fetcher"  # bu modülün maç denemeleri arasındaki beklemeleri
+FETCHER_PAUSES = "sofascore_scraper.services.detail_phase"  # detay aşamasının maç denemeleri arasındaki beklemeleri
 
 # (dilim, yolun son parçası, okunamayan gövde): sofascore_scraper.slices.slice_body_state bunlara BODY_MALFORMED der
 MALFORMED: List[Tuple[str, str, Any]] = [
@@ -52,20 +46,20 @@ MALFORMED: List[Tuple[str, str, Any]] = [
 ]
 MALFORMED_IDS = ["statistics-text", "statistics-object", "h2h-list", "team_streaks-list"]
 
-Run = Callable[[MatchDataFetcher, Sequence[int]], List[str]]
+Run = Callable[[DetailPhase, Sequence[int]], List[str]]
 
 
-def _run_async(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
-    """Async hat (lig/sezon planları): fetch_detail_ids → fetch_matches_batch_async. Başarısız maçları döndürür."""
+def _run_async(md: DetailPhase, ids: Sequence[int]) -> List[str]:
+    """Lig/sezon planları: DetailPhase.fetch. Başarısız maçları döndürür."""
     failed: List[str] = []
-    md.fetch_detail_ids([str(i) for i in ids], failed_callback=failed.append)
+    md.fetch([str(i) for i in ids], failed=failed.append)
     return failed
 
 
-def _run_sync(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
-    """Sync hat (kimliğiyle seçilen maçlar): fetch_matches_batch. Başarısız maçları döndürür."""
+def _run_sync(md: DetailPhase, ids: Sequence[int]) -> List[str]:
+    """Kimliğiyle seçilen maçlar: DetailPhase.fetch_selected. Başarısız maçları döndürür."""
     failed: List[str] = []
-    md.fetch_matches_batch(list(ids), failed_callback=failed.append)
+    md.fetch_selected(list(ids), failed=failed.append)
     return failed
 
 
@@ -91,7 +85,7 @@ def fake() -> Iterator[FakeSofaScore]:
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return path
 
 
@@ -106,28 +100,33 @@ def breaker() -> Iterator[request_breaker.CircuitBreaker]:
         request_breaker.deactivate(token)
 
 
-def _fetcher(data_dir: Path) -> MatchDataFetcher:
+def _fetcher(data_dir: Path) -> DetailPhase:
     from sofascore_scraper.web.deps import config_manager as _web_config
-    config_manager = _web_config()
 
-    return MatchDataFetcher(config_manager, data_dir=str(data_dir))
+    return DetailPhase(open_store(str(data_dir)), _web_config())
 
 
-def _stored(md: MatchDataFetcher, event_id: int) -> Dict[str, Any]:
+def _stored(md: DetailPhase, event_id: int) -> Dict[str, Any]:
     """Kaydın hali, eski düzen dizininin dosyaları biçiminde (Store'dan): ad → içerik; kayıt yoksa {}."""
-    return detail_records.legacy_view(md.data_dir, event_id)
+    return detail_records.legacy_view(md.store.data_dir, event_id)
 
 
-def _expected(md: MatchDataFetcher, event_id: int) -> List[str]:
+def _need(md: DetailPhase, match_id: str) -> str:
+    """Maçın şimdiki ihtiyacı, katalogdan (işin önbelleğine bakmadan)."""
+    return Details(store=md.store).need(match_id)
+
+
+def _expected(md: DetailPhase, event_id: int) -> List[str]:
     """Bu maçta hâlâ beklenen `required` dilimler ("yok" sayılanlar hariç)."""
-    assert md._find_match_path(str(event_id)) is not None
-    return md._expected_slice_keys(event_id, "football")
+    details = Details(store=md.store)
+    assert details.location(str(event_id)) is not None
+    return details.expected_keys(event_id, "football")
 
 
-def _saved_outcomes(md: MatchDataFetcher, monkeypatch: pytest.MonkeyPatch) -> List[Dict[str, SliceOutcome]]:
+def _saved_outcomes(md: DetailPhase, monkeypatch: pytest.MonkeyPatch) -> List[Dict[str, SliceOutcome]]:
     """Boru hattının her kayıtta Store.events.put'a verdiği dilim sonuçları, `event` hariç (kayıt yine gerçek)."""
     seen: List[Dict[str, SliceOutcome]] = []
-    events = md._store().events
+    events = md.store.events
     put = events.put
 
     def spy(event_id: int, outcomes: Any, **kwargs: Any) -> Any:
@@ -179,7 +178,7 @@ def test_malformed_body_is_a_failed_slice(
     assert (error["reason"], error["status"], error["count"]) == ("parse", None, 1)
 
     assert key in _expected(md, FINISHED)
-    assert md._needs_detail_fetch(str(FINISHED)) == "refill"
+    assert _need(md, str(FINISHED)) == "refill"
     # İstek yanıt aldı; okunamayan gövde engellenme belirtisi değildir
     assert (breaker.failures, breaker.counts(), breaker.tripped) == (0, {}, False)
 
@@ -213,7 +212,7 @@ def test_repeated_malformed_body_never_becomes_unavailable(
         entry = stored["_slice_status.json"]["statistics"]
         assert list(entry) == ["error"] and (entry["error"]["reason"], entry["error"]["count"]) == ("parse", attempt)
         assert "statistics" in _expected(md, FINISHED)
-        assert md._needs_detail_fetch(str(FINISHED)) == "refill"
+        assert _need(md, str(FINISHED)) == "refill"
 
     assert (breaker.failures, breaker.counts(), breaker.tripped) == (0, {}, False)
 
@@ -224,7 +223,7 @@ def test_repeated_malformed_body_never_becomes_unavailable(
     stored = _stored(md, FINISHED)
     assert stored["statistics.json"] == world.routes[path]
     assert "_slice_status.json" not in stored and "_unavailable.json" not in stored
-    assert md._needs_detail_fetch(str(FINISHED)) != "refill"
+    assert _need(md, str(FINISHED)) != "refill"
 
 
 @pytest.mark.parametrize("run,via", PATHS)
@@ -248,7 +247,7 @@ def test_malformed_body_does_not_advance_an_existing_marker(
         assert (entry["error"]["reason"], entry["error"]["count"]) == ("parse", attempt)
         assert stored["statistics.json"] == {"statistics": []}  # önceki kesin yanıtın gövdesi; bozuk gövde yazılmadı
         assert "statistics" in _expected(md, FINISHED)
-        assert md._needs_detail_fetch(str(FINISHED)) == "refill"
+        assert _need(md, str(FINISHED)) == "refill"
 
 
 # --- kesin "boş" yanıt: eskisi gibi sayılır ----------------------------------------------------
@@ -281,7 +280,7 @@ def test_real_empty_answer_still_counts_towards_unavailable(
     }
     assert [stored["_slice_status.json"][k]["empty"]["count"] for k in ("statistics", "lineups")] == [1, 1]
     assert stored["statistics.json"] == {"statistics": []} and "lineups.json" not in stored
-    assert md._needs_detail_fetch(str(FINISHED)) == "refill"
+    assert _need(md, str(FINISHED)) == "refill"
 
     assert run(md, [FINISHED]) == []
     stored = _stored(md, FINISHED)
@@ -289,7 +288,7 @@ def test_real_empty_answer_still_counts_towards_unavailable(
     assert [stored["_slice_status.json"][k]["empty"]["count"] for k in ("statistics", "lineups")] == [2, 2]
     expected = _expected(md, FINISHED)
     assert "statistics" not in expected and "lineups" not in expected
-    assert md._needs_detail_fetch(str(FINISHED)) != "refill"
+    assert _need(md, str(FINISHED)) != "refill"
 
     fake.reset_log()
     assert run(md, [FINISHED]) == []
@@ -364,42 +363,6 @@ def test_point_by_point_answers_for_picked_matches(fake: FakeSofaScore, tmp_path
     assert (empty.status, empty.reason, empty.data) == (SLICE_EMPTY, "empty", {"pointByPoint": []})
     assert (malformed.status, malformed.reason, malformed.data) == (SLICE_FAILED, "parse", None)
     assert {r.via for r in fake.requests} == {"async"}
-
-
-# --- sync hattın diğer çağıranları ---------------------------------------------------------------
-
-
-def test_single_match_route_with_a_malformed_slice(fake: FakeSofaScore, data_dir: Path) -> None:
-    """
-    Tek maç uç noktası (POST /api/matches/{id}/fetch, boru hattı): bir dilimin gövdesi okunamıyorsa maç yine
-    kaydedilir ve "success" döner (eskiden yüklemin hatası 500 "Match fetch failed" oluyor, hiçbir şey
-    kaydedilmiyordu). Yeniden çekim yalnızca o dilimi ister; istenen dilimlerin hiçbiri yanıt almadığı için
-    sonuç tipli `upstream` hatasıdır (502), dilim yine "yok" sayılmaz.
-    """
-    import sofascore_scraper.web.api.legacy as matches_routes
-
-    path = _slice_path(FINISHED, "h2h")
-    fake.add(path, {"teamDuel": "abc"})
-
-    assert matches_routes._fetch_single_match_sync(str(FINISHED)) == {"status": "success", "match_id": str(FINISHED)}
-    md = _fetcher(data_dir)
-    stored = _stored(md, FINISHED)
-    assert sorted(stored) == sorted(
-        ["basic.json", "observation.json", "_slice_status.json"] + [f"{k}.json" for k in REQUIRED if k != "h2h"]
-    )
-    assert list(stored["_slice_status.json"]) == ["h2h"] and list(stored["_slice_status.json"]["h2h"]) == ["error"]
-    assert stored["_slice_status.json"]["h2h"]["error"]["reason"] == "parse"
-
-    fake.reset_log()
-    with pytest.raises(HTTPException) as raised:
-        matches_routes._fetch_single_match_sync(str(FINISHED))
-
-    assert (raised.value.status_code, raised.value.detail["reason"]) == (502, upstream.UPSTREAM)
-    assert sorted(r.path for r in fake.requests if r.path != SITE_ROOT) == [f"/event/{FINISHED}", path]
-    stored = _stored(md, FINISHED)
-    assert "h2h.json" not in stored and "_unavailable.json" not in stored
-    assert list(stored["_slice_status.json"]["h2h"]) == ["error"]
-    assert stored["_slice_status.json"]["h2h"]["error"]["count"] == 2
 
 
 # --- "falsy" gövde de kurala sorulur ----------------------------------------------------------------

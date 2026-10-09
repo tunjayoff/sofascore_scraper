@@ -9,7 +9,7 @@ Ne yapar:
   - İstek katmanının modülleri (tests/fakes/sofascore.py: REQUEST_LAYER_MODULES) uygulama tarafından içe
     aktarıldığı ANDA sahte taşıyıcıyı (G-01) kurar. Daha önce kurmaz: `main.py`nin içe aktarma sırası
     (.env'in yüklenmesi, --version / --doctor'ın ağır modüllerden önce yanıtlanması) olduğu gibi kalır.
-  - Tarayıcı köprüsü (sofascore_scraper/challenge_solver.py) içe aktarılırsa gerçek tarayıcının başlatılmasını engeller
+  - Tarayıcı köprüsü (sofascore_scraper/client/bridge.py) içe aktarılırsa gerçek tarayıcının başlatılmasını engeller
     (tests/conftest.py'deki `_isolate_request_layer` ile aynı kural).
   - Async oturum açıkken yazılan çıktıyı iki işaretin arasına alır (sırası sözleşme olmayan bölüm).
   - Süreç kapanırken iki dosya yazar: `transport.json` (sahtenin kaydı: istekler, beklemeler, oturumlar;
@@ -42,7 +42,7 @@ PROCESS_LOG = "process.json"
 CONCURRENT_BEGIN = "<<cli-golden:concurrent-begin>>"
 CONCURRENT_END = "<<cli-golden:concurrent-end>>"
 
-BRIDGE_MODULE = "sofascore_scraper.client.bridge"  # tarayıcı köprüsü (P24); eski adı `sofascore_scraper.challenge_solver` bir takma addır
+BRIDGE_MODULE = "sofascore_scraper.client.bridge"  # tarayıcı köprüsü (P24)
 _FAKE_MODULE_NAME = "_cli_golden_fake_sofascore"
 _FAKE_SOURCE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "fakes", "sofascore.py"

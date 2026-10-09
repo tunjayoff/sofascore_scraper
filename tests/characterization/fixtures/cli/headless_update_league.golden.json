@@ -1,8 +1,7 @@
 {
  "argv": [
-  "--headless",
-  "--update-all",
-  "--league-id",
+  "sync",
+  "--tournament",
   "17"
  ],
  "exit_code": 0,
@@ -14,7 +13,6 @@
   "sofascore_scraper.client.transport": 4
  },
  "stderr": [
-  "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17",
   "LOG INFO ConfigManager: 1 leagues loaded",
   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
   "LOG INFO Services: Created directory: <SANDBOX>/data",
@@ -23,7 +21,6 @@
   "LOG INFO Store: state.db migration applied: 0001_initial",
   "LOG INFO Store: state.db migration applied: 0002_job_manager",
   "LOG INFO SyncService: Refreshing season list for league 17...",
-  "LOG INFO SeasonFetcher: SeasonFetcher started",
   {
    "concurrent": []
   },
@@ -32,7 +29,6 @@
     "LOG INFO Listing: Season list of league 17 stored (2 seasons)"
    ]
   },
-  "LOG INFO SeasonFetcher: Season lists loaded from the catalog: 1 league(s), 2 season(s)",
   "LOG INFO SyncService: Fetching matches: league 17, season 61627",
   {
    "concurrent": []
@@ -42,7 +38,7 @@
     "LOG INFO Listing: League 17, season 61627: 2 of 2 rounds listed matches"
    ]
   },
-  "LOG INFO MatchFetcher: League 17, season 61627: 2 schedule pages, 3 matches listed",
+  "LOG INFO SyncService: League 17, season 61627: 2 schedule pages, 3 matches listed",
   "LOG INFO SyncService: Fetching matches: league 17, season 52186",
   {
    "concurrent": []
@@ -53,12 +49,12 @@
     "LOG INFO Listing: League 17, season 52186: no week-based rounds (1 listed); using the event pages"
    ]
   },
-  "LOG INFO MatchFetcher: League 17, season 52186: 1 schedule pages, 1 matches listed",
+  "LOG INFO SyncService: League 17, season 52186: 1 schedule pages, 1 matches listed",
   "LOG INFO SyncService: Checking which matches need details...",
-  "LOG INFO MatchDataFetcher: Fetching match details for league 17",
-  "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+  "LOG INFO Details: Fetching match details for league 17",
+  "LOG INFO Details: League 17_Premier_League: 4 match ids",
   "LOG INFO SyncService: Fetching match details: league 17 (4 matches)…",
-  "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
+  "LOG INFO Details: Details will be fetched for 4 matches",
   {
    "concurrent": []
   },
@@ -70,7 +66,7 @@
     "LOG INFO FetchPipeline: Match 9100010 stored (7 files written)"
    ]
   },
-  "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully"
+  "LOG INFO Details: Done: 4/4 matches (100.0%) processed successfully"
  ],
  "stdout": [
   "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."

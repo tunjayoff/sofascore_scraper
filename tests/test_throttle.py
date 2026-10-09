@@ -14,12 +14,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import bridge as cs
+from sofascore_scraper.client import transport
+from sofascore_scraper.client import context as request_ctx
+from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper import throttle
-from sofascore_scraper.client import request_context, transport
+from sofascore_scraper.client import request_context
 from sofascore_scraper.throttle import RequestThrottle, Reservation, advance, put_back, take
-from sofascore_scraper.watcher import MatchWatcher
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -41,8 +42,8 @@ class Clock:
 def shared_dir(tmp_path, monkeypatch):
     """Ortak bütçe açık, durum dosyaları bu teste özel."""
     d = tmp_path / "throttle"
-    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(d))
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "10")
+    monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(d))
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "10")
     throttle.reset_for_tests()
     yield d
     throttle.reset_for_tests()
@@ -115,42 +116,54 @@ def test_very_low_rates_still_space_requests():
     ("0", 0.0),
     ("off", 0.0),
     ("OFF", 0.0),
-    ("-3", 0.0),
-    ("abc", throttle.DEFAULT_RATE_LIMIT),
-    ("nan", throttle.DEFAULT_RATE_LIMIT),
-    ("inf", throttle.DEFAULT_RATE_LIMIT),
 ])
 def test_configured_rate(monkeypatch, raw, expected):
-    monkeypatch.delenv("MAX_CONCURRENT", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__MAX_CONCURRENT", raising=False)
     if raw is None:
-        monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+        monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     else:
-        monkeypatch.setenv("REQUEST_RATE_LIMIT", raw)
+        monkeypatch.setenv("SOFASCORE_CLIENT__RATE", raw)
     assert throttle.configured_rate() == expected
+
+
+@pytest.mark.parametrize("raw", ["-3", "abc", "nan", "inf", "false", "none", "disabled"])
+def test_an_invalid_rate_is_a_config_error(monkeypatch, raw):
+    """3.1: bütçe `client.rate` ayarından okunur; geçersiz değer sessizce varsayılana dönmez, ayarlar kurulamaz."""
+    from sofascore_scraper.exceptions import ConfigError
+
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", raw)
+    with pytest.raises(ConfigError, match="SOFASCORE_CLIENT__RATE"):
+        throttle.configured_rate()
+
+
+def test_the_2x_rate_name_is_not_read(monkeypatch):
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
+    assert throttle.configured_rate() == throttle.DEFAULT_RATE_LIMIT
 
 
 def test_default_is_five_requests_per_second():
     assert throttle.DEFAULT_RATE_LIMIT == 5.0
 
 
-@pytest.mark.parametrize("max_concurrent", [None, "1", "10", "30", "50", "0", "abc"])
+@pytest.mark.parametrize("max_concurrent", [None, "1", "10", "30", "50"])
 def test_default_rate_does_not_depend_on_max_concurrent(monkeypatch, max_concurrent):
-    """Varsayılan sabittir (5 istek/sn): MAX_CONCURRENT'i yükseltmek toplam hızı artırmaz."""
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    """Varsayılan sabittir (5 istek/sn): `client.max_concurrent`i yükseltmek toplam hızı artırmaz."""
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     if max_concurrent is None:
-        monkeypatch.delenv("MAX_CONCURRENT", raising=False)
+        monkeypatch.delenv("SOFASCORE_CLIENT__MAX_CONCURRENT", raising=False)
     else:
-        monkeypatch.setenv("MAX_CONCURRENT", max_concurrent)
+        monkeypatch.setenv("SOFASCORE_CLIENT__MAX_CONCURRENT", max_concurrent)
     assert throttle.configured_rate() == 5.0
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "7")  # açıkça verilen değer aynen kullanılır
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "7")  # açıkça verilen değer aynen kullanılır
     assert throttle.configured_rate() == 7.0
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "100")  # eski varsayılanı elle yazmış kullanıcı etkilenmez
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "100")  # eski varsayılanı elle yazmış kullanıcı etkilenmez
     assert throttle.configured_rate() == 100.0
 
 
 def test_unset_limit_paces_requests_at_five_per_second(tmp_path, monkeypatch):
     """Ayar yokken: bir saniyelik pay (5 istek) beklemeden geçer, sonrası 0,2 sn aralıklıdır."""
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     clock = Clock()
     t = RequestThrottle("api", throttle.configured_rate, clock=clock, directory=str(tmp_path))
     delays = [t.reserve() for _ in range(10)]  # on istek aynı anda gelir
@@ -161,11 +174,11 @@ def test_unset_limit_paces_requests_at_five_per_second(tmp_path, monkeypatch):
     assert slots[-1] - slots[4] == pytest.approx(120.0)
 
 
-@pytest.mark.parametrize("raw", ["0", "off", "OFF", "false", "none", "disabled"])
+@pytest.mark.parametrize("raw", ["0", "off", "OFF"])
 def test_off_switch_removes_the_limit(tmp_path, monkeypatch, raw):
     """0 / off: hiçbir istek bekletilmez, durum dosyası da yazılmaz."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", raw)
-    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", raw)
+    monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(tmp_path / "t"))
     throttle.reset_for_tests()
     try:
         assert [throttle.reserve() for _ in range(200)] == [0.0] * 200
@@ -176,8 +189,8 @@ def test_off_switch_removes_the_limit(tmp_path, monkeypatch, raw):
 
 
 def test_default_shows_in_status(tmp_path, monkeypatch):
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
-    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
+    monkeypatch.setenv("SOFASCORE_CLIENT__THROTTLE_DIR", str(tmp_path / "t"))
     throttle.reset_for_tests()
     try:
         assert throttle.status() == {"enabled": True, "requests_per_second": 5.0, "shared": True, "error": None}
@@ -206,9 +219,9 @@ def test_rate_is_read_on_every_call(shared_dir, monkeypatch):
     """Ayarlar sayfası .env'i değiştirince çalışan süreç yeniden başlatılmadan uyar."""
     clock = Clock()
     t = RequestThrottle("api", throttle.configured_rate, burst=1, clock=clock)
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "2")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "2")
     assert [t.reserve(), t.reserve()] == [0.0, 0.5]
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0")
     assert t.reserve() == 0.0
 
 
@@ -674,15 +687,15 @@ def test_module_level_give_back_ignores_plain_numbers(shared_dir):
 
 
 def test_interrupted_block_gives_the_slot_back_and_a_finished_one_keeps_it(shared_dir, monkeypatch):
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")
     assert throttle.reserve() == 0.0
     kept = throttle.reserve()
     with throttle.give_back_if_interrupted(kept):
         pass  # bekleme bitti: istek gönderilecek, sıra kullanıldı
     dropped = throttle.reserve()
     assert 19.0 < dropped <= 20.0
-    with pytest.raises(utils.FetchCancelled), throttle.give_back_if_interrupted(dropped):
-        raise utils.FetchCancelled()
+    with pytest.raises(request_ctx.FetchCancelled), throttle.give_back_if_interrupted(dropped):
+        raise request_ctx.FetchCancelled()
     assert 19.0 < throttle.reserve() <= 20.0  # aynı an yeniden verildi
     assert kept.give_back() is True  # hâlâ beklenebilirdi: blok onu iade etmedi
 
@@ -766,11 +779,11 @@ def _reserve_counter(monkeypatch, delay=0.0):
 def test_sync_curl_request_takes_a_slot_per_attempt(monkeypatch):
     calls = _reserve_counter(monkeypatch, delay=0.3)
     sleeps = []
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils, "_sleep", side_effect=sleeps.append), \
-            patch.object(utils.cffi_requests, "get", side_effect=[Resp(500), Resp(200, {"ok": 1})]) as get:
-        assert utils.make_api_request("/x") == {"ok": 1}
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport, "_sleep", side_effect=sleeps.append), \
+            patch.object(transport.cffi_requests, "get", side_effect=[Resp(500), Resp(200, {"ok": 1})]) as get:
+        assert transport.make_api_request("/x") == {"ok": 1}
     assert get.call_count == 2 and len(calls) == 2  # yeniden deneme de bir istektir
     assert sleeps.count(0.3) == 2
 
@@ -779,26 +792,26 @@ def test_async_curl_request_takes_a_slot(monkeypatch):
     calls = _reserve_counter(monkeypatch)
     session = MagicMock()
     session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
-        assert asyncio.run(utils.make_api_request_async(session, "/x")) == {"ok": 1}
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
+        assert asyncio.run(transport.make_api_request_async(session, "/x")) == {"ok": 1}
     assert len(calls) == 1
 
 
 def test_throttle_wait_is_cancellable(monkeypatch):
     """Uzun bir bütçe beklemesi iptal edilen işi tutmaz ve istek hiç atılmaz."""
     _reserve_counter(monkeypatch, delay=60.0)
-    token = utils.set_cancel_check(lambda: True)
+    token = request_ctx.set_cancel_check(lambda: True)
     try:
-        with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-                patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-                patch.object(utils, "raise_if_cancelled", side_effect=[None, utils.FetchCancelled()]), \
-                patch.object(utils.cffi_requests, "get") as get, \
-                pytest.raises(utils.FetchCancelled):
-            utils.make_api_request("/x")
+        with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+                patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+                patch.object(request_ctx, "raise_if_cancelled", side_effect=[None, request_ctx.FetchCancelled()]), \
+                patch.object(transport.cffi_requests, "get") as get, \
+                pytest.raises(request_ctx.FetchCancelled):
+            transport.make_api_request("/x")
         assert get.call_count == 0
     finally:
-        utils._cancel_check.reset(token)
+        request_ctx._cancel_check.reset(token)
 
 
 def _bridge(evaluate):
@@ -825,19 +838,19 @@ def test_browser_first_request_passes_the_limiter_once(monkeypatch):
     """Önce-tarayıcı modunda istek curl'e uğramaz: bütçeden tek sıra alınır (köprünün içinde)."""
     calls = _reserve_counter(monkeypatch)
     bridge = _bridge(AsyncMock(return_value={"status": 200, "ok": True, "data": {"a": 1}, "text": None}))
-    monkeypatch.setattr(utils, "_browser_first_until", time.monotonic() + 60)
+    monkeypatch.setattr(transport, "_browser_first_until", time.monotonic() + 60)
     session = MagicMock()
     session.get = AsyncMock()
     with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
-        assert asyncio.run(utils.make_api_request_async(session, "/event/1")) == {"a": 1}
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
+        assert asyncio.run(transport.make_api_request_async(session, "/event/1")) == {"a": 1}
     assert session.get.await_count == 0 and len(calls) == 1
 
 
 def test_real_limiter_spaces_bridge_requests_across_callers(shared_dir, monkeypatch):
     """Gerçek sınırlayıcıyla uçtan uca: köprü ve curl aynı şeridi kullanır."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "1")
     stamps = []
 
     async def evaluate(script, arg=None):
@@ -853,11 +866,11 @@ def test_real_limiter_spaces_bridge_requests_across_callers(shared_dir, monkeypa
         return 0.0  # ayırma gerçek, uyku yok
 
     monkeypatch.setattr(throttle, "reserve", spy)
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(200, {})):
+    with patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport.cffi_requests, "get", return_value=Resp(200, {})):
         asyncio.run(bridge.fetch_json("/event/1"))
-        utils.make_api_request("/event/2")
+        transport.make_api_request("/event/2")
         asyncio.run(bridge.fetch_json("/event/3"))
     assert delays[0] == 0.0
     assert 0.9 < delays[1] <= 1.0 and 1.9 < delays[2] <= 2.0  # 1 istek/sn: sıra sıra
@@ -983,16 +996,16 @@ def _queued_seconds():
 
 
 def test_cancelled_sync_request_gives_its_slot_back(shared_dir, monkeypatch):
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")  # 10 sn'de bir istek
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")  # 10 sn'de bir istek
     assert throttle.reserve() == 0.0
     answers = iter([False])  # deneme başındaki kontrol geçer, sıra beklenirken iptal gelir
 
     with request_context(cancel=lambda: next(answers, True)), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils.cffi_requests, "get") as get, \
-            pytest.raises(utils.FetchCancelled):
-        utils.make_api_request("/x")
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(transport.cffi_requests, "get") as get, \
+            pytest.raises(request_ctx.FetchCancelled):
+        transport.make_api_request("/x")
     assert get.call_count == 0
     assert 9.0 < throttle.reserve() <= 10.0  # iade olmasaydı ~20 sn
 
@@ -1005,7 +1018,7 @@ def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
     gelsin, burada (1 istek/sn) 69 sn, varsayılan 5 istek/sn ile 13 sn beklerdi. Şimdi hiçbiri gönderilmez
     ve kuyrukta sıra kalmaz.
     """
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "1")
     session = MagicMock()
     session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
     stopped = []
@@ -1015,17 +1028,17 @@ def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
 
     async def job():
         return await asyncio.gather(
-            *[utils.make_api_request_async(session, f"/event/{n}") for n in range(70)], stop(),
+            *[transport.make_api_request_async(session, f"/event/{n}") for n in range(70)], stop(),
             return_exceptions=True,
         )
 
     with request_context(cancel=lambda: bool(stopped)), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
         results = asyncio.run(job())
 
     assert session.get.await_count == 1  # durdurmadan sonra hiçbir istek gitmedi
-    assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
+    assert sum(isinstance(r, request_ctx.FetchCancelled) for r in results) == 69
     assert _queued_seconds() <= 1.0 + 1e-3  # yalnızca giden isteğin aralığı
     assert throttle.reserve() <= 1.0
 
@@ -1064,8 +1077,8 @@ def _stopped_job(request, count=70):
         return await asyncio.gather(*[request(n) for n in range(count)], stop(), return_exceptions=True)
 
     with request_context(cancel=lambda: bool(stopped)), \
-            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
+            patch.object(transport, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(transport, "_get_proxy_config", return_value=(False, "")):
         return asyncio.run(job())[:count]
 
 
@@ -1078,7 +1091,7 @@ def test_stopped_bulk_job_sends_nothing_however_slow_the_reservations_are(
     ayırmalarla bu 1 sn'yi (bir aralığı) aşıyor, sırası gelmiş bulunan istek de gidiyordu. Kontrol
     varken yalnızca durdurmadan önce semaforu almış olanlar sıra ayırır.
     """
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "1")
     session = MagicMock()
     session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
     real_reserve = throttle.api_throttle().reserve
@@ -1090,12 +1103,12 @@ def test_stopped_bulk_job_sends_nothing_however_slow_the_reservations_are(
         return real_reserve()
 
     monkeypatch.setattr(throttle, "reserve", slow_reserve)
-    results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"))
+    results = _stopped_job(lambda n: transport.make_api_request_async(session, f"/event/{n}"))
 
     assert session.get.await_count == 1
     # giden istek + durdurma anında semaforu tutup bütçedeki sırasını bekleyen REQUEST_SLOTS istek
     assert len(reservations) == 1 + request_slots
-    assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
+    assert sum(isinstance(r, request_ctx.FetchCancelled) for r in results) == 69
 
 
 def test_stop_reaches_requests_waiting_for_a_request_slot(monkeypatch, request_slots):
@@ -1113,13 +1126,13 @@ def test_stop_reaches_requests_waiting_for_a_request_slot(monkeypatch, request_s
 
     session = MagicMock()
     session.get = get
-    with patch.object(utils.breaker, "report_ok") as answered, \
-            patch.object(utils.breaker, "report_exception") as failed:
-        results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"))
+    with patch.object(request_breaker, "report_ok") as answered, \
+            patch.object(request_breaker, "report_exception") as failed:
+        results = _stopped_job(lambda n: transport.make_api_request_async(session, f"/event/{n}"))
 
     assert len(sent) == request_slots and len(reservations) == request_slots
     assert results[:request_slots] == [{"ok": 1}] * request_slots  # yanıtı gelmiş istek atılmaz
-    assert all(isinstance(r, utils.FetchCancelled) for r in results[request_slots:])
+    assert all(isinstance(r, request_ctx.FetchCancelled) for r in results[request_slots:])
     # durdurulan istek bir sonuç değildir: ağ hatasına çevrilmez, devre kesiciye bildirilmez
     assert answered.call_count == request_slots and failed.call_count == 0
 
@@ -1142,15 +1155,15 @@ def test_stop_reaches_browser_first_requests_waiting_for_a_request_slot(monkeypa
         return {"status": 200, "ok": True, "data": {"a": 1}, "text": None}
 
     bridge = _bridge(evaluate)
-    monkeypatch.setattr(utils, "_browser_first_until", time.monotonic() + 60)
+    monkeypatch.setattr(transport, "_browser_first_until", time.monotonic() + 60)
     session = MagicMock()
     session.get = AsyncMock()
     with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
-        results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"), count=30)
+        results = _stopped_job(lambda n: transport.make_api_request_async(session, f"/event/{n}"), count=30)
 
     assert len(evaluated) == 0 and len(reservations) == 0  # FX-18: eskiden request_slots
     assert session.get.await_count == 0
-    assert all(isinstance(r, utils.FetchCancelled) for r in results)
+    assert all(isinstance(r, request_ctx.FetchCancelled) for r in results)
 
 
 @pytest.mark.parametrize("sync", [True, False])
@@ -1160,7 +1173,7 @@ def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatc
     aralığı içinde kesilir, istek gönderilmez ve sıra geri verilir. Eskiden sync yolda çağıran thread
     bekleme bitene kadar (burada 10 sn) köprüde kalırdı.
     """
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")
     assert throttle.reserve() == 0.0
     bridge = _bridge(AsyncMock(return_value=_OK))
     stop_at = time.monotonic() + 0.1
@@ -1173,7 +1186,7 @@ def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatc
     with request_context(cancel=lambda: time.monotonic() >= stop_at), \
             patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
         start = time.monotonic()
-        with pytest.raises(utils.FetchCancelled):
+        with pytest.raises(request_ctx.FetchCancelled):
             call()
         elapsed = time.monotonic() - start
     assert elapsed < 0.1 + cs._CANCEL_CHECK_SECONDS + 2.0  # + yavaş makine payı; 10 sn değil
@@ -1182,7 +1195,7 @@ def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatc
 
 
 def test_bridge_slot_wait_without_a_cancel_check_is_unchanged(shared_dir, monkeypatch):
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "4")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "4")
     monkeypatch.setattr(throttle.api_throttle(), "_burst", 1)
     bridge = _bridge(AsyncMock(return_value=_OK))
     with request_context(), patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
@@ -1193,7 +1206,7 @@ def test_bridge_slot_wait_without_a_cancel_check_is_unchanged(shared_dir, monkey
 
 def test_cancelled_bridge_call_gives_its_slot_back(shared_dir, monkeypatch):
     """Sıra beklerken asyncio iptali (zaman aşımı, kapanan çağıran) da sırayı geri verir."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0.1")
     assert throttle.reserve() == 0.0
 
     async def run():
@@ -1226,95 +1239,67 @@ def test_one_cancelled_job_does_not_stop_a_shared_solve(monkeypatch):
     bridge._solve_challenge = solve
     with request_context(cancel=lambda: True):
         assert cs._run_sync(bridge.solve_challenge(), 5.0) == "jwt"
-        with pytest.raises(utils.FetchCancelled):  # işin kendi isteği ise kesilir
+        with pytest.raises(request_ctx.FetchCancelled):  # işin kendi isteği ise kesilir
             cs._run_sync(cs._wait_for_slot(), 5.0)
 
 
-# --- izleyici: 1 sn aralık ortak bütçenin "watch" şeridinden gelir -----------------------------
-
-def _fake_api(path):
-    return {"events": []} if path.endswith("/events/live") else None
+# --- canlı servis: 1 sn aralık ortak bütçenin "watch" şeridinden gelir ---------------------------------
+# (sofascore_scraper/services/live/supervisor.py; 2.x izleyicisi sofascore_scraper/watcher.py aynı şeridi kullanıyordu)
 
 
-def test_watcher_with_injected_fetch_keeps_its_lane_in_process(shared_dir, tmp_path):
+def _watch_lane(clock: "Clock", *, shared: bool = True) -> RequestThrottle:
+    from sofascore_scraper.services.live import supervisor
+
+    return throttle.lane(supervisor.WATCH_THROTTLE_LANE, supervisor.MIN_REQUEST_SPACING_SECONDS, shared=shared,
+                         clock=clock, sleep=clock.sleep)
+
+
+def test_the_watch_lane_with_an_injected_fetch_stays_in_process(shared_dir, tmp_path):
     clock = Clock()
-    w = MatchWatcher("football", league_ids=[17], data_dir=str(tmp_path / "d"), fetch_json=_fake_api,
-                     clock=clock, sleep=clock.sleep)
+    lane = _watch_lane(clock, shared=False)  # sahte fetch verilmiş servis: ortak dosyaya dokunmaz
     for _ in range(3):
-        w._get("/sport/football/events/live")
+        lane.wait()
     assert clock.sleeps == [1.0, 1.0]
-    assert not os.path.exists(shared_dir / "watch.json")  # sahte fetch: ortak dosyaya dokunmaz
+    assert not os.path.exists(shared_dir / "watch.json")
 
 
-def test_watchers_in_separate_processes_share_one_second_spacing(shared_dir, tmp_path):
-    """
-    Spor başına bir --watch süreci (issue #16): gerçek fetch kullanan izleyiciler aynı şeridi
-    paylaşır, toplamda istekler arası ≥ 1 sn kalır. İki izleyici iki süreci temsil eder.
-    """
+def test_watch_lanes_of_separate_processes_share_one_second_spacing(shared_dir, tmp_path):
+    """Spor başına bir canlı süreç (issue #16): şerit paylaşılır, toplamda istekler arası ≥ 1 sn kalır."""
     clock = Clock()
     stamps = []
-
-    def fetch(path):
-        stamps.append(clock())
-        return _fake_api(path)
-
-    watchers = []
-    for sport in ("football", "tennis"):
-        with patch.object(MatchWatcher, "_default_fetch", staticmethod(fetch)):
-            watchers.append(MatchWatcher(sport, league_ids=[17], data_dir=str(tmp_path / "d"),
-                                         clock=clock, sleep=clock.sleep))
+    lanes = [_watch_lane(clock), _watch_lane(clock)]  # iki süreç
     for _ in range(3):
-        for w in watchers:
-            w._get(f"/sport/{w.sport}/events/live")
+        for lane in lanes:
+            lane.wait()
+            stamps.append(clock())
     assert len(stamps) == 6
     assert all(b - a >= 1.0 for a, b in zip(stamps, stamps[1:], strict=False))
     assert os.path.exists(shared_dir / "watch.json")
 
 
-def test_watchers_keep_one_second_spacing_with_the_default_budget(shared_dir, tmp_path, monkeypatch):
-    """REQUEST_RATE_LIMIT verilmemişken (5 istek/sn) izleyici şeridi değişmez: toplamda ≥ 1 sn, ortak dosya."""
-    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+def test_watch_lanes_keep_one_second_spacing_with_the_default_budget(shared_dir, tmp_path, monkeypatch):
+    """REQUEST_RATE_LIMIT verilmemişken (5 istek/sn) şerit değişmez: toplamda ≥ 1 sn, ortak dosya."""
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)
     clock = Clock()
     stamps = []
-
-    def fetch(path):
-        stamps.append(clock())
-        return _fake_api(path)
-
-    watchers = []
-    for sport in ("football", "tennis"):
-        with patch.object(MatchWatcher, "_default_fetch", staticmethod(fetch)):
-            watchers.append(MatchWatcher(sport, league_ids=[17], data_dir=str(tmp_path / "d"),
-                                         clock=clock, sleep=clock.sleep))
+    lanes = [_watch_lane(clock), _watch_lane(clock)]
     for _ in range(3):
-        for w in watchers:
-            w._get(f"/sport/{w.sport}/events/live")
+        for lane in lanes:
+            lane.wait()
+            stamps.append(clock())
     assert [b - a for a, b in zip(stamps, stamps[1:], strict=False)] == [1.0] * 5
     assert os.path.exists(shared_dir / "watch.json")
 
 
-def test_watcher_keeps_private_spacing_when_shared_budget_is_off(shared_dir, tmp_path, monkeypatch):
-    """REQUEST_RATE_LIMIT=0: ortak dosya yok, ama izleyicinin 1 sn aralığı (eski davranış) sürer."""
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
+def test_the_watch_lane_keeps_private_spacing_when_the_shared_budget_is_off(shared_dir, tmp_path, monkeypatch):
+    """client.rate = 0: ortak dosya yok, ama 1 sn aralık (eski davranış) sürer."""
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "0")
     clock = Clock()
-    with patch.object(MatchWatcher, "_default_fetch", staticmethod(_fake_api)):
-        w = MatchWatcher("football", league_ids=[17], data_dir=str(tmp_path / "d"), clock=clock, sleep=clock.sleep)
+    lane = _watch_lane(clock)
     for _ in range(3):
-        w._get("/sport/football/events/live")
+        lane.wait()
     assert clock.sleeps == [1.0, 1.0]
     assert not os.path.exists(shared_dir / "watch.json")
-
-
-def test_watcher_default_fetch_also_passes_the_api_lane(shared_dir, tmp_path, monkeypatch):
-    """İzleyicinin gerçek isteği make_api_request'ten geçer: genel bütçeden de sıra alır."""
-    calls = _reserve_counter(monkeypatch)
-    clock = Clock()
-    w = MatchWatcher("football", league_ids=[17], data_dir=str(tmp_path / "d"), clock=clock, sleep=clock.sleep)
-    with patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
-            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(200, {"events": []})):
-        assert w._get("/sport/football/events/live") == {"events": []}
-    assert len(calls) == 1
 
 
 # --- ayarlar uç noktası -----------------------------------------------------------------------
@@ -1347,40 +1332,28 @@ def env_file_restored():
     loader.reset()
 
 
-def test_settings_expose_and_update_rate_limit(monkeypatch, env_file_restored):
+def _rate_row(client: object) -> float:
+    rows = client.get("/api/v1/settings").json()["data"]["settings"]  # type: ignore[attr-defined]
+    return next(row["value"] for row in rows if row["key"] == "client.rate")
+
+
+def test_settings_show_the_default_when_unset_and_update_the_rate(monkeypatch, env_file_restored, settings_overrides):
+    """Ayarlar API'si (`/api/v1/settings`): varsayılan 5; 0 ("off") sınırı kaldırır; üst sınır 1000."""
     from fastapi.testclient import TestClient
 
     from sofascore_scraper.web.app import app
 
     client = TestClient(app)
-    before = os.environ.get("REQUEST_RATE_LIMIT")
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE", raising=False)  # ortamın değeri ayarı kilitlerdi
     try:
-        assert client.get("/api/settings").json()["request_rate_limit"] == 0.0  # conftest: kapalı
-        assert client.post("/api/settings", json={"request_rate_limit": 2.5}).status_code == 200
-        assert os.environ["REQUEST_RATE_LIMIT"] == "2.5"
-        assert client.get("/api/settings").json()["request_rate_limit"] == 2.5
-        assert client.post("/api/settings", json={"request_rate_limit": -1}).status_code == 422
-        assert client.post("/api/settings", json={"request_rate_limit": 5000}).status_code == 422
+        assert _rate_row(client) == 5.0
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 2.5}}).status_code == 200
+        assert _rate_row(client) == 2.5 and throttle.configured_rate() == 2.5
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 0}}).status_code == 200  # kapalı
+        assert _rate_row(client) == 0.0 and throttle.configured_rate() == 0.0
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 40}}).status_code == 200
+        assert _rate_row(client) == 40.0
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": -1}}).status_code == 422
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": 5000}}).status_code == 422
     finally:
-        client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
-        os.environ["REQUEST_RATE_LIMIT"] = before or "0"
-
-
-def test_settings_show_the_default_when_unset_and_accept_off(monkeypatch, env_file_restored):
-    from fastapi.testclient import TestClient
-
-    from sofascore_scraper.web.app import app
-
-    client = TestClient(app)
-    before = os.environ.get("REQUEST_RATE_LIMIT")
-    try:
-        monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
-        assert client.get("/api/settings").json()["request_rate_limit"] == 5.0
-        assert client.post("/api/settings", json={"request_rate_limit": 0}).status_code == 200  # kapalı
-        assert os.environ["REQUEST_RATE_LIMIT"] == "0"
-        assert client.get("/api/settings").json()["request_rate_limit"] == 0.0
-        assert client.post("/api/settings", json={"request_rate_limit": 40}).status_code == 200  # varsayılanın üstü
-        assert client.get("/api/settings").json()["request_rate_limit"] == 40.0
-    finally:
-        client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
-        os.environ["REQUEST_RATE_LIMIT"] = before or "0"
+        assert client.patch("/api/v1/settings", json={"values": {"client.rate": None}}).status_code == 200

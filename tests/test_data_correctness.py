@@ -1,29 +1,24 @@
-"""Veri hattı doğruluğu: tur tazeliği, 'bitti' tanımı, eksik dilimler, sezon seçimi, web özetleri."""
+"""Veri hattı doğruluğu: tur tazeliği, 'bitti' tanımı, eksik dilimler, sezon seçimi."""
 from __future__ import annotations
 
 import asyncio
 import json
 import os
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
 
-import conftest
 from catalog_index import LISTING_SCHEDULES, index_listings
 from schedule_runner import inline, legacy_get
-from sofascore_scraper.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
-                                    SliceOutcome)
-from sofascore_scraper.match_fetcher import MatchFetcher
+from detail_fetch import Details
 from sofascore_scraper.services import listing
+from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS
+from sofascore_scraper.services.pipeline import is_finished
 from sofascore_scraper.services.status import StatusService
-from sofascore_scraper.slices import SLICE_OK, Outcome
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, Outcome, SliceOutcome
 from sofascore_scraper.store import Ref, league_dir_name, open_store
-from sofascore_scraper.web import deps
-from sofascore_scraper.web.app import app
 
-client = TestClient(app)
 
 
 def _event(mid, status_type="finished", desc="Ended", code=100):
@@ -67,7 +62,7 @@ def test_incomplete_round_is_refetched_after_ttl(tmp_path):
     data = {"events": [_event(1), _event(2, "notstarted", "Not started", 0)]}
     _store_round(tmp_path, data, complete=False)
     assert f.cached_round(17, SEASON, "round_1") is not None
-    _store_round(tmp_path, data, complete=False, age_seconds=MatchFetcher.ROUND_CACHE_TTL_SECONDS + 60)
+    _store_round(tmp_path, data, complete=False, age_seconds=listing.ROUND_CACHE_TTL_SECONDS + 60)
     assert f.cached_round(17, SEASON, "round_1") is None
 
 
@@ -105,13 +100,13 @@ def test_round_saves_raw_payload_and_returns_only_finished(tmp_path):
     {"type": "finished", "description": "Ended", "code": 100},
 ])
 def test_finished_includes_extra_time_and_penalties(status):
-    assert MatchFetcher._is_finished_event({"status": status})
+    assert is_finished({"status": status})
 
 
 # --- maç detayları ------------------------------------------------------------------
 
-def _detail_fetcher(tmp_path) -> MatchDataFetcher:
-    return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+def _detail_fetcher(tmp_path) -> Details:
+    return Details(tmp_path)
 
 
 def _basic(mid=42, sport="tennis", desc="Ended"):
@@ -138,11 +133,11 @@ def test_slice_confirmed_empty_twice_is_no_longer_expected(tmp_path):
     f = _detail_fetcher(tmp_path)
     data = _partial_match()
     confirmed = {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404) for key in _EMPTY_SLICES}
-    f._save_match_data("42", data, confirmed)
-    assert f._needs_detail_fetch("42") == "refill"
+    f.save("42", data, confirmed)
+    assert f.need("42") == "refill"
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS - 1):
-        f._save_match_data("42", data, confirmed)
-    assert f._needs_detail_fetch("42") == "none"
+        f.save("42", data, confirmed)
+    assert f.need("42") == "none"
 
 
 @pytest.mark.parametrize("outcomes", [
@@ -153,8 +148,8 @@ def test_slice_missing_without_a_definitive_answer_stays_expected(tmp_path, outc
     """Eski kural her boş dilimi sayıyordu; başarısız istek kaç kez olursa olsun "yok" sayılmaz."""
     f = _detail_fetcher(tmp_path)
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS + 3):
-        f._save_match_data("42", _partial_match(), outcomes)
-    assert f._needs_detail_fetch("42") == "refill"
+        f.save("42", _partial_match(), outcomes)
+    assert f.need("42") == "refill"
 
 
 def test_sync_fetch_accepts_aet(tmp_path):
@@ -164,7 +159,7 @@ def test_sync_fetch_accepts_aet(tmp_path):
     fake = FakeSofaScore()  # P13: tek maç da boru hattından; dilimler 404
     fake.add_event(_basic(sport="football", desc="AET"))
     with fake:
-        assert f.fetch_match_data(42) is not None
+        assert f.fetch(42) is not None
 
 
 # --- kapsam raporu (P15: katalogdan, dosya yazılmaz) -------------------------------------------------
@@ -177,10 +172,10 @@ def _files(root) -> set:
 def test_coverage_report_counts_the_slices_the_writer_marked_and_writes_nothing(tmp_path, capsys):
     """Terminal menüsünün dosya raporu (FX-15'te kalktı) yerine: kapsam raporu katalogdan gelir, dosya yazılmaz."""
     f = _detail_fetcher(tmp_path)
-    f._save_match_data("42", _partial_match(), {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
+    f.save("42", _partial_match(), {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
                                                  for key in _EMPTY_SLICES})
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):  # istatistik yeterince kez kesin "yok": artık eksik sayılmaz
-        f._save_match_data("43", {**_partial_match(), "basic": _basic(43), "statistics": None},
+        f.save("43", {**_partial_match(), "basic": _basic(43), "statistics": None},
                            {"statistics": SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)})
     capsys.readouterr()
     before = _files(tmp_path)
@@ -205,51 +200,3 @@ def test_path_helpers_match_existing_layout():
     assert league_dir_name(2361, "Wimbledon, Men") == "2361_Wimbledon,_Men"
     # Config'de olmayan lig: kaydeden ve okuyan aynı adı kullanır
     assert league_dir_name(5, None) == "5_League_5"
-
-
-# --- web özetleri ---------------------------------------------------------------
-
-def test_dashboard_counts_seasons():
-    card = client.get("/api/dashboard").json()["leagues"][0]
-    assert card["id"] == conftest.LEAGUE_ID
-    assert card["seasons"] == 1
-
-
-def test_missing_details_respects_season_filter():
-    lid = conftest.LEAGUE_ID
-    all_ = client.get(f"/api/leagues/{lid}/missing-details").json()
-    assert all_["missing_count"] == 1 and all_["truncated"] is False
-    same = client.get(f"/api/leagues/{lid}/missing-details?season_id={conftest.SEASON_ID}").json()
-    assert same["missing_count"] == 1
-    other = client.get(f"/api/leagues/{lid}/missing-details?season_id=1").json()
-    assert other["total_matches"] == 0
-
-
-def test_csv_export_filters_by_league():
-    """EX-1: dışa aktarma saklanan maçlardan istekte üretilir; `processed/` altındaki bayat bir dosya sunulmaz."""
-    processed = os.path.join(conftest.DATA_DIR, "match_details", "processed")
-    os.makedirs(processed, exist_ok=True)
-    path = os.path.join(processed, "all_matches_1.csv")
-    with open(path, "w") as f:
-        f.write("match_id,league_folder\n1,17_Premier_League\n2,8_LaLiga\n3,170_Other\n")
-    try:
-        whole = client.get("/api/export/csv").text.strip().splitlines()
-        league = client.get(f"/api/export/csv?league_id={conftest.LEAGUE_ID}").text.strip().splitlines()
-        other = client.get("/api/export/csv?league_id=8")
-        assert whole[0].startswith("match_id,") and len(whole) > 1
-        assert "1,17_Premier_League" not in whole and "2,8_LaLiga" not in whole
-        assert league[0] == whole[0] and len(league) > 1
-        assert all(line.split(",")[1].startswith(f"{conftest.LEAGUE_ID}_") for line in league[1:])
-        assert other.status_code == 404
-        assert os.listdir(processed) == ["all_matches_1.csv"]
-    finally:
-        os.remove(path)
-
-
-def test_single_fetch_conflicts_with_running_job():
-
-    deps.job_store().create_running({"mode": "full"})
-    try:
-        assert client.post(f"/api/matches/{conftest.MATCH_IDS[1]}/fetch").status_code == 409
-    finally:
-        deps.job_store().update(status="Cancelled", progress=0, current_task="cleanup", finished=True)

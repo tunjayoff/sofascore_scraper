@@ -287,11 +287,9 @@ def test_the_running_process_moves_the_heartbeat(manager: JobManager, data_dir: 
 def test_the_web_api_sees_and_cancels_a_job_of_another_process(monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
-    from sofascore_scraper.web.api import legacy as fetch_job
     from sofascore_scraper.web.app import app
 
     jobs = deps.job_store()
-    monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
     if jobs.snapshot().get("is_running"):
         jobs.update(status="Cancelled", finished=True)
     client = TestClient(app)
@@ -299,26 +297,18 @@ def test_the_web_api_sees_and_cancels_a_job_of_another_process(monkeypatch: pyte
 
     with running_job(web_data_dir, cancel_poll=0.05) as runner:
         # Komut satırından başlatılmış gibi bir iş web arayüzünün iş geçmişinde görünür
-        listed = client.get("/api/jobs?limit=1").json()["jobs"][0]
-        assert (listed["id"], listed["status"], listed["is_running"]) == (runner.job_id, "running", True)
-        assert listed["payload"] == {"league_id": 17, "mode": "full", "selections": None}
-        assert client.get(f"/api/jobs/{runner.job_id}").json()["matches_done"] == 3
+        listed = client.get("/api/v1/jobs", params={"limit": 1}).json()["data"][0]
+        assert (listed["id"], listed["state"]) == (runner.job_id, "running")
+        assert client.get(f"/api/v1/jobs/{runner.job_id}").json()["data"]["state"] == "running"
 
-        refused = client.post("/api/fetch", json={"mode": "full", "league_id": 17})
-        assert refused.status_code == 409 and refused.json()["detail"]["code"] == "job_running"
+        refused = client.post("/api/v1/jobs", json={"kind": "sync", "spec": {"league_id": 17}})
+        assert refused.status_code == 409 and refused.json()["error"]["code"] == "job_running"
         assert jobs.snapshot()["is_running"] is False
 
-        cancelled = client.post("/api/scrape/cancel")
+        cancelled = client.post(f"/api/v1/jobs/{runner.job_id}/cancel")
         assert cancelled.status_code == 200, cancelled.text
         out, err = runner.wait()
         assert runner.proc.returncode == 0, err
         assert out.strip() == "done cancelled"
 
-    assert client.get(f"/api/jobs/{runner.job_id}").json()["status"] == "cancelled"
-    assert client.post("/api/scrape/cancel").status_code == 400  # artık çalışan iş yok
-    started = client.post("/api/fetch", json={"mode": "full", "league_id": 17})
-    try:
-        assert started.status_code == 200, started.text
-    finally:
-        if jobs.snapshot().get("is_running"):
-            jobs.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
+    assert client.get(f"/api/v1/jobs/{runner.job_id}").json()["data"]["state"] == "cancelled"

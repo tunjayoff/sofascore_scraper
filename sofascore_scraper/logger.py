@@ -13,19 +13,23 @@ da "json", satır başına bir JSON nesnesi (`JsonFormatter`: time, level, logge
 biçimi yalnızca konsolu etkiler: dosya her zaman düz metindir, çünkü tanılama paketi (sofascore_scraper/diagnostics.py)
 satırlarını LINE_RE ile ayrıştırır.
 
-Dosya: LOG_DIR (varsayılan: proje kökündeki logs/) altında `sofascore_scraper.log`. Boyutu
-LOG_MAX_MB'ı (varsayılan 5) geçince çevrilir, en fazla LOG_BACKUP_COUNT (varsayılan 5) eski dosya
-tutulur. LOG_TO_FILE=false dosyayı kapatır. Dizin yazılamıyorsa uygulama dosyasız devam eder.
+Dosya: `log.dir` (varsayılan: proje kökündeki logs/) altında `sofascore_scraper.log`. Boyutu
+`log.max_mb`ı (varsayılan 5) geçince çevrilir, en fazla `log.backup_count` (varsayılan 5) eski dosya
+tutulur. `log.to_file` false dosyayı kapatır. Dizin yazılamıyorsa uygulama dosyasız devam eder. Ayarlar
+(`[log]`, `display.use_color`) ayar yükleyicisinden okunur; 2.x'in LOG_* , DEBUG ve USE_COLOR adları 3.1'de
+okunmaz. Ayarlar kurulamıyorsa (geçersiz yapılandırma; hatayı komut kendisi bildirir) varsayılanlar geçerlidir:
+log kurulumu hiçbir zaman düşmez.
 Web sunucusu, CLI ve --watch aynı dosyaya yazabilir; satırda süreç numarası bulunur.
 
 Dosyaya ve konsola yazılan her satır sofascore_scraper.redact'ten geçer: token, cookie ve proxy parolası
 loga düşmez. Rich markup kapalıdır: mesajdaki "[...]" olduğu gibi yazılır.
 
-LOG_LEVEL / DEBUG çalışırken değişebilir: apply_log_level() (ayarlar kaydedilince çağrılır).
+Seviye (`log.level`, `log.debug`) çalışırken değişebilir: apply_log_level() (ayarlar kaydedilince yükleyici çağırır).
 """
 from __future__ import annotations
 
 import copy
+import dataclasses
 import datetime as _dt
 import json
 import logging
@@ -36,7 +40,7 @@ import time
 import traceback
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional, Tuple
 
 import dotenv
 from rich.console import Console
@@ -60,8 +64,6 @@ LINE_RE = re.compile(
 LEVEL_NAMES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_TRUTHY = ("true", "1", "yes", "t", "y", "on")
-_FALSY = ("false", "0", "no", "f", "n", "off")
 
 # Konsol log satırlarının yazıldığı akış (set_console_stream)
 CONSOLE_STREAMS = ("stdout", "stderr")
@@ -75,15 +77,31 @@ _configured = False
 _console_handler: Optional[logging.Handler] = None
 _file_handler: Optional["SharedRotatingFileHandler"] = None
 _file_error: Optional[str] = None
+# Son kurulumun kullandığı log ayarları ve renk ayarı: ayarlar yeniden kurulunca karşılaştırılır (follow_settings)
+_applied: Optional[Tuple[Any, bool]] = None
 # attach_file_handler ile dosya handler'ı eklenen (kök dışı) logger adları
 _attached: List[str] = []
 
 
 # --- ayarlar ------------------------------------------------------------------------------
 
+def _settings() -> Any:
+    """
+    Etkin ayarlar; kurulamıyorsa (geçersiz yapılandırma) varsayılanlar. Yükleyici işlev içinde içe aktarılır:
+    günlükçü süreç başında yüklenir ve ayarlardan önce de log yazabilmelidir.
+    """
+    from sofascore_scraper.config import loader
+    from sofascore_scraper.config.settings import Settings
+
+    try:
+        return loader.active_settings()
+    except Exception:
+        return Settings()
+
+
 def log_dir() -> str:
-    """Log dizini: LOG_DIR; göreli yol proje köküne göre çözülür (çalışma dizininden bağımsız)."""
-    raw = os.getenv("LOG_DIR", "").strip()
+    """Log dizini: `log.dir`; göreli yol proje köküne göre çözülür (çalışma dizininden bağımsız)."""
+    raw = (_settings().log.dir or "").strip()
     path = Path(raw).expanduser() if raw else Path("logs")
     if not path.is_absolute():
         path = _REPO_ROOT / path
@@ -91,39 +109,22 @@ def log_dir() -> str:
 
 
 def log_to_file_enabled() -> bool:
-    return os.getenv("LOG_TO_FILE", "true").strip().lower() not in _FALSY
-
-
-def _env_number(key: str, default: float, minimum: float) -> float:
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return default
-    try:
-        value = float(raw)
-    except ValueError:
-        return default
-    return value if value >= minimum else default
+    return bool(_settings().log.to_file)
 
 
 def log_max_bytes() -> int:
-    return int(_env_number("LOG_MAX_MB", DEFAULT_MAX_MB, 0.001) * 1024 * 1024)
+    return int(float(_settings().log.max_mb) * 1024 * 1024)
 
 
 def log_backup_count() -> int:
     # En az 1: eski dosya tutulmazsa RotatingFileHandler hiç çevirmez ve dosya sınırsız büyür
-    return max(1, int(_env_number("LOG_BACKUP_COUNT", DEFAULT_BACKUP_COUNT, 0)))
+    return max(1, int(_settings().log.backup_count))
 
 
 def resolve_level() -> int:
-    """LOG_LEVEL ve DEBUG ortam değişkenlerinden geçerli seviye (geçersizse INFO)."""
-    name = os.getenv("LOG_LEVEL", "INFO").strip().upper() or "INFO"
-    # Override if DEBUG env variable is truthy
-    if os.getenv("DEBUG", "").strip().lower() in _TRUTHY:
-        name = "DEBUG"
-    if name not in LEVEL_NAMES:
-        print(f"Warning: invalid LOG_LEVEL '{name}'; using INFO.", file=sys.stderr)
-        return logging.INFO
-    return getattr(logging, name)
+    """`log.level` ve `log.debug`ten geçerli seviye (`effective_level`: debug açıksa DEBUG)."""
+    name = _settings().log.effective_level
+    return getattr(logging, name) if name in LEVEL_NAMES else logging.INFO
 
 
 # --- biçimlendirme ve maskeleme -----------------------------------------------------------
@@ -313,8 +314,8 @@ def set_log_format(name: str) -> None:
 
 
 def _build_console_handler() -> logging.Handler:
-    # USE_COLOR kontrolü
-    if os.getenv("USE_COLOR", "true").strip().lower() != "true":
+    # `display.use_color` kapalıysa Rich renksiz yazar (NO_COLOR)
+    if not _settings().display.use_color:
         os.environ["NO_COLOR"] = "1"
     to_stderr = _console_stream == "stderr"
     stream = sys.stderr if to_stderr else sys.stdout
@@ -346,14 +347,18 @@ def _build_console_handler() -> logging.Handler:
 def setup_logger(level: Optional[int] = None, force: bool = False) -> None:
     """
     Kök logger'ı konsol ve (açıksa) dosya handler'ı ile kurar. Bir kez çalışır;
-    force=True LOG_DIR / LOG_TO_FILE değişikliğini uygulamak için yeniden kurar.
+    force=True `log.dir` / `log.to_file` değişikliğini uygulamak için yeniden kurar.
     """
-    global _configured, _console_handler, _file_handler, _file_error
+    global _configured, _console_handler, _file_handler, _file_error, _applied
     if _configured and not force:
         return
 
-    # LOG_* ayarları .env'den de gelebilir: giriş noktası .env'i henüz yüklememiş olabilir
+    # Log ayarları .env'den de gelebilir (SOFASCORE_LOG__*): giriş noktası .env'i henüz yüklememiş olabilir
     dotenv.load_dotenv(env_file_path())
+    # Ortam değiştiyse yükleyici ayarları şimdi yeniden kurar ve log ayarı değiştiyse bu işlevi kendisi çağırır
+    # (follow_settings): o iç içe kurulum, handler'lar kaldırılıp eklenirken (aşağıda) değil, burada biter;
+    # satırlar iki kez yazılmaz
+    settings = _settings()
 
     root = logging.getLogger()
     reattach = list(_attached)
@@ -386,6 +391,7 @@ def setup_logger(level: Optional[int] = None, force: bool = False) -> None:
 
     root.setLevel(resolve_level() if level is None else level)
     _configured = True
+    _applied = (settings.log, bool(settings.display.use_color))
     for name in reattach:
         attach_file_handler(name)
 
@@ -424,8 +430,28 @@ def attach_file_handler(logger_name: str) -> bool:
     return True
 
 
+def follow_settings(settings: Any) -> None:
+    """
+    Ayar yükleyicisi ayarları her kurduğunda çağırır (sofascore_scraper/config/loader.py): log ayarı ya da renk
+    ayarı son kurulumdakinden farklıysa log kurulumu yenilenir; yalnızca seviye değiştiyse seviye uygulanır.
+    Loglama henüz kurulmadıysa bir şey yapılmaz (kurulum ayarları kendisi okur).
+    """
+    global _applied
+    if not _configured or _applied is None:
+        return
+    log, color = settings.log, bool(settings.display.use_color)
+    before_log, before_color = _applied
+    if log == before_log and color == before_color:
+        return
+    if color == before_color and dataclasses.replace(before_log, level=log.level, debug=log.debug) == log:
+        _applied = (log, color)
+        apply_log_level()
+    else:
+        setup_logger(force=True)
+
+
 def apply_log_level(level: Optional[int] = None) -> int:
-    """Seviyeyi çalışırken uygular (LOG_LEVEL / DEBUG değişince). Geçerli seviyeyi döndürür."""
+    """Seviyeyi çalışırken uygular (`log.level` / `log.debug` değişince). Geçerli seviyeyi döndürür."""
     if not _configured:
         setup_logger()
     new = resolve_level() if level is None else level

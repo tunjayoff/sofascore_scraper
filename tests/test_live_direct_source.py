@@ -731,8 +731,8 @@ def test_a_credential_page_request_that_fails_while_closing_is_handed_back(
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "48")
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "48")
     return path
 
 

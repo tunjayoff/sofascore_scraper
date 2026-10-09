@@ -9,7 +9,7 @@ tamlığını yine katalogdan hesaplar (plan maddesi P15; eski dosya analizi rap
 
 Sayım kuralları (katalogdaki her maç ve her sezon listesi bir kez sayılır):
 
-  * matches   turnuvanın katalogdaki maçları. "Yalnızca bitmiş maçlar" ayarı açıkken (FETCH_ONLY_FINISHED,
+  * matches   turnuvanın katalogdaki maçları. "Yalnızca bitmiş maçlar" ayarı açıkken (fetch.only_finished,
               varsayılan) bitmiş olanlar (durum sınıfı completed / decided_without_play) ile detayı indirilmiş
               olanların birleşimi: programda görünen ama henüz bitmemiş, detayı da olmayan maç sayılmaz. Ayar
               kapalıyken bütün maçlar. Bugünkü yazıcıların sezon özetine koyduğu satırların karşılığıdır;
@@ -58,7 +58,6 @@ Servis yazdırmaz, kilit almaz ve dosya sistemine dokunmaz.
 """
 from __future__ import annotations
 
-import os
 import threading
 import time
 import weakref
@@ -84,10 +83,13 @@ _NOT_FINISHED: Tuple[str, ...] = tuple(member.value for member in StatusClass if
 
 def only_finished_setting() -> bool:
     """
-    "Yalnızca bitmiş maçlar" ayarının o anki değeri. Yazıcılarla aynı kaynaktan ve aynı kuralla okunur
-    (sofascore_scraper/utils.py: FETCH_ONLY_FINISHED, varsayılan açık); çağrı anında okunur.
+    "Yalnızca bitmiş maçlar" ayarının o anki değeri (`fetch.only_finished`, varsayılan açık), ayar yükleyicisinden
+    çağrı anında (plan maddesi RD-4). Anlamı FX-26'nınkidir: bir lig indirmesinde hangi maçların detayının
+    indirileceğine (QueryService.detail_candidates) ve genel bakış sayılarına karar verir.
     """
-    return os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true"
+    from sofascore_scraper.config import loader
+
+    return bool(loader.active_settings().fetch.only_finished)
 
 
 @dataclass(frozen=True)
@@ -433,11 +435,13 @@ class StatusService:
         by_tournament: Dict[Optional[int], _Tally] = {}
         by_season: Dict[Optional[int], Dict[Optional[int], _Tally]] = {}
         if info.rows.get("catalog"):
+            # Planlayıcının seçimi: yapılandırma ve takip tablosu (API'den eklenen takiplerin seçimi; P27)
+            policy = planning.configured_policy(store)
             for state in store.events.states(scope):
                 row = state.event
                 if not row.has_event_payload:
                     continue
-                missing = planning.unresolved_slice_keys(state, threshold=threshold)
+                missing = planning.unresolved_slice_keys(state, policy, threshold=threshold)
                 total.add(missing)
                 by_tournament.setdefault(row.tournament_id, _Tally()).add(missing)
                 by_season.setdefault(row.tournament_id, {}).setdefault(row.season_id, _Tally()).add(missing)
@@ -480,6 +484,7 @@ class StatusService:
             int(row.id): {} for row in store.entities.seasons(int(tournament_id)) if row.id is not None}
         tallies: Dict[Optional[int], _Tally] = {}
         events: Dict[Optional[int], List[int]] = {}
+        policy = planning.configured_policy(store)  # yapılandırma ve takip tablosu (P27, FX-13)
         for state in store.events.states(Scope(tournament_ids=(int(tournament_id),))):
             row = state.event
             counts = events.setdefault(row.season_id, [0, 0, 0])
@@ -491,7 +496,7 @@ class StatusService:
                 counts[2] += 1
             if row.has_event_payload and finished:
                 tallies.setdefault(row.season_id, _Tally()).add(
-                    planning.unresolved_slice_keys(state, threshold=threshold))
+                    planning.unresolved_slice_keys(state, policy, threshold=threshold))
         out: List[SeasonCounts] = []
         for season_id in sorted(seasons, key=_season_order):
             fetched: Optional[float] = None

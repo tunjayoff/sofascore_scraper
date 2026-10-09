@@ -64,7 +64,6 @@ FS_ALLOWLIST: Dict[str, str] = {
     "sofascore_scraper/i18n.py": "çeviri dosyaları (locales/)",
     "sofascore_scraper/doctor.py": "ortam yoklamaları",
     "sofascore_scraper/throttle.py": "istek bütçesi dosyaları",
-    "sofascore_scraper/challenge_solver.py": "tarayıcı profili",
     "sofascore_scraper/client/profile_lock.py": "tarayıcı profilinin kilidi ve geçici kardeş profiller (FX-23)",
     "sofascore_scraper/logger.py": "log dosyaları",
     "sofascore_scraper/diagnostics.py": "log dosyaları ve tanılama paketi",
@@ -87,9 +86,9 @@ NAMED_EXCEPTIONS: Dict[Tuple[str, str], str] = {
         "uzlaştırma istemez. Bir Store yöntemine taşınabilir.",
     ("sofascore_scraper/services/context.py", "_ensure_directory"):
         "bağlam kurulurken veri dizini ve 2.x alt dizinleri var edilir (bugünkü davranış). P30'la gider.",
-    ("sofascore_scraper/utils.py", "ensure_directory"):
-        "2.x indiricilerinin ve CSV dışa aktarmasının dizinleri var etmesi (sofascore_scraper/season_fetcher.py, "
-        "sofascore_scraper/match_fetcher.py, sofascore_scraper/match_data_fetcher.py, sofascore_scraper/cli/commands/export.py). P30'la gider.",
+    ("sofascore_scraper/cli/commands/export.py", "export"):
+        "`ssc export`'un varsayılan çıktı dizini (match_details/processed) yoksa kurulur (3.1'e kadar "
+        "sofascore_scraper/utils.py `ensure_directory`; P30). Dışa aktarma servisine taşınabilir.",
     ("sofascore_scraper/services/export.py", "_write_file"):
         "dışa aktarmanın kullanıcının seçtiği yoldaki çıktı dosyası (dosya sink'i gibi; yol veri dizininde "
         "de olabilir).",
@@ -589,7 +588,7 @@ def test_the_ratchet_baseline_is_gone():
 
 def test_store_itself_is_not_scanned():
     assert all(not rel.startswith("sofascore_scraper/store/") for rel, _path in iter_modules(SRC_DIR))
-    assert {"sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/web/api/legacy.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
+    assert {"sofascore_scraper/doctor.py", "sofascore_scraper/web/api/v1/jobs.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
     assert {"errors", "codec", "files", "layout", "manifest"} <= store_submodules(SRC_DIR)
 
 
@@ -1061,14 +1060,14 @@ def test_hook_follows_the_data_dir_environment_variable(tmp_path: Path, monkeypa
     exec(compile(source, str(tmp_path / "sofascore_scraper" / "reader.py"), "exec"), namespace)
     conftest.BOUNDARY_RECORDERS.append(recorder)
     try:
-        monkeypatch.setenv("DATA_DIR", str(tmp_path / "elsewhere"))
+        monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "elsewhere"))
         namespace["names"](str(other))
         assert recorder.records == {}
-        monkeypatch.setenv("DATA_DIR", str(other))
+        monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(other))
         namespace["names"](str(other))
         namespace["names"](str(fixed))  # sabit dizin her zaman izlenir
         assert len(recorder.records) == 1 and {path for _test, path in recorder.records.values()} == {str(other)}
-        monkeypatch.delenv("DATA_DIR")
+        monkeypatch.delenv("SOFASCORE_STORAGE__DATA_DIR")
         recorder.records.clear()
         namespace["names"](str(other))
         namespace["names"](str(fixed))

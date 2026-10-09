@@ -1862,8 +1862,6 @@ CREATE TABLE events (
   away_name          TEXT,
   home_score         INTEGER,                      -- homeScore.display, else .current
   away_score         INTEGER,
-  home_score_current INTEGER,                      -- homeScore.current as given (legacy list and CSV shapes)
-  away_score_current INTEGER,
   winner_code        INTEGER,
   scores_json        TEXT,                         -- normalised score sheet (sofascore_scraper/status.extract_scores)
   slug               TEXT,
@@ -2176,12 +2174,13 @@ Notes on the event row:
 - `seasons.sort_key` is `derive.season_sort_key(year)`. It equals `SeasonFetcher._get_sortable_year_value`
   wherever that function returns a number, and returns 0.0 where that function raises (`'ab/cd'`, a
   non-string) or returns NaN (`'nan'`).
-- `home_score_current`, `away_score_current`, `stage_name` and `listed_in` exist only so that the legacy list
-  routes and the legacy CSV can be reproduced from the catalog: today's summary writes `homeScore.current`
-  (`sofascore_scraper/match_fetcher.py:570-571`; in football that value includes penalties, see the docstring at
-  `sofascore_scraper/status.py:140`), `tournament.name` (`:574`) and, for seasons fetched as event pages, the page name as
-  the round (`:372`). They are not part of the public contract and can be dropped (a catalog rebuild) when the
-  legacy `/api` routes are removed.
+- `home_score_current`, `away_score_current`, `stage_name` and `listed_in` existed so that the legacy list
+  routes and the legacy CSV could be reproduced from the catalog: the 2.x summary wrote `homeScore.current`
+  (in football that value includes penalties, see the docstring at `sofascore_scraper/status.py:140`),
+  `tournament.name` and, for seasons fetched as event pages, the page name as the round. 3.1 (P30) dropped the
+  two score columns with the legacy `/api` routes (catalog schema 2, a rebuild). `stage_name` and `listed_in`
+  stay: schema v1 prints `stage.name` from the first, and the listing rules of 8.2 (`stale`, the reconcile of a
+  season's pages, the "listed" events of the planner) read the second.
 - When an event has an `/event/{id}` payload, its row always equals `derive(event payload)`. A listing never
   overwrites such a row (8.2).
 - `first_seen_at` and `updated_at` are taken from the manifest (`created_at`, `updated_at`) or, for a listing

@@ -47,7 +47,7 @@ import push_channel_run as pcr  # noqa: E402
 from _all_sports_patterns import SOFA_HOST  # noqa: E402
 from explore_all_sports import nats_messages  # noqa: E402
 
-import sofascore_scraper.challenge_solver as cs  # noqa: E402
+from sofascore_scraper.client import bridge as cs  # noqa: E402
 
 WS_URL = "wss://ws.sofascore.com:9222/"
 TOPIC = "sport.football"

@@ -181,7 +181,8 @@ def activate_settings(inv: Invocation) -> None:
     language = loaded.settings.display.language
     if language != inv.lang and inv.translator is not None:
         # Dil yapılandırma dosyasında da verilebilir ([display] language); komutun metni o dilde yazılır.
-        # Yardım metni ve ayarlar yüklenmeden oluşan hatalar ortamdaki dile (APP_LANGUAGE, sistem dili) uyar.
+        # Yardım metni ve ayarlar yüklenmeden oluşan hatalar ortamdaki dile (SOFASCORE_DISPLAY__LANGUAGE, sistem
+        # dili) uyar.
         inv.t, inv.lang = inv.translator(language)
         inv.out.t = inv.t
 
@@ -192,9 +193,10 @@ def read_settings(inv: Invocation, *, config_file: bool = True) -> Any:
     yazmaz, log kurmaz, etkin ayarları değiştirmez. `config validate`, `doctor` ve `config init` bunu kullanır.
 
     Yükleyici `.env`'in ortama yüklenmiş olmasını bekler (uygulama onu başlangıçta python-dotenv ile yükler);
-    burada aynı görünüm ortamı değiştirmeden kurulur: süreç ortamı, altında `.env`.
+    burada aynı görünüm ortamı değiştirmeden kurulur: süreç ortamı, altında `.env`. `.env`'in kendisi de verilir:
+    eski adların uyarısı adın `.env`'de durduğunu söyler.
 
-    config_file=False: yapılandırma dosyası hesaba katılmaz (yalnızca bugünkü kaynaklar).
+    config_file=False: yapılandırma dosyası hesaba katılmaz.
     """
     import dotenv
 

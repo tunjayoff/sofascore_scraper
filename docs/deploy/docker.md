@@ -33,13 +33,14 @@ Inside the container the server listens on `0.0.0.0`, the container's own interf
 is decided by `-p` / `ports:`, which the app cannot see. Two rules follow:
 
 - **Allowed host names.** `ssc serve` does not start on every interface without them. The Compose example sets
-  them explicitly (`SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"`). When they are set nowhere (not in
-  the environment under either name, not in `/app/config/.env`, and no config file exists), the entrypoint
+  them explicitly (`SOFASCORE_SERVER__ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"`). When they are set nowhere
+  (not in the environment, not in `/app/config/.env`, and no config file exists), the entrypoint
   sets the loopback names itself, so a plain `docker run` answers on `127.0.0.1` exactly as before. A config
   file decides on its own: put `[server] allowed_hosts` in it, or set the variable. To open the
-  app from another machine, add the name or address you use: `SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan`.
+  app from another machine, add the name or address you use:
+  `SOFASCORE_SERVER__ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan`.
   Keep `127.0.0.1` in the list: the image's health check uses it.
-- **Access token.** Without `SOFASCORE_API_TOKEN` the server logs a warning at every start, because it listens on
+- **Access token.** Without `SOFASCORE_SERVER__TOKEN` the server logs a warning at every start, because it listens on
   a non-loopback address. With the port published on `127.0.0.1` only (as in both examples) nobody else can
   reach it and the warning can be ignored. When you publish the port to a network (`-p 8000:8000`), set the
   token: without it anyone who can reach the port can read and delete the data and change the settings.
@@ -52,13 +53,13 @@ the page [`README.md`](README.md#behind-a-reverse-proxy) explains why, and what 
 
 | Volume | Holds |
 |---|---|
-| `/app/data` | everything downloaded, the job history and the event log (`DATA_DIR`) |
-| `/app/config` | `overrides.json` (the settings saved on the web app's **Settings** page), `.env` (settings under their 2.x names), `leagues.txt` and `league_sports.json` (the 2.x league list, read as follows) and, if you add one, `sofascore.toml`. The follows themselves are in the data volume |
+| `/app/data` | everything downloaded, the job history and the event log (`[storage] data_dir`) |
+| `/app/config` | `overrides.json` (the settings saved on the web app's **Settings** page), `.env` (settings as `SOFASCORE_<SECTION>__<KEY>` variables), `leagues.txt` and `league_sports.json` (the 2.x league list, read as follows) and, if you add one, `sofascore.toml`. The follows themselves are in the data volume |
 | `/app/browser-profile` | the browser profile with the solved challenge; keeps restarts fast |
 | `/app/logs` | the rotating log file; the same lines go to the container output (`docker logs`) |
 
-The browser profile is set with `SOFASCORE_CLIENT__BROWSER_PROFILE` (the image also sets the old name,
-`SOFASCORE_BROWSER_PROFILE`, to the same folder for the environment check); to move it, change both. A
+The browser profile is set with `SOFASCORE_CLIENT__BROWSER_PROFILE` (the 2.x name `SOFASCORE_BROWSER_PROFILE`
+is not read since 3.1; an `.env` from 2.x is listed by `ssc doctor` with the new names). A
 Chromium profile can be used by one process at a time: a second container on the same profile volume logs a
 warning and cannot open its browser. Give every container that downloads or watches a profile volume of its
 own, as the Compose example does.

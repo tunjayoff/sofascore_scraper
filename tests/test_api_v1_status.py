@@ -44,7 +44,6 @@ def _fresh_limiter() -> Iterator[None]:
 @pytest.fixture
 def token(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
     monkeypatch.setenv(security.TOKEN_ENV, ACCESS)
-    monkeypatch.setattr(security, "_startup_token", ACCESS)
     redact.refresh()
     yield ACCESS
     monkeypatch.undo()
@@ -53,13 +52,13 @@ def token(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
 
 @pytest.fixture
 def no_token(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
+    monkeypatch.delenv(security.TOKEN_ENV, raising=False)
 
 
 @pytest.fixture
 def canonical(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> sf.LegacyFixture:
     fixture = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     return fixture
 
 
@@ -94,7 +93,7 @@ def test_the_session_routes_answer_without_the_token(token: str) -> None:
     assert anonymous.get("/api/v1/status").status_code == 401
 
 
-def test_login_sets_the_session_cookie_of_the_legacy_route(token: str) -> None:
+def test_login_sets_the_session_cookie(token: str) -> None:
     browser = TestClient(app)
     r = browser.post("/api/v1/auth/login", json={"token": f"  {token} "})
     assert data(r) == {"required": True, "authenticated": True}
@@ -102,7 +101,6 @@ def test_login_sets_the_session_cookie_of_the_legacy_route(token: str) -> None:
     assert cookie.startswith(f"{security.SESSION_COOKIE}={security.session_value(token)};")
     assert "HttpOnly" in cookie and "SameSite=strict" in cookie and token not in cookie
     assert browser.get("/api/v1/status").status_code == 200
-    assert browser.get("/api/settings").status_code == 200  # aynı cookie eski yollarda da geçer
     assert data(browser.post("/api/v1/auth/logout")) == {"required": True, "authenticated": False}
     assert browser.get("/api/v1/status").status_code == 401
 
@@ -119,16 +117,16 @@ def test_a_wrong_token_is_unauthorized_with_a_reason(token: str) -> None:
     assert r.headers["www-authenticate"] == "Bearer" and r.headers["x-request-id"] == body["request_id"]
 
 
-def test_failed_logins_share_the_limit_with_the_legacy_route(token: str) -> None:
+def test_failed_logins_share_the_limit_with_wrong_bearer_tokens(token: str) -> None:
     c = TestClient(app)
     for _ in range(4):
         assert c.post("/api/v1/auth/login", json={"token": "nope"}).status_code == 401
-    assert c.post("/api/auth/login", json={"token": "nope"}).status_code == 401  # fifth: the lock starts
+    wrong = {"authorization": "Bearer nope"}
+    assert c.get("/api/v1/status", headers=wrong).status_code == 401  # fifth: the lock starts
     locked = c.post("/api/v1/auth/login", json={"token": token})  # the right token is not evaluated
     body = error(locked, 401, "unauthorized")
     assert body["details"]["reason"] == "too_many_attempts" and int(locked.headers["retry-after"]) >= 1
     assert "set-cookie" not in locked.headers
-    assert c.post("/api/auth/login", json={"token": token}).status_code == 429
     deps.attempt_limiter.reset()
     assert c.post("/api/v1/auth/login", json={"token": token}).status_code == 200
 
@@ -195,7 +193,7 @@ def test_a_folder_written_by_3_0_has_a_disk_total(tmp_path: Path, monkeypatch: p
     """G21: `summary.disk.total` bir 3.0 dizininde 0 değildir (önceden yalnızca 2.x ağaçlarını sayıyordu)."""
     from sofascore_scraper.services.status import forget_sizes
 
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "fresh"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "fresh"))
     store = open_store(tmp_path / "fresh")
     (Path(store.data_dir) / "v3" / "events").mkdir(parents=True, exist_ok=True)
     (Path(store.data_dir) / "v3" / "events" / "probe.bin").write_bytes(b"x" * 1000)
@@ -284,7 +282,7 @@ def upstream(monkeypatch: pytest.MonkeyPatch) -> List[Any]:
             raise outcome[0]
         return outcome[0]
 
-    monkeypatch.setattr("sofascore_scraper.utils.make_api_request", fake)
+    monkeypatch.setattr("sofascore_scraper.client.transport.make_api_request", fake)
     return [calls, outcome]
 
 

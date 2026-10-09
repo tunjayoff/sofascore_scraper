@@ -2,8 +2,8 @@
 Spor kayıt defteri: desteklenen sporlar ve maç detay dilimleri tek yerde.
 
 Okuyanlar: sofascore_scraper/status.py (skor ailesi), sofascore_scraper/services/live/ (izleyici parametreleri), sofascore_scraper/services/pipeline.py
-(istenecek detay uç noktaları), sofascore_scraper/web/league_sports.py (liglerin sporu), sofascore_scraper/web/api/legacy.py ve
-sofascore_scraper/web/api/v1/ (GET /api/sports, /api/v1/sports), `ssc watch` (--sport seçenekleri), sofascore_scraper/services/planning.py
+(istenecek detay uç noktaları), sofascore_scraper/web/league_sports.py (liglerin sporu),
+sofascore_scraper/web/api/v1/ (GET /api/v1/sports), `ssc watch` (--sport seçenekleri), sofascore_scraper/services/planning.py
 (bir maçın ihtiyacı: beklenen dilimler).
 
 Yeni spor eklemek:
@@ -50,7 +50,7 @@ PeriodFormat = Literal["quarters", "halves", "thirds"]
 #              söyler ve oynanmamış oyunlar da 0-0 gelir; oyunların skoru /event/{id}/esports-games dilimindedir
 SetFormat = Literal["games", "points", "frames", "legs", "legs_won", "games_won"]
 
-# Bitişe yakınlık kuralı (sofascore_scraper/watcher.py'deki _NEAR_END_RULES):
+# Bitişe yakınlık kuralı (sofascore_scraper/services/live/reducer.py NEAR_END_RULES):
 #   football_minute: 2. yarı ≥ 80. dk ya da uzatma dakikası görüldü; uzatma/penaltı kodları
 #   played_ratio:    oynanan süre ≥ normal sürenin %90'ı; saat yoksa son periyot kodu
 #   last_set:        son set (defaultPeriodCount)
@@ -68,7 +68,7 @@ class WatcherParams:
     near_end_rule: NearEndRule = "never"
     # Bu kadar süre geçtiği halde bitmeyen (canlı ya da başlamamış) maç "takılı" sayılır
     stuck_after_seconds: int = DEFAULT_STUCK_AFTER_SECONDS
-    # True: süre startTimestamp'ten değil gerçek oyun başlangıcından sayılır (sofascore_scraper/watcher.py play_start)
+    # True: süre startTimestamp'ten değil gerçek oyun başlangıcından sayılır (sofascore_scraper/services/live/reducer.py play_start)
     stuck_from_play_start: bool = False
 
 

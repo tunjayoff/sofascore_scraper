@@ -1,7 +1,7 @@
 """
 `ssc serve` (sofascore_scraper/cli/commands/serve.py; plan maddesi P25): bağımsız değişkenler, Host izin listesi kuralları
 (PR #43'ünkiler), belirteçsiz açık adres uyarısı, sink dağıtıcısının barındırılması, durdurma ve çıkış kodları,
-`main.py --web`in çevirisi. Başlatıcı tests/test_start_web.py'de, Docker giriş noktası tests/test_packaging.py'dedir.
+`python main.py serve`. Başlatıcı tests/test_start_web.py'de, Docker giriş noktası tests/test_packaging.py'dedir.
 
 Süreç içi testler sunucu başlatmaz: `serve.run_server` sahtesiyle değiştirilir ve web uygulamasının o an
 göreceği izin listesini (SOFASCORE_ALLOWED_HOSTS) kaydeder. Gerçek bir sunucuyu yalnızca bir test başlatır
@@ -26,7 +26,7 @@ import pytest
 
 import main as legacy_main
 import test_cli_skeleton as skeleton
-from sofascore_scraper.cli import legacy_flags, signals
+from sofascore_scraper.cli import signals
 from sofascore_scraper.cli.commands import serve as serve_command
 from sofascore_scraper.web import security
 from test_cli_skeleton import CliRunner, Run, Sandbox
@@ -45,12 +45,15 @@ class FakeServer:
     def __init__(self) -> None:
         self.calls: List[Dict[str, Any]] = []
         self.hosts_env: List[Optional[str]] = []
+        # Web uygulamasının o anda göreceği liste (sofascore_scraper/web/security.allowed_hosts: ayarlardan)
+        self.hosts_seen: List[List[str]] = []
         self.raises: Optional[BaseException] = None
         self.during: Optional[Any] = None
 
     def __call__(self, options: Dict[str, Any]) -> None:
         self.calls.append(dict(options))
         self.hosts_env.append(os.environ.get(security.ALLOWED_HOSTS_ENV))
+        self.hosts_seen.append(security.allowed_hosts())
         if self.during is not None:
             self.during()
         if self.raises is not None:
@@ -65,8 +68,7 @@ def server(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> FakeServer:
     for name in (security.ALLOWED_HOSTS_ENV, "SOFASCORE_SERVER__ALLOWED_HOSTS", security.TOKEN_ENV,
                  "SOFASCORE_SERVER__TOKEN", "SOFASCORE_SINKS"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(security, "_startup_token", None)
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "data"))
     return fake
 
 
@@ -172,7 +174,8 @@ def test_allowed_hosts_from_the_config_file_and_the_new_variable(cli: CliRunner,
                                    'schema = 1\n[server]\nallowed_hosts = ["box.lan", "127.0.0.1"]\n')
     run = serve(cli, "--config", config, "--host", "0.0.0.0", "--json")
     assert run.exit_code == 0, run.stderr
-    assert server.hosts_env == ["box.lan,127.0.0.1"]
+    # Ayarlardan gelen liste ortama yazılmaz: uygulama onu ayarlardan okur
+    assert server.hosts_env == [None] and server.hosts_seen == [["box.lan", "127.0.0.1"]]
     monkeypatch.setenv("SOFASCORE_SERVER__ALLOWED_HOSTS", "other.lan")
     run = serve(cli, "--host", "0.0.0.0", "--json")
     assert run.exit_code == 0 and server.hosts_env[-1] == "other.lan"
@@ -317,7 +320,7 @@ def test_serve_hosts_the_configured_sinks(cli: CliRunner, server: FakeServer, mo
 
     def emit() -> None:
         # Sunucu çalışırken bir iş biter: dağıtıcı onu sink'e teslim eder (en geç çıkıştaki boşaltmada)
-        store = open_store(os.environ["DATA_DIR"])
+        store = open_store(os.environ["SOFASCORE_STORAGE__DATA_DIR"])
         store.streams.append("job", [StreamEvent(type="job.finished", data={"state": "succeeded"}, source="job")])
 
     server.during = emit
@@ -330,7 +333,7 @@ def test_serve_hosts_the_configured_sinks(cli: CliRunner, server: FakeServer, mo
 
 def test_a_broken_sink_stops_the_start_before_the_server(cli: CliRunner, server: FakeServer,
                                                          monkeypatch: pytest.MonkeyPatch) -> None:
-    inside = Path(os.environ["DATA_DIR"]) / "inside.jsonl"
+    inside = Path(os.environ["SOFASCORE_STORAGE__DATA_DIR"]) / "inside.jsonl"
     monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([{"name": "file", "type": "file", "path": str(inside)}]))
     run = serve(cli, "--json")
     assert (run.exit_code, run.error["code"]) == (2, "config_invalid")
@@ -339,7 +342,7 @@ def test_a_broken_sink_stops_the_start_before_the_server(cli: CliRunner, server:
 
 def test_without_sinks_no_store_is_opened(cli: CliRunner, server: FakeServer) -> None:
     assert serve(cli, "--json").exit_code == 0
-    assert not (Path(os.environ["DATA_DIR"]) / ".meta").exists()
+    assert not (Path(os.environ["SOFASCORE_STORAGE__DATA_DIR"]) / ".meta").exists()
 
 
 # --- komut kaydı ---------------------------------------------------------------------------------
@@ -358,32 +361,23 @@ def test_there_is_no_token_option_and_no_live_option(cli: CliRunner) -> None:
     assert "--token" not in run.stdout and "--live" not in run.stdout
 
 
-# --- main.py --web ---------------------------------------------------------------------------------
+# --- python main.py serve ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("argv,expected", [
-    (["--web"], ["serve", "--host", "127.0.0.1", "--port", "8000"]),
-    (["--web", "--host", "0.0.0.0", "--port", "9", "--allow-any-host", "--dev"],
-     ["serve", "--host", "0.0.0.0", "--port", "9", "--allow-any-host", "--dev"]),
-    (["--web", "--data-dir", "veri", "--ignore-rate-limit"],
-     ["--data-dir", os.path.abspath("veri"), "--ignore-breaker", "serve", "--host", "127.0.0.1", "--port", "8000"]),
-])
-def test_legacy_web_is_translated_to_serve(argv: List[str], expected: List[str]) -> None:
-    translation = legacy_flags.translate(legacy_main.parse_arguments(argv), os.getcwd())
-    assert translation.commands == (tuple(expected),) and translation.error is None
-    assert translation.interactive is False
-
-
-def test_main_py_web_runs_serve_with_its_deprecation_line(server: FakeServer, capsys: pytest.CaptureFixture[str],
-                                                         monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("APP_LANGUAGE", "en")
-    assert legacy_main.main(["--web", "--port", "9010"]) == 0
-    err = capsys.readouterr().err
-    assert "this run is: ssc serve --host 127.0.0.1 --port 9010" in err
+def test_main_py_serve_is_ssc_serve_and_the_old_web_flag_is_a_usage_error(
+    restore_cli_process: None,
+    server: FakeServer, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "en")
+    assert legacy_main.main(["serve", "--port", "9010"]) == 0
     assert server.calls == [{"host": "127.0.0.1", "port": 9010}]
+    capsys.readouterr()
     # Her arayüz, izin listesi yok: başlamaz (kod 2), sunucu çağrılmaz
-    assert legacy_main.main(["--web", "--host", "0.0.0.0"]) == 2
+    assert legacy_main.main(["serve", "--host", "0.0.0.0"]) == 2
     assert len(server.calls) == 1 and "--allow-any-host" in capsys.readouterr().err
+    # 2.x'in `--web` bayrağı 3.1'de kalktı (P30): hiçbir şey başlamaz, ileti `ssc serve`i söyler
+    assert legacy_main.main(["--web", "--port", "9010"]) == 2
+    assert len(server.calls) == 1 and "use `ssc serve`" in capsys.readouterr().err
 
 
 # --- gerçek bir sunucu --------------------------------------------------------------------------

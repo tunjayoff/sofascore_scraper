@@ -1,10 +1,10 @@
 """
 Ortam ön denetimi ("doctor"): uygulamanın çalışması için gerekenler yerinde mi?
 
-    python main.py --doctor            # okunur metin; hata varsa çıkış kodu 1
-    python main.py --doctor --json     # aynı sonuç JSON olarak (otomasyon, başlatıcı)
-    python -m sofascore_scraper.doctor               # aynısı (başlatıcı sanal ortamın Python'u ile böyle çağırır)
-    ssc doctor [--json]                # yeni CLI (sofascore_scraper/cli): aynı denetimler + istek bütçesi uyarısı
+    ssc doctor                         # okunur metin; hata varsa çıkış kodu 1 (python main.py doctor da aynı)
+    ssc --json doctor                  # aynı sonuç JSON olarak (otomasyon, başlatıcı)
+    python -m sofascore_scraper.doctor # aynı denetimler, yalnızca standart kütüphaneyle (başlatıcı ve kurulum
+                                       # betikleri sanal ortamın Python'u ile böyle çağırır)
 
 Denetimler SofaScore'a bağlanmaz: Python sürümü, gerekli paketler, köprünün başlatacağı tarayıcı
 (patchright'ın Chromium'u; yerel bir about:blank sayfasıyla denenir), tarayıcı profili, veri ve
@@ -73,32 +73,18 @@ REQUIRED_MODULES: Tuple[Tuple[str, str], ...] = (
 _PROFILE_LOCK_FILES = ("SingletonLock", "SingletonSocket", "SingletonCookie")
 
 BROWSER_PROBE_TIMEOUT = 90.0
-# Canlı denetimin tek isteği: küçük ve durağan bir uç nokta (challenge_solver._PROBE_URL ile aynı)
+# Canlı denetimin tek isteği: küçük ve durağan bir uç nokta (client/bridge.py `_PROBE_URL` ile aynı)
 LIVE_PROBE_PATH = "/unique-tournament/17/seasons"
 
 _ALLOWED_API_HOSTS = ("www.sofascore.com", "api.sofascore.com")
-_PROXY_SCHEMES = ("http", "https", "socks5", "socks5h")
-_LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
-_RATE_OFF_WORDS = ("off", "false", "no", "none", "disabled")  # sofascore_scraper/throttle.py ile aynı
-_TRUTHY = ("1", "true", "yes")
-
-# (anahtar, tam sayı mı, alt sınır, alt sınır dahil mi, üst sınır) — okuyan kodun kabul ettiği aralıklar
-_NUMBER_RULES: Tuple[Tuple[str, bool, float, bool, Optional[float]], ...] = (
-    ("REQUEST_TIMEOUT", True, 1, True, None),
-    ("MAX_RETRIES", True, 0, True, None),
-    ("MAX_CONCURRENT", True, 1, True, None),
-    ("WAIT_TIME_MIN", False, 0, True, None),
-    ("WAIT_TIME_MAX", False, 0, True, None),
-    ("RATE_LIMIT_THRESHOLD_CONSECUTIVE", True, 1, True, None),
-    ("RATE_LIMIT_THRESHOLD_RATIO", False, 0, False, 1),
-    ("SERVER_ERROR_THRESHOLD_CONSECUTIVE", True, 1, True, None),
-    ("REFRESH_WINDOW_HOURS", False, 0, True, None),
-    ("REFRESH_MIN_INTERVAL_HOURS", False, 0, True, None),
-    ("BRIDGE_DEGRADED_AFTER", False, 1, True, None),
-    ("BRIDGE_BLOCKED_AFTER", False, 1, True, None),
-    ("BRIDGE_BLOCKED_MIN_SECONDS", False, 0, True, None),
-    ("WATCH_MAX_EVENT_POLLS", True, 1, True, None),
-)
+_RATE_OFF = "off"  # `client.rate`'in "kapalı" yazımı (sofascore_scraper/config/loader.py `coerce`)
+_TRUTHY = ("1", "true", "yes", "on")  # yükleyicinin mantıksal "doğru" yazımları
+# Ayarların ortamdaki adları (SOFASCORE_<BÖLÜM>__<ANAHTAR>; sofascore_scraper/config/loader.py `env_name`). Değerleri
+# yükleyici denetler (`config` denetimi); bu modül yalnızca birkaçını kendisi okur.
+_ENV_DATA_DIR = "SOFASCORE_STORAGE__DATA_DIR"
+_ENV_BROWSER_PROFILE = "SOFASCORE_CLIENT__BROWSER_PROFILE"
+_ENV_BROWSER_HEADED = "SOFASCORE_CLIENT__BROWSER_HEADED"
+_ENV_BASE_URL = "SOFASCORE_CLIENT__BASE_URL"
 # Yapılandırma dosyasının adı ve aramayı kapatan değer (sofascore_scraper/config/loader.py CONFIG_FILE_NAME, CONFIG_DISABLED;
 # doktor yükleyiciyi yalnızca `check_config` içinde içe aktarır)
 _CONFIG_FILE_NAME = "sofascore.toml"
@@ -145,9 +131,6 @@ def _configured_language(ctx: "Context") -> Optional[str]:
     except (OSError, ValueError):
         return None
 
-
-# Kod bunları `.lower() == "true"` ile okur: "1" ya da "yes" sessizce false olur
-_BOOL_KEYS = ("USE_PROXY", "USE_COLOR", "FETCH_ONLY_FINISHED", "SAVE_EMPTY_ROUNDS")
 
 
 # --- sonuç ve bağlam --------------------------------------------------------------------------
@@ -215,24 +198,17 @@ class Context:
 
     def _app_language(self) -> str:
         # Uygulamayla aynı kural (sofascore_scraper/language.py): açık ayar > sistem dili > İngilizce. Açık ayar, ayar
-        # yükleyicisinin katman sırasıyla aranır (sofascore_scraper/config/loader.py; FX-22): süreç ortamı > sofascore.toml >
-        # overrides.json (Ayarlar sayfası) > .env. Yükleyici dotenv'e bağlı olduğu için burada yalnızca standart
-        # kütüphaneyle okunur: başlatıcı (scripts/start_web.py) ve başlatma betikleri dili buradan alır.
-        new_name = _language_code(self.get(_LANGUAGE_SETTING_ENV))  # SOFASCORE_DISPLAY__LANGUAGE: ortam katmanı
-        legacy, legacy_from_env = None, False
-        for name in language.EXPLICIT_KEYS:  # yükleyici gibi: geçerli kodu taşıyan ilk eski ad, katmanı onun
-            legacy = language.explicit_language({name: self.get(name)})
-            if legacy is not None:
-                legacy_from_env = name in self.environ and self.environ[name] != self.file_env.get(name)
-                break
-        explicit = (new_name or (legacy if legacy_from_env else None) or _configured_language(self)
-                    or legacy)
+        # yükleyicisinin katman sırasıyla aranır (sofascore_scraper/config/loader.py; FX-22): ortam (`.env` dahil:
+        # uygulama onu ortama yükler) > sofascore.toml > overrides.json (Ayarlar sayfası). 2.x'in APP_LANGUAGE adı
+        # 3.1'de okunmaz. Yükleyici dotenv'e bağlı olduğu için burada yalnızca standart kütüphaneyle okunur:
+        # başlatıcı (scripts/start_web.py) ve başlatma betikleri dili buradan alır.
+        explicit = _language_code(self.get(_LANGUAGE_SETTING_ENV)) or _configured_language(self)
         return explicit or language.detected_language(
             {key: self.get(key) for key in language.LOCALE_KEYS}, platform=self.platform
         ) or language.DEFAULT_LANGUAGE
 
     def get(self, key: str, default: str = "") -> str:
-        """Geçerli değer: süreç ortamı .env'in önündedir (uygulama load_dotenv'i override'sız çağırır)."""
+        """Geçerli değer: süreç ortamı, yoksa .env (uygulama .env'i ortama, var olanı ezmeden yükler)."""
         value = self.environ.get(key)
         if value is None:
             value = self.file_env.get(key)
@@ -252,18 +228,18 @@ class Context:
     def data_dir(self) -> Path:
         """
         Veri dizini, uygulamanın ayar yükleyicisinin kuralıyla (FX-23, bulgu F1; `ssc status` de onu kullanır):
-        süreç ortamı > yapılandırma dosyasının `storage.data_dir`'i > overrides.json > `.env`'deki DATA_DIR >
-        "data". Yükleyici içe aktarılamıyorsa (paketler eksik) ya da ayarlar kurulamıyorsa (`config` denetimi
-        bunu bildirir) yalnızca ortama ve `.env`'e bakılır.
+        ortam (`.env` dahil) > yapılandırma dosyasının `storage.data_dir`'i > overrides.json > "data". Yükleyici
+        içe aktarılamıyorsa (paketler eksik) ya da ayarlar kurulamıyorsa (`config` denetimi bunu bildirir)
+        yalnızca ortama ve `.env`'e bakılır (SOFASCORE_STORAGE__DATA_DIR).
         """
-        return self._resolve(self._loaded_data_dir() or self.get("DATA_DIR") or "data")
+        return self._resolve(self._loaded_data_dir() or self.get(_ENV_DATA_DIR) or "data")
 
     def _loaded_data_dir(self) -> Optional[str]:
         try:
             from sofascore_scraper.config import loader
 
             path, _disabled = _config_file(self)
-            # Uygulama `.env`'i süreç ortamına yükler (var olanı ezmeden); yükleyici eski adları ortamdan okur
+            # Uygulama `.env`'i süreç ortamına yükler (var olanı ezmeden): yükleyici ayarları ortamdan okur
             environ = {**self.file_env, **self.environ}
             loaded = loader.load_settings(config_file=path, environ=environ, dotenv_values=self.file_env,
                                           overrides_file=self.config_dir() / loader.OVERRIDES_FILE_NAME)
@@ -276,8 +252,21 @@ class Context:
         return self._resolve(self.get("SOFASCORE_CONFIG_DIR") or "config")
 
     def profile_dir(self) -> Path:
-        # sofascore_scraper/paths.browser_profile_dir ile aynı kural (boş = varsayılan); burada .env de hesaba katılır
-        return self._resolve(self.get("SOFASCORE_BROWSER_PROFILE") or DEFAULT_BROWSER_PROFILE_DIR)
+        # sofascore_scraper/paths.browser_profile_dir ile aynı kural (boş = varsayılan); burada .env de hesaba katılır.
+        # Yapılandırma dosyasındaki profil (client.browser_profile) yükleyiciyle okunur, kurulamıyorsa ortam.
+        return self._resolve(self._loaded_profile_dir() or self.get(_ENV_BROWSER_PROFILE) or DEFAULT_BROWSER_PROFILE_DIR)
+
+    def _loaded_profile_dir(self) -> Optional[str]:
+        try:
+            from sofascore_scraper.config import loader
+
+            path, _disabled = _config_file(self)
+            loaded = loader.load_settings(config_file=path, environ={**self.file_env, **self.environ},
+                                          dotenv_values=self.file_env,
+                                          overrides_file=self.config_dir() / loader.OVERRIDES_FILE_NAME)
+        except Exception:
+            return None
+        return str(loaded.settings.client.browser_profile or "") or None
 
     def frontend_index(self) -> Path:
         return self.root / "frontend" / "dist" / "index.html"
@@ -686,8 +675,8 @@ def check_config(ctx: Context) -> CheckResult:
                        fix=ctx.t("doctor_config_unchecked_fix"), detail=detail)
     try:
         overrides = ctx.config_dir() / loader.OVERRIDES_FILE_NAME
-        loaded = loader.load_settings(config_file=path, environ=ctx.environ, dotenv_values=ctx.file_env,
-                                      overrides_file=overrides)
+        loaded = loader.load_settings(config_file=path, environ={**ctx.file_env, **ctx.environ},
+                                      dotenv_values=ctx.file_env, overrides_file=overrides)
     except Exception as e:  # ConfigError: bozuk TOML, bilinmeyen anahtar, aralık dışı değer, eksik dosya
         detail["error"] = str(e)
         return _result(ctx, "config", FAIL, "config_invalid",
@@ -853,65 +842,43 @@ def check_frontend(ctx: Context, node_version: Callable[[], Optional[Tuple[int, 
 # --- .env -------------------------------------------------------------------------------------
 
 
-def _number_problem(ctx: Context, key: str, raw: str, integer: bool, low: float, inclusive: bool, high: Optional[float]) -> Optional[str]:
+def _legacy_names(ctx: Context) -> List[Tuple[str, str]]:
+    """
+    Ortamda ya da `.env`'de duran 2.x adları ve yerlerine geçen adlar (sofascore_scraper/config/loader.py
+    `LEGACY_NAMES`): 3.1 onları okumaz. Yükleyici içe aktarılamıyorsa (paketler eksik) boş: eksik paketi
+    `packages` denetimi bildirir.
+    """
     try:
-        value = int(raw) if integer else float(raw)
-        valid = value == value and abs(value) != float("inf")  # nan / inf
-    except ValueError:
-        valid = False
-    if valid:
-        valid = (value >= low if inclusive else value > low) and (high is None or value <= high)
-    if valid:
-        return None
-    bounds = "{} {:g}".format("≥" if inclusive else ">", low)
-    if high is not None:
-        bounds += ", ≤ {:g}".format(high)
-    return ctx.t("doctor_env_not_int" if integer else "doctor_env_not_number", key=key, value=raw, range=bounds)
+        from sofascore_scraper.config import loader
+    except Exception:
+        return []
+    named: Tuple[str, ...] = ()
+    try:  # proxy_env / token_env'in adını verdiği değişken okunur: eski bir ad olsa da sorun değildir
+        path, _disabled = _config_file(ctx)
+        named = loader.named_variables(loader.load_settings(
+            config_file=path, environ={**ctx.file_env, **ctx.environ}, dotenv_values=ctx.file_env,
+            overrides_file=ctx.config_dir() / loader.OVERRIDES_FILE_NAME).settings)
+    except Exception:  # ayarlar kurulamıyor: `config` denetimi bildirir
+        pass
+    return [(name, loader.legacy_replacement(name))
+            for name in loader.legacy_names_in(ctx.environ, ctx.file_env, named)]
 
 
 def _env_problems(ctx: Context) -> List[Tuple[str, str, str]]:
-    """(status, anahtar, ileti) listesi: uygulamanın gerçekten göreceği değerler denetlenir."""
+    """
+    (status, anahtar, ileti) listesi. Ayarların değerlerini yükleyici denetler (`config` denetimi); burada `.env`'in
+    okunamayan satırları, okunmayan 2.x adları ve yükleyicinin görmediği birkaç durum denetlenir.
+    """
     problems: List[Tuple[str, str, str]] = []
 
     for number, text in ctx.env_bad_lines:
         problems.append((FAIL, "line {}".format(number), ctx.t("doctor_env_bad_line", line=number, text=text)))
 
-    for key, integer, low, inclusive, high in _NUMBER_RULES:
-        raw = ctx.get(key)
-        if raw:  # boş = ayarlanmamış: varsayılan kullanılır
-            message = _number_problem(ctx, key, raw, integer, low, inclusive, high)
-            if message:
-                problems.append((FAIL, key, message))
+    # 2.x'in adları 3.1'de okunmaz (plan maddesi P30): her biri yeni adıyla söylenir
+    for name, replacement in _legacy_names(ctx):
+        problems.append((WARN, name, ctx.t("doctor_env_legacy_name", name=name, new=replacement)))
 
-    for key in _BOOL_KEYS:
-        raw = ctx.get(key)
-        if raw and raw.lower() not in ("true", "false"):
-            problems.append((FAIL, key, ctx.t("doctor_env_not_bool", key=key, value=raw)))
-
-    rate = ctx.get("REQUEST_RATE_LIMIT").lower()
-    if rate and rate not in _RATE_OFF_WORDS:
-        try:
-            ok = abs(float(rate)) != float("inf") and float(rate) == float(rate)
-        except ValueError:
-            ok = False
-        if not ok:
-            problems.append((FAIL, "REQUEST_RATE_LIMIT", ctx.t("doctor_env_rate", value=rate)))
-
-    # Proxy: değer hiçbir zaman yazdırılmaz (kimlik bilgisi içerebilir)
-    use_proxy = ctx.get("USE_PROXY").lower() == "true"
-    proxy = ctx.get("PROXY_URL")
-    if use_proxy and not proxy:
-        problems.append((FAIL, "PROXY_URL", ctx.t("doctor_env_proxy_missing")))
-    elif proxy:
-        try:
-            parsed = urlparse(proxy)
-            proxy_ok = parsed.scheme in _PROXY_SCHEMES and bool(parsed.hostname)
-        except ValueError:
-            proxy_ok = False
-        if not proxy_ok:
-            problems.append((FAIL if use_proxy else WARN, "PROXY_URL", ctx.t("doctor_env_proxy_invalid")))
-
-    api = ctx.get("API_BASE_URL")
+    api = ctx.get(_ENV_BASE_URL)
     if api:
         try:
             parsed = urlparse(api)
@@ -919,25 +886,14 @@ def _env_problems(ctx: Context) -> List[Tuple[str, str, str]]:
         except ValueError:
             api_ok = False
         if not api_ok:
-            problems.append((WARN, "API_BASE_URL", ctx.t("doctor_env_api_url", value=api)))
-
-    language = ctx.get("APP_LANGUAGE")
-    if language and language.lower() not in SUPPORTED_LANGUAGES:
-        problems.append((WARN, "APP_LANGUAGE", ctx.t("doctor_env_language", value=language)))
-
-    level = ctx.get("LOG_LEVEL")
-    if level and level.upper() not in _LOG_LEVELS:
-        problems.append((WARN, "LOG_LEVEL", ctx.t("doctor_env_log_level", value=level)))
+            problems.append((WARN, _ENV_BASE_URL, ctx.t("doctor_env_api_url", value=api)))
 
     if ctx.get("SOFASCORE_CHROME_PROFILE"):
         problems.append((WARN, "SOFASCORE_CHROME_PROFILE", ctx.t("doctor_env_legacy_profile")))
 
-    headed = ctx.get("SOFASCORE_BROWSER_HEADED").lower() in _TRUTHY
+    headed = ctx.get(_ENV_BROWSER_HEADED).lower() in _TRUTHY
     if headed and ctx.platform.startswith("linux") and not (ctx.get("DISPLAY") or ctx.get("WAYLAND_DISPLAY")):
-        problems.append((WARN, "SOFASCORE_BROWSER_HEADED", ctx.t("doctor_env_headed")))
-
-    if ctx.env_file.is_file() and not os.access(str(ctx.env_file), os.W_OK):
-        problems.append((WARN, ".env", ctx.t("doctor_env_readonly", path=ctx.env_file)))
+        problems.append((WARN, _ENV_BROWSER_HEADED, ctx.t("doctor_env_headed")))
 
     return problems
 
@@ -973,14 +929,14 @@ def check_env(ctx: Context) -> CheckResult:
 # sofascore_scraper/throttle.DEFAULT_RATE_LIMIT ile aynı (tests/test_doctor.py karşılaştırır); burada yinelenir çünkü bu
 # modül yüklenirken başka uygulama modülü içe aktarmaz
 DEFAULT_REQUEST_RATE = 5.0
-# Yeni ad eski adın önündedir (sofascore_scraper/config/loader.py: ikisi de verilmişse yenisi kazanır)
-_RATE_KEYS = ("SOFASCORE_CLIENT__RATE", "REQUEST_RATE_LIMIT")
+# Bütçenin ortamdaki adı (`client.rate`; 2.x'in REQUEST_RATE_LIMIT adı 3.1'de okunmaz)
+_RATE_KEYS = ("SOFASCORE_CLIENT__RATE",)
 
 
 def _configured_rate(ctx: Context) -> Tuple[float, str]:
     """
-    (istek/sn, kaynak). Çağıran geçerli değeri verdiyse o; değilse ortam ve .env, sofascore_scraper/throttle.configured_rate
-    kuralıyla: boş ya da geçersiz = varsayılan (geçersiz değeri `env` denetimi bildirir), 0 / off = kapalı.
+    (istek/sn, kaynak). Çağıran geçerli değeri verdiyse o; değilse ortam ve .env (`client.rate`'in kuralı): boş ya
+    da geçersiz = varsayılan (geçersiz değeri `config` denetimi bildirir), 0 / off = kapalı.
     """
     if ctx.request_rate is not None:
         return max(0.0, float(ctx.request_rate)), ctx.request_rate_source or "settings"
@@ -988,7 +944,7 @@ def _configured_rate(ctx: Context) -> Tuple[float, str]:
         raw = ctx.get(key).lower()
         if not raw:
             continue
-        if raw in _RATE_OFF_WORDS:
+        if raw == _RATE_OFF:
             return 0.0, key
         try:
             rate = float(raw)
@@ -1037,7 +993,7 @@ def check_live(ctx: Context, fetch: Optional[Callable[[str], Any]] = None) -> Ch
     (çalışan web uygulaması) tarayıcı başlayamaz ve denetim başarısız olur.
     """
     if fetch is None:
-        from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync as fetch
+        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync as fetch
 
     try:
         data = fetch(LIVE_PROBE_PATH)
@@ -1080,7 +1036,7 @@ CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
 )
 CHECK_IDS = tuple(check_id for check_id, _ in CHECKS)
 
-# Eskiden yalnızca yeni CLI'nin (`run_checks(extra=True)`) çalıştırdığı denetimler. `python main.py --doctor`
+# Eskiden yalnızca yeni CLI'nin (`run_checks(extra=True)`) çalıştırdığı denetimler. 2.x'in `python main.py --doctor`u
 # `ssc doctor`un takma adı olunca (plan maddesi P19) istek bütçesi denetimi CHECKS'e katıldı; liste boş kalır,
 # `extra` parametresi eski çağıranlar için durur.
 EXTRA_CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = ()
@@ -1191,7 +1147,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ctx = Context(lang=lang)
 
     parser = argparse.ArgumentParser(
-        prog="python main.py --doctor", description=ctx.t("doctor_cli_description"), add_help=False
+        prog="python -m sofascore_scraper.doctor", description=ctx.t("doctor_cli_description"), add_help=False
     )
     parser.add_argument("-h", "--help", action="help", help=ctx.t("cli_help_help"))
     parser.add_argument("--json", action="store_true", help=ctx.t("doctor_cli_json"))

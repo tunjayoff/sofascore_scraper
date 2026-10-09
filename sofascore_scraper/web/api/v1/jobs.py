@@ -272,7 +272,7 @@ class StartExportJob(BaseModel):
 class BackupJobSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    scope: Literal["all", "state", "data", "config", "seasons", "matches", "match_details"] = "all"
+    scope: Literal["all", "state", "data"] = "all"
     include_env: bool = Field(default=False, description="Also `.env` (it can hold secrets); the file name says so.")
 
 
@@ -580,18 +580,6 @@ def _sync_spec(body: Union[StartSyncJob, StartFetchJob, StartRefreshJob]) -> "Sy
     )
 
 
-def _legacy_payload(spec: "SyncSpec") -> Dict[str, Any]:
-    """Eski arayüzün iş kartı başlığı istek gövdesinden üretilir: aynı biçim (bkz. routes/scrape.FetchRequest)."""
-    return {
-        "league_id": spec.league_id,
-        "mode": spec.mode,
-        "selections": [
-            {"league_id": s.league_id, "season_ids": list(s.season_ids) or None, "match_ids": list(s.match_ids) or None}
-            for s in spec.selections
-        ] or None,
-    }
-
-
 def _run_sync(handle: "JobHandle", spec: "SyncSpec") -> "JobOutcome":
     """
     İşin gövdesi (işin kendi thread'inde): servisi çalıştırır ve sonucunu işin bitişine çevirir. Servisten
@@ -671,7 +659,6 @@ def start_job(response: Response, body: Annotated[StartJob, Body(discriminator="
         origin=local_origin("api"),
         background=True,
         phases=spec.job_phases,
-        payload=_legacy_payload(spec),
         on_change=deps.refresh_job_mirror,
     )
     deps.refresh_job_mirror()

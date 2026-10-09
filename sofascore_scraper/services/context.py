@@ -15,9 +15,8 @@ Bağlam SofaScore istemcisini ve veri dizininin deposuna giden yolu taşır:
 
 Tasarımdaki diğer alanlar (Settings, Clock) onları getiren plan maddeleriyle eklenir.
 
-Eski indiriciler (`season_fetcher`, `match_fetcher`, `match_data_fetcher`; plan maddesi P15) bağlam kurulurken
-kurulmaz: ilk erişimde kurulur ve bağlamın ömrü boyunca aynı nesne kalır. Yalnızca eski adlı yüzlerdir (iş
-sofascore_scraper/services/ altındadır); eşitleme ve bakım servisleri ile bir web ucu onları hâlâ bu adlarla çağırır. Modül onları içe aktarmaz: bağlamı içe aktarmak üç indiriciyi yüklemez.
+2.x'in indiricileri (`season_fetcher`, `match_fetcher`, `match_data_fetcher`; P15'ten beri eski adlı yüzler) 3.1'de
+kalktı (plan maddesi P30): servisler listeleri ListingService ile, detayları DetailPhase ve boru hattıyla çalıştırır.
 
 Bağlam kurulurken takipler de `follows` tablosuna eşitlenir (plan maddesi ST-17): yapılandırma dosyasının
 `[[follow]]` girdileri "config" kaynağıyla, lig dosyaları "legacy" kaynağıyla (bkz. `_sync_follows`). Bu eşitleme
@@ -27,8 +26,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from functools import cached_property
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Set, Tuple
+from typing import Any, Mapping, Optional, Set, Tuple
 
 from sofascore_scraper.client import Client
 from sofascore_scraper.config_manager import ConfigManager
@@ -36,11 +34,6 @@ from sofascore_scraper.exceptions import StorageError
 from sofascore_scraper.jobs.manager import JobManager
 from sofascore_scraper.logger import get_logger
 from sofascore_scraper.store import FollowSpec, JobStore, Store, apply_follows, open_store
-
-if TYPE_CHECKING:
-    from sofascore_scraper.match_data_fetcher import MatchDataFetcher
-    from sofascore_scraper.match_fetcher import MatchFetcher
-    from sofascore_scraper.season_fetcher import SeasonFetcher
 
 logger = get_logger("Services")
 
@@ -59,33 +52,11 @@ class ServiceContext:
     client              SofaScore istemcisi; köprü sağlığı değişimleri deponun çalışma zamanı bilgilerine yazılır
     store               (özellik) veri dizininin deposu; ilk erişimde açılır
     jobs                (özellik) deponun iş yöneticisi
-    season_fetcher      (özellik) sezon listelerinin eski yüzü; ilk erişimde kurulur
-    match_fetcher       (özellik) maç listelerinin (program) eski yüzü; ilk erişimde kurulur
-    match_data_fetcher  (özellik) maç detaylarının ve yenilemenin eski yüzü; ilk erişimde kurulur
     """
 
     config: ConfigManager
     data_dir: str
     client: Optional[Client] = None
-
-    # Dondurulmuş sınıfta da çalışır: cached_property değeri örneğin __dict__'ine doğrudan yazar
-    @cached_property
-    def season_fetcher(self) -> "SeasonFetcher":
-        from sofascore_scraper.season_fetcher import SeasonFetcher
-
-        return SeasonFetcher(self.config, self.data_dir)
-
-    @cached_property
-    def match_fetcher(self) -> "MatchFetcher":
-        from sofascore_scraper.match_fetcher import MatchFetcher
-
-        return MatchFetcher(self.config, self.season_fetcher, self.data_dir)
-
-    @cached_property
-    def match_data_fetcher(self) -> "MatchDataFetcher":
-        from sofascore_scraper.match_data_fetcher import MatchDataFetcher
-
-        return MatchDataFetcher(self.config, self.data_dir)
 
     @property
     def store(self) -> Store:
@@ -176,21 +147,19 @@ def _client_for(data_dir: str) -> Optional[Client]:
     _health_data_dir = data_dir
     try:
         return Client(on_health_change=_record_bridge_health)
-    except ValueError as e:  # API_BASE_URL http(s) değil: istekler zaten başarısız olur, bağlam yine kurulur
+    except ValueError as e:  # `client.base_url` http(s) değil: istekler zaten başarısız olur, bağlam yine kurulur
         logger.warning("SofaScore client could not be built: %s", e)
         return None
 
 
 def build_context(config_manager: ConfigManager, *, data_dir: Optional[str] = None) -> ServiceContext:
     """
-    Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler ve istemciyi kurar. İndiriciler kurulmaz
-    (ilk erişimde; sınıf belgesi).
+    Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler ve istemciyi kurar.
 
-    data_dir verilmezse yapılandırmadaki DATA_DIR kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni bir
-    bağlamdır; indiriciler durum taşıdığı için (iş önbelleği, son istek sayımları) bir bağlam tek bir işe ya da
-    tek bir isteğe aittir.
+    data_dir verilmezse ayarlardaki veri dizini (`storage.data_dir`) kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni bir
+    bağlamdır; bir bağlam tek bir işe ya da tek bir isteğe aittir.
 
-    USE_COLOR kapalıyken NO_COLOR'ı süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); bağlam ortama dokunmaz.
+    display.use_color kapalıyken NO_COLOR'ı süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); bağlam ortama dokunmaz.
     """
     data_dir = data_dir or config_manager.get_data_dir()
     _ensure_directory(data_dir)

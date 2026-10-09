@@ -6,28 +6,27 @@ duranlar o kararı zayıflatmayan ve kullanıcının kendi tarayıcısı üzerin
 
   Host izin listesi   DNS rebinding: yalnızca bilinen adlarla gelen isteklere yanıt verilir.
   Kaynak denetimi     CSRF: başka bir sitenin tetiklediği durum değiştiren istek reddedilir.
-  Erişim belirteci    İsteğe bağlı (SOFASCORE_API_TOKEN): ayarlıysa her /api isteği onu taşır.
+  Erişim belirteci    İsteğe bağlı (`[server] token`: SOFASCORE_SERVER__TOKEN ya da `token_env`in
+                      adını verdiği değişken): ayarlıysa her /api isteği onu taşır.
   Güvenlik başlıkları nosniff, çerçeveleme yasağı, Referrer-Policy, Content-Security-Policy.
 
-Bu modül yalnızca standart kütüphaneye bağlıdır: main.py, sunucuyu başlatmadan önce Host izin
-listesini buradan hesaplar.
+İzin listesi ve belirteç ayar yükleyicisinden okunur (sofascore_scraper/config/loader.py; işlev içinde içe aktarılır):
+`ssc serve` adrese göre türettiği listeyi ayarlara verir (bayrak ve ortam katmanı), uygulama oradan okur.
+2.x'in SOFASCORE_ALLOWED_HOSTS ve SOFASCORE_API_TOKEN adları 3.1'de okunmaz (plan maddesi P30).
 """
 from __future__ import annotations
 
 import hashlib
 import hmac
 import ipaddress
-import logging
-import os
-from pathlib import Path
 from typing import List, Mapping, Optional, Tuple
 from urllib.parse import urlparse
 
-logger = logging.getLogger(__name__)
-
 # --- Host izin listesi ----------------------------------------------------------------------
 
-ALLOWED_HOSTS_ENV = "SOFASCORE_ALLOWED_HOSTS"
+# İzin listesinin ortamdaki adı (`server.allowed_hosts`; `ssc serve` türettiği listeyi buraya da yazar: `--dev`in
+# yeniden yükleyen alt süreci onu ortamdan alır)
+ALLOWED_HOSTS_ENV = "SOFASCORE_SERVER__ALLOWED_HOSTS"
 # Tarayıcının bu bilgisayara ulaşırken gönderdiği Host adları (IPv6 köşeli ayraçla gelir)
 LOOPBACK_HOSTS: Tuple[str, ...] = ("localhost", "127.0.0.1", "[::1]")
 # "Her arayüz" adresleri: bu adreslerle açılan sunucuya hangi adla ulaşılacağı bilinemez
@@ -55,17 +54,19 @@ def is_loopback_bind(host: str) -> bool:
 
 def allowed_hosts() -> List[str]:
     """
-    Yanıt verilen Host adları: SOFASCORE_ALLOWED_HOSTS, yoksa (ya da boşsa) yalnızca yerel adlar.
-    Kullanıcının yazdığı değer olduğu gibi kullanılır ("*" = hepsi; güvensiz).
+    Yanıt verilen Host adları: `server.allowed_hosts` (varsayılanı yalnızca yerel adlar). Kullanıcının yazdığı
+    değer olduğu gibi kullanılır ("*" = hepsi; güvensiz).
     """
-    return parse_hosts(os.environ.get(ALLOWED_HOSTS_ENV)) or list(LOOPBACK_HOSTS)
+    from sofascore_scraper.config import loader
+
+    return list(loader.active_settings().server.allowed_hosts) or list(LOOPBACK_HOSTS)
 
 
 def allowed_hosts_for_bind(bind_host: str, explicit: Optional[str], allow_any: bool = False) -> Optional[str]:
     """
-    main.py --web --host için SOFASCORE_ALLOWED_HOSTS değeri; None = ortam olduğu gibi kalır.
+    `ssc serve --host` için `server.allowed_hosts` değeri; None = ayar olduğu gibi kalır.
 
-      - Kullanıcı SOFASCORE_ALLOWED_HOSTS yazdıysa her zaman o geçerlidir (üzerine yazılmaz).
+      - Kullanıcı listeyi verdiyse (`explicit`) her zaman o geçerlidir (üzerine yazılmaz).
       - Yerel adres: varsayılan (yalnızca yerel adlar).
       - --allow-any-host: "*" (güvensiz; DNS rebinding koruması kapanır).
       - Belirli bir adres (ör. 192.168.1.5): yerel adlar + o adres. IP ile yazılmış bir Host
@@ -114,35 +115,32 @@ def is_cross_origin_write(method: str, headers: Mapping[str, str]) -> bool:
 
 # --- Erişim belirteci -----------------------------------------------------------------------
 
-TOKEN_ENV = "SOFASCORE_API_TOKEN"
+# Belirtecin ortamdaki adı (`[server] token_env` başka bir değişken adı vermediyse; sofascore_scraper/config/loader.TOKEN_ENV)
+TOKEN_ENV = "SOFASCORE_SERVER__TOKEN"
 SESSION_COOKIE = "sofascore_session"
 SESSION_MAX_AGE = 30 * 24 * 3600
 # Bundan kısa bir belirteç tahmin edilebilir; başlangıçta uyarılır
 MIN_TOKEN_LENGTH = 16
-# Belirteç olmadan da yanıt veren /api yolları: oturum durumu, giriş ve çıkış (eski yollar ve v1 halefleri)
-AUTH_OPEN_PATHS = frozenset({
-    "/api/auth", "/api/auth/login", "/api/auth/logout",
-    "/api/v1/auth", "/api/v1/auth/login", "/api/v1/auth/logout",
-})
-
-
-# Süreç başlarken okunan belirteç (None = henüz okunmadı)
-_startup_token: Optional[str] = None
+# Belirteç olmadan da yanıt veren /api yolları: oturum durumu, giriş ve çıkış
+AUTH_OPEN_PATHS = frozenset({"/api/v1/auth", "/api/v1/auth/login", "/api/v1/auth/logout"})
 
 
 def api_token() -> str:
     """
-    Ayarlı erişim belirteci ("" = kapalı). İlk çağrıda (uygulama başlarken, .env yüklendikten
-    sonra) okunur ve süreç boyunca sabit kalır; değiştirmek için uygulama yeniden başlatılır.
-
-    Her istekte ortamdan okunmamasının nedeni: ayar kaydı .env'i ortamın üzerine yeniden yükler
-    (ConfigManager.reload_config, override=True). .env'deki boş bir `SOFASCORE_API_TOKEN=` satırı,
-    ortamdan (kabuk, Docker -e) verilen belirteci çalışırken silip korumayı sessizce kapatırdı.
+    Ayarlı erişim belirteci ("" = kapalı): `server.token`, ayar yükleyicisinden. Belirteç yalnızca ortamdan gelir
+    (SOFASCORE_SERVER__TOKEN ya da `token_env`in adını verdiği değişken; dosyaya ve Ayarlar sayfasına yazılamaz):
+    süreç çalışırken değişmez. Adı verilen değişken boşsa ConfigError: uygulama başlamaz (sofascore_scraper/web/app.py).
     """
-    global _startup_token
-    if _startup_token is None:
-        _startup_token = os.environ.get(TOKEN_ENV, "").strip()
-    return _startup_token
+    from sofascore_scraper.config import loader
+
+    return loader.active_settings().server.token.strip()
+
+
+def token_variable() -> str:
+    """Belirtecin okunduğu değişkenin adı (iletilerde): `token_env`, verilmediyse SOFASCORE_SERVER__TOKEN."""
+    from sofascore_scraper.config import loader
+
+    return loader.active_settings().server.token_env.strip() or TOKEN_ENV
 
 
 def _equal(a: str, b: str) -> bool:
@@ -181,11 +179,9 @@ def requires_token(path: str) -> bool:
 
 # --- Güvenlik başlıkları --------------------------------------------------------------------
 
-# Derleme, betiklerinin eval gerektirmediğini frontend/index.html'deki bu etiketle bildirir (vue-i18n 10'dan
-# beri iletiler her zaman JIT ile, eval'siz derlenir; frontend/csp.test bunu sınar). Etiketi taşımayan eski bir
-# derleme vue-i18n iletilerini `Function(...)` ile derler; onu bozmamak için politika 'unsafe-eval' ile gevşer.
-CSP_MARKER = '<meta name="sofascore-csp" content="no-eval"'
-
+# Uygulamanın politikası katıdır: eval yok (vue-i18n 10'dan beri iletiler eval'siz derlenir; frontend/tests/csp.test.ts
+# derlemeyi sınar). 3.0'a kadar `sofascore-csp` etiketini taşımayan eski bir derleme için 'unsafe-eval' ile gevşeyen
+# uyum yolu 3.1'de kalktı (plan maddesi P30, #43): eski derleme yeniden derlenmelidir (npm run build).
 _CSP = (
     ("default-src", "'self'"),
     ("script-src", "'self'"),
@@ -194,7 +190,7 @@ _CSP = (
     ("img-src", "'self' data:"),
     # Küçük yazı tipleri derlemede CSS'e data: olarak gömülür
     ("font-src", "'self' data:"),
-    # fetch ve SSE (/api/scrape/stream) yalnızca uygulamanın kendisine
+    # fetch ve SSE (/api/v1/jobs/{id}/events) yalnızca uygulamanın kendisine
     ("connect-src", "'self'"),
     ("object-src", "'none'"),
     ("base-uri", "'self'"),
@@ -218,43 +214,18 @@ _DOCS_CSP = (
     ("frame-ancestors", "'none'"),
 )
 
-# index.html'in son okunan hali: (yol, mtime_ns, boyut) → eval gerekiyor mu
-_legacy_cache: Tuple[Optional[Tuple[str, int, int]], bool] = (None, False)
-
-
 def _render(policy: Tuple[Tuple[str, str], ...]) -> str:
     return "; ".join(f"{name} {value}" for name, value in policy)
 
 
-def spa_needs_eval(dist: Path) -> bool:
-    """Sunulan derleme CSP etiketini taşımayan eski bir derleme mi? (index.html değişince yeniden okunur)"""
-    global _legacy_cache
-    index = dist / "index.html"
-    try:
-        st = index.stat()
-        signature = (str(index), st.st_mtime_ns, st.st_size)
-        if _legacy_cache[0] != signature:
-            legacy = CSP_MARKER not in index.read_text(encoding="utf-8", errors="replace")
-            _legacy_cache = (signature, legacy)
-            if legacy:
-                logger.warning(
-                    "The web UI is an old build: the Content-Security-Policy allows 'unsafe-eval'. "
-                    "Build it again: cd frontend && npm install && npm run build"
-                )
-        return _legacy_cache[1]
-    except OSError:
-        return False  # derleme yok: yardım sayfasında betik yoktur
-
-
-def content_security_policy(path: str, dist: Path) -> str:
+def content_security_policy(path: str) -> str:
+    """Yolun politikası: belge sayfalarına (/docs, /redoc) kendi gevşek politikaları, geri kalan her yanıta katı olan."""
     if path in DOCS_PATHS:
         return _render(_DOCS_CSP)
-    if spa_needs_eval(dist):
-        return _render(tuple((n, v + " 'unsafe-eval'" if n == "script-src" else v) for n, v in _CSP))
     return _render(_CSP)
 
 
-def security_headers(path: str, dist: Path) -> List[Tuple[str, str]]:
+def security_headers(path: str) -> List[Tuple[str, str]]:
     return [
         # Yanıt, bildirilen türünden başka bir şey (betik, stil) olarak yorumlanmaz
         ("X-Content-Type-Options", "nosniff"),
@@ -264,5 +235,5 @@ def security_headers(path: str, dist: Path) -> List[Tuple[str, str]]:
         ("Referrer-Policy", "no-referrer"),
         # Başka bir site yanıtları <script>/<img> ile kendi sayfasına gömemez
         ("Cross-Origin-Resource-Policy", "same-origin"),
-        ("Content-Security-Policy", content_security_policy(path, dist)),
+        ("Content-Security-Policy", content_security_policy(path)),
     ]

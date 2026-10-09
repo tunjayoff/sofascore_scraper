@@ -121,8 +121,8 @@ class Stop:
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))  # çalışma zamanı sınır denetimi bu dizine erişimleri izler
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "48")
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))  # çalışma zamanı sınır denetimi bu dizine erişimleri izler
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "48")
     return path
 
 
@@ -273,21 +273,6 @@ def test_a_crash_before_the_state_was_saved_does_not_store_the_transition_twice(
     assert report.events == 0
 
 
-def test_the_service_continues_where_the_legacy_watcher_stopped(store: Store, data_dir: Path) -> None:
-    from sofascore_scraper.watcher import MatchWatcher
-
-    live, done = finish_scenario()
-    api = FakeApi({"football": [live]}, {500: live})
-    clock = Clock(fetched(FB_LIVE))
-    legacy = MatchWatcher("football", league_ids=[17], data_dir=str(data_dir), fetch_json=api, clock=clock,
-                          sleep=clock.sleep)
-    legacy.tick()
-    api.live["football"] = []
-    api.events[500] = done
-    service(store, api, clock, explicit_scope(["football"], tournament_ids=[17])).run(Stop(clock, rounds=1))
-    assert [(e.data["from"], e.data["to"]) for e in live_events(store)] == [("live", "completed")]
-
-
 def test_a_2x_state_file_is_imported_once(store: Store, data_dir: Path) -> None:
     live, done = finish_scenario()
     old = {"500": {"class": "live", "done": False, "start_ts": live["startTimestamp"], "tournament_id": 17,
@@ -341,11 +326,12 @@ def test_a_data_operation_blocked_by_a_live_watcher_is_instance_running(store: S
     assert to_platform_error(refused.value).code == "instance_running"
 
 
-def test_the_legacy_alias_still_takes_league_ids(data_dir: Path, monkeypatch: pytest.MonkeyPatch,
-                                                 capsys: pytest.CaptureFixture[str]) -> None:
+def test_polling_watch_takes_several_tournaments_and_a_duration(
+        data_dir: Path, monkeypatch: pytest.MonkeyPatch, restore_cli_process: None,
+        capsys: pytest.CaptureFixture[str]) -> None:
     """
-    P19: `main.py --watch` `ssc watch --source poll --stdout`tur (karar D18); --league-ids turnuva kapsamı,
-    --watch-hours süre olur. Servis sahtedir: kapsamı, kaynağı ve süreyi kaydeder.
+    2.x'in `main.py --watch`ının yerine geçen `ssc watch --source poll --stdout` (karar D18; bayrak P30'da kalktı):
+    her --tournament kapsama girer, --hours süredir. Servis sahtedir: kapsamı, kaynağı ve süreyi kaydeder.
     """
     from types import SimpleNamespace
 
@@ -363,8 +349,8 @@ def test_the_legacy_alias_still_takes_league_ids(data_dir: Path, monkeypatch: py
             seen[-1]["until"] = until_seconds
 
     monkeypatch.setattr("sofascore_scraper.services.live.supervisor.LiveService", Recorder)
-    assert main.main(["--watch", "--sport", "football", "--league-ids", "17,8", "--watch-hours", "2",
-                      "--data-dir", str(data_dir)]) == 0
+    assert main.main(["--data-dir", str(data_dir), "watch", "--source", "poll", "--stdout", "--sport", "football",
+                      "--tournament", "17", "--tournament", "8", "--hours", "2"]) == 0
     assert seen == [{"sports": [("football", [8, 17], [])], "source": "poll", "data_dir": str(data_dir),
                      "until": 7200.0}]
 
@@ -467,18 +453,6 @@ def test_the_service_does_not_end_on_a_busy_store(store: Store, monkeypatch: pyt
     report = service(store, api, clock, explicit_scope(["football"], tournament_ids=[17]), confirm=False).run(
         Stop(clock, rounds=2, on_wait=finish))
     assert report.events == 1 and report.rounds == 2
-
-
-def test_the_legacy_watcher_does_not_end_on_a_busy_store(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from sofascore_scraper.watcher import MatchWatcher
-
-    not_started = fx("football/A_notstarted-0-not-started__17184998", 700)
-    clock = Clock(not_started["startTimestamp"] + 5 * 3600)
-    watcher = MatchWatcher("football", event_ids=[700], data_dir=str(data_dir),
-                           fetch_json=FakeApi({"football": []}, {700: not_started}), clock=clock, sleep=clock.sleep)
-    busy_then(watcher._store, monkeypatch, 2)
-    watcher.start()  # stuck
-    assert [e.type for e in live_events(watcher._store)] == ["live.stuck"]
 
 
 # --- kapsam ---------------------------------------------------------------------------------------------

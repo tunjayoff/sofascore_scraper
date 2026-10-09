@@ -204,7 +204,6 @@ def test_a_plain_number_settles_to_nothing():
 
 
 def test_the_search_service_asks_through_the_priority_lane(monkeypatch):
-    from sofascore_scraper import utils
     from sofascore_scraper.services import follows
 
     seen: List[bool] = []
@@ -213,7 +212,7 @@ def test_the_search_service_asks_through_the_priority_lane(monkeypatch):
         seen.append(throttle.is_interactive())
         return {"uniqueTournaments": []}
 
-    monkeypatch.setattr(utils, "make_api_request", fake_request)
+    monkeypatch.setattr(transport, "make_api_request", fake_request)
     service = follows.FollowsService.__new__(follows.FollowsService)
     assert service._ask("/search/unique-tournaments/abc") == {"uniqueTournaments": []}
     assert seen == [True] and not throttle.is_interactive()

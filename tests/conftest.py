@@ -41,20 +41,30 @@ SEASON_ID = 96668
 SEASON_NAME = "Premier League 26/27"
 MATCH_IDS = (9000001, 9000002)
 
-# Kullanıcının kabuğundan veya gerçek .env'den gelebilecek ayarları temizle
-for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETCH_ONLY_FINISHED", "SOFASCORE_API_TOKEN"):
+# Kullanıcının kabuğundan veya gerçek .env'den gelebilecek ayarları temizle: her SOFASCORE_<BÖLÜM>__<ANAHTAR> ve
+# JSON listesi (SOFASCORE_FOLLOWS...), ayrıca 2.x'in adları (3.1 okumaz ama yükleyici her biri için uyarı yazar)
+for _k in [k for k in os.environ if k.startswith("SOFASCORE_") and ("__" in k or k in (
+        "SOFASCORE_FOLLOWS", "SOFASCORE_SINKS", "SOFASCORE_SLICES", "SOFASCORE_CONFIG"))]:
+    os.environ.pop(_k, None)
+for _k in ("DATA_DIR", "STORE_DURABILITY", "STORE_OPEN_RECONCILE_SECONDS", "API_BASE_URL", "REQUEST_RATE_LIMIT", "MAX_CONCURRENT", "REQUEST_TIMEOUT",
+           "MAX_RETRIES", "WAIT_TIME_MIN", "WAIT_TIME_MAX", "USE_PROXY", "PROXY_URL", "SOFA_CAPTCHA_TOKEN",
+           "SOFASCORE_BROWSER_PROFILE", "SOFASCORE_BROWSER_HEADED", "SOFASCORE_THROTTLE_DIR",
+           "RATE_LIMIT_THRESHOLD_CONSECUTIVE", "RATE_LIMIT_THRESHOLD_RATIO", "SERVER_ERROR_THRESHOLD_CONSECUTIVE",
+           "IGNORE_RATE_LIMIT", "BRIDGE_DEGRADED_AFTER", "BRIDGE_BLOCKED_AFTER", "BRIDGE_BLOCKED_MIN_SECONDS",
+           "FETCH_ONLY_FINISHED", "SAVE_EMPTY_ROUNDS", "REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS",
+           "REFRESH_LEGACY", "WATCH_MAX_EVENT_POLLS", "SOFASCORE_ALLOWED_HOSTS", "SOFASCORE_API_TOKEN", "LOG_LEVEL",
+           "DEBUG", "LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "USE_COLOR", "DATE_FORMAT",
+           "APP_LANGUAGE"):
     os.environ.pop(_k, None)
 # Dil, testleri çalıştıranın kabuğuna bağlı olmasın (kural: açık ayar > sistem dili > İngilizce,
 # sofascore_scraper/language.py): açık ayar yok, ileti dili "C" → her makinede varsayılan dil (İngilizce).
 # LC_MESSAGES yalnızca ileti dilidir; LANG'e dokunulmaz (karakter kodlaması ondan gelir).
-for _k in ("APP_LANGUAGE", "LANGUAGE", "LC_ALL"):
+for _k in ("LANGUAGE", "LC_ALL"):
     os.environ.pop(_k, None)
 os.environ["LC_MESSAGES"] = "C"
 # Log dosyası da geçici dizine: testler projedeki logs/ dizinine yazmaz (sofascore_scraper/logger.py)
-for _k in ("LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT"):
-    os.environ.pop(_k, None)
-os.environ["LOG_DIR"] = os.path.join(_TMP, "logs")
-os.environ["DATA_DIR"] = DATA_DIR
+os.environ["SOFASCORE_LOG__DIR"] = os.path.join(_TMP, "logs")
+os.environ["SOFASCORE_STORAGE__DATA_DIR"] = DATA_DIR
 os.environ["SOFASCORE_CONFIG_DIR"] = CONFIG_DIR
 os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
 # Yapılandırma dosyası (sofascore.toml) aranmaz: proje kökündeki gerçek bir dosya testleri etkilemesin.
@@ -62,13 +72,13 @@ os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
 os.environ["SOFASCORE_CONFIG"] = "none"
 # Ortak istek bütçesi (sofascore_scraper/throttle.py) testlerde kapalı ve yalıtılmış: testler makinedeki gerçek
 # süreçlerin bütçe dosyasına dokunmaz, sahte uyku sayaçlarına fazladan bekleme girmez.
-os.environ["REQUEST_RATE_LIMIT"] = "0"
-os.environ["SOFASCORE_THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
+os.environ["SOFASCORE_CLIENT__RATE"] = "0"
+os.environ["SOFASCORE_CLIENT__THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
 # Tarayıcı profili de geçici dizinde: uygulama başlangıçta profil dizininin izinlerini daraltır
 # (sofascore_scraper/private_files.harden_secret_paths); testler kullanıcının gerçek profiline dokunmaz.
-os.environ["SOFASCORE_BROWSER_PROFILE"] = os.path.join(_TMP, "browser-profile")
+os.environ["SOFASCORE_CLIENT__BROWSER_PROFILE"] = os.path.join(_TMP, "browser-profile")
 # TestClient "testserver" Host başlığını kullanır
-os.environ["SOFASCORE_ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
+os.environ["SOFASCORE_SERVER__ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
 # Gölge denetimi (sofascore_scraper/store/api.py): ürün kodunun dokunduğu veri dizinleri not edilir, test sonunda karşılaştırılır
 os.environ["STORE_SHADOW_CHECK"] = "1"
 
@@ -103,7 +113,7 @@ def _seed() -> None:
         f.write(f"# League configuration file\n# Format: League Name: ID\n\n{LEAGUE_NAME}: {LEAGUE_ID}\n")
     _write_json(os.path.join(CONFIG_DIR, "league_sports.json"), {str(LEAGUE_ID): "football"})
     with open(ENV_FILE, "w", encoding="utf-8") as f:
-        f.write("# test env\nMAX_CONCURRENT=5\n")
+        f.write("# test env (settings: SOFASCORE_<SECTION>__<KEY>)\n")
 
     league_dir = f"{LEAGUE_ID}_{LEAGUE_NAME.replace(' ', '_')}"
     season_slug = SEASON_NAME.replace(" ", "_").replace("/", "_")
@@ -237,7 +247,7 @@ class BoundaryRecorder:
     """
     Verilen veri dizinlerinin altına, `src_dir/store/` dışındaki bir `src_dir` çerçevesinden yapılan
     erişimleri toplar. `follow_env=True` ise `DATA_DIR` ortam değişkeninin o anki değeri de veri dizini
-    sayılır (testlerin çoğu kendi geçici dizinini `monkeypatch.setenv("DATA_DIR", ...)` ile verir).
+    sayılır (testlerin çoğu kendi geçici dizinini `monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", ...)` ile verir).
     """
 
     def __init__(self, src_dir: str, tests_dir: str, data_dirs: Sequence[str], *, follow_env: bool = False) -> None:
@@ -276,7 +286,7 @@ class BoundaryRecorder:
 
     def _current_roots(self) -> Tuple[str, ...]:
         if self._follow_env:
-            env = os.environ.get("DATA_DIR")
+            env = os.environ.get("SOFASCORE_STORAGE__DATA_DIR")
             if env != self._env_value:
                 self._env_value = env
                 extra = self._expand([env]) if env and isinstance(env, str) else ()
@@ -560,11 +570,11 @@ def _isolate_request_layer(request, monkeypatch):
     Her test temiz bir istek katmanıyla başlar: "önce tarayıcı" modu bir testten diğerine
     taşınmaz. `browser` işaretli olmayan testler gerçek bir tarayıcı başlatamaz.
     """
-    import sofascore_scraper.utils as utils
-    import sofascore_scraper.challenge_solver as cs
+    from sofascore_scraper.client import transport
+    from sofascore_scraper.client import bridge as cs
     from sofascore_scraper import bridge_health
 
-    monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+    monkeypatch.setattr(transport, "_browser_first_until", 0.0)
     bridge_health.reset()  # köprü sağlık durumu da testten teste taşınmaz
     follows = sys.modules.get("sofascore_scraper.services.follows")
     if follows is not None:
@@ -575,6 +585,30 @@ def _isolate_request_layer(request, monkeypatch):
 
         monkeypatch.setattr(cs.BrowserBridge, "_launch", _no_real_browser)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _forget_2x_names_and_resync_the_settings():
+    """
+    2.x adlarıyla `.env` yazan bir test (eski kurulumun uyarısını sınayan) dosyayı süreç ortamına yükletebilir:
+    uygulama `.env`'i ortama yükler (python-dotenv, logger.setup_logger da). 3.1 bu adları okumaz ama her biri
+    için uyarı verir; sonraki testlerin uyarı listelerine taşınmasın diye test bitince ortamdan silinir. Ardından
+    etkin ayarlar geri alınmış ortamla yeniden kurulur (testin değiştirdiği log seviyesi sonrakine taşınmaz).
+    """
+    from sofascore_scraper.config import loader
+
+    before = {name for name in loader.LEGACY_NAMES if name in os.environ}
+    yield
+    for name in loader.LEGACY_NAMES:
+        if name in os.environ and name not in before:
+            del os.environ[name]
+    # Test ortamı (monkeypatch) geri aldı; ayarlar bir sonraki okumada yeniden kurulur. Günlükçü ayarları
+    # yeniden kurulumda izler (logger.follow_settings): seviyesi bir sonraki testin ilk satırlarına taşınmasın
+    try:
+        if loader.current() is not None:
+            loader.active()
+    except Exception:  # geçersiz bir ayarı sınayan test ortamı bırakmışsa: o testin sorunu, burada değil
+        pass
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -614,3 +648,48 @@ def _close_stores_opened_by_the_test():
     assert not orphaned, ("data folder removed while its Store was still open (fails on Windows); close the "
                           "Store before removing the folder:\n" + "\n".join(orphaned))
     assert not differences, "catalog differs from a rebuild after this test:\n" + "\n".join(differences)
+
+
+@pytest.fixture
+def settings_overrides() -> Any:
+    """
+    Ayarlar API'sine (`PATCH /api/v1/settings`) yazan testler için: test bitince yazılan `CONFIG_DIR/overrides.json`
+    silinir ve etkin ayarlar yeniden okunur. Anahtarları `null` ile geri almak dosyayı boş (`{}`) bırakır; sonraki
+    testler dosyanın hiç olmadığını varsayar (tests/test_api_v1_settings.py `sandbox`).
+    """
+    path = os.path.join(CONFIG_DIR, "overrides.json")
+    existed = os.path.exists(path)
+    yield path
+    if not existed and os.path.exists(path):
+        os.remove(path)
+    loader = sys.modules.get("sofascore_scraper.config.loader")
+    if loader is not None:
+        loader.reload()
+
+
+@pytest.fixture
+def restore_cli_process() -> Any:
+    """
+    `main.py`yi (ya da `sofascore_scraper.cli.main.main`i) bu süreçte çalıştıran testler için: CLI bir sürecin giriş
+    noktasıdır ve süreç genelinde iz bırakır (çalışma dizini, etkin ayarlar ve köprünün ortama yazdıkları, log akışı,
+    biçimi ve seviyesi). Hepsi testten sonra geri alınır. 3.0'a kadar `main.py`nin geçiş kabuğu bunu her komut için
+    kendisi yapıyordu (P30'da kalktı).
+    """
+    import logging
+
+    cwd, environ, level = os.getcwd(), dict(os.environ), logging.getLogger().level
+    log_module = sys.modules.get("sofascore_scraper.logger")
+    stream = log_module.console_stream() if log_module is not None else "stdout"
+    log_format = log_module.log_format() if log_module is not None else "text"
+    yield
+    loader = sys.modules.get("sofascore_scraper.config.loader")
+    if loader is not None:
+        loader.reset()
+    os.environ.clear()
+    os.environ.update(environ)
+    log_module = sys.modules.get("sofascore_scraper.logger")
+    if log_module is not None:
+        log_module.set_console_stream(stream)
+        log_module.set_log_format(log_format)
+    logging.getLogger().setLevel(level)
+    os.chdir(cwd)

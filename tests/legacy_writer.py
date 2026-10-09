@@ -22,7 +22,7 @@ import re
 from typing import Any, Dict, Mapping, Optional, Tuple
 
 from sofascore_scraper import breaker as request_breaker
-from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.services.pipeline import is_finished
 from sofascore_scraper.slices import SliceOutcome, match_detail_slice_present
 from sofascore_scraper.sports import event_sport_slug, slices_for
 from catalog_index import LISTING_CHANGES, index_event, index_listings
@@ -164,7 +164,7 @@ def save_legacy(data_dir: Any, match_id: Any, match_data: Mapping[str, Any],
         for data_type, data in match_data.items():
             if data is not None:
                 _write_json(os.path.join(match_dir, f"{data_type}.json"), data)
-        if MatchFetcher._is_finished_event(dict(basic_data)):
+        if is_finished(dict(basic_data)):
             _update_slice_markers(match_dir, event_sport_slug(dict(basic_data)) or "", match_data, outcomes or {})
     finally:
         index_event(data_dir, mid, match_dir)

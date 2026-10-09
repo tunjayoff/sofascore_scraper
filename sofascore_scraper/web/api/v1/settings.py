@@ -9,11 +9,11 @@ değerler maskelenir: belirteçler `***` olarak, proxy adresi parolası maskelen
 
 Katmanlar ve kilit. Bir değer yapılandırma dosyasından, süreç ortamından ya da bir bayraktan geliyorsa
 kilitlidir (`locked`): arayüzden yazılan değer onun altında kalır ve etkisi olmaz. PATCH kilitli bir anahtarı
-reddeder (400 `invalid_request`, `details.locked`) ve hiçbir şey yazmaz. Eski `POST /api/settings` böyle bir
-değeri `.env`'e yazıp başarı bildiriyordu.
+reddeder (400 `invalid_request`, `details.locked`) ve hiçbir şey yazmaz. `.env`'deki SOFASCORE_*__* satırları süreç
+ortamıdır, onlar da kilitlidir (2.x'in `.env` katmanı ve ortam adları 3.1'de kalktı, plan maddesi P30).
 
-Yazma. PATCH, `CONFIG_DIR/overrides.json`'a yazar (sofascore_scraper/config/overrides.py): `.env`'in üstünde, yapılandırma
-dosyasının altında duran, makinenin yazdığı katman. `null` anahtarı oradan siler (alttaki katmanın değeri
+Yazma. PATCH, `CONFIG_DIR/overrides.json`'a yazar (sofascore_scraper/config/overrides.py): varsayılanların üstünde,
+yapılandırma dosyasının altında duran, makinenin yazdığı katman. `null` anahtarı oradan siler (alttaki katmanın değeri
 geçerli olur). İstek ya bütünüyle uygulanır ya da hiç uygulanmaz.
 
 Buradan değiştirilebilen anahtarlar WRITABLE tablosundadır: bugünkü Ayarlar sayfasının düzenlediği ayarlar.
@@ -64,7 +64,7 @@ router = APIRouter(tags=["settings"])
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DATA_DIR_KEY = "storage.data_dir"
 PROXY_KEY = "client.proxy"
-# Eski rota ile aynı kural (sofascore_scraper/web/api/legacy.py: _ALLOWED_API_HOSTS)
+# API kökü yalnızca SofaScore'un iki sunucusundan biri olabilir (2.x'in ayarlar rotasındaki kural)
 ALLOWED_API_HOSTS = frozenset({"www.sofascore.com", "api.sofascore.com"})
 PROXY_SCHEMES = ("http", "https", "socks5", "socks5h")
 DEFAULTS_SLICES_KEY = "defaults.slices"
@@ -156,7 +156,6 @@ WRITABLE: Mapping[str, Rule] = {
     "fetch.only_finished": Rule(),
     # Seçilecek dilimler: anahtarlar ya da grup adları (boş liste: yalnızca maç sayfası)
     DEFAULTS_SLICES_KEY: Rule(check=_slice_names),
-    "fetch.save_empty_rounds": Rule(),
     "refresh.window_hours": Rule(maximum=720),
     "log.level": Rule(),
     "log.debug": Rule(),
@@ -200,7 +199,7 @@ class SettingMetadata(BaseModel):
 class Setting(BaseModel):
     key: str = Field(description="`section.key`, as in the config file.")
     value: Any = Field(description="The value in force. Secrets are masked.")
-    source: Literal["default", "dotenv", "overrides", "file", "env", "flag"] = Field(
+    source: Literal["default", "overrides", "file", "env", "flag"] = Field(
         description="The layer the value comes from, weakest to strongest in this order.",
     )
     source_name: str = Field(description="The file or the environment variable, when there is one.")
@@ -213,7 +212,7 @@ class SportSliceSelection(BaseModel):
     sport: str = Field(description="Registered sport slug.")
     enable: List[str] = Field(description="Slice keys or groups added to `defaults.slices` for this sport.")
     disable: List[str] = Field(description="Slice keys or groups removed for this sport (applied after `enable`).")
-    source: Literal["default", "dotenv", "overrides", "file", "env", "flag"] = Field(
+    source: Literal["default", "overrides", "file", "env", "flag"] = Field(
         description="The layer the sport's selection comes from; `default` when none is set.",
     )
     source_name: str
@@ -466,7 +465,7 @@ def _move_data_dir(changes: Mapping[str, Any], target: str) -> None:
     ayar yazılır. Ayar yazılamazsa depo geçerli dizine geri döner. Çalışan iş ya da süren bir veri işlemi
     varken reddedilir (JobStoreConflict → 409).
     """
-    from sofascore_scraper.web.jobs import default_db_path
+    from sofascore_scraper.store import default_db_path
 
     store = deps.job_store()
     previous = os.path.abspath(deps.config_manager().get_data_dir())

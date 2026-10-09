@@ -125,7 +125,7 @@ def option(inv: Invocation, name: str, default: Any = None) -> Any:
 
 
 def data_dir_of_settings() -> str:
-    """Etkin ayarların veri dizini (mutlak yol): `--data-dir` > yapılandırma dosyası > DATA_DIR > `data`."""
+    """Etkin ayarların veri dizini (mutlak yol): `--data-dir` > ortam > yapılandırma dosyası > `data`."""
     from sofascore_scraper.config import loader
 
     return os.path.abspath(loader.active_settings().storage.data_dir)
@@ -342,8 +342,6 @@ def run_sync_job(inv: Invocation, ctx: "ServiceContext", spec: "SyncSpec", *, ki
         job = jobs.start(
             JobKind(kind), recorded, origin=local_origin("cli"),
             wait_for_lease=float(option(inv, "wait", 0.0)),
-            # Web arayüzünün iş kartı başlığı istek gövdesinden üretilir: aynı biçim
-            payload={"league_id": spec.league_id, "mode": spec.mode, "selections": None},
             lease_purpose=purpose,
         )
     except JobStoreConflict as conflict:
@@ -464,10 +462,17 @@ def sync_result(inv: Invocation, run: JobRun) -> CommandResult:
     return CommandResult(data=run_data(run), text=text, exit_code=code, notes=notes)
 
 
-def _include_legacy(enabled: bool) -> None:
-    """`--include-legacy`: gözlemi olmayan eski kayıtlar bu çalıştırmada bir kez yenilenir (REFRESH_LEGACY)."""
-    if enabled:
-        os.environ["REFRESH_LEGACY"] = "true"
+def _include_legacy(inv: Invocation, enabled: bool) -> None:
+    """
+    `--include-legacy`: gözlemi olmayan eski kayıtlar bu çalıştırmada bir kez yenilenir (`refresh.include_legacy`;
+    ayarların bayrak katmanına girer, ortama yazılmaz).
+    """
+    if not enabled:
+        return
+    from sofascore_scraper.config import loader
+
+    inv.flags = {**dict(inv.flags), "refresh.include_legacy": True}
+    loader.activate(config_file=inv.config_file, flags=dict(inv.flags))
 
 
 # --- kuru çalıştırma ------------------------------------------------------------------------------
@@ -522,6 +527,7 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
     kuralıdır (sofascore_scraper/services/listing.py); maçların ihtiyacı planlamanınkidir (sofascore_scraper/services/planning.py).
     """
     from sofascore_scraper.services import listing
+    from sofascore_scraper.services import sync as sync_service
     from sofascore_scraper.services.sync import pick_seasons, sync_targets
 
     store = ctx.store
@@ -553,7 +559,7 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
                 lists["season_lists"] += 1
                 list_requests += 1
             wanted = [sid for s in spec.selections if s.league_id == lid for sid in s.season_ids]
-            known = [int(s["id"]) for s in ctx.season_fetcher.get_seasons_for_league(lid) if s.get("id") is not None]
+            known = [int(s["id"]) for s in sync_service.stored_seasons(ctx, lid) if s.get("id") is not None]
             if by_follow and lid in targets:
                 known = pick_seasons(known, targets[lid].seasons)  # takibin sezon seçimi (sync'in kuralı)
             seasons_of[lid] = wanted or known
@@ -689,7 +695,7 @@ def sync(inv: Invocation) -> CommandResult:
         raise UsageError("--recheck-unavailable changes the data folder; it cannot be part of --dry-run")
     if args.only == "seasons" and args.recheck:
         raise UsageError("--recheck-unavailable resets match details; it cannot be used with --only seasons")
-    _include_legacy(args.include_legacy)
+    _include_legacy(inv, args.include_legacy)
     mode = {"events": "details", "seasons": "seasons"}.get(args.only or "", "full")
     if args.follows and args.tournament:
         raise UsageError("Give only one of --tournament and --follow")
@@ -783,7 +789,7 @@ def refresh(inv: Invocation) -> CommandResult:
     from sofascore_scraper.services.sync import SyncSpec
 
     args = inv.args
-    _include_legacy(args.include_legacy)
+    _include_legacy(inv, args.include_legacy)
     spec = SyncSpec(mode="refresh", league_id=args.tournament)
     return _download(inv, spec, kind="refresh", purpose="refresh", dry_run=args.dry_run,
                      plan=lambda ctx: plan_refresh(ctx, args.tournament), describe=refresh_result)

@@ -2,7 +2,7 @@
 Dilim sonucu (Outcome) ve "bu yanıtta veri var mı" kuralları.
 
 Saf modül: disk, ağ, yapılandırma ve günlük yoktur; import edildiğinde standart kitaplık ile sofascore_scraper.exceptions
-dışında hiçbir şey yüklenmez. Çekici (sofascore_scraper/match_data_fetcher.py), istemci ve depo aynı sonuç tipini ve aynı
+dışında hiçbir şey yüklenmez. Boru hattı (sofascore_scraper/services/pipeline.py), istemci ve depo aynı sonuç tipini ve aynı
 kuralları buradan alır (docs/design/01-storage.md 2.3, docs/design/02-services.md 2.4).
 """
 from __future__ import annotations

@@ -1,10 +1,9 @@
 """
 İstek katmanı: SofaScore'a giden her HTTP isteğinin gövdesi (curl_cffi taşıyıcısı ve tarayıcı köprüsüne düşüş).
 
-Buradaki her şey sofascore_scraper/utils.py'den taşındı (plan maddesi P05; docs/design/02-services.md 2.2 ve 2.4): yeniden
-deneme, geri çekilme, tipli hatalar, ortak istek bütçesi, "önce tarayıcı" modu, oturum ısınması. sofascore_scraper/utils.py
-aynı adları yeniden dışa aktarır ve kendisine yapılan atamaları buraya iletir; eski import'lar ve
-`utils._sleep = ...` biçimindeki yamalar çalışmaya devam eder.
+Buradaki her şey 2.x'in sofascore_scraper/utils.py'sinden taşındı (plan maddesi P05; docs/design/02-services.md 2.2 ve
+2.4): yeniden deneme, geri çekilme, tipli hatalar, ortak istek bütçesi, "önce tarayıcı" modu, oturum ısınması. Adları
+yeniden dışa aktaran utils 3.1'de kalktı (plan maddesi P30).
 
 İptal kontrolü ve bekleme bildirimi sofascore_scraper/client/context.py'dedir. Bu modül DATA_DIR altına hiçbir şey yazmaz.
 """
@@ -12,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import os
 import random
 import time
 import weakref
@@ -29,7 +27,7 @@ from sofascore_scraper import breaker, throttle
 from sofascore_scraper.client.context import FetchCancelled, _notify_wait, raise_if_cancelled
 from sofascore_scraper.client.endpoints import DEFAULT_BASE_URL
 
-# .env bu import sırasında yüklenir (sofascore_scraper/config_manager.py); aşağıdaki os.getenv ondan sonra okunmalı
+# .env bu import sırasında ortama yüklenir (sofascore_scraper/config_manager.py); ayarlar ondan sonra okunur
 from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.exceptions import (
     APIError,
@@ -47,8 +45,16 @@ from sofascore_scraper.slices import OutcomeVia
 logger = get_logger("Utils")
 
 def _configured_base_url() -> str:
-    """API_BASE_URL ayarı. Boş bırakılan ayar varsayılan köktür; sondaki "/" atılır (yollar "/" ile başlar)."""
-    return (os.getenv("API_BASE_URL") or "").strip().rstrip("/") or DEFAULT_BASE_URL
+    """
+    `client.base_url` ayarı (`effective_base_url`): boş bırakılan ayar varsayılan köktür; sondaki "/" atılır
+    (yollar "/" ile başlar). Ayarlar kurulamıyorsa (geçersiz yapılandırma) varsayılan kök.
+    """
+    from sofascore_scraper.config import loader
+
+    try:
+        return loader.active_settings().client.effective_base_url or DEFAULT_BASE_URL
+    except Exception:
+        return DEFAULT_BASE_URL
 
 
 # API kökü: süreç başlarken bir kez okunur ve her isteğe uygulanır (base_url / api_url)
@@ -165,14 +171,16 @@ def get_sofascore_hash() -> str:
 
 def get_sofa_captcha_token() -> Optional[str]:
     """
-    Geçerli sofa_captcha JWT tokenini döndürür.
-    Önce .env (SOFA_CAPTCHA_TOKEN), sonra önbellekten bakar.
+    Geçerli sofa_captcha JWT tokenini döndürür: önce elle verilen `client.captcha_token`
+    (SOFASCORE_CLIENT__CAPTCHA_TOKEN), sonra köprünün önbelleği.
     """
-    env_token = os.getenv("SOFA_CAPTCHA_TOKEN", "").strip()
+    from sofascore_scraper.config import loader
+
+    env_token = (loader.active_settings().client.captcha_token or "").strip()
     if env_token:
         return env_token
     try:
-        from sofascore_scraper.challenge_solver import get_cached_token
+        from sofascore_scraper.client.bridge import get_cached_token
         return get_cached_token()
     except Exception:
         return None
@@ -345,7 +353,7 @@ def _request_sync(
     breaker.check(url)
     if _browser_first():
         raise_if_cancelled()
-        from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync
+        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
         data = fetch_api_via_browser_sync(full_url)
         if data is not None:
             trace.bridge()
@@ -400,7 +408,7 @@ def _request_sync(
                 if "challenge" in response.text:
                     logger.info("Turnstile challenge detected; fetching through the browser bridge")
                     try:
-                        from sofascore_scraper.challenge_solver import fetch_api_via_browser_sync
+                        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
                         browser_data = fetch_api_via_browser_sync(full_url)
                         if browser_data is not None:
                             trace.bridge()
@@ -541,7 +549,7 @@ async def _request_async(
         raise_if_cancelled()
         browser_data = None
         try:
-            from sofascore_scraper.challenge_solver import fetch_api_via_browser
+            from sofascore_scraper.client.bridge import fetch_api_via_browser
             async with semaphore:
                 # Semafor beklenirken iş durdurulmuş olabilir (aşağıdaki curl yoluyla aynı kural)
                 raise_if_cancelled()
@@ -616,7 +624,7 @@ async def _request_async(
                 logger.info("Turnstile challenge detected; fetching through the browser bridge")
                 browser_data = None
                 try:
-                    from sofascore_scraper.challenge_solver import fetch_api_via_browser
+                    from sofascore_scraper.client.bridge import fetch_api_via_browser
                     browser_data = await fetch_api_via_browser(full_url)
                 except Exception as te:
                     logger.debug(f"Browser bridge error: {te!r}")

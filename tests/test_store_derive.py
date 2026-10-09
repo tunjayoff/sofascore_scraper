@@ -8,8 +8,8 @@ kurulsun diye) ve dosya şöyle yeniden üretilir:
     REGEN_DERIVE_GOLDEN=1 python -m pytest tests/test_store_derive.py
 
 Ağ yok. Bugünkü kurallarla karşılaştırma: classify_status / extract_scores (sofascore_scraper/status.py),
-`_tier_hint` (sofascore_scraper/refresh.py), SeasonFetcher._get_sortable_year_value ve özet CSV satırı
-(tests/store_fixtures.summary_row = MatchFetcher._save_season_summary).
+`_tier_hint` (sofascore_scraper/refresh.py), listing.sortable_year (2.x'te SeasonFetcher._get_sortable_year_value) ve
+özet CSV satırı (tests/store_fixtures.summary_row = 2.x'in MatchFetcher._save_season_summary).
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ import pytest
 
 import store_fixtures as sf
 from sofascore_scraper.refresh import _tier_hint
-from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.services.listing import sortable_year
 from sofascore_scraper.status import ScoreSheet, classify_status, extract_scores
 from sofascore_scraper.store import PayloadCorrupt, derive
 
@@ -125,8 +125,7 @@ def test_scores_and_status_columns_are_read_from_the_payload_as_documented(path)
 
     assert row["home_score"] == home.get("display", home.get("current"))
     assert row["away_score"] == away.get("display", away.get("current"))
-    assert row["home_score_current"] == home.get("current")
-    assert row["away_score_current"] == away.get("current")
+    assert "home_score_current" not in row and "away_score_current" not in row  # 3.1'de kalktı (P30)
     assert (row["status_type"], row["status_code"], row["status_description"]) == (
         event["status"].get("type"), event["status"].get("code"), event["status"].get("description"))
     assert row["start_ts"] == event["startTimestamp"]
@@ -208,8 +207,6 @@ EXPECTED_ROW = {
     "away_name": "Fenerbahçe İstanbul",
     "home_score": 4,
     "away_score": 0,
-    "home_score_current": 4,
-    "away_score_current": 0,
     "winner_code": 1,
     "scores_json": '{"aet":null,"aggregated":null,"aggregated_winner_code":null,"family":"football",'
                    '"ft90":[4,0],"ht":[4,0],"penalties":null}',
@@ -321,7 +318,7 @@ def test_malformed_fields_never_raise_and_give_typed_columns(extra):
 def test_malformed_values_are_coerced_or_dropped():
     row = derive.event_row({"id": 9, **MALFORMED[3]}, "event", 100)
 
-    assert (row["home_score"], row["home_score_current"], row["away_score"], row["away_score_current"]) == (3, 3, 2, 2)
+    assert (row["home_score"], row["away_score"]) == (3, 2)
     assert (row["start_ts"], row["winner_code"]) == (1787493600, None)  # 64 bite sığmayan sayı yazılmaz
     assert (row["tournament_id"], row["stage_id"], row["stage_name"]) == (17, 1, "5")
     assert derive.event_row({"id": 9, **MALFORMED[2]})["status_class"] == "unknown"
@@ -332,7 +329,11 @@ def test_malformed_values_are_coerced_or_dropped():
 
 @pytest.mark.parametrize("name", sorted(EVENTS), ids=str)
 def test_legacy_summary_columns_can_be_rebuilt_from_the_row(name):
-    """Özet CSV'sinin sütunları (sofascore_scraper/match_fetcher.py:547-575) satırdan geri kurulabilmeli (bölüm 3.3, 8.2)."""
+    """
+    Özet CSV'sinin sütunları (2.x'te sofascore_scraper/match_fetcher.py:547-575) satırdan geri kurulabilmeli (bölüm 3.3,
+    8.2); skor sütunları hariç: CSV'nin `current` skorunun sütunları 3.1'de kalktı (P30), satırda normalleştirilmiş skor
+    (`display`, yoksa `current`) durur.
+    """
     ev = EVENTS[name]
     event = sf.basic_payload(ev)
     row = derive.event_row(event, "event")
@@ -340,7 +341,6 @@ def test_legacy_summary_columns_can_be_rebuilt_from_the_row(name):
 
     assert row["id"] == summary["match_id"] == sf.event_id(ev)
     assert (row["home_name"], row["away_name"]) == (summary["home_team"], summary["away_team"])
-    assert (row["home_score_current"] or 0, row["away_score_current"] or 0) == (summary["home_score"], summary["away_score"])
     assert (row["status_description"] or "") == summary["status"]
     assert (row["stage_name"] or "") == summary["tournament"]
     assert row["round"] == ev.round
@@ -352,11 +352,14 @@ def test_legacy_summary_columns_can_be_rebuilt_from_the_row(name):
 
 
 def test_penalty_shootout_keeps_both_scores():
-    """Penaltılarla biten maç: normalleştirilmiş skor 3-3, bugünkü listelerin yazdığı `current` 10-9."""
+    """
+    Penaltılarla biten maç: normalleştirilmiş skor 3-3; 2.x listelerinin yazdığı `current` (10-9) satırda yok (3.1),
+    penaltılar skor çizelgesinde.
+    """
     row = derive.event_row(sf.basic_payload(sf.CUP_PEN), "event")
 
     assert (row["home_score"], row["away_score"]) == (3, 3)
-    assert (row["home_score_current"], row["away_score_current"]) == (10, 9)
+    assert json.loads(row["scores_json"])["penalties"] is not None
     assert row["status_description"] == "AP"
 
 
@@ -420,7 +423,7 @@ YEARS = ["24/25", "26/27", "99/00", "98/99", "00/01", "49/50", "50/51", "2024/20
 
 @pytest.mark.parametrize("year", YEARS, ids=repr)
 def test_season_sort_key_equals_todays_rule(year):
-    assert derive.season_sort_key(year) == SeasonFetcher._get_sortable_year_value(None, year)
+    assert derive.season_sort_key(year) == sortable_year(year)
 
 
 def test_season_sort_key_values():

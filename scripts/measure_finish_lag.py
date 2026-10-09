@@ -7,7 +7,7 @@ Her turda dört kaynak sorgulanır ve her gözlem research/finish_lag/{tarih}_{s
   live         /sport/{sport}/events/live                  (tur başına 1 istek)
   season_list  scraper'ın kendi liste yolu: tur bazlı liglerde
                /unique-tournament/{ut}/season/{s}/events/round/{r}[/slug/..], diğerlerinde
-               .../events/last/0 — seçim sofascore_scraper/match_fetcher.py ile aynı (lig/tur başına 1 istek)
+               .../events/last/0 — seçim sofascore_scraper/services/listing.py ile aynı (lig/tur başına 1 istek)
   scheduled    /unique-tournament/{ut}/scheduled-events/{tarih} (lig/gün başına 1 istek).
                Talimattaki /sport/{sport}/scheduled-events/{tarih} artık 404 döndürüyor;
                sitenin kendisi tarih listesi için scheduled-tournaments + turnuva bazlı
@@ -36,7 +36,8 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _research_common import ROOT, SPORTS, Client, cache_headers, utc_now, write_json  # noqa: E402
 
-from sofascore_scraper.match_fetcher import MatchFetcher  # noqa: E402
+from sofascore_scraper.client import endpoints  # noqa: E402
+from sofascore_scraper.services import listing  # noqa: E402
 
 OUT_DIR = os.path.join(ROOT, "research", "finish_lag")
 SCORE_KEYS = ("current", "display", "normaltime", "period1", "period2", "period3", "period4", "period5",
@@ -121,7 +122,7 @@ def find_events_for_league(c: Client, league_id: int, date: str, limit: int) -> 
 
 
 def season_list_path(c: Client, meta: Dict[str, Any], rounds_cache: Dict) -> Optional[str]:
-    """Scraper'ın bu maç için kullanacağı liste yolu (sofascore_scraper/match_fetcher.py ile aynı karar)."""
+    """Scraper'ın bu maç için kullanacağı liste yolu (sofascore_scraper/services/listing.py ile aynı karar)."""
     ut, sid = meta.get("ut"), meta.get("season")
     if not ut or not sid:
         return None
@@ -130,8 +131,8 @@ def season_list_path(c: Client, meta: Dict[str, Any], rounds_cache: Dict) -> Opt
         rounds_cache[key] = ((c.get(f"/unique-tournament/{ut}/season/{sid}/rounds").get("body") or {}).get("rounds") or [])
     rounds = rounds_cache[key]
     rnd = meta.get("round")
-    if MatchFetcher.is_week_based_rounds(rounds) and isinstance(rnd, int):
-        return MatchFetcher.build_round_events_url(ut, sid, rnd, meta.get("round_slug"))
+    if listing.is_week_based_rounds(rounds) and isinstance(rnd, int):
+        return endpoints.round_events(ut, sid, rnd, meta.get("round_slug"))
     return f"/unique-tournament/{ut}/season/{sid}/events/last/0"
 
 

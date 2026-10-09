@@ -1,8 +1,7 @@
 {
  "empty_data_dir": {
   "argv": [
-   "--headless",
-   "--csv-export"
+   "export"
   ],
   "exit_code": 1,
   "files": {
@@ -14,7 +13,6 @@
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc export",
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
    "Not found: there is no downloaded match to export"
@@ -23,8 +21,7 @@
  },
  "with_data": {
   "argv": [
-   "--headless",
-   "--csv-export"
+   "export"
   ],
   "exit_code": 0,
   "files": {
@@ -33,13 +30,10 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc export",
-   "LOG INFO ConfigManager: 1 leagues loaded",
-   "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
   ],
   "stdout": [

@@ -11,7 +11,6 @@ import pytest
 
 import sofascore_scraper.jobs as jobs_pkg
 import sofascore_scraper.jobs.progress as new_progress
-import sofascore_scraper.web.progress as old_progress
 from sofascore_scraper.jobs.model import (
     LEGACY_STATUS_TO_STATE,
     ErrorInfo,
@@ -21,7 +20,7 @@ from sofascore_scraper.jobs.model import (
     Origin,
     job_state_from_status,
 )
-from sofascore_scraper.web.jobs import JobStore
+from sofascore_scraper.store import JobStore
 
 JOBS_DIR = Path(jobs_pkg.__file__).parent
 
@@ -29,9 +28,10 @@ JOBS_DIR = Path(jobs_pkg.__file__).parent
 # --- taşıma ve eski yol ------------------------------------------------------------
 
 
-def test_old_import_path_re_exports_the_same_objects():
-    for name in ("JobProgress", "PHASE_WEIGHTS", "MAX_FAILED_LISTED", "_ETA_MIN_DONE", "_ETA_MIN_ELAPSED"):
-        assert getattr(old_progress, name) is getattr(new_progress, name), name
+def test_the_old_import_paths_are_gone():
+    """`sofascore_scraper.web.progress` ve `sofascore_scraper.web.jobs` 3.1'de kalktı (P30)."""
+    web = Path(jobs_pkg.__file__).parent.parent / "web"
+    assert not (web / "progress.py").exists() and not (web / "jobs.py").exists()
 
 
 def test_job_progress_lives_in_the_jobs_package():
@@ -39,12 +39,6 @@ def test_job_progress_lives_in_the_jobs_package():
     assert jobs_pkg.JobProgress is new_progress.JobProgress
     assert jobs_pkg.PHASE_WEIGHTS is new_progress.PHASE_WEIGHTS
     assert jobs_pkg.MAX_FAILED_LISTED == new_progress.MAX_FAILED_LISTED
-
-
-def test_shim_holds_no_logic_of_its_own():
-    tree = ast.parse(Path(old_progress.__file__).read_text(encoding="utf-8"))
-    kinds = {type(node) for node in tree.body}
-    assert not kinds & {ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef}
 
 
 # --- katman kuralı (docs/design/02-services.md 2.1, madde 5) -------------------------
@@ -165,7 +159,7 @@ def _row_state(store: JobStore, job_id: str) -> Optional[JobState]:
 
 
 def test_rows_written_by_todays_job_store_map_as_designed(tmp_path):
-    """Eşleme, JobStore'un gerçekten yazdığı satırlar üzerinde sınanır (sofascore_scraper/web/jobs.py)."""
+    """Eşleme, JobStore'un gerçekten yazdığı satırlar üzerinde sınanır (sofascore_scraper/store/jobs.py)."""
     db = str(tmp_path / "jobs.db")
     store = JobStore(db)
 

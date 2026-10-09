@@ -2,9 +2,9 @@
 Bakım servisi: veri dizininde ağ isteği gerektirmeyen düzeltmeler (docs/design/02-services.md 2.7).
 
 İşler:
-  * "bu dilim bu maçta yok" işaretlerinin yeniden denetime açılması (`main.py --recheck-unavailable`).
-    İşaretleri okuyup yazan kod hâlâ MatchDataFetcher'dadır (`reset_unavailable_markers`); servis onu
-    yüzlerden bağımsız, türü belli bir sonuçla sunar. Bağlam (`ServiceContext`) ister.
+  * "bu dilim bu maçta yok" işaretlerinin yeniden denetime açılması (`ssc data recheck-unavailable`).
+    İşaretleri Store geri alır; servis onu detay aşamasıyla (sofascore_scraper/services/detail_phase.py
+    `reset_markers`) çağırır ve türü belli bir sonuçla sunar. Bağlam (`ServiceContext`) ister.
   * verinin temizlenmesi (`clear`, plan maddesi ST-19): işi Store yapar (`Store.clear`,
     docs/design/01-storage.md 9.3); servis bugünkü kapsam adlarını (`match_details`, `matches`, `seasons`,
     `all`) Store'un adlarına çevirir. Yalnızca depo ister: `MaintenanceService(store=...)`. Bir turnuvanın (ya da
@@ -207,8 +207,10 @@ class MaintenanceService:
         """
         if self._ctx is None:
             raise ValueError("recheck_unavailable needs a service context")
-        reset = self._ctx.match_data_fetcher.reset_unavailable_markers(
-            league_id=league_id, include_confirmed=include_confirmed
+        from sofascore_scraper.services.detail_phase import DetailPhase
+
+        reset = DetailPhase(self._ctx.store, self._ctx.config).reset_markers(
+            league_id, include_confirmed=include_confirmed
         )
         counts = ResetCounts(
             matches=int(reset.get("matches", 0)),

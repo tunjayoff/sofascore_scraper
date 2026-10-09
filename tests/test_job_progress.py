@@ -6,8 +6,10 @@ from typing import Any, Dict, List
 
 import pytest
 
+import sync_fakes
+
 from sofascore_scraper.web import deps
-from sofascore_scraper.web.jobs import JobStore
+from sofascore_scraper.store import JobStore
 from sofascore_scraper.jobs.progress import MAX_FAILED_LISTED, JobProgress
 
 
@@ -126,55 +128,51 @@ def test_job_store_keeps_detail_in_the_mirror(tmp_path):
 
 
 class FakeMatchData:
-    def __init__(self, pending: Dict[str, List[str]], failing: set, breaker_after: str = "") -> None:
-        self.pending = pending
+    """Detay aşamasının (DetailPhase) servisin kullandığı yüzü."""
+
+    def __init__(self, planned: Dict[int, List[str]], failing: set, breaker_after: str = "") -> None:
+        self.planned = planned
         self.failing = failing
         self.breaker_after = breaker_after
-        self.rate_limit_breaker_triggered = False
-        self.last_status_counts: Dict[str, int] = {}
+        self.breaker_tripped = False
+        self.status_counts: Dict[str, int] = {}
+        self.refresh_listener: Any = None
         self.fetched: List[List[str]] = []
 
-    def begin_job_cache(self) -> None:
-        pass
+    def candidates(self, league_id=None, *, only_season_ids=None):
+        return list(self.planned.get(league_id, [])) + ["done-" + str(league_id)]
 
-    def end_job_cache(self) -> None:
-        pass
-
-    def collect_detail_match_ids(self, league_id=None, max_seasons=0, only_season_ids=None):
-        return list(self.pending.get(league_id, [])) + ["done-" + str(league_id)]
-
-    def pending_detail_ids(self, ids):
+    def pending(self, ids):
         return [i for i in ids if not i.startswith("done-")]
 
-    def fetch_detail_ids(self, ids, progress_callback=None, should_cancel=None, failed_callback=None):
+    def fetch(self, ids, *, progress=None, cancelled=None, failed=None):
         self.fetched.append(list(ids))
-        progress_callback(0, len(ids), "")
+        progress(0, len(ids), "")
         for n, mid in enumerate(ids, start=1):
             if mid in self.failing:
-                failed_callback(mid)
-            progress_callback(n, len(ids), "")
+                failed(mid)
+            progress(n, len(ids), "")
         if self.breaker_after and self.breaker_after in ids:
-            self.rate_limit_breaker_triggered = True
-            self.last_status_counts = {"403": 9, "404": 20, "429": 1}
+            self.breaker_tripped = True
+            self.status_counts = {"403": 9, "404": 20, "429": 1}
         return len(ids)
 
 
 def fake_ui(md: FakeMatchData, seasons: Dict[int, List[Dict[str, Any]]]):
     return SimpleNamespace(
-        season_fetcher=SimpleNamespace(
+        seasons=SimpleNamespace(
             fetch_seasons_for_league=lambda lid: seasons.get(lid, []),
             get_seasons_for_league=lambda lid: seasons.get(lid, []),
             resolve_season_id=lambda lid, sid: sid,
         ),
-        match_fetcher=SimpleNamespace(fetch_matches_for_season=lambda lid, sid: True),
-        match_data_fetcher=md,
-        export_all_to_csv=lambda: None,
+        schedule=SimpleNamespace(fetch_matches_for_season=lambda lid, sid: True),
+        details=md,
     )
 
 
 @pytest.fixture
 def job_env(tmp_path, monkeypatch):
-    import sofascore_scraper.web.api.legacy as fj
+    from sofascore_scraper.services import context as fj
 
     store = JobStore(str(tmp_path / "jobs.db"))
     snaps: List[Dict[str, Any]] = []
@@ -191,7 +189,7 @@ def _listing_faces(ui: Any) -> None:
     """
     from sofascore_scraper.services.listing import ListingResult
 
-    seasons, schedule = getattr(ui, "season_fetcher", None), getattr(ui, "match_fetcher", None)
+    seasons, schedule = getattr(ui, "seasons", None), getattr(ui, "schedule", None)
     if seasons is not None and not hasattr(seasons, "list_seasons"):
         seasons.list_seasons = lambda lid, max_age=None: ListingResult(
             "seasons", lid, seasons=seasons.fetch_seasons_for_league(lid))
@@ -201,21 +199,19 @@ def _listing_faces(ui: Any) -> None:
 
 
 def run(fj, store, monkeypatch, ui, payload):
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    from web_job import run_sync_job
 
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = deps.config_manager()
     _listing_faces(ui)
+    sync_fakes.install(monkeypatch)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
-    req = FetchRequest(**payload)
-    job_id = store.create_running(req.model_dump())
-    fj.run_fetch_job(job_id, req)
-    return store.snapshot()
+    return run_sync_job(store, payload)
 
 
 def test_selection_job_counts_details_across_leagues(job_env, monkeypatch):
     fj, store, snaps = job_env
-    md = FakeMatchData({"17": ["a", "b", "c"], "8": ["d", "e"]}, failing={"d"})
+    md = FakeMatchData({17: ["a", "b", "c"], 8: ["d", "e"]}, failing={"d"})
     seasons = {17: [{"id": 1, "name": "PL 24/25"}], 8: [{"id": 2, "name": "LaLiga 24/25"}]}
     final = run(
         fj, store, monkeypatch, fake_ui(md, seasons),
@@ -242,7 +238,7 @@ def test_selection_job_counts_details_across_leagues(job_env, monkeypatch):
 
 def test_details_only_job_skips_season_phases(job_env, monkeypatch):
     fj, store, _ = job_env
-    md = FakeMatchData({"17": ["a"]}, failing=set())
+    md = FakeMatchData({17: ["a"]}, failing=set())
     final = run(fj, store, monkeypatch, fake_ui(md, {}), {"mode": "details", "league_id": 17})
     assert final["detail"]["phases"] == ["details"]
     assert md.fetched == [["a"]]
@@ -250,7 +246,7 @@ def test_details_only_job_skips_season_phases(job_env, monkeypatch):
 
 def test_breaker_stops_remaining_leagues_and_is_reported(job_env, monkeypatch):
     fj, store, _ = job_env
-    md = FakeMatchData({"17": ["a"], "8": ["b"]}, failing=set(), breaker_after="b")
+    md = FakeMatchData({17: ["a"], 8: ["b"]}, failing=set(), breaker_after="b")
     seasons = {17: [{"id": 1}], 8: [{"id": 2}]}
     final = run(
         fj, store, monkeypatch, fake_ui(md, seasons),
@@ -264,14 +260,14 @@ def test_breaker_stops_remaining_leagues_and_is_reported(job_env, monkeypatch):
 
 def test_wait_notifier_reaches_the_card(job_env, monkeypatch):
     fj, store, _ = job_env
-    from sofascore_scraper import utils
+    from sofascore_scraper.client import context as request_ctx
 
     class WaitingMD(FakeMatchData):
-        def fetch_detail_ids(self, ids, **kw):
-            utils._notify_wait("rate_limit", 30)
-            return super().fetch_detail_ids(ids, **kw)
+        def fetch(self, ids, **kw):
+            request_ctx._notify_wait("rate_limit", 30)
+            return super().fetch(ids, **kw)
 
-    md = WaitingMD({"17": ["a"]}, failing=set())
+    md = WaitingMD({17: ["a"]}, failing=set())
     seen: List[Any] = []
     orig = store.update
 
@@ -284,4 +280,4 @@ def test_wait_notifier_reaches_the_card(job_env, monkeypatch):
     run(fj, store, monkeypatch, fake_ui(md, {}), {"mode": "details", "league_id": 17})
     assert seen and seen[0] == "rate_limit"
     # The notifier is per job: nothing is left behind for other requests
-    assert utils._wait_notifier.get() is None
+    assert request_ctx._wait_notifier.get() is None

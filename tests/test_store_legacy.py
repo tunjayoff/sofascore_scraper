@@ -4,8 +4,9 @@ sofascore_scraper/store/legacy.py: eski düzenin salt okunur okuyucusu (plan mad
 Üç şey denetlenir:
   1. Okuyucu, `tests/store_fixtures.py`'nin kurduğu her biçimi (L1-L5, program, özetler, sezon listeleri,
      değişiklik günlüğü, izleyici dosyaları) tanır ve bölüm 2.3 / 5.1 / 5.2'deki kuralları uygular.
-  2. Bugünkü okuyucularla ilişkisi: maç kümesi `MatchDataFetcher._build_match_index` ile aynıdır (RD-1'den
-     beri o da depodan okur), beklenen dilimler `_expected_slices` ile aynıdır, ve bugünkü ağaç
+  2. Bugünkü okuyucularla ilişkisi: maç kümesi kataloğun detayı kayıtlı maçlarıyla aynıdır (2.x'te
+     `MatchDataFetcher._build_match_index`; RD-1'den beri o da depodan okuyordu), beklenen dilimler eski yazıcının
+     `_expected_slices`i ile aynıdır, ve bugünkü ağaç
      gezginlerinin hangisinin daha az ya da daha çok maç bulduğu `WALKER_DIFFERENCES` tablosunda durur.
   3. Modül yalnızca okur ve katman kuralına uyar.
 
@@ -31,10 +32,10 @@ import pytest
 import legacy_writer
 import store_dump
 import store_fixtures as sf
-from sofascore_scraper import match_data_fetcher as mdf
-from sofascore_scraper import refresh, slices, sports, status, watcher
-from sofascore_scraper.config_manager import ConfigManager
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from detail_fetch import Details
+from sofascore_scraper import refresh, slices, sports, status
+from sofascore_scraper.store import watch
+from sofascore_scraper.services.detail_phase import UNAVAILABLE_AFTER_ATTEMPTS
 from sofascore_scraper.services import stats as stats_service
 from sofascore_scraper.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
 from sofascore_scraper.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
@@ -101,24 +102,36 @@ def tree_state(root: Path) -> Dict[str, Tuple[str, int]]:
     return out
 
 
-def fetcher_for(data_dir: Path) -> MatchDataFetcher:
-    return MatchDataFetcher(config_manager=ConfigManager(), data_dir=str(data_dir))
+def fetcher_for(data_dir: Path) -> Details:
+    return Details(data_dir)
+
+
+def match_index(details: Details) -> Dict[str, Any]:
+    """Detayı kayıtlı bütün maçlar, katalogdan: kimlik → yer (2.x'te `MatchDataFetcher._build_match_index`)."""
+    from sofascore_scraper.store import EventQuery
+
+    index: Dict[str, Any] = {}
+    for row in details.store.events.iter(EventQuery(has_details=True)):
+        location = details.location(row.id)
+        if location is not None:
+            index[str(row.id)] = location
+    return index
 
 
 # --- sabitler yazıcılardakilerle aynı ---------------------------------------------------------
 
 
 def test_names_equal_the_writers_constants() -> None:
-    """Store, yazıcı modüllerini içe aktaramaz (katman kuralı); adların eşit kaldığını bu test güvenceye alır."""
-    assert legacy.UNAVAILABLE_FILE == mdf.UNAVAILABLE_FILE
-    assert legacy.SLICE_STATUS_FILE == mdf.SLICE_STATUS_FILE
-    assert legacy.NO_TOURNAMENT_DIR == mdf.NO_TOURNAMENT_DIR
-    assert f"{legacy.BASIC_KEY}.json" == legacy.BASIC_FILE == mdf.REQUIRED_FILES[0]
+    """Store, eski yazıcının adlarını kendisi tutar (yazıcı 3.0'da kalktı; donmuş kopyası tests/legacy_writer.py)."""
+    assert legacy.UNAVAILABLE_FILE == legacy_writer.UNAVAILABLE_FILE
+    assert legacy.SLICE_STATUS_FILE == legacy_writer.SLICE_STATUS_FILE
+    assert legacy.NO_TOURNAMENT_DIR == legacy_writer.NO_TOURNAMENT_DIR
+    assert f"{legacy.BASIC_KEY}.json" == legacy.BASIC_FILE == "basic.json"
     assert legacy.OBSERVATION_KEY == status.OBSERVATION_KEY
     assert legacy.OBSERVATION_FILE == f"{status.OBSERVATION_KEY}.json"
     assert legacy.CHANGES_FILE == refresh.SCORE_CHANGES_FILE
-    assert legacy.WATCH_EVENTS_FILE == watcher.WATCH_EVENTS_FILE
-    assert legacy._WATCH_STATE_RE.fullmatch(watcher.WATCH_STATE_FILE.format(sport="table-tennis")).group(1) == \
+    assert legacy.WATCH_EVENTS_FILE == "watch_events.jsonl"  # 2.x izleyicisinin dosyası (P30'da kalktı)
+    assert legacy._WATCH_STATE_RE.fullmatch(watch.LEGACY_STATE_FILE.format(sport="table-tennis")).group(1) == \
         "table-tennis"
     assert LegacyReader("x").known_slices == tuple(s.key for s in sports.DETAIL_SLICES)
     for name in ("a b/c\\d", "Premier League", "Wimbledon, Men"):
@@ -128,8 +141,8 @@ def test_names_equal_the_writers_constants() -> None:
 # --- keşif: her biçim ---------------------------------------------------------------------------
 
 # Okuyucunun bulup dizin ağacını gezen hiçbir gezginin bulamadığı tek kayıt: yalnızca birleşik dosyası (L4)
-# olan düz dizin. Tasarım (5.1) onu maç dizini sayar. Depodan okuyanlar (RD-1: `_find_match_path`,
-# `_build_match_index`, `/api/matches/{id}`) onu bulur; gezginler için `basic.json`'ı olmayan dizin görünmez.
+# olan düz dizin. Tasarım (5.1) onu maç dizini sayar. Depodan okuyanlar (RD-1'den beri kaydın yeri ve dizini,
+# maçın detayı) onu bulur; gezginler için `basic.json`'ı olmayan dizin görünmez.
 COMBINED_ONLY = {"legacy": {17018554}}
 # Dizini olduğu halde maç sayılmayanlar (olay yükü yok): fixture adı → maç id'leri
 NO_EVENT_PAYLOAD = {"legacy": {17018572}}
@@ -137,7 +150,7 @@ NO_EVENT_PAYLOAD = {"legacy": {17018572}}
 
 def test_event_ids_equal_build_match_index(fx: sf.LegacyFixture) -> None:
     events, _ = scan(fx.data_dir)
-    index = fetcher_for(fx.data_dir)._build_match_index()
+    index = match_index(fetcher_for(fx.data_dir))
     assert all(mid.isdigit() for mid in index)
     assert set(events) == {int(mid) for mid in index}  # RD-1: dizin de depodan okunur (birleşik dosyalı dizin dahil)
     assert COMBINED_ONLY.get(fx.name, set()) <= set(events)
@@ -251,14 +264,14 @@ def test_event_directory_needs_a_payload_whose_id_is_the_directory_name(tmp_path
 def test_first_level_directory_with_basic_json_is_a_flat_event_as_today(tmp_path: Path) -> None:
     """
     Birinci düzeyde basic.json varsa dizin düz kayıttır, altına bakılmaz (RD-1 öncesinin `_build_match_index`'i
-    gibi). O dizin, kimliği adına uymadığı için maç sayılmaz; depodan okuyan `_build_match_index` de onu vermez
+    gibi). O dizin, kimliği adına uymadığı için maç sayılmaz; katalog da onu vermez
     (eskiden dizin adıyla, "17_PL" olarak veriyordu).
     """
     write(tmp_path, "match_details/17_PL/basic.json", event_of(1))
     write(tmp_path, "match_details/17_PL/season_x/7/basic.json", event_of(7))
     events, report = scan(tmp_path)
     assert events == {} and [(p.path, p.kind) for p in report.problems] == [("match_details/17_PL", "id_mismatch")]
-    assert fetcher_for(tmp_path)._build_match_index() == {}
+    assert match_index(fetcher_for(tmp_path)) == {}
 
 
 # --- aynı maç birden çok yerde -------------------------------------------------------------------
@@ -386,11 +399,11 @@ def test_event_slice_and_file_facts(canonical: sf.LegacyFixture) -> None:
     assert [e.event_id for e in reader.iter_events(payloads=False)] == list(events)  # rapor vermeden de çalışır
 
 
-def expected_today(fetcher: MatchDataFetcher, event: LegacyEvent) -> List[str]:
+def expected_today(fetcher: Details, event: LegacyEvent) -> List[str]:
     """Eski yazıcının dosya tabanlı kuralı (ST-21'e kadar `MatchDataFetcher._expected_slices`; tests/legacy_writer.py)."""
     match_dir = str(Path(fetcher.data_dir).joinpath(*event.path.split("/")))
     return legacy_writer.expected_slices(match_dir, sports.event_sport_slug(event.event) or "",
-                                         mdf.UNAVAILABLE_AFTER_ATTEMPTS)
+                                         UNAVAILABLE_AFTER_ATTEMPTS)
 
 
 def expected_from_record(event: LegacyEvent) -> List[str]:
@@ -399,7 +412,7 @@ def expected_from_record(event: LegacyEvent) -> List[str]:
     out = []
     for detail in sports.slices_for(sport, required_only=True):
         entry = event.slice(detail.key)
-        if entry is None or not entry.settled_empty(mdf.UNAVAILABLE_AFTER_ATTEMPTS):
+        if entry is None or not entry.settled_empty(UNAVAILABLE_AFTER_ATTEMPTS):
             out.append(detail.key)
     return out
 
@@ -648,14 +661,14 @@ def test_missing_slices_equal_today_s_refill_need(fx: sf.LegacyFixture, monkeypa
     """
     from sofascore_scraper.store import open_store
 
-    for key in ("REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS", "REFRESH_LEGACY"):
+    for key in ("SOFASCORE_REFRESH__WINDOW_HOURS", "SOFASCORE_REFRESH__MIN_INTERVAL_HOURS", "SOFASCORE_REFRESH__INCLUDE_LEGACY"):
         monkeypatch.delenv(key, raising=False)
     events, _ = scan(fx.data_dir)
     fetcher = fetcher_for(fx.data_dir)
     store = open_store(fx.data_dir)
     for eid, event in events.items():
         missing = [k for k in expected_from_record(event) if event.slice(k) is None or event.slice(k).state != "ok"]
-        need = fetcher._needs_detail_fetch(str(eid))
+        need = fetcher.need(str(eid))
         row = store.events.get(eid)
         if row is not None and row.stale:
             assert need == "refresh", (event.path, need)
@@ -718,7 +731,7 @@ def test_combined_file_next_to_basic_json(old_forms: sf.LegacyFixture) -> None:
     assert counters(event) == ALL_OK
     assert {(s.path, s.in_combined, s.size) for s in event.slices[1:]} == {(f"{base}/17099711.json", True, None)}
     assert event.observation.observed_at == dt.datetime(2026, 9, 15, 13, 10, tzinfo=UTC)
-    today = fetcher_for(old_forms.data_dir)._load_match_data_from_dir(str(old_forms.data_dir / base), "17099711")
+    today = fetcher_for(old_forms.data_dir).stored("17099711")
     observation = today.pop("observation")  # RD-1: depodan okunur; eskiden gözlem okunmaz, kayıt hiç yenilenmezdi
     assert {("event" if k == "basic" else k): v for k, v in today.items()} == event.payloads
     assert observation["observed_at_utc"] == "2026-09-15T13:10:00+00:00"
@@ -731,7 +744,7 @@ def test_combined_file_alone_is_an_event_directory(old_forms: sf.LegacyFixture) 
     assert {(s.path, s.in_combined) for s in event.slices} == {("match_details/17018554/17018554.json", True)}
     assert counters(event) == ALL_OK and event.event["id"] == 17018554
     # RD-1: yer katalogdan sorulur; dizini gezen eski arama bu kaydı bulamıyordu
-    assert fetcher_for(old_forms.data_dir)._find_match_path("17018554") == (
+    assert fetcher_for(old_forms.data_dir).location("17018554") == (
         None, None, os.path.join(str(old_forms.data_dir), "match_details", "17018554"))
 
 
@@ -1199,11 +1212,13 @@ def test_watch_state_files(tmp_path: Path) -> None:
 
 # --- bugünkü gezginlerle karşılaştırma (01-storage.md, bölüm 1.2) -------------------------------
 
-def _csv_export_ids(fetcher: MatchDataFetcher) -> List[str]:
+def _csv_export_ids(fetcher: Details) -> List[str]:
     """CSV dışa aktarmasının (`legacy-wide-csv`, ExportService) satırlarındaki maç kimlikleri."""
     from sofascore_scraper.services.export import ExportService
 
-    result = ExportService(open_store(fetcher.data_dir)).write_legacy_csv(fetcher.processed_dir)
+    out_dir = os.path.join(fetcher.data_dir, "match_details", "processed")
+    os.makedirs(out_dir, exist_ok=True)
+    result = ExportService(open_store(fetcher.data_dir)).write_legacy_csv(out_dir)
     if result is None or not result.path:
         return []
     with open(result.path, newline="", encoding="utf-8") as f:
@@ -1223,8 +1238,8 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
         return {int(name) for name in names}
 
     return {
-        "build_match_index": ids(fetcher._build_match_index()),
-        "find_match_path": {eid for eid in candidates if fetcher._find_match_path(str(eid))},
+        "build_match_index": ids(match_index(fetcher)),
+        "find_match_path": {eid for eid in candidates if fetcher.location(str(eid))},
         "csv_export": ids(_csv_export_ids(fetcher)),
     }
 
@@ -1409,7 +1424,7 @@ def test_import_is_light() -> None:
     code = (
         "import sys, sofascore_scraper.store, sofascore_scraper.store.legacy\n"
         "heavy = [m for m in ('pandas', 'tqdm', 'rich', 'dotenv', 'curl_cffi', 'sofascore_scraper.logger', 'sofascore_scraper.utils',"
-        " 'sofascore_scraper.match_data_fetcher', 'sofascore_scraper.config_manager') if m in sys.modules]\n"
+        " 'sofascore_scraper.services', 'sofascore_scraper.config_manager') if m in sys.modules]\n"
         "assert not heavy, heavy\n"
         "assert not any(name.startswith('Legacy') for name in sofascore_scraper.store.__all__)\n"
     )

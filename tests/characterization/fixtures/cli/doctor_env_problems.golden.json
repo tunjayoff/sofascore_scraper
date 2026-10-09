@@ -1,8 +1,8 @@
 {
  "json": {
   "argv": [
-   "--doctor",
    "--json",
+   "doctor",
    "--only",
    "env"
   ],
@@ -29,9 +29,9 @@
    "sofascore_scraper.cli.commands.sync",
    "sofascore_scraper.cli.commands.watch",
    "sofascore_scraper.cli.exit_codes",
-   "sofascore_scraper.cli.legacy_flags",
    "sofascore_scraper.cli.main",
    "sofascore_scraper.cli.output",
+   "sofascore_scraper.cli.removed_flags",
    "sofascore_scraper.cli.signals",
    "sofascore_scraper.config",
    "sofascore_scraper.config.loader",
@@ -47,7 +47,9 @@
    "sofascore_scraper.version"
   ],
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc doctor --json --only env"
+   "python-dotenv could not parse statement starting at line 4",
+   "python-dotenv could not parse statement starting at line 4",
+   "python-dotenv could not parse statement starting at line 4"
   ],
   "stdout": {
    "checks": [
@@ -58,28 +60,28 @@
       "path": "<SANDBOX>/.env",
       "problems": [
        {
+        "key": "line 4",
+        "message": "line 4 cannot be parsed and is ignored: this is not a setting",
+        "status": "fail"
+       },
+       {
         "key": "REQUEST_TIMEOUT",
-        "message": "REQUEST_TIMEOUT=soon: must be a whole number (≥ 1); the default is used instead",
-        "status": "fail"
+        "message": "REQUEST_TIMEOUT is no longer read (the 2.x names were removed in 3.1): use SOFASCORE_CLIENT__TIMEOUT_SECONDS (or client.timeout_seconds in the config file)",
+        "status": "warn"
        },
        {
-        "key": "USE_PROXY",
-        "message": "USE_PROXY=yes: must be true or false; anything else is read as false",
-        "status": "fail"
-       },
-       {
-        "key": "API_BASE_URL",
-        "message": "API_BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
+        "key": "SOFASCORE_CLIENT__BASE_URL",
+        "message": "SOFASCORE_CLIENT__BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
         "status": "warn"
        }
       ]
      },
-     "fix": "Edit <SANDBOX>/.env (.env.example lists the accepted values)",
+     "fix": "Edit <SANDBOX>/.env (.env.example lists the names; `ssc config init --from-legacy` turns 2.x settings into a config file)",
      "fix_command": null,
      "id": "env",
      "label": "Settings (.env)",
      "status": "fail",
-     "summary": "3 problems: REQUEST_TIMEOUT, USE_PROXY, API_BASE_URL"
+     "summary": "3 problems: line 4, REQUEST_TIMEOUT, SOFASCORE_CLIENT__BASE_URL"
     }
    ],
    "counts": {
@@ -95,7 +97,7 @@
  },
  "text": {
   "argv": [
-   "--doctor",
+   "doctor",
    "--only",
    "env"
   ],
@@ -122,9 +124,9 @@
    "sofascore_scraper.cli.commands.sync",
    "sofascore_scraper.cli.commands.watch",
    "sofascore_scraper.cli.exit_codes",
-   "sofascore_scraper.cli.legacy_flags",
    "sofascore_scraper.cli.main",
    "sofascore_scraper.cli.output",
+   "sofascore_scraper.cli.removed_flags",
    "sofascore_scraper.cli.signals",
    "sofascore_scraper.config",
    "sofascore_scraper.config.loader",
@@ -140,16 +142,18 @@
    "sofascore_scraper.version"
   ],
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc doctor --only env"
+   "python-dotenv could not parse statement starting at line 4",
+   "python-dotenv could not parse statement starting at line 4",
+   "python-dotenv could not parse statement starting at line 4"
   ],
   "stdout": [
    "SofaScore Scraper — environment check",
    "",
-   "[FAIL] Settings (.env): 3 problems: REQUEST_TIMEOUT, USE_PROXY, API_BASE_URL",
-   "       - REQUEST_TIMEOUT=soon: must be a whole number (≥ 1); the default is used instead",
-   "       - USE_PROXY=yes: must be true or false; anything else is read as false",
-   "       - API_BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
-   "       Fix: Edit <SANDBOX>/.env (.env.example lists the accepted values)",
+   "[FAIL] Settings (.env): 3 problems: line 4, REQUEST_TIMEOUT, SOFASCORE_CLIENT__BASE_URL",
+   "       - line 4 cannot be parsed and is ignored: this is not a setting",
+   "       - REQUEST_TIMEOUT is no longer read (the 2.x names were removed in 3.1): use SOFASCORE_CLIENT__TIMEOUT_SECONDS (or client.timeout_seconds in the config file)",
+   "       - SOFASCORE_CLIENT__BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
+   "       Fix: Edit <SANDBOX>/.env (.env.example lists the names; `ssc config init --from-legacy` turns 2.x settings into a config file)",
    "",
    "Result: 1 failed, 0 warning(s), 0 ok."
   ]

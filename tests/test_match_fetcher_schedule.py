@@ -1,4 +1,4 @@
-"""Sezon programı: sarmalayıcının durağan adları (sofascore_scraper/match_fetcher.py) ve programın stratejisi (sofascore_scraper/services/listing.py, sahte HTTP)."""
+"""Sezon programı: tur yolu ve tur listesinin kuralı, programın stratejisi (sofascore_scraper/services/listing.py, sahte HTTP)."""
 
 from __future__ import annotations
 
@@ -10,8 +10,9 @@ from typing import Any, Dict, Iterator, List, Optional
 
 from schedule_runner import list_schedule_async
 from sofascore_scraper.exceptions import APIError, ResourceNotFoundError
-from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.client import endpoints
 from sofascore_scraper.services import listing
+from sofascore_scraper.services.pipeline import is_finished
 from sofascore_scraper.store import Ref, open_store
 
 
@@ -29,13 +30,11 @@ def _finished_event(eid: int) -> Dict[str, Any]:
 
 class TestScheduleHelpers(unittest.TestCase):
     def test_build_round_events_url_plain(self):
-        url = MatchFetcher.build_round_events_url(17, 100, 3)
+        url = endpoints.round_events(17, 100, 3)
         self.assertEqual(url, "/unique-tournament/17/season/100/events/round/3")
 
     def test_build_round_events_url_with_slug(self):
-        url = MatchFetcher.build_round_events_url(
-            242, 70158, 227, slug="western-conference-semifinals"
-        )
+        url = endpoints.round_events(242, 70158, 227, "western-conference-semifinals")
         self.assertEqual(
             url,
             "/unique-tournament/242/season/70158/events/round/227/slug/western-conference-semifinals",
@@ -43,7 +42,7 @@ class TestScheduleHelpers(unittest.TestCase):
 
     def test_week_based_pl_rounds(self):
         rounds = [{"round": n} for n in range(1, 39)]
-        self.assertTrue(MatchFetcher.is_week_based_rounds(rounds, max_round=50))
+        self.assertTrue(listing.is_week_based_rounds(rounds, max_round=50))
 
     def test_mls_playoff_rounds_not_week_based(self):
         rounds = [
@@ -58,10 +57,10 @@ class TestScheduleHelpers(unittest.TestCase):
                 "slug": "eastern-conference-semifinals",
             },
         ]
-        self.assertFalse(MatchFetcher.is_week_based_rounds(rounds, max_round=50))
+        self.assertFalse(listing.is_week_based_rounds(rounds, max_round=50))
 
     def test_empty_rounds_not_week_based(self):
-        self.assertFalse(MatchFetcher.is_week_based_rounds([], max_round=50))
+        self.assertFalse(listing.is_week_based_rounds([], max_round=50))
 
 
 @contextlib.contextmanager
@@ -83,7 +82,7 @@ def _data_dir() -> Iterator[str]:
 
 
 def _api(pages: Dict[str, Any], calls: List[str]) -> Any:
-    """Eski istek yolunun sahte hali (sofascore_scraper.utils.make_api_request_async; göreli yol): bilinmeyen yol 404."""
+    """Eski istek yolunun sahte hali (sofascore_scraper.client.transport.make_api_request_async; göreli yol): bilinmeyen yol 404."""
 
     async def fake_api(session: Any, url: str, max_retries: Optional[int] = None) -> Any:
         calls.append(url)
@@ -187,7 +186,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
 class TestFinished(unittest.TestCase):
     def test_finished_by_type_without_ended_description(self):
         ev = {"status": {"type": "finished", "description": "AET", "code": 110}}
-        self.assertTrue(MatchFetcher._is_finished_event(ev))
+        self.assertTrue(is_finished(ev))
         filtered, total, finished = listing.filter_finished(
             {
                 "events": [

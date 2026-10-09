@@ -2,7 +2,7 @@
 sofascore_scraper/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı" kuralları.
 
 Beklenen değerler tabloya elle yazıldı ve yüklemler sofascore_scraper/slices.py'ye taşınmadan ÖNCEKİ kodla
-(MatchDataFetcher metotları, sofascore_scraper/match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
+(2.x'te MatchDataFetcher metotları ve match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
 IMPLEMENTATIONS'taki her uygulamaya uygulanır (sofascore_scraper.slices'taki işlevler, tek tek ve dağıtıcı üzerinden).
 MatchDataFetcher'ın vekil metotları P15'te kalktı; onların iki satırı tablodan çıktı.
 
@@ -30,8 +30,8 @@ from sofascore_scraper.exceptions import (
     RateLimitError,
     ResourceNotFoundError,
 )
-from sofascore_scraper import match_data_fetcher, slices, sports
-from sofascore_scraper.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SliceOutcome
+from sofascore_scraper import slices, sports
+from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SliceOutcome
 from sofascore_scraper.services import pipeline
 from sofascore_scraper.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA, SLICE_SKIPPED, Outcome
 
@@ -633,11 +633,8 @@ def test_outcome_is_frozen_and_compares_by_value():
 
 # --- sofascore_scraper/slices.py'ye taşıma ---------------------------------------------------------------
 
-def test_moved_names_stay_importable_from_match_data_fetcher():
+def test_the_moved_names_live_in_slices():
     assert slices.SliceOutcome is Outcome
-    assert match_data_fetcher.SliceOutcome is Outcome
-    for name in ("SLICE_OK", "SLICE_EMPTY", "SLICE_FAILED"):
-        assert getattr(match_data_fetcher, name) is getattr(slices, name)
     for name in list(TYPED_FUNCTIONS.values()) + ["match_detail_slice_present"]:
         assert callable(getattr(slices, name))
 

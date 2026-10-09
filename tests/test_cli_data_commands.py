@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 import test_cli_skeleton as skeleton
-from sofascore_scraper.cli import legacy_flags, output
+from sofascore_scraper.cli import output, removed_flags
 from sofascore_scraper.cli import main as cli_main
 from sofascore_scraper.cli.commands import sync as sync_command
 from sofascore_scraper.jobs.manager import JobManager
@@ -55,7 +55,10 @@ def jobs_of(data_dir: Path) -> List[Any]:
 
 
 class FakeSync:
-    """SyncService.run'ın yerine geçer: belirtimi, iş kimliğini ve o anki ortamı kaydeder; sonucu `outcome` belirler."""
+    """
+    SyncService.run'ın yerine geçer: belirtimi, iş kimliğini ve o anki `refresh.include_legacy` ayarını kaydeder;
+    sonucu `outcome` belirler.
+    """
 
     def __init__(self, data_dir: Path) -> None:
         self.data_dir = data_dir
@@ -77,7 +80,9 @@ class FakeSync:
 
             fake.specs.append(spec)
             fake.handles.append(handle)
-            fake.env.append(os.environ.get("REFRESH_LEGACY"))
+            from sofascore_scraper.config import loader
+
+            fake.env.append(str(loader.active_settings().refresh.include_legacy).lower())
             handle.progress.start_phase("details", 2)
             handle.log("Checking which matches need details...")
             if fake.on_run is not None:
@@ -192,7 +197,7 @@ def test_fetch_tournament_rejects_seasons_with_only_events(cli: CliRunner, data_
 
 def test_refresh_and_its_include_legacy_switch(cli: CliRunner, data_dir: Path, fake_sync: FakeSync,
                                               monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("REFRESH_LEGACY", raising=False)
+    monkeypatch.delenv("SOFASCORE_REFRESH__INCLUDE_LEGACY", raising=False)
     fake_sync.refresh = RefreshCounts(due=3, refreshed=2, changed=1, failed=1)
 
     run = run_in(cli, data_dir, "refresh", "--tournament", "17", "--include-legacy")
@@ -200,7 +205,7 @@ def test_refresh_and_its_include_legacy_switch(cli: CliRunner, data_dir: Path, f
     assert run.exit_code == 3
     assert run.stdout.strip() == "Refresh: 2 matches refreshed, 1 changed, 1 failed"
     assert fake_sync.specs == [SyncSpec(mode="refresh", league_id=17)]
-    assert fake_sync.env == ["true"]  # bu çalıştırma için REFRESH_LEGACY
+    assert fake_sync.env == ["true"]  # bu çalıştırma için refresh.include_legacy (bayrak katmanı)
     (job,) = jobs_of(data_dir)
     assert job.kind is JobKind.REFRESH and job.result["refresh"]["failed"] == 1
 
@@ -316,12 +321,12 @@ def test_a_broken_sink_stops_the_command_before_the_job(cli: CliRunner, data_dir
 @pytest.fixture
 def no_network(monkeypatch: pytest.MonkeyPatch) -> None:
     """Kuru çalıştırma hiçbir istek atmaz ve iş başlatmaz."""
-    from sofascore_scraper import utils
+    from sofascore_scraper.client import transport
 
     def refuse(*args: Any, **kwargs: Any) -> Any:
         raise AssertionError("a dry run must not send a request")
 
-    monkeypatch.setattr(utils.cffi_requests, "get", refuse)
+    monkeypatch.setattr(transport.cffi_requests, "get", refuse)
     monkeypatch.setattr(SyncService, "run", refuse)
     monkeypatch.setattr(JobManager, "start", refuse)
 
@@ -350,7 +355,7 @@ def test_dry_runs_plan_without_requests_jobs_or_locks(cli: CliRunner, data_dir: 
 def seeded(tmp_path: Path) -> Path:
     """Testlerin veri dizininin kopyası (tests/conftest.py): bir maçın detayı eski düzende saklı."""
     target = tmp_path / "seeded"
-    shutil.copytree(os.environ["DATA_DIR"], target, ignore=shutil.ignore_patterns(".meta"))
+    shutil.copytree(os.environ["SOFASCORE_STORAGE__DATA_DIR"], target, ignore=shutil.ignore_patterns(".meta"))
     return target
 
 
@@ -651,13 +656,16 @@ def test_main_py_passes_a_subcommand_through(box: Sandbox) -> None:
                           env=box.environ(), capture_output=True, text=True, timeout=120)
     assert proc.returncode == 0, proc.stderr
     assert json.loads(proc.stdout)["command"] == "status"
-    assert "deprecated" not in proc.stderr  # bir alt komut kullanımdan kalkmış değildir
+    assert "removed" not in proc.stderr  # bir alt komut kaldırılmış bir bayrak değildir
 
 
-def test_deprecation_line_names_the_new_commands() -> None:
-    t = lambda key, **kw: f"{key}:{kw['commands']}"  # noqa: E731
-    line = legacy_flags.deprecation_line(t, "ssc", [("sync", "--tournament", "17"), ("export",)])
-    assert line == "ssc_legacy_deprecated:ssc sync --tournament 17 && ssc export"
+def test_the_removed_flags_name_the_new_command() -> None:
+    assert removed_flags.replacement(["--headless", "--update-all", "--league-id"]) == "sync --tournament"
+    assert removed_flags.replacement(["--refresh-only", "--update-all"]) == "refresh"  # 2.x'in önceliği
+    assert removed_flags.replacement(["--headless"]) is None
+    message = removed_flags.message(["--headless", "--csv-export"], "ssc")
+    assert message.startswith("--headless --csv-export: the flags of `python main.py` were removed in 3.1")
+    assert "use `ssc export`" in message
 
 
 def test_sync_module_helpers() -> None:

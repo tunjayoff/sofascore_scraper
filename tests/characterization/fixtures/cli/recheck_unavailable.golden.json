@@ -1,12 +1,11 @@
 {
  "all_then_download": {
   "argv": [
+   "sync",
+   "--only",
+   "events",
    "--recheck-unavailable",
-   "all",
-   "--headless",
-   "--update-all",
-   "--fetch-mode",
-   "details"
+   "all"
   ],
   "exit_code": 0,
   "files": {
@@ -183,15 +182,14 @@
    "sofascore_scraper.client.transport": 1
   },
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc sync --only events --recheck-unavailable all",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=True matches=1 slices=2 scanned=1",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for all leagues",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (2 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 2 matches",
+   "LOG INFO Details: Details will be fetched for 2 matches",
    {
     "concurrent": []
    },
@@ -201,7 +199,7 @@
      "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 2/2 matches (100.0%) processed successfully",
+   "LOG INFO Details: Done: 2/2 matches (100.0%) processed successfully",
    "Re-check: 2 \"slice not available\" markers reopened in 1 matches (1 matches with markers scanned). They will be requested again on the next download."
   ],
   "stdout": [
@@ -210,7 +208,8 @@
  },
  "default": {
   "argv": [
-   "--recheck-unavailable"
+   "data",
+   "recheck-unavailable"
   ],
   "exit_code": 0,
   "files": {
@@ -286,7 +285,6 @@
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=False matches=1 slices=1 scanned=2"
@@ -297,8 +295,9 @@
  },
  "default_again": {
   "argv": [
-   "--recheck-unavailable",
-   "--league-id",
+   "data",
+   "recheck-unavailable",
+   "--tournament",
    "17"
   ],
   "exit_code": 0,
@@ -307,7 +306,6 @@
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable --tournament 17",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=17 include_confirmed=False matches=0 slices=0 scanned=1"
@@ -318,10 +316,9 @@
  },
  "details_run_confirms_markers": {
   "argv": [
-   "--headless",
-   "--update-all",
-   "--fetch-mode",
-   "details"
+   "sync",
+   "--only",
+   "events"
   ],
   "exit_code": 0,
   "files": {
@@ -425,14 +422,13 @@
    "sofascore_scraper.client.transport": 1
   },
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc sync --only events",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO Details: Fetching match details for all leagues",
+   "LOG INFO Details: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
-   "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
+   "LOG INFO Details: Details will be fetched for 1 matches",
    {
     "concurrent": []
    },
@@ -441,7 +437,7 @@
      "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 1/1 matches (100.0%) processed successfully"
+   "LOG INFO Details: Done: 1/1 matches (100.0%) processed successfully"
   ],
   "stdout": [
    "Download finished. Matches that needed details: 1 (1 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
@@ -449,9 +445,10 @@
  },
  "other_league": {
   "argv": [
-   "--recheck-unavailable",
-   "all",
-   "--league-id",
+   "data",
+   "recheck-unavailable",
+   "--all",
+   "--tournament",
    "8"
   ],
   "exit_code": 0,
@@ -460,7 +457,6 @@
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable --all --tournament 8",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=8 include_confirmed=True matches=0 slices=0 scanned=0"

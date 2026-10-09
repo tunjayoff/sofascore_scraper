@@ -4,13 +4,16 @@ sorusu ve liglerin sporu katalogdan okunur.
 
 Sınananlar:
 
-  * sezon listesi kuralı: bir ligin birden çok dosyası varsa adı ne olursa olsun en yenisi; üç okuyucu
-    (servis, SeasonFetcher, GET /api/leagues/{id}/seasons) aynı listeyi verir;
+  * sezon listesi kuralı: bir ligin birden çok dosyası varsa adı ne olursa olsun en yenisi; okuyucular (servis,
+    yapılandırılmış adla servis, eşitleme servisinin `stored_seasons`'ı; 3.1'e kadar SeasonFetcher) aynı listeyi
+    verir;
   * okunamayan listeler için verilen yanıtlar;
   * adında kimlik olmayan dosyanın (`<ad>_seasons.json`), takip tablosu başka bir ad taşısa da, ligin
     yapılandırmadaki adıyla bulunması (plan bölüm 15 satır 74);
-  * bugünkü yazıcıların ürettiği dizinde (canonical) hiçbir şeyin değişmediği;
-  * GET /api/leagues'in hiçbir dosya yazmadığı ve aramanın sporu döndürdüğü.
+  * bugünkü yazıcıların ürettiği dizinde (canonical) hiçbir şeyin değişmediği.
+
+2.x'in `GET /api/leagues`, `/api/leagues/search` ve `/api/leagues/{id}/seasons` yolları 3.1'de kalktı (P30);
+`get_seasons` o yolun servisi nasıl çağırdığını (yapılandırmadaki lig adıyla) yeniden üretir.
 
 Testin kendi yazdığı dosyaları katalog, depo bir sonraki açılışta görür (süreç içinde açık duran depo dosya
 sistemini izlemez); bu yüzden dosya yazan adımlardan sonra depo `reopened` ile kapatılıp açılır.
@@ -25,17 +28,12 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import pytest
-from fastapi.testclient import TestClient
 
 import conftest
 import store_fixtures as sf
-from sofascore_scraper.season_fetcher import SeasonFetcher
-from sofascore_scraper.services import tournaments
+from sofascore_scraper.services import sync, tournaments
 from sofascore_scraper.store import FollowSpec, Store, StoreError, open_store
-from sofascore_scraper.web import league_sports
-from sofascore_scraper.web.app import app
-
-client = TestClient(app)
+from sofascore_scraper.web import deps, league_sports
 
 LEAGUES_FILE = os.path.join(conftest.CONFIG_DIR, "leagues.txt")
 SPORTS_FILE = os.path.join(conftest.CONFIG_DIR, "league_sports.json")
@@ -43,7 +41,7 @@ OLDER, NEWER = sf.BASE_MTIME - 30 * sf.DAY, sf.BASE_MTIME
 
 
 class Leagues:
-    """SeasonFetcher'ın yapılandırmadan kullandığı iki yöntem."""
+    """Sezon listesi okuyucularının yapılandırmadan kullandığı iki yöntem."""
 
     def __init__(self, leagues: Optional[Dict[int, str]] = None) -> None:
         self.leagues = dict(leagues or {})
@@ -55,12 +53,35 @@ class Leagues:
         return self.leagues.get(league_id)
 
 
+class Seasons:
+    """
+    Sezon listesinin servis okuyucuları (2.x'te SeasonFetcher'ın yüzleri; P30): bir ligin listesi eşitleme
+    servisinden (`sync.stored_seasons`, ligin yapılandırmadaki adıyla), bütün saklanan listeler katalogdan
+    (`tournaments.season_lists`). Depo her okumada açılır (testin yazdığı dosyaları sonraki açılış görür).
+    """
+
+    def __init__(self, leagues: Leagues, data_dir: str) -> None:
+        self.config = leagues
+        self.data_dir = data_dir
+
+    @property
+    def store(self) -> Store:
+        return open_store(self.data_dir)
+
+    def get_seasons_for_league(self, league_id: int) -> List[Dict[str, Any]]:
+        return sync.stored_seasons(self, league_id)  # type: ignore[arg-type]
+
+    @property
+    def league_seasons(self) -> Dict[int, List[Dict[str, Any]]]:
+        return tournaments.season_lists(self.store, self.config.get_leagues())
+
+
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Testin veri dizini; web katmanı ve Store sınırının çalışma zamanı denetimi de ona bakar (DATA_DIR)."""
     path = tmp_path / "data"
     path.mkdir()
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return path
 
 
@@ -86,9 +107,11 @@ def ids(seasons: Optional[List[Any]]) -> Optional[List[Any]]:
 
 
 def get_seasons(league_id: int) -> Dict[str, Any]:
-    response = client.get(f"/api/leagues/{league_id}/seasons")
-    assert response.status_code == 200
-    return response.json()
+    """Ligin saklanan sezon listesi, yapılandırmadaki adıyla (2.x'in `GET /api/leagues/{id}/seasons` yanıtı)."""
+    manager = deps.config_manager()
+    seasons = tournaments.seasons_of(open_store(manager.get_data_dir()), league_id,
+                                     name=manager.get_league_by_id(league_id))
+    return {"seasons": seasons or [], "fetched": seasons is not None}
 
 
 @contextlib.contextmanager
@@ -132,7 +155,7 @@ def configured(leagues: Dict[int, str], sports: Optional[bytes] = None) -> Itera
 def test_several_season_list_files_every_reader_uses_the_newest(data_dir: Path) -> None:
     """
     Davranış değişikliği (RD-5). Eskiden web uç noktası yalın `<id>_seasons.json`'ı (daha eski olsa da),
-    SeasonFetcher ise ligin yapılandırmadaki adıyla yazılmış dosyayı (daha eski olsa da) seçerdi.
+    SeasonFetcher (3.1'de kalktı) ise ligin yapılandırmadaki adıyla yazılmış dosyayı (daha eski olsa da) seçerdi.
     """
     # 54: yalın ad eski, adlı dosya yeni → adlı dosya (web eskiden 541'i verirdi)
     write(data_dir, "seasons/54_seasons.json", season_list(541), OLDER)
@@ -148,18 +171,17 @@ def test_several_season_list_files_every_reader_uses_the_newest(data_dir: Path) 
     expected = {54: [542], 55: [552], 56: [563]}
 
     store = open_store(data_dir)
-    fetcher = SeasonFetcher(Leagues(leagues), str(data_dir))
+    fetcher = Seasons(Leagues(leagues), str(data_dir))
     with configured(leagues):
         for league_id, wanted in expected.items():
             assert ids(tournaments.seasons_of(store, league_id)) == wanted
             assert ids(tournaments.seasons_of(store, league_id, name=leagues[league_id])) == wanted
             assert ids(fetcher.get_seasons_for_league(league_id)) == wanted
             assert ids(fetcher.league_seasons[league_id]) == wanted
-            assert fetcher.get_season_name(league_id, wanted[0]) == f"S {wanted[0]}"
             body = get_seasons(league_id)
             assert (ids(body["seasons"]), body["fetched"]) == (wanted, True)
-    # Yapılandırılmamış lig için de aynı (uç nokta ve SeasonFetcher lig listesine bağlı değildir)
-    unconfigured = SeasonFetcher(Leagues(), str(data_dir))
+    # Yapılandırılmamış lig için de aynı (okuyucular lig listesine bağlı değildir)
+    unconfigured = Seasons(Leagues(), str(data_dir))
     assert {lid: ids(unconfigured.get_seasons_for_league(lid)) for lid in expected} == expected
     assert {lid: ids(get_seasons(lid)["seasons"]) for lid in expected} == expected
 
@@ -175,7 +197,7 @@ def test_the_csv_list_counts_only_for_a_league_without_a_json_list(data_dir: Pat
 
     assert ids(tournaments.seasons_of(store, 17)) == [170]
     assert tournaments.seasons_of(store, 8) == [{"id": 2, "name": "LaLiga 2", "year": "02/03"}]
-    fetcher = SeasonFetcher(Leagues({17: "Premier League", 8: "LaLiga"}), str(data_dir))
+    fetcher = Seasons(Leagues({17: "Premier League", 8: "LaLiga"}), str(data_dir))
     # Eskiden CSV yalnızca hiçbir ligin JSON dosyası yokken okunurdu; şimdi lig başına karar verilir
     assert {lid: ids(seasons) for lid, seasons in fetcher.league_seasons.items()} == {17: [170], 8: [2]}
     assert get_seasons(8) == {"seasons": [{"id": 2, "name": "LaLiga 2", "year": "02/03"}], "fetched": True}
@@ -202,7 +224,7 @@ def test_an_unreadable_file_is_not_a_season_list(data_dir: Path, content: bytes)
     write(data_dir, "seasons/53_Broken_seasons.json", content, NEWER)
     write(data_dir, "seasons/53_seasons.json", season_list(531), OLDER)
     store = open_store(data_dir)
-    fetcher = SeasonFetcher(Leagues({52: "Broken", 53: "Broken too"}), str(data_dir))
+    fetcher = Seasons(Leagues({52: "Broken", 53: "Broken too"}), str(data_dir))
 
     assert tournaments.seasons_of(store, 52) is None
     assert fetcher.get_seasons_for_league(52) == []
@@ -223,7 +245,7 @@ def test_a_list_file_without_a_list_of_seasons_is_an_empty_list(data_dir: Path, 
     store = open_store(data_dir)
 
     assert tournaments.seasons_of(store, 51) == []
-    assert SeasonFetcher(Leagues({51: "Odd"}), str(data_dir)).get_seasons_for_league(51) == []
+    assert Seasons(Leagues({51: "Odd"}), str(data_dir)).get_seasons_for_league(51) == []
     assert get_seasons(51) == {"seasons": [], "fetched": True}
 
 
@@ -246,9 +268,9 @@ def test_a_league_without_any_list(data_dir: Path) -> None:
 def test_a_store_that_cannot_be_read_is_answered_like_a_missing_list(
     data_dir: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Depolama hatası uç noktayı ve SeasonFetcher'ı düşürmez: boş liste, `fetched: false` ve bir hata satırı."""
+    """Depolama hatası eşitleme servisinin okuyucusunu düşürmez: boş liste ve bir hata satırı."""
     write(data_dir, "seasons/17_seasons.json", season_list(1))
-    fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
+    fetcher = Seasons(Leagues({17: "Premier League"}), str(data_dir))
 
     def broken(*args: Any, **kwargs: Any) -> Any:
         raise StoreError("catalog.db cannot be read")
@@ -256,12 +278,8 @@ def test_a_store_that_cannot_be_read_is_answered_like_a_missing_list(
     monkeypatch.setattr(tournaments, "seasons_of", broken)
     monkeypatch.setattr(tournaments, "season_lists", broken)
 
-    assert get_seasons(17) == {"seasons": [], "fetched": False}
     assert fetcher.get_seasons_for_league(17) == []
-    assert fetcher.league_seasons == {}
-    assert fetcher.get_season_name(17, 1) == "Season_1"
     assert "Stored season list of league 17 could not be read" in caplog.text
-    assert "Stored season lists could not be loaded" in caplog.text
 
 
 # --- adında kimlik olmayan dosya (plan bölüm 15, satır 74) -----------------------------------------------
@@ -280,10 +298,10 @@ def test_a_name_only_file_is_resolved_with_the_configured_league_name(data_dir: 
     assert ids(tournaments.seasons_of(store, 8, name="LaLiga")) == [81, 82]
     assert tournaments.seasons_of(store, 8, name="Serie A") is None
     assert tournaments.seasons_of(store, 9, name="LaLiga 2") is None
-    fetcher = SeasonFetcher(Leagues({8: "LaLiga"}), str(data_dir))
+    fetcher = Seasons(Leagues({8: "LaLiga"}), str(data_dir))
     assert ids(fetcher.get_seasons_for_league(8)) == [81, 82]
-    assert ids(fetcher.league_seasons[8]) == [81, 82] and fetcher.get_season_name(8, 82) == "S 82"
-    assert SeasonFetcher(Leagues(), str(data_dir)).get_seasons_for_league(8) == []
+    assert ids(fetcher.league_seasons[8]) == [81, 82]
+    assert Seasons(Leagues(), str(data_dir)).get_seasons_for_league(8) == []
 
     # Takipler lig dosyasının aynası olduğunda (yapılandırma dosyası yok) katalog da aynı sonucu verir
     store.follows.apply([FollowSpec(kind="tournament", entity_id=8, name="LaLiga")], origin="legacy")
@@ -307,9 +325,8 @@ def test_a_name_only_file_is_found_when_the_config_file_names_the_league_differe
 
     assert ids(tournaments.seasons_of(store, 8, name="LaLiga")) == [81, 82]
     assert {lid: ids(s) for lid, s in tournaments.season_lists(store, {8: "LaLiga"}).items()} == {8: [81, 82]}
-    fetcher = SeasonFetcher(Leagues({8: "LaLiga"}), str(data_dir))
+    fetcher = Seasons(Leagues({8: "LaLiga"}), str(data_dir))
     assert ids(fetcher.get_seasons_for_league(8)) == [81, 82]
-    assert fetcher.get_season_name(8, 81) == "S 81"
     with configured({8: "LaLiga"}):
         assert get_seasons(8) == {"seasons": season_list(81, 82)["seasons"], "fetched": True}
 
@@ -335,7 +352,7 @@ def test_a_name_only_file_takes_part_in_the_newest_rule(data_dir: Path, follow_n
 
     assert {lid: ids(tournaments.seasons_of(store, lid, name=name)) for lid, name in names.items()} == expected
     assert {lid: ids(s) for lid, s in tournaments.season_lists(store, names).items()} == expected
-    fetcher = SeasonFetcher(Leagues(names), str(data_dir))
+    fetcher = Seasons(Leagues(names), str(data_dir))
     assert {lid: ids(fetcher.get_seasons_for_league(lid)) for lid in names} == expected
     assert {lid: ids(s) for lid, s in fetcher.league_seasons.items()} == expected
 
@@ -348,65 +365,32 @@ def test_stored_lists_of_unconfigured_leagues_are_loaded_too(data_dir: Path) -> 
     write(data_dir, "seasons/17_Premier_League_seasons.json", season_list(171))
     write(data_dir, "seasons/23_Serie_A_seasons.json", season_list(231))
     write(data_dir, "seasons/Unknown Cup_seasons.json", season_list(991))  # turnuvası bilinmiyor: yüklenemez
-    fetcher = SeasonFetcher(Leagues({17: "Premier League", 35: "Bundesliga"}), str(data_dir))
+    fetcher = Seasons(Leagues({17: "Premier League", 35: "Bundesliga"}), str(data_dir))
 
     assert {lid: ids(s) for lid, s in fetcher.league_seasons.items()} == {17: [171], 23: [231]}
-    assert fetcher.get_season_name(23, 231) == "S 231"
-    assert fetcher.get_season_name(35, 1) == "Season_1" and 35 not in fetcher.league_seasons
+    assert 35 not in fetcher.league_seasons
 
 
-# --- SeasonFetcher ---------------------------------------------------------------------------------------
+# --- yazılan liste ----------------------------------------------------------------------------------------
 
 
-def test_the_fetcher_does_not_open_the_store_until_a_list_is_read(
-    data_dir: Path, caplog: pytest.LogCaptureFixture
-) -> None:
-    """Kurucu `.meta/` altında bir şey yaratmaz (build_context depo açmadan kurulabilir); listeler ilk okumada yüklenir."""
-    write(data_dir, "seasons/17_Premier_League_seasons.json", season_list(171, 172))
-    with caplog.at_level("INFO"):
-        fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
-        assert not (data_dir / ".meta").exists()
-        assert "Season lists loaded" not in caplog.text
-
-        assert ids(fetcher.league_seasons[17]) == [171, 172]
-    assert (data_dir / ".meta" / "catalog.db").is_file()
-    assert "Season lists loaded from the catalog: 1 league(s), 2 season(s)" in caplog.text
-    caplog.clear()
-    assert ids(fetcher.league_seasons[17]) == [171, 172] and "Season lists loaded" not in caplog.text  # bir kez
-
-    fetcher.league_seasons = {238: [{"id": 1, "name": "assigned"}]}
-    assert fetcher.get_season_name(238, 1) == "assigned"
-
-
-def test_a_fetched_list_is_what_the_readers_see_next(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_stored_list_is_what_the_readers_see_next(data_dir: Path) -> None:
     """Yazıcı kancası kataloğu günceller: çekilen liste, eski bir dosya dururken de, hemen okunur."""
+    from sofascore_scraper.services import listing
+
     write(data_dir, "seasons/17_seasons.json", season_list(1), OLDER)
-    fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
+    fetcher = Seasons(Leagues({17: "Premier League"}), str(data_dir))
     assert ids(fetcher.get_seasons_for_league(17)) == [1]
     fresh = {"seasons": [{"id": 96668, "name": "Premier League 26/27", "year": "26/27", "editor": False}]}
-    monkeypatch.setattr("sofascore_scraper.season_fetcher.make_api_request", lambda url, **kwargs: fresh)
 
-    assert fetcher.fetch_seasons_checked(17) == fresh["seasons"]
+    assert listing.store_season_list(open_store(data_dir), 17, fresh) == 1
 
     assert fetcher.get_seasons_for_league(17) == fresh["seasons"]
-    assert fetcher.get_season_name(17, 96668) == "Premier League 26/27"
-    assert SeasonFetcher(Leagues(), str(data_dir)).get_seasons_for_league(17) == fresh["seasons"]
+    assert Seasons(Leagues(), str(data_dir)).get_seasons_for_league(17) == fresh["seasons"]
     assert get_seasons(17) == {"seasons": fresh["seasons"], "fetched": True}
     # ST-22: liste v3 düzenine yazılır; eski dosya yerinde kalır, okunmaz
     assert sorted(p.name for p in (data_dir / "seasons").iterdir()) == ["17_seasons.json"]
     assert (data_dir / "v3" / "tournaments" / "17" / "seasons.json.gz").is_file()
-
-
-def test_a_list_missing_from_the_bulk_load_is_asked_for_by_id(data_dir: Path) -> None:
-    """Sezon adı dizin adına girer: liste belleğe alındıktan sonra yazılmış olsa da `Season_<id>`'ye düşülmez."""
-    fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
-    assert fetcher.league_seasons == {}
-    write(data_dir, "seasons/23_Serie_A_seasons.json", season_list(231))
-    reopened(data_dir)  # başka bir sürecin yazdığı liste
-
-    assert fetcher.get_season_name(23, 231) == "S 231"
-    assert fetcher.get_season_name(23, 999) == "Season_999"
-    assert fetcher.get_season_name(35, 1) == "Season_1" and set(fetcher.league_seasons) == {23}
 
 
 # --- maç listesi indirilmiş mi ---------------------------------------------------------------------------
@@ -425,7 +409,7 @@ def _event(event_id: int, tournament_id: int, season_id: int, start: int) -> Dic
 
 
 def _downloaded(store: Store, league_id: int, season_id: int) -> Tuple[int, bool]:
-    """(saklanan program sayfası, sezonun maç listesi indirilmiş mi), katalogdan (eski `SeasonFetcher._downloaded_matches`)."""
+    """(saklanan program sayfası, sezonun maç listesi indirilmiş mi), katalogdan (2.x'te `SeasonFetcher._downloaded_matches`)."""
     pages = tournaments.schedule_pages(store, league_id, season_id)
     return pages, pages > 0 or tournaments.has_matches(store, league_id, season_id)
 
@@ -444,9 +428,9 @@ def _files_say(data_dir: Path, league_id: int, league_name: Optional[str], seaso
 def test_on_a_directory_written_by_todays_code_nothing_changes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """canonical: sezon listeleri dosyadakiyle, sayfa sayıları ve "indirilmiş" yanıtı dizindekiyle aynı."""
     fx = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fx.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fx.data_dir))
     store = open_store(fx.data_dir)
-    fetcher = SeasonFetcher(Leagues(fx.leagues), str(fx.data_dir))
+    fetcher = Seasons(Leagues(fx.leagues), str(fx.data_dir))
     checked = 0
     for league_id, name in fx.leagues.items():
         path = fx.data_dir / "seasons" / f"{league_id}_{sf.safe_name(name)}_seasons.json"
@@ -483,7 +467,7 @@ def test_downloaded_seasons_are_seen_whatever_their_directory_is_called(data_dir
     # 61627: yalnızca tek bir maçın kendi detayı var (maç listesi indirilmedi)
     write(data_dir, "match_details/17_Premier_League/season_S_61627/4/basic.json", _event(4, 17, 61627, 1_730_000_000))
     store = open_store(data_dir)
-    fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
+    fetcher = Seasons(Leagues({17: "Premier League"}), str(data_dir))
 
     assert tournaments.schedule_pages(store, 17, 96668) == 2
     assert _downloaded(store, 17, 96668) == (2, True)
@@ -536,7 +520,7 @@ def test_sports_for_prefers_the_stored_sport_and_writes_nothing(data_dir: Path, 
 def test_a_store_that_cannot_be_opened_leaves_the_sport_unknown(
     data_dir: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Lig listesi yapılandırmadır: katalog okunamıyor diye GET /api/leagues düşmez, spor bilinmiyor kalır."""
+    """Lig listesi yapılandırmadır: katalog okunamıyor diye sporu soran düşmez, spor bilinmiyor kalır."""
     def refuse(*args: Any, **kwargs: Any) -> Store:
         raise StoreError("state.db is newer than this build")
 
@@ -544,52 +528,3 @@ def test_a_store_that_cannot_be_opened_leaves_the_sport_unknown(
 
     assert league_sports.infer_from_data(str(data_dir), 17) is None
     assert "Sport of league 17 could not be read from the catalog" in caplog.text
-    with configured({8: "LaLiga"}):
-        assert client.get("/api/leagues").json() == [{"id": 8, "name": "LaLiga", "sport": None}]
-
-
-# --- GET /api/leagues, /api/leagues/search ---------------------------------------------------------------
-
-
-def test_get_leagues_reads_the_sport_from_the_catalog_and_writes_no_file(data_dir: Path) -> None:
-    """
-    Davranış değişikliği (RD-5): veriden okunan spor `config/league_sports.json`'a yazılmaz; dosya yoksa
-    yaratılmaz, varsa (tanınmayan girdileriyle) bayt bayt aynı kalır. Kullanıcının kaydettiği spor yine kazanır.
-    """
-    basket = _event(21, 132, 80229, 1_790_000_000)
-    basket["tournament"]["category"]["sport"] = {"slug": "basketball", "name": "Basketball"}
-    write(data_dir, "match_details/132_NBA/season_NBA/21/basic.json", basket)
-    write(data_dir, "match_details/17_Premier_League/season_S/23/basic.json", _event(23, 17, 96668, 1_790_000_000))
-    leagues = {17: "Premier League", 132: "NBA", 35: "Bundesliga"}
-    inferred = [
-        {"id": 17, "name": "Premier League", "sport": "football"},
-        {"id": 132, "name": "NBA", "sport": "basketball"},
-        {"id": 35, "name": "Bundesliga", "sport": None},
-    ]
-
-    with configured(leagues):
-        assert client.get("/api/leagues").json() == inferred
-        assert client.get("/api/leagues").json() == inferred
-        assert not os.path.exists(SPORTS_FILE)
-
-    stored = b'{"17": "Tennis", "999": "basketball", "not-an-id": "football", "35": "curling"}'
-    with configured(leagues, stored):
-        assert [row["sport"] for row in client.get("/api/leagues").json()] == ["tennis", "basketball", None]
-        with open(SPORTS_FILE, "rb") as f:
-            assert f.read() == stored
-
-
-def test_league_search_returns_the_sport(data_dir: Path) -> None:
-    """Davranış değişikliği (RD-5): arama eskiden her lig için `sport: null` döndürürdü."""
-    write(data_dir, "match_details/8_LaLiga/season_S/24/basic.json", _event(24, 8, 97532, 1_790_000_000))
-    with configured({17: "Premier League", 8: "LaLiga", 35: "Bundesliga"}, b'{"17": "tennis"}'):
-        assert client.get("/api/leagues/search", params={"q": "LEAGUE"}).json() == [
-            {"id": 17, "name": "Premier League", "sport": "tennis"},  # kayıtlı
-        ]
-        assert client.get("/api/leagues/search", params={"q": "liga"}).json() == [
-            {"id": 8, "name": "LaLiga", "sport": "football"},  # indirilmiş veriden
-            {"id": 35, "name": "Bundesliga", "sport": None},
-        ]
-        assert client.get("/api/leagues/search", params={"q": "zz"}).json() == []
-        with open(SPORTS_FILE, "rb") as f:
-            assert f.read() == b'{"17": "tennis"}'

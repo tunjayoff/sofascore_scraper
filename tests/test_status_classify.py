@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from sofascore_scraper.match_fetcher import MatchFetcher
+from sofascore_scraper.services.pipeline import is_finished
 from sofascore_scraper.status import StatusClass, classify_status, is_played
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
@@ -84,7 +84,7 @@ def test_every_fixture_matches_status_universe(path):
 @pytest.mark.parametrize("path", ALL, ids=lambda p: f"{p.parent.name}/{p.stem}")
 def test_is_finished_event_unchanged(path):
     event = json.loads(path.read_text(encoding="utf-8"))
-    assert MatchFetcher._is_finished_event(event) == _legacy_is_finished(event)
+    assert is_finished(event) == _legacy_is_finished(event)
 
 
 @pytest.mark.parametrize("rel,expected", [
@@ -118,13 +118,13 @@ def test_abandoned_with_full_score_is_void():
     assert event["homeScore"]["current"] == 59 and event["awayScore"]["current"] == 57
     assert classify_status(event) is StatusClass.VOID
     assert not is_played(event)
-    assert not MatchFetcher._is_finished_event(event)
+    assert not is_finished(event)
 
 
 def test_walkover_and_retired_are_finished_but_not_played():
     for rel in ("tennis/T2_retired__17081861", "tennis/T3_walkover__17058663"):
         event = _load(rel)
-        assert MatchFetcher._is_finished_event(event)  # FETCH_ONLY_FINISHED anlamı değişmedi
+        assert is_finished(event)  # FETCH_ONLY_FINISHED anlamı değişmedi
         assert not is_played(event)
 
 
@@ -169,7 +169,7 @@ def test_cricket_end_of_day_is_live_and_not_finished():
     event = _load("cricket/A_willcontinue-141-end-of-day-1__16586046")
     assert classify_status(event) is StatusClass.LIVE
     assert not is_played(event)
-    assert not MatchFetcher._is_finished_event(event)
+    assert not is_finished(event)
     del event["status"]["type"]  # kod tek başına da canlı
     assert classify_status(event) is StatusClass.LIVE
 

@@ -16,20 +16,20 @@ import contextlib
 import io
 from pathlib import Path
 from typing import Any, Dict, Iterator
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 import store_dump
 import store_fixtures as sf
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from detail_fetch import Details
 from sofascore_scraper.services.export import ExportService, ExportSpec
 from sofascore_scraper.store import EventQuery, open_store
 from sofascore_scraper.store import events as events_mod
 
 
-def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    return MatchDataFetcher(MagicMock(), data_dir=str(data_dir))
+def _fetcher(data_dir: Path) -> Details:
+    return Details(data_dir)
 
 
 def _csv(data_dir: Path) -> str:
@@ -45,7 +45,7 @@ def _tree(root: Path) -> Dict[str, bytes]:
 @pytest.fixture
 def canonical(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> sf.LegacyFixture:
     fixture = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     return fixture
 
 
@@ -57,8 +57,8 @@ def test_the_csv_export_sees_matches_written_by_the_new_writer_unchanged(canonic
     fresh = tmp_path / "fresh"
     writer = _fetcher(fresh)
     for event_id in canonical.detail_ids:
-        data = source._load_match_data_from_dir("", str(event_id))
-        writer._save_match_data(str(event_id), data)
+        data = source.stored(str(event_id))
+        writer.save(str(event_id), data)
 
     store = open_store(fresh)
     rows = list(store.events.iter(EventQuery(has_details=True)))
@@ -79,7 +79,7 @@ def test_a_record_of_the_old_layout_is_promoted_by_its_next_write_and_its_folder
     before_csv = _csv(data)
     fetcher = _fetcher(data)
     for event_id in canonical.detail_ids:
-        fetcher._save_match_data(str(event_id), fetcher._load_match_data_from_dir("", str(event_id)))
+        fetcher.save(str(event_id), fetcher.stored(str(event_id)))
 
     store = open_store(data)
     rows = list(store.events.iter(EventQuery(has_details=True)))
@@ -131,11 +131,11 @@ def test_a_change_row_survives_a_refresh_interrupted_before_the_change_log(
 
     with _serving(new), \
             patch.object(events_mod.EventStore, "_checkpoint", killed), pytest.raises(KeyboardInterrupt):
-        fetcher.refresh_match(str(event_id))
+        fetcher.refresh(str(event_id))
     assert store.changes.last_seq() == last  # satır henüz günlükte yok; niyet dosyasında
 
     with _serving(new):
-        assert fetcher.refresh_match(str(event_id)) is not None
+        assert fetcher.refresh(str(event_id)) is not None
     rows = store.changes.list(event_id=event_id, after_seq=last)
     assert len(rows) == 1 and "homeScore.current" in rows[0].fields
     assert store.catalog.diff_from_rebuild() == []

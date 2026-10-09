@@ -37,7 +37,7 @@ from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Seque
 import pytest
 
 import conftest
-from sofascore_scraper import doctor, errors
+from sofascore_scraper import breaker, doctor, errors, throttle
 from sofascore_scraper import logger as app_logger
 from sofascore_scraper.cli import PROG, VERSION_TEXT, exit_codes, output
 from sofascore_scraper.cli import commands as registry
@@ -197,7 +197,7 @@ class Sandbox:
             directory.mkdir(parents=True)
         (box.root / "config" / "leagues.txt").write_text("Premier League: 17\n", encoding="utf-8", newline="\n")
         (box.root / "config" / "league_sports.json").write_text('{"17": "football"}', encoding="utf-8")
-        box.env_file.write_text("\n".join(("MAX_CONCURRENT=5", *env_lines)) + "\n", encoding="utf-8", newline="\n")
+        box.env_file.write_text("\n".join(("SOFASCORE_CLIENT__MAX_CONCURRENT=5", *env_lines)) + "\n", encoding="utf-8", newline="\n")
         return box
 
     def environ(self, **extra: str) -> Dict[str, str]:
@@ -209,15 +209,15 @@ class Sandbox:
             "PYTHONPATH": str(REPO),
             "PYTHONIOENCODING": "utf-8",
             "LC_MESSAGES": "C",
-            "DATA_DIR": str(self.root / "data"),
+            "SOFASCORE_STORAGE__DATA_DIR": str(self.root / "data"),
             "SOFASCORE_CONFIG_DIR": str(self.root / "config"),
             "SOFASCORE_ENV_FILE": str(self.env_file),
             "SOFASCORE_CONFIG": "none",
-            "LOG_DIR": str(self.root / "logs"),
+            "SOFASCORE_LOG__DIR": str(self.root / "logs"),
             # İstek bütçesi kapalı ve yalıtılmış (G-03 goldenları ve tests/conftest.py ile aynı)
-            "REQUEST_RATE_LIMIT": "0",
-            "SOFASCORE_THROTTLE_DIR": str(self.root / "throttle"),
-            "SOFASCORE_BROWSER_PROFILE": str(self.root / "browser-profile"),
+            "SOFASCORE_CLIENT__RATE": "0",
+            "SOFASCORE_CLIENT__THROTTLE_DIR": str(self.root / "throttle"),
+            "SOFASCORE_CLIENT__BROWSER_PROFILE": str(self.root / "browser-profile"),
         })
         if site.ENABLE_USER_SITE:
             env["PYTHONUSERBASE"] = site.getuserbase()
@@ -594,22 +594,22 @@ PORTABLE_CHECKS = "profile,data_dir,config_dir,env,budget"
 
 
 def test_doctor_json_envelope_and_exit_code(cli, monkeypatch):
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "5")
+    monkeypatch.setenv("SOFASCORE_CLIENT__RATE", "5")
     run = cli("doctor", "--json", "--only", PORTABLE_CHECKS)
     report = run.data
     assert (run.exit_code, run.stderr, run.json["command"]) == (0, "", "doctor")
     assert sorted(report) == ["checks", "counts", "language", "ok", "root", "status"]
     assert [check["id"] for check in report["checks"]] == PORTABLE_CHECKS.split(",")
     assert (report["ok"], report["status"], report["language"], report["root"]) == (True, "ok", "en", str(REPO))
-    assert report["checks"][-1]["detail"] == {"rate": 5.0, "default": 5.0, "source": "REQUEST_RATE_LIMIT"}
+    assert report["checks"][-1]["detail"] == {"rate": 5.0, "default": 5.0, "source": "SOFASCORE_CLIENT__RATE"}
 
 
 def test_doctor_warns_about_the_budget_and_strict_makes_it_exit_1(cli):
     """Testler (ve G-03 goldenları) istek bütçesi kapalı koşar: yeni CLI'nin doctor'ı bunu uyarı olarak bildirir."""
-    assert os.environ["REQUEST_RATE_LIMIT"] == "0"
+    assert os.environ["SOFASCORE_CLIENT__RATE"] == "0"
     run = cli("doctor", "--only", "budget")
     assert run.exit_code == 0 and run.stderr == ""
-    assert "[WARN] Request budget: the limit is off" in run.stdout and "Fix: Set REQUEST_RATE_LIMIT=5" in run.stdout
+    assert "[WARN] Request budget: the limit is off" in run.stdout and "Fix: Set SOFASCORE_CLIENT__RATE=5" in run.stdout
 
     strict = cli("doctor", "--only", "budget", "--strict", "--json")
     assert strict.exit_code == 1
@@ -619,7 +619,7 @@ def test_doctor_warns_about_the_budget_and_strict_makes_it_exit_1(cli):
 
 
 def test_doctor_budget_follows_the_config_file_and_the_rate_flag(cli, tmp_path, monkeypatch):
-    monkeypatch.delenv("REQUEST_RATE_LIMIT")  # süreç ortamı yapılandırma dosyasının önündedir
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE")  # süreç ortamı yapılandırma dosyasının önündedir
     config = write_config(tmp_path / "sofascore.toml", "schema = 1\n[client]\nrate = 20\n")
     from_file = cli("doctor", "--only", "budget", "--json", "--config", config).data["checks"][0]
     assert (from_file["code"], from_file["detail"]["rate"]) == ("budget_above_default", 20.0)
@@ -630,7 +630,7 @@ def test_doctor_budget_follows_the_config_file_and_the_rate_flag(cli, tmp_path, 
 
 def test_doctor_with_a_failed_check_exits_1(cli, tmp_path, monkeypatch):
     env_file = tmp_path / ".env"
-    env_file.write_text("REQUEST_TIMEOUT=soon\n", encoding="utf-8")
+    env_file.write_text("this is not a setting\n", encoding="utf-8")
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env_file))
     text = cli("doctor", "--only", "env")
     assert text.exit_code == 1 and "[FAIL] Settings (.env)" in text.stdout and text.stderr == ""
@@ -676,7 +676,7 @@ def test_doctor_checks_the_config_file_of_the_flag(cli, tmp_path):
 
 def test_doctor_live_runs_only_when_asked_and_with_the_settings_loaded(cli, tmp_path, monkeypatch):
     """Gerçek istek atılmaz: canlı denetim sahtedir. `--live` ayarları yükler (istek uygulamanın ayarlarıyla atılır)."""
-    monkeypatch.delenv("REQUEST_RATE_LIMIT")
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE")
     calls: List[Optional[str]] = []
 
     def fake_live(ctx: doctor.Context) -> doctor.CheckResult:
@@ -692,7 +692,7 @@ def test_doctor_live_runs_only_when_asked_and_with_the_settings_loaded(cli, tmp_
     run = cli("doctor", "--live", "--only", "budget,live", "--json", "--config", config)
     assert run.exit_code == 0 and calls == [str(config)]
     assert [check["id"] for check in run.data["checks"]] == ["budget", "python"]
-    assert os.environ["REQUEST_RATE_LIMIT"] == "2"  # ortamı okuyan istek bütçesi de dosyadaki değeri görür
+    assert throttle.configured_rate() == 2.0  # istek bütçesi de dosyadaki değeri görür
 
 
 def test_doctor_help_lists_the_extra_check(cli):
@@ -704,8 +704,8 @@ def test_doctor_help_lists_the_extra_check(cli):
 
 
 def test_config_show_prints_every_value_with_its_source(cli, tmp_path, monkeypatch):
-    monkeypatch.setenv("PROXY_URL", "http://user:hunter2@proxy.example.com:8080")
-    monkeypatch.delenv("REQUEST_RATE_LIMIT")  # süreç ortamı yapılandırma dosyasının önündedir
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", "http://user:hunter2@proxy.example.com:8080")
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE")  # süreç ortamı yapılandırma dosyasının önündedir
     config = write_config(tmp_path / "sofascore.toml", "schema = 1\n[client]\nrate = 2\n[[follow]]\ntournament = 17\n")
     run = cli("config", "show", "--json", "--config", config, "--data-dir", tmp_path / "data")
     data = run.data
@@ -721,7 +721,7 @@ def test_config_show_prints_every_value_with_its_source(cli, tmp_path, monkeypat
     lines = text.stdout.splitlines()
     assert lines[0] == f"Config file: {config}" and lines[1] == ""
     assert any(re.fullmatch(rf"client\.rate\s+= 2\.0  \[file: {re.escape(str(config))}\]", line) for line in lines)
-    assert any(re.fullmatch(r"client\.proxy\s+= \"\*\*\*\"  \[env: PROXY_URL\]", line) for line in lines)
+    assert any(re.fullmatch(r"client\.proxy\s+= \"\*\*\*\"  \[env: SOFASCORE_CLIENT__PROXY\]", line) for line in lines)
     assert "hunter2" not in text.stdout + text.stderr
 
 
@@ -735,28 +735,35 @@ def test_config_show_without_a_file_and_with_flags(cli):
     assert rows["log.level"]["value"] == "ERROR" and rows["log.debug"]["value"] is False
     assert rows["display.language"]["value"] == "tr" and rows["display.use_color"]["value"] is False
     assert os.environ["NO_COLOR"] == "1"
-    # Bayraklar ayarların en güçlü katmanıdır: ortamı hâlâ doğrudan okuyan modüller de aynı değeri görür
-    assert (os.environ["REQUEST_RATE_LIMIT"], os.environ["IGNORE_RATE_LIMIT"], os.environ["LOG_LEVEL"]) == ("0", "true", "ERROR")
+    # Bayraklar ayarların en güçlü katmanıdır: ayarı okuyan modüller de aynı değeri görür; ortama yazılmaz
+    assert (throttle.configured_rate(), breaker._ignore_rate_limit()) == (0.0, True)
+    assert "SOFASCORE_BREAKER__IGNORE" not in os.environ and "SOFASCORE_LOG__LEVEL" not in os.environ
     assert logging.getLogger().level == logging.ERROR
 
 
 @pytest.mark.parametrize("flags,level", [(["--verbose"], "DEBUG"), (["--log-level", "warning"], "WARNING")])
 def test_log_level_flags_beat_the_debug_switch(cli, monkeypatch, flags, level):
-    monkeypatch.setenv("DEBUG", "true")  # DEBUG=true seviyeyi DEBUG'a zorlar; açıkça istenen seviye önündedir
-    monkeypatch.setenv("LOG_LEVEL", "CRITICAL")
+    monkeypatch.setenv("SOFASCORE_LOG__DEBUG", "true")  # DEBUG=true seviyeyi DEBUG'a zorlar; açıkça istenen seviye önündedir
+    monkeypatch.setenv("SOFASCORE_LOG__LEVEL", "CRITICAL")
     rows = {row["key"]: row for row in cli(*flags, "config", "show", "--json").data["values"]}
     assert (rows["log.level"]["value"], rows["log.level"]["source"], rows["log.debug"]["value"]) == (level, "flag", False)
     assert logging.getLogger().level == getattr(logging, level)
 
 
-def test_config_show_reports_unreadable_legacy_values(cli, monkeypatch):
+def test_config_show_names_the_new_name_of_every_2x_name_still_set(cli, monkeypatch):
+    """P30/P31: 3.1 2.x adlarını okumaz; `config show` her biri için yeni adı söyler (JSON'da `warnings`)."""
     monkeypatch.setenv("MAX_CONCURRENT", "many")
     run = cli("config", "show", "--json")
+    rows = {row["key"]: row for row in run.data["values"]}
+    assert rows["client.max_concurrent"]["source"] == "default"
     assert run.json["warnings"] == [{
-        "code": "legacy_value_ignored",
-        "message": "MAX_CONCURRENT='many' is not valid and is ignored; client.max_concurrent is 10.",
+        "code": "legacy_name",
+        "message": "MAX_CONCURRENT (set in the environment) is no longer read since 3.1; "
+                   "use SOFASCORE_CLIENT__MAX_CONCURRENT (or client.max_concurrent in the config file).",
     }]
-    assert "Warning: MAX_CONCURRENT='many'" in cli("config", "show").stderr
+    # Metin çıktısında uyarı, ayarlar etkinleşirken log satırı olarak yazılır (alt süreçte stderr'e:
+    # test_logs_go_to_stderr_and_stdout_stays_parseable)
+    assert cli("config", "show").exit_code == 0
 
 
 def test_config_validate(cli, tmp_path):
@@ -888,6 +895,7 @@ def test_toml_values():
         meta.toml_value(None)
 
 
+# 2.x'in adlarıyla bir kurulum (3.1 bunları okumaz; `config init --from-legacy` onların karşılığını yazar)
 LEGACY_ENV = {
     "DATA_DIR": "legacy-data",
     "REQUEST_RATE_LIMIT": "off",
@@ -903,29 +911,40 @@ LEGACY_ENV = {
 }
 
 
-def test_config_init_from_legacy_is_the_equivalent_of_todays_sources(tmp_path):
-    legacy = loader.load_settings(config_file=None, environ=LEGACY_ENV, dotenv_values=LEGACY_ENV, overrides_file=None)
-    leagues = {17: "Premier League", 8: "LaLiga", 9: "LaLiga", 132: 'NBA "A"'}
-    text = meta.legacy_config_text(legacy, leagues, {17: "football", 132: "basketball"}, "/cfg/leagues.txt")
+def _in_new_names(env: Mapping[str, str]) -> Dict[str, str]:
+    """Aynı değerler 3.1 adlarıyla (2.x'te bu değerlerin verdiği ayarlar); "off" bütçe için de geçerli."""
+    return {loader.env_name(loader.LEGACY_NAMES[name]): value for name, value in env.items() if value}
 
-    # Gizli değerler dosyaya girmez: proxy için değişkenin adı yazılır
+
+def test_config_init_from_legacy_is_the_equivalent_of_todays_sources(tmp_path):
+    before = loader.load_settings(config_file=None, environ=_in_new_names(LEGACY_ENV), dotenv_values={},
+                                  overrides_file=None)
+    leagues = {17: "Premier League", 8: "LaLiga", 9: "LaLiga", 132: 'NBA "A"'}
+    text = meta.legacy_config_text(LEGACY_ENV, leagues, {17: "football", 132: "basketball"}, "/cfg/leagues.txt")
+
+    # Gizli değerler dosyaya girmez: proxy ve erişim belirteci için onları taşıyan değişkenin adı yazılır
     assert "hunter2" not in text and "sekret-token" not in text
-    assert 'proxy_env = "PROXY_URL"' in text
+    assert 'proxy_env = "PROXY_URL"' in text and 'token_env = "SOFASCORE_API_TOKEN"' in text
     assert f"data_dir = {meta.toml_value(os.path.abspath('legacy-data'))}  # DATA_DIR" in text
     assert "# base_url: the value of API_BASE_URL cannot be written here" in text  # boş adres dosyada geçersiz
 
-    # Dosya tek başına (bugünkü adlar olmadan; yalnızca adı verilen gizli değişkenler ortamda) aynı ayarları verir
+    # Dosya tek başına (yalnızca adı verilen gizli değişkenler ortamda) aynı ayarları verir; o değişkenler eski
+    # ad olsa da uyarı yoktur (okunurlar)
     secrets = {"PROXY_URL": LEGACY_ENV["PROXY_URL"], "SOFASCORE_API_TOKEN": LEGACY_ENV["SOFASCORE_API_TOKEN"]}
-    loaded = _load_text(text, tmp_path, secrets).settings
+    from_file = _load_text(text, tmp_path, secrets)
+    loaded = from_file.settings
+    assert from_file.warnings == ()
     expected = dataclasses.replace(
-        legacy.settings,
-        storage=dataclasses.replace(legacy.settings.storage, data_dir=os.path.abspath("legacy-data")),
-        client=dataclasses.replace(legacy.settings.client, proxy_env="PROXY_URL", base_url=loaded.client.base_url),
+        before.settings,
+        storage=dataclasses.replace(before.settings.storage, data_dir=os.path.abspath("legacy-data")),
+        client=dataclasses.replace(before.settings.client, proxy_env="PROXY_URL", base_url=loaded.client.base_url),
+        server=dataclasses.replace(before.settings.server, token_env="SOFASCORE_API_TOKEN"),
         follows=loaded.follows,
     )
     assert loaded == expected
-    assert loaded.client.effective_base_url == legacy.settings.client.effective_base_url
+    assert loaded.client.effective_base_url == before.settings.client.effective_base_url
     assert (loaded.client.rate, loaded.client.use_proxy, loaded.client.proxy) == (0.0, True, LEGACY_ENV["PROXY_URL"])
+    assert loaded.server.token == "sekret-token"
     assert (loaded.display.language, loaded.log.level, loaded.fetch.only_finished) == ("tr", "DEBUG", False)
     assert [(f.kind, f.entity_id, f.name, f.sport, f.seasons) for f in loaded.follows] == [
         ("tournament", 17, "Premier League", "football", "all"),
@@ -936,18 +955,22 @@ def test_config_init_from_legacy_is_the_equivalent_of_todays_sources(tmp_path):
 
 
 def test_config_init_from_legacy_keeps_the_proxy_off_when_it_is_off_today(tmp_path):
+    """2.x'te PROXY_URL tek başına proxy'yi açmazdı (USE_PROXY=true gerekirdi): dosya da kapalı tutar."""
     env = {"PROXY_URL": "http://proxy.example.com:8080"}
-    legacy = loader.load_settings(config_file=None, environ=env, dotenv_values=env, overrides_file=None)
-    assert legacy.settings.client.use_proxy is False
-    text = meta.legacy_config_text(legacy, {}, {}, "/cfg/leagues.txt")
+    text = meta.legacy_config_text(env, {}, {}, "/cfg/leagues.txt")
     assert "use_proxy = false" in text
     assert _load_text(text, tmp_path, env).settings.client.use_proxy is False
 
 
 def test_config_init_from_legacy_command(cli, tmp_path, monkeypatch):
-    """Komut bugünkü dosyaları okur: .env, ortam, leagues.txt ve league_sports.json (test kurulumundaki lig)."""
+    """Komut 2.x'in dosyalarını okur: .env, ortam, leagues.txt ve league_sports.json (test kurulumundaki lig)."""
     from sofascore_scraper.config_manager import ConfigManager
     from sofascore_scraper.web import league_sports
+
+    old_env = tmp_path / "old.env"
+    old_env.write_text("MAX_CONCURRENT=5\n", encoding="utf-8")
+    monkeypatch.setenv("SOFASCORE_ENV_FILE", str(old_env))
+    monkeypatch.setenv("DATA_DIR", conftest.DATA_DIR)
 
     manager = ConfigManager()
     leagues = manager.get_leagues()
@@ -982,7 +1005,7 @@ def test_config_init_from_legacy_only_reads(cli, tmp_path, monkeypatch):
     """FX-15: eksik leagues.txt yaratılmaz, takipler state.db'ye yansıtılmaz (ConfigManager kurulmaz)."""
     config_dir, data_dir = tmp_path / "config", tmp_path / "data"
     monkeypatch.setenv("SOFASCORE_CONFIG_DIR", str(config_dir))
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
     run = cli("config", "init", "--from-legacy", "--json")
     assert run.exit_code == 0 and run.data["follows"] == 0 and "\n[[follow]]\n" not in run.data["toml"]
     assert not config_dir.exists() and not data_dir.exists()
@@ -1057,7 +1080,7 @@ def test_a_broken_config_found_by_the_search_is_reported_the_same_way(cli, tmp_p
 
 
 def test_secrets_in_an_error_message_are_masked(cli, tmp_path, monkeypatch):
-    monkeypatch.setenv("PROXY_URL", "http://user:hunter2@proxy.example.com:8080")
+    monkeypatch.setenv("SOFASCORE_CLIENT__PROXY", "http://user:hunter2@proxy.example.com:8080")
 
     @registry.command("zz-leak", help="ssc_help_cmd_version")
     def leak(inv: registry.Invocation) -> CommandResult:
@@ -1192,7 +1215,7 @@ def test_lang_flag_translates_text_and_help_but_never_json(cli):
 
 
 def test_language_follows_the_application_setting(cli, monkeypatch):
-    monkeypatch.setenv("APP_LANGUAGE", "tr")
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "tr")
     assert "CLI çıktı şeması" in cli("version").stdout
     assert "CLI output schema" in cli("version", "--lang", "en").stdout
 
@@ -1215,7 +1238,7 @@ def test_help_names_every_sport_and_not_only_football(cli):
 
 
 def test_relative_paths_are_resolved_against_the_invoking_directory(cli, tmp_path, monkeypatch):
-    monkeypatch.delenv("REQUEST_RATE_LIMIT")
+    monkeypatch.delenv("SOFASCORE_CLIENT__RATE")
     write_config(tmp_path / "mine.toml", "schema = 1\n[client]\nrate = 3\n")
     run = cli("config", "show", "--json", "--config", "mine.toml", "--data-dir", "d", cwd=tmp_path)
     rows = {row["key"]: row["value"] for row in run.data["values"]}
@@ -1363,11 +1386,12 @@ def test_selecting_the_stream_survives_a_forced_setup(console_stream):
     assert app_logger.log_file_path() is not None  # dosya logu yerinde
 
 
-def test_logger_warnings_are_english(monkeypatch, capsys):
-    monkeypatch.setenv("LOG_LEVEL", "LOUD")
-    monkeypatch.delenv("DEBUG", raising=False)
+def test_an_invalid_log_level_falls_back_to_info_quietly(monkeypatch, capsys):
+    """Geçersiz `log.level` ayarları kurdurmaz (`config validate` ve `doctor` bildirir); günlükçü INFO ile sürer."""
+    monkeypatch.setenv("SOFASCORE_LOG__LEVEL", "LOUD")
+    monkeypatch.delenv("SOFASCORE_LOG__DEBUG", raising=False)
     assert app_logger.resolve_level() == logging.INFO
-    assert capsys.readouterr().err == "Warning: invalid LOG_LEVEL 'LOUD'; using INFO.\n"
+    assert capsys.readouterr().err == ""
 
 
 # === alt süreç: akışlar, çalışma dizini, paketsiz çalışma ========================================

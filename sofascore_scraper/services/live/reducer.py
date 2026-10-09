@@ -2,9 +2,9 @@
 Canlı indirgeyici: bir maçın son bilinen durumu + yeni gözlem → yeni durum + olaylar
 (docs/design/02-services.md bölüm 8.1). Saf işlevdir: ağa, depoya ve saate dokunmaz; anı gözlem taşır.
 
-Kural 2.x izleyicisinin `MatchWatcher._observe` yöntemidir (bugün `sofascore_scraper/watcher.py` bunu çağırır):
+Kural 2.x izleyicisinin `MatchWatcher._observe` yöntemidir (izleyici, sofascore_scraper/watcher.py, 3.1'de kalktı):
 
-  * Durum sınıfı değiştiyse `status_changed` (ilk `completed`te `provisional`: başlangıç + REFRESH_WINDOW_HOURS
+  * Durum sınıfı değiştiyse `status_changed` (ilk `completed`te `provisional`: başlangıç + refresh.window_hours
     dolmadıysa sonuç geçicidir, 03-A);
   * maç önceki gözlemde de canlıydı ve başlık skoru değiştiyse `score_changed`;
   * başlangıçtan (tenisde gerçek oyun başlangıcından) sporun eşiği kadar sonra hâlâ canlı ya da başlamamışsa
@@ -179,7 +179,7 @@ def reduce(state: Optional[Mapping[str, Any]], obs: Observation, sport: str, *,
 
     state         maçın saklanan durumu; None ya da boş: maç ilk kez görülüyor (önceki sınıf bilinmez,
                   geçiş olayı üretilmez)
-    window_hours  REFRESH_WINDOW_HOURS'u veren işlev (varsayılan sofascore_scraper.refresh); yalnızca ilk completed'te çağrılır
+    window_hours  refresh.window_hours'u veren işlev (varsayılan sofascore_scraper.refresh); yalnızca ilk completed'te çağrılır
     """
     event = obs.event
     eid = str(event.get("id"))
@@ -208,7 +208,7 @@ def reduce(state: Optional[Mapping[str, Any]], obs: Observation, sport: str, *,
             "scores": scores,
         }
         if cls is StatusClass.COMPLETED and not s.get("completed_emitted"):
-            # 03-A: başlangıç + REFRESH_WINDOW_HOURS dolmadıysa sonuç geçici
+            # 03-A: başlangıç + refresh.window_hours dolmadıysa sonuç geçici
             window = (window_hours or refresh_window_hours)()
             start = s.get("start_ts")
             closed = bool(window) and isinstance(start, (int, float)) and now >= start + window * 3600

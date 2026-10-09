@@ -13,8 +13,8 @@ Modüller:
   exit_codes.py  çıkış kodu tablosu
   commands/      her komut kendini kaydeden bir modül (commands/__init__.py)
 
-Depo kökündeki `main.py` (eski giriş noktası) bir kabuktur: eski bayrakları bu paketin komutlarına çevirir
-(sofascore_scraper/cli/legacy_flags.py, plan maddesi P19); bayraklarla birlikte P30'da kalkar.
+Depo kökündeki `main.py` bu CLI'nin yönlendiricisidir (`python main.py sync` = `ssc sync`). 2.x'in bayrakları 3.1'de
+kalktı (P30): onlarla çalıştırma, yerine geçen komutu söyleyen bir kullanım hatasıdır (cli/removed_flags.py).
 
 Bu dosya yalnızca standart kütüphaneyi ve sofascore_scraper/version.py'yi içe aktarır: `ssc --version` paketler
 kurulmadan da çalışır.
@@ -28,7 +28,7 @@ PROG = "ssc"
 # Kurulum yapılmadan çalıştırma biçimi; yardım metinlerinde komut adı olarak görünür
 MODULE_PROG = "python -m sofascore_scraper.cli.main"
 VERSION_TEXT = f"SofaScore Scraper {__version__}"
-# Depo kökündeki `main.py`nin adı (kullanımdan kalkan yüz, P30'da kalkar); kullanım ipucu onun yerine PROG'u gösterir
+# Depo kökündeki `main.py`nin adı (yönlendirici); kullanım ipucu onun yerine kurulu komutun adını (PROG) gösterir
 LEGACY_PROG = "python main.py"
 
 __all__ = ["LEGACY_PROG", "MODULE_PROG", "PROG", "VERSION_TEXT"]

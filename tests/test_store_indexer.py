@@ -1185,7 +1185,7 @@ def test_quick_verify_finds_what_changed_behind_the_catalog(canonical: sf.Legacy
     base = f"{PL_DIR}/17018572"
     write(data, f"{base}/statistics.json", sf.slice_payload("statistics", sf.basic_payload(sf.PL_NEW)))  # I3: yeni dilim
     edited = sf.basic_payload(sf.PL_LIV)
-    edited["homeScore"]["current"] = 7
+    edited["homeScore"]["display"] = edited["homeScore"]["current"] = 7
     write(data, f"{PL_DIR}/17099711/basic.json", edited)  # I4: olay yükü değişti
     (data / PL_DIR / "16951514" / "statistics.json").unlink()  # I2: katalog yükü var diyor
     bump(data / PL_DIR / "16951514")
@@ -1200,7 +1200,7 @@ def test_quick_verify_finds_what_changed_behind_the_catalog(canonical: sf.Legacy
     by_id = {i.event_id: i for i in report.issues}
     assert by_id[sf.event_id(sf.PL_FUTURE)].path == new_dir and by_id[ARS].path == f"{PL_DIR}/{ARS}"
     assert "statistics: state" in by_id[17018572].detail and "has_payload" in by_id[17018572].detail
-    assert by_id[17099711].detail == "farklı sütunlar: home_score_current"
+    assert by_id[17099711].detail.startswith("farklı sütunlar: home_score")
     assert by_id[16951514].detail == "statistics: dosyalarda yok"
     assert report.events_read == 6 and not report.ok and len(report.open_issues) == 5
     assert snapshot(admin.catalog, sig=False) == clean  # onarım istenmedi: katalog değişmedi
@@ -1519,7 +1519,8 @@ def test_stats(old_forms: sf.LegacyFixture, make_admin) -> None:
     stats = admin.stats()
 
     assert (stats["exists"], stats["usable"], stats["rebuild_reason"], stats["schema_version"],
-            stats["derive_version"], stats["journal_mode"]) == (True, True, None, 1, derive.DERIVE_VERSION, "wal")
+            stats["derive_version"], stats["journal_mode"]) == (True, True, None, catalog_mod.CATALOG_SCHEMA,
+                                                                  derive.DERIVE_VERSION, "wal")
     assert stats["size_bytes"] == os.path.getsize(admin.catalog.path) and stats["tables"] == report.counts
     assert stats["meta"]["built_at"] == str(NOW) and stats["meta"]["build_mode"] == "recreate"
     assert stats["events"] == {

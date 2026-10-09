@@ -24,7 +24,6 @@ import pytest
 import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from sofascore_scraper import utils
 from sofascore_scraper.services import planning
 from sofascore_scraper.services.listing import ListingService, ScheduleLister
 from sofascore_scraper.services.pipeline import FetchPipeline, PipelineSummary
@@ -53,7 +52,7 @@ _STATUS = {
 @pytest.fixture(autouse=True)
 def _settings(monkeypatch: pytest.MonkeyPatch) -> None:
     pin_default_settings(monkeypatch)
-    monkeypatch.delenv("FETCH_ONLY_FINISHED", raising=False)
+    monkeypatch.delenv("SOFASCORE_FETCH__ONLY_FINISHED", raising=False)
 
 
 def _listed(event: Dict[str, Any], event_id: int) -> Dict[str, Any]:
@@ -106,10 +105,6 @@ def _event_requests(fake: FakeSofaScore) -> Dict[int, List[str]]:
     return {event_id: sorted(paths) for event_id, paths in sorted(found.items())}
 
 
-def _ids(rows: List[Dict[str, Any]]) -> List[int]:
-    return sorted(int(row["match_id"]) for row in rows)
-
-
 # --- saklama --------------------------------------------------------------------------------------------
 
 def test_a_listing_stores_matches_of_every_status(fake: FakeSofaScore, store: Store) -> None:
@@ -134,17 +129,19 @@ def test_the_setting_filters_when_reading(fake: FakeSofaScore, store: Store, tmp
     page = store.entities.payload(Ref.season(LEAGUE, PAGED_SEASON), "schedule", "last_0")
     ScheduleLister(old, only_finished=True).save_page(LEAGUE, PAGED_SEASON, "last_0", page, meta={"filtered": True})
 
+    def listed(of: Store, only_finished: bool) -> List[int]:
+        rows = QueryService(of).listed_events(tournament_ids=(LEAGUE,), season_ids=(PAGED_SEASON,),
+                                              only_finished=only_finished)
+        return [row.id for row in rows]
+
     for only_finished in (True, False):
-        new_rows = QueryService(store).season_matches_legacy(PAGED_SEASON, LEAGUE, only_finished=only_finished)
-        new_page = QueryService(store).matches_legacy(only_finished=only_finished, limit=100)
+        new_rows = listed(store, only_finished)
         new_count = StatusService(store).summary(only_finished=only_finished, sizes=False).matches
         if only_finished:
-            assert new_rows == QueryService(old).season_matches_legacy(PAGED_SEASON, LEAGUE, only_finished=True)
-            assert new_page == QueryService(old).matches_legacy(only_finished=True, limit=100)
+            assert new_rows == listed(old, True) == [PAGED_FINISHED]
             assert new_count == StatusService(old).summary(only_finished=True, sizes=False).matches == 1
-            assert _ids(new_rows) == [PAGED_FINISHED]
         else:
-            assert _ids(new_rows) == _ids(list(new_page.items)) == [PAGED_FINISHED, NOT_STARTED, POSTPONED, LIVE]
+            assert new_rows == [PAGED_FINISHED, NOT_STARTED, POSTPONED, LIVE]
             assert new_count == 4
 
 
@@ -157,8 +154,7 @@ def test_downloads_fetch_finished_matches_only_whatever_the_setting(
     Bitmiş maç başına istekler değişmez (/event ve seçili dilimler); yalnızca listeden bilinen bitmemiş maç
     indirilmez (maç bitince liste satırı değişir). Ayar kapalıyken de: ayar yalnızca okurken uygulanır.
     """
-    monkeypatch.setenv("FETCH_ONLY_FINISHED", "true" if only_finished else "false")
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", only_finished)
+    monkeypatch.setenv("SOFASCORE_FETCH__ONLY_FINISHED", "true" if only_finished else "false")
     _list(store, ROUND_SEASON, only_finished=only_finished)
     _list(store, PAGED_SEASON, only_finished=only_finished)
     fake.reset_log()

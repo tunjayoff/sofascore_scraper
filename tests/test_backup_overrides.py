@@ -2,7 +2,8 @@
 Web arayüzünde kaydedilen ayarlar (`CONFIG_DIR/overrides.json`) yedeğe girer ve geri yüklenir (plan maddesi
 FX-22; docs/design/01-storage.md bölüm 9).
 
-  * Ayar taşıyan kapsamlar (`all`, `state`, `config`) dosyayı `config/overrides.json` olarak alır, `data` almaz.
+  * Ayar taşıyan kapsamlar (`all`, `state`) dosyayı `config/overrides.json` olarak alır, `data` almaz (2.x'in
+    `config` kapsamı 3.1'de kalktı).
     Dosya proxy adresini parolasıyla taşıyabilir: onu taşıyan yedek yalnızca sahibince okunur (0600).
   * Geri yükleme dosyayı veriyle aynı adımda, 0600 izniyle yerine koyar; bir adım başarısız olursa önceki hali
     geri gelir. Yeri verilmezse ya da belge bozuksa dosyaya dokunulmaz (`skipped`); içerik günlüğe yazılmaz.
@@ -57,7 +58,7 @@ def _source_backup(tmp_path: Path, scope: str = "all") -> tuple[Store, backup_mo
 
 # --- yedek -----------------------------------------------------------------------------------------------
 
-@pytest.mark.parametrize("scope,included", [("all", True), ("state", True), ("config", True), ("data", False)])
+@pytest.mark.parametrize("scope,included", [("all", True), ("state", True), ("data", False)])
 def test_the_settings_scopes_take_the_overrides_file(tmp_path: Path, scope: str, included: bool) -> None:
     _, info, data = _source_backup(tmp_path, scope)
 
@@ -70,10 +71,10 @@ def test_the_settings_scopes_take_the_overrides_file(tmp_path: Path, scope: str,
 
 @POSIX
 def test_a_backup_holding_the_overrides_file_is_private(tmp_path: Path) -> None:
-    store, info, _ = _source_backup(tmp_path, "config")
+    store, info, _ = _source_backup(tmp_path, "state")
     assert _mode(Path(info.path)) == 0o600
     # Dosya yoksa (ayar kaydedilmemiş) yedek eskisi gibidir: üye yok, izin umask'e kalır
-    plain = store.backup.create("config", overrides_file=str(tmp_path / "missing.json"),
+    plain = store.backup.create("state", overrides_file=str(tmp_path / "missing.json"),
                                 now=STAMP.replace(second=5))
     with zipfile.ZipFile(plain.path) as zf:
         assert MEMBER not in zf.namelist()
@@ -83,7 +84,7 @@ def test_a_config_file_named_overrides_json_is_not_added_twice(tmp_path: Path) -
     store, _ = rich_store(tmp_path / "source")
     settings = tmp_path / "config" / "overrides.json"
     _write(settings, DOCUMENT)
-    info = backup_all(store, "config", config_files=[str(settings)], overrides_file=str(settings))
+    info = backup_all(store, "state", config_files=[str(settings)], overrides_file=str(settings))
     with zipfile.ZipFile(info.path) as zf:
         assert zf.namelist().count(MEMBER) == 1
 
@@ -114,14 +115,14 @@ def test_restore_puts_the_overrides_file_back_privately(tmp_path: Path, caplog: 
 
 
 def test_restore_creates_the_overrides_file_when_there_was_none(tmp_path: Path) -> None:
-    _, info, data = _source_backup(tmp_path, "config")
+    _, info, data = _source_backup(tmp_path, "state")
     target_dir = tmp_path / "target" / "data"
     name = into(info.path, target_dir)
     settings = tmp_path / "target" / "fresh-config" / "overrides.json"
 
     report = open_store(target_dir).backup.restore(name, overrides_file=str(settings))
 
-    assert report.restored == (MEMBER,) and report.replaced == ()
+    assert report.restored[-1] == MEMBER and MEMBER not in report.replaced
     assert settings.read_bytes() == data
 
 

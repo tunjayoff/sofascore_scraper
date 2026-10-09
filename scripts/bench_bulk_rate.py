@@ -1,9 +1,9 @@
 """
-Toplu indirme yolunun (fetch_matches_batch_async) istek hızını ağ olmadan ölçer.
+Toplu indirme yolunun (detay aşaması: DetailPhase.fetch_selected) istek hızını ağ olmadan ölçer.
 
 SofaScore'a hiç istek atılmaz: tarayıcı köprüsü, sabit gecikmeli sahte bir taşıyıcıyla
-değiştirilir. Ölçülen şey, kodun kendi sınırlarının (MAX_CONCURRENT, istek sonrası
-WAIT_TIME_MIN/MAX beklemesi) ve ortak istek bütçesinin izin verdiği istek hızıdır.
+değiştirilir. Ölçülen şey, kodun kendi sınırlarının (`client.max_concurrent`, istek sonrası
+`client.wait_time_min` / `wait_time_max` beklemesi) ve ortak istek bütçesinin izin verdiği istek hızıdır.
 Varsayılan bütçe (5 istek/sn, bkz. sofascore_scraper/throttle.py) bu tavanın bilerek çok altındadır.
 
 Kullanım:
@@ -23,7 +23,7 @@ import time
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
-os.environ.setdefault("LOG_LEVEL", "ERROR")
+os.environ.setdefault("SOFASCORE_LOG__LEVEL", "ERROR")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -51,18 +51,19 @@ def _event(mid: int, sport: str) -> Dict[str, Any]:
 def run_once(matches: int, latency: float, sport: str, rate: str) -> Dict[str, float]:
     """Bir koşu: `matches` yeni maç, istek başına `latency` sn sahte gecikme."""
     with tempfile.TemporaryDirectory(prefix="sofascore-bench-") as tmp:
-        os.environ["DATA_DIR"] = os.path.join(tmp, "data")
-        os.environ["SOFASCORE_THROTTLE_DIR"] = os.path.join(tmp, "throttle")
+        os.environ["SOFASCORE_STORAGE__DATA_DIR"] = os.path.join(tmp, "data")
+        os.environ["SOFASCORE_CLIENT__THROTTLE_DIR"] = os.path.join(tmp, "throttle")
         if rate == "default":
-            os.environ.pop("REQUEST_RATE_LIMIT", None)
+            os.environ.pop("SOFASCORE_CLIENT__RATE", None)
         else:
-            os.environ["REQUEST_RATE_LIMIT"] = rate
+            os.environ["SOFASCORE_CLIENT__RATE"] = rate
 
-        import sofascore_scraper.challenge_solver as cs
-        import sofascore_scraper.utils as utils
         from sofascore_scraper import throttle
+        from sofascore_scraper.client import bridge as cs
+        from sofascore_scraper.client import transport
         from sofascore_scraper.config_manager import ConfigManager
-        from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+        from sofascore_scraper.services.detail_phase import DetailPhase
+        from sofascore_scraper.store import open_store
 
         throttle.reset_for_tests()
         stamps: List[float] = []
@@ -83,16 +84,16 @@ def run_once(matches: int, latency: float, sport: str, rate: str) -> Dict[str, f
             yield MagicMock()
 
         cm = ConfigManager()
-        fetcher = MatchDataFetcher(cm, data_dir=os.environ["DATA_DIR"])
-        utils._browser_first_until = time.monotonic() + 3600  # bugünkü gerçek yol: önce tarayıcı
+        phase = DetailPhase(open_store(os.environ["SOFASCORE_STORAGE__DATA_DIR"]), cm)
+        transport._browser_first_until = time.monotonic() + 3600  # bugünkü gerçek yol: önce tarayıcı
         ids = list(range(1, matches + 1))
         with patch.object(cs, "fetch_api_via_browser", fake_browser_fetch), \
-                patch.object(utils, "create_session_async", fake_session):
+                patch.object(transport, "create_session_async", fake_session):
             t0 = time.monotonic()
-            results = asyncio.run(fetcher.fetch_matches_batch_async(ids, max_concurrent=cm.get_max_concurrent()))
+            stored = phase.fetch_selected(ids)
             elapsed = time.monotonic() - t0
-        if len(results) != matches:
-            raise SystemExit(f"beklenen {matches} maç, alınan {len(results)}")
+        if stored != matches:
+            raise SystemExit(f"beklenen {matches} maç, alınan {stored}")
         # En yoğun 1 sn'lik pencere
         peak, j = 0, 0
         for i, s in enumerate(stamps):
@@ -108,11 +109,11 @@ def main() -> int:
     p.add_argument("--latency", type=float, nargs="*", default=[0.0, 0.1, 0.2, 0.3, 0.5],
                    help="istek başına sahte gecikme (sn); birden çok değer verilebilir")
     p.add_argument("--sport", default="football", choices=["football", "basketball", "tennis"])
-    p.add_argument("--rate", default="0", help="REQUEST_RATE_LIMIT (istek/sn); 0 = kapalı, 'default' = varsayılan")
+    p.add_argument("--rate", default="0", help="client.rate (istek/sn); 0 = kapalı, 'default' = varsayılan")
     args = p.parse_args()
 
-    print(f"spor={args.sport} maç={args.matches} REQUEST_RATE_LIMIT={args.rate} "
-          f"MAX_CONCURRENT={os.getenv('MAX_CONCURRENT', '10')}")
+    print(f"spor={args.sport} maç={args.matches} client.rate={args.rate} "
+          f"client.max_concurrent={os.getenv('SOFASCORE_CLIENT__MAX_CONCURRENT', '10')}")
     print(f"{'gecikme':>8} {'istek':>6} {'süre':>7} {'ort. istek/sn':>14} {'tepe istek/sn':>14}")
     for lat in args.latency:
         r = run_once(args.matches, lat, args.sport, args.rate)

@@ -1,6 +1,0 @@
-{
- "league_id=17": {"status": 200, "body": {"seasons": [], "fetched": false}},
- "league_id=8": {"status": 200, "body": {"seasons": [], "fetched": false}},
- "league_id=999": {"status": 200, "body": {"seasons": [], "fetched": false}},
- "league_id=abc": {"status": 422}
-}

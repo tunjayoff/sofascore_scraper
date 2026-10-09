@@ -101,7 +101,7 @@ instead of failing. It does not restart on exit code 2 (a configuration error, o
 `--idle` is removed) or 6 (another live service holds this data folder); it restarts after other failures.
 
 The `page` and `direct` sources start Chromium with the profile `<profile>-live` next to the bridge profile
-(`[client] browser_profile` or `SOFASCORE_BROWSER_PROFILE`, default `~/.cache/sofascore_scraper/chrome_profile`),
+(`[client] browser_profile` or `SOFASCORE_CLIENT__BROWSER_PROFILE`, default `~/.cache/sofascore_scraper/chrome_profile`),
 so the service user needs a writable home or a profile setting that points to a folder it can write. Polling and confirmation
 requests go through the shared request budget (`[client] rate`) together with downloads and the web app.
 

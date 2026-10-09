@@ -5,4 +5,3 @@ class WatchStateStore:
     def load(self, watcher: str) -> Dict[str, Dict[str, Any]]
     def save(self, watcher: str, state: Mapping[str, Mapping[str, Any]], *, changed: Optional[Iterable[str]] = None) -> None
     def import_legacy(self, sport: str, *, watcher: Optional[str] = None) -> Optional[int]
-    def append_legacy_events(self, lines: Sequence[str]) -> None

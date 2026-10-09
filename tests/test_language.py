@@ -1,8 +1,10 @@
 """
-Dil kuralı: açık ayar (APP_LANGUAGE) > sistem dili > İngilizce.
+Dil kuralı: açık ayar (`display.language`: SOFASCORE_DISPLAY__LANGUAGE) > sistem dili > İngilizce.
 
 Kural sofascore_scraper/language.py'de durur; kurulum ve başlatma betikleri (bash, PowerShell) Python daha
-yokken çalıştıkları için aynı kuralı kendileri uygular. Aynı örnek tablosu hepsine sorulur.
+yokken çalıştıkları için kendi kurallarını uygular. Betiklerin Python'suz yedek kuralı 2.x'in APP_LANGUAGE adını
+okur: kurulum betikleri (scripts/install.*) P30'un kapsamında değildir; betiklere kendi tablosu sorulur
+(SCRIPT_CASES). Başlatma betikleri Python varken dili uygulamaya sorar (app_lang, aşağıda).
 Ayrıca: iki dil dosyasında aynı anahtarlar var mı, yeni kurulum İngilizce mi başlıyor.
 """
 from __future__ import annotations
@@ -38,20 +40,38 @@ CASES = [
     ({"LANG": "en_US.UTF-8", "LC_MESSAGES": "tr_TR.UTF-8"}, None, "tr"),
     ({"LANG": "tr_TR.UTF-8", "LC_MESSAGES": "en_US.UTF-8", "LC_ALL": "tr_TR.UTF-8"}, None, "tr"),
     # Açık ayar her zaman kazanır
+    ({"LANG": "tr_TR.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "en"}, None, "en"),
+    ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "tr"}, None, "tr"),
+    ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "TR"}, None, "tr"),
+    ({"LANG": "tr_TR.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "de"}, None, "tr"),  # desteklenmeyen ayar yok sayılır
+    # 2.x'in LANGUAGE ve APP_LANGUAGE adları 3.1'de okunmaz (P30); LANGUAGE gettext'in değişkenidir
+    ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr"}, None, "en"),
+    ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr_TR:tr"}, None, "en"),
+    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "tr"}, None, "en"),
+    # .env'deki ayar
+    ({"LANG": "en_US.UTF-8"}, "SOFASCORE_CLIENT__MAX_CONCURRENT=5\nSOFASCORE_DISPLAY__LANGUAGE=tr\n", "tr"),
+    ({"LANG": "tr_TR.UTF-8"}, 'SOFASCORE_DISPLAY__LANGUAGE="en"\n', "en"),
+    ({"LANG": "tr_TR.UTF-8"}, "SOFASCORE_DISPLAY__LANGUAGE=\n", "tr"),  # boş = ayarlanmamış
+    ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "en"}, "SOFASCORE_DISPLAY__LANGUAGE=tr\n", "en"),  # süreç ortamı .env'in önünde
+    ({"LANG": "en_US.UTF-8"}, "APP_LANGUAGE=tr\n", "en"),
+]
+_IDS = [f"{i}-{expected}" for i, (_env, _file, expected) in enumerate(CASES)]
+
+# Python'dan önce çalışan betiklerin yedek kuralı (scripts/install.sh, install.ps1 ve başlatma betiklerinin
+# detect_lang'ı): 2.x'in adları. Kurulum betikleri P30'un kapsamında değildir (bkz. modülün açıklaması).
+SCRIPT_CASES = [case for case in CASES[:11]] + [
     ({"LANG": "tr_TR.UTF-8", "APP_LANGUAGE": "en"}, None, "en"),
     ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "tr"}, None, "tr"),
     ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "TR"}, None, "tr"),
-    ({"LANG": "tr_TR.UTF-8", "APP_LANGUAGE": "de"}, None, "tr"),  # desteklenmeyen ayar yok sayılır
-    # Eski LANGUAGE yalnızca tam olarak tr / en ise ayardır; gettext listesi ("tr_TR:tr") değildir
+    ({"LANG": "tr_TR.UTF-8", "APP_LANGUAGE": "de"}, None, "tr"),
     ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr"}, None, "tr"),
     ({"LANG": "en_US.UTF-8", "LANGUAGE": "tr_TR:tr"}, None, "en"),
-    # .env'deki ayar
     ({"LANG": "en_US.UTF-8"}, "MAX_CONCURRENT=5\nAPP_LANGUAGE=tr\n", "tr"),
     ({"LANG": "tr_TR.UTF-8"}, 'APP_LANGUAGE="en"\n', "en"),
-    ({"LANG": "tr_TR.UTF-8"}, "APP_LANGUAGE=\n", "tr"),  # boş = ayarlanmamış (.env.example böyle gelir)
-    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "en"}, "APP_LANGUAGE=tr\n", "en"),  # süreç ortamı .env'in önünde
+    ({"LANG": "tr_TR.UTF-8"}, "APP_LANGUAGE=\n", "tr"),
+    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "en"}, "APP_LANGUAGE=tr\n", "en"),
 ]
-_IDS = [f"{i}-{expected}" for i, (_env, _file, expected) in enumerate(CASES)]
+_SCRIPT_IDS = [f"{i}-{expected}" for i, (_env, _file, expected) in enumerate(SCRIPT_CASES)]
 
 
 # --- Python: tek kural ------------------------------------------------------------------------
@@ -76,9 +96,9 @@ def test_language_of_reads_locale_names():
 
 def test_explicit_and_detected_are_reported_separately():
     assert language.explicit_language({"LANG": "tr_TR.UTF-8"}) is None  # sistem dili ayar değildir
-    assert language.explicit_language({"APP_LANGUAGE": "tr"}) == "tr"
-    assert language.explicit_language({"APP_LANGUAGE": ""}) is None
-    assert language.detected_language({"APP_LANGUAGE": "en", "LANG": "tr_TR.UTF-8"}, platform="linux") == "tr"
+    assert language.explicit_language({"SOFASCORE_DISPLAY__LANGUAGE": "tr"}) == "tr"
+    assert language.explicit_language({"SOFASCORE_DISPLAY__LANGUAGE": ""}) is None
+    assert language.detected_language({"SOFASCORE_DISPLAY__LANGUAGE": "en", "LANG": "tr_TR.UTF-8"}, platform="linux") == "tr"
     assert language.detected_language({}, platform="linux") is None
 
 
@@ -86,7 +106,7 @@ def test_windows_falls_back_to_the_user_interface_language(monkeypatch):
     ui = {"value": "tr_TR"}
     monkeypatch.setattr(language, "_windows_ui_language", lambda: ui["value"])
     assert language.resolve_language({}, platform="win32") == "tr"
-    assert language.resolve_language({"APP_LANGUAGE": "en"}, platform="win32") == "en"
+    assert language.resolve_language({"SOFASCORE_DISPLAY__LANGUAGE": "en"}, platform="win32") == "en"
     # Git Bash gibi kabuklar LANG verir: o zaman o belirler
     assert language.resolve_language({"LANG": "en_US.UTF-8"}, platform="win32") == "en"
     for other in ("en_US", "de_DE", None):
@@ -109,7 +129,7 @@ def test_the_app_uses_the_rule(monkeypatch):
     assert app_language() == "en" and I18nManager().current_lang == "en"
     monkeypatch.setenv("LANG", "tr_TR.UTF-8")
     assert app_language() == "tr" and I18nManager().current_lang == "tr"
-    monkeypatch.setenv("APP_LANGUAGE", "en")
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "en")
     assert app_language() == "en" and I18nManager().current_lang == "en"
 
 
@@ -129,7 +149,7 @@ def test_shell_scripts_share_one_detect_lang():
 
 
 @pytest.mark.skipif(os.name == "nt", reason="bash betikleri POSIX'te çalışır")
-@pytest.mark.parametrize("environ,env_text,expected", CASES, ids=_IDS)
+@pytest.mark.parametrize("environ,env_text,expected", SCRIPT_CASES, ids=_SCRIPT_IDS)
 def test_rule_in_the_shell_scripts(tmp_path, environ, env_text, expected):
     bash = shutil.which("bash")
     if bash is None:
@@ -167,7 +187,7 @@ def _powershell() -> str | None:
 def _run_powershell(tmp_path: Path, body: str, environ: dict) -> subprocess.CompletedProcess:
     script = tmp_path / "probe.ps1"
     script.write_text(body, encoding="utf-8-sig")  # BOM: Windows PowerShell 5.1 dosyayı UTF-8 okusun
-    env = {k: v for k, v in os.environ.items() if k not in language.ENV_KEYS}
+    env = {k: v for k, v in os.environ.items() if k not in language.ENV_KEYS + ("APP_LANGUAGE", "LANGUAGE")}
     env.update(environ)
     return subprocess.run(
         [_powershell(), "-NoProfile", "-NonInteractive", *_POLICY, "-File", str(script)],
@@ -200,7 +220,8 @@ def test_powershell_installer_parses(tmp_path):
 
 # Ortam hiçbir şey söylemiyorsa PowerShell makinenin arayüz diline bakar: o örnek makineye bağlıdır
 @pytest.mark.parametrize(
-    "environ,env_text,expected", [c for c in CASES if c[0]], ids=[f"{i}-{c[2]}" for i, c in enumerate(CASES) if c[0]]
+    "environ,env_text,expected", [c for c in SCRIPT_CASES if c[0]],
+    ids=[f"{i}-{c[2]}" for i, c in enumerate(SCRIPT_CASES) if c[0]],
 )
 def test_rule_in_the_powershell_installer(tmp_path, environ, env_text, expected):
     if _powershell() is None:
@@ -252,14 +273,14 @@ def test_cli_locale_files_have_the_same_keys_and_placeholders():
 def test_keys_used_by_the_cli_and_the_launcher_exist():
     en = _locale("en")
     used = set()
-    for name in ("main.py", "sofascore_scraper/match_data_fetcher.py", "sofascore_scraper/bridge_health.py", "sofascore_scraper/match_fetcher.py", "sofascore_scraper/web/api/legacy.py"):
+    for name in ("sofascore_scraper/bridge_health.py",):  # 2.x'in indiricileri P30'da kalktı
         used |= set(re.findall(r"""\bt\(\s*['"]([a-z0-9_]+)['"]""", (REPO / name).read_text(encoding="utf-8")))
     launcher = (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
     used |= {"launcher_" + key for key in re.findall(r'_t\(\s*"([a-z_]+)"', launcher)}
-    assert len(used) > 50  # P25: main.py'nin web sunucusu dalı `ssc serve` oldu, onun metinleri gitti
+    # P25: main.py'nin web sunucusu dalı `ssc serve` oldu; P30: main.py'nin bayrakları ve metinleri gitti
+    assert len(used) > 20
     assert used <= set(en), sorted(used - set(en))
     # Kullanılmayan çeviri kalmasın (bu değişiklikle eklenen ön ekler için)
-    main_text = (REPO / "main.py").read_text(encoding="utf-8")
     doctor_text = (REPO / "sofascore_scraper" / "doctor.py").read_text(encoding="utf-8")
     # `details_*` anahtarlarını P15'e kadar MatchDataFetcher yazdırıyordu; artık günlük satırıdırlar ve anahtarlar
     # terminal menüsüyle (P26) kullanım taramasından sonra silinir
@@ -267,7 +288,7 @@ def test_keys_used_by_the_cli_and_the_launcher_exist():
         if key.startswith("launcher_"):
             assert f'"{key[len("launcher_"):]}"' in launcher, key
         elif key.startswith("cli_"):
-            assert f'"{key}"' in main_text or f'"{key}"' in doctor_text, key
+            assert f'"{key}"' in doctor_text, key
 
 
 @pytest.mark.parametrize("lang", ["en", "tr"])
@@ -280,23 +301,18 @@ def test_help_texts_survive_argparse_formatting(lang):
 
 
 @pytest.mark.parametrize("lang,expected,absent", [
-    ("en", ["Start the web interface", "Headless / CI examples", "Show this help message", "--diagnostics [PATH]"], "arayüz"),
-    ("tr", ["Web arayüzünü başlatır", "Headless / CI örnekleri", "Bu yardım iletisini", "--diagnostics [YOL]"], "Start the"),
+    ("en", ["Command line of the SofaScore data platform", "The web app: python main.py serve."], "arayüz"),
+    ("tr", ["SofaScore veri platformunun komut satırı", "Web uygulaması: python main.py serve."], "Command line"),
 ])
-def test_main_help_is_in_the_chosen_language(monkeypatch, capsys, lang, expected, absent):
+def test_main_help_is_in_the_chosen_language(capsys, lang, expected, absent, restore_cli_process):
     import main as cli
 
-    i18n = I18nManager()
-    i18n.set_language(lang)
-    monkeypatch.setattr(cli, "get_i18n", lambda: i18n)
-    monkeypatch.setattr("sys.argv", ["main.py", "--help"])
-    with pytest.raises(SystemExit) as e:
-        cli.parse_arguments()
+    assert cli.main(["--lang", lang, "--help"]) == 0
     out = capsys.readouterr().out
-    assert e.value.code == 0
+    assert out.startswith("usage: python main.py")
     for text in expected:
         assert text in out, text
-    assert absent not in out and "cli_" not in out  # çevrilmemiş anahtar görünmüyor
+    assert absent not in out and "ssc_help_" not in out  # çevrilmemiş anahtar görünmüyor
 
 
 @pytest.mark.parametrize("lang,expected", [("en", "print the result as JSON"), ("tr", "sonucu metin yerine JSON")])
@@ -311,30 +327,15 @@ def test_doctor_help_and_errors_are_in_the_chosen_language(capsys, lang, expecte
     assert ("unknown check id: nope" if lang == "en" else "bilinmeyen denetim adı: nope") in err
 
 
-@pytest.mark.parametrize("lang,usage,stopped", [
-    ("en", "--watch needs --sport", "Refresh: 2 matches refreshed, 1 changed, 0 failed"),
-    ("tr", "--watch için --sport", "Yenileme: 2 maç yenilendi, 1 değişti, 0 başarısız"),
+@pytest.mark.parametrize("lang,stopped", [
+    ("en", "Refresh: 2 matches refreshed, 1 changed, 0 failed"),
+    ("tr", "Yenileme: 2 maç yenilendi, 1 değişti, 0 başarısız"),
 ])
-def test_cli_messages_are_translated(lang, usage, stopped):
+def test_cli_messages_are_translated(lang, stopped):
     i18n = I18nManager()
     i18n.set_language(lang)
-    assert usage in i18n.t("cli_watch_usage")
     assert stopped in i18n.t("ssc_refresh_summary", refreshed=2, changed=1, failed=0)
-    assert "--update-all" in i18n.t("cli_headless_usage")
     assert "12.5" in i18n.t("details_finished", ok=1, total=8, rate="12.5")
-
-
-def test_watch_without_arguments_explains_itself_in_the_app_language(monkeypatch, capsys):
-    import main as cli
-
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirebilir
-    monkeypatch.setattr("sys.argv", ["main.py", "--watch"])
-    for lang, expected in (("en", "--watch needs --sport"), ("tr", "--watch için --sport")):
-        i18n = I18nManager()
-        i18n.set_language(lang)
-        monkeypatch.setattr(cli, "get_i18n", lambda i18n=i18n: i18n)
-        assert cli.main() == 2
-        assert expected in capsys.readouterr().err
 
 
 # --- yeni kurulum İngilizce başlar -------------------------------------------------------------
@@ -342,7 +343,9 @@ def test_watch_without_arguments_explains_itself_in_the_app_language(monkeypatch
 
 def test_env_example_does_not_pin_a_language():
     text = (REPO / ".env.example").read_text(encoding="utf-8")
-    assert re.findall(r"(?m)^APP_LANGUAGE=(.*)$", text) == [""]
+    # Dil satırı yorumdadır; 2.x adı hiç geçmez
+    assert re.findall(r"(?m)^SOFASCORE_DISPLAY__LANGUAGE=", text) == [] and "# SOFASCORE_DISPLAY__LANGUAGE=" in text
+    assert not re.findall(r"(?m)^#? ?APP_LANGUAGE=", text)
     # .env.example'ı kopyalayan kurulum: dil sistemi izler, sistem desteklenmiyorsa İngilizce
     for environ, expected in (({}, "en"), ({"LANG": "de_DE.UTF-8"}, "en"), ({"LANG": "tr_TR.UTF-8"}, "tr")):
         root = REPO  # yalnızca yol; .env SOFASCORE_ENV_FILE ile verilir
@@ -352,7 +355,7 @@ def test_env_example_does_not_pin_a_language():
 
 def test_shipped_defaults_do_not_pin_turkish():
     compose = [ln for ln in (REPO / "docker-compose.yml").read_text(encoding="utf-8").splitlines() if not ln.lstrip().startswith("#")]
-    assert not [ln for ln in compose if "APP_LANGUAGE" in ln]
+    assert not [ln for ln in compose if "SOFASCORE_DISPLAY__LANGUAGE" in ln or "APP_LANGUAGE" in ln]
     assert '<html lang="en">' in (REPO / "frontend" / "index.html").read_text(encoding="utf-8")
     assert language.DEFAULT_LANGUAGE == "en"
     frontend = (REPO / "frontend" / "src" / "i18n.ts").read_text(encoding="utf-8")
@@ -367,32 +370,36 @@ def test_settings_api_says_whether_the_language_is_pinned(monkeypatch):
     for key in language.ENV_KEYS:
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(language, "_windows_ui_language", lambda: None)
-    body = client.get("/api/settings").json()
-    assert (body["language"], body["language_explicit"]) == ("en", False)
+
+    def shown() -> tuple:
+        rows = client.get("/api/v1/settings").json()["data"]["settings"]
+        row = next(row for row in rows if row["key"] == "display.language")
+        return row["value"], row["source"] != "default"
+
+    assert shown() == ("en", False)
 
     monkeypatch.setenv("LANG", "tr_TR.UTF-8")  # sunucunun sistem dili: CLI için geçerli, ayar değil
-    body = client.get("/api/settings").json()
-    assert (body["language"], body["language_explicit"]) == ("tr", False)
+    assert shown() == ("tr", False)
 
-    monkeypatch.setenv("APP_LANGUAGE", "tr")
-    body = client.get("/api/settings").json()
-    assert (body["language"], body["language_explicit"]) == ("tr", True)
+    monkeypatch.setenv("SOFASCORE_DISPLAY__LANGUAGE", "tr")
+    assert shown() == ("tr", True)
 
 
 # --- yapılandırma katmanları: sofascore.toml ve Ayarlar sayfası (FX-22) ------------------------------------
-# Uygulama dili ayar yükleyicisinin katman sırasıyla da bulur: süreç ortamı > sofascore.toml > overrides.json
-# (Ayarlar sayfası) > .env > sistem dili. Başlatıcı ve başlatma betikleri yükleyiciyi (dotenv'e bağlı) yüklemeden
-# aynı sonucu doctor.Context'ten alır.
+# Uygulama dili ayar yükleyicisinin katman sırasıyla da bulur: ortam (uygulama `.env`'i ortama yükler) >
+# sofascore.toml > overrides.json (Ayarlar sayfası) > sistem dili. Başlatıcı ve başlatma betikleri yükleyiciyi
+# (dotenv'e bağlı) yüklemeden aynı sonucu doctor.Context'ten alır.
 
 # (süreç ortamı, .env, sofascore.toml'un [display] language'ı, overrides.json'ınki, beklenen)
 LAYER_CASES = [
     ({"LANG": "en_US.UTF-8"}, None, None, "tr", "tr"),  # Ayarlar sayfası sistem dilinin önünde
     ({"LANG": "tr_TR.UTF-8"}, None, "en", None, "en"),  # yapılandırma dosyası da
     ({"LANG": "en_US.UTF-8"}, None, "tr", "en", "tr"),  # dosya overrides'ın üstünde
-    ({"LANG": "en_US.UTF-8"}, "APP_LANGUAGE=en\n", None, "tr", "tr"),  # overrides .env'in üstünde
-    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "en"}, None, "tr", "tr", "en"),  # süreç ortamı hepsinin üstünde
+    ({"LANG": "en_US.UTF-8"}, "SOFASCORE_DISPLAY__LANGUAGE=en\n", None, "tr", "en"),  # .env (ortam) overrides'ın üstünde
+    ({"LANG": "en_US.UTF-8"}, "APP_LANGUAGE=en\n", None, "tr", "tr"),  # 2.x adı okunmaz
+    ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "en"}, None, "tr", "tr", "en"),  # süreç ortamı hepsinin üstünde
     ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "tr"}, None, "en", "en", "tr"),
-    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "tr"}, "APP_LANGUAGE=tr\n", None, "en", "en"),  # .env'den gelen
+    ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "tr"}, "SOFASCORE_DISPLAY__LANGUAGE=tr\n", None, "en", "tr"),  # .env'den gelen de ortamdır
     ({"LANG": "tr_TR.UTF-8"}, None, None, None, "tr"),
     ({"LANG": "tr_TR.UTF-8", "SOFASCORE_CONFIG": "none"}, None, "en", None, "tr"),  # dosya araması kapalı
 ]

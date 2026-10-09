@@ -1,5 +1,5 @@
 """
-Sahte SofaScore taşıyıcısı: istek katmanının (sofascore_scraper/utils.make_api_request / make_api_request_async)
+Sahte SofaScore taşıyıcısı: istek katmanının (sofascore_scraper/transport.make_api_request / make_api_request_async)
 hemen altına, HTTP sınırına kurulur. İstek katmanının kendisi (yeniden deneme, tipli hatalar, devre
 kesici bildirimi) gerçek kalır; yalnızca curl çağrıları ve beklemeler sahtedir.
 
@@ -43,8 +43,8 @@ API_PREFIX = "/api/v1"
 SITE_ROOT = "https://www.sofascore.com/"
 
 # İstek katmanının gövdesinin bulunduğu modüller: `AsyncSession`, `_sleep` ve `_asleep` adları burada
-# değiştirilir. Gövde sofascore_scraper/client/transport.py'dedir (plan: P05); sofascore_scraper.utils aynı adları yeniden dışa aktarır.
-REQUEST_LAYER_MODULES: Tuple[str, ...] = ("sofascore_scraper.utils", "sofascore_scraper.client.transport")
+# değiştirilir. Gövde sofascore_scraper/client/transport.py'dedir (plan: P05; 2.x'in sofascore_scraper.utils'i P30'da kalktı).
+REQUEST_LAYER_MODULES: Tuple[str, ...] = ("sofascore_scraper.client.transport",)
 
 # Beklemenin kaynağı: istek katmanı (yeniden deneme geri çekilmesi, istek sonrası kısa bekleme ve
 # ortak istek bütçesi açıksa isteğin bütçede beklediği sıra: sofascore_scraper/throttle.py)
@@ -113,7 +113,7 @@ class RecordedRequest:
 
 @dataclass(frozen=True)
 class RecordedSleep:
-    source: str  # REQUEST_LAYER ya da bekleyen modülün adı ("sofascore_scraper.match_data_fetcher")
+    source: str  # REQUEST_LAYER ya da bekleyen modülün adı ("sofascore_scraper.services.detail_phase")
     seconds: float
     kind: str  # "sync" | "async"
 

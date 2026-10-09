@@ -31,7 +31,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 from sofascore_scraper import bridge_health
 
 pytestmark = pytest.mark.browser
@@ -233,9 +233,9 @@ def bridge(site, tmp_path_factory):
     mp.setattr(cs, "CAPTCHA_URL", site.url("/captcha.html"))
     mp.setattr(cs, "_PROBE_URL", site.url("/api/v1/probe"))
     # Tarayıcının tüm trafiği sahte sunucudan geçer (bkz. modül açıklaması: emniyet)
-    mp.setenv("USE_PROXY", "true")
-    mp.setenv("PROXY_URL", site.origin)
-    mp.delenv("SOFASCORE_BROWSER_HEADED", raising=False)
+    mp.setenv("SOFASCORE_CLIENT__USE_PROXY", "true")
+    mp.setenv("SOFASCORE_CLIENT__PROXY", site.origin)
+    mp.delenv("SOFASCORE_CLIENT__BROWSER_HEADED", raising=False)
     # Köprü çözdüğü token'ı modül düzeyinde de saklar; diğer testlere sızmasın
     mp.setattr(cs, "_cached_token", None)
     mp.setattr(cs, "_cached_at", 0)

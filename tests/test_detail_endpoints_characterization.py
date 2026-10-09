@@ -19,7 +19,9 @@ import pytest
 import detail_records
 from characterization import pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
-from sofascore_scraper.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, SLICE_EMPTY, MatchDataFetcher, SliceOutcome
+from detail_fetch import LEGACY_DETAIL_KEYS, Details
+from sofascore_scraper.services.detail_phase import DetailPhase
+from sofascore_scraper.slices import SLICE_EMPTY, SliceOutcome
 
 MID = "4242"
 EVENT = f"/event/{MID}"
@@ -75,8 +77,13 @@ def _basic(sport_obj) -> dict:
     }
 
 
-def _fetcher(tmp_path) -> MatchDataFetcher:
-    return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+def _fetcher(tmp_path) -> Details:
+    return Details(tmp_path)
+
+
+def _batch(f: Details) -> int:
+    """Toplu indirme: eşitleme işinin detay aşaması (seçilen maçlar)."""
+    return DetailPhase(f.store, MagicMock()).fetch_selected([MID])
 
 
 @pytest.fixture(autouse=True)
@@ -104,20 +111,19 @@ def _calls(fake: FakeSofaScore) -> list:
 
 
 def test_slice_constants_are_unchanged():
-    assert DETAIL_SLICE_KEYS == tuple(COMMON_KEYS)
-    assert REQUIRED_FILES == ["basic.json"] + [f"{k}.json" for k in COMMON_KEYS]
+    assert LEGACY_DETAIL_KEYS == tuple(COMMON_KEYS)
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
 def test_batch_download_requests_exactly_these_endpoints(tmp_path, fake, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
     _serve(fake, _basic(sport_obj))
-    data = f.fetch_matches_batch([MID])[MID]
+    assert _batch(f) == 1
 
     expected = [EVENT] + _paths(point_by_point)
     assert _calls(fake) == sorted(expected)
-    expected_keys = ["basic", "observation"] + _keys(point_by_point)
-    assert list(data) == expected_keys  # tablo sırası
+    stored = {info.key for info in f.store.events.slices(int(MID)) if not info.sub}
+    assert stored >= set(_keys(point_by_point))
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
@@ -129,19 +135,19 @@ def test_batch_download_counts_every_requested_slice_as_unavailable(tmp_path, fa
     """
     f = _fetcher(tmp_path)
     _serve(fake, _basic(sport_obj))
-    f.fetch_matches_batch([MID])
+    _batch(f)
 
     unavailable = detail_records.legacy_view(f.data_dir, int(MID))["_unavailable.json"]
     assert unavailable == {k: 1 for k in _keys(point_by_point)}
-    assert f._expected_slice_keys(int(MID), None) == COMMON_KEYS
-    assert f._compute_detail_need(MID) == "refill"
+    assert f.expected_keys(int(MID), None) == COMMON_KEYS
+    assert f.need(MID) == "refill"
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
 def test_single_match_download_requests_exactly_these_endpoints(tmp_path, fake, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
     _serve(fake, _basic(sport_obj))
-    data = f.fetch_match_data(MID)
+    data = f.fetch(MID)
 
     assert _calls(fake) == sorted([EVENT] + _paths(point_by_point))  # toplu indirmeyle aynı dilimler
     assert list(data) == ["basic", "observation"] + _keys(point_by_point)
@@ -151,9 +157,9 @@ def test_single_match_download_requests_exactly_these_endpoints(tmp_path, fake, 
 def test_refill_requests_every_missing_slice(tmp_path, fake, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
     basic = _basic(sport_obj)
-    f._save_match_data(MID, {"basic": basic})
+    f.save(MID, {"basic": basic})
     _serve(fake, basic)
-    f.refill_missing_match_slices(MID)
+    f.refill(MID)
 
     assert _calls(fake) == sorted([EVENT] + _paths(point_by_point))
 
@@ -164,13 +170,12 @@ def test_refill_skips_present_and_unavailable_slices(tmp_path, fake, label, spor
     basic = _basic(sport_obj)
     gone = SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
     # lineups ve incidents iki kez (artık beklenmez), statistics bir kez 404 almış
-    f._save_match_data(MID, {"basic": basic, "h2h": {"teamDuel": {"homeWins": 1, "awayWins": 0, "draws": 0}},
-                             "lineups": None, "incidents": None, "statistics": None},
-                       {"lineups": gone, "incidents": gone, "statistics": gone})
-    f._save_match_data(MID, {"basic": basic, "lineups": None, "incidents": None},
-                       {"lineups": gone, "incidents": gone})
+    f.save(MID, {"basic": basic, "h2h": {"teamDuel": {"homeWins": 1, "awayWins": 0, "draws": 0}},
+                 "lineups": None, "incidents": None, "statistics": None},
+           {"lineups": gone, "incidents": gone, "statistics": gone})
+    f.save(MID, {"basic": basic, "lineups": None, "incidents": None}, {"lineups": gone, "incidents": gone})
     _serve(fake, basic)
-    f.refill_missing_match_slices(MID)
+    f.refill(MID)
 
     expected = [EVENT, f"{EVENT}/statistics", f"{EVENT}/team-streaks", f"{EVENT}/pregame-form"]
     assert _calls(fake) == sorted(expected + ([POINT_BY_POINT] if point_by_point else []))

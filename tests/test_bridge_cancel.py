@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-import sofascore_scraper.challenge_solver as cs
+from sofascore_scraper.client import bridge as cs
 from sofascore_scraper import throttle
 from sofascore_scraper.client import bridge as bridge_module
 from sofascore_scraper.client import request_context, transport

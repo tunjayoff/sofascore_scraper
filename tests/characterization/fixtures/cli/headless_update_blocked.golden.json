@@ -1,14 +1,13 @@
 {
  "all_leagues": {
   "argv": [
-   "--headless",
-   "--update-all"
+   "sync"
   ],
   "exit_code": 3,
   "files": {
    "added": {
     "data/datasets/": "<empty dir>",
-    "data/match_details/processed/": "<empty dir>",
+    "data/match_details/": "<empty dir>",
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
@@ -28,7 +27,6 @@
    "sofascore_scraper.client.transport": 1
   },
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc sync",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO Services: Created directory: <SANDBOX>/data",
@@ -37,7 +35,6 @@
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
    "LOG INFO SyncService: Refreshing season list for league 17...",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    {
     "concurrent": []
    },
@@ -50,9 +47,9 @@
     ]
    },
    "LOG INFO SyncService: The season list of league 17 could not be fetched (403).",
-   "LOG WARNING SeasonFetcher: No stored season list for league 17",
+   "LOG WARNING SyncService: No stored season list for league 17",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
+   "LOG INFO Details: Fetching match details for all leagues",
    "1 season list(s) or schedule(s) could not be fetched; the job is partial (details in --json)."
   ],
   "stdout": [
@@ -61,16 +58,15 @@
  },
  "one_league": {
   "argv": [
-   "--headless",
-   "--update-all",
-   "--league-id",
+   "sync",
+   "--tournament",
    "17"
   ],
   "exit_code": 3,
   "files": {
    "added": {
     "data/datasets/": "<empty dir>",
-    "data/match_details/processed/": "<empty dir>",
+    "data/match_details/": "<empty dir>",
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
@@ -90,7 +86,6 @@
    "sofascore_scraper.client.transport": 1
   },
   "stderr": [
-   "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17",
    "LOG INFO ConfigManager: 1 leagues loaded",
    "LOG INFO ConfigManager: Configuration manager started: 1 leagues loaded (<SANDBOX>/config/leagues.txt)",
    "LOG INFO Services: Created directory: <SANDBOX>/data",
@@ -99,7 +94,6 @@
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
    "LOG INFO SyncService: Refreshing season list for league 17...",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    {
     "concurrent": []
    },
@@ -112,10 +106,10 @@
     ]
    },
    "LOG INFO SyncService: The season list of league 17 could not be fetched (403).",
-   "LOG WARNING SeasonFetcher: No stored season list for league 17",
+   "LOG WARNING SyncService: No stored season list for league 17",
    "LOG INFO SyncService: Checking which matches need details...",
-   "LOG INFO MatchDataFetcher: Fetching match details for league 17",
-   "LOG WARNING MatchDataFetcher: League 17 has no listed matches",
+   "LOG INFO Details: Fetching match details for league 17",
+   "LOG WARNING Details: League 17 has no listed matches",
    "1 season list(s) or schedule(s) could not be fetched; the job is partial (details in --json)."
   ],
   "stdout": [

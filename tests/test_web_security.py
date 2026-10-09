@@ -1,17 +1,12 @@
-"""Web sunucusu güvenlik sınırları: dosya okuma, Host/Origin, yedekler, girdi doğrulama."""
+"""Web sunucusu güvenlik sınırları: dosya okuma, Host/Origin, yedek indirme, girdi doğrulama."""
 from __future__ import annotations
 
 import asyncio
-import os
-import zipfile
 
 import pytest
 from fastapi.testclient import TestClient
 
-from sofascore_scraper.paths import env_file_path
-from sofascore_scraper.web import deps
 from sofascore_scraper.web.app import FRONTEND_DIST, app
-from sofascore_scraper.web.api import legacy as api_mod
 
 client = TestClient(app)
 
@@ -51,76 +46,20 @@ def test_unknown_host_rejected():
 
 
 def test_cross_origin_write_rejected():
-    r = client.post("/api/data/backup", headers={"origin": "https://evil.example"})
+    r = client.post("/api/v1/jobs", json={"kind": "backup", "spec": {}}, headers={"origin": "https://evil.example"})
     assert r.status_code == 403
 
 
 def test_same_origin_write_allowed():
-    r = client.post("/api/scrape/cancel", headers={"origin": "http://testserver"})
+    r = client.post("/api/v1/jobs/x/cancel", headers={"origin": "http://testserver"})
     assert r.status_code != 403
 
 
-def test_backup_is_outside_static_and_excludes_env():
-    assert os.path.exists(env_file_path())
-    r = client.post("/api/data/backup")
-    assert r.status_code == 200
-    body = r.json()
-    assert body["download_url"] == f"/api/data/backups/{body['filename']}"
-    path = os.path.join(api_mod._backups_dir(), body["filename"])
-    assert "static" not in path
-    with zipfile.ZipFile(path) as zf:
-        names = zf.namelist()
-    assert "config/.env" not in names  # biçim 2 (ST-24): ayarlar config/ altında
-    assert "config/leagues.txt" in names
-
-    dl = client.get(body["download_url"])
-    assert dl.status_code == 200
-    assert dl.headers["content-type"] == "application/zip"
-
-
 def test_backup_download_rejects_other_names():
-    assert client.get("/api/data/backups/..%2F..%2F.env").status_code == 404
-    assert client.get("/api/data/backups/leagues.txt").status_code == 404
+    assert client.get("/api/v1/backups/..%2F..%2F.env").status_code == 404
+    assert client.get("/api/v1/backups/leagues.txt").status_code == 404
 
 
-def test_backup_rejects_unknown_scope():
-    assert client.post("/api/data/backup?scope=../../x").status_code == 422
-
-
-def test_clear_rejects_unknown_scope():
-    assert client.post("/api/data/clear", json={"scope": "everything"}).status_code == 422
-
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"proxy_url": "http://x:1\nDATA_DIR=/etc"},
-        {"date_format": "%Y\nFOO=bar"},
-        {"api_base_url": "https://attacker.example/api/v1"},
-        {"api_base_url": "http://www.sofascore.com/api/v1"},
-        {"data_dir": "/etc"},
-        {"max_concurrent": -1},
-        {"log_level": "LOUD"},
-    ],
-)
-def test_settings_rejects_bad_values(payload):
-    before = open(env_file_path(), encoding="utf-8").read()
-    r = client.post("/api/settings", json=payload)
-    assert r.status_code == 422
-    assert open(env_file_path(), encoding="utf-8").read() == before
-
-
-def test_env_writer_rejects_newlines():
-    assert deps.config_manager().update_env_variable("PROXY_URL", "a\nB=c") is False
-
-
-@pytest.mark.parametrize("name", ["Evil\nInjected", "Serie A: Italy", "../../escape", "..", "a/b"])
-def test_add_league_rejects_unsafe_names(name):
-    r = client.post("/api/leagues", json={"id": 424242, "name": name})
-    assert r.status_code == 422
-    assert 424242 not in deps.config_manager().get_leagues()
-
-
-def test_match_id_must_be_numeric():
-    assert client.get("/api/matches/..%2F..%2Fx").status_code in (404, 422)
-    assert client.get("/api/matches/abc").status_code == 422
+def test_event_id_must_be_numeric():
+    assert client.get("/api/v1/events/..%2F..%2Fx").status_code in (404, 422)
+    assert client.get("/api/v1/events/abc").status_code == 422

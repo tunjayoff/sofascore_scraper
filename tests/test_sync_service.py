@@ -29,17 +29,14 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tupl
 
 import pytest
 
-import sofascore_scraper.utils as utils
+import sync_fakes
+
 from sofascore_scraper.web import deps
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper.client import context as request_ctx
-from sofascore_scraper.client import transport
 from sofascore_scraper.config_manager import ConfigManager
 from sofascore_scraper.exceptions import StorageError
 from sofascore_scraper.jobs.progress import JobProgress
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
-from sofascore_scraper.match_fetcher import MatchFetcher
-from sofascore_scraper.season_fetcher import SeasonFetcher
 from sofascore_scraper.services.context import DATA_SUBDIRECTORIES, ServiceContext, build_context
 from sofascore_scraper.services.listing import ListingResult
 from sofascore_scraper.services.sync import (
@@ -115,12 +112,12 @@ def test_loading_the_web_job_does_not_load_the_terminal_ui(tmp_path: Path) -> No
     """Ayrı süreçte: rotalar, iş modülü ve servisler yüklendiğinde menü modülleri yüklenmiş olmamalı."""
     code = (
         "import json, sys\n"
-        "import sofascore_scraper.web.api.legacy, sofascore_scraper.services.sync, sofascore_scraper.services.export\n"
+        "import sofascore_scraper.web.api.v1.jobs, sofascore_scraper.services.sync, sofascore_scraper.services.export\n"
         "print(json.dumps(sorted(m for m in sys.modules"
         " if m == 'sofascore_scraper.SofaScoreUi' or m == 'sofascore_scraper.ui' or m.startswith('sofascore_scraper.ui.'))))\n"
     )
     # Kendi veri dizini: rotalar yüklenirken açılan iş deposu testlerin ortak dizinine dokunmasın
-    env = {**os.environ, "DATA_DIR": str(tmp_path / "data")}
+    env = {**os.environ, "SOFASCORE_STORAGE__DATA_DIR": str(tmp_path / "data")}
     done = subprocess.run(
         [sys.executable, "-c", code], cwd=str(ROOT), env=env, capture_output=True, text=True, timeout=120, check=False
     )
@@ -136,7 +133,7 @@ def config() -> ConfigManager:
     return ConfigManager()
 
 
-def test_build_context_creates_the_data_directories_and_the_three_fetchers(
+def test_build_context_creates_the_data_directories(
     tmp_path: Path, config: ConfigManager
 ) -> None:
     data_dir = tmp_path / "new" / "data"
@@ -150,16 +147,14 @@ def test_build_context_creates_the_data_directories_and_the_three_fetchers(
         assert (data_dir / name).is_dir(), name
     # Listeler v3/tournaments/ altına yazılır: boş `seasons/` ve `matches/` kurulmaz (FX-15)
     assert not (data_dir / "seasons").exists() and not (data_dir / "matches").exists()
-    assert isinstance(ctx.season_fetcher, SeasonFetcher) and ctx.season_fetcher.data_dir == str(data_dir)
-    assert isinstance(ctx.match_fetcher, MatchFetcher) and ctx.match_fetcher.data_dir == str(data_dir)
-    assert ctx.match_fetcher.season_fetcher is ctx.season_fetcher
-    assert isinstance(ctx.match_data_fetcher, MatchDataFetcher) and ctx.match_data_fetcher.data_dir == str(data_dir)
+    # 2.x'in indiricileri (P15'ten beri eski adlı yüzler) 3.1'de kalktı (P30): bağlam onları taşımaz
+    assert not {"season_fetcher", "match_fetcher", "match_data_fetcher"} & set(dir(ctx))
 
 
 def test_build_context_uses_the_configured_data_dir(
     tmp_path: Path, config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path / "configured"))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(tmp_path / "configured"))
 
     ctx = build_context(config)
 
@@ -167,13 +162,15 @@ def test_build_context_uses_the_configured_data_dir(
     assert (tmp_path / "configured" / "match_details").is_dir()
 
 
-def test_build_context_builds_new_fetchers_every_time(tmp_path: Path, config: ConfigManager) -> None:
-    """İndiriciler iş durumunu taşır (iş önbelleği, son sayımlar): bağlam paylaşılmaz."""
+def test_every_run_builds_its_own_detail_phase(tmp_path: Path, config: ConfigManager) -> None:
+    """Detay aşaması iş durumunu taşır (ihtiyaç önbelleği, son sayımlar): her bağlam kendi aşamasını kurar."""
+    from sofascore_scraper.services import sync
+
     first = build_context(config, data_dir=str(tmp_path))
     second = build_context(config, data_dir=str(tmp_path))
 
-    assert first.match_data_fetcher is not second.match_data_fetcher
-    assert first.season_fetcher is not second.season_fetcher
+    assert sync.detail_phase(first) is not sync.detail_phase(second)
+    assert sync.detail_phase(first).store is sync.detail_phase(second).store  # aynı veri dizini, aynı depo
 
 
 def test_build_context_raises_when_a_directory_cannot_be_created(tmp_path: Path, config: ConfigManager) -> None:
@@ -199,7 +196,7 @@ def test_build_context_leaves_the_colour_switch_to_the_logger(
     P15: bağlam NO_COLOR'a dokunmaz. Süreç başlarken günlükçü kurar (sofascore_scraper/logger.py); eskiden bağlam da her işte
     kuruyordu, ilerleme çubuğu (P14'te kalktı) renksiz yazsın diye.
     """
-    monkeypatch.setenv("USE_COLOR", use_color)
+    monkeypatch.setenv("SOFASCORE_DISPLAY__USE_COLOR", use_color)
     monkeypatch.setenv("NO_COLOR", "untouched")
 
     build_context(config, data_dir=str(tmp_path))
@@ -207,7 +204,7 @@ def test_build_context_leaves_the_colour_switch_to_the_logger(
     assert os.environ["NO_COLOR"] == "untouched"
 
 
-# --- sahte indiriciler ve tutamaç --------------------------------------------------------------------
+# --- sahte listeler, detay aşaması ve tutamaç --------------------------------------------------------------------
 
 
 class FakeSeasons:
@@ -258,65 +255,47 @@ class FakeSchedule:
 
 
 class FakeDetails:
-    """MatchDataFetcher'ın servisin kullandığı yüzü; çağrıları kaydeder."""
+    """Detay aşamasının (DetailPhase) servisin kullandığı yüzü; çağrıları kaydeder."""
 
-    def __init__(self, pending: Optional[Dict[Optional[str], List[str]]] = None, failing: Sequence[str] = ()) -> None:
-        self.pending = pending or {}
+    def __init__(self, planned: Optional[Dict[Optional[int], List[str]]] = None, failing: Sequence[str] = ()) -> None:
+        self.planned = planned or {}
         self.failing = set(failing)
-        self.rate_limit_breaker_triggered = False
-        self.last_status_counts: Dict[str, int] = {}
+        self.breaker_tripped = False
+        self.status_counts: Dict[str, int] = {}
         self.refresh_listener: Optional[Callable[[str, bool], None]] = None
-        self.collected: List[Tuple[Optional[str], Optional[List[int]]]] = []
+        self.collected: List[Tuple[Optional[int], Optional[List[int]]]] = []
         self.fetched: List[List[str]] = []
         self.batches: List[List[int]] = []
-        self.cache_events: List[str] = []
-        self.exports = 0
-        self.export_result: Any = "/data/match_details/processed/all_matches_x.csv"
         self.during_fetch: Callable[[], None] = lambda: None
         self.listener_during_fetch: Any = "not called"
 
-    def begin_job_cache(self) -> None:
-        self.cache_events.append("begin")
-
-    def end_job_cache(self) -> None:
-        self.cache_events.append("end")
-
-    def collect_detail_match_ids(
-        self, league_id: Optional[str] = None, max_seasons: int = 0, only_season_ids: Optional[List[int]] = None
-    ) -> List[str]:
+    def candidates(self, league_id: Optional[int] = None, *,
+                   only_season_ids: Optional[List[int]] = None) -> List[str]:
         self.collected.append((league_id, only_season_ids))
-        return list(self.pending.get(league_id, [])) + [f"done-{league_id}"]
+        return list(self.planned.get(league_id, [])) + [f"done-{league_id}"]
 
-    def pending_detail_ids(self, ids: List[str]) -> List[str]:
+    def pending(self, ids: List[str]) -> List[str]:
         return [i for i in ids if not i.startswith("done-")]
 
-    def fetch_detail_ids(
-        self, ids: List[str], progress_callback: Any = None, should_cancel: Any = None, failed_callback: Any = None
-    ) -> int:
+    def fetch(self, ids: List[str], *, progress: Any = None, cancelled: Any = None, failed: Any = None) -> int:
         self.fetched.append(list(ids))
         self.listener_during_fetch = self.refresh_listener
         self.during_fetch()
         for n, mid in enumerate(ids, start=1):
             if mid in self.failing:
-                failed_callback(mid)
-            progress_callback(n, len(ids), "")
+                failed(mid)
+            progress(n, len(ids), "")
         return len(ids)
 
-    def fetch_matches_batch(
-        self, ids: List[int], progress_callback: Any = None, should_cancel: Any = None, failed_callback: Any = None
-    ) -> None:
+    def fetch_selected(self, ids: List[int], *, progress: Any = None, cancelled: Any = None,
+                       failed: Any = None) -> int:
         self.batches.append(list(ids))
         self.during_fetch()
         for n, mid in enumerate(ids, start=1):
             if str(mid) in self.failing:
-                failed_callback(mid)
-            progress_callback(n, len(ids), "")
-
-    def convert_all_matches_to_csv(self) -> Any:
-        self.exports += 1
-        if isinstance(self.export_result, BaseException):
-            raise self.export_result
-        return self.export_result
+                failed(mid)
+            progress(n, len(ids), "")
+        return len(ids)
 
 
 class RecordingHandle:
@@ -365,12 +344,13 @@ def make_ctx(
     leagues: Optional[Dict[int, str]] = None,
 ) -> Any:
     monkeypatch.setattr(config, "get_leagues", lambda: dict(LEAGUES if leagues is None else leagues))
+    sync_fakes.install(monkeypatch)
     return SimpleNamespace(
         config=config,
         data_dir="unused",
-        season_fetcher=seasons or FakeSeasons(),
-        match_fetcher=schedule or FakeSchedule(),
-        match_data_fetcher=details or FakeDetails(),
+        seasons=seasons or FakeSeasons(),
+        schedule=schedule or FakeSchedule(),
+        details=details or FakeDetails(),
     )
 
 
@@ -407,7 +387,7 @@ def test_full_run_of_one_league_goes_through_the_three_phases(
 ) -> None:
     seasons = FakeSeasons({17: [{"id": 1, "name": "PL 24/25"}, {"id": 2, "year": "23/24"}, {"name": "no id"}]})
     schedule = FakeSchedule()
-    details = FakeDetails({"17": ["a", "b"]})
+    details = FakeDetails({17: ["a", "b"]})
     ctx = make_ctx(config, monkeypatch, seasons=seasons, schedule=schedule, details=details)
     spec = SyncSpec(mode="full", league_id=17)
     handle = RecordingHandle(spec)
@@ -416,9 +396,8 @@ def test_full_run_of_one_league_goes_through_the_three_phases(
 
     assert seasons.fetched == [17]
     assert schedule.calls == [(17, 1), (17, 2)]
-    assert details.collected == [("17", None)]  # tek lig, tüm sezonlar
-    assert details.fetched == [["a", "b"]] and details.cache_events == ["begin", "end"]
-    assert details.exports == 0  # CSV aşaması yok (EX-1)
+    assert details.collected == [(17, None)]  # tek lig, tüm sezonlar
+    assert details.fetched == [["a", "b"]]
     assert handle.lines == [
         "Refreshing season list for league 17...",
         "Fetching matches: league 17, season 1",
@@ -479,7 +458,7 @@ def test_season_selections_resolve_retired_ids_and_limit_the_detail_plan(
         resolve={(17, 10): 11},
     )
     schedule = FakeSchedule()
-    details = FakeDetails({"17": ["a"], "8": ["b"]})
+    details = FakeDetails({17: ["a"], 8: ["b"]})
     ctx = make_ctx(config, monkeypatch, seasons=seasons, schedule=schedule, details=details)
     spec = SyncSpec(
         selections=(
@@ -495,7 +474,7 @@ def test_season_selections_resolve_retired_ids_and_limit_the_detail_plan(
     assert seasons.fetched == [8, 17]  # sezon listeleri lig ID'si sırasıyla
     assert schedule.calls == [(17, 11), (8, 2)]  # maç listeleri seçim sırasıyla
     assert "Season 10 outdated → using 11 for league 17" in handle.lines
-    assert details.collected == [("17", [11]), ("8", [2])]
+    assert details.collected == [(17, [11]), (8, [2])]
     assert details.batches == []
 
 
@@ -503,7 +482,7 @@ def test_a_selection_without_seasons_fetches_no_schedule_and_no_details(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     schedule = FakeSchedule()
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     ctx = make_ctx(config, monkeypatch, seasons=FakeSeasons({17: [{"id": 1}]}), schedule=schedule, details=details)
     spec = SyncSpec(selections=(SyncSelection(league_id=17),))
     handle = RecordingHandle(spec)
@@ -573,7 +552,7 @@ def test_when_every_schedule_is_empty_the_job_log_says_so(
 
 def test_details_mode_skips_the_listing_phases(config: ConfigManager, monkeypatch: pytest.MonkeyPatch) -> None:
     seasons, schedule = FakeSeasons({17: [{"id": 1}]}), FakeSchedule()
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     ctx = make_ctx(config, monkeypatch, seasons=seasons, schedule=schedule, details=details)
     spec = SyncSpec(mode="details", league_id=17)
     handle = RecordingHandle(spec)
@@ -582,7 +561,7 @@ def test_details_mode_skips_the_listing_phases(config: ConfigManager, monkeypatc
 
     assert seasons.fetched == [] and schedule.calls == []
     assert handle.phases == ["details"]
-    assert details.collected == [("17", None)] and details.fetched == [["a"]]
+    assert details.collected == [(17, None)] and details.fetched == [["a"]]
     assert not any(kind == "publish" for kind, _ in handle.events)
     assert result.state == "succeeded" and result.schedule_empty_seasons == 0
 
@@ -616,7 +595,7 @@ def test_selected_matches_are_fetched_once_each_and_failures_name_their_league(
     result = SyncService(ctx).run(spec, handle=handle)
 
     assert details.batches == [[1, 2, 3]]
-    assert details.collected == [] and details.cache_events == []
+    assert details.collected == []
     assert handle.lines == ["Fetching details for 3 selected matches..."]
     assert result.progress["failed"] == [{"match_id": "3", "league_id": 8}]
     assert result.state == "partial" and result.breaker is None
@@ -639,20 +618,20 @@ def test_selected_matches_of_one_league_put_that_league_on_the_card(
 def test_selections_without_matches_do_nothing_in_details_mode(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     ctx = make_ctx(config, monkeypatch, details=details)
     spec = SyncSpec(mode="details", selections=(SyncSelection(league_id=17, season_ids=(1,)),))
 
     result = SyncService(ctx).run(spec)
 
     assert details.batches == [] and details.collected == [] and details.fetched == []
-    assert details.exports == 0 and result.state == "succeeded"
+    assert result.state == "succeeded"
 
 
 def test_run_without_a_handle_works_and_reports_the_result(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    details = FakeDetails({"17": ["a", "b"]}, failing=["b"])
+    details = FakeDetails({17: ["a", "b"]}, failing=["b"])
     ctx = make_ctx(config, monkeypatch, details=details)
 
     result = SyncService(ctx).run(SyncSpec(mode="details", league_id=17))
@@ -679,7 +658,7 @@ def test_the_job_installs_its_request_context_and_takes_it_back(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """İptal sorusu, bekleme bildirimi ve tek bir devre kesici yalnızca iş sürerken kuruludur."""
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     seen: List[Tuple[Any, Any, Any]] = []
     details.during_fetch = lambda: seen.append(_request_context_state())
     ctx = make_ctx(config, monkeypatch, details=details)
@@ -697,7 +676,7 @@ def test_the_job_installs_its_request_context_and_takes_it_back(
 def test_refreshed_records_are_counted_only_during_the_detail_phase(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     ctx = make_ctx(config, monkeypatch, details=details)
     spec = SyncSpec(mode="details", league_id=17)
     handle = RecordingHandle(spec)
@@ -716,11 +695,11 @@ def test_refreshed_records_are_counted_only_during_the_detail_phase(
 def test_a_breaker_reported_by_the_detail_fetcher_stops_the_remaining_leagues(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    details = FakeDetails({"17": ["a"], "8": ["b"]})
+    details = FakeDetails({17: ["a"], 8: ["b"]})
 
     def trip() -> None:
-        details.rate_limit_breaker_triggered = True
-        details.last_status_counts = {"403": 2, "404": 20, "429": 9}
+        details.breaker_tripped = True
+        details.status_counts = {"403": 2, "404": 20, "429": 9}
 
     details.during_fetch = trip
     ctx = make_ctx(config, monkeypatch, seasons=FakeSeasons({17: [{"id": 1}], 8: [{"id": 2}]}), details=details)
@@ -733,8 +712,6 @@ def test_a_breaker_reported_by_the_detail_fetcher_stops_the_remaining_leagues(
     # İşin kesicisi açılmadı: neden indiricinin sayımından gelir (en sık görülen 403 / 429 / 5xx)
     assert result.breaker == "429" and result.state == "partial"
     assert handle.lines.count("Too many failed requests (429); stopped fetching match details.") == 1
-    assert details.exports == 0  # CSV aşaması yok (EX-1)
-    assert details.cache_events == ["begin", "end"]
 
 
 def _trip(breaker: request_breaker.CircuitBreaker) -> None:
@@ -748,10 +725,10 @@ def _trip(breaker: request_breaker.CircuitBreaker) -> None:
 def test_an_open_breaker_stops_every_later_phase_and_is_reported_once(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
+    monkeypatch.setenv("SOFASCORE_BREAKER__RATE_LIMIT_CONSECUTIVE", "3")
     seasons = FakeSeasons({17: [{"id": 1}, {"id": 2}], 8: [{"id": 3}]})
     schedule = FakeSchedule()
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     ctx = make_ctx(config, monkeypatch, seasons=seasons, schedule=schedule, details=details)
     original = seasons.fetch_seasons_for_league
 
@@ -775,7 +752,6 @@ def test_an_open_breaker_stops_every_later_phase_and_is_reported_once(
     assert result.breaker == "403" and result.state == "partial"
     # Hiçbir maç listesi istenmedi: "boş sezon" sayılmaz, "hiç maç yok" satırı yazılmaz
     assert result.schedule_empty_seasons == 0
-    assert details.exports == 0
 
 
 # --- iptal -------------------------------------------------------------------------------------------
@@ -786,7 +762,7 @@ def test_a_cancel_between_phases_ends_the_run_without_an_export(
 ) -> None:
     seasons = FakeSeasons({17: [{"id": 1}, {"id": 2}]})
     schedule = FakeSchedule()
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     ctx = make_ctx(config, monkeypatch, seasons=seasons, schedule=schedule, details=details)
     spec = SyncSpec(league_id=17)
     handle = RecordingHandle(spec, cancel_on="Fetching matches: league 17, season 1")
@@ -794,7 +770,7 @@ def test_a_cancel_between_phases_ends_the_run_without_an_export(
     result = SyncService(ctx).run(spec, handle=handle)
 
     assert schedule.calls == [(17, 1)]  # ikinci sezon istenmedi
-    assert details.collected == [] and details.exports == 0
+    assert details.collected == []
     assert result.state == "cancelled"
     assert "export" not in handle.phases and "details" not in handle.phases
 
@@ -803,7 +779,7 @@ def test_a_cancel_seen_by_the_request_layer_is_a_result_not_an_error(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """İstek katmanı iptali bir isteğin ortasında FetchCancelled ile bildirir; servis onu sonuca çevirir."""
-    details = FakeDetails({"17": ["a", "b"]})
+    details = FakeDetails({17: ["a", "b"]})
 
     def cancelled_mid_request() -> None:
         raise request_ctx.FetchCancelled()
@@ -815,8 +791,8 @@ def test_a_cancel_seen_by_the_request_layer_is_a_result_not_an_error(
 
     result = SyncService(ctx).run(spec, handle=handle)
 
-    assert result.state == "cancelled" and details.exports == 0
-    assert details.cache_events == ["begin", "end"] and details.refresh_listener is None
+    assert result.state == "cancelled"
+    assert details.refresh_listener is None
     assert _request_context_state() == (None, None, None)
 
 
@@ -826,7 +802,7 @@ def test_a_cancel_seen_by_the_request_layer_is_a_result_not_an_error(
 def test_a_storage_error_leaves_the_service_and_the_context_is_taken_back(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    details = FakeDetails({"17": ["a"]})
+    details = FakeDetails({17: ["a"]})
     error = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/match_details/x")
 
     def full_disk() -> None:
@@ -839,7 +815,7 @@ def test_a_storage_error_leaves_the_service_and_the_context_is_taken_back(
         SyncService(ctx).run(SyncSpec(mode="details", league_id=17))
 
     assert raised.value is error
-    assert details.exports == 0 and details.cache_events == ["begin", "end"] and details.refresh_listener is None
+    assert details.refresh_listener is None
     assert _request_context_state() == (None, None, None)
 
 
@@ -848,10 +824,13 @@ def test_a_storage_error_leaves_the_service_and_the_context_is_taken_back(
 
 @pytest.fixture
 def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
-    """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.jobs import JobStore
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    """
+    Web işini (`POST /api/v1/jobs`un gövdesi) kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis
+    bağlamıyla çalıştırır.
+    """
+    from sofascore_scraper.services import context
+    from sofascore_scraper.store import JobStore
+    from web_job import run_sync_job
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
@@ -859,62 +838,24 @@ def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
     def run(details: FakeDetails, **payload: Any) -> Dict[str, Any]:
         ctx = make_ctx(deps.config_manager(), monkeypatch, details=details)
-        monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-        request = FetchRequest(**payload)
-        fj.run_fetch_job(store.create_running(request.model_dump()), request)
-        return store.snapshot()
+        monkeypatch.setattr(context, "build_context", lambda config_manager: ctx)
+        return run_sync_job(store, payload)
 
     return run
 
 
-def test_payload_becomes_a_spec() -> None:
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.api.legacy import FetchRequest
-
-    assert fj._spec_from_payload(FetchRequest()) == SyncSpec(mode="full", league_id=None, selections=())
-    assert fj._spec_from_payload(FetchRequest(mode="details", league_id=17, selections=[])) == SyncSpec(
-        mode="details", league_id=17
-    )
-    request = FetchRequest(
-        selections=[
-            {"league_id": 17, "season_ids": [2, 1, 2]},
-            {"league_id": 8, "match_ids": [5]},
-            {"league_id": 9, "season_ids": [], "match_ids": None},
-        ]
-    )
-    assert fj._spec_from_payload(request).selections == (
-        SyncSelection(league_id=17, season_ids=(2, 1, 2)),
-        SyncSelection(league_id=8, match_ids=(5,)),
-        SyncSelection(league_id=9),
-    )
-
-
-def test_the_first_job_log_line_names_the_target() -> None:
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.api.legacy import FetchRequest
-
-    assert fj._summary(FetchRequest()) == "All Leagues"
-    assert fj._summary(FetchRequest(league_id=17)) == "17"
-    assert fj._summary(FetchRequest(league_id=17, selections=[{"league_id": 8}, {"league_id": 9}])) == (
-        "2 targeted selection(s)"
-    )
-
-
-def test_web_job_prints_its_console_line_and_no_menu_text(
+def test_web_job_prints_no_console_line_and_no_menu_text(
     web_job: Any, capsys: pytest.CaptureFixture[str]
 ) -> None:
     from sofascore_scraper.i18n import get_i18n
 
-    final = web_job(FakeDetails({"17": ["a"]}), mode="details", league_id=17)
+    final = web_job(FakeDetails({17: ["a"]}), mode="details", league_id=17)
 
     assert final["status"] == "Completed" and final["progress"] == 100
-    assert final["log"][0] == "[Running] Starting fetch for 17"
-    assert final["log"][-1] == "[Completed] Background Task Completed Successfully."
+    assert final["log"][-1] == "[Completed] Finished"
     assert not any("CSV" in line for line in final["log"])
     out = capsys.readouterr().out
-    assert [line for line in out.splitlines() if line.startswith("-->")] == [
-        "--> Background Task Completed Successfully.",
-    ]
+    assert [line for line in out.splitlines() if line.startswith("-->")] == []
     i18n = get_i18n()
     for key in ("headless_exporting_csv", "title_csv_conversion", "csv_created_success", "csv_created_error"):
         assert i18n.t(key) not in out, key
@@ -922,14 +863,14 @@ def test_web_job_prints_its_console_line_and_no_menu_text(
 
 def test_web_job_does_not_leave_its_cancel_check_behind(web_job: Any) -> None:
     """Eskiden iptal kontrolü kurulup geri alınmıyordu; işi ana thread'de koşturan testlerde sonraki isteklere sızıyordu."""
-    final = web_job(FakeDetails({"17": ["a"]}), mode="details", league_id=17)
+    final = web_job(FakeDetails({17: ["a"]}), mode="details", league_id=17)
 
     assert final["status"] == "Completed"
     assert _request_context_state() == (None, None, None)
 
 
 def test_web_job_ends_cancelled_when_the_request_layer_sees_the_cancel(web_job: Any) -> None:
-    details = FakeDetails({"17": ["a", "b", "c", "d"]})
+    details = FakeDetails({17: ["a", "b", "c", "d"]})
 
     def cancelled_mid_request() -> None:
         raise request_ctx.FetchCancelled()
@@ -940,12 +881,11 @@ def test_web_job_ends_cancelled_when_the_request_layer_sees_the_cancel(web_job: 
 
     assert final["status"] == "Cancelled" and final["is_running"] is False
     assert final["log"][-1] == "[Cancelled] Cancelled"
-    assert details.exports == 0
     assert _request_context_state() == (None, None, None)
 
 
 def test_web_job_writes_the_result_of_the_service(web_job: Any) -> None:
-    details = FakeDetails({"17": ["a", "b"]}, failing=["b"])
+    details = FakeDetails({17: ["a", "b"]}, failing=["b"])
 
     final = web_job(details, mode="details", league_id=17)
 
@@ -953,67 +893,3 @@ def test_web_job_writes_the_result_of_the_service(web_job: Any) -> None:
     assert final["result"]["schedule_empty_seasons"] == 0
     assert final["result"]["failed"] == [{"match_id": "b", "league_id": 17}]
     assert final["result"]["details_done"] == 2 and final["result"]["breaker"] is None
-
-
-# --- lig araması: API kökü ---------------------------------------------------------------------------
-
-DEFAULT_BASE = "https://www.sofascore.com/api/v1"
-OTHER_BASE = "https://api.sofascore.com/api/v1"
-
-
-class _Response:
-    def __init__(self, body: Any) -> None:
-        self.status_code = 200
-        self.reason = "OK"
-        self.headers: Dict[str, str] = {}
-        self.text = json.dumps(body)
-        self._body = body
-
-    def json(self) -> Any:
-        return self._body
-
-
-@pytest.fixture
-def sent_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
-    """curl'e giden tam adresleri toplar; her isteğe tek sonuçlu bir arama yanıtı döner."""
-    urls: List[str] = []
-    body = {
-        "results": [
-            {"entity": {"id": 17, "name": "Premier League", "slug": "premier-league",
-                        "category": {"name": "England", "sport": {"name": "Football"}}}}
-        ]
-    }
-
-    def sync_get(url: str, **kwargs: Any) -> _Response:
-        urls.append(url)
-        return _Response(body)
-
-    monkeypatch.setattr(transport.cffi_requests, "get", sync_get)
-    monkeypatch.setattr(utils, "_sleep", lambda seconds: None)
-    return urls
-
-
-@pytest.mark.parametrize("base", [DEFAULT_BASE, OTHER_BASE])
-def test_league_search_uses_the_api_base_of_the_client(
-    sent_urls: List[str], monkeypatch: pytest.MonkeyPatch, base: str
-) -> None:
-    """Eskiden arama, API_BASE_URL ne olursa olsun varsayılan adrese gidiyordu (PR #48'in bıraktığı tek istek)."""
-    from sofascore_scraper.web.api import legacy as leagues
-
-    monkeypatch.setattr(utils, "API_BASE_URL", base)
-
-    found = leagues._search_remote_leagues_sync("premier league/1")
-
-    # Sorgu yolun parçasıdır ve tümüyle kodlanır ("/" dahil), önceki gibi
-    assert sent_urls == [f"{base}/search/unique-tournaments/premier%20league%2F1"]
-    assert [(league.id, league.name, league.country, league.sport) for league in found] == [
-        (17, "Premier League", "England", "Football")
-    ]
-
-
-def test_the_league_route_module_no_longer_hard_codes_the_api_base() -> None:
-    # Eski lig rotaları sofascore_scraper/web/api/legacy.py'dedir (P21); oradaki SofaScore adları yalnızca ayar doğrulamasının
-    # izin verdiği sunuculardır (`_ALLOWED_API_HOSTS`), bir istek adresi değil
-    source = (SRC / "web" / "api" / "legacy.py").read_text(encoding="utf-8")
-    assert "sofascore.com/api" not in source and "https://www.sofascore.com" not in source
-    assert source.count("sofascore.com") == 2 and '_ALLOWED_API_HOSTS = {"www.sofascore.com", "api.sofascore.com"}' in source

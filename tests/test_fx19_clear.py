@@ -50,7 +50,7 @@ def _settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 @pytest.fixture
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Store:
     fixture = sf.build_fixture("canonical", tmp_path / "data")
-    monkeypatch.setenv("DATA_DIR", str(fixture.data_dir))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(fixture.data_dir))
     opened = open_store(fixture.data_dir)
     with FakeSofaScore.from_file(WORLD):
         items = planning.plan_items(opened, [V3_EVENT], RefreshPolicy.current(), selection=None)

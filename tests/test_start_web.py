@@ -114,7 +114,7 @@ def test_old_python_blocks_and_other_failures_do_not(launcher, capsys):
 
 def test_unreadable_doctor_report_does_not_block_the_start(launcher, capsys):
     assert launcher._preflight(PY, run_doctor=lambda py: None, run_fix=lambda cmd: pytest.fail("çalışmamalı")) is True
-    assert "--doctor" in capsys.readouterr().err
+    assert "main.py doctor" in capsys.readouterr().err
 
 
 def test_fix_command_that_cannot_be_started_is_survived(launcher, capsys):
@@ -291,13 +291,13 @@ def test_launcher_messages_follow_the_app_language(launcher, monkeypatch, capsys
 
 
 def test_launcher_language_comes_from_the_shared_rule(launcher, monkeypatch, tmp_path):
-    for key in ("APP_LANGUAGE", "LANGUAGE"):  # başka bir testin ortamda bıraktığı ayar .env'in önüne geçmesin
+    for key in ("SOFASCORE_DISPLAY__LANGUAGE", "LANGUAGE"):  # başka bir testin ortamda bıraktığı ayar .env'in önüne geçmesin
         monkeypatch.delenv(key, raising=False)
     env_file = tmp_path / ".env"
-    env_file.write_text("APP_LANGUAGE=tr\n", encoding="utf-8")
+    env_file.write_text("SOFASCORE_DISPLAY__LANGUAGE=tr\n", encoding="utf-8")
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env_file))
     monkeypatch.setattr(launcher, "_messages", None)
     assert launcher._t("ready", url="http://x") == "Hazır: http://x"
-    env_file.write_text("APP_LANGUAGE=\n", encoding="utf-8")
+    env_file.write_text("SOFASCORE_DISPLAY__LANGUAGE=\n", encoding="utf-8")
     monkeypatch.setattr(launcher, "_messages", None)
     assert launcher._t("ready", url="http://x") == "Ready: http://x"

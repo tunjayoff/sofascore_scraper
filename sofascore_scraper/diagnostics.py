@@ -15,8 +15,8 @@ pakete girmez; iş metinlerinde, tarayıcı profili kilidinde ve log kuyruğunda
 Okunan dosyalar sabittir: log dosyası yalnızca sofascore_scraper.logger'ın yazdığı dosyadır,
 dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (iş geçmişi salt okunur açılır).
 
-Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (sofascore_scraper/web/api/legacy.py) ve
-GET /api/v1/diagnostics (sofascore_scraper/web/api/v1/). CLI: ssc diagnostics [YOL] (eski adı: python main.py --diagnostics)
+Web: GET /api/v1/logs, GET /api/v1/diagnostics, GET /api/v1/diagnostics/bundle (sofascore_scraper/web/api/v1/).
+CLI: ssc diagnostics [--out YOL]
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ import dotenv
 
 from sofascore_scraper import logger as app_logger
 from sofascore_scraper.paths import default_league_config_path, env_file_path
-from sofascore_scraper.redact import MASK, mask_value, redact_obj, redact_text
+from sofascore_scraper.redact import MASK, mask_url_userinfo, mask_value, redact_obj, redact_text
 from sofascore_scraper.version import __version__
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -75,20 +75,6 @@ _JOB_JSON_COLUMNS: Tuple[str, ...] = (
 # uç nokta her çağrıda bunu yapmamalı); köprünün gerçek durumu zaten "bridge" bölümündedir.
 _DOCTOR_SKIP: Tuple[str, ...] = ("browser",)
 
-# Değeri pakette gösterilen ayarlar (gizli olanlar mask_value ile `***` olur). Burada olmayan
-# .env anahtarlarının yalnızca adı ve dolu olup olmadığı yazılır.
-SETTING_KEYS: Tuple[str, ...] = (
-    "API_BASE_URL", "REQUEST_TIMEOUT", "MAX_RETRIES", "DATA_DIR",
-    "SOFA_CAPTCHA_TOKEN",
-    "MAX_CONCURRENT", "WAIT_TIME_MIN", "WAIT_TIME_MAX", "REQUEST_RATE_LIMIT",
-    "USE_PROXY", "PROXY_URL",
-    "FETCH_ONLY_FINISHED", "SAVE_EMPTY_ROUNDS", "REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS",
-    "BRIDGE_DEGRADED_AFTER", "BRIDGE_BLOCKED_AFTER", "BRIDGE_BLOCKED_MIN_SECONDS",
-    "RATE_LIMIT_THRESHOLD_CONSECUTIVE", "RATE_LIMIT_THRESHOLD_RATIO", "SERVER_ERROR_THRESHOLD_CONSECUTIVE",
-    "IGNORE_RATE_LIMIT",
-    "USE_COLOR", "DATE_FORMAT", "APP_LANGUAGE",
-    "LOG_LEVEL", "DEBUG", "LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT",
-)
 _PACKAGES = (
     "curl_cffi", "scrapling", "playwright", "patchright", "rich",
     "python-dotenv", "fastapi", "pydantic", "uvicorn", "sse-starlette",
@@ -393,23 +379,55 @@ def _runtime() -> Dict[str, Any]:
 
 
 def _settings() -> Dict[str, Any]:
-    """Etkin ayarlar (ortamdan). None: ayarlanmamış, uygulama varsayılanı kullanıyor."""
-    values: Dict[str, Optional[str]] = {key: mask_value(key, os.environ.get(key)) for key in SETTING_KEYS}
-    for key in sorted(os.environ):
-        if key.startswith("SOFASCORE_") and key not in values:
-            values[key] = mask_value(key, os.environ[key])  # SOFASCORE_SINKS: redact.mask_value'nin kuralı
+    """
+    Etkin ayarlar, ayar yükleyicisinden (`config show` ile aynı satırlar: değer, katman ve kaynağın adı; gizli
+    değerler `***`, webhook adresleri maskeli; proxy adresinin yalnızca kullanıcı bilgisi maskeli, sunucusu sorun
+    ararken gerekir). Ayarlar kurulamıyorsa (geçersiz yapılandırma) yalnızca hata. Ayar olmayan SOFASCORE_
+    değişkenleri (sink'lerin `secret_env`i, SOFASCORE_CONFIG_DIR...) maskeli değerleriyle ayrıca yazılır. 2.x'in
+    ortamda ya da `.env`'de duran adlarının (3.1 okumaz) yalnızca adları yazılır; `.env`'in uygulamanın tanımadığı
+    anahtarlarının da yalnızca adları.
+    """
+    from sofascore_scraper.config import loader
+
+    values: Dict[str, Any] = {}
+    sources: Dict[str, str] = {}
+    error: Optional[str] = None
+    named: Tuple[str, ...] = ()
+    try:
+        loaded = loader.active()
+        named = loader.named_variables(loaded.settings)
+        for row in loaded.describe(mask_secrets=True):
+            values[row["key"]] = row["value"]
+            sources[row["key"]] = row["source"] + (f": {row['from']}" if row["from"] else "")
+        if loaded.settings.client.proxy:
+            values["client.proxy"] = redact_text(mask_url_userinfo(loaded.settings.client.proxy))
+    except Exception as e:  # geçersiz yapılandırma: paket yine yazılır
+        error = f"{e.__class__.__name__}: {e}"
 
     path = env_file_path()
-    # Uygulamanın tanımadığı .env anahtarları: değerleri hiç yazılmaz, yalnızca adları
     other_set: List[str] = []
     other_empty: List[str] = []
+    file_values: Dict[str, str] = {}
     exists = os.path.isfile(path)
     if exists:
-        for key, value in dotenv.dotenv_values(path).items():
-            if key not in values:
-                (other_set if value else other_empty).append(key)
+        file_values = {key: value or "" for key, value in dotenv.dotenv_values(path).items()}
+        for key, value in file_values.items():
+            if key.startswith(loader.ENV_PREFIX) or key in loader.LEGACY_NAMES:
+                continue
+            (other_set if value else other_empty).append(key)
+    # Ayar olmayan SOFASCORE_ değişkenleri: SOFASCORE_<BÖLÜM>__<ANAHTAR> ve listeler yukarıda, ayar olarak
+    lists = (loader.ENV_FOLLOWS, loader.ENV_SINKS, loader.ENV_SLICES)
+    variables = {
+        name: mask_value(name, value) for name, value in sorted(os.environ.items())
+        if name.startswith(loader.ENV_PREFIX) and loader.ENV_SEPARATOR not in name and name not in lists
+        and name not in loader.LEGACY_NAMES
+    }
     return {
         "values": values,
+        "sources": sources,
+        "error": error,
+        "variables": variables,
+        "legacy_names": loader.legacy_names_in(os.environ, file_values, named),
         "env_file": {
             "path": os.path.abspath(path),
             "exists": exists,
@@ -428,8 +446,18 @@ def _leagues() -> Dict[str, Any]:
     return {"config_file": os.path.abspath(path), "exists": os.path.isfile(path), "configured": count}
 
 
+def _data_dir_path() -> str:
+    """Veri dizini (`storage.data_dir`); ayarlar kurulamıyorsa "data"."""
+    from sofascore_scraper.config import loader
+
+    try:
+        return os.path.abspath(loader.active_settings().storage.data_dir or "data")
+    except Exception:
+        return os.path.abspath("data")
+
+
 def _data_dir() -> Dict[str, Any]:
-    path = os.path.abspath(os.getenv("DATA_DIR", "data"))
+    path = _data_dir_path()
     info: Dict[str, Any] = {"path": path, "exists": os.path.isdir(path)}
     probe = path if info["exists"] else os.path.dirname(path)
     if os.path.isdir(probe):
@@ -507,7 +535,7 @@ def _jobs(found_hosts: Optional[List[Any]] = None) -> Dict[str, Any]:
     söyleyen hata iletisi) `***` olur. `found_hosts` verilirse satırlarda kayıtlı adlar ona da eklenir
     (log kuyruğu aynı adları maskeler: _log_hosts).
     """
-    meta = os.path.join(os.path.abspath(os.getenv("DATA_DIR", "data")), ".meta")
+    meta = os.path.join(_data_dir_path(), ".meta")
     db = os.path.join(meta, "state.db")
     if not os.path.isfile(db):
         db = os.path.join(meta, "jobs.db")
@@ -562,7 +590,7 @@ def _throttle() -> Dict[str, Any]:
 
 def _doctor() -> Dict[str, Any]:
     """
-    Kurulum denetimi (python main.py --doctor ile aynı denetimler, tarayıcıyı başlatan hariç).
+    Kurulum denetimi (`ssc doctor` ile aynı denetimler, tarayıcıyı başlatan hariç).
     SofaScore'a istek atılmaz; hiçbir şey değiştirilmez.
     """
     from sofascore_scraper import doctor

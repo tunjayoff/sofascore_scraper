@@ -4,8 +4,7 @@ diske, veritabanına ve saate dokunmaz; aynı girdi her zaman aynı satırı ver
 
 Bir yükten skorun okunduğu tek yer burasıdır. `status_class` ve `scores_json` sofascore_scraper.status'tan
 (classify_status, extract_scores) gelir; `home_score` / `away_score` normalleştirilmiş skordur
-(`display`, yoksa `current`), `home_score_current` / `away_score_current` ise bugünkü liste ve CSV
-biçimlerinin yazdığı `homeScore.current` değeridir (futbolda penaltıları içerir).
+(`display`, yoksa `current`). 2.x liste ve CSV biçimlerinin `homeScore.current` sütunları 3.1'de kalktı (P30).
 
 İşlevlerin döndürdüğü sözlüklerin anahtarları sütun adlarıdır. Bir sözlükte olmayan sütun o satırın bu
 kaynaktan türetilmediğini söyler (ör. `event_row` depolama sütunlarını, olaydan türetilen sezon satırı
@@ -47,7 +46,9 @@ logger = logging.getLogger(__name__)
 # 6: futbolda kod 120 (AP) maçın uzatma skoru (`aet`) yalnızca SofaScore uzatma anahtarı (overtime / extra1 /
 #    extra2) yolladıysa dolar; uzatmasız doğrudan penaltıya giden maç uzatma oynanmış görünmez (FX-23, F10).
 #    Sürüm değiştiği için eski kataloglar ilk açılışta dosyalardan yeniden kurulur ve düzelir.
-DERIVE_VERSION = 6
+# 7: 2.x liste ve CSV biçimlerinin `home_score_current` / `away_score_current` sütunları kalktı (3.1, P30;
+#    katalog şeması da 2'ye çıktı)
+DERIVE_VERSION = 7
 
 Row = Dict[str, Any]
 Timestamp = Union[datetime, int, float, None]
@@ -62,7 +63,7 @@ EVENT_DERIVED_COLUMNS: Tuple[str, ...] = (
     "round", "round_name", "round_slug", "start_ts",
     "status_type", "status_code", "status_description", "status_class",
     "home_id", "away_id", "home_name", "away_name",
-    "home_score", "away_score", "home_score_current", "away_score_current",
+    "home_score", "away_score",
     "winner_code", "scores_json", "slug", "custom_id",
     "observed_at", "change_ts", "observed_gap", "tier_hint",
     "row_source", "has_event_payload",
@@ -286,8 +287,6 @@ def event_row(payload: Mapping[str, Any], source: str = "event", observed_at: Ti
         "away_name": _text(away.get("name")),
         "home_score": normalised(home_score),
         "away_score": normalised(away_score),
-        "home_score_current": _int(home_score.get("current")),
-        "away_score_current": _int(away_score.get("current")),
         "winner_code": _int(payload.get("winnerCode")),
         "scores_json": scores_json(payload, slug or None),
         "slug": _text(payload.get("slug")),

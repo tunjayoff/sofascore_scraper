@@ -40,7 +40,7 @@ def leagues(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     (config / "leagues.txt").write_text("# leagues\nPremier League: 17\n", encoding="utf-8")
     (config / "league_sports.json").write_text(json.dumps({"17": "football"}), encoding="utf-8")
     data = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(data))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data))
     open_store(data)
     manager = ConfigManager()
     monkeypatch.setattr(manager, "league_config_path", str(config / "leagues.txt"))
@@ -329,7 +329,7 @@ def search(monkeypatch: pytest.MonkeyPatch) -> List[Any]:
             raise outcome[0]
         return outcome[0]
 
-    monkeypatch.setattr("sofascore_scraper.utils.make_api_request", fake)
+    monkeypatch.setattr("sofascore_scraper.client.transport.make_api_request", fake)
     return [calls, outcome]
 
 

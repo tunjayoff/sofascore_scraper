@@ -93,6 +93,10 @@ class StorageSettings:
         "normal", KIND_ENUM, "\"full\" fsyncs every file and directory the Store writes.", choices=("normal", "full"),
         case="lower",
     )
+    open_reconcile_seconds: float = setting(
+        60.0, KIND_FLOAT, "An open of the data directory skips the scan of the old folders when the last scan "
+        "ended less than this many seconds ago; 0 scans on every open.", minimum=0,
+    )
 
 
 @dataclass(frozen=True)
@@ -127,8 +131,8 @@ class ClientSettings:
     @property
     def effective_base_url(self) -> str:
         """
-        İsteklere uygulanan kök (sofascore_scraper/client/transport.py ile aynı kural): boş bırakılan ayar varsayılan
-        köktür, sondaki "/" atılır. `base_url` ise API_BASE_URL'nin yazıldığı halidir (ayarlar sayfası onu gösterir).
+        İsteklere uygulanan kök (sofascore_scraper/client/transport.py bunu kullanır): boş bırakılan ayar varsayılan
+        köktür, sondaki "/" atılır. `base_url` ise ayarın yazıldığı halidir (Ayarlar sayfası onu gösterir).
         """
         return self.base_url.strip().rstrip("/") or DEFAULT_API_BASE_URL
 
@@ -158,10 +162,9 @@ class BridgeSettings:
 class FetchSettings:
     only_finished: bool = setting(
         True, KIND_BOOL, "A league download fetches the details of finished events only, and the Overview counts and "
-        "the old /api match lists count finished events (or events with details) only. Team, player and event "
-        "follows and the v1 event list are not affected.",
+        "status counts finished events (or events with details) only. Team, player and event follows and the v1 "
+        "event list are not affected.",
     )
-    save_empty_rounds: bool = setting(False, KIND_BOOL, "Write round files that hold no event.")
 
 
 @dataclass(frozen=True)
@@ -204,7 +207,8 @@ class ServerSettings:
     port: int = setting(8000, KIND_INT, "Port of the HTTP server.", minimum=1, maximum=65535)
     allowed_hosts: Tuple[str, ...] = setting(LOOPBACK_HOSTS, KIND_STR_LIST, "Host names the server answers to.")
     token_env: str = setting(
-        "", KIND_STR, "Name of the environment variable that holds the optional access token; empty = SOFASCORE_API_TOKEN.",
+        "", KIND_STR, "Name of the environment variable that holds the optional access token; empty = "
+        "SOFASCORE_SERVER__TOKEN.",
     )
     token: str = setting("", KIND_STR, "Access token; empty = no token.", secret=True, in_file=False)
 

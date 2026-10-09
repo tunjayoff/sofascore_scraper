@@ -167,7 +167,7 @@ def doctor(inv: Invocation) -> CommandResult:
     environ = dict(os.environ)
     data_dir = inv.flags.get("storage.data_dir")
     if data_dir:
-        environ["DATA_DIR"] = str(data_dir)
+        environ["SOFASCORE_STORAGE__DATA_DIR"] = str(data_dir)
     ctx = checks.Context(environ=environ, lang=inv.lang, config_file=inv.config_file)
     rate, warnings = _effective_rate(inv)
     if rate is not None:
@@ -340,17 +340,11 @@ group("config", help="ssc_help_cmd_config")
 
 
 def _load_warnings(loaded: Any, *, logged: bool) -> List[CliWarning]:
-    """Yükleyicinin uyarıları ve bugünkü adla verilip okunamamış (varsayılana düşmüş) değerler."""
-    from sofascore_scraper.config import loader
-
-    warnings = [CliWarning(warning.code, warning.message, logged=logged) for warning in loaded.warnings]
-    for key, raw in sorted(loaded.invalid_legacy.items()):
-        variable = loader.LEGACY_BY_KEY[key].env if key in loader.LEGACY_BY_KEY else key
-        warnings.append(CliWarning(
-            "legacy_value_ignored",
-            f"{variable}={raw!r} is not valid and is ignored; {key} is {loaded.settings.get(key)!r}.",
-        ))
-    return warnings
+    """
+    Yükleyicinin uyarıları: okunmayan 2.x adları (`legacy_name`, yeni adla), kalkmış ayarlar (`retired_setting`),
+    `live.source = "direct"` (`live_direct_source`).
+    """
+    return [CliWarning(warning.code, warning.message, logged=logged) for warning in loaded.warnings]
 
 
 def _value_text(value: Any) -> str:
@@ -375,9 +369,9 @@ def config_show(inv: Invocation) -> CommandResult:
     for row in rows:
         origin = row["source"] + (f": {row['from']}" if row["from"] and row["from"] != row["key"] else "")
         lines.append(f"{row['key']:<{width}} = {_value_text(row['value'])}  [{origin}]")
-    # Yükleyicinin uyarıları etkinleştirmede log satırı olarak yazıldı; okunamayan eski değerler burada eklenir
-    extra = [warning for warning in _load_warnings(loaded, logged=True) if warning.code == "legacy_value_ignored"]
-    return CommandResult(data=data, text="\n".join(lines), warnings=extra)
+    # Yükleyicinin uyarıları (okunmayan eski adlar, kalkmış ayarlar, canlı kaynak) etkinleştirmede log satırı olarak
+    # yazıldı; JSON çıktısının `warnings` dizisine de girer (plan maddesi P31'in notu)
+    return CommandResult(data=data, text="\n".join(lines), warnings=_load_warnings(loaded, logged=True))
 
 
 def _check_sinks(loaded: Any) -> None:
@@ -472,8 +466,8 @@ _TEMPLATE_HEADER = """\
 # Every value below is the built-in default and is commented out; remove the "# " in front of a line to
 # set it. The file is read from, in this order: --config, the SOFASCORE_CONFIG variable, sofascore.toml in
 # the project folder, sofascore.toml in the config folder.
-# Precedence, weakest to strongest: built-in defaults, .env, overrides.json, this file, environment
-# variables (SOFASCORE_<SECTION>__<KEY>, e.g. SOFASCORE_CLIENT__RATE=5), command-line flags.
+# Precedence, weakest to strongest: built-in defaults, overrides.json, this file, environment variables
+# (SOFASCORE_<SECTION>__<KEY>, e.g. SOFASCORE_CLIENT__RATE=5; also from .env), command-line flags.
 # Relative paths in this file are resolved against the folder that holds it.
 #
 #   {prog} config validate   checks the file
@@ -484,8 +478,9 @@ _TEMPLATE_HEADER = """\
 _LEGACY_HEADER = """\
 # sofascore.toml: written by `{prog} config init --from-legacy` (SofaScore Scraper {version}).
 #
-# The equivalent of today's settings: the values that come from .env and from the environment under their
-# current names, and one [[follow]] per league of {leagues}.
+# The equivalent of the 2.x settings: the values given in .env and in the environment under the 2.x names
+# (DATA_DIR, MAX_CONCURRENT, ...), which 3.1 no longer reads, and one [[follow]] per league of {leagues}.
+# Remove those lines from .env once this file is in place.
 # Once this file is in place the league list is read from here and no longer from leagues.txt.
 # Paths are written as absolute paths, so the file can be saved in any of the places it is searched in.
 #
@@ -542,23 +537,51 @@ def default_config_text() -> str:
 
 
 def _absolute(value: str) -> str:
-    """Bugünkü adlarla verilen göreli yol çalışma dizinine (proje kökü) göredir; dosyada mutlak yazılır."""
+    """2.x adlarıyla verilen göreli yol çalışma dizinine (proje kökü) göredir; dosyada mutlak yazılır."""
     if not value or value.startswith("~") or os.path.isabs(value):
         return value
     return os.path.abspath(value)
 
 
-def legacy_config_text(loaded: Any, leagues: Mapping[int, str], league_sports: Mapping[int, str],
+# 2.x'in "kapalı" yazımları (sofascore_scraper/throttle.py'nin 3.0'daki kuralı); dosyada yalnızca 0 ya da "off" geçerlidir
+_LEGACY_RATE_OFF = ("off", "false", "no", "none", "disabled")
+
+
+def legacy_values() -> Dict[str, str]:
+    """
+    2.x adlarıyla verilmiş dolu değerler: `.env`, üstünde süreç ortamı (uygulamanın `.env`'i ortama yüklediği
+    sırayla). Ad -> ham değer, loader.LEGACY_NAMES sırasıyla. Süreç ortamına dokunulmaz.
+    """
+    import dotenv
+
+    from sofascore_scraper.config import loader
+    from sofascore_scraper.paths import env_file_path
+
+    try:
+        file_values = {key: value for key, value in dotenv.dotenv_values(env_file_path()).items() if value is not None}
+    except Exception:
+        file_values = {}
+    merged = {**file_values, **os.environ}
+    return {name: merged[name] for name in loader.LEGACY_NAMES if (merged.get(name) or "").strip()}
+
+
+def legacy_config_text(legacy: Mapping[str, str], leagues: Mapping[int, str], league_sports: Mapping[int, str],
                        leagues_file: str) -> str:
     """
-    Bugünkü kaynakların (`.env`, bugünkü adlarla ortam, leagues.txt, league_sports.json) TOML karşılığı.
+    2.x kaynaklarının (2.x adlarıyla `.env` ve ortam: `legacy`, ad -> ham değer; leagues.txt, league_sports.json)
+    TOML karşılığı. 3.1 bu adları okumaz (plan maddesi P30): dosya onların yerini alır.
 
-    Yalnızca bugünkü adla verilmiş değerler yazılır. Gizli değerler dosyaya yazılmaz: proxy adresi için onu
-    taşıyan değişkenin adı (`proxy_env`) yazılır. Dosyanın kabul etmediği bir değer (ör. boş API adresi)
-    yorum satırı olarak bırakılır ve bugünkü kaynağından okunmaya devam eder.
+    Her değer yapılandırma dosyasının kuralıyla denetlenir. Gizli değerler dosyaya yazılmaz: proxy adresi için onu
+    taşıyan değişkenin adı (`proxy_env`) yazılır; erişim belirteci ve captcha belirteci yalnızca ortamdan okunur.
+    Dosyanın kabul etmediği bir değer yorum satırı olarak bırakılır.
     """
     from sofascore_scraper.config import loader
     from sofascore_scraper.config import settings as model
+
+    by_key: Dict[str, str] = {}
+    for env, key in loader.LEGACY_NAMES.items():
+        if key is not None and env in legacy:
+            by_key.setdefault(key, env)
 
     lines = _LEGACY_HEADER.format(version=__version__, prog=PROG, leagues=leagues_file).splitlines()
     lines += ["", f"schema = {model.SCHEMA_VERSION}"]
@@ -566,26 +589,32 @@ def legacy_config_text(loaded: Any, leagues: Mapping[int, str], league_sports: M
         body: List[str] = []
         for name, f in keys.items():
             key = f"{section}.{name}"
-            source = loaded.source(key)
-            if not source.legacy or not f.metadata["in_file"]:
+            env = by_key.get(key)
+            if env is None:
                 continue
-            value = loaded.settings.get(key)
+            raw = legacy[env].strip()
             if f.metadata["secret"]:
-                # Gizli değer dosyaya girmez; kardeş `<ad>_env` anahtarı varsa değişkenin adı yazılır
-                if value and f"{name}_env" in keys:
-                    body.append(f"{name}_env = {toml_value(source.name)}")
+                # Gizli değer dosyaya girmez; kardeş `<ad>_env` anahtarı varsa değişkenin adı yazılır (proxy_env,
+                # token_env): değişken yerinde kalır ve okunmaya devam eder. Kardeşi olmayan (captcha belirteci)
+                # yeni adıyla verilmelidir: `ssc config show` ve `ssc doctor` bunu söyler
+                if f"{name}_env" in keys:
+                    body.append(f"{name}_env = {toml_value(env)}  # the variable that holds it")
+                continue
+            if not f.metadata["in_file"]:
+                continue
+            if key == "client.rate" and raw.lower() in _LEGACY_RATE_OFF:
+                raw = "0"
+            try:
+                value = loader.coerce(f, raw, text=True)
+            except ValueError:
+                body.append(f"# {name}: the value of {env} cannot be written here; set it by hand")
                 continue
             if f.metadata["kind"] == model.KIND_PATH:
                 value = _absolute(value)
-            try:
-                loader.coerce(f, list(value) if isinstance(value, tuple) else value)
-            except ValueError:
-                body.append(f"# {name}: the value of {source.name} cannot be written here; it is still read from {source.name}")
-                continue
-            body.append(f"{name} = {toml_value(value)}  # {source.name}")
+            body.append(f"{name} = {toml_value(value)}  # {env}")
         if section == "client" and any(line.startswith("proxy_env = ") for line in body) \
                 and not any(line.startswith("use_proxy = ") for line in body):
-            # Dosyada verilen bir proxy kendiliğinden kullanılır; bugün ise yalnızca USE_PROXY=true ile
+            # Dosyada verilen bir proxy kendiliğinden kullanılır; 2.x'te ise yalnızca USE_PROXY=true ile
             body.append("use_proxy = false  # USE_PROXY is not set")
         if body:
             lines += ["", f"[{section}]", *body]
@@ -624,13 +653,12 @@ def config_init(inv: Invocation) -> CommandResult:
         from sofascore_scraper.paths import default_league_config_path
         from sofascore_scraper.web import league_sports
 
-        # Yapılandırma dosyası hesaba katılmaz: yalnızca bugünkü kaynaklar okunur. Lig dosyası yalnızca okunur
+        # Yalnızca 2.x kaynakları okunur (yapılandırma dosyası hesaba katılmaz). Lig dosyası yalnızca okunur
         # (ConfigManager kurulmaz: eksik dosyayı yaratır ve takipleri state.db'ye yansıtırdı).
-        loaded = read_settings(inv, config_file=False)
         leagues_path = default_league_config_path()
         leagues = read_league_file(leagues_path)
         leagues_file = os.path.abspath(leagues_path)
-        text = legacy_config_text(loaded, leagues, league_sports.load(leagues_path), leagues_file)
+        text = legacy_config_text(legacy_values(), leagues, league_sports.load(leagues_path), leagues_file)
         leagues_count = len(leagues)
     data = {"from_legacy": bool(inv.args.from_legacy), "follows": leagues_count, "toml": text}
     typed = f"{inv.out.prog} config init" + (" --from-legacy" if inv.args.from_legacy else "")
@@ -666,5 +694,6 @@ __all__: Sequence[str] = [
     "describe_slices",
     "describe_sports",
     "legacy_config_text",
+    "legacy_values",
     "toml_value",
 ]

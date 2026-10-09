@@ -8,7 +8,7 @@ Dışa aktarma servisi (docs/design/02-services.md 2.7): saklanan maçlardan ver
     ham yükler olarak (`schema="raw"`, yalnızca `events` ve `slices`). Aşağıda "Veri kümeleri" bölümü.
   * Tek profil: `legacy-wide-csv`, eski `match_details/processed/all_matches_*.csv` dosyalarının
 geniş CSV'si (maç başına bir satır: temel bilgiler, "ALL" dönemi istatistikleri, seriler, form, H2H, kadro
-sayıları). Düzleştirme sofascore_scraper/match_data_fetcher.py'den buraya taşındı (plan maddesi EX-1); maçlar dosya ağacı
+sayıları). Düzleştirme 2.x'in match_data_fetcher.py modülünden buraya taşındı (plan maddesi EX-1); maçlar dosya ağacı
 gezilerek değil, deponun okuma API'siyle bulunur (`Store.events`), yani iki düzen de (eski `match_details/`
 ağacı ve v3) aynı çağrılarla okunur.
 
@@ -27,7 +27,7 @@ boştu) ve lig süzgeçli indirme artık pandas'tan geçmez: satırları birleş
 tamsayı sütunları `1.0` biçiminde çıkmaz, satır sonu her yerde `\\r\\n`'dir.
 
 Servis dosya yazmaz; yalnızca istenen akışa ya da yola yazar. Web'in GET'i çıktıyı istekte üretip akıtır
-(karar D16); `ssc export --profile legacy-wide-csv` (ve onun eski adı `--headless --csv-export`) dosyayı
+(karar D16); `ssc export --profile legacy-wide-csv` (2.x'te `--headless --csv-export`) dosyayı
 `match_details/processed/` altına yazar (`write_legacy_csv`). Dışa aktarma kilit almaz: katalogdan okur.
 """
 from __future__ import annotations
@@ -66,7 +66,7 @@ LEGACY_SLICE_KEYS: Tuple[str, ...] = ("statistics", "team_streaks", "pregame_for
 PRIORITY_COLUMNS: Tuple[str, ...] = ("match_id", "league_folder", "season_folder", "tournament_name", "season_name",
                                      "round", "home_team_name", "away_team_name", "home_score_ft", "away_score_ft",
                                      "match_date")
-NO_TOURNAMENT_DIR = "_no_tournament"  # sofascore_scraper/match_data_fetcher.py ve sofascore_scraper/store/legacy.py NO_TOURNAMENT_DIR ile aynı
+NO_TOURNAMENT_DIR = "_no_tournament"  # sofascore_scraper/store/legacy.py NO_TOURNAMENT_DIR ile aynı (2.x yazıcısının adı)
 _LEGACY_LAYOUT = "legacy"
 _MATCH_DETAILS_DIR = "match_details"
 _SORT = "start_asc"
@@ -82,7 +82,7 @@ class ExportSpec:
         NotSupportedError.
     tournament_ids, event_ids: boş = süzgeç yok; dolu alanlar birlikte (VE) uygulanır. Yalnızca detayı
         (olay yükü) saklanan maçlar dışa aktarılır.
-    league_id: eski lig süzgeçli indirme (`GET /api/export/csv?league_id=`): birleşik tablonun `league_folder`'ı
+    league_id: 2.x'in lig süzgeçli indirmesi (3.1'de kalkan `GET /api/export/csv?league_id=`): birleşik tablonun `league_folder`'ı
         `<lig id>_` ile başlayan satırları, birleşik tablodaki değerleriyle (sütunlar birleşik tablonunkiler).
     """
 
@@ -247,7 +247,7 @@ class ExportService:
             size += len(chunk.encode("utf-8"))
         return ExportResult(prepared.rows, prepared.columns, size, None)
 
-    # -- dosyaya yazan girişler (`ssc export --profile legacy-wide-csv`, eski adı --headless --csv-export) ------
+    # -- dosyaya yazan girişler (`ssc export --profile legacy-wide-csv`; 2.x'te --headless --csv-export) ------
 
     def write_legacy_csv(self, directory: str, spec: Optional[ExportSpec] = None, *,
                          now: Optional[float] = None) -> Optional[ExportResult]:

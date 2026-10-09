@@ -36,12 +36,12 @@ import legacy_writer
 import sofascore_scraper.store
 import store_fixtures as sf
 from schedule_runner import list_schedule, list_schedule_async
-from sofascore_scraper.web import deps
 from sofascore_scraper.exceptions import StorageError
-from sofascore_scraper.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
-from sofascore_scraper.season_fetcher import SeasonFetcher
+from detail_fetch import Details
+from legacy_writer import SCORE_CHANGES_FILE, UNAVAILABLE_FILE
+from sofascore_scraper.services.detail_phase import DetailPhase
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
-from sofascore_scraper.utils import ensure_directory
+from sofascore_scraper.services.context import _ensure_directory
 from sofascore_scraper.store import (
     CatalogAdmin,
     EventQuery,
@@ -88,10 +88,14 @@ def no_check(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(api_mod.SHADOW_CHECK_ENV)
 
 
+# `storage.open_reconcile_seconds`in ortamdaki adı (Store onu ayar yükleyicisinden okur)
+OPEN_RECONCILE_ENV = "SOFASCORE_STORAGE__OPEN_RECONCILE_SECONDS"
+
+
 @pytest.fixture
 def every_open_reconciles(monkeypatch: pytest.MonkeyPatch) -> None:
     """Karar S17'nin sınırı kapalı: her açılış eski düzen maç dizinlerini tarar (uzlaştırmanın kendisini sınayanlar)."""
-    monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, "0")
+    monkeypatch.setenv(OPEN_RECONCILE_ENV, "0")
 
 
 def differences(store: Store) -> List[str]:
@@ -110,8 +114,12 @@ def serving(event: Dict[str, Any]) -> Any:
         yield fake
 
 
-def fetcher_of(data_dir: Path) -> MatchDataFetcher:
-    return MatchDataFetcher(config_manager=MagicMock(), data_dir=str(data_dir))
+def fetcher_of(data_dir: Path) -> Details:
+    return Details(data_dir)
+
+
+def phase_of(data_dir: Path) -> DetailPhase:
+    return DetailPhase(open_store(data_dir), MagicMock())
 
 
 def legacy_save(data_dir: Path, event_id: int, match_data: Dict[str, Any], outcomes: Any = None) -> str:
@@ -264,7 +272,7 @@ def test_a_catalog_that_needs_recreating_waits_while_the_directory_is_in_use(
 
     with caplog.at_level(logging.WARNING):
         store = open_store(data)  # açılış düşmez
-        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+        fetcher_of(data).save(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert store.info(sizes=False).catalog_rebuild_reason == "schema_version"
     waiting = warnings_of(caplog)  # bir kez: kanca yeniden uyarmaz
     assert len(waiting) == 1 and "has to be recreated (schema_version)" in waiting[0]
@@ -273,7 +281,7 @@ def test_a_catalog_that_needs_recreating_waits_while_the_directory_is_in_use(
 
     writer.release()
     store._catalog_retry_at = 0.0  # bekleme süresi doldu
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    fetcher_of(data).save(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert store.info(sizes=False).catalog_rebuild_reason is None
     assert store.events.get(NO_DETAIL).has_event_payload and differences(store) == []
 
@@ -402,7 +410,7 @@ def test_saving_a_match_indexes_it(canonical: sf.LegacyFixture) -> None:
     assert (before.row_source, before.has_event_payload, before.listed_in) == ("listing", False, "round_2")
     basic = sf.basic_payload(sf.PL_NO_DETAIL)
 
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {
+    fetcher_of(data).save(str(NO_DETAIL), {
         "basic": basic, "statistics": sf.slice_payload("statistics", basic), "lineups": None})
 
     row = store.events.get(NO_DETAIL)
@@ -420,7 +428,7 @@ def test_saving_into_a_directory_that_was_never_opened_builds_the_catalog(tmp_pa
     data = tmp_path / "data"
     basic = sf.basic_payload(sf.NBA_A)
 
-    fetcher_of(data)._save_match_data(str(sf.event_id(sf.NBA_A)), {"basic": basic})
+    fetcher_of(data).save(str(sf.event_id(sf.NBA_A)), {"basic": basic})
 
     assert (data / ".meta" / "catalog.db").is_file()
     store = open_store(data)
@@ -439,7 +447,7 @@ def test_a_match_without_a_tournament_is_indexed_where_the_writer_put_it(tmp_pat
     assert store.events.get(event_id).path == f"match_details/_no_tournament/football/{event_id}"
     assert differences(store) == []
     # İndirici aynı maçı v3'e yazar (yeri kimlikten türer); eski dizin yerinde kalır
-    fetcher_of(data)._save_match_data(str(event_id), {"basic": sf.basic_payload(sf.FRIENDLY_A)})
+    fetcher_of(data).save(str(event_id), {"basic": sf.basic_payload(sf.FRIENDLY_A)})
     row = store.events.get(event_id)
     assert (row.layout, row.legacy_path) == ("v3", f"match_details/_no_tournament/football/{event_id}")
     assert differences(store) == []
@@ -458,7 +466,7 @@ def test_saves_from_several_threads_are_all_indexed(tmp_path: Path) -> None:
             start.wait(timeout=10)
             for _ in range(3):
                 basic = sf.basic_payload(ev)
-                fetcher._save_match_data(str(sf.event_id(ev)), {
+                fetcher.save(str(sf.event_id(ev)), {
                     "basic": basic, "statistics": sf.slice_payload("statistics", basic)})
         except BaseException as exc:  # iş parçacığındaki hata testi düşürmeli
             errors.append(exc)
@@ -483,11 +491,11 @@ def test_marker_updates_are_indexed_with_the_save(canonical: sf.LegacyFixture) -
     fetcher = fetcher_of(data)
     outcomes = {"lineups": SliceOutcome(SLICE_EMPTY, http_status=404)}
 
-    fetcher._save_match_data(str(NO_DETAIL), {"basic": basic, "lineups": None}, outcomes)
+    fetcher.save(str(NO_DETAIL), {"basic": basic, "lineups": None}, outcomes)
     first = store.events.slice(NO_DETAIL, "lineups")
     assert (first.state, first.empty_count, first.settled_empty()) == ("empty", 1, False)
 
-    fetcher._save_match_data(str(NO_DETAIL), {"basic": basic, "lineups": None}, outcomes)
+    fetcher.save(str(NO_DETAIL), {"basic": basic, "lineups": None}, outcomes)
     second = store.events.slice(NO_DETAIL, "lineups")
     assert (second.empty_count, second.unverified_empty_count, second.settled_empty()) == (2, 0, True)
     assert differences(store) == []
@@ -514,14 +522,14 @@ def test_a_failed_save_leaves_the_catalog_equal_to_the_disk(canonical: sf.Legacy
 
     monkeypatch.setattr(store_files, "write_bytes", disk_full_on_the_statistics)
     with pytest.raises(StorageError) as info:
-        fetcher_of(data)._save_match_data(str(NO_DETAIL), {
+        fetcher_of(data).save(str(NO_DETAIL), {
             "basic": basic, "statistics": sf.slice_payload("statistics", basic)})
     assert info.value.fatal
 
     assert not store.events.get(NO_DETAIL).has_event_payload
     assert differences(store) == []
     monkeypatch.undo()
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {
+    fetcher_of(data).save(str(NO_DETAIL), {
         "basic": basic, "statistics": sf.slice_payload("statistics", basic)})
     assert store.events.slice(NO_DETAIL, "statistics").state == "ok" and differences(store) == []
 
@@ -536,7 +544,7 @@ def test_marker_reset_is_indexed(canonical: sf.LegacyFixture) -> None:
     before = store.events.slice(BRE, "lineups")
     assert (before.state, before.unverified_empty_count, before.settled_empty()) == ("empty", 2, True)
 
-    result = fetcher_of(data).reset_unavailable_markers()
+    result = phase_of(data).reset_markers()
 
     assert result["matches"] >= 1 and (match_dir(canonical, BRE) / UNAVAILABLE_FILE).exists()
     assert store.events.get(BRE).layout == "v3"
@@ -544,7 +552,7 @@ def test_marker_reset_is_indexed(canonical: sf.LegacyFixture) -> None:
     assert differences(store) == []
     # İkinci çalıştırma hiçbir şeyi değiştirmez: yazma da kanca da yok
     signature = store.events.get(BRE).sig
-    assert fetcher_of(data).reset_unavailable_markers()["matches"] == 0
+    assert phase_of(data).reset_markers()["matches"] == 0
     assert store.events.get(BRE).sig == signature and differences(store) == []
 
 
@@ -556,10 +564,10 @@ def test_refresh_without_a_change_indexes_the_new_observation(canonical: sf.Lega
     fetcher = fetcher_of(data)
 
     with serving(old):
-        assert fetcher.refresh_match(str(LIV)) is not None
+        assert fetcher.refresh(str(LIV)) is not None
 
     after = store.events.get(LIV)
-    assert not fetcher.last_refresh_changed and store.changes.last_seq() == len(sf.SCORE_CHANGES)
+    assert store.changes.last_seq() == len(sf.SCORE_CHANGES)  # değişiklik yok: günlüğe satır eklenmedi
     assert after.observed_at > before.observed_at and after.sig != before.sig
     assert (after.home_score, after.away_score) == (before.home_score, before.away_score)
     assert differences(store) == []
@@ -572,13 +580,14 @@ def test_refresh_with_a_change_indexes_the_payload_and_the_change_log(canonical:
     old = read_json(match_dir(canonical, LIV) / "basic.json")
     new = copy.deepcopy(old)
     new["homeScore"]["current"] = old["homeScore"]["current"] + 1
+    new["homeScore"]["display"] = new["homeScore"]["current"]
     fetcher = fetcher_of(data)
 
     with serving(new):
-        fetcher.refresh_match(str(LIV))
+        fetcher.refresh(str(LIV))
 
     after = store.events.get(LIV)
-    assert fetcher.last_refresh_changed and after.home_score_current == before.home_score_current + 1
+    assert after.home_score == before.home_score + 1
     assert store.changes.last_seq() == len(sf.SCORE_CHANGES) + 1
     newest = store.changes.list(event_id=LIV)[-1]
     assert newest.seq == store.changes.last_seq() and "homeScore.current" in newest.fields
@@ -601,7 +610,7 @@ def test_first_payload_of_a_tournament_fills_the_sport_of_its_summary_rows(tmp_p
     store = open_store(data)
     assert store.events.get(sf.event_id(sf.NBA_B)).sport == ""
 
-    fetcher_of(data)._save_match_data(str(sf.event_id(sf.NBA_A)), {"basic": sf.basic_payload(sf.NBA_A)})
+    fetcher_of(data).save(str(sf.event_id(sf.NBA_A)), {"basic": sf.basic_payload(sf.NBA_A)})
 
     assert store.events.get(sf.event_id(sf.NBA_B)).sport == "basketball"
     assert differences(store) == []
@@ -679,11 +688,9 @@ def test_saving_a_season_list_indexes_it(canonical: sf.LegacyFixture) -> None:
     data = canonical.data_dir
     store = open_store(data)
     assert store.entities.seasons(sf.BUNDESLIGA.id) == []
-    config = MagicMock()
-    config.get_league_by_id.return_value = sf.BUNDESLIGA.name
-    fetcher = SeasonFetcher(config, data_dir=str(data))
+    from sofascore_scraper.services import listing as listing_service
 
-    fetcher._save_seasons_json(sf.BUNDESLIGA.id, {"seasons": [
+    listing_service.store_season_list(store, sf.BUNDESLIGA.id, {"seasons": [
         {"id": 77001, "name": "Bundesliga 26/27", "year": "26/27"},
         {"id": 77000, "name": "Bundesliga 25/26", "year": "25/26"}]})
 
@@ -703,13 +710,12 @@ def test_saving_a_season_list_indexes_it(canonical: sf.LegacyFixture) -> None:
 def test_clear_rebuilds_the_catalog(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, scope: str,
                                     left: Dict[str, int]) -> None:
     """Temizlemeden sonra katalog kalan dosyalardan yeniden kurulur: silinen turnuvaların satırları da gider."""
-    from sofascore_scraper.web.api import legacy as data_routes
+    from sofascore_scraper.services.maintenance import MaintenanceService
 
     data = canonical.data_dir
     store = open_store(data)
-    monkeypatch.setattr(deps.config_manager(), "get_data_dir", lambda: str(data))
 
-    assert data_routes._clear_data_sync(scope)["status"] == "success"
+    assert MaintenanceService(store=open_store(data)).clear(scope, confirm=True).cleared  # type: ignore[arg-type]
 
     info = store.info(sizes=False)
     assert {name: info.events_by_layout.get(name, 0) for name in left} == left
@@ -910,7 +916,7 @@ def test_the_pass_runs_whenever_the_shortcut_is_not_safe(canonical: sf.LegacyFix
         shutil.copytree(data, tmp_path / "copy")
         data = tmp_path / "copy"
     if case == "window_zero":
-        monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, "0")
+        monkeypatch.setenv(OPEN_RECONCILE_ENV, "0")
     if case == "clock_went_back":
         now = time.time()
         monkeypatch.setattr(api_mod.time, "time", lambda: now - 3600)
@@ -922,10 +928,14 @@ def test_the_pass_runs_whenever_the_shortcut_is_not_safe(canonical: sf.LegacyFix
     assert differences(store) == []
 
 
-def test_the_window_can_be_set_through_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    for raw, seconds in (("", 60.0), ("5", 5.0), ("-3", 0.0), ("soon", 60.0)):
-        monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, raw)
+def test_the_window_comes_from_the_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`storage.open_reconcile_seconds` (ST-19); geçersiz değer ayarları kurdurmaz, Store varsayılanla açılır."""
+    for raw, seconds in (("", 60.0), ("5", 5.0), ("0", 0.0), ("-3", 60.0), ("soon", 60.0)):
+        monkeypatch.setenv(OPEN_RECONCILE_ENV, raw)
         assert api_mod._open_reconcile_seconds() == seconds
+    monkeypatch.delenv(OPEN_RECONCILE_ENV)
+    monkeypatch.setenv("STORE_OPEN_RECONCILE_SECONDS", "5")  # 2.x'in (yalnızca ortamdan okunan) adı
+    assert api_mod._open_reconcile_seconds() == 60.0
 
 
 # --- iki gerçek süreç: birinde yazar, ötekinde açılış ----------------------------------------------------
@@ -1002,7 +1012,7 @@ def test_a_catalog_that_stays_busy_fails_the_save_of_the_downloader(
     artan beklemeyle yeniden denenir, sonra maç başarısız olur (kalıcı olmayan StorageError: iş sürer); diske
     yarım bir şey yazılmaz. Kilit açılınca sonraki yazma başarılır.
     """
-    import sofascore_scraper.match_data_fetcher as fetcher_mod
+    from sofascore_scraper.services import pipeline as pipeline_mod
     from sofascore_scraper.store import events as events_mod
 
     data = canonical.data_dir
@@ -1014,16 +1024,16 @@ def test_a_catalog_that_stays_busy_fails_the_save_of_the_downloader(
         raise sofascore_scraper.store.StoreBusy("catalog.db kilitli", path=str(data))
 
     monkeypatch.setattr(events_mod.EventStore, "_entity_write", busy)
-    monkeypatch.setattr(fetcher_mod.time, "sleep", waits.append)
+    monkeypatch.setattr(pipeline_mod.time, "sleep", waits.append)
     with caplog.at_level(logging.WARNING), pytest.raises(StorageError) as info:
-        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+        fetcher_of(data).save(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert isinstance(info.value, sofascore_scraper.store.StoreBusy) and not info.value.fatal
     assert waits == [0.5, 1.0, 2.0]  # STORE_BUSY_ATTEMPTS = 4 deneme
-    assert len(messages(caplog, "MatchDataFetcher", level=logging.WARNING)) == 3
+    assert len(messages(caplog, "FetchPipeline", level=logging.WARNING)) == 3
     assert store.events.get(NO_DETAIL).row_source == "listing" and differences(store) == []
 
     monkeypatch.setattr(events_mod.EventStore, "_entity_write", entity_write)
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    fetcher_of(data).save(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert store.events.get(NO_DETAIL).has_event_payload and differences(store) == []
 
 
@@ -1035,7 +1045,7 @@ def test_the_downloader_does_not_write_into_a_folder_of_a_newer_version(tmp_path
     schema.write_text(json.dumps({**read_json(schema), "layout_version": 99, "min_reader_layout": 99}))
 
     with pytest.raises(sofascore_scraper.store.SchemaTooNew):
-        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+        fetcher_of(data).save(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert not (data / "v3").exists()
 
 
@@ -1051,7 +1061,7 @@ def test_an_unexpected_indexer_error_fails_the_save_of_the_downloader(
     # İndiricinin Store'a yazması: dizinleyicinin hatası yazmayı düşürür (kalıcı olmayan StorageError); yazma
     # yarım kaldığı için işaret durur, sonraki açılış maçı dosyalardan toparlar
     with pytest.raises(StorageError, match="dizinleyicide hata"):
-        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+        fetcher_of(data).save(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     monkeypatch.undo()
     for store in list(api_mod._registry.values()):
         store.close()
@@ -1138,16 +1148,16 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
     store = open_store(data)
     basic_file = match_dir(canonical, ARS) / "basic.json"
     edited = read_json(basic_file)
-    edited["homeScore"]["current"] = 9
+    edited["homeScore"]["display"] = edited["homeScore"]["current"] = 9
     stamp = basic_file.stat().st_mtime_ns
     basic_file.write_bytes(sf.dump_json(edited))  # yerinde: dizinin imzası aynı kalır
     os.utime(basic_file, ns=(stamp, stamp))
-    assert store.events.get(ARS).home_score_current != 9 and api_mod.shadow_unsynced()
+    assert store.events.get(ARS).home_score != 9 and api_mod.shadow_unsynced()
 
-    # Ürün kodu dizine dokunur (Store'un dışında: bağlam kurulurken veri dizini var edilir, sofascore_scraper/utils.py)
-    ensure_directory(str(data))
+    # Ürün kodu dizine dokunur (Store'un dışında: bağlam kurulurken veri dizinleri var edilir, services/context.py)
+    _ensure_directory(str(data / "datasets-p30"))
 
-    assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score_current == 9
+    assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score == 9
     assert differences(store) == [] and api_mod.shadow_check() == []
 
 

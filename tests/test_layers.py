@@ -176,32 +176,26 @@ def test_loading_the_store_loads_no_other_layer():
 WEB_DIR = ROOT / "sofascore_scraper" / "web"
 FACE_MAY_IMPORT = frozenset({"sofascore_scraper.services", "sofascore_scraper.jobs", "sofascore_scraper.config", "sofascore_scraper.errors"})
 
-# Web yüzünün bugün içe aktardığı başka modüller ve nedeni. Bir girdi, servisi geldiğinde ya da eski rotalarla
-# (sofascore_scraper/web/api/legacy.py, P30) silinir.
+# Web yüzünün bugün içe aktardığı başka modüller ve nedeni. Bir girdi, servisi geldiğinde silinir (2.x'in
+# `/api` yollarının girdileri P30'la gitti).
 WEB_ALSO_IMPORTS: Dict[str, str] = {
-    "sofascore_scraper.store": "hata sınıfları (StoreError, LeaseHeld, JobStoreConflict ...), iş deposu (sofascore_scraper/web/jobs.py) ve "
+    "sofascore_scraper.store": "hata sınıfları (StoreError, LeaseHeld, JobStoreConflict ...), iş deposu ve "
                  "`open_store`: rotalar depoyu açıp servise verir (deps.store)",
     "sofascore_scraper.schema": "şema v1 kayıtlarının yanıt modelleri (sofascore_scraper/web/api/v1/records.py)",
-    "sofascore_scraper.sports": "spor kayıt defteri (`/sports`, eski lig sporları)",
+    "sofascore_scraper.sports": "spor kayıt defteri (`/sports`, lig sporları)",
     "sofascore_scraper.version": "sürüm (`/health`, `/status`)",
     "sofascore_scraper.logger": "web sunucusunun log ayarı ve log satırları",
     "sofascore_scraper.redact": "hata ve log metinlerinin maskelenmesi",
     "sofascore_scraper.exceptions": "istek katmanının tipli hataları (sofascore_scraper/web/upstream.py) ve StorageError",
-    "sofascore_scraper.bridge_health": "SofaScore'a erişimin durumu (`/health`, `/status`, eski bağlantı testi)",
+    "sofascore_scraper.bridge_health": "SofaScore'a erişimin durumu (`/health`, `/status`, bağlantı denetimi)",
     "sofascore_scraper.throttle": "ortak istek bütçesinin durumu (`/health`, `/status`)",
-    "sofascore_scraper.client": "bağlantı denetimi ve eski lig araması tek istek atar (API kökü istemcinindir)",
-    "sofascore_scraper.utils": "bağlantı denetiminin ve eski lig aramasının istek işlevi (testler onu değiştirir)",
+    "sofascore_scraper.client": "bağlantı denetimi tek istek atar (API kökü ve istek işlevi istemcinindir; 3.1'e "
+                                "kadar istek işlevi sofascore_scraper.utils'ten geliyordu)",
     "sofascore_scraper.diagnostics": "log ve tanılama rotaları (servisi yok: sofascore_scraper/diagnostics.py)",
     "sofascore_scraper.config_manager": "web sürecinin yapılandırma yöneticisi (deps.config_manager; P30 Settings'e geçer)",
     "sofascore_scraper.paths": ".env yolu (uygulamanın başlangıcı)",
     "sofascore_scraper.private_files": ".env ve tarayıcı profilinin izinleri (uygulamanın başlangıcı)",
     "sofascore_scraper.config_files": "lig spor dosyasının yazımı (sofascore_scraper/web/league_sports.py)",
-    "sofascore_scraper.breaker": "eski tek maç rotasının devre kesicisi (sofascore_scraper/web/api/legacy.py)",
-    "sofascore_scraper.challenge_solver": "eski bağlantı testi ve köprü durumu (sofascore_scraper/web/api/legacy.py)",
-    "sofascore_scraper.i18n": "eski indirme işinin kart metinleri (sofascore_scraper/web/api/legacy.py)",
-    "sofascore_scraper.language": "eski ayarların `language_explicit` alanı (sofascore_scraper/web/api/legacy.py)",
-    "sofascore_scraper.refresh": "eski ayarların yenileme penceresi (sofascore_scraper/web/api/legacy.py)",
-    "sofascore_scraper.slices": "eski tek maç rotasının sonuç türü (sofascore_scraper/web/api/legacy.py)",
 }
 
 
@@ -235,15 +229,17 @@ def test_the_web_face_imports_only_services_and_the_listed_modules():
 
 
 def test_the_web_face_has_no_terminal_ui_and_no_writer():
-    """Web yüzü terminal menüsünü ve indiricileri doğrudan içe aktarmaz: servisler üzerinden çalışır."""
+    """Web yüzü terminal menüsünü, detay aşamasını ve boru hattını doğrudan içe aktarmaz: servisler üzerinden çalışır."""
     found = face_imports(WEB_DIR, ROOT)
-    for layer in ("sofascore_scraper.SofaScoreUi", "sofascore_scraper.ui", "sofascore_scraper.match_data_fetcher", "sofascore_scraper.match_fetcher", "sofascore_scraper.season_fetcher"):
+    for layer in ("sofascore_scraper.SofaScoreUi", "sofascore_scraper.ui", "sofascore_scraper.services.detail_phase",
+                  "sofascore_scraper.services.pipeline"):
         assert layer not in found, (layer, found.get(layer))
 
 
 def test_the_web_routes_package_is_gone():
-    """Eski rotalar sofascore_scraper/web/api/legacy.py'dedir (P21); sofascore_scraper/web/routes ve sofascore_scraper/web/fetch_job.py yoktur."""
+    """2.x'in rotaları yoktur: sofascore_scraper/web/routes, web/fetch_job.py (P21) ve web/api/legacy.py (P30)."""
     assert not (WEB_DIR / "routes").exists() and not (WEB_DIR / "fetch_job.py").exists()
+    assert not (WEB_DIR / "api" / "legacy.py").exists()
 
 
 def test_face_imports_reports_layers_with_their_places(tmp_path: Path):

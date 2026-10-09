@@ -2,7 +2,7 @@
 İş deposu: işlerin geçmişi (state.db'nin `jobs` ve `job_events` tabloları) ve çalışan işin bellek içi yansısı.
 
 2.x'te sofascore_scraper/web/jobs.py'de, `.meta/jobs.db` üzerinde duruyordu; yöntemler ve hata sınıfları aynen taşındı
-(docs/design/01-storage.md bölüm 2.3 ve 3.1). sofascore_scraper/web/jobs.py artık buradaki adları yeniden dışa açar.
+(docs/design/01-storage.md bölüm 2.3 ve 3.1). Eski içe aktarma yolu (sofascore_scraper/web/jobs.py) 3.1'de kalktı (P30).
 
   * Satırlar `.meta/state.db`'ye yazılır. `.meta/jobs.db`'ye 3.x dokunmaz: satırları bir kez, salt okunur
     içe aktarılır (`meta.imported_jobs_db` kaydı) ve dosya yerinde kalır; aynı dizinde başlatılan bir 2.x
@@ -40,7 +40,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, cast
 
-from sofascore_scraper.store import layout
+from sofascore_scraper.store import files, layout
 from sofascore_scraper.store.errors import LeaseHeld, StoreError
 from sofascore_scraper.store.lease import EXPORT, MAINTENANCE, WRITER, Lease, LeaseManager
 from sofascore_scraper.store.state import APPLICATION_ID, BUSY_TIMEOUT_MS, StateDb
@@ -534,20 +534,6 @@ class JobStore:
                 changed.append(job_id)
                 _insert_event(conn, job_id, EVENT_FINISHED, {"state": STATUS_INTERRUPTED})
         return changed
-
-    def mark_stale_running_interrupted(self) -> int:
-        """
-        Koşulsuz süpürme: çalışan/sıradaki **her** satır (bu deponun kendi işi dahil) `interrupted` olur, yansı
-        boşalır ve `writer` kilidi bırakılır. Depo bunu artık kendiliğinden çağırmaz (açılışta ve `rebind`te
-        `reap_stale` çalışır); bir sürecin kendi işini bilerek bırakması içindir.
-        """
-        with self._lock:
-            with self._state.write() as conn:
-                n = len(self._interrupt(conn, None, _utc_now()))
-            self._active_id = None
-            self._mirror = self._idle_mirror()
-            self._release_writer()
-            return n
 
     def reap_stale(self) -> int:
         """
@@ -1120,7 +1106,7 @@ def get_job_store(data_dir: Optional[str] = None) -> JobStore:
     global _store
     with _store_lock:
         if _store is None:
-            root = data_dir or os.getenv("DATA_DIR", "data")
+            root = data_dir or files.default_data_dir()
             if not os.path.isabs(root):
                 root = os.path.abspath(root)
             _store = JobStore(default_db_path(root))

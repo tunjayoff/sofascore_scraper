@@ -37,7 +37,7 @@ from sofascore_scraper.exceptions import ConfigError, StorageError
 from sofascore_scraper.store import DataOperationRunningError, JobRunningError, LeaseHeld, SchemaTooNew
 from sofascore_scraper.web import deps, errors, security
 from sofascore_scraper.web.api import is_v1
-from sofascore_scraper.web.app import LOGIN_PATH, app
+from sofascore_scraper.web.app import app
 from sofascore_scraper.web.deps import AttemptLimiter
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -73,7 +73,6 @@ def raising(monkeypatch: pytest.MonkeyPatch) -> Any:
 def token(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
     """Uygulama bu erişim belirteciyle başlamış gibi."""
     monkeypatch.setenv(security.TOKEN_ENV, TOKEN)
-    monkeypatch.setattr(security, "_startup_token", TOKEN)
     redact.refresh()
     yield TOKEN
     monkeypatch.undo()
@@ -301,50 +300,22 @@ def test_a_request_id_sent_by_the_client_is_used_when_it_is_safe() -> None:
         assert got != unsafe and len(got) == 16
 
 
-def test_legacy_routes_get_no_request_id() -> None:
-    for path in ("/api/status", "/health", "/api/nope"):
+def test_paths_outside_v1_get_no_request_id() -> None:
+    for path in ("/health", "/api/nope"):
         assert "x-request-id" not in client.get(path).headers
 
 
-# --- eski yollar değişmedi ---------------------------------------------------------------------------
+# --- v1 dışındaki yollar -----------------------------------------------------------------------------
 
 
-def test_legacy_error_bodies_are_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_removed_legacy_routes_answer_not_found() -> None:
+    """2.x'in `/api` yolları 3.1'de kalktı (P30): 404 ya da 405, Deprecation başlığı yok."""
+    for method, path in (("GET", "/api/status"), ("GET", "/api/jobs/unknown"), ("POST", "/api/fetch"),
+                         ("GET", "/api/settings"), ("POST", "/api/auth/login"), ("GET", "/api/export/csv")):
+        r = client.request(method, path)
+        assert r.status_code in (404, 405), (method, path)
+        assert "deprecation" not in r.headers and "link" not in r.headers, (method, path)
     assert client.get("/api/nope").json() == {"detail": "Not Found"}
-    assert client.get("/api/jobs/unknown").json() == {"detail": "Job not found"}
-    validation = client.get("/api/jobs", params={"limit": 0})
-    assert validation.status_code == 422 and isinstance(validation.json()["detail"], list)
-
-
-    def conflict(job_id: str) -> Any:
-        raise JobRunningError()
-
-    monkeypatch.setattr(deps.job_store(), "get_job", conflict)
-    r = client.get("/api/jobs/x")
-    assert r.status_code == 409
-    assert r.json() == {"detail": {"code": "job_running", "message": str(JobRunningError())}}
-
-
-def test_an_unexpected_error_of_a_legacy_route_is_not_caught(monkeypatch: pytest.MonkeyPatch) -> None:
-
-    def boom(job_id: str) -> Any:
-        raise RuntimeError("legacy boom")
-
-    monkeypatch.setattr(deps.job_store(), "get_job", boom)
-    with pytest.raises(RuntimeError, match="legacy boom"):
-        client.get("/api/jobs/x")
-    r = TestClient(app, raise_server_exceptions=False).get("/api/jobs/x")
-    assert r.status_code == 500 and r.text == "Internal Server Error"
-
-
-def test_a_platform_error_of_a_legacy_route_is_not_given_the_v1_shape(monkeypatch: pytest.MonkeyPatch) -> None:
-
-    def boom(job_id: str) -> Any:
-        raise NotFoundError("gone")
-
-    monkeypatch.setattr(deps.job_store(), "get_job", boom)
-    r = TestClient(app, raise_server_exceptions=False).get("/api/jobs/x")
-    assert r.status_code == 500 and "error" not in r.text
 
 
 # --- kaynak denetimi ---------------------------------------------------------------------------------
@@ -356,20 +327,20 @@ def test_a_cross_origin_write_to_v1_is_forbidden_origin() -> None:
         assert r.status_code == 403
         error = _error(r)
         assert (error["code"], error["message"]) == ("forbidden_origin", "Cross-origin request rejected.")
-    # Eski yolların gövdesi aynı
-    legacy = client.post("/api/scrape/cancel", headers={"sec-fetch-site": "cross-site"})
-    assert legacy.json() == {"detail": "Cross-origin request rejected"}
+    # v1 dışındaki bir yolun ret gövdesi 2.x'in biçimindedir
+    other = client.post("/api/scrape/cancel", headers={"sec-fetch-site": "cross-site"})
+    assert other.json() == {"detail": "Cross-origin request rejected"}
     # Okuma reddedilmez
     assert client.get("/api/v1/health", headers={"sec-fetch-site": "cross-site"}).status_code == 200
 
 
 # --- erişim belirteci --------------------------------------------------------------------------------
 
+LOGIN_PATH = "/api/v1/auth/login"
 V1_READS = ("/api/v1/health", "/api/v1/status", "/api/v1/sports", "/api/v1/jobs", "/api/v1/settings")
 
 
 def test_without_a_token_v1_is_open(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
     for path in V1_READS:
         assert client.get(path).status_code == 200, path
     assert client.get("/api/v1/status").json()["data"]["auth_required"] is False
@@ -384,7 +355,7 @@ def test_with_a_token_v1_answers_unauthorized(token: str) -> None:
         error = _error(r)
         assert (error["code"], error["message"], error["details"]) == ("unauthorized", "An access token is required.", None)
     assert anonymous.post("/api/v1/jobs", json={"kind": "sync"}).status_code == 401
-    # Eski yollar kendi kodunu korur
+    # v1 dışındaki bir /api yolu 2.x'in gövdesiyle reddedilir
     assert anonymous.get("/api/status").json() == {
         "detail": {"code": "auth_required", "message": "An access token is required."},
     }
@@ -551,7 +522,6 @@ def test_every_v1_route_is_behind_the_host_check(token: str, reached: List[str],
 
 
 def test_the_host_check_covers_v1_without_a_token_too(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
     for method, path in V1_OPERATIONS:
         r = client.request(method, path, headers={"host": "192.168.1.5:8000"}, json=WRITE_BODIES.get(path))
         assert (r.status_code, r.text) == (400, "Invalid host header"), (method, path)
@@ -598,8 +568,8 @@ def test_the_origin_check_lets_the_app_and_programs_write_to_v1(method: str, pat
         assert client.request(method, path, headers=headers).status_code in expected, headers
 
 
-def test_v1_responses_carry_the_response_headers_of_the_legacy_routes() -> None:
-    """PR #43'ün yanıt başlıkları: başarılı, hatalı ve reddedilen her v1 yanıtında, eski rotalardaki değerlerle."""
+def test_v1_responses_carry_the_response_headers_of_the_other_paths() -> None:
+    """PR #43'ün yanıt başlıkları: başarılı, hatalı ve reddedilen her v1 yanıtında, v1 dışındaki yollardaki değerlerle."""
     legacy = client.get("/api/status")
     responses = {
         "ok": client.get("/api/v1/health"),
@@ -641,10 +611,10 @@ def _run_app(tmp_path: Path, config: str, extra_env: Dict[str, str]) -> subproce
     (tmp_path / ".env").write_text("", encoding="utf-8")
     env = {k: v for k, v in os.environ.items() if k not in (security.TOKEN_ENV, "MY_SCRAPER_TOKEN")}
     env.update(
-        SOFASCORE_CONFIG=str(config_file), DATA_DIR=str(tmp_path / "data"),
+        SOFASCORE_CONFIG=str(config_file), SOFASCORE_STORAGE__DATA_DIR=str(tmp_path / "data"),
         SOFASCORE_CONFIG_DIR=str(tmp_path / "config"), SOFASCORE_ENV_FILE=str(tmp_path / ".env"),
-        LOG_DIR=str(tmp_path / "logs"), SOFASCORE_BROWSER_PROFILE=str(tmp_path / "profile"),
-        SOFASCORE_ALLOWED_HOSTS="testserver", **extra_env,
+        SOFASCORE_LOG__DIR=str(tmp_path / "logs"), SOFASCORE_CLIENT__BROWSER_PROFILE=str(tmp_path / "profile"),
+        SOFASCORE_SERVER__ALLOWED_HOSTS="testserver", **extra_env,
     )
     return subprocess.run(
         [sys.executable, "-c", _TOKEN_ENV_PROBE], cwd=str(ROOT), env=env, capture_output=True, text=True,
@@ -670,13 +640,19 @@ def test_a_token_env_that_names_an_unset_variable_stops_the_start(tmp_path: Path
     assert "MY_SCRAPER_TOKEN is not set" in done.stderr
 
 
-def test_the_default_token_variable_still_works_without_a_config_file(monkeypatch: pytest.MonkeyPatch) -> None:
-    from sofascore_scraper.web import app as app_module
-
+def test_the_default_token_variable_works_without_a_config_file(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(security.TOKEN_ENV, f"  {TOKEN} ")
-    monkeypatch.setattr(security, "_startup_token", None)  # süreç yeni başlıyor
-    assert app_module._token_from_settings() == TOKEN
     assert security.api_token() == TOKEN == deps.server_token()
+    assert security.token_variable() == "SOFASCORE_SERVER__TOKEN"
+
+
+def test_the_2x_token_variable_is_not_read(monkeypatch: pytest.MonkeyPatch) -> None:
+    """3.1: SOFASCORE_API_TOKEN okunmaz (koruma onunla açılmaz); `token_env` onu adıyla verebilir."""
+    monkeypatch.delenv(security.TOKEN_ENV, raising=False)
+    monkeypatch.setenv("SOFASCORE_API_TOKEN", TOKEN)
+    assert security.api_token() == ""
+    monkeypatch.setenv("SOFASCORE_SERVER__TOKEN_ENV", "SOFASCORE_API_TOKEN")
+    assert security.api_token() == TOKEN and security.token_variable() == "SOFASCORE_API_TOKEN"
 
 
 # --- başarısız deneme sınırı -------------------------------------------------------------------------
@@ -745,20 +721,22 @@ def test_presents_bearer_and_client_key() -> None:
 def test_repeated_wrong_logins_are_refused_for_a_while(token: str, caplog: pytest.LogCaptureFixture) -> None:
     c = TestClient(app)
     free = deps.attempt_limiter.free_attempts
-    with caplog.at_level(logging.WARNING, logger="WebApp"):
+    with caplog.at_level(logging.WARNING):
         for attempt in range(free):
             r = c.post(LOGIN_PATH, json={"token": f"guess-{attempt}"})
-            assert r.status_code == 401 and r.json()["detail"]["code"] == "invalid_token"
+            assert r.status_code == 401 and _error(r)["details"] == {"reason": "invalid_token"}
 
         locked = c.post(LOGIN_PATH, json={"token": "guess-again"})
 
-    assert locked.status_code == 429
-    detail = locked.json()["detail"]
-    assert detail["code"] == "too_many_attempts" and detail["retry_after"] == int(locked.headers["retry-after"])
-    assert 0 < detail["retry_after"] <= deps.attempt_limiter.base_lock
+    assert locked.status_code == 401
+    error = _error(locked)
+    assert error["code"] == "unauthorized" and error["details"]["reason"] == "too_many_attempts"
+    assert error["details"]["retry_after"] == int(locked.headers["retry-after"])
+    assert 0 < error["details"]["retry_after"] <= deps.attempt_limiter.base_lock
     # Kilit sürerken doğru belirteç de değerlendirilmez: cookie kurulmaz
     right = c.post(LOGIN_PATH, json={"token": token})
-    assert right.status_code == 429 and "set-cookie" not in right.headers
+    assert right.status_code == 401 and "set-cookie" not in right.headers
+    assert _error(right)["details"]["reason"] == "too_many_attempts"
     warnings = [r.getMessage() for r in caplog.records if "Too many failed access-token attempts" in r.getMessage()]
     assert len(warnings) == 1 and "testclient" in warnings[0]
     assert all(token not in r.getMessage() and "guess-" not in r.getMessage() for r in caplog.records)
@@ -772,7 +750,7 @@ def test_the_lock_ends_and_a_right_token_clears_the_count(token: str, monkeypatc
 
     for _ in range(2):
         assert c.post(LOGIN_PATH, json={"token": "wrong"}).status_code == 401
-    assert c.post(LOGIN_PATH, json={"token": token}).status_code == 429
+    assert _error(c.post(LOGIN_PATH, json={"token": token}))["details"]["reason"] == "too_many_attempts"
     clock.now += 31
     assert c.post(LOGIN_PATH, json={"token": token}).status_code == 200
     # Sayaç sıfırlandı: yeniden iki yanlış deneme hakkı var
@@ -785,12 +763,13 @@ def test_wrong_bearer_tokens_count_and_lock_bearer_requests(token: str) -> None:
     c = TestClient(app)
     free = deps.attempt_limiter.free_attempts
     for attempt in range(free):
-        assert c.get("/api/status", headers={"authorization": f"Bearer guess-{attempt}"}).status_code == 401
+        assert c.get("/api/v1/status", headers={"authorization": f"Bearer guess-{attempt}"}).status_code == 401
 
     right = {"authorization": f"Bearer {token}"}
-    legacy = c.get("/api/status", headers=right)
-    assert legacy.status_code == 429 and legacy.json()["detail"]["code"] == "too_many_attempts"
-    assert int(legacy.headers["retry-after"]) > 0
+    # v1 dışındaki bir /api yolu kilidi 2.x'in gövdesiyle bildirir
+    other = c.get("/api/status", headers=right)
+    assert other.status_code == 429 and other.json()["detail"]["code"] == "too_many_attempts"
+    assert int(other.headers["retry-after"]) > 0
 
     v1 = c.get("/api/v1/status", headers=right)
     assert v1.status_code == 401 and v1.headers["www-authenticate"] == "Bearer"
@@ -798,7 +777,7 @@ def test_wrong_bearer_tokens_count_and_lock_bearer_requests(token: str) -> None:
     assert error["code"] == "unauthorized"
     assert error["details"] == {"reason": "too_many_attempts", "retry_after": int(v1.headers["retry-after"])}
     # Giriş de aynı sayaca bağlıdır
-    assert c.post(LOGIN_PATH, json={"token": token}).status_code == 429
+    assert _error(c.post(LOGIN_PATH, json={"token": token}))["details"]["reason"] == "too_many_attempts"
 
 
 def test_requests_without_credentials_and_sessions_are_not_counted_or_locked(token: str) -> None:
@@ -815,11 +794,10 @@ def test_requests_without_credentials_and_sessions_are_not_counted_or_locked(tok
     assert deps.attempt_limiter.retry_after("testclient") > 0
     # Kilit sürerken oturum cookie'si taşıyan istekler çalışmaya devam eder
     assert browser.get("/api/v1/jobs").status_code == 200
-    assert browser.get("/api/status").status_code == 200
+    assert browser.get("/api/v1/status").status_code == 200
 
 
 def test_without_a_token_nothing_is_counted(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(security, "_startup_token", "")
     c = TestClient(app)
     for _ in range(deps.attempt_limiter.free_attempts + 2):
         assert c.post(LOGIN_PATH, json={"token": "anything"}).status_code == 200

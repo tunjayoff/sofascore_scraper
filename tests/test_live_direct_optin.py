@@ -42,8 +42,8 @@ cli = skeleton.cli
 @pytest.fixture
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))
-    monkeypatch.setenv("REFRESH_WINDOW_HOURS", "48")
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_REFRESH__WINDOW_HOURS", "48")
     return path
 
 
@@ -278,12 +278,12 @@ def test_the_readmes_carry_the_four_warnings() -> None:
 def log_files(tmp_path: Path) -> Any:
     from sofascore_scraper import logger as app_logger
 
-    keys = ("LOG_DIR", "LOG_TO_FILE", "LOG_LEVEL", "DEBUG")
+    keys = ("SOFASCORE_LOG__DIR", "SOFASCORE_LOG__TO_FILE", "SOFASCORE_LOG__LEVEL", "SOFASCORE_LOG__DEBUG")
     saved = {k: os.environ.get(k) for k in keys}
     level = logging.getLogger().level
-    os.environ["LOG_DIR"] = str(tmp_path / "logs")
-    os.environ["LOG_LEVEL"] = "DEBUG"
-    os.environ.pop("DEBUG", None)
+    os.environ["SOFASCORE_LOG__DIR"] = str(tmp_path / "logs")
+    os.environ["SOFASCORE_LOG__LEVEL"] = "DEBUG"
+    os.environ.pop("SOFASCORE_LOG__DEBUG", None)
     app_logger.setup_logger(force=True)
     yield tmp_path / "logs"
     for key, value in saved.items():

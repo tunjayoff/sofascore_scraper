@@ -121,12 +121,12 @@ def write_snapshot(document: Dict[str, Any], path: Optional[Path] = None) -> Non
 
 # Uygulamanın içe aktarılırken okuduğu ya da oluşturduğu yerler (tests/conftest.py aynı listeyi kullanır)
 _ISOLATED_PATHS = {
-    "DATA_DIR": "data",
+    "SOFASCORE_STORAGE__DATA_DIR": "data",
     "SOFASCORE_CONFIG_DIR": "config",
     "SOFASCORE_ENV_FILE": ".env",
-    "LOG_DIR": "logs",
-    "SOFASCORE_BROWSER_PROFILE": "browser-profile",
-    "SOFASCORE_THROTTLE_DIR": "throttle",
+    "SOFASCORE_LOG__DIR": "logs",
+    "SOFASCORE_CLIENT__BROWSER_PROFILE": "browser-profile",
+    "SOFASCORE_CLIENT__THROTTLE_DIR": "throttle",
 }
 
 
@@ -139,7 +139,8 @@ def _isolate(directory: str) -> None:
     for name, relative in _ISOLATED_PATHS.items():
         os.environ[name] = os.path.join(directory, relative)
     os.environ["SOFASCORE_CONFIG"] = "none"
-    os.environ.pop("SOFASCORE_API_TOKEN", None)
+    os.environ.pop("SOFASCORE_SERVER__TOKEN", None)
+    os.environ.pop("SOFASCORE_SERVER__TOKEN_ENV", None)
     # Günlükçü içe aktarılırken kurulur ve log dizinini oluşturur: ortam ondan önce hazır olmalı
     from sofascore_scraper.logger import set_console_stream
 

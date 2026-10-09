@@ -17,13 +17,12 @@
   "job": {
    "circuit_breaker_triggered": false,
    "log": [
-    "[Running] Starting fetch for 17",
     "[Running] The season list of league 17 is up to date; it is not read again.",
     "[Running] The matches of league 17, season 61627 are up to date; they are not read again.",
     "[Running] The matches of league 17, season 52186 are up to date; they are not read again.",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league 17 (1 matches)…",
-    "[Completed] Background Task Completed Successfully."
+    "[Completed] Finished"
    ],
    "matches_done": 1,
    "matches_failed": 0,
@@ -40,6 +39,7 @@
     "details_total": 1,
     "failed": [],
     "failed_count": 0,
+    "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
     "schedule_empty_seasons": 0
@@ -62,12 +62,11 @@
   "job": {
    "circuit_breaker_triggered": false,
    "log": [
-    "[Running] Starting fetch for 17",
     "[Running] The season list of league 17 is up to date; it is not read again.",
     "[Running] The matches of league 17, season 61627 are up to date; they are not read again.",
     "[Running] The matches of league 17, season 52186 are up to date; they are not read again.",
     "[Running] Checking which matches need details...",
-    "[Completed] Background Task Completed Successfully."
+    "[Completed] Finished"
    ],
    "matches_done": 0,
    "matches_failed": 0,
@@ -84,6 +83,7 @@
     "details_total": 0,
     "failed": [],
     "failed_count": 0,
+    "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
     "schedule_empty_seasons": 0

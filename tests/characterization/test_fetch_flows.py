@@ -2,9 +2,10 @@
 İndirme akışlarının goldenları: her akışın SofaScore'a attığı istekler (sırasıyla) ve yazdığı dosyalar.
 
 Sabitlenen akışlar:
-  - web işi (sofascore_scraper/web/fetch_job.py): tam güncelleme (lig, tüm ligler, sezon seçimi), yalnızca detay,
-    kimliğiyle seçilen maçlar; ayrıca tam güncellemenin ikinci ve üçüncü çalıştırması
-  - tek maç uç noktası (POST /api/matches/{id}/fetch)
+  - web işi (`POST /api/v1/jobs`un gövdesi, sofascore_scraper/web/api/v1/jobs.py `_run_sync`): tam güncelleme (lig,
+    tüm ligler, sezon seçimi), yalnızca detay, kimliğiyle seçilen maçlar; ayrıca tam güncellemenin ikinci ve
+    üçüncü çalıştırması. 3.0'a kadar aynı servisi 2.x'in `/api/fetch` işi çalıştırıyordu; yol 3.1'de kalktı (P30),
+    goldenlar v1'in işiyle yeniden üretildi (iş günlüğünün ilk satırı ve sonucun `failed_listings` alanı)
   - yalnızca yenileme (main.py --refresh-only'nin çağırdığı sıra)
   - "yok" işaretlerinin yeniden denetimi (main.py --recheck-unavailable'ın çağırdığı fonksiyon)
 
@@ -31,13 +32,14 @@ import pytest
 import detail_records
 from catalog_index import index_event
 import legacy_writer
-import sofascore_scraper.utils as utils
+from sofascore_scraper.client import transport
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
+from web_job import run_sync_job
 from sofascore_scraper.web import deps
 from sofascore_scraper import breaker as request_breaker
 from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
-from sofascore_scraper.match_data_fetcher import MatchDataFetcher
+from sofascore_scraper.services.detail_phase import DetailPhase
 
 LEAGUE = 17
 SEASON_WEEKS = 61627  # haftalık turlar
@@ -59,7 +61,7 @@ def _settings(monkeypatch: pytest.MonkeyPatch) -> None:
 def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Boş bir veri dizini; ConfigManager.get_data_dir() onu döndürür."""
     path = tmp_path / "data"
-    monkeypatch.setenv("DATA_DIR", str(path))
+    monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(path))
     return path
 
 
@@ -71,29 +73,24 @@ def fake() -> Iterator[FakeSofaScore]:
 
 @pytest.fixture
 def run_job(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> RunJob:
-    """Web işini kendi thread'i olmadan, geçici bir iş deposuyla çalıştırır; son iş durumunu döndürür."""
-    import sofascore_scraper.web.api.legacy as fj
-    from sofascore_scraper.web.jobs import JobStore
-    from sofascore_scraper.web.api.legacy import FetchRequest
+    """
+    Web işini (`POST /api/v1/jobs`un gövdesi) kendi thread'i olmadan, geçici bir iş deposuyla çalıştırır; son iş
+    durumunu döndürür.
+    """
+    from sofascore_scraper.store import JobStore
 
     store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(deps, "job_store", lambda: store)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
-
-    def run(**payload: Any) -> Dict[str, Any]:
-        request = FetchRequest(**payload)
-        job_id = store.create_running(request.model_dump())
-        fj.run_fetch_job(job_id, request)
-        return store.snapshot()
-
-    return run
+    return lambda **payload: run_sync_job(store, payload)
 
 
-def _fetcher(data_dir: Path) -> MatchDataFetcher:
+def _details(data_dir: Path) -> DetailPhase:
+    """Veri dizininin detay aşaması (eşitleme işinin kurduğu gibi)."""
+    from sofascore_scraper.store import open_store
     from sofascore_scraper.web.deps import config_manager as _web_config
-    config_manager = _web_config()
 
-    return MatchDataFetcher(config_manager, data_dir=str(data_dir))
+    return DetailPhase(open_store(str(data_dir)), _web_config())
 
 
 def _make_provisional(data_dir: Path, fake: FakeSofaScore, event_id: int) -> None:
@@ -167,11 +164,11 @@ def _as_legacy_record(data_dir: Path, event_id: int, *, drop: Any = (), unavaila
 
 def test_fake_serves_canned_payloads_and_records_every_url_in_order(fake: FakeSofaScore) -> None:
     async def fetch_async() -> Any:
-        async with utils.create_session_async() as session:
-            return await utils.make_api_request_async(session, f"/unique-tournament/{LEAGUE}/seasons")
+        async with transport.create_session_async() as session:
+            return await transport.make_api_request_async(session, f"/unique-tournament/{LEAGUE}/seasons")
 
-    absolute = utils.make_api_request("https://www.sofascore.com/api/v1/event/9100001")
-    relative = utils.make_api_request("/event/9100001/h2h")
+    absolute = transport.make_api_request("https://www.sofascore.com/api/v1/event/9100001")
+    relative = transport.make_api_request("/event/9100001/h2h")
     seasons = asyncio.run(fetch_async())
 
     assert absolute["event"]["id"] == 9100001
@@ -191,9 +188,9 @@ def test_fake_serves_canned_payloads_and_records_every_url_in_order(fake: FakeSo
 
 
 def test_fake_answers_404_for_an_unknown_path(fake: FakeSofaScore) -> None:
-    assert utils.make_api_request("/event/1") is None
+    assert transport.make_api_request("/event/1") is None
     with pytest.raises(ResourceNotFoundError):
-        utils.make_api_request("/event/1", raise_on_failure=True)
+        transport.make_api_request("/event/1", raise_on_failure=True)
     assert fake.paths() == ["/event/1", "/event/1"]  # 404 yeniden denenmez
 
 
@@ -212,10 +209,10 @@ def test_fake_injects_http_errors_through_the_real_request_layer(
     started = time.monotonic()
 
     with pytest.raises(error) as raised:
-        utils.make_api_request("/event/9100001", raise_on_failure=True)
+        transport.make_api_request("/event/9100001", raise_on_failure=True)
 
     assert raised.value.status_code == status
-    assert [r.outcome for r in fake.requests] == [str(status)] * 3  # MAX_RETRIES varsayılanı
+    assert [r.outcome for r in fake.requests] == [str(status)] * 3  # client.retries varsayılanı
     assert fake.slept(REQUEST_LAYER) == backoff  # geri çekilmeler kaydedilir ama beklenmez
     assert time.monotonic() - started < 2
 
@@ -223,7 +220,7 @@ def test_fake_injects_http_errors_through_the_real_request_layer(
 def test_fake_injects_a_fault_a_limited_number_of_times(fake: FakeSofaScore) -> None:
     fake.fail("/event/*/statistics", 502, times=1)
 
-    data = utils.make_api_request("/event/9100001/statistics")
+    data = transport.make_api_request("/event/9100001/statistics")
 
     assert data is not None and "statistics" in data
     assert [r.outcome for r in fake.requests] == ["502", "200"]
@@ -234,9 +231,9 @@ def test_fake_injects_timeouts_and_connection_errors(fake: FakeSofaScore) -> Non
     fake.disconnect("/event/9100002")
 
     with pytest.raises(NetworkError) as timed_out:
-        utils.make_api_request("/event/9100001", raise_on_failure=True)
+        transport.make_api_request("/event/9100001", raise_on_failure=True)
     with pytest.raises(NetworkError) as disconnected:
-        utils.make_api_request("/event/9100002", raise_on_failure=True)
+        transport.make_api_request("/event/9100002", raise_on_failure=True)
 
     assert request_breaker.failure_kind(timed_out.value) == "timeout"
     assert request_breaker.failure_kind(disconnected.value) == "network"
@@ -265,9 +262,9 @@ def test_fake_leaves_storage_waits_real(fake: FakeSofaScore) -> None:
     yeniden deneme): beklemesi atlanmaz ve kaydedilmez. Diğer uygulama modüllerininki atlanır.
     """
     started = time.monotonic()
-    _sleep_as("sofascore_scraper.match_data_fetcher", 30.0)
+    _sleep_as("sofascore_scraper.services.detail_phase", 30.0)
     assert time.monotonic() - started < 2
-    assert [(s.source, s.seconds) for s in fake.sleeps] == [("sofascore_scraper.match_data_fetcher", 30.0)]
+    assert [(s.source, s.seconds) for s in fake.sleeps] == [("sofascore_scraper.services.detail_phase", 30.0)]
 
     fake.reset_log()
     started = time.monotonic()
@@ -283,7 +280,7 @@ def test_fake_world_and_log_round_trip_through_json(tmp_path: Path) -> None:
     clone = FakeSofaScore.from_dict(json.loads(json.dumps(source.to_dict())))
 
     with clone:
-        data = utils.make_api_request("/event/9100001")
+        data = transport.make_api_request("/event/9100001")
     clone.save_log(tmp_path / "log.json")
     saved = json.loads((tmp_path / "log.json").read_text(encoding="utf-8"))
 
@@ -294,14 +291,14 @@ def test_fake_world_and_log_round_trip_through_json(tmp_path: Path) -> None:
 
 
 def test_fake_restores_the_transport_on_uninstall() -> None:
-    original_get, original_session = cffi_requests.get, utils.AsyncSession
-    original_sleeps = (utils._sleep, utils._asleep, time.sleep, asyncio.sleep)
+    original_get, original_session = cffi_requests.get, transport.AsyncSession
+    original_sleeps = (transport._sleep, transport._asleep, time.sleep, asyncio.sleep)
 
     with FakeSofaScore.from_file(WORLD):
         assert cffi_requests.get is not original_get
 
-    assert (cffi_requests.get, utils.AsyncSession) == (original_get, original_session)
-    assert (utils._sleep, utils._asleep, time.sleep, asyncio.sleep) == original_sleeps
+    assert (cffi_requests.get, transport.AsyncSession) == (original_get, original_session)
+    assert (transport._sleep, transport._asleep, time.sleep, asyncio.sleep) == original_sleeps
 
 
 # --- web işi ---------------------------------------------------------------------------------
@@ -322,7 +319,7 @@ def test_web_job_full_update(
     runs: Dict[str, Dict[str, Any]] = {}
     for name, payload in FULL_UPDATE_PAYLOADS.items():
         data_dir = tmp_path / name  # her biçim boş bir veri dizininde
-        monkeypatch.setenv("DATA_DIR", str(data_dir))
+        monkeypatch.setenv("SOFASCORE_STORAGE__DATA_DIR", str(data_dir))
         fake.reset_log()
         final = run_job(**payload)
         runs[name] = {"requests": fake.canonical_log(), "files": snapshot_tree(data_dir), "job": _job_summary(final)}
@@ -473,79 +470,35 @@ def test_web_job_runs_are_idempotent(fake: FakeSofaScore, run_job: RunJob, data_
     assert_golden("job_idempotency", runs)
 
 
-# --- tek maç uç noktası ----------------------------------------------------------------------
-
-def test_single_match_route(fake: FakeSofaScore, data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from fastapi.testclient import TestClient
-
-    from sofascore_scraper.web.app import app
-    from sofascore_scraper.web.jobs import JobStore
-
-    idle = JobStore(str(tmp_path / "jobs.db"))  # çalışan iş yok
-    monkeypatch.setattr(deps, "job_store", lambda: idle)
-    client = TestClient(app)
-    steps: Dict[str, Any] = {}
-
-    def fetch(step: str, event_id: int) -> None:
-        fake.reset_log()
-        response = client.post(f"/api/matches/{event_id}/fetch")
-        steps[step] = {"status": response.status_code, "body": response.json(), "requests": fake.canonical_log()}
-
-    fetch("new_match", 9100001)
-    fetch("complete_match_again", 9100001)
-    detail_records.drop_slices(data_dir, 9100001, "h2h")
-    fetch("missing_slice", 9100001)
-    fetch("empty_slices", 9100002)
-    fetch("empty_slices_again", 9100002)
-    fetch("empty_slices_third_time", 9100002)
-    fetch("not_started", NOT_STARTED)
-    fetch("unknown_event", 1)
-    # Diskteki maç SofaScore'da artık "oynanıyor": refill vazgeçer, tam çekim /event'i yeniden ister
-    live = fake.event(9100001)
-    live["status"] = {"code": 6, "description": "1st half", "type": "inprogress"}
-    fake.add_event(live)
-    fetch("stored_match_now_live", 9100001)
-    fake.fail("/event/9100003*", 403)
-    fetch("blocked", 9100003)
-    fake.clear_faults()
-    fake.fail("/event/9100003/*", 403)
-    fetch("blocked_slices_only", 9100003)
-
-    assert_golden("single_match_route", {"steps": steps, "files": snapshot_tree(data_dir)})
-
-
 # --- yalnızca yenileme -----------------------------------------------------------------------
 
 def test_refresh_only(fake: FakeSofaScore, data_dir: Path) -> None:
     """
-    main.py --refresh-only'nin sırası: yenilenecekleri bul, her biri için yalnızca /event iste.
+    Yalnızca yenilemenin sırası (2.x'te main.py --refresh-only): yenilenecekleri bul, her biri için yalnızca /event iste.
     Maçlar arasında sabit bekleme yok (eski 1 sn, PR #33'te kalktı): `pause_seconds` boş. Kalan tek
     bekleme istek katmanınındır: yanıt alınan her istekten sonraki WAIT_TIME ve, açıksa, ortak istek
     bütçesinin sırası (sofascore_scraper/throttle.py; testlerde kapalı: tests/conftest.py).
     """
-    md = _fetcher(data_dir)
-    md.fetch_matches_batch([9100001, 9100003, 9100010])
+    details = _details(data_dir)
+    details.fetch_selected([9100001, 9100003, 9100010])
     for event_id in (9100001, 9100003, 9100010):
         _make_provisional(data_dir, fake, event_id)
     _change_score(fake, 9100003, home=2)  # skor düzeltildi
     fake.remove("/event/9100010")  # artık 404
     fake.reset_log()
 
-    md.begin_job_cache()
-    try:
-        ids = md.refresh_due_ids(league_id=None)
-        stats = md.refresh_matches(ids)
-    finally:
-        md.end_job_cache()
+    details = _details(data_dir)  # yeni iş: ihtiyaç önbelleği boş
+    ids = details.refresh_due(None)
+    stats = details.refresh(ids)
 
     request_waits = fake.slept(REQUEST_LAYER)
-    assert all(0.2 <= seconds <= 0.7 for seconds in request_waits)  # WAIT_TIME_MIN + [0, WAIT_TIME_MAX]
+    assert all(0.2 <= seconds <= 0.7 for seconds in request_waits)  # client.wait_time_min + [0, client.wait_time_max]
 
     assert_golden("refresh_only", {
         "due_ids": ids,
         "stats": stats,
         "requests": fake.canonical_log(),
-        "pause_seconds": fake.slept("sofascore_scraper.match_data_fetcher"),
+        "pause_seconds": fake.slept("sofascore_scraper.services.detail_phase"),
         "request_layer_waits": len(request_waits),
         "files": {
             path: content
@@ -564,12 +517,12 @@ def test_recheck_unavailable(fake: FakeSofaScore, run_job: RunJob, data_dir: Pat
     run_job(mode="details", league_id=LEAGUE)  # 9100002'nin iki dilimi ikinci kez boş: kesin "yok"
     # Eski sürümden kalma kayıt: 9100001 eski düzende, statistics dilimi doğrulanmadan "yok" sayılmış
     _as_legacy_record(data_dir, 9100001, drop=("statistics",), unavailable={"statistics": 2})
-    md = _fetcher(data_dir)
+    details = _details(data_dir)
     result: Dict[str, Any] = {"markers_before": _markers(data_dir)}
 
     fake.reset_log()
-    result["default"] = md.reset_unavailable_markers(league_id=LEAGUE)
-    result["default_again"] = md.reset_unavailable_markers(league_id=LEAGUE)
+    result["default"] = details.reset_markers(LEAGUE)
+    result["default_again"] = details.reset_markers(LEAGUE)
     result["markers_after_default"] = _markers(data_dir)
     assert fake.requests == []
 
@@ -577,7 +530,7 @@ def test_recheck_unavailable(fake: FakeSofaScore, run_job: RunJob, data_dir: Pat
     result["requests_after_default"] = fake.canonical_log()
 
     fake.reset_log()
-    result["all"] = md.reset_unavailable_markers(league_id=LEAGUE, include_confirmed=True)
+    result["all"] = details.reset_markers(LEAGUE, include_confirmed=True)
     result["markers_after_all"] = _markers(data_dir)
     assert fake.requests == []
 

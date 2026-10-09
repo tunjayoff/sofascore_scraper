@@ -1,34 +1,26 @@
 {
  "exit_code": 0,
- "files": {
-  "added": {
-   "logs/": "<empty dir>"
-  }
- },
+ "files": {},
  "options": [
-  "--allow-any-host",
   "--config",
-  "--csv-export",
   "--data-dir",
-  "--dev",
-  "--diagnostics",
-  "--doctor",
-  "--event-ids",
-  "--fetch-mode",
-  "--headless",
-  "--host",
-  "--ignore-rate-limit",
-  "--league-id",
-  "--league-ids",
-  "--port",
-  "--recheck-unavailable",
-  "--refresh-legacy",
-  "--refresh-only",
-  "--sport",
-  "--update-all",
+  "--delete-legacy",
+  "--dry-run",
+  "--help",
+  "--ignore-breaker",
+  "--json",
+  "--lang",
+  "--log-format",
+  "--log-level",
+  "--no-color",
+  "--out",
+  "--output",
+  "--progress",
+  "--quiet",
+  "--rate",
+  "--tournament",
+  "--verbose",
   "--version",
-  "--watch",
-  "--watch-hours",
-  "--web"
+  "--wait"
  ]
 }

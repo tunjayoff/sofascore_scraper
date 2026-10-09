@@ -10,8 +10,8 @@ Durum servisi ve istatistik aktarıcısı (plan maddesi RD-4): sayımlar katalog
     hiçbir sayı değişmemiştir;
   * disk kullanımının saklanması ve aktarıcının (`sofascore_scraper/services/stats.py`) bugünkü yanıt anahtarları.
 
-GET /api/dashboard ve /api/stats/system yanıtlarının tamamı `tests/golden/readers/` altında sabittir
-(tests/characterization/test_reader_goldens.py).
+2.x'in `GET /api/dashboard` ve `/api/stats/system` yolları 3.1'de kalktı (P30); aşağıdaki `dashboard` ve
+`system_stats` onların aktarıcıdan nasıl kurulduğunu yeniden üretir.
 """
 from __future__ import annotations
 
@@ -28,10 +28,10 @@ import conftest
 import store_fixtures as sf
 from sofascore_scraper.services import stats as stats_service
 from sofascore_scraper.services import status as status_module
+from sofascore_scraper.services.maintenance import MaintenanceService
 from sofascore_scraper.services.status import DataSummary, DiskUsage, StatusService, TournamentCounts
 from sofascore_scraper.store import Store, open_store
 from sofascore_scraper.web import deps
-from sofascore_scraper.web.api import legacy as data_routes
 
 NOT_STARTED_CASE = "football/A_notstarted-0-not-started__17184998"
 
@@ -42,7 +42,7 @@ NOT_STARTED_CASE = "football/A_notstarted-0-not-started__17184998"
 @pytest.fixture(autouse=True)
 def _default_setting(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Ayar kabuktan gelmesin (varsayılan: yalnızca bitmiş maçlar); saklanan disk ölçümleri testler arasında taşınmasın."""
-    monkeypatch.delenv("FETCH_ONLY_FINISHED", raising=False)
+    monkeypatch.delenv("SOFASCORE_FETCH__ONLY_FINISHED", raising=False)
     status_module.forget_sizes()
     yield
     status_module.forget_sizes()
@@ -67,6 +67,42 @@ def canonical(tmp_path: Path) -> sf.LegacyFixture:
 @pytest.fixture
 def old_forms(tmp_path: Path) -> sf.LegacyFixture:
     return build("legacy", tmp_path)
+
+
+# --- 2.x'in gösterge paneli yanıtları (aktarıcıdan; yolları 3.1'de kalktı) -----------------------------
+
+
+def _data_summary(data_dir: str, leagues: Dict[int, str]) -> DataSummary:
+    return StatusService(open_store(data_dir)).summary(tournament_ids=tuple(leagues))
+
+
+def dashboard(data_dir: str, leagues: Dict[int, str]) -> Dict[str, Any]:
+    summary = _data_summary(data_dir, leagues)
+    cards = []
+    for lid, name in leagues.items():
+        st = stats_service.league_counts(summary, lid, name)
+        cards.append({k: st[k] for k in ("id", "name", "seasons", "matches", "details", "coverage", "last_update")})
+    disk = stats_service.disk_usage(summary)
+    return {
+        "leagues": cards,
+        "disk_usage": {k: disk[k] for k in ("seasons", "matches", "details", "total", "formatted_total")},
+        "totals": {"leagues": len(leagues), "matches": sum(c["matches"] for c in cards),
+                   "details": sum(c["details"] for c in cards)},
+    }
+
+
+def system_stats(data_dir: str, leagues: Dict[int, str]) -> Dict[str, Any]:
+    stats = stats_service.system_counts(_data_summary(data_dir, leagues), leagues)
+    stats["league_breakdown"] = sorted(
+        ({k: b[k] for k in ("id", "name", "matches", "details", "coverage")}
+         for b in stats["league_breakdown"] if b["matches"] or b["details"]),
+        key=lambda b: b["matches"], reverse=True,
+    )
+    return stats
+
+
+def clear(data_dir: str, scope: str) -> List[str]:
+    return list(MaintenanceService(store=open_store(data_dir)).clear(scope, confirm=True).cleared)  # type: ignore[arg-type]
 
 
 def summarise(fixture: sf.LegacyFixture, **kwargs: Any) -> DataSummary:
@@ -267,7 +303,7 @@ def test_the_setting_is_read_at_call_time(canonical: sf.LegacyFixture, monkeypat
                                           value: Optional[str], expected: bool) -> None:
     """Varsayılan kural FETCH_ONLY_FINISHED'dan gelir; yazıcılarla aynı okuma (sofascore_scraper/utils.py)."""
     if value is not None:
-        monkeypatch.setenv("FETCH_ONLY_FINISHED", value)
+        monkeypatch.setenv("SOFASCORE_FETCH__ONLY_FINISHED", value)
     assert status_module.only_finished_setting() is expected
     summary = summarise(canonical, sizes=False)
     assert summary.only_finished is expected
@@ -370,20 +406,20 @@ def test_the_dashboard_follows_a_clear_at_once(canonical: sf.LegacyFixture, monk
     """
     data_dir, leagues = str(canonical.data_dir), canonical.leagues
     monkeypatch.setattr(deps.config_manager(), "get_data_dir", lambda: data_dir)
-    before = data_routes._build_dashboard_sync(data_dir, leagues)
+    before = dashboard(data_dir, leagues)
     assert before["totals"] == {"leagues": 6, "matches": 29, "details": 23}
     assert before["disk_usage"]["details"] > 0
 
-    assert data_routes._clear_data_sync("match_details") == {"status": "success", "cleared": ["match_details"]}
-    after = data_routes._build_dashboard_sync(data_dir, leagues)
+    assert clear(data_dir, "match_details") == ["match_details"]
+    after = dashboard(data_dir, leagues)
     assert after["totals"]["details"] == 0 and after["disk_usage"]["details"] == 0
     assert after["disk_usage"]["matches"] == before["disk_usage"]["matches"] > 0
     assert all(card["details"] == 0 and card["last_update"] is None for card in after["leagues"])
     # program dosyaları duruyor: bitmiş görünen maçlar sayılmaya devam eder (LaLiga'da yalnızca bitmiş olan)
     assert {card["id"]: card["matches"] for card in after["leagues"]} == {17: 12, 19: 3, 132: 6, 2361: 6, 8: 1, 35: 0}
 
-    assert data_routes._clear_data_sync("all")["status"] == "success"
-    empty = data_routes._compute_system_stats_sync(data_dir, leagues)
+    clear(data_dir, "all")
+    empty = system_stats(data_dir, leagues)
     assert (empty["seasons"], empty["matches"], empty["details"], empty["league_breakdown"]) == (0, 0, 0, [])
     assert empty["disk_usage"]["total"] == 0
 
@@ -426,10 +462,10 @@ def test_disk_total_includes_datasets(old_forms: sf.LegacyFixture) -> None:
     total = sum(areas.values())
     usage = stats_service.disk_usage(summary)
     assert usage == {**areas, "total": total, "formatted_total": stats_service.format_size(total)}
-    dashboard = data_routes._build_dashboard_sync(str(data_dir), old_forms.leagues)
-    assert dashboard["disk_usage"] == {key: usage[key] for key in ("seasons", "matches", "details", "total",
-                                                                  "formatted_total")}
-    assert dashboard["disk_usage"]["total"] > sum(dashboard["disk_usage"][key] for key in ("seasons", "matches", "details"))
+    panel = dashboard(str(data_dir), old_forms.leagues)
+    assert panel["disk_usage"] == {key: usage[key] for key in ("seasons", "matches", "details", "total",
+                                                              "formatted_total")}
+    assert panel["disk_usage"]["total"] > sum(panel["disk_usage"][key] for key in ("seasons", "matches", "details"))
 
 
 class InfoCalls:
@@ -553,11 +589,11 @@ def test_the_routes_do_not_walk_the_tree(canonical: sf.LegacyFixture, monkeypatc
     for name in ("dir_size", "_league_dirs", "league_stats", "system_stats"):
         assert not hasattr(stats_service, name)
     data_dir, leagues = str(canonical.data_dir), canonical.leagues
-    dashboard = data_routes._build_dashboard_sync(data_dir, leagues)
-    assert dashboard["totals"] == {"leagues": 6, "matches": 29, "details": 23}
-    assert [card["id"] for card in dashboard["leagues"]] == list(leagues)
-    assert set(dashboard["leagues"][0]) == {"id", "name", "seasons", "matches", "details", "coverage", "last_update"}
-    system = data_routes._compute_system_stats_sync(data_dir, leagues)
+    panel = dashboard(data_dir, leagues)
+    assert panel["totals"] == {"leagues": 6, "matches": 29, "details": 23}
+    assert [card["id"] for card in panel["leagues"]] == list(leagues)
+    assert set(panel["leagues"][0]) == {"id", "name", "seasons", "matches", "details", "coverage", "last_update"}
+    system = system_stats(data_dir, leagues)
     # döküm: maçı ya da detayı olan ligler, maç sayısına göre (eşitlikte yapılandırma sırası)
     assert [(b["id"], b["matches"]) for b in system["league_breakdown"]] == [
         (17, 12), (132, 6), (2361, 6), (19, 3), (8, 2)]

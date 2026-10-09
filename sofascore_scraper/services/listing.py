@@ -13,7 +13,7 @@ Sonuç tiplidir (`ListingResult`): `ok`, `failed` (neden: istek katmanının ned
 "storage") ya da `skipped` (devre kesici açık, ya da liste taze: `fresh`). Çekilemeyen bir sezon listesi ya da tur
 "sezon yok" / "maç yok" gibi görünmez: başarısız bir iş birimidir.
 
-Kurallar (eski sofascore_scraper/season_fetcher.py ve sofascore_scraper/match_fetcher.py'den taşındı; davranış aynı):
+Kurallar (2.x'in season_fetcher.py ve match_fetcher.py modüllerinden taşındı; davranış aynı):
 
   * Tur sayfası olduğu gibi saklanır, meta'sında `complete` (her maçı bitmiş ya da iptal mi) vardır. Tamamlanmış
     tur bir daha istenmez; tamamlanmamış tur ROUND_CACHE_TTL_SECONDS dolunca yeniden istenir. `complete`'i
@@ -22,9 +22,9 @@ Kurallar (eski sofascore_scraper/season_fetcher.py ve sofascore_scraper/match_fe
     durumdaki maç saklanır (plan maddesi ST-27): sayfa, maçı olduğu sürece bütün maçlarıyla yazılır. "Yalnızca
     bitmiş maçlar" (`only_finished`) yalnızca sonucun `chunks`'ını süzer (çağıranın "maç listelendi mi" sorusu);
     neyin saklandığını değiştirmez. Okuyanlar ayarı okurken uygular (sofascore_scraper/services/query.py).
-  * Maçı olmayan tur atlanır ve saklanmaz (SAVE_EMPTY_ROUNDS emekli, ST-27). 404 "yok"tur, hata değildir.
+  * Maçı olmayan tur atlanır ve saklanmaz (ST-27; SAVE_EMPTY_ROUNDS ayarı 3.1'de kalktı). 404 "yok"tur, hata değildir.
   * Deneme sayıları istek katmanınınki gibidir: tur listesi 1, olay sayfası 2, tur ve sezon listesi ayardaki
-    (`MAX_RETRIES`).
+    (`client.retries`).
 
 Tazelik (02-services.md 3.5, yeniden çalıştırma): eşitleme işi bir listeyi, son çekiminin üzerinden belli bir
 süre geçmediyse yeniden istemez (`max_age`; bkz. SEASON_LIST_TTL_SECONDS ve SCHEDULE_TTL_SECONDS). Program için
@@ -34,9 +34,10 @@ her çalıştırmada bir kez istenir (turlar istenmez).
 
 Yürütme: liste birimleri getirme boru hattında (sofascore_scraper/services/pipeline.py) yürür: çalıştırma başına tek ısıtılmış
 oturum, depoya her erişim (okuma da) yazıcı thread'inde. `ListingFetcher` boru hattının liste işleyicisidir;
-`ListingService` onu tek bir çağrıyla çalıştıran yüzdür (sofascore_scraper/season_fetcher.py ve sofascore_scraper/match_fetcher.py'nin
-sarmalayıcıları onu kullanır). `ScheduleLister` programın kendisidir ve istek ile yazmayı dışarıdan alır, böylece
-eski çağıranların istek yolu (sofascore_scraper.utils.make_api_request_async) da aynı kuralları kullanır.
+`ListingService` onu tek bir çağrıyla çalıştıran yüzdür (eşitleme servisi onu kullanır:
+sofascore_scraper/services/sync.py `list_seasons`, `list_schedule`). `ScheduleLister` programın kendisidir ve istek
+ile yazmayı dışarıdan alır, böylece doğrudan istek yolu (sofascore_scraper.client.transport.make_api_request_async)
+da aynı kuralları kullanır.
 
 `enqueue_events=True` ile bir program, listede bitmiş görünen ve katalogda eksik olan maçlar için maç iş birimleri
 (`full` / `refill`) getirir (`ItemResult.follow_up`): boru hattı onları aynı çalıştırmada yürütür. Eşitleme
@@ -99,7 +100,7 @@ SCHEDULE_KEY = planning.LISTING_SCHEDULE
 MAX_ROUND = 50
 # Bir türün (`last` / `next`) en çok bu kadar sayfası istenir
 EVENT_PAGE_LIMIT = 200
-# İstek katmanının deneme sayıları (eski kodla aynı): tur listesi 1, olay sayfası 2; None = ayardaki MAX_RETRIES
+# İstek katmanının deneme sayıları (eski kodla aynı): tur listesi 1, olay sayfası 2; None = ayardaki client.retries
 ROUNDS_RETRIES = 1
 EVENT_PAGE_RETRIES = 2
 
@@ -403,13 +404,11 @@ class ScheduleLister:
     çağrı.
 
     store              sayfaların yazıldığı ve önbellek kararının okunduğu depo
-    only_finished      sonucun `chunks`'ı yalnızca bitmiş maçları sayar (FETCH_ONLY_FINISHED); saklananı değiştirmez
-    save_empty_rounds  emekli (ST-27): eski çağıranlar için kabul edilir, etkisi yoktur; maçı olmayan tur saklanmaz
+    only_finished      sonucun `chunks`'ı yalnızca bitmiş maçları sayar (fetch.only_finished); saklananı değiştirmez
     concurrency        aynı anda istenen tur sayısı
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
-                 concurrency: int = 5, max_round: int = MAX_ROUND,
+    def __init__(self, store: "Store", *, only_finished: bool, concurrency: int = 5, max_round: int = MAX_ROUND,
                  clock: Callable[[], float] = time.time) -> None:
         self.store = store
         self.only_finished = bool(only_finished)
@@ -671,7 +670,7 @@ class ListingFetcher:
     enqueue_events                     programda bitmiş görünen eksik maçlar için maç birimleri getirilir
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
+    def __init__(self, store: "Store", *, only_finished: bool,
                  concurrency: int = 5, max_round: int = MAX_ROUND, season_max_age: Optional[float] = None,
                  schedule_max_age: Optional[float] = None, enqueue_events: bool = False,
                  clock: Callable[[], float] = time.time) -> None:
@@ -760,7 +759,7 @@ class ListingService:
     ve devre kesici çağıranın istek bağlamındadır (sofascore_scraper.client.context.request_context).
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
+    def __init__(self, store: "Store", *, only_finished: bool,
                  concurrency: int = 5, max_round: int = MAX_ROUND, client: Optional["Client"] = None,
                  enqueue_events: bool = False, clock: Callable[[], float] = time.time) -> None:
         self.store = store

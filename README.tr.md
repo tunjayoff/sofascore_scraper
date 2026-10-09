@@ -170,14 +170,14 @@ ssc config init         # açıklamalı bir başlangıç dosyası yazdırır
 ssc describe config     # her bölüm ve anahtar, JSON Schema olarak
 ```
 
-- **Katmanlar**, sonraki kazanır: yerleşik varsayılan → `.env` → `config/overrides.json` (web arayüzündeki **Ayarlar** sayfasının kaydettikleri) → `sofascore.toml` → ortam değişkenleri → komut satırı seçenekleri. Dosyanın, ortamın ya da bir seçeneğin sabitlediği değer Ayarlar sayfasında kilitli görünür.
-- **Ortamla ezme**: her anahtar `SOFASCORE_<BÖLÜM>__<ANAHTAR>` biçiminde, örneğin `SOFASCORE_CLIENT__RATE=2` ya da `SOFASCORE_LIVE__SOURCE=poll`. 2.x'in değişken adları (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `APP_LANGUAGE`, …; `.env.example` içinde) çalışmaya devam eder.
-- **Gizli değerler** yalnızca ortamdan okunur: erişim anahtarı `SOFASCORE_API_TOKEN` ve webhook imza anahtarları (`secret_env` değişkenin adını verir).
-- **Dil**: `APP_LANGUAGE=en|tr` (ya da `[display] language`) dili sabitler; sabitlenmemişse Türkçe sistemler ve tarayıcılar Türkçe, diğerleri İngilizce görür. `--lang` tek bir komut için ayarlar; JSON çıktı hiçbir zaman çevrilmez.
+- **Katmanlar**, sonraki kazanır: yerleşik varsayılan → `config/overrides.json` (web arayüzündeki **Ayarlar** sayfasının kaydettikleri) → `sofascore.toml` → ortam değişkenleri (`.env` ortama yüklenir) → komut satırı seçenekleri. Dosyanın, ortamın ya da bir seçeneğin sabitlediği değer Ayarlar sayfasında kilitli görünür.
+- **Ortamla ezme**: her anahtar `SOFASCORE_<BÖLÜM>__<ANAHTAR>` biçiminde, örneğin `SOFASCORE_CLIENT__RATE=2` ya da `SOFASCORE_LIVE__SOURCE=poll` (`.env.example` hepsini listeler). 2.x'in değişken adları (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `APP_LANGUAGE`, …) 3.1'den beri okunmaz; `ssc doctor` ve `ssc config show` hâlâ duran her birinin yeni adını söyler.
+- **Gizli değerler** yalnızca ortamdan okunur: erişim anahtarı `SOFASCORE_SERVER__TOKEN` ve webhook imza anahtarları (`secret_env` değişkenin adını verir).
+- **Dil**: `SOFASCORE_DISPLAY__LANGUAGE=en|tr` (ya da `[display] language`) dili sabitler; sabitlenmemişse Türkçe sistemler ve tarayıcılar Türkçe, diğerleri İngilizce görür. `--lang` tek bir komut için ayarlar; JSON çıktı hiçbir zaman çevrilmez.
 
 ## Veri ve dışa aktarma
 
-Tüm veriler tek bir klasördedir, varsayılan olarak `data/` (`DATA_DIR`, `[storage] data_dir`, `--data-dir`):
+Tüm veriler tek bir klasördedir, varsayılan olarak `data/` (`[storage] data_dir`, `SOFASCORE_STORAGE__DATA_DIR`, `--data-dir`):
 
 ```text
 data/
@@ -231,8 +231,8 @@ Hedefler `sofascore.toml` içinde `[[sink]]` tablolarıdır (`stdout`, `file` ya
 
 Web arayüzünde **kullanıcı hesabı yoktur** ve varsayılan olarak `127.0.0.1` üzerinde dinler. Onu bir ağa açmak kuranın kararı ve sorumluluğudur:
 
-- `SOFASCORE_API_TOKEN`'ı uzun, rastgele bir değere ayarlayın (bundan sonra her `/api` isteği `Authorization: Bearer <token>` ya da web arayüzünün oturum çerezini ister);
-- uygulamaya hangi adlarla ulaşıldığını `SOFASCORE_ALLOWED_HOSTS` içinde listeleyin (`ssc serve --host 0.0.0.0` bu liste olmadan başlamaz);
+- `SOFASCORE_SERVER__TOKEN`'ı uzun, rastgele bir değere ayarlayın (bundan sonra her `/api` isteği `Authorization: Bearer <token>` ya da web arayüzünün oturum çerezini ister);
+- uygulamaya hangi adlarla ulaşıldığını `SOFASCORE_SERVER__ALLOWED_HOSTS` içinde listeleyin (`ssc serve --host 0.0.0.0` bu liste olmadan başlamaz);
 - önüne bir güvenlik duvarı ya da VPN ve TLS (bir ters vekil sunucu) koyun.
 
 Uygulama yalnızca izin verilen sunucu adlarına yanıt verir, başka sitelerin gönderdiği durum değiştiren istekleri reddeder, sıkı bir Content-Security-Policy gönderir, anahtarsız açıldığında uyarır ve `.env`'i, ayar dosyasını ve tarayıcı profilini yalnızca sahibinin okuyabileceği biçimde tutar. Ayrıntılar: [docs/deploy](docs/deploy/README.md#access-token) (İngilizce).
@@ -250,8 +250,8 @@ ssc migrate --dry-run     # isteğe bağlı: yeni düzene neyin taşınacağı
 - **Veriler**: hiçbir şey kendiliğinden taşınmaz. Eski veriler bulundukları yerden okunur; yeni yazmalar yeni düzeni kullanır. `ssc migrate` eski klasörleri dönüştürüp doğrular ve eskilerini korur; `ssc migrate --delete-legacy --yes` doğrulanmış eski kopyaları sonradan siler.
 - **Terminal menüsü kaldırıldı.** `python main.py` argümansız çalıştırılınca kısa bir yardım yazar ve `2` ile çıkar. Web arayüzünü ya da betikler için `ssc`'yi kullanın.
 - **İçe aktarılan paket `sofascore_scraper`'dır** (önceden `src`'ydi ve takma adı yoktur): kendi systemd birimleriniz ve betikleriniz `python -m src.cli.main` yerine `python -m sofascore_scraper.cli.main` çalıştırır, kütüphane kodu `sofascore_scraper`'ı içe aktarır.
-- **3.0.0'da kullanımdan kalkan, 3.1'de kaldırılacak olanlar**: `main.py` seçenekleri (`--headless --update-all` `ssc sync`'i, `--refresh-only` `ssc refresh`'i, `--watch` `ssc watch --source poll --stdout`'u, `--web` `ssc serve`'ü çalıştırır, …; her biri çalıştırdığı komutu yazar), `/api/...` altındaki 2.x yolları (bunlar bir `Deprecation` başlığı ve `/api/v1`'deki karşılıklarını gösteren bir `Link` ile yanıt verir) ve `config`, `seasons`, `matches`, `match_details` yedek kapsamları (yerlerine `all`, `state` ya da `data`). Çıkış kodları yeni tabloya uyar (devre kesicinin durdurduğu iş artık `2` değil `4`).
-- **Ayarlar**: `.env` çalışmaya devam eder; `ssc config init --from-legacy > sofascore.toml` bugünkü `.env`'i ve `config/leagues.txt`'yi bir yapılandırma dosyası olarak yazar. `config/leagues.txt`'deki ligler indirilmeye devam eder; ligin sayfasındaki **Buraya taşı** onu uygulamaya taşır.
+- **3.1'de kaldırılanlar** (3.0.0'da kullanımdan kalkmıştı): `main.py` seçenekleri (kullanım hatası her birinin yerine geçen komutu söyler: `--headless --update-all` `ssc sync`, `--refresh-only` `ssc refresh`, `--watch` `ssc watch --source poll --stdout`, `--web` `ssc serve`, …), `/api/...` altındaki 2.x yolları (yerine `/api/v1`), `config`, `seasons`, `matches`, `match_details` yedek kapsamları (yerlerine `all`, `state` ya da `data`; eski yedekler yine geri yüklenir) ve 2.x'in ortam adları. Çıkış kodları yeni tabloya uyar (devre kesicinin durdurduğu iş artık `2` değil `4`).
+- **Ayarlar**: `.env`'deki 2.x adlarını yeniden adlandırın (`ssc doctor` her birini yeni adıyla listeler) ya da eski `.env`'i ve `config/leagues.txt`'yi bir yapılandırma dosyası olarak yazan `ssc config init --from-legacy > sofascore.toml` komutunu çalıştırın. `config/leagues.txt`'deki ligler indirilmeye devam eder; ligin sayfasındaki **Buraya taşı** onu uygulamaya taşır.
 
 Değişikliklerin tam listesi [CHANGELOG.md](CHANGELOG.md) dosyasındadır (İngilizce).
 

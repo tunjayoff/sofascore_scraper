@@ -3,7 +3,7 @@
 
 Üçü de ContextVar'dır: yalnızca o işin thread'ini ve onun asyncio.run / asyncio.to_thread çağrılarını
 etkiler; aynı anda gelen diğer istekler (lig arama, tek maç çekme) etkilenmez. İptal kontrolü ile bekleme
-bildirimi sofascore_scraper/utils.py'den buraya taşındı (eski adlar orada duruyor); devre kesicinin ContextVar'ı
+bildirimi 2.x'in sofascore_scraper/utils.py'sinden buraya taşındı (utils 3.1'de kalktı); devre kesicinin ContextVar'ı
 sofascore_scraper/breaker.py'de kalır, buradan yalnızca kurulur.
 
 `request_context` üçünü tek blokta kurar ve çıkışta geri alır (docs/design/02-services.md 2.4).

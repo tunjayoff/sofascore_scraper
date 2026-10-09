@@ -19,15 +19,14 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 import store_dump
 import store_fixtures as sf
 from schedule_runner import list_schedule
-from sofascore_scraper.match_fetcher import MatchFetcher
-from sofascore_scraper.season_fetcher import SeasonFetcher
+from sofascore_scraper.client import endpoints
 from sofascore_scraper.services.query import QueryService
 from sofascore_scraper.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
 from sofascore_scraper.store import (
@@ -349,7 +348,7 @@ def test_categories_and_sports_are_read_from_the_catalog(tmp_path: Path) -> None
         store.entities.sport(1)  # type: ignore[arg-type]
 
 
-# --- yazıcılar: program (listing.ScheduleLister) ve SeasonFetcher ------------------------------------------------------------
+# --- yazıcılar: program (listing.ScheduleLister) ve sezon listesi ------------------------------------------------------------
 
 def _api(league: sf.League, season: sf.Season, listings: Sequence[sf.Listing]) -> Any:
     """Listelerden sahte SofaScore: turlar `/rounds` ve tur uç noktalarından, sayfalar `events/last|next`'ten."""
@@ -361,7 +360,7 @@ def _api(league: sf.League, season: sf.Season, listings: Sequence[sf.Listing]) -
         if url == f"{base}/rounds":
             return {"rounds": [{"round": r.label, **({"slug": r.slug} if r.slug else {})} for r in rounds]}
         for listing in rounds:
-            if url == MatchFetcher.build_round_events_url(league.id, season.id, int(listing.label), listing.slug):
+            if url == endpoints.round_events(league.id, season.id, int(listing.label), listing.slug):
                 return {"events": [sf.event_payload(ev) for ev in listing.events], "hasNextPage": listing.has_next}
         found = pages.get(url)
         if found is None:
@@ -391,7 +390,6 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
     eşittir; sezonun liste satırları eski sezon özeti CSV'sinin satırlarına eşittir. Özet dosyası yazılmaz.
     """
     filtered = all(listing.filtered for listing in listings)
-    monkeypatch.setattr("sofascore_scraper.utils.FETCH_ONLY_FINISHED", filtered)
     built = sf.build_fixture("canonical", tmp_path / "built")
     key = f"{league.id}/{season.id}"
     expected = store_dump.dump_legacy(built.data_dir)["schedules"][key]
@@ -404,16 +402,15 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
     assert [name for name in tree(data) if name.startswith("matches/")] == []
 
     store = open_store(data)
-    rows = QueryService(store).season_matches_legacy(season.id, league.id, only_finished=False)
+    rows = QueryService(store).listed_events(tournament_ids=(league.id,), season_ids=(season.id,), only_finished=False)
     _results, summary = sf.summary_of(listings)
-    have = {row["match_id"]: {k: str(v) for k, v in row.items()} for row in rows}
-    want = {row["match_id"]: {k: str(v) for k, v in row.items()} for row in summary}
-    assert {mid: have[mid] for mid in want} == want  # özetin her satırı listede, aynı değerlerle
+    have = {row.id: (row.home_name, row.away_name, row.status_description) for row in rows}
+    want = {int(row["match_id"]): (row["home_team"], row["away_team"], row["status"]) for row in summary}
+    assert {mid: have[mid] for mid in want} == want  # özetin her satırı listede, aynı takımlar ve durumla
     assert differences(store) == []
 
 
 def test_a_complete_round_is_not_fetched_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("sofascore_scraper.utils.FETCH_ONLY_FINISHED", True)
     data = tmp_path / "data"
     calls: List[str] = []
     api = _api(sf.PL, sf.PL_2627, sf.PL_ROUNDS)
@@ -434,38 +431,37 @@ def test_a_complete_round_is_not_fetched_again(tmp_path: Path, monkeypatch: pyte
 def test_the_season_list_writer_stores_the_response_in_the_store(canonical: sf.LegacyFixture) -> None:
     data = canonical.data_dir
     before = legacy_tree(data)
+    from types import SimpleNamespace
+
+    from sofascore_scraper.services import listing as listing_service
+    from sofascore_scraper.services import sync
+
     config = MagicMock()
     config.get_league_by_id.return_value = sf.BUNDESLIGA.name
-    fetcher = SeasonFetcher(config, data_dir=str(data))
+    ctx = SimpleNamespace(config=config, store=open_store(data))
     payload = {"seasons": [{"id": 77001, "name": "Bundesliga 26/27", "year": "26/27"}]}
 
-    fetcher._save_seasons_json(sf.BUNDESLIGA.id, payload)
+    listing_service.store_season_list(ctx.store, sf.BUNDESLIGA.id, payload)
 
     assert legacy_tree(data) == before  # seasons/<id>_<ad>_seasons.json yazılmaz
     assert (data / "v3" / "tournaments" / str(sf.BUNDESLIGA.id) / "seasons.json.gz").is_file()
-    assert fetcher.get_seasons_for_league(sf.BUNDESLIGA.id) == payload["seasons"]
+    assert sync.stored_seasons(ctx, sf.BUNDESLIGA.id) == payload["seasons"]
     store = open_store(data)
     assert store_dump.dump(data)["season_lists"][str(sf.BUNDESLIGA.id)] == {
         "sha256": store_dump.payload_hash(payload), "seasons": 1}
     assert differences(store) == []
 
 
-def test_a_season_list_that_cannot_be_stored_is_logged(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
-    config = MagicMock()
-    fetcher = SeasonFetcher(config, data_dir=str(tmp_path / "data"))
-    with patch.object(fetcher, "_store", side_effect=StoreError("disk full")):
-        fetcher._save_seasons_json(PL, season_list(sf.PL_2627))
-    assert any("could not be stored" in record.getMessage() for record in caplog.records)
-
-
 def test_schedule_subs_follow_the_legacy_file_names() -> None:
-    assert MatchFetcher.schedule_sub("round", 12) == "round_12"
-    assert MatchFetcher.schedule_sub("round", 1, "Final") == "round_1_final"
-    assert MatchFetcher.schedule_sub("round", 3, "quarter finals") == "round_3_quarter-finals"
-    assert MatchFetcher.schedule_sub("last", 0) == "last_0" and MatchFetcher.schedule_sub("next", 2) == "next_2"
+    from sofascore_scraper.services.listing import schedule_sub as listing_sub
+
+    assert listing_sub("round", 12) == "round_12"
+    assert listing_sub("round", 1, "Final") == "round_1_final"
+    assert listing_sub("round", 3, "quarter finals") == "round_3_quarter-finals"
+    assert listing_sub("last", 0) == "last_0" and listing_sub("next", 2) == "next_2"
     with pytest.raises(ValueError):
-        MatchFetcher.schedule_sub("week", 1)
+        listing_sub("week", 1)
     # Eski sürümün dosya adından okuyucunun çıkardığı alt anahtarla aynı: eski tur dosyası önbellek olarak bulunur
     for name, args in (("round_12.json", ("round", 12)), ("round_1_Final.json", ("round", 1, "Final")),
                        ("events_last_0.json", ("last", 0))):
-        assert legacy_schedule_sub(name)[1] == MatchFetcher.schedule_sub(*args)
+        assert legacy_schedule_sub(name)[1] == listing_sub(*args)
