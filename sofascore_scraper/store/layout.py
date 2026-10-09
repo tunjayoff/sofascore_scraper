@@ -99,31 +99,31 @@ def _check_id(value: int, what: str) -> int:
 
 def event_dir(event_id: int) -> str:
     """v3/events/<id // 1000000>/<(id // 1000) % 1000, 3 hane>/<id>: bir dizinde en çok 1000 maç dizini olur."""
-    eid = _check_id(event_id, "maç")
+    eid = _check_id(event_id, "event")
     return f"{EVENTS_DIR}/{eid // 1_000_000}/{(eid // 1000) % 1000:03d}/{eid}"
 
 
 def tournament_dir(tournament_id: int) -> str:
-    return f"{TOURNAMENTS_DIR}/{_check_id(tournament_id, 'turnuva')}"
+    return f"{TOURNAMENTS_DIR}/{_check_id(tournament_id, 'tournament')}"
 
 
 def season_dir(tournament_id: int, season_id: int) -> str:
     """Sezon, turnuvasının dizini altında durur."""
-    return f"{tournament_dir(tournament_id)}/seasons/{_check_id(season_id, 'sezon')}"
+    return f"{tournament_dir(tournament_id)}/seasons/{_check_id(season_id, 'season')}"
 
 
 def team_dir(team_id: int) -> str:
-    tid = _check_id(team_id, "takım")
+    tid = _check_id(team_id, "team")
     return f"{TEAMS_DIR}/{tid // 1000}/{tid}"
 
 
 def player_dir(player_id: int) -> str:
-    pid = _check_id(player_id, "oyuncu")
+    pid = _check_id(player_id, "player")
     return f"{PLAYERS_DIR}/{pid // 1000}/{pid}"
 
 
 def sport_dir(sport_id: int) -> str:
-    return f"{SPORTS_DIR}/{_check_id(sport_id, 'spor')}"
+    return f"{SPORTS_DIR}/{_check_id(sport_id, 'sport')}"
 
 
 def entity_dir(kind: str, entity_id: int, tournament_id: Optional[int] = None) -> str:

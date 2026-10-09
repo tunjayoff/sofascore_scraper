@@ -175,7 +175,7 @@ class Catalog:
         self._attach: Dict[str, str] = {}
         for name, other in (attach or {}).items():
             if not _SCHEMA_NAME_RE.fullmatch(name) or name in ("main", "temp"):
-                raise ValueError(f"Geçersiz ATTACH adı: {name!r}")
+                raise ValueError(f"Invalid ATTACH name: {name!r}")
             self._attach[name] = os.path.abspath(os.fspath(other))
         self._local = threading.local()  # iş parçacığının _Slot'u; bağlantının kendisi _connections'ta
         self._lock = threading.Lock()
@@ -509,7 +509,7 @@ class Catalog:
         Dönen değer eklenen ya da güncellenen satır sayısıdır.
         """
         if on_conflict not in ("update", "ignore"):
-            raise ValueError(f"Geçersiz on_conflict: {on_conflict!r}")
+            raise ValueError(f"Invalid on_conflict: {on_conflict!r}")
         conn = self._require_write()
         columns, primary, required = self._table_info(conn, table)
         groups: Dict[Tuple[str, ...], List[Tuple[Any, ...]]] = {}

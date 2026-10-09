@@ -75,3 +75,54 @@ def test_schema_too_new_and_an_invalid_manifest_say_it_in_english() -> None:
         manifest.from_dict({"format": 1, "kind": "nope", "id": None, "slices": []}, "/data/m.json")
     assert not TURKISH.search(str(caught.value))
     assert "invalid kind 'nope'" in str(caught.value)
+
+
+# --- doğrulama ve taramaların sorun metinleri (B2) ---------------------------------------------------------
+
+# Türkçe harf taşıyabilen, metin olmayan sabitler: 2.x'in CSV sütun adları (veri) ve arama katlamasının tablosu
+NOT_TEXT = {
+    ("legacy.py", "Sezon Adı"), ("legacy.py", "Sezon Yılı"), ("legacy.py", "Liga Adı"), ("derive.py", "ı"),
+}
+
+
+def _docstrings(tree: ast.AST) -> set:
+    found = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.body:
+            first = node.body[0]
+            if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant):
+                found.add(id(first.value))
+    return found
+
+
+def test_issue_and_problem_texts_are_english() -> None:
+    """
+    Doğrulamanın (`verify`) sorunları, taramaların (eski düzen, değişiklik günlüğü, varlıklar, dizinleyici)
+    sorun kayıtları ve iç hata iletileri İngilizcedir: kodlarıyla birlikte CLI'ın JSON çıktısına, günlüğe ve
+    raporlara girerler. Okura gösterilen açıklama yerelleştirme anahtarından gelir (`ssc_catalog_kind_<kod>`).
+    Belge dizileri ve yorumlar Türkçe kalır.
+    """
+    found = []
+    for path in sorted(STORE.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        docs = _docstrings(tree)
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docs
+                    and TURKISH.search(node.value) and (path.name, node.value) not in NOT_TEXT):
+                found.append(f"{path.name}:{node.lineno}: {node.value!r}")
+    assert found == []
+
+
+def test_every_issue_and_problem_kind_has_a_description_in_both_languages() -> None:
+    import json
+
+    from sofascore_scraper.store import changes, indexer, legacy, verify
+
+    kinds = {value for name, value in vars(verify).items() if name.startswith("KIND_")}
+    problems = {value for module in (legacy, indexer, changes)
+                for name, value in vars(module).items() if name.startswith("PROBLEM_")}
+    root = STORE.parents[1] / "locales"
+    for language in ("en", "tr"):
+        texts = json.loads((root / f"{language}.json").read_text(encoding="utf-8"))
+        assert sorted(k for k in kinds if f"ssc_catalog_kind_{k}" not in texts) == [], language
+        assert sorted(p for p in problems if f"ssc_catalog_problem_{p}" not in texts) == [], language

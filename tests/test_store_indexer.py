@@ -1200,8 +1200,8 @@ def test_quick_verify_finds_what_changed_behind_the_catalog(canonical: sf.Legacy
     by_id = {i.event_id: i for i in report.issues}
     assert by_id[sf.event_id(sf.PL_FUTURE)].path == new_dir and by_id[ARS].path == f"{PL_DIR}/{ARS}"
     assert "statistics: state" in by_id[17018572].detail and "has_payload" in by_id[17018572].detail
-    assert by_id[17099711].detail.startswith("farklı sütunlar: home_score")
-    assert by_id[16951514].detail == "statistics: dosyalarda yok"
+    assert by_id[17099711].detail.startswith("columns differ: home_score")
+    assert by_id[16951514].detail == "statistics: not in the files"
     assert report.events_read == 6 and not report.ok and len(report.open_issues) == 5
     assert snapshot(admin.catalog, sig=False) == clean  # onarım istenmedi: katalog değişmedi
 
@@ -1253,7 +1253,7 @@ def test_newer_duplicate_is_found_by_the_quick_check(old_forms: sf.LegacyFixture
     report = admin.verify()
     # satır başka dizini gösteriyor; yeni geçerli kopyada eski dizinin dilimleri yok
     assert issues(report) == [("I4", "event_row", ARS), ("I2", "slices", ARS)]
-    assert "path" in report.issues[0].detail and "statistics: dosyalarda yok" in report.issues[1].detail
+    assert "path" in report.issues[0].detail and "statistics: not in the files" in report.issues[1].detail
     assert admin.verify(repair=True).ok
     assert event_row(admin.catalog, ARS)["path"] == f"match_details/{ARS}"
     assert set(slice_rows(admin.catalog, ARS)) == {"event"}
@@ -1288,7 +1288,7 @@ def test_deep_verify_finds_what_signatures_cannot(canonical: sf.LegacyFixture, m
     assert sorted(issues(report)) == [
         ("I2", "slices", 17184988), ("I3", "slices", 16867839), ("I4", "event_participants", 17099711),
         ("I4", "event_row", ARS)]
-    assert {i.event_id: i.detail for i in report.issues}[ARS] == "farklı sütunlar: status_class, home_score"
+    assert {i.event_id: i.detail for i in report.issues}[ARS] == "columns differ: status_class, home_score"
     assert [(p.path, p.kind) for p in report.problems] == [(f"{PL_DIR}/17184988/lineups.json", "corrupt")]
 
     assert admin.verify(deep=True, repair=True).ok
@@ -1343,17 +1343,17 @@ def test_deep_verify_checks_v3_payloads_against_the_manifest(canonical: sf.Legac
         ("I2", "payload", resized, "h2h.json.gz", "h2h"),
         ("I2", "payload", bad_event, "event.json.gz", "event"),
         # olay yükü okunamayan v3 dizini geçerli bir maç değil: diskte geçerli olan eski kopya
-        ("I5", "layout", bad_event, events[bad_event].path.rsplit("/", 1)[-1], "katalog 'v3' diyor, diskte geçerli olan 'legacy'"),
-        ("I9", "unknown_file", ids[5], "notes.txt", "manifestin adını vermediği dosya"),
-        ("I9", "unknown_file", ids[5], "1.json.gz", "manifestin adını vermediği dosya"),
+        ("I5", "layout", bad_event, events[bad_event].path.rsplit("/", 1)[-1], "the catalog says 'v3', the valid one on disk is 'legacy'"),
+        ("I9", "unknown_file", ids[5], "notes.txt", "a file the manifest does not name"),
+        ("I9", "unknown_file", ids[5], "1.json.gz", "a file the manifest does not name"),
     }
     assert found == expected
     details = {(i.event_id, i.kind): i.detail for i in report.issues}
-    assert details[(missing, "payload")] == "statistics: dosya yok"
-    assert details[(corrupt, "payload")].startswith("statistics: açılamıyor")
-    assert details[(swapped, "payload")] == "h2h: sha256 manifesttekinden farklı"
-    assert details[(resized, "payload")].startswith("h2h: boyut manifesttekinden farklı (dosya ")
-    assert details[(bad_event, "payload")].startswith("event: JSON değil")
+    assert details[(missing, "payload")] == "statistics: file missing"
+    assert details[(corrupt, "payload")].startswith("statistics: cannot be opened")
+    assert details[(swapped, "payload")] == "h2h: sha256 differs from the manifest"
+    assert details[(resized, "payload")].startswith("h2h: size differs from the manifest (file ")
+    assert details[(bad_event, "payload")].startswith("event: not JSON")
     assert report.leftovers == [f"{layout.event_dir(ids[5])}/.manifest.json.abc123.tmp"]
     assert report.leftovers_removed == 0 and v3_file(data, ids[5], ".manifest.json.abc123.tmp").exists()
     assert {i: v3_file(data, i, "manifest.json").read_bytes() for i in ids} == manifests  # yalnızca okundu
@@ -1440,8 +1440,8 @@ def test_quick_verify_sees_a_changed_v3_manifest(tmp_path: Path, make_admin) -> 
              updated=T1 + dt.timedelta(hours=1))
     report = admin.verify()
     assert issues(report) == [("I4", "event_row", ARS), ("I3", "slices", ARS)] and report.events_read == 1
-    assert report.issues[0].detail == "farklı sütunlar: updated_at"
-    assert report.issues[1].detail.startswith("event: fetched_at, checked_at; statistics: katalogda yok")
+    assert report.issues[0].detail == "columns differ: updated_at"
+    assert report.issues[1].detail.startswith("event: fetched_at, checked_at; statistics: not in the catalog")
     assert admin.verify(repair=True).ok and admin.verify().events_read == 0
     assert set(slice_rows(admin.catalog, ARS)) == {"event", "statistics"}
 

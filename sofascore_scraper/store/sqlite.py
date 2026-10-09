@@ -218,7 +218,7 @@ def configure(conn: sqlite3.Connection, *, synchronous: str = "NORMAL", busy_tim
     request_wal: WAL isteğini yapan işlev (SQLite'ın yanıtını döndürür); verilmezse `set_journal_mode`.
     """
     if synchronous not in ("NORMAL", "FULL"):
-        raise ValueError(f"Geçersiz synchronous değeri: {synchronous!r}")
+        raise ValueError(f"Invalid synchronous value: {synchronous!r}")
     conn.execute(f"PRAGMA busy_timeout = {int(busy_timeout_ms)}")
     mode = request_wal(conn) if request_wal is not None else set_journal_mode(conn, "WAL", busy_timeout_ms)
     if mode != "wal":
@@ -380,7 +380,7 @@ def split_statements(script: str) -> List[str]:
         start = position
     rest = strip_comments(script[start:])
     if rest:
-        raise ValueError(f"SQL betiği yarım bir deyimle bitiyor (noktalı virgül eksik): {rest[:80]!r}")
+        raise ValueError(f"The SQL script ends in an unfinished statement (missing semicolon): {rest[:80]!r}")
     return statements
 
 

@@ -165,7 +165,7 @@ def test_every_fixture_directory_is_classified(fx: sf.LegacyFixture) -> None:
     assert list(found) == sorted(found)
     for record in fx.details:
         if not record.has_basic and not record.combined:
-            assert LegacyProblem(record.path, legacy.PROBLEM_NO_EVENT, "maç dizininde olay yükü yok") in report.problems
+            assert LegacyProblem(record.path, legacy.PROBLEM_NO_EVENT, "no event payload in the event directory") in report.problems
             assert record.path not in found
             continue
         entry = found.pop(record.path)
@@ -194,7 +194,7 @@ def test_forms_of_the_legacy_fixture(old_forms: sf.LegacyFixture) -> None:
         17185003: ("L1", False, "17_Premier_League", "season_Premier_League_26_27"),
     }
     assert report.problems == [
-        LegacyProblem(f"{PL_DIR}/17018572", "no_event_payload", "maç dizininde olay yükü yok"),
+        LegacyProblem(f"{PL_DIR}/17018572", "no_event_payload", "no event payload in the event directory"),
         LegacyProblem(f"{PL_DIR}/17185003/statistics.json", "corrupt",
                       "Expecting ':' delimiter: line 4 column 15 (char 40)"),
     ]
@@ -1188,7 +1188,7 @@ def test_change_log_sequence_is_the_line_number(tmp_path: Path) -> None:
         (1, {"event_id": 1}), (4, {"event_id": 4}), (7, {"event_id": 7, "ad": "ç"}), (9, {"event_id": 9})]
     assert changes[1].line == '{"event_id": 4}'
     assert [(p.kind, p.detail.split(":")[0]) for p in report.problems] == [
-        ("torn_line", "satır 10"), ("corrupt", "satır 3"), ("malformed", "satır 5"), ("corrupt", "satır 8")]
+        ("torn_line", "line 10"), ("corrupt", "line 3"), ("malformed", "line 5"), ("corrupt", "line 8")]
     assert all(p.path == "score_changes.jsonl" for p in report.problems)
     # Dosyanın sonuna yeni satır eklenince eski satırların numarası değişmez
     with open(tmp_path / "score_changes.jsonl", "ab") as f:
