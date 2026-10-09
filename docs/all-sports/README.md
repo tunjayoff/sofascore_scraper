@@ -382,11 +382,14 @@ PR #121'den beri her spor, SofaScore'un kendi maç sayfasının o sporda istedi�
 her spor aynı altı ortak dilimi zorunlu olarak alıyordu. İki spora özgü dilim eklendi: kriket `innings` ve dart
 `point_by_point`. Futbol, basketbol ve tenis #121'de değişmedi; sahibin 08.10.2026 kararıyla FX-16 (PR #176)
 değiştirdi (aşağıda, "Karar"). FX-31 kanıtı onarılmış keşif aracının koşusundan yeniden üretti ve yedi sporun
-satırını değiştirdi (aşağıda, "FX-31"); dört sporun satırı sahibin kararını bekler (aşağıda, "Öneri").
+satırını değiştirdi (aşağıda, "FX-31"); ragbi, voleybol, florbol ve mini futbolun satırını sahibin 09.10.2026
+kararıyla FX-36 değiştirdi (aşağıda, "Karar (FX-36)").
 
-- **Kaynak:** bu keşfin kaydı (`research/all_sports/`), yeni istek atılmadı. İki koşu var: 01.10.2026'nın
-  keşfi (#17) ve onarılmış keşif aracının (FX-29, FX-29b) koşusu `lv-20261009` (#183: 21 sporun 39 maç
-  sayfası, 20 sporun bitmiş ve 19 sporun başlamamış maçı; her satırda `run_id`). `tests/sport_evidence.py`
+- **Kaynak:** bu keşfin kaydı (`research/all_sports/`), yeni istek atılmadı. Üç koşu var: 01.10.2026'nın
+  keşfi (#17) ve onarılmış keşif aracının (FX-29, FX-29b) iki koşusu, her satırda `run_id`: `lv-20261009`
+  (#183: 21 sporun 39 maç sayfası, 20 sporun bitmiş ve 19 sporun başlamamış maçı) ve `lv-20261009b` (FX-36:
+  ragbi, voleybol, florbol ve mini futbolun en çok takip edilen üç liginden 02.10.2026 haftasının 12 bitmiş
+  maçı, 565 istek). `tests/sport_evidence.py`
   tabloyu `requests.jsonl`, `pages.jsonl` ve `events/*.jsonl`'dan türetir: yalnızca maç sayfalarının istekleri,
   bahis hariç, maçın isteğin anındaki durumu HTTP koduyla birlikte. Sonuç
   `tests/fixtures/sport_slices/evidence.json`; bir test dosyanın araştırma verisinden yeniden türetilebildiğini
@@ -397,17 +400,18 @@ satırını değiştirdi (aşağıda, "FX-31"); dört sporun satırı sahibin ka
   ortak dilimi alır.
 
 **Hangi koşu neyi kanıtlar.** Eski keşif aracı maç sayfalarının isteklerinin çoğunu kaybetti: kaybolan istek ne
-gönderildi ne kaydedildi. Kaydedilmiş her yanıt yine de SofaScore'un gerçek yanıtıdır, bu yüzden **yanıtlar iki
-koşudan da sayılır** (eski yanıtları atmak futbol ve basketbolun bitmiş ve canlı maçtaki team-streaks ve h2h
+gönderildi ne kaydedildi. Kaydedilmiş her yanıt yine de SofaScore'un gerçek yanıtıdır, bu yüzden **yanıtlar bütün
+koşulardan sayılır** (eski yanıtları atmak futbol ve basketbolun bitmiş ve canlı maçtaki team-streaks ve h2h
 yanıtlarını, futbol ve buz hokeyinin pregame-form 404'lerini atardı). **Yokluk** ("sayfa bu dilimi hiç
-istemedi") ise **yalnızca onarılmış koşunun sayfalarından** okunur: eski ragbi, mini futbol ve masa tenisi
+istemedi") ise **yalnızca onarılmış koşuların sayfalarından** okunur: eski ragbi, mini futbol ve masa tenisi
 sayfaları kendi maçları için 4-6 uç nokta yanıtladı, `lv-20261009`'un aynı sporlardaki sayfaları 13-15; kaybolan
 istek "istenmedi"den ayırt edilemez. Maçın durumu isteğin anındaki durumdur (maçın kendi `/event/{id}`
 yanıtından, zamanca en yakın gözlem): koşunun "başlamamış" diye açtığı sayfalardan üçünün maçı sayfa
 açıldığında başlamıştı (basketbol, buz hokeyi, beyzbol: tablodaki tek canlı sayfalar), dartınki bitmişti.
 Bir sayfa `/event/{id}` ve `/event/{id}/pregame-form` istemiş ve yanıt almışsa (200 ya da 404) **tam** sayılır;
-`lv-20261009`'un bütün sayfaları tam (tabloda bir sayfada geçen iki komşu maç da var: beyzbol 17212666, dart
-17278936). Bitmiş maçta H2H ve team-streaks bir sekmenin arkasında: bir sayfanın bunları hiç
+iki onarılmış koşunun bütün sayfaları tam (tabloda bir sayfada geçen üç komşu maç da var: beyzbol 17212666, dart
+17278936 ve `lv-20261009b`'de florbol sayfası 16597412'nin istediği başlamamış 16597419). Bitmiş maçta H2H ve
+team-streaks bir sekmenin arkasında: bir sayfanın bunları hiç
 istememesi dilimin olmadığına kanıt sayılmaz.
 
 **Kanıt hâlâ ince.** Çoğu sporda bir bitmiş ve bir başlamamış maç sayfası var; canlı maç yanıtı yalnızca yedi
@@ -422,16 +426,16 @@ gövdeye bakmaz: 200 her zaman veri değildir (aşağıda, "Bulgular").
 |---|---|
 | bitmiş maçta 200, bitmiş maçta 404 yok | istenir, tamlığa girer (**R**) |
 | başlamış (canlı ya da bitmiş) maçta 404, temiz bitmiş veri yok | istenir, tamlığa girmez (*o*) |
-| statistics, lineups ya da incidents onarılmış koşunun tam bir canlı ya da bitmiş sayfasında hiç istenmemiş | istenmez (✗) |
+| statistics, lineups ya da incidents onarılmış koşuların tam bir canlı ya da bitmiş sayfasında hiç istenmemiş | istenmez (✗) |
 | hiçbir başlamamış maç sayfası istememiş ya da orada yalnızca 404 almış | yalnızca maç başlayınca istenir (`phases` canlı ve bitmiş) |
 | yalnızca başlamamış maç kanıtı, sayfa yok ya da 403 | değişmez |
 
-**Tablo.** Hücrede F, L ve N bitmiş, canlı ve başlamamış maçtır, ardından HTTP kodu gelir (iki koşunun
+**Tablo.** Hücrede F, L ve N bitmiş, canlı ve başlamamış maçtır, ardından HTTP kodu gelir (bütün koşuların
 yanıtları birlikte); `—` sayfanın uç noktayı hiç istemediğini gösterir. Her hücrenin sonunda kayıt defterinin
-şimdi ne yaptığı yazar. Sayfa sütunu `lv-20261009`'un sayfalarıdır (yokluk yalnızca onlardan); #121'in sayfaları
-`research/all_sports/requests.jsonl`'da.
+şimdi ne yaptığı yazar. Sayfa sütunu onarılmış koşuların sayfalarıdır (yokluk yalnızca onlardan; `lv-20261009b`'ninkiler
+"b" ile); #121'in sayfaları `research/all_sports/requests.jsonl`'da.
 
-| Spor | Maç sayfaları (lv-20261009) | statistics | team-streaks | pregame-form | h2h | lineups | incidents | spora özgü |
+| Spor | Maç sayfaları (lv-20261009, lv-20261009b) | statistics | team-streaks | pregame-form | h2h | lineups | incidents | spora özgü |
 |---|---|---|---|---|---|---|---|---|
 | football | 15534082 F, 16363871 N, 17256969 F | F200 L200 **R** | F200 L200 **R** | F200 F404 L404 N200 *o*¹ | F200 L200 **R** | F200 L404 N200 **R** | F200 L200 N200 **R** | — |
 | basketball | 16685163 L, 16832233 F | F200 L200 **R** | F200 **R** | F404 L404 *o*¹ | F200 **R** | F200 L200 **R** | F200 L200 **R** | — |
@@ -440,11 +444,11 @@ yanıtları birlikte); `—` sayfanın uç noktayı hiç istemediğini gösterir
 | aussie-rules | 17236299 N | — **R** | N200 **R** | N200 **R** | N200 **R** | N404 **R** | N404 **R** | — |
 | ice-hockey | 16546323 L, 16546907 F | F200 L200 **R** | — **R** | F200 F404 L200 *o* | — **R** | F200 L200 **R** | F200 L200 **R** | — |
 | handball | 16419114 N, 16634075 F | F200 **R** | N200 **R** | F200 N200 N404 **R** | N200 **R** | F200 N200 N404 **R** | F200 N404 **R** | — |
-| rugby | 16534955 N, 16793649 F | F404 **R** (öneri: *o*) | F200 N200 **R** | F200 N200 **R** | F200 N200 **R** | F200 F404 N404 **R** (öneri: *o*) | F404 N404 **R** (öneri: *o*) | — |
+| rugby | 16534955 N, 16793649 F; b: 16534950 F, 16662714 F, 17199838 F | F200 F404 *o*³ | F200 N200 **R** | F200 F404 N200 *o*³ | F200 N200 **R** | F200 F404 N404 *o*³ | F200 F404 N404 *o*³ | — |
 | futsal | 16904548 N, 17256669 F | F404 *o* | F200 N200 **R** | F404 N200 *o* | F200 N200 **R** | F404 N404 *o* | F200 F404 N404 *o*² | — |
-| minifootball | 17219190 F, 17268351 N | F200 F404 **R** (öneri: *o*) | F200 N200 **R** | F404 N404 **R** (öneri: *o*) | F200 N200 **R** | F404 N404 *o* | F404 N404 **R** (öneri: *o*) | — |
-| floorball | 16672337 N, 16779060 F | F404 **R** (öneri: *o*) | F200 N200 **R** | F404 N200 N404 **R** (öneri: *o*) | F200 N200 **R** | — **R** (öneri: ✗) | F404 N404 **R** (öneri: *o*) | — |
-| volleyball | 17063542 F, 17259128 N | F404 **R** (öneri: *o*) | F200 N200 **R** | F404 N200 N404 **R** (öneri: *o*) | F200 N200 **R** | F404 N404 **R** (öneri: *o*) | F200 N404 **R** | — |
+| minifootball | 17219190 F, 17268351 N; b: 17046055 F, 17254475 F, 17276181 F | F200 F404 *o*³ | F200 N200 **R** | F404 N404 *o*³ | F200 N200 **R** | F200 F404 N404 *o* | F200 F404 N404 *o*³ | — |
+| floorball | 16672337 N, 16779060 F; b: 16597412 F, 16597419 N, 16672335 F, 16956586 F | F404 *o*³ | F200 N200 **R** | F200 F404 N200 N404 *o*³ | F200 N200 **R** | — ✗³ | F200 F404 N404 **R**³ ⁴ | — |
+| volleyball | 17063542 F, 17259128 N; b: 16605451 F, 16933596 F, 17239586 F | F200 F404 *o*³ | F200 N200 **R** | F404 N200 N404 *o*³ | F200 N200 **R** | F404 N404 *o*³ | F200 F404 N404 *o*³ | — |
 | badminton | 17263404 F, 17287651 N | F200 **R** | F200 N200 **R** | F404 N404 *o*² | F200 N200 **R** | — ✗² | F200 N404 **R** | point-by-point F200 N404 **R**² |
 | table-tennis | 17257062 F, 17283335 N | F200 **R** | F200 N200 **R** | F404 N404 *o*² | F200 N200 **R** | — ✗² | F200 N404 **R** | point-by-point F200 N404 **R**² |
 | padel | 17266951 F, 17284571 N | F404 *o* | — **R** | F404 N404 *o* | — **R** | — ✗ | — ✗ | — |
@@ -456,8 +460,9 @@ yanıtları birlikte); `—` sayfanın uç noktayı hiç istemediğini gösterir
 | mma | 17057712 F | F200 **R** | F200 **R** | F200 F404 *o*² | — **R** | — ✗ | — ✗ | — |
 
 ¹ Sahibin 08.10.2026 kararı (FX-16, aşağıda "Karar"). ² FX-31'in değiştirdiği hücre (aşağıda "FX-31").
-"(öneri: …)" kanıtın önerdiği, uygulanmamış hücre (aşağıda "Öneri"). `statistics` ve `point_by_point` her
-sporda yalnızca maç başladıktan sonra istenir (FX-31).
+³ Sahibin 09.10.2026 kararı (FX-36, aşağıda "Karar (FX-36)"). ⁴ Kuralın yargısı *o* (bir bitmiş maçta 404);
+sahibin kararıyla tamlığa girer. `statistics` ve `point_by_point` her sporda yalnızca maç başladıktan sonra
+istenir (FX-31).
 
 **Bitmiş maç başına istek, önce → sonra.** İlk çekim 1 `/event` artı dilim başına bir istek. Önceden 404 veren
 zorunlu bir dilim bir tamamlama turu daha açıyordu (1 + hâlâ `ok` olmayan her dilim). Sayım tablodaki yanıtları
@@ -484,8 +489,17 @@ varsayar: sitenin hiç istemediği dilim 404, kanıtı olmayan dilim veri döner
 | futsal (FX-31) | 9 → 7 | incidents isteğe bağlı (incidents'ı 404 olan maçta) |
 | mma (FX-31) | 7 → 5 | pregame_form isteğe bağlı (pregame-form'u 404 olan maçta) |
 | esports (FX-31) | 7 → 7 | `esports_games` tamlığa giriyor (eksikse maç yeniden doldurulur) |
+| rugby (FX-36) | 7, 7, 9 → 7 (`lv-20261009`'un maçı 11 → 7) | statistics, lineups, incidents ve pregame_form isteğe bağlı |
+| volleyball (FX-36) | 11, 11, 11 → 7 (`lv-20261009`'un maçı 11 → 7) | statistics, lineups, incidents ve pregame_form isteğe bağlı |
+| floorball (FX-36) | 10, 10, 11 → 6 (`lv-20261009`'un maçı 12 → 10) | lineups istenmiyor; statistics ve pregame_form isteğe bağlı; incidents zorunlu kalır |
+| minifootball (FX-36) | 9, 9, 12 → 7 (`lv-20261009`'un maçı 12 → 7) | statistics, incidents ve pregame_form isteğe bağlı (lineups zaten öyleydi) |
 | aussie-rules, handball | değişmedi | — |
-| rugby, floorball, volleyball | değişmedi (öneriyle 11 → 7, floorball 12 → 6) | aşağıda "Öneri" |
+
+FX-36'nın satırlarında okun solundaki sayılar `lv-20261009b`'nin üç üst lig maçınındır, maç başına; sağındaki
+sayı üçünde de aynı. Tamamlama turu, tamlığa giren bir dilim `ok` değilse açılır ve `ok` olmayan
+**her** seçili dilimi yeniden ister, isteğe bağlılar dahil (`planning.wanted_slice_keys`); FX-31'in önerisindeki
+"11 → 7" mini futbolun isteğe bağlı `lineups`'ını bu turda saymamıştı (doğrusu 12). Florbolun `lv-20261009`
+maçında olaylar 404 aldı: olaylar tamlığa girdiği için o maç yine bir tur açar (1 + 3).
 
 **Karar (sahip, 08.10.2026; FX-16, PR #176).** Futbol, basketbol ve tenis için #121'in üç önerisi canlı
 doğrulamadan (Talimat 07) sonra olduğu gibi uygulandı:
@@ -527,25 +541,39 @@ isteğe bağlı ya da istenmez hücrede uygulama tarafı bitmiş tablo da veri g
   maçta da veriyle geldi (ör. futbolun başlamamış maçında kadro ve olaylar 200): evreleri değişmedi. Canlı evre
   hiçbir dilimden çıkarılmadı.
 
-**Öneri (FX-31; uygulanmadı, sahip karar verir).** Ragbi, florbol, voleybol ve mini futbolun bitmiş maçında
-(`lv-20261009`, birer maç) sayfa istatistik, kadro ve olayların çoğuna 404 aldı; uygulama tarafı bitmiş tabloda
-(07.10.2026) de bu hücrelerin hepsi veri vermedi ("-"). Bugün bu dilimler zorunlu olduğu için bu sporların her
-bitmiş maçı bir doğrulama turu daha açar. Kanıtın kuralı şunu önerir (`PROPOSALS`,
-`tests/test_sport_slices.py`; kayıt defteri bugünkü davranışı korur):
+**Karar (FX-36; sahip, 09.10.2026).** FX-31'in kanıtı her sporda tek, büyük olasılıkla alt lig bitmiş maçıydı;
+sahip daha fazla kanıt istedi. `lv-20261009b` her sporun en çok takip edilen üç liginden birer bitmiş maç sayfası
+açtı (ragbi: Top 14, NRL, Premiership; voleybol: İtalya Serie A1 kadınlar, Sultanlar Ligi, Asya Oyunları; florbol:
+İsveç Superligan, Şampiyonlar Kupası, Finlandiya F-Liiga; mini futbolun üç ligi). Sayfanın kendi maçı için aldığı
+kodlar (lig sırasıyla; "—": sayfa istemedi) ve karar:
 
-| Spor | Sayfanın istediği ve aldığı (bitmiş maç / başlamamış maç) | Öneri |
-|---|---|---|
-| rugby | statistics 404 / —; lineups 404 (#121'in yarım sayfasında 200) / 404; incidents 404 / 404; team-streaks, h2h, pregame-form 200 / 200 | statistics, lineups, incidents isteğe bağlı |
-| floorball | statistics 404 / —; lineups hiç istenmedi / hiç istenmedi; incidents 404 / 404; pregame-form 404 / 200 (#121'de 404); team-streaks, h2h 200 / 200 | lineups istenmez; statistics, incidents, pregame_form isteğe bağlı |
-| volleyball | statistics 404 / —; lineups 404 / 404; pregame-form 404 / 200 (#121'de 404); incidents 200 / 404; team-streaks, h2h 200 / 200 | statistics, lineups, pregame_form isteğe bağlı; incidents zorunlu kalır |
-| minifootball | statistics 404 (#121'in yarım sayfasında 200) / —; lineups 404 / 404 (bugün de isteğe bağlı); incidents 404 / 404; pregame-form 404 / 404; team-streaks, h2h 200 / 200 | statistics, incidents, pregame_form isteğe bağlı |
+| Spor | statistics | lineups | incidents | pregame-form | Karar |
+|---|---|---|---|---|---|
+| rugby | 200, 200, 200 | 200, 200, 200 | 200, 200, 200 | 200, 404, 200 | dördü de isteğe bağlı |
+| volleyball | 404, 404, 200 | 404, 404, 404 | 200, 200, 404 | 404, 404, 404 | dördü de isteğe bağlı |
+| floorball | 404, 404, 404 | —, —, — | 200, 200, 200 | 200, 404, 200 | lineups istenmez; statistics ve pregame_form isteğe bağlı; incidents zorunlu |
+| minifootball | 404, 200, 200 | 404, 200, 200 | 404, 200, 200 | 404, 404, 404 | statistics, incidents ve pregame_form isteğe bağlı (lineups zaten öyleydi) |
 
-Uygulanırsa bitmiş maç başına istek ragbi, voleybol ve mini futbolda 11 → 7, florbolda 12 → 6 olur. Kanıt
-her sporda bir bitmiş maçtır ve hepsi alt lig maçı olabilir: üst lig maçında bu dilimler veriyle gelebilir
-(ör. #121'in ragbi sayfasında lineups 200). İsteğe bağlı dilim yine istenir, yalnızca eksikliği maçı yeniden
-doldurmaz; istenmez (`not_in`) dilim hiç istenmez, bu yüzden florbolun `lineups`'ı en güçlü değişikliktir.
-Mini futbolun iki sayfasında team-streaks 200 aldı ama gövdesi boştu (aşağıda, "Bulgular"); kural koda
-baktığı için öneride yok.
+İsteğe bağlı dilim yine istenir ve geldiyse saklanır; yokluğu maçı eksik saymaz ve tamamlama turu açmaz.
+Kanıtın kuralı (`verdict()`, iki onarılmış koşunun ve #121'in yanıtlarıyla) kararla bir hücre dışında aynı:
+
+- Ragbide üst liglerin üç maçı istatistik, kadro ve olayları veriyle yanıtladı, ama `lv-20261009`'un bitmiş maçı
+  üçüne 404 aldı; pregame-form NRL maçında 404. Dördü de her maçta gelmez: isteğe bağlı. Ragbi pregame_form
+  FX-31'in önerisinde yoktu (o zaman tek bitmiş maçta 200).
+- Voleybol olayları FX-31'in önerisinde zorunlu kalıyordu; Asya Oyunları maçı 404 aldı: isteğe bağlı (önerinin
+  düzeltmesi).
+- Florbolun hiçbir tam sayfası (dört bitmiş, iki başlamamış) kadro istemedi: istenmez (`not_in`). Olaylar üst
+  liglerin üç maçında veriyle geldi; `lv-20261009`'un bitmiş maçı 404 aldı, bu yüzden kural *o* der. Sahip
+  tamlığa girmesine karar verdi: kayıt defteri kararı izler, `tests/test_sport_slices.py` bu hücreyi `DECIDED`'da
+  `REQUIRED`, `DECIDED_AGAINST_THE_RULE`'da kuralın yargısıyla (`OPTIONAL`) sabitler.
+- Mini futbolun üç liginden birinin maçı dört dilime de 404 aldı; pregame-form bütün bitmiş maçlarda 404.
+
+`tests/test_sport_slices.py`: `PROPOSALS` kalktı; on dört hücre `DECIDED`'da, `TOP_LEAGUE_ANSWERS` yukarıdaki
+tabloyu `requests.jsonl`'dan yeniden okur (`test_the_top_league_pages_are_the_decisions_evidence`). Uygulama
+tarafı bitmiş tablo (07.10.2026; spor başına bir maç) kararın isteğe bağlı ya da istenmez dediği hücrelerin
+hepsinde "-" gösterir, iki hücre dışında: ragbi pregame_form ve voleybol olayları orada veriyle geldi (üst
+liglerde birer maçta 404, isteğe bağlı kalır). Florbol olayları orada veri getirmedi (tamlığa girer, sahibin
+kararı). Bu dört sporun canlı maç sayfası hâlâ yok.
 
 **Bulgular.**
 - 200 her zaman veri değildir: team-streaks birçok sporda 200 ile boş gövde döndü (`slices.slice_body_state`
@@ -556,7 +584,8 @@ baktığı için öneride yok.
 - Kayıt defterinde dilimi olmayan yeni uç noktalar: voleybol `/graph/sequence` ve tenis `/tennis-power` (bitmiş
   maçta 200); beyzbol `/umpires`, `/weather`, `/comments` artık bitmiş ve canlı maçta 200, `/at-bats` başlamamış
   maçta da (`OTHER_ENDPOINTS`, öneri).
-- Hiç kanıtı olmayan ya da yetmeyen: aussie-rules (yalnızca başlamamış maç); Amerikan futbolunun canlı maçı.
+- Hiç kanıtı olmayan ya da yetmeyen: aussie-rules (yalnızca başlamamış maç); Amerikan futbolunun canlı maçı;
+  ragbi, voleybol, florbol ve mini futbolun canlı maçı.
   Kayıtlı olmayan bandy ve su topu yalnızca #121'in başlamamış sayfalarında.
 
 ---
