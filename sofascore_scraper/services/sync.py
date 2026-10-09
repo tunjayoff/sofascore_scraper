@@ -22,7 +22,9 @@ takipleri (`FollowsService.sync_tournaments`: leagues.txt'in aynası, yapıland�
 girdileri, API'den ve `ssc follows add` ile eklenenler). Her takibin `seasons` seçimi uygulanır: "all" listedeki
 her sezon, "current" listenin ilki (SofaScore en yeniyi önce verir), "last:N" ilk N, kimlikler o sezonlar.
 `follows` verilirse yalnızca o takipler. Takip tablosu okunamazsa (depo açılamadı) ligler eskisi gibi
-yapılandırmadan okunur (`ConfigManager.get_leagues`, bütün sezonlar).
+yapılandırmadan okunur (`ConfigManager.get_leagues`, leagues.txt, bütün sezonlar; 02-services.md 2.7):
+bu bir depo hatasıdır ve hata olarak loglanır, çünkü takiplerin sezon seçimi ve öteki kaynakların takipleri o
+çalıştırmada uygulanmaz.
 
 Takım, oyuncu ve maç takipleri (plan maddesi FX-19; sofascore_scraper/services/follow_sync.py): tam kipte, belirtim bir lig ya da
 seçim vermiyorsa her etkin takım, oyuncu ve maç takibi (`follows` verilirse yalnızca adı verilenler) maçlarını
@@ -168,7 +170,8 @@ def pick_seasons(listed: Sequence[int], choice: Union[str, Sequence[int]]) -> Li
 def sync_targets(ctx: ServiceContext) -> Dict[int, SyncTarget]:
     """
     Eşitlemenin turnuvaları: takip tablosunun etkin turnuva takipleri (kimlik → hedef), takip sırasıyla. Tablo
-    okunamazsa (depo açılamadı ya da meşgul) yapılandırmanın ligleri, bütün sezonlarıyla (bugünkü yedek yol).
+    okunamazsa (depo açılamadı ya da meşgul) yapılandırmanın ligleri, bütün sezonlarıyla (yedek yol; hata
+    loglanır). Deposu olmayan bağlamda da yapılandırmanın ligleri (hata değildir).
     """
     from sofascore_scraper.services.follows import ConfigLeagues, FollowsService
 
@@ -186,8 +189,10 @@ def sync_targets(ctx: ServiceContext) -> Dict[int, SyncTarget]:
             mirror(ctx.data_dir)
         rows = FollowsService(store, ConfigLeagues(), config_file=True).sync_tournaments()
     except StorageError as e:
-        logger.warning("The follows table could not be read; the sync uses the leagues of the configuration: %s", e)
-        return {int(lid): SyncTarget(int(lid), name) for lid, name in ctx.config.get_leagues().items()}
+        leagues = ctx.config.get_leagues()
+        logger.error("The follows table could not be read (%s); this sync downloads the %d leagues of the "
+                     "configuration (leagues.txt) with every season instead of the follows", e, len(leagues))
+        return {int(lid): SyncTarget(int(lid), name) for lid, name in leagues.items()}
     return {row.entity_id: SyncTarget(row.entity_id, row.name, row.seasons) for row in rows}
 
 

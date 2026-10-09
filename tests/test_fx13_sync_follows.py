@@ -199,6 +199,26 @@ def test_a_context_without_a_store_reads_the_leagues_of_the_configuration() -> N
     assert {tid: (t.name, t.seasons) for tid, t in targets.items()} == {17: ("Premier League", "all")}
 
 
+def test_an_unreadable_follows_table_is_logged_as_an_error_and_the_configuration_is_used(
+        store: Store, monkeypatch: pytest.MonkeyPatch) -> None:
+    """FX-34: yedek yol kalır (leagues.txt), ama depo hatasını gizlemez: hata olarak loglanır."""
+    from sofascore_scraper.exceptions import StorageError
+    from sofascore_scraper.services import sync as sync_module
+
+    def unreadable(self: FollowsService) -> None:
+        raise StorageError("database is locked")
+
+    errors: List[str] = []
+    monkeypatch.setattr(FollowsService, "sync_tournaments", unreadable)
+    monkeypatch.setattr(sync_module.logger, "error", lambda msg, *args: errors.append(msg % args))
+    follow(store, "tournament", 8, "LaLiga", seasons="current")
+
+    targets = sync_targets(context(store, leagues={17: "Premier League"}))
+
+    assert {tid: (t.name, t.seasons) for tid, t in targets.items()} == {17: ("Premier League", "all")}
+    assert len(errors) == 1 and "database is locked" in errors[0] and "1 leagues" in errors[0]
+
+
 def test_a_sync_downloads_each_follow_with_its_season_choice(store: Store) -> None:
     follow(store, "tournament", 17, "Premier League", origin="legacy")
     follow(store, "tournament", 8, "LaLiga", seasons=(84, 83))
