@@ -112,7 +112,8 @@ def test_the_wide_csv_export_is_written_and_downloaded(jobs: JobStore, store: St
         "file": name,
     }
     assert record["filter"] == {"sport": None, "tournament_ids": [], "season_ids": [], "event_ids": [],
-                                "status_classes": [], "from": None, "to": None}  # SC-2: üç süzgeç daha
+                                "status_classes": [], "from": None, "to": None,  # SC-2: üç süzgeç daha
+                                "team_ids": [], "player_ids": []}  # B1: katılımcı süzgeci
 
     r = client.get(f"/api/v1/exports/{job['id']}/download")
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")

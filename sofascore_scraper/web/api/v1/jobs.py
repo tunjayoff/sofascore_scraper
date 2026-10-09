@@ -239,6 +239,16 @@ class ExportFilter(BaseModel):
                     "the changes dataset the time the change was recorded. Not for the legacy-wide-csv profile.")
     to: Optional[str] = Field(default=None, max_length=40,
                               description="At or before, as `from`; a date includes the whole day.")
+    team_ids: List[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list,
+        description="Only events of these teams (the id of `participant` in `GET /events`, of a team follow; in "
+                    "tennis, darts, MMA … a player or a pair). With `player_ids` one filter: an event of any of "
+                    "the teams or players.")
+    player_ids: List[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list,
+        description="Only events whose stored lineups name one of these players (starters and substitutes; the id "
+                    "of a player follow). An event without stored lineups is not found by it. With `team_ids` one "
+                    "filter, see there.")
 
 
 class ExportJobSpec(BaseModel):
@@ -679,7 +689,8 @@ def export_request(spec: Mapping[str, Any]) -> "ExportRequest":
         schema=str(spec.get("schema") or "normalized"), profile=spec.get("profile"), sport=flt.get("sport"),
         tournament_ids=tuple(flt.get("tournament_ids") or ()), season_ids=tuple(flt.get("season_ids") or ()),
         event_ids=tuple(flt.get("event_ids") or ()), status_classes=tuple(flt.get("status_classes") or ()),
-        start_from=flt.get("from"), start_to=flt.get("to"),
+        start_from=flt.get("from"), start_to=flt.get("to"), team_ids=tuple(flt.get("team_ids") or ()),
+        player_ids=tuple(flt.get("player_ids") or ()),
     )
 
 

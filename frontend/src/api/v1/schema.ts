@@ -433,6 +433,10 @@ export interface ExportFilter {
   from?: string | null
   /** At or before, as `from`; a date includes the whole day. */
   to?: string | null
+  /** Only events of these teams (the id of `participant` in `GET /events`, of a team follow; in tennis, darts, MMA … a player or a pair). With `player_ids` one filter: an event of any of the teams or players. */
+  team_ids?: number[]
+  /** Only events whose stored lineups name one of these players (starters and substitutes; the id of a player follow). An event without stored lineups is not found by it. With `team_ids` one filter, see there. */
+  player_ids?: number[]
 }
 
 /**

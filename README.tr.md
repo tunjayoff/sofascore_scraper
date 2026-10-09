@@ -196,6 +196,7 @@ data/
 ```bash
 ssc export --dataset events --format parquet --tournament 17 --out pl.parquet   # pyarrow gerekir
 ssc export --dataset slices --format sqlite --out slices.sqlite
+ssc export --dataset events --format csv --team 3071 --player 822471 --out benim.csv  # bir takımın ya da oyuncunun maçları
 ssc export --schema raw --format jsonl --out raw.jsonl     # saklanan SofaScore yanıtları
 ssc export --out matches.csv                               # 2.x'in geniş CSV'si
 ```
