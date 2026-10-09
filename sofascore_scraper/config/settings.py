@@ -115,7 +115,11 @@ class ClientSettings:
     )
     proxy: str = setting("", KIND_STR, "Proxy URL; may carry credentials.", secret=True)
     proxy_env: str = setting("", KIND_STR, "Name of the environment variable that holds the proxy URL.")
-    odds_provider: int = setting(1, KIND_INT, "Odds provider id used by the odds slices.", minimum=1)
+    odds_provider: int = setting(
+        1, KIND_INT, "SofaScore's id of the bookmaker whose odds the odds slices request: 1 = bet365 "
+        "(international). Any id may be entered; the names the platform knows: GET /api/v1/odds/providers.",
+        minimum=1,
+    )
     odds_country: str = setting(
         "", KIND_STR, "Country recorded with every odds read (the country SofaScore answers for, e.g. \"TR\"); "
         "empty = not recorded. It is never derived from this machine.",

@@ -1,0 +1,64 @@
+{
+ "source": "research/all_sports/samples/volleyball/odds-providers-cc-web__2.json",
+ "note": "SofaScore GET /odds/providers/TR/web; every address replaced by a placeholder",
+ "fetched_at_utc": "2026-10-09T00:23:25+00:00",
+ "body": {
+  "providers": [
+   {
+    "provider": {
+     "name": "bet365 Türkiye",
+     "slug": "bet365-turkiye",
+     "defaultBetSlipLink": "<affiliate-url>",
+     "oddsFrom": {
+      "name": "bet365",
+      "slug": "bet365",
+      "defaultBetSlipLink": "<affiliate-url>",
+      "country": "international",
+      "id": 1,
+      "colors": {
+       "primary": "#017b5b"
+      },
+      "brandId": 1
+     },
+     "liveOddsFrom": {
+      "name": "bet365",
+      "slug": "bet365",
+      "defaultBetSlipLink": "<affiliate-url>",
+      "country": "international",
+      "id": 1,
+      "colors": {
+       "primary": "#017b5b"
+      },
+      "brandId": 1
+     },
+     "country": "TR",
+     "id": 1528,
+     "colors": {
+      "primary": "#017b5b"
+     },
+     "brandId": 1
+    },
+    "branded": false,
+    "weight": 100,
+    "featuredOddsType": "default",
+    "defaultBetSlipLink": "<affiliate-url>",
+    "betSlipLink": "<affiliate-url>",
+    "type": "web",
+    "campaignId": 1405,
+    "fallbackProvider": {
+     "name": "bet365",
+     "slug": "bet365",
+     "defaultBetSlipLink": "<affiliate-url>",
+     "country": "international",
+     "id": 1,
+     "colors": {
+      "primary": "#017b5b"
+     },
+     "brandId": 1
+    },
+    "id": 6861,
+    "impressionCostEncrypted": "<redacted>"
+   }
+  ]
+ }
+}

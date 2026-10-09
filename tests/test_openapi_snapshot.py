@@ -101,6 +101,7 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "POST /api/v1/status/check",
         "GET /api/v1/sports",
         "GET /api/v1/sports/{slug}",
+        "GET /api/v1/odds/providers",  # B4
         "GET /api/v1/sinks",
         "GET /api/v1/auth",
         "POST /api/v1/auth/login",
@@ -172,7 +173,7 @@ def test_every_api_path_is_v1(document: Dict[str, Any], full_document: Dict[str,
 def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, Any]) -> None:
     ids = [op["operationId"] for _m, _p, op in operations(document)]
     assert ids == [
-        "getHealth", "getStatus", "checkConnection", "listSports", "getSport", "listSinks", "getAuth", "login",
+        "getHealth", "getStatus", "checkConnection", "listSports", "getSport", "listOddsProviders", "listSinks", "getAuth", "login",
         "logout", "listFollows", "addFollow", "getFollow", "updateFollow", "removeFollow", "listTournaments",
         "searchTournaments", "suggestCatalog", "getTournament", "getTeam", "listTournamentSeasons", "getSeason",
         "listSeasonSlices",
