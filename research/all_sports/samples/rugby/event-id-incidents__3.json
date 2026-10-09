@@ -1,0 +1,140 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16534950/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:31:23+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/rc-toulon-montpellier-herault-rugby/YTCf#id:16534950",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": true,
+  "run_id": "lv-20261009b",
+  "body": {
+    "incidents": [
+      {
+        "text": "FT",
+        "homeScore": 28,
+        "awayScore": 0,
+        "isLive": false,
+        "time": 80,
+        "addedTime": 999,
+        "timeSeconds": 4800,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 2400
+      },
+      {
+        "from": "try",
+        "homeScore": 28,
+        "awayScore": 0,
+        "player": {
+          "name": "Wilfrid Hounkpatin",
+          "firstName": "Wilfrid",
+          "lastName": "Hounkpatin",
+          "slug": "wilfrid-hounkpatin",
+          "shortName": "W. Hounkpatin",
+          "position": "F",
+          "jerseyNumber": "",
+          "height": 192,
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "utp-qte",
+          "id": 1168627,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 680745600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هونكباتين، ويلفريد",
+              "ru": "Уилфрид Хункапатин"
+            },
+            "shortNameTranslation": {
+              "ar": "و. هونكباتين",
+              "ru": "У. Хункапатин"
+            }
+          }
+        },
+        "id": 364056952,
+        "time": 80,
+        "addedTime": 1,
+        "timeSeconds": 4800,
+        "isHome": true,
+        "incidentClass": "try",
+        "incidentType": "goal",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 2400
+      },
+      {
+        "playerIn": {
+          "name": "Ali Price",
+          "firstName": "Ali",
+          "lastName": "Price",
+          "slug": "ali-price",
+          "shortName": "A. Price",
+          "position": "B",
+          "jerseyNumber": "",
+          "height": 178,
+          "userCount": 3,
+          "gender": "M",
+          "sofascoreId": "c6k-etg",
+          "id": 838037,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 737164800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "برايس، علي",
+              "bn": "প্রাইস, আলী",
+              "hi": "प्राइस, अली",
+              "ru": "Али Прайс"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. برايس",
+              "bn": "এ. প্রাইস",
+              "hi": "ए. प्राइस",
+              "ru": "А. Прайс"
+            }
+          }
+        },
+        "playerOut": {
+          "name": "Alexis Bernadet",
+          "firstName": "Alexis",
+          "lastName": "Bernadet",
+          "slug": "alexis-bernadet",
+          "shortName": "A. Bernadet",
+          "position": "B",
+          "jerseyNumber": "",
+          "height": 180,
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "jss-jwv",
+          "id": 1936323,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 991440000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "برناديت، ألكسيس",
+              "ru": "Алексис Бернаде"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. برناديت",
+              "ru": "А. Бернаде"
+            }
+          }
+        },
+        "playerNameIn": "Ali Price",
+        "playerNameOut": "Alexis Bernadet",
+        "id": 126976510,
+        "time": 70,
+        "timeSeconds": 4168,
+        "injury": false,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "substitution",
+        "reversedPeriodTime": 11,
+        "reversedPeriodTimeSeconds": 632,
+        "periodTimeSeconds": 1768
+      },
+      {
+        "__trimmed__": 25
+      }
+    ]
+  }
+}

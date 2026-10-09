@@ -1,0 +1,718 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/116334/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:34:11+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/savino-del-bene-scandicci-reale-mutua-fenera-chieri-76/oZjsJBW#id:16605451",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009b",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Serie A1, Women",
+          "slug": "serie-a1-women",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 126,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A1, Women",
+            "slug": "serie-a1-women",
+            "primaryColorHex": "#023C83",
+            "secondaryColorHex": "#FF23B0",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 126,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1877,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 567,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الدرجة الأولى، سيدات",
+                "bn": "সেরি এ1, উইমেনস",
+                "hi": "सीरी A1, वूमेन",
+                "ru": "Серия A1 среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 8,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2741,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الدرجة الأولى A للسيدات",
+              "bn": "সিরি এ1, উইমেন",
+              "hi": "सीरी ए1, वूमेन",
+              "ru": "Серия A1, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A1 Women 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 79493
+        },
+        "roundInfo": {
+          "round": 18
+        },
+        "customId": "JBWsKvTb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Savino Del Bene Scandicci",
+          "slug": "savino-del-bene-scandicci",
+          "shortName": "Scandicci",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 2483,
+          "nameCode": "PAS",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 116334,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سافينو ديل بيني سكنديتشي",
+              "ru": "Савино Дель Бене Скандицци"
+            },
+            "shortNameTranslation": {
+              "ar": "سكنديتشي",
+              "ru": "Скандицци"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Omag-Mt San Giovanni In Marignano",
+          "slug": "omag-mt-san-giovanni-in-marignano",
+          "shortName": "San Giovanni",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 180,
+          "nameCode": "POL",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 233535,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوماغ-إم تي سان جيوفاني إن مارينيانو",
+              "ru": "Омаг-Мт Сан-Джованни ин Мариньяно"
+            },
+            "shortNameTranslation": {
+              "ar": "مارينيانو",
+              "ru": "Сан Джованни"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 25,
+          "period2": 25,
+          "period3": 25,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 17,
+          "period2": 18,
+          "period3": 23,
+          "normaltime": 0
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1767547056
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1767547061
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14316247,
+        "slug": "omag-mt-san-giovanni-in-marignano-savino-del-bene-scandicci",
+        "startTimestamp": 1767542400,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Champions League Women, Pool A",
+          "slug": "champions-league-women-pool-a",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 11,
+            "country": {},
+            "id": 136,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Champions League Women",
+            "slug": "champions-league-women",
+            "primaryColorHex": "#100dfb",
+            "secondaryColorHex": "#05FE00",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 11,
+              "country": {},
+              "id": 136,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 2427,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 587,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري أبطال أوروبا للسيدات",
+                "bn": "চ্যাম্পিয়ন্স লীগ উইমেন",
+                "hi": "चैंपियंस लीग वूमेन",
+                "ru": "Лига чемпионов среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 26,
+          "isGroup": false,
+          "isLive": false,
+          "id": 9306,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري أبطال أوروبا للسيدات، المجموعة A",
+              "bn": "চ্যাম্পিয়ন্স লীগ উইমেন, পুল এ",
+              "hi": "चैंपियंस लीग वूमेन, पूल ए",
+              "ru": "Лига чемпионов среди женщин, Группа A"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "CEV Champions League, Women 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 79023
+        },
+        "roundInfo": {
+          "round": 3
+        },
+        "customId": "muksJBW",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Savino Del Bene Scandicci",
+          "slug": "savino-del-bene-scandicci",
+          "shortName": "Scandicci",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 2483,
+          "nameCode": "PAS",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 116334,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سافينو ديل بيني سكنديتشي",
+              "ru": "Савино Дель Бене Скандицци"
+            },
+            "shortNameTranslation": {
+              "ar": "سكنديتشي",
+              "ru": "Скандицци"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "VakıfBank",
+          "slug": "vakifbank",
+          "shortName": "VakıfBank",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 5640,
+          "nameCode": "VAK",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 25962,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فاكف بنك",
+              "ru": "Вакифбанк Истанбул"
+            },
+            "shortNameTranslation": {
+              "ar": "فاكف بنك"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 24,
+          "period2": 22,
+          "period3": 25,
+          "period4": 21,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 26,
+          "period2": 25,
+          "period3": 17,
+          "period4": 25,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1767905595
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1767905602
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14261388,
+        "slug": "savino-del-bene-scandicci-vakifbank",
+        "startTimestamp": 1767898800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Serie A1, Women",
+          "slug": "serie-a1-women",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 126,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A1, Women",
+            "slug": "serie-a1-women",
+            "primaryColorHex": "#023C83",
+            "secondaryColorHex": "#FF23B0",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 126,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1877,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 567,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الدرجة الأولى، سيدات",
+                "bn": "সেরি এ1, উইমেনস",
+                "hi": "सीरी A1, वूमेन",
+                "ru": "Серия A1 среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 8,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2741,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الدرجة الأولى A للسيدات",
+              "bn": "সিরি এ1, উইমেন",
+              "hi": "सीरी ए1, वूमेन",
+              "ru": "Серия A1, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A1 Women 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 79493
+        },
+        "roundInfo": {
+          "round": 19
+        },
+        "customId": "FZjsJBW",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "UYBA Volley Busto Arsizio",
+          "slug": "uyba-volley-busto-arsizio",
+          "shortName": "Busto Arsizio",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 1146,
+          "nameCode": "BUA",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 24980,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يويبا فولي بوستو أرسيتسيو",
+              "ru": "УЙБА Воллей Бусто Арсицио"
+            },
+            "shortNameTranslation": {
+              "ar": "بوستو أرسيتسيو",
+              "ru": "Бусто Арсицио"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Savino Del Bene Scandicci",
+          "slug": "savino-del-bene-scandicci",
+          "shortName": "Scandicci",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 2483,
+          "nameCode": "PAS",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 116334,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سافينو ديل بيني سكنديتشي",
+              "ru": "Савино Дель Бене Скандицци"
+            },
+            "shortNameTranslation": {
+              "ar": "سكنديتشي",
+              "ru": "Скандицци"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 18,
+          "period2": 15,
+          "period3": 19,
+          "normaltime": 0
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 25,
+          "period2": 25,
+          "period3": 25,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1768151529
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1768151533
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14792659,
+        "slug": "savino-del-bene-scandicci-uyba-volley-busto-arsizio",
+        "startTimestamp": 1768147200,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

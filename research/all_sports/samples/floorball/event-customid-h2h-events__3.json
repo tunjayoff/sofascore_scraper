@@ -1,0 +1,446 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/UHbsVAEd/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:37:05+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/ibk-lund-elit-storvreta-ibk/UHbsVAEd#id:16672335",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Svenska Superligan",
+          "slug": "svenska-superligan",
+          "category": {
+            "name": "Sweden",
+            "slug": "sweden",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 63,
+            "flag": "sweden",
+            "alpha2": "SE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السويد",
+                "hi": "स्वीडन",
+                "bn": "সুইডেন",
+                "ru": "Швеция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Svenska Superligan",
+            "slug": "svenska-superligan",
+            "secondaryColorHex": "#777777",
+            "category": {
+              "name": "Sweden",
+              "slug": "sweden",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "SE",
+                "alpha3": "SWE",
+                "name": "Sweden",
+                "slug": "sweden"
+              },
+              "id": 63,
+              "flag": "sweden",
+              "alpha2": "SE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "السويد",
+                  "hi": "स्वीडन",
+                  "bn": "সুইডেন",
+                  "ru": "Швеция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 223,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 255,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري السويدي الممتاز",
+                "hi": "स्वेन्स्का सुपरलीगन",
+                "bn": "সভেনস্কা সুপারলীগান",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 111,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "সুইডিশ সুপারলীগা",
+              "hi": "स्वेन्स्का सुपरलीगन",
+              "ar": "الدوري السويدي الممتاز",
+              "ru": "Суперлига Швеции"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Svenska Superligan 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99642
+        },
+        "roundInfo": {
+          "round": 17
+        },
+        "customId": "UHbsVAEd",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "IBK Lund Elit",
+          "slug": "ibk-lund-elit",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 27,
+          "nameCode": "IBK",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 448795,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إي بي كيه لوند إليت",
+              "ru": "ИБК Лунд Элит"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Storvreta IBK",
+          "slug": "storvreta-ibk",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 281,
+          "nameCode": "STO",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 4144,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ستورفريتا آي بي كيه",
+              "bn": "স্টরভরেটা আইবিকে",
+              "hi": "स्टॉरव्रेटा आईबीके",
+              "ru": "Сторврета ИБК"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16672440,
+        "slug": "ibk-lund-elit-storvreta-ibk",
+        "startTimestamp": 1801414800,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Svenska Superligan",
+          "slug": "svenska-superligan",
+          "category": {
+            "name": "Sweden",
+            "slug": "sweden",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 63,
+            "flag": "sweden",
+            "alpha2": "SE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السويد",
+                "hi": "स्वीडन",
+                "bn": "সুইডেন",
+                "ru": "Швеция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Svenska Superligan",
+            "slug": "svenska-superligan",
+            "secondaryColorHex": "#777777",
+            "category": {
+              "name": "Sweden",
+              "slug": "sweden",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "SE",
+                "alpha3": "SWE",
+                "name": "Sweden",
+                "slug": "sweden"
+              },
+              "id": 63,
+              "flag": "sweden",
+              "alpha2": "SE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "السويد",
+                  "hi": "स्वीडन",
+                  "bn": "সুইডেন",
+                  "ru": "Швеция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 223,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 255,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري السويدي الممتاز",
+                "hi": "स्वेन्स्का सुपरलीगन",
+                "bn": "সভেনস্কা সুপারলীগান",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 111,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "সুইডিশ সুপারলীগা",
+              "hi": "स्वेन्स्का सुपरलीगन",
+              "ar": "الدوري السويدي الممتاز",
+              "ru": "Суперлига Швеции"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Svenska Superligan 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99642
+        },
+        "roundInfo": {
+          "round": 4
+        },
+        "customId": "UHbsVAEd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Storvreta IBK",
+          "slug": "storvreta-ibk",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 281,
+          "nameCode": "STO",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 4144,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ستورفريتا آي بي كيه",
+              "bn": "স্টরভরেটা আইবিকে",
+              "hi": "स्टॉरव्रेटा आईबीके",
+              "ru": "Сторврета ИБК"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "IBK Lund Elit",
+          "slug": "ibk-lund-elit",
+          "gender": "M",
+          "sport": {
+            "name": "Floorball",
+            "slug": "floorball",
+            "id": 7
+          },
+          "userCount": 27,
+          "nameCode": "IBK",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "SE",
+            "alpha3": "SWE",
+            "name": "Sweden",
+            "slug": "sweden"
+          },
+          "id": 448795,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إي بي كيه لوند إليت",
+              "ru": "ИБК Лунд Элит"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 9,
+          "display": 9,
+          "period1": 0,
+          "period2": 4,
+          "period3": 5,
+          "normaltime": 9
+        },
+        "awayScore": {
+          "current": 5,
+          "display": 5,
+          "period1": 0,
+          "period2": 1,
+          "period3": 4,
+          "normaltime": 5
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791126202
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.period3",
+            "homeScore.normaltime",
+            "awayScore.period3",
+            "awayScore.normaltime",
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1791126242
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16672335,
+        "slug": "ibk-lund-elit-storvreta-ibk",
+        "startTimestamp": 1791118800,
+        "periods": {
+          "current": "Score",
+          "period1": "1st period",
+          "period2": "2nd period",
+          "period3": "3rd period",
+          "overtime": "Overtime",
+          "penalties": "Penalty"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,432 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16662714/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:33:06+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/saracens-sale-sharks/VIbsXIb#id:16662714",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009b",
+  "body": {
+    "confirmed": false,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Eroni Mawi",
+            "firstName": "Eroni",
+            "lastName": "Mawi",
+            "slug": "eroni-mawi",
+            "shortName": "E. Mawi",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 188,
+            "userCount": 2,
+            "gender": "M",
+            "sofascoreId": "tdf-c34",
+            "country": {
+              "alpha2": "FJ",
+              "alpha3": "FJI",
+              "name": "Fiji",
+              "slug": "fiji"
+            },
+            "id": 997370,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 823564800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماوي، إيروني",
+                "bn": "মাউই, এরোনি",
+                "hi": "मावी, एरोनी",
+                "ru": "Эрони Мави"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. ماوي",
+                "bn": "ই. মাউই",
+                "hi": "ई. मावी",
+                "ru": "Э. Мави"
+              }
+            }
+          },
+          "teamId": 4197,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 5,
+            "carries": 8,
+            "cleanBreaks": 0,
+            "metersRun": 12,
+            "offloads": 0,
+            "passes": 3,
+            "tacklesMissed": 0,
+            "tackles": 4,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 1,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Theo Dan",
+            "firstName": "Theo",
+            "lastName": "Dan",
+            "slug": "theo-dan",
+            "shortName": "T. Dan",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 180,
+            "userCount": 22,
+            "gender": "M",
+            "sofascoreId": "g8v-cvf",
+            "country": {
+              "alpha2": "EN",
+              "alpha3": "ENG",
+              "name": "England",
+              "slug": "england"
+            },
+            "id": 1160161,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 977788800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دان، ثيو",
+                "bn": "ড্যান, থিও",
+                "hi": "डैन, थियो",
+                "ru": "Тео Дэн"
+              },
+              "shortNameTranslation": {
+                "ar": "ث. دان",
+                "bn": "টি. ড্যান",
+                "hi": "टी. डैन",
+                "ru": "Т. Дэн"
+              }
+            }
+          },
+          "teamId": 4197,
+          "shirtNumber": 2,
+          "jerseyNumber": "2",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 10,
+            "cleanBreaks": 0,
+            "metersRun": 35,
+            "offloads": 0,
+            "passes": 1,
+            "tacklesMissed": 1,
+            "tackles": 8,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Marcus Street",
+            "firstName": "Marcus",
+            "lastName": "Street",
+            "slug": "marcus-street",
+            "shortName": "M. Street",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 183,
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "wrr-5fp",
+            "country": {},
+            "id": 963341,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 918259200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ستريت، ماركوس",
+                "bn": "স্ট্রিট, মার্কাস",
+                "hi": "स्ट्रीट, मार्कस",
+                "ru": "Маркус Стрит"
+              },
+              "shortNameTranslation": {
+                "ar": "م. ستريت",
+                "bn": "এম. স্ট্রিট",
+                "hi": "एम. स्ट्रीट",
+                "ru": "М. Стрит"
+              }
+            }
+          },
+          "teamId": 4197,
+          "shirtNumber": 3,
+          "jerseyNumber": "3",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 0,
+            "cleanBreaks": 0,
+            "metersRun": 0,
+            "offloads": 0,
+            "passes": 1,
+            "tacklesMissed": 0,
+            "tackles": 6,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 20
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Nicky Smith",
+            "firstName": "Nicky",
+            "lastName": "Smith",
+            "slug": "nicky-smith",
+            "shortName": "N. Smith",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 183,
+            "userCount": 5,
+            "gender": "M",
+            "sofascoreId": "ghj-fci",
+            "country": {
+              "alpha2": "WA",
+              "alpha3": "WAL",
+              "name": "Wales",
+              "slug": "wales"
+            },
+            "id": 838548,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 765676800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "نيكي سميث",
+                "bn": "নিকি স্মিথ",
+                "hi": "निकी स्मिथ",
+                "ru": "Ники Смит"
+              },
+              "shortNameTranslation": {
+                "ar": "ن. سميث",
+                "bn": "এন. স্মিথ",
+                "hi": "एन. स्मिथ",
+                "ru": "Н. Смит"
+              }
+            }
+          },
+          "teamId": 4195,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 3,
+            "cleanBreaks": 0,
+            "metersRun": 4,
+            "offloads": 0,
+            "passes": 2,
+            "tacklesMissed": 0,
+            "tackles": 7,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Nathan Jibulu",
+            "firstName": "Nathan",
+            "lastName": "Jibulu",
+            "slug": "nathan-jibulu",
+            "shortName": "N. Jibulu",
+            "position": "F",
+            "jerseyNumber": "0",
+            "height": 183,
+            "userCount": 6,
+            "gender": "M",
+            "sofascoreId": "g8d-xyf",
+            "country": {
+              "alpha2": "EN",
+              "alpha3": "ENG",
+              "name": "England",
+              "slug": "england"
+            },
+            "id": 1412532,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1043539200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جيبول، ناثان",
+                "bn": "জিবলু, নাথান",
+                "hi": "जिबुलु, नाथन",
+                "ru": "Натан Джибулу"
+              },
+              "shortNameTranslation": {
+                "ar": "ن. جيبول",
+                "bn": "এন. জিবলু",
+                "hi": "एन. जिबुलु",
+                "ru": "Н. Джибулу"
+              }
+            }
+          },
+          "teamId": 4195,
+          "shirtNumber": 2,
+          "jerseyNumber": "2",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 5,
+            "carries": 5,
+            "cleanBreaks": 0,
+            "metersRun": 14,
+            "offloads": 0,
+            "passes": 1,
+            "tacklesMissed": 0,
+            "tackles": 13,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 1,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Asher Opoku-Fordjour",
+            "firstName": "Asher",
+            "lastName": "Opoku-Fordjour",
+            "slug": "asher-opoku-fordjour",
+            "shortName": "A. Opoku-Fordjour",
+            "position": "F",
+            "jerseyNumber": "0",
+            "height": 185,
+            "userCount": 9,
+            "gender": "M",
+            "sofascoreId": "ek4-pcm",
+            "country": {
+              "alpha2": "EN",
+              "alpha3": "ENG",
+              "name": "England",
+              "slug": "england"
+            },
+            "id": 1537480,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1089936000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوبوكو-فوردجور، آشر",
+                "bn": "ওপোকু-ফোর্ডজোর, আশের",
+                "hi": "ओपोकू-फोर्डजौर, आशेर",
+                "ru": "Ашер Опоку-Форджур"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. أوبوكو-فوردجور",
+                "bn": "এ. ওপোকু-ফোর্ডজোর",
+                "hi": "ए. ओपोकू-फोर्डजौर",
+                "ru": "А. Опоку-Форджур"
+              }
+            }
+          },
+          "teamId": 4195,
+          "shirtNumber": 3,
+          "jerseyNumber": "3",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 2,
+            "cleanBreaks": 0,
+            "metersRun": 0,
+            "offloads": 0,
+            "passes": 0,
+            "tacklesMissed": 2,
+            "tackles": 12,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 20
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

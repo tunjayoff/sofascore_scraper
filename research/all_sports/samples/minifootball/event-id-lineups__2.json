@@ -1,0 +1,1090 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17046055/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:41:39+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/presidentsc-esquerdopatas-futebol-clube/xkvjsfmvj#id:17046055",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "confirmed": false,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Arthur César",
+            "firstName": "Arthur",
+            "lastName": "César",
+            "slug": "arthur-cesar",
+            "shortName": "A. César",
+            "position": "G",
+            "jerseyNumber": "31",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "hep-wu4",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506684,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 577929600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "آرثر سيزار",
+                "ru": "Артур Сезар"
+              },
+              "shortNameTranslation": {
+                "ar": "آ. سيزار",
+                "ru": "А. Сезар"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 31,
+          "jerseyNumber": "31",
+          "position": "G",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Arthur Choinski",
+            "firstName": "Arthur",
+            "lastName": "Choinski",
+            "slug": "arthur-choinski",
+            "shortName": "A. Choinski",
+            "position": "F",
+            "jerseyNumber": "9",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "c87-knd",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506677,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 965174400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "آرثر تشوينسكي",
+                "ru": "Артур Хоински"
+              },
+              "shortNameTranslation": {
+                "ar": "آ. تشوينسكي",
+                "ru": "А. Хоински"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 9,
+          "jerseyNumber": "9",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Johann Vaz",
+            "firstName": "Johann",
+            "lastName": "Vaz",
+            "slug": "johann-vaz",
+            "shortName": "J. Vaz",
+            "position": "F",
+            "jerseyNumber": "15",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "xdu-r5s",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2703319,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 854582400
+          },
+          "teamId": 1175522,
+          "shirtNumber": 15,
+          "jerseyNumber": "15",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Lucas Duarte",
+            "firstName": "Lucas",
+            "lastName": "Duarte",
+            "slug": "lucas-duarte",
+            "shortName": "L. Duarte",
+            "position": "F",
+            "jerseyNumber": "23",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "r3h-idt",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2496002,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 680572800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوكاس دوارتي",
+                "ru": "Лукас Дуарте"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. دوارتي",
+                "ru": "Л. Дуарте"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 23,
+          "jerseyNumber": "23",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Fabio Kasprisin",
+            "firstName": "Fabio",
+            "lastName": "Kasprisin",
+            "slug": "fabio-kasprisin",
+            "shortName": "F. Kasprisin",
+            "position": "F",
+            "jerseyNumber": "20",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "kv6-3fg",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506685,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 638755200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فابيو كاسبرسين",
+                "ru": "Фабио Каспризин"
+              },
+              "shortNameTranslation": {
+                "ar": "ف. كاسبرسين",
+                "ru": "Ф. Каспризин"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 20,
+          "jerseyNumber": "20",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Matheus Pires",
+            "firstName": "Matheus",
+            "lastName": "Pires",
+            "slug": "matheus-pires",
+            "shortName": "M. Pires",
+            "position": "F",
+            "jerseyNumber": "55",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "tfr-q6r",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506682,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 916617600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماثيوس بيريس",
+                "ru": "Матэус Пирес"
+              },
+              "shortNameTranslation": {
+                "ar": "م. بيريس",
+                "ru": "М. Пирес"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 55,
+          "jerseyNumber": "55",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Bruno Oliveira",
+            "firstName": "Bruno",
+            "lastName": "Oliveira",
+            "slug": "bruno-oliveira",
+            "shortName": "B. Oliveira",
+            "position": "F",
+            "jerseyNumber": "3",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "wmy-sd5",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506670,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 869875200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "برونو أوليفيرا",
+                "ru": "Бруно Оливейра"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. أوليفيرا",
+                "ru": "Б. Оливейра"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 3,
+          "jerseyNumber": "3",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Arthur Henrique da Silva Lima",
+            "firstName": "Arthur Henrique da Silva",
+            "lastName": "Lima",
+            "slug": "arthur-henrique-da-silva-lima",
+            "shortName": "A. H. d. S. Lima",
+            "position": "F",
+            "jerseyNumber": "58",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "wme-6r7",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2703341,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 866419200
+          },
+          "teamId": 1175522,
+          "shirtNumber": 58,
+          "jerseyNumber": "58",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Thiago da Conceição Silva",
+            "firstName": "Thiago da Conceição",
+            "lastName": "Silva",
+            "slug": "thiago-da-conceicao-silva",
+            "shortName": "T. d. C. Silva",
+            "position": "F",
+            "jerseyNumber": "62",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "dp5-3bn",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2703318,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 961200000
+          },
+          "teamId": 1175522,
+          "shirtNumber": 62,
+          "jerseyNumber": "62",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Cléber Pereira",
+            "firstName": "Cléber",
+            "lastName": "Pereira",
+            "slug": "cleber-pereira",
+            "shortName": "C. Pereira",
+            "position": "F",
+            "jerseyNumber": "92",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "gw4-jxd",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506676,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 704246400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كلبر بيريرا",
+                "ru": "Клебер Перейра"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. بيريرا",
+                "ru": "К. Перейра"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 92,
+          "jerseyNumber": "92",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Patrick Nunes",
+            "firstName": "Patrick",
+            "lastName": "Nunes",
+            "slug": "patrick-nunes",
+            "shortName": "P. Nunes",
+            "position": "F",
+            "jerseyNumber": "97",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "wmy-sdt",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506669,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 638755200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "باتريك نونيس",
+                "ru": "Патрик Нунес"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. نونيس",
+                "ru": "П. Нунес"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 97,
+          "jerseyNumber": "97",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Luiz Roberto",
+            "firstName": "Luiz",
+            "lastName": "Roberto",
+            "slug": "luiz-roberto",
+            "shortName": "L. Roberto",
+            "position": "F",
+            "jerseyNumber": "333",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "pax-ywd",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2506686,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 278121600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لويس روبرتو",
+                "ru": "Луис Роберто"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. روبرتو",
+                "ru": "Л. Роберто"
+              }
+            }
+          },
+          "teamId": 1175522,
+          "shirtNumber": 333,
+          "jerseyNumber": "333",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Gustavo Moraes",
+            "firstName": "Gustavo",
+            "lastName": "Moraes",
+            "slug": "gustavo-moraes",
+            "shortName": "G. Moraes",
+            "position": "G",
+            "jerseyNumber": "27",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "b43-8mr",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2485721,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 848016000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "غوستافو مورايس",
+                "ru": "Густаво Мораес"
+              },
+              "shortNameTranslation": {
+                "ar": "غ. مورايس",
+                "ru": "Г. Мораес"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 27,
+          "jerseyNumber": "27",
+          "position": "G",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Flavio Vinicius Rosa Correa Sthurt",
+            "firstName": "Flavio Vinicius Rosa Correa",
+            "lastName": "Sthurt",
+            "slug": "flavio-vinicius-rosa-correa-sthurt",
+            "shortName": "F. V. R. C. Sthurt",
+            "position": "F",
+            "jerseyNumber": "9",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "h8g-3be",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2781756,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 964483200
+          },
+          "teamId": 1175605,
+          "shirtNumber": 9,
+          "jerseyNumber": "9",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Alef Leonardo Ferreira",
+            "firstName": "Alef",
+            "lastName": "Leonardo Ferreira",
+            "slug": "alef-leonardo-ferreira",
+            "shortName": "A. L. Ferreira",
+            "position": "F",
+            "jerseyNumber": "29",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "hey-p22",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2703196,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 749779200
+          },
+          "teamId": 1175605,
+          "shirtNumber": 29,
+          "jerseyNumber": "29",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Luciano Klebis",
+            "firstName": "Luciano",
+            "lastName": "Klebis",
+            "slug": "luciano-klebis",
+            "shortName": "L. Klebis",
+            "position": "F",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "xdu-j3j",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2703191,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 616377600
+          },
+          "teamId": 1175605,
+          "shirtNumber": 83,
+          "jerseyNumber": "83",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Willian Da Silva Pinto Golaz",
+            "firstName": "Willian",
+            "lastName": "Da Silva Pinto Golaz",
+            "slug": "willian-da-silva-pinto-golaz",
+            "shortName": "W. D. S. P. Golaz",
+            "jerseyNumber": "5",
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "gw7-tfa",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2485697,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 798940800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ويليان دا سيلفا بينتو غولاز",
+                "ru": "Уиллиан да Силва Пинто Голаз"
+              },
+              "shortNameTranslation": {
+                "ar": "و. غولاز",
+                "ru": "У. Голаз"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 5,
+          "jerseyNumber": "5",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Lucas Gomes Souza",
+            "firstName": "Lucas",
+            "lastName": "Gomes Souza",
+            "slug": "lucas-gomes-souza",
+            "shortName": "L. G. Souza",
+            "position": "F",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "b4d-uzx",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2703193,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 794275200
+          },
+          "teamId": 1175605,
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "David Fellipe Plochacz",
+            "firstName": "David",
+            "lastName": "Fellipe Plochacz",
+            "slug": "david-fellipe-plochacz",
+            "shortName": "D. F. Plochacz",
+            "jerseyNumber": "7",
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "ej9-z7k",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2485736,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 993945600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ديفيد فيليبي بلوتشاتس",
+                "ru": "Давид Фелипе Плохач"
+              },
+              "shortNameTranslation": {
+                "ar": "د. بلوتشاتس",
+                "ru": "Д. Плохач"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 7,
+          "jerseyNumber": "7",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Juliano Schneider",
+            "firstName": "Juliano",
+            "lastName": "Schneider",
+            "slug": "juliano-schneider",
+            "shortName": "J. Schneider",
+            "jerseyNumber": "13",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "b43-wjw",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2486617,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 602121600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جوليانو شنايدر",
+                "ru": "Жулиано Шнайдер"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. شنايدر",
+                "ru": "Ж. Шнайдер"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 13,
+          "jerseyNumber": "13",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Arthur Marcelo Bastos De Lima",
+            "firstName": "Arthur",
+            "lastName": "Marcelo Bastos De Lima",
+            "slug": "arthur-marcelo-bastos-de-lima",
+            "shortName": "A. M. B. D. Lima",
+            "jerseyNumber": "17",
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "5br-gec",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2486616,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1166572800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أرثر مارسيلو باستوس دي ليما",
+                "ru": "Артур Марсело Бастос де Лима"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. دي ليما",
+                "ru": "А. Лима"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 17,
+          "jerseyNumber": "17",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Karlos Diego De Souza Gonçalves",
+            "firstName": "Karlos",
+            "lastName": "Diego De Souza Gonçalves",
+            "slug": "karlos-diego-de-souza-goncalves",
+            "shortName": "K. D. D. S. Gonçalves",
+            "jerseyNumber": "25",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "f7s-jsd",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2489670,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 865296000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كارلوس دييغو دي سوزا غونكالفيس",
+                "ru": "Карлос Диего Де Соуза Гонсалвеш"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. دي سوزا غونكالفيس",
+                "ru": "К. Гонсалвеш"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 25,
+          "jerseyNumber": "25",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Derick Cieslak Rolim",
+            "firstName": "Derick",
+            "lastName": "Cieslak Rolim",
+            "slug": "derick-cieslak-rolim",
+            "shortName": "D. C. Rolim",
+            "jerseyNumber": "77",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "ej9-qaw",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2489672,
+            "marketValueCurrency": "EUR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ديريك تشيسلاك روليم",
+                "ru": "Дерик Чеслак Ролим"
+              },
+              "shortNameTranslation": {
+                "ar": "د. روليم",
+                "ru": "Д. Ролим"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 77,
+          "jerseyNumber": "77",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Ryan Adrian Siqueira Alves Da Costa",
+            "firstName": "Ryan",
+            "lastName": "Adrian Siqueira Alves Da Costa",
+            "slug": "ryan-adrian-siqueira-alves-da-costa",
+            "shortName": "R. A. S. A. D. Costa",
+            "jerseyNumber": "86",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "c8p-tz3",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2486613,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1147651200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "رايان أدريان سيكيريا ألفيس دا كوستا",
+                "ru": "Райан Адриан Сикейра Алвеш да Коста"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. دا كوستا",
+                "ru": "Р. Коста"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 86,
+          "jerseyNumber": "86",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Denis  Castro Dos Santos",
+            "firstName": "Denis ",
+            "lastName": "Castro Dos Santos",
+            "slug": "denis-castro-dos-santos",
+            "shortName": "D. C. D. Santos",
+            "jerseyNumber": "99",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "6ib-5b6",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2489671,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 779500800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دينيس كاسترو دوس سانتوس",
+                "ru": "Денис Кастро Дос Сантос"
+              },
+              "shortNameTranslation": {
+                "ar": "د. دوس سانتوس",
+                "ru": "Д. Сантос"
+              }
+            }
+          },
+          "teamId": 1175605,
+          "shirtNumber": 99,
+          "jerseyNumber": "99",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Gustavo Henrique da Cunha Monteiro",
+            "firstName": "Gustavo",
+            "lastName": "Henrique da Cunha Monteiro",
+            "slug": "gustavo-henrique-da-cunha-monteiro",
+            "shortName": "G. H. d. C. Monteiro",
+            "position": "F",
+            "jerseyNumber": "85",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "5bx-mnv",
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 2703192,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1243209600
+          },
+          "teamId": 1175605,
+          "shirtNumber": 12,
+          "jerseyNumber": "12",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

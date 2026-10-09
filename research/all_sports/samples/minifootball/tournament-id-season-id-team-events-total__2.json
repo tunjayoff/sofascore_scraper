@@ -1,0 +1,519 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/202804/season/105094/team-events/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:40:14+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/kakao-united-digitalci/nvqksxvqk#id:17276181",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "teamEvents": {
+      "1291022": [
+        {
+          "tournament": {
+            "name": "Grupa B",
+            "slug": "grupa-b",
+            "category": {
+              "name": "Croatia Amateur",
+              "slug": "croatia-amateur",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1805,
+              "flag": "croatia",
+              "alpha2": "HR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كرواتيا هواة",
+                  "ru": "Хорватия Любители"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "PRHG Liga",
+              "slug": "prhg-liga",
+              "category": {
+                "name": "Croatia Amateur",
+                "slug": "croatia-amateur",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1805,
+                "flag": "croatia",
+                "alpha2": "HR",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "كرواتيا هواة",
+                    "ru": "Хорватия Любители"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 87,
+              "liveActivityEnabled": false,
+              "id": 21378,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دوري PRHG",
+                  "ru": "Лига PRHG"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 202804
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "nvqksxvqk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Digitalci",
+            "slug": "digitalci",
+            "shortName": "Digitalci",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 3,
+            "nameCode": "DIG",
+            "national": false,
+            "type": 0,
+            "id": 1291013,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "Kakao United",
+            "slug": "kakao-united",
+            "shortName": "Kakao United",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 3,
+            "nameCode": "KUN",
+            "national": false,
+            "type": 0,
+            "id": 1291022,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "homeScore": {
+            "current": 12,
+            "display": 12
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3
+          },
+          "id": 17276181,
+          "slug": "kakao-united-digitalci",
+          "startTimestamp": 1791361500,
+          "finalResultOnly": false
+        }
+      ],
+      "1291013": [
+        {
+          "tournament": {
+            "name": "Grupa B",
+            "slug": "grupa-b",
+            "category": {
+              "name": "Croatia Amateur",
+              "slug": "croatia-amateur",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1805,
+              "flag": "croatia",
+              "alpha2": "HR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كرواتيا هواة",
+                  "ru": "Хорватия Любители"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "PRHG Liga",
+              "slug": "prhg-liga",
+              "category": {
+                "name": "Croatia Amateur",
+                "slug": "croatia-amateur",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1805,
+                "flag": "croatia",
+                "alpha2": "HR",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "كرواتيا هواة",
+                    "ru": "Хорватия Любители"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 87,
+              "liveActivityEnabled": false,
+              "id": 21378,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دوري PRHG",
+                  "ru": "Лига PRHG"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 202804
+          },
+          "roundInfo": {
+            "round": 2
+          },
+          "customId": "nvqksxvqk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Digitalci",
+            "slug": "digitalci",
+            "shortName": "Digitalci",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 3,
+            "nameCode": "DIG",
+            "national": false,
+            "type": 0,
+            "id": 1291013,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "Kakao United",
+            "slug": "kakao-united",
+            "shortName": "Kakao United",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 3,
+            "nameCode": "KUN",
+            "national": false,
+            "type": 0,
+            "id": 1291022,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "homeScore": {
+            "current": 12,
+            "display": 12
+          },
+          "awayScore": {
+            "current": 3,
+            "display": 3
+          },
+          "id": 17276181,
+          "slug": "kakao-united-digitalci",
+          "startTimestamp": 1791361500,
+          "finalResultOnly": false
+        },
+        {
+          "tournament": {
+            "name": "Grupa B",
+            "slug": "grupa-b",
+            "category": {
+              "name": "Croatia Amateur",
+              "slug": "croatia-amateur",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1805,
+              "flag": "croatia",
+              "alpha2": "HR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كرواتيا هواة",
+                  "ru": "Хорватия Любители"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "PRHG Liga",
+              "slug": "prhg-liga",
+              "category": {
+                "name": "Croatia Amateur",
+                "slug": "croatia-amateur",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1805,
+                "flag": "croatia",
+                "alpha2": "HR",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "كرواتيا هواة",
+                    "ru": "Хорватия Любители"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 87,
+              "liveActivityEnabled": false,
+              "id": 21378,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دوري PRHG",
+                  "ru": "Лига PRHG"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 202804
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "nvqksvvqk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Digitalci",
+            "slug": "digitalci",
+            "shortName": "Digitalci",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 3,
+            "nameCode": "DIG",
+            "national": false,
+            "type": 0,
+            "id": 1291013,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "Joga Finito",
+            "slug": "joga-finito",
+            "shortName": "Joga Finito",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 1,
+            "nameCode": "JFI",
+            "national": false,
+            "type": 0,
+            "id": 1291020,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "homeScore": {
+            "current": 11,
+            "display": 11
+          },
+          "awayScore": {
+            "current": 1,
+            "display": 1
+          },
+          "id": 17276187,
+          "slug": "joga-finito-digitalci",
+          "startTimestamp": 1790864700,
+          "finalResultOnly": false
+        }
+      ],
+      "1291020": [
+        {
+          "tournament": {
+            "name": "Grupa B",
+            "slug": "grupa-b",
+            "category": {
+              "name": "Croatia Amateur",
+              "slug": "croatia-amateur",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1805,
+              "flag": "croatia",
+              "alpha2": "HR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كرواتيا هواة",
+                  "ru": "Хорватия Любители"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "uniqueTournament": {
+              "name": "PRHG Liga",
+              "slug": "prhg-liga",
+              "category": {
+                "name": "Croatia Amateur",
+                "slug": "croatia-amateur",
+                "sport": {
+                  "name": "Minifootball",
+                  "slug": "minifootball",
+                  "id": 109
+                },
+                "priority": 0,
+                "id": 1805,
+                "flag": "croatia",
+                "alpha2": "HR",
+                "fieldTranslations": {
+                  "nameTranslation": {
+                    "ar": "كرواتيا هواة",
+                    "ru": "Хорватия Любители"
+                  },
+                  "shortNameTranslation": {}
+                }
+              },
+              "userCount": 87,
+              "liveActivityEnabled": false,
+              "id": 21378,
+              "displayInverseHomeAwayTeams": false,
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دوري PRHG",
+                  "ru": "Лига PRHG"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "priority": 0,
+            "id": 202804
+          },
+          "roundInfo": {
+            "round": 1
+          },
+          "customId": "nvqksvvqk",
+          "status": {
+            "code": 100,
+            "description": "Ended",
+            "type": "finished"
+          },
+          "winnerCode": 1,
+          "homeTeam": {
+            "name": "Digitalci",
+            "slug": "digitalci",
+            "shortName": "Digitalci",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 3,
+            "nameCode": "DIG",
+            "national": false,
+            "type": 0,
+            "id": 1291013,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "awayTeam": {
+            "name": "Joga Finito",
+            "slug": "joga-finito",
+            "shortName": "Joga Finito",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "userCount": 1,
+            "nameCode": "JFI",
+            "national": false,
+            "type": 0,
+            "id": 1291020,
+            "teamColors": {
+              "primary": "#374df5",
+              "secondary": "#374df5",
+              "text": "#ffffff"
+            }
+          },
+          "homeScore": {
+            "current": 11,
+            "display": 11
+          },
+          "awayScore": {
+            "current": 1,
+            "display": 1
+          },
+          "id": 17276187,
+          "slug": "joga-finito-digitalci",
+          "startTimestamp": 1790864700,
+          "finalResultOnly": false
+        }
+      ]
+    }
+  }
+}

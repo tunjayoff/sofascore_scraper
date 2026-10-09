@@ -1,0 +1,1115 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/yrvgszrvg/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:35:12+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/aras-kargo-zeren-spor/yrvgszrvg#id:16933596",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "VVSL Lig, Women",
+          "slug": "vvsl-lig-women",
+          "category": {
+            "name": "Turkey",
+            "slug": "turkey",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "TR",
+              "alpha3": "TUR",
+              "name": "Türkiye",
+              "slug": "turkiye"
+            },
+            "id": 195,
+            "flag": "turkey",
+            "alpha2": "TR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تركيا",
+                "ru": "Турция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Vodafone Sultans League",
+            "slug": "mislicom-sultanlar-ligi",
+            "primaryColorHex": "#e6007e",
+            "secondaryColorHex": "#26338d",
+            "category": {
+              "name": "Turkey",
+              "slug": "turkey",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "TR",
+                "alpha3": "TUR",
+                "name": "Türkiye",
+                "slug": "turkiye"
+              },
+              "id": 195,
+              "flag": "turkey",
+              "alpha2": "TR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تركيا",
+                  "ru": "Турция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1379,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 969,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري سلاطين فودافون",
+                "ru": "Лига султанов Vodafone"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2040,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري VVSL للسيدات",
+              "ru": "Лига VVSL, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Sultanlar Ligi, Women 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 102000
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "yrvgszrvg",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Aras Kargo",
+          "slug": "aras-kargo",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 165,
+          "nameCode": "AKA",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800874,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أراس كارغو",
+              "ru": "Арас Карго"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Zeren Spor",
+          "slug": "zeren-spor",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 540,
+          "nameCode": "ZER",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800873,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "زرين سبور",
+              "ru": "Зерен Спор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 25,
+          "period2": 25,
+          "period3": 25
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 16,
+          "period2": 20,
+          "period3": 20
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.current",
+            "homeScore.display"
+          ],
+          "changeTimestamp": 1791124872
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16933596,
+        "slug": "aras-kargo-zeren-spor",
+        "startTimestamp": 1791118800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "VVSL Lig, Women",
+          "slug": "vvsl-lig-women",
+          "category": {
+            "name": "Turkey",
+            "slug": "turkey",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "TR",
+              "alpha3": "TUR",
+              "name": "Türkiye",
+              "slug": "turkiye"
+            },
+            "id": 195,
+            "flag": "turkey",
+            "alpha2": "TR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تركيا",
+                "ru": "Турция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Vodafone Sultans League",
+            "slug": "mislicom-sultanlar-ligi",
+            "primaryColorHex": "#e6007e",
+            "secondaryColorHex": "#26338d",
+            "category": {
+              "name": "Turkey",
+              "slug": "turkey",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "TR",
+                "alpha3": "TUR",
+                "name": "Türkiye",
+                "slug": "turkiye"
+              },
+              "id": 195,
+              "flag": "turkey",
+              "alpha2": "TR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تركيا",
+                  "ru": "Турция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1379,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 969,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري سلاطين فودافون",
+                "ru": "Лига султанов Vodafone"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2040,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري VVSL للسيدات",
+              "ru": "Лига VVSL, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Sultanlar Ligi, Women 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 81024
+        },
+        "roundInfo": {
+          "round": 18
+        },
+        "customId": "yrvgszrvg",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Aras Kargo",
+          "slug": "aras-kargo",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 165,
+          "nameCode": "AKA",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800874,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أراس كارغو",
+              "ru": "Арас Карго"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Zeren Spor",
+          "slug": "zeren-spor",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 540,
+          "nameCode": "ZER",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800873,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "زرين سبور",
+              "ru": "Зерен Спор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 25,
+          "period2": 16,
+          "period3": 16,
+          "normaltime": 0
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 27,
+          "period2": 25,
+          "period3": 25,
+          "normaltime": 3
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "homeScore.normaltime",
+            "awayScore.normaltime"
+          ],
+          "changeTimestamp": 1769264665
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15317880,
+        "slug": "aras-kargo-zeren-spor",
+        "startTimestamp": 1769257800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "VVSL Lig, Women",
+          "slug": "vvsl-lig-women",
+          "category": {
+            "name": "Turkey",
+            "slug": "turkey",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "TR",
+              "alpha3": "TUR",
+              "name": "Türkiye",
+              "slug": "turkiye"
+            },
+            "id": 195,
+            "flag": "turkey",
+            "alpha2": "TR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تركيا",
+                "ru": "Турция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Vodafone Sultans League",
+            "slug": "mislicom-sultanlar-ligi",
+            "primaryColorHex": "#e6007e",
+            "secondaryColorHex": "#26338d",
+            "category": {
+              "name": "Turkey",
+              "slug": "turkey",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "TR",
+                "alpha3": "TUR",
+                "name": "Türkiye",
+                "slug": "turkiye"
+              },
+              "id": 195,
+              "flag": "turkey",
+              "alpha2": "TR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تركيا",
+                  "ru": "Турция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1379,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 969,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري سلاطين فودافون",
+                "ru": "Лига султанов Vodafone"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2040,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري VVSL للسيدات",
+              "ru": "Лига VVSL, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Sultanlar Ligi, Women 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 81024
+        },
+        "roundInfo": {
+          "round": 5
+        },
+        "customId": "yrvgszrvg",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Zeren Spor",
+          "slug": "zeren-spor",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 540,
+          "nameCode": "ZER",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800873,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "زرين سبور",
+              "ru": "Зерен Спор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Aras Kargo",
+          "slug": "aras-kargo",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 165,
+          "nameCode": "AKA",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800874,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أراس كارغو",
+              "ru": "Арас Карго"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 25,
+          "period2": 25,
+          "period3": 25,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 20,
+          "period2": 22,
+          "period3": 19,
+          "normaltime": 0
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "homeScore.normaltime",
+            "awayScore.normaltime"
+          ],
+          "changeTimestamp": 1763395950
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14984194,
+        "slug": "aras-kargo-zeren-spor",
+        "startTimestamp": 1763301600,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "VVSL Lig, Women",
+          "slug": "vvsl-lig-women",
+          "category": {
+            "name": "Turkey",
+            "slug": "turkey",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "TR",
+              "alpha3": "TUR",
+              "name": "Türkiye",
+              "slug": "turkiye"
+            },
+            "id": 195,
+            "flag": "turkey",
+            "alpha2": "TR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تركيا",
+                "ru": "Турция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Vodafone Sultans League",
+            "slug": "mislicom-sultanlar-ligi",
+            "primaryColorHex": "#e6007e",
+            "secondaryColorHex": "#26338d",
+            "category": {
+              "name": "Turkey",
+              "slug": "turkey",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "TR",
+                "alpha3": "TUR",
+                "name": "Türkiye",
+                "slug": "turkiye"
+              },
+              "id": 195,
+              "flag": "turkey",
+              "alpha2": "TR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تركيا",
+                  "ru": "Турция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1379,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 969,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري سلاطين فودافون",
+                "ru": "Лига султанов Vodafone"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2040,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري VVSL للسيدات",
+              "ru": "Лига VVSL, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Sultans League, Women 24/25",
+          "year": "24/25",
+          "editor": false,
+          "id": 64883
+        },
+        "roundInfo": {
+          "round": 18
+        },
+        "customId": "yrvgszrvg",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Zeren Spor",
+          "slug": "zeren-spor",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 540,
+          "nameCode": "ZER",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800873,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "زرين سبور",
+              "ru": "Зерен Спор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Aras Kargo",
+          "slug": "aras-kargo",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 165,
+          "nameCode": "AKA",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800874,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أراس كارغو",
+              "ru": "Арас Карго"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 25,
+          "period2": 25,
+          "period3": 25,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 14,
+          "period2": 23,
+          "period3": 20,
+          "normaltime": 0
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "homeScore.normaltime",
+            "awayScore.normaltime"
+          ],
+          "changeTimestamp": 1737898271
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 12951952,
+        "slug": "aras-kargo-zeren-spor",
+        "startTimestamp": 1737892800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "VVSL Lig, Women",
+          "slug": "vvsl-lig-women",
+          "category": {
+            "name": "Turkey",
+            "slug": "turkey",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "TR",
+              "alpha3": "TUR",
+              "name": "Türkiye",
+              "slug": "turkiye"
+            },
+            "id": 195,
+            "flag": "turkey",
+            "alpha2": "TR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تركيا",
+                "ru": "Турция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Vodafone Sultans League",
+            "slug": "mislicom-sultanlar-ligi",
+            "primaryColorHex": "#e6007e",
+            "secondaryColorHex": "#26338d",
+            "category": {
+              "name": "Turkey",
+              "slug": "turkey",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "TR",
+                "alpha3": "TUR",
+                "name": "Türkiye",
+                "slug": "turkiye"
+              },
+              "id": 195,
+              "flag": "turkey",
+              "alpha2": "TR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تركيا",
+                  "ru": "Турция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1379,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 969,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري سلاطين فودافون",
+                "ru": "Лига султанов Vodafone"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2040,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري VVSL للسيدات",
+              "ru": "Лига VVSL, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Sultans League, Women 24/25",
+          "year": "24/25",
+          "editor": false,
+          "id": 64883
+        },
+        "roundInfo": {
+          "round": 5
+        },
+        "customId": "yrvgszrvg",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Aras Kargo",
+          "slug": "aras-kargo",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 165,
+          "nameCode": "AKA",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800874,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أراس كارغو",
+              "ru": "Арас Карго"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Zeren Spor",
+          "slug": "zeren-spor",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 540,
+          "nameCode": "ZER",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "TR",
+            "alpha3": "TUR",
+            "name": "Türkiye",
+            "slug": "turkiye"
+          },
+          "id": 800873,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "زرين سبور",
+              "ru": "Зерен Спор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 25,
+          "period2": 23,
+          "period3": 25,
+          "period4": 21,
+          "period5": 12,
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 18,
+          "period2": 25,
+          "period3": 22,
+          "period4": 25,
+          "period5": 15,
+          "normaltime": 3
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.current",
+            "homeScore.display",
+            "homeScore.period1",
+            "homeScore.period2",
+            "homeScore.period3",
+            "homeScore.period4",
+            "homeScore.period5",
+            "homeScore.normaltime",
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period1",
+            "awayScore.period2",
+            "awayScore.period3",
+            "awayScore.period4",
+            "awayScore.period5",
+            "awayScore.normaltime"
+          ],
+          "changeTimestamp": 1729962355
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 12822285,
+        "slug": "aras-kargo-zeren-spor",
+        "startTimestamp": 1729953000,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ]
+  }
+}

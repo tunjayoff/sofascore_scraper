@@ -1,0 +1,27 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16605451/highlights",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:34:25+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/savino-del-bene-scandicci-reale-mutua-fenera-chieri-76/oZjsJBW#id:16605451",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "highlights": [
+      {
+        "title": "Scandicci 2 - 3 Chieri",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=SZ_YRekozwg",
+        "thumbnailUrl": "https://i.ytimg.com/vi/SZ_YRekozwg/hqdefault.jpg",
+        "mediaType": 6,
+        "doFollow": false,
+        "keyHighlight": true,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8134159,
+        "createdAtTimestamp": 1791218088,
+        "sourceUrl": "https://www.youtube.com/watch?v=SZ_YRekozwg"
+      }
+    ]
+  }
+}

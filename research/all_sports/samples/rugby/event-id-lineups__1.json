@@ -1,0 +1,427 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16534950/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:31:27+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/rc-toulon-montpellier-herault-rugby/YTCf#id:16534950",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009b",
+  "body": {
+    "confirmed": false,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Baptiste Erdocio",
+            "firstName": "Baptiste",
+            "lastName": "Erdocio",
+            "slug": "baptiste-erdocio",
+            "shortName": "B. Erdocio",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 175,
+            "userCount": 9,
+            "gender": "M",
+            "sofascoreId": "ejj-ywb",
+            "country": {
+              "alpha2": "FR",
+              "alpha3": "FRA",
+              "name": "France",
+              "slug": "france"
+            },
+            "id": 1929704,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 952905600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إردوشيو، باتيست",
+                "ru": "Баптист Эрдоцио"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. إردوشيو",
+                "ru": "Б. Эрдоцио"
+              }
+            }
+          },
+          "teamId": 5754,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 1,
+            "cleanBreaks": 0,
+            "metersRun": 1,
+            "offloads": 0,
+            "passes": 1,
+            "tacklesMissed": 1,
+            "tackles": 1,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Christopher Tolofua",
+            "firstName": "Christopher",
+            "lastName": "Tolofua",
+            "slug": "christopher-tolofua",
+            "shortName": "C. Tolofua",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 182,
+            "userCount": 4,
+            "gender": "M",
+            "sofascoreId": "tdd-bky",
+            "country": {
+              "alpha2": "FR",
+              "alpha3": "FRA",
+              "name": "France",
+              "slug": "france"
+            },
+            "id": 956826,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 757296000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تولوفو، كريستوفر",
+                "bn": "টোলোফুয়া, ক্রিস্টোফার",
+                "hi": "टोलोफ़ुआ, क्रिस्टोफर",
+                "ru": "Кристофер Толофуа"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. تولوفو",
+                "bn": "সি. টোলোফুয়া",
+                "hi": "सी. टोलोफ़ुआ",
+                "ru": "К. Толофуа"
+              }
+            }
+          },
+          "teamId": 5754,
+          "shirtNumber": 2,
+          "jerseyNumber": "2",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 5,
+            "carries": 5,
+            "cleanBreaks": 0,
+            "metersRun": 6,
+            "offloads": 0,
+            "passes": 4,
+            "tacklesMissed": 0,
+            "tackles": 7,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 1,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Luka Japaridze",
+            "slug": "luka-japaridze",
+            "shortName": "L. Japaridze",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 181,
+            "userCount": 3,
+            "gender": "M",
+            "sofascoreId": "sng-yk4",
+            "country": {
+              "alpha2": "GE",
+              "alpha3": "GEO",
+              "name": "Georgia",
+              "slug": "georgia"
+            },
+            "id": 1535504,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 905040000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوكا جاباريزي",
+                "bn": "লুকা জাপারিদজে",
+                "hi": "लुका जापरिद्ज़े",
+                "ru": "Лука Джапаридзе"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. جاباريزي",
+                "bn": "এল. জাপারিদজে",
+                "hi": "एल. लुका जापरिद्ज़े",
+                "ru": "Л. Джапаридзе"
+              }
+            }
+          },
+          "teamId": 5754,
+          "shirtNumber": 3,
+          "jerseyNumber": "3",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 1,
+            "cleanBreaks": 0,
+            "metersRun": 0,
+            "offloads": 1,
+            "passes": 1,
+            "tacklesMissed": 1,
+            "tackles": 3,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 20
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Jean Baptiste Gros",
+            "firstName": "Jean Baptiste",
+            "lastName": "Gros",
+            "slug": "jean-baptiste-gros",
+            "shortName": "J. Gros",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 186,
+            "userCount": 29,
+            "gender": "M",
+            "sofascoreId": "vux-fp2",
+            "country": {
+              "alpha2": "FR",
+              "alpha3": "FRA",
+              "name": "France",
+              "slug": "france"
+            },
+            "id": 1020939,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 927936000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جان باتيست غرو",
+                "bn": "গ্রোস, জিন ব্যাপটিস্ট",
+                "hi": "ग्रोस, जीन बैप्टिस्ट",
+                "ru": "Жан Батист Гро"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. غرو",
+                "bn": "জে. বি. গ্রস",
+                "hi": "जे. बी. ग्रो्स",
+                "ru": "Ж. Гро"
+              }
+            }
+          },
+          "teamId": 5760,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 2,
+            "cleanBreaks": 0,
+            "metersRun": 3,
+            "offloads": 0,
+            "passes": 0,
+            "tacklesMissed": 0,
+            "tackles": 5,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Pierre Damond",
+            "firstName": "Pierre",
+            "lastName": "Damond",
+            "slug": "pierre-damond",
+            "shortName": "P. Damond",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 181,
+            "userCount": 2,
+            "gender": "M",
+            "sofascoreId": "kvn-66y",
+            "country": {
+              "alpha2": "FR",
+              "alpha3": "FRA",
+              "name": "France",
+              "slug": "france"
+            },
+            "id": 2047633,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1069891200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "داموند، بيير",
+                "ru": "Дамон, Пьер"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. داموند",
+                "ru": "П. Дамон"
+              }
+            }
+          },
+          "teamId": 5760,
+          "shirtNumber": 2,
+          "jerseyNumber": "2",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 2,
+            "cleanBreaks": 0,
+            "metersRun": 5,
+            "offloads": 0,
+            "passes": 3,
+            "tacklesMissed": 2,
+            "tackles": 4,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Kyle Sinckler",
+            "firstName": "Kyle",
+            "lastName": "Sinckler",
+            "slug": "kyle-sinckler",
+            "shortName": "K. Sinckler",
+            "position": "F",
+            "jerseyNumber": "",
+            "height": 182,
+            "userCount": 6,
+            "gender": "M",
+            "sofascoreId": "wev-qyk",
+            "country": {
+              "alpha2": "EN",
+              "alpha3": "ENG",
+              "name": "England",
+              "slug": "england"
+            },
+            "id": 837518,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 733449600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كايل سينكلر",
+                "bn": "কাইল সিঙ্কলার",
+                "hi": "काइल सिंक्लर",
+                "ru": "Кайл Синклер"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. سينكلر",
+                "bn": "কে. সিঙ্কলার",
+                "hi": "के. सिंक्लर",
+                "ru": "К. Синклер"
+              }
+            }
+          },
+          "teamId": 5760,
+          "shirtNumber": 3,
+          "jerseyNumber": "3",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "points": 0,
+            "carries": 3,
+            "cleanBreaks": 0,
+            "metersRun": 6,
+            "offloads": 0,
+            "passes": 2,
+            "tacklesMissed": 2,
+            "tackles": 3,
+            "tryAssists": 0,
+            "penaltyGoals": 0,
+            "tries": 0,
+            "dropGoals": 0,
+            "conversions": 0,
+            "yellowCard": 0,
+            "redCard": 0,
+            "statisticsType": {
+              "sportSlug": "rugby",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 20
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}
