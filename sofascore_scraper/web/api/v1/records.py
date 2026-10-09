@@ -79,6 +79,7 @@ Season = mirror(schema_models.Season)
 Event = mirror(schema_models.Event)
 Slice = mirror(schema_models.Slice)
 Change = mirror(schema_models.Change)
+Participant = mirror(schema_models.Participant)
 
 
 def as_json(record: schema_models.Model) -> Dict[str, Any]:
@@ -86,4 +87,4 @@ def as_json(record: schema_models.Model) -> Dict[str, Any]:
     return record.to_dict()
 
 
-__all__ = ["Category", "Change", "Event", "RENAMED", "Season", "Slice", "Tournament", "as_json", "mirror"]
+__all__ = ["Category", "Change", "Event", "Participant", "RENAMED", "Season", "Slice", "Tournament", "as_json", "mirror"]

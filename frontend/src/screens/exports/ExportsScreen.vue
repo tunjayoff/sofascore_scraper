@@ -38,6 +38,8 @@ function filterText(f: ExportFilter): string {
   if (f.tournament_ids?.length) parts.push(t('ui.exports.filter.tournaments', { n: f.tournament_ids.length }))
   if (f.season_ids?.length) parts.push(t('ui.exports.filter.seasons', { n: f.season_ids.length }))
   if (f.event_ids?.length) parts.push(t('ui.exports.filter.events', { n: f.event_ids.length }))
+  if (f.team_ids?.length) parts.push(t('ui.exports.filter.teams', { n: f.team_ids.length }))
+  if (f.player_ids?.length) parts.push(t('ui.exports.filter.players', { n: f.player_ids.length }))
   return parts.join(' · ') || t('ui.exports.filter.all')
 }
 

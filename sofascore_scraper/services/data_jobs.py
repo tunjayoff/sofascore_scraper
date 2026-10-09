@@ -61,6 +61,8 @@ class ExportRequest:
 
     status_classes: durum sınıfları. start_from / start_to: ISO 8601 tarih ya da tarih-saat (UTC; yalnızca
     tarih: günün başı / sonu); `changes` için kaydın zamanı, ötekiler için maçın başlangıcı.
+    team_ids / player_ids: katılımcı süzgeci (B1; sofascore_scraper/services/export.py): bu takımlardan ya da
+    oyunculardan birinin maçları. Geniş CSV de bilir.
     """
 
     dataset: str = "events"
@@ -74,6 +76,8 @@ class ExportRequest:
     status_classes: Tuple[str, ...] = ()
     start_from: Optional[str] = None
     start_to: Optional[str] = None
+    team_ids: Tuple[int, ...] = ()
+    player_ids: Tuple[int, ...] = ()
 
 
 def check_export(req: ExportRequest) -> None:
@@ -92,7 +96,7 @@ def check_export(req: ExportRequest) -> None:
                              {"dataset": req.dataset, "format": req.format})
         if (req.sport is not None or req.season_ids or req.status_classes or req.start_from is not None
                 or req.start_to is not None):
-            raise UsageError("The legacy-wide-csv profile filters by tournament and event only.",
+            raise UsageError("The legacy-wide-csv profile filters by tournament, event, team and player only.",
                              {"filter": ["sport", "season_ids", "status_classes", "from", "to"]})
         return
     if req.schema == "raw" and req.format != "jsonl":
@@ -117,7 +121,8 @@ def dataset_spec(req: ExportRequest) -> "DatasetSpec":
         filter=DatasetFilter(sport=req.sport, tournament_ids=tuple(req.tournament_ids),
                              season_ids=tuple(req.season_ids), event_ids=tuple(req.event_ids),
                              status_classes=tuple(req.status_classes), start_from=moments["from"],
-                             start_to=moments["to"]))
+                             start_to=moments["to"], team_ids=tuple(req.team_ids),
+                             player_ids=tuple(req.player_ids)))
 
 
 def export_extension(req: ExportRequest) -> str:
@@ -144,8 +149,8 @@ def slug(text: str) -> str:
 
 def export_label(req: ExportRequest, tournament_name: Optional[str] = None) -> str:
     """
-    Dosya adının baş parçası: tek bir turnuva süzülmüşse onun adı (biliniyorsa), yoksa veri kümesi; ham dışa
-    aktarmada `-raw`, 2.x'in geniş CSV'sinde `-wide` eklenir.
+    Dosya adının baş parçası: tek bir turnuva (ya da turnuvasız tek bir takım veya oyuncu) süzülmüşse onun adı
+    (biliniyorsa), yoksa veri kümesi; ham dışa aktarmada `-raw`, 2.x'in geniş CSV'sinde `-wide` eklenir.
     """
     base = slug(tournament_name or "") if tournament_name else ""
     base = base or req.dataset
@@ -157,7 +162,8 @@ def export_label(req: ExportRequest, tournament_name: Optional[str] = None) -> s
 def export_name(store: "Store", job_id: str, req: ExportRequest, *, now: Optional[float] = None) -> str:
     """
     Okunur dosya adı (FX-19): `<etiket>_<UTC tarih>_<iş kimliğinin son 8 harfi>.<uzantı>`. Turnuvanın adı takip
-    tablosundan, yoksa katalogdan.
+    tablosundan, yoksa katalogdan. Turnuva süzülmemiş, tek bir takım ya da tek bir oyuncu süzülmüşse (B1) onun
+    takibinin adı, takımın takibi yoksa katalogdaki adı.
     """
     name: Optional[str] = None
     if len(req.tournament_ids) == 1:
@@ -168,6 +174,14 @@ def export_name(store: "Store", job_id: str, req: ExportRequest, *, now: Optiona
         else:
             row = store.entities.tournament(tid)
             name = row.name if row is not None else None
+    elif not req.tournament_ids and len(req.team_ids) + len(req.player_ids) == 1:
+        kind, entity_id = ("team", int(req.team_ids[0])) if req.team_ids else ("player", int(req.player_ids[0]))
+        follow = store.follows.get(kind, entity_id)
+        if follow is not None:
+            name = follow.name
+        elif kind == "team":
+            rows = store.entities.participants(ids=(entity_id,), limit=1)
+            name = rows[0].name if rows else None
     moment = dt.datetime.fromtimestamp(now if now is not None else dt.datetime.now(dt.timezone.utc).timestamp(),
                                        dt.timezone.utc)
     short = "".join(ch for ch in job_id.lower() if ch.isalnum())[-8:] or "export"
@@ -184,7 +198,8 @@ def run_export(store: "Store", req: ExportRequest, dest: str) -> Dict[str, Any]:
     check_export(req)
     if req.profile == LEGACY_WIDE_CSV:
         table = ExportService(store).legacy_table(
-            ExportSpec(tournament_ids=tuple(req.tournament_ids), event_ids=tuple(req.event_ids)))
+            ExportSpec(tournament_ids=tuple(req.tournament_ids), event_ids=tuple(req.event_ids),
+                       team_ids=tuple(req.team_ids), player_ids=tuple(req.player_ids)))
         report = store.export.rows(table.rows, table.columns, dest, "csv", overwrite=True)
         result: Dict[str, Any] = {"rows": report.items, "events": report.items, "bytes": report.bytes, "skipped": 0}
     else:

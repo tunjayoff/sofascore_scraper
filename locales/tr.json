@@ -333,6 +333,8 @@
     "ssc_help_export_out": "nereye yazılacak; - stdout'tur (yalnızca jsonl ve csv). Geniş CSV için varsayılan: veri klasöründe match_details/processed/all_matches_<zaman>.csv; veri kümesi için: veri klasöründe exports/<veri kümesi>_<zaman>.<biçim>",
     "ssc_help_export_tournament": "yalnızca bu turnuvanın maçları (yinelenebilir)",
     "ssc_help_export_event": "yalnızca bu maç (yinelenebilir)",
+    "ssc_help_export_team": "yalnızca bu takımın maçları; bireysel sporlarda oyuncu (yinelenebilir; --player ile tek süzgeç)",
+    "ssc_help_export_player": "yalnızca saklanan kadrosunda bu oyuncunun adı geçen maçlar (yinelenebilir; --team ile tek süzgeç)",
     "ssc_help_export_force": "var olan hedefin üzerine yaz (veri kümeleri ve --schema raw)",
     "ssc_export_written": "Dışa aktarma yazıldı: {path} ({rows} maç)",
     "ssc_export_streamed": "Dışa aktarma stdout'a yazıldı: {rows} maç",

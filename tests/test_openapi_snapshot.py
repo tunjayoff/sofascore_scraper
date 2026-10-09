@@ -114,6 +114,7 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "POST /api/v1/tournaments/search",
         "GET /api/v1/catalog/suggest",  # FX-20
         "GET /api/v1/tournaments/{tournament_id}",
+        "GET /api/v1/teams/{team_id}",  # B1
         "GET /api/v1/tournaments/{tournament_id}/seasons",
         "GET /api/v1/seasons/{season_id}",
         "GET /api/v1/seasons/{season_id}/slices",  # P28
@@ -173,7 +174,8 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
     assert ids == [
         "getHealth", "getStatus", "checkConnection", "listSports", "getSport", "listSinks", "getAuth", "login",
         "logout", "listFollows", "addFollow", "getFollow", "updateFollow", "removeFollow", "listTournaments",
-        "searchTournaments", "suggestCatalog", "getTournament", "listTournamentSeasons", "getSeason", "listSeasonSlices",
+        "searchTournaments", "suggestCatalog", "getTournament", "getTeam", "listTournamentSeasons", "getSeason",
+        "listSeasonSlices",
         "getSeasonStandings", "getSeasonSlice", "listEvents", "getEvent", "getEventExtra", "listEventSlices", "getEventSlice",
         "getEventRaw", "getEventSliceRaw", "listEventOdds", "listEventOddsSnapshots", "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "listExports",
         "downloadExport", "listBackups", "downloadBackup", "listLogs", "getDiagnostics", "downloadDiagnosticsBundle",

@@ -7,6 +7,8 @@ API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/desig
     GET /api/v1/catalog/suggest                     yazarken öneri: adında metin geçen kayıtlı turnuvalar ve takımlar
                                                     (yalnızca katalog, SofaScore'a istek yok; FX-20)
     GET /api/v1/tournaments/{tournament_id}         tek turnuva, kategorisiyle
+    GET /api/v1/teams/{team_id}                     tek yarışmacı (takım; bireysel sporda oyuncu ya da çift):
+                                                    cinsiyeti, milli takım olup olmadığı, ülkesi (B1)
     GET /api/v1/tournaments/{tournament_id}/seasons turnuvanın sezonları, en yeni önce; `include=counts` ile sezon
                                                     başına sayımlar (FX-13, 05-web-ui.md G17)
     GET /api/v1/seasons/{season_id}                 tek sezon
@@ -14,9 +16,9 @@ API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/desig
     GET /api/v1/seasons/{season_id}/slices/{key}    sezonun bir dilimi (puan durumu ...), saklanan yüküyle
     GET /api/v1/seasons/{season_id}/standings       sezonun puan durumu, satır satır (şema v1 StandingsRow; P28)
 
-Kayıtlar şema v1'indir (sofascore_scraper/schema; docs/design/04-schema-v1.md): Tournament, Category, Season, Slice. Bir turnuva
-kaydı iki alan ekler (ek alan eklemek sürüm artırmaz): `category` (katalogdaki kategori kaydı, yoksa null) ve
-`followed` (turnuva takip ediliyor). Okumalar katalogdandır (QueryService) ve SofaScore'a istek atmaz; arama
+Kayıtlar şema v1'indir (sofascore_scraper/schema; docs/design/04-schema-v1.md): Tournament, Category, Season, Slice,
+Participant. Bir turnuva kaydı iki alan ekler (ek alan eklemek sürüm artırmaz): `category` (katalogdaki kategori
+kaydı, yoksa null) ve `followed` (turnuva takip ediliyor); bir yarışmacı kaydı yalnızca `followed`'ı. Okumalar katalogdandır (QueryService) ve SofaScore'a istek atmaz; arama
 SofaScore'a sorar ve bu yüzden POST'tur (GET olsaydı başka bir site onu kullanıcının adına tetikleyebilirdi).
 
 Sezonun maç dışı dilimleri (puan durumu, sezon bilgisi, kupa ağacı, en iyiler; plan maddesi P28) varsayılan olarak
@@ -43,7 +45,7 @@ from sofascore_scraper.web.errors import error_responses
 
 if TYPE_CHECKING:
     from sofascore_scraper.services.owner_data import OwnerDataService
-    from sofascore_scraper.services.query import QueryService, TournamentEntry
+    from sofascore_scraper.services.query import QueryService, TeamEntry, TournamentEntry
 
 router = APIRouter(tags=["tournaments"])
 logger = logging.getLogger("WebAPI")
@@ -74,6 +76,20 @@ class TournamentResponse(BaseModel):
 class TournamentListResponse(BaseModel):
     data: List[TournamentRecord]
     page: PageInfo
+
+
+class TeamRecord(records.Participant):  # type: ignore[misc,valid-type]
+    """
+    A competitor as the catalog knows it from its stored events (schema v1 Participant): a team, or in a sport of one
+    against one a player or a pair (SofaScore lists them as teams). `gender`, `national` and `country_code` tell
+    same-named teams apart (a men's and a women's team, a club and a national team).
+    """
+
+    followed: bool = Field(default=False, description="A team follow of any origin names this competitor.")
+
+
+class TeamResponse(BaseModel):
+    data: TeamRecord
 
 
 class SeasonResponse(BaseModel):
@@ -178,15 +194,20 @@ class TournamentHit(BaseModel):
     country: Optional[SearchHitCountry] = Field(
         default=None, description="Country of the tournament's category, of the team or of the player.",
     )
-    team: Optional[SearchHitTeam] = Field(default=None, description="A player's team; null for the other kinds.")
+    team: Optional[SearchHitTeam] = Field(
+        default=None,
+        description="A player's team; null for the other kinds and for a player without a club (SofaScore's "
+                    "placeholder team `No team` is left out).",
+    )
     followed: bool = Field(description="A follow of any origin names this tournament, team or player already.")
     gender: Optional[str] = Field(
         default=None,
-        description="Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when SofaScore does not "
-                    "say (tournaments, players, stored names). Tells same-named men's and women's teams apart.",
+        description="Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when it is not known "
+                    "(tournaments, players, a stored team whose events did not say). Tells same-named men's and "
+                    "women's teams apart.",
     )
     national: Optional[bool] = Field(
-        default=None, description="The team is a national team; null when SofaScore does not say.",
+        default=None, description="The team is a national team; null when it is not known.",
     )
 
 
@@ -199,6 +220,10 @@ def _record(entry: "TournamentEntry") -> Dict[str, Any]:
     category = entry.category
     return {**records.as_json(entry.tournament), "category": records.as_json(category) if category else None,
             "followed": entry.followed}
+
+
+def _team_record(entry: "TeamEntry") -> Dict[str, Any]:
+    return {**records.as_json(entry.participant), "followed": entry.followed}
 
 
 def _query() -> "QueryService":
@@ -325,6 +350,7 @@ def suggest_catalog(
                 category=TournamentHitCategory(id=s.category_id, name=s.category_name, slug=s.category_slug,
                                                country_code=s.country_code),
                 country=SearchHitCountry(code=s.country_code) if s.country_code else None,
+                gender=s.gender, national=s.national,
             )
             for s in found
         ],
@@ -387,6 +413,25 @@ def get_tournament(tournament_id: Annotated[int, Path(ge=1)]) -> TournamentRespo
     if entry is None:
         raise NotFoundError("The data directory knows no tournament with this id.", {"tournament_id": tournament_id})
     return TournamentResponse(data=_record(entry))  # type: ignore[arg-type]
+
+
+@router.get(
+    "/teams/{team_id}",
+    response_model=TeamResponse,
+    operation_id="getTeam",
+    summary="Get a team",
+    responses=error_responses("not_found"),
+)
+def get_team(team_id: Annotated[int, Path(ge=1)]) -> TeamResponse:
+    """
+    A competitor the data directory knows from its stored events, by SofaScore's team id (the id of a team follow,
+    `team:<id>`; in tennis, darts, MMA … a player or a pair). Read from the catalog; nothing is sent to SofaScore.
+    404 `not_found` until an event of it is stored.
+    """
+    entry = _query().team(team_id)
+    if entry is None:
+        raise NotFoundError("The data directory knows no team with this id.", {"team_id": team_id})
+    return TeamResponse(data=_team_record(entry))  # type: ignore[arg-type]
 
 
 @router.get(

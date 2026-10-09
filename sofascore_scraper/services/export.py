@@ -26,6 +26,15 @@ doludur (SofaScore dizilişi metin olarak gönderir, `"4-2-3-1"`; eski kod nesne
 boştu) ve lig süzgeçli indirme artık pandas'tan geçmez: satırları birleşik dışa aktarmadakiyle aynıdır, boşluklu
 tamsayı sütunları `1.0` biçiminde çıkmaz, satır sonu her yerde `\\r\\n`'dir.
 
+Katılımcı süzgeci (B1, e2e F13: dışa aktarma yalnızca lig takibiyle süzülebiliyordu): `team_ids` takımların
+(yarışmacı kimliği, `homeTeam.id`; bireysel sporlarda oyuncu ya da çift) maçlarını, `player_ids` oyuncuların (kişi
+kimliği, kadrodaki `player.id`) maçlarını seçer. İkisi tek bir süzgeçtir: maç listelenen takımlardan ya da
+oyunculardan birinindir; öteki süzgeçlerle birlikte (VE) uygulanır. Bir oyuncunun maçları saklanan kadrolardır
+(`lineups` dilimi: ilk on bir ve yedekler; eksik oyuncular sayılmaz): oyuncunun takibi maç listesini saklamaz
+(sofascore_scraper/services/follow_sync.py), kadrosu saklanmamış maçı bu süzgeç bulmaz. Süzgeç dışa aktarmadan önce
+maç kimliklerine çözülür (`ExportService.participant_events`); bunun için öteki süzgeçlerin kapsamındaki
+(spor, turnuva, sezon, maç) maçların kadroları okunur.
+
 Servis dosya yazmaz; yalnızca istenen akışa ya da yola yazar. Web'in GET'i çıktıyı istekte üretip akıtır
 (karar D16); `ssc export --profile legacy-wide-csv` (2.x'te `--headless --csv-export`) dosyayı
 `match_details/processed/` altına yazar (`write_legacy_csv`). Dışa aktarma kilit almaz: katalogdan okur.
@@ -44,8 +53,8 @@ import time
 import types
 import typing
 from dataclasses import dataclass, field
-from typing import (TYPE_CHECKING, Any, BinaryIO, Callable, Dict, IO, Iterable, Iterator, List, Mapping, Optional,
-                    Sequence, Set, Tuple, Type, Union)
+from typing import (TYPE_CHECKING, Any, BinaryIO, Callable, Dict, FrozenSet, IO, Iterable, Iterator, List, Mapping,
+                    Optional, Sequence, Set, Tuple, Type, Union)
 
 from sofascore_scraper.errors import NotFoundError, NotSupportedError, UsageError
 from sofascore_scraper.logger import get_logger
@@ -82,6 +91,7 @@ class ExportSpec:
         NotSupportedError.
     tournament_ids, event_ids: boş = süzgeç yok; dolu alanlar birlikte (VE) uygulanır. Yalnızca detayı
         (olay yükü) saklanan maçlar dışa aktarılır.
+    team_ids, player_ids: katılımcı süzgeci (modül belgesi); ikisi birlikte tek süzgeçtir.
     league_id: 2.x'in lig süzgeçli indirmesi (3.1'de kalkan `GET /api/export/csv?league_id=`): birleşik tablonun `league_folder`'ı
         `<lig id>_` ile başlayan satırları, birleşik tablodaki değerleriyle (sütunlar birleşik tablonunkiler).
     """
@@ -92,6 +102,8 @@ class ExportSpec:
     tournament_ids: Tuple[int, ...] = ()
     event_ids: Tuple[int, ...] = ()
     league_id: Optional[int] = None
+    team_ids: Tuple[int, ...] = ()
+    player_ids: Tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -194,7 +206,9 @@ class ExportService:
         spec = spec or ExportSpec()
         _check(spec)
         rows: List[Dict[str, Any]] = []
-        query = EventQuery(scope=Scope(tournament_ids=tuple(spec.tournament_ids), event_ids=tuple(spec.event_ids)),
+        event_ids = self._narrowed_events(Scope(tournament_ids=tuple(spec.tournament_ids),
+                                                event_ids=tuple(spec.event_ids)), spec.team_ids, spec.player_ids)
+        query = EventQuery(scope=Scope(tournament_ids=tuple(spec.tournament_ids), event_ids=event_ids),
                            has_details=True, sort=_SORT)
         for event in self._store.events.iter(query):
             found = self._payloads(event.id)
@@ -286,6 +300,59 @@ class ExportService:
             logger.warning("No downloaded match to export to CSV")
         return results
 
+    # -- katılımcı süzgeci (B1) -----------------------------------------------------------------------------
+
+    def participant_events(self, team_ids: Iterable[int] = (), player_ids: Iterable[int] = (),
+                           scope: Optional[Scope] = None) -> Set[int]:
+        """
+        Kapsamdaki maçlardan takımlardan ya da oyunculardan birinin oynadığı maçların kimlikleri (modül belgesi):
+        takım katalogdaki iki tarafından biridir, oyuncu maçın saklanan kadrosundadır. Okunamayan bir kadro
+        atlanır (uyarı loglanır).
+        """
+        teams, players = tuple(team_ids), frozenset(player_ids)
+        base = scope or Scope()
+        found: Set[int] = set()
+        if teams:
+            query = EventQuery(scope=dataclasses.replace(base, participant_ids=teams), sort=_SORT)
+            found.update(row.id for row in self._store.events.iter(query, batch=_PAGE))
+        if players:
+            read = 0
+            for state in self._store.events.states(base, batch=_PAGE):
+                if state.event.id in found or not state.slice(LINEUPS_KEY).has_payload:
+                    continue
+                read += 1
+                try:
+                    lineups = self._store.events.payload(state.event.id, LINEUPS_KEY)
+                except (PayloadMissing, PayloadCorrupt) as e:
+                    logger.warning("Event %s: the stored lineups are unreadable and the player filter skips it: %s",
+                                   state.event.id, e)
+                    continue
+                if players & lineup_players(lineups):
+                    found.add(state.event.id)
+            logger.info("Player filter: %d stored lineups read, %d matches of the players", read, len(found))
+        return found
+
+    def _narrowed_events(self, scope: Scope, team_ids: Iterable[int],
+                         player_ids: Iterable[int]) -> Tuple[int, ...]:
+        """
+        Kapsamın maç süzgeci, katılımcı süzgeciyle daraltılmış: katılımcı yoksa kapsamınki olduğu gibi; varsa
+        uyan maçlar (kapsamın maç süzgeciyle kesişimi zaten), hiçbiri uymuyorsa hiçbir maçı seçmeyen `(_NO_EVENT,)`.
+        """
+        teams, players = tuple(team_ids), tuple(player_ids)
+        if not teams and not players:
+            return tuple(scope.event_ids)
+        found = self.participant_events(teams, players, scope)
+        return tuple(sorted(found)) or (_NO_EVENT,)
+
+    def _narrowed(self, flt: "DatasetFilter") -> "DatasetFilter":
+        """Süzgecin katılımcıları maç kimliklerine çözülmüş hali (`team_ids` ve `player_ids` boşalır)."""
+        if not flt.team_ids and not flt.player_ids:
+            return flt
+        scope = Scope(sport=flt.sport, tournament_ids=tuple(flt.tournament_ids), season_ids=tuple(flt.season_ids),
+                      event_ids=tuple(flt.event_ids))
+        events = self._narrowed_events(scope, flt.team_ids, flt.player_ids)
+        return dataclasses.replace(flt, event_ids=events, team_ids=(), player_ids=())
+
     def _payloads(self, event_id: int) -> Dict[str, Any]:
         """
         Maçın profilde kullanılan dilimlerinden yükü olanlar. Bir dilim okunamıyorsa (katalog güncellendikten sonra
@@ -362,8 +429,10 @@ class ExportService:
           standings
                    StandingsRow (P28); süzgece uyan maçların sezonları (turnuva, sezon; ilk görülme sırasıyla),
                    her sezonun saklanan puan durumu tabloları, sıra düzeniyle.
+
+        Katılımcı süzgeci (`team_ids`, `player_ids`) önce maç kimliklerine çözülür (modül belgesi).
         """
-        flt = flt or DatasetFilter()
+        flt = self._narrowed(flt or DatasetFilter())
         if dataset == DATASET_EVENTS:
             return self._events(flt)
         if dataset == DATASET_SLICES:
@@ -440,7 +509,7 @@ class ExportService:
     def _raw_dataset(self, spec: "DatasetSpec", dest: Any, *, overwrite: bool, allow_empty: bool) -> ExportResult:
         if _is_stream(dest):
             raise UsageError("A raw export is written to a path, not to a stream.", {"schema": RAW})
-        query = _event_query(spec.filter, has_details=True)
+        query = _event_query(self._narrowed(spec.filter), has_details=True)
         if not allow_empty and self._store.events.count(query) == 0:
             raise NotFoundError("there is no downloaded match to export", _not_found_details(spec))
         keys = (EVENT_KEY,) if spec.dataset == DATASET_EVENTS else None
@@ -495,6 +564,10 @@ _DATASET_SORT = "start_asc"
 _PAGE = 500  # bir okumadaki maç ya da değişiklik satırı
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _NOTHING = object()
+LINEUPS_KEY = "lineups"  # oyuncu süzgecinin okuduğu dilim (kadro)
+# Hiçbir maçın kimliği değil (SofaScore kimlikleri pozitiftir): katılımcı süzgecine uyan maç yoksa maç süzgeci bu
+# tek kimlik olur, böylece boş süzgeç "hepsi" anlamına gelmez
+_NO_EVENT = 0
 
 
 @dataclass(frozen=True)
@@ -506,6 +579,8 @@ class DatasetFilter:
     status_classes: durum sınıfları (`not_started`, `live`, `completed`, `decided_without_play`, `void`,
         `unknown`). start_from / start_to: epoch saniye, iki uç dahil; `events` ve `slices` için maçın
         başlangıcı, `changes` için kaydın zamanı. `changes` sezon ve durum süzgeci almaz.
+    team_ids / player_ids: katılımcı süzgeci (B1; modül belgesi): bu takımlardan ya da oyunculardan birinin
+        maçları; ikisi birlikte tek süzgeçtir, öteki alanlarla VE.
     """
 
     sport: Optional[str] = None
@@ -515,6 +590,8 @@ class DatasetFilter:
     status_classes: Tuple[str, ...] = ()
     start_from: Optional[float] = None
     start_to: Optional[float] = None
+    team_ids: Tuple[int, ...] = ()
+    player_ids: Tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -693,6 +770,25 @@ def flatten_record(record: Mapping[str, Any], paths: Sequence[Tuple[str, Tuple[s
             value = value.get(part) if isinstance(value, Mapping) else None
         row[name] = value
     return row
+
+
+def lineup_players(lineups: Any) -> FrozenSet[int]:
+    """
+    Saklanan bir kadronun (`/event/{id}/lineups`) oyuncu kimlikleri: iki tarafın `players` listesi (ilk on bir ve
+    yedekler). `missingPlayers` (sakat, cezalı) sayılmaz. Beklenmeyen biçim boş küme.
+    """
+    found: Set[int] = set()
+    if not isinstance(lineups, Mapping):
+        return frozenset()
+    for side in ("home", "away"):
+        team = lineups.get(side)
+        entries = team.get("players") if isinstance(team, Mapping) else None
+        for entry in entries if isinstance(entries, list) else ():
+            player = entry.get("player") if isinstance(entry, Mapping) else None
+            value = player.get("id") if isinstance(player, Mapping) else None
+            if isinstance(value, int) and not isinstance(value, bool):
+                found.add(value)
+    return frozenset(found)
 
 
 def _event_query(flt: DatasetFilter, *, has_details: Optional[bool] = None) -> EventQuery:
@@ -929,5 +1025,5 @@ __all__ = ["COLUMN_SEPARATOR", "DATASETS", "DATASET_CHANGES", "DATASET_EVENTS", 
            "DatasetFilter", "DatasetSpec", "ExportResult", "ExportService", "ExportSpec", "LEGACY_WIDE_CSV",
            "LegacyTable", "NORMALIZED", "PreparedExport", "RAW", "RAW_DATASETS", "RAW_FORMATS", "SCHEMAS",
            "TEXT_FORMATS", "check_dataset", "column_types", "dataset_columns", "flatten_record", "leaf_paths",
-           "legacy_columns", "legacy_folders", "legacy_wide_row", "parquet_available", "parse_moment",
+           "legacy_columns", "legacy_folders", "legacy_wide_row", "lineup_players", "parquet_available", "parse_moment",
            "record_model"]

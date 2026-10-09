@@ -333,6 +333,8 @@
     "ssc_help_export_out": "where to write; - is stdout (jsonl and csv only). Default for the wide CSV: match_details/processed/all_matches_<time>.csv in the data folder; for a dataset: exports/<dataset>_<time>.<format> in the data folder",
     "ssc_help_export_tournament": "only the matches of this tournament (repeatable)",
     "ssc_help_export_event": "only this match (repeatable)",
+    "ssc_help_export_team": "only the matches of this team; a player in individual sports (repeatable; one filter with --player)",
+    "ssc_help_export_player": "only the matches whose stored lineups name this player (repeatable; one filter with --team)",
     "ssc_help_export_force": "replace an existing target (datasets and --schema raw)",
     "ssc_export_written": "Export written: {path} ({rows} matches)",
     "ssc_export_streamed": "Export written to stdout: {rows} matches",

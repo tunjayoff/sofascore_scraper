@@ -218,6 +218,9 @@ export const v1 = {
     request<Op<'listTournaments'>['response']>('GET', '/api/v1/tournaments', { query, signal }),
   tournament: (id: number, signal?: AbortSignal): Promise<Data<'getTournament'>> =>
     request<Op<'getTournament'>['response']>('GET', `/api/v1/tournaments/${id}`, { signal }).then((r) => r.data),
+  /** A competitor the catalog knows from its stored matches: gender, national team, country (B1); 404 before. */
+  team: (id: number, signal?: AbortSignal): Promise<Data<'getTeam'>> =>
+    request<Op<'getTeam'>['response']>('GET', `/api/v1/teams/${id}`, { signal }).then((r) => r.data),
   /**
    * One request to SofaScore (5.1), unless the server still keeps the answer of the same text (10 minutes,
    * FX-20). Aborting it before the server sent it means it is never sent.

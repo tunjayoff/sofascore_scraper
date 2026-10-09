@@ -140,11 +140,15 @@ export const change = (over: Partial<Change> = {}): Change => ({
   ...over,
 })
 
+/** The sports the server's registry flags `individual` (sofascore_scraper/sports.py; B1). */
+export const INDIVIDUAL = ['tennis', 'badminton', 'table-tennis', 'padel', 'snooker', 'darts', 'mma']
+
 export const sport = (slug = 'football') => ({
   slug,
   name: slug[0].toUpperCase() + slug.slice(1),
   i18n_key: `sport.${slug}`,
   score_family: 'football',
+  individual: INDIVIDUAL.includes(slug),
   slices: ['statistics', 'team_streaks', 'pregame_form', 'h2h', 'lineups', 'incidents'].map((key) => ({ key, path: `/event/{event_id}/${key}`, required: true, default_enabled: true })),
 })
 

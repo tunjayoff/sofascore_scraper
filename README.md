@@ -196,6 +196,7 @@ data/
 ```bash
 ssc export --dataset events --format parquet --tournament 17 --out pl.parquet   # needs pyarrow
 ssc export --dataset slices --format sqlite --out slices.sqlite
+ssc export --dataset events --format csv --team 3071 --player 822471 --out mine.csv   # a team's or a player's matches
 ssc export --schema raw --format jsonl --out raw.jsonl     # the stored SofaScore payloads
 ssc export --out matches.csv                               # the 2.x wide CSV
 ```

@@ -70,3 +70,12 @@ def test_api_sports_is_read_only():
     client = TestClient(app)
     assert client.post("/api/v1/sports", json={}).status_code == 405
     assert client.delete("/api/v1/sports").status_code == 405
+
+
+def test_api_says_which_sports_are_individual():
+    """B1 (e2e F31): `individual` kayıt defterinden; web arayüzü bireysel sporların listesini artık kendisi tutmaz."""
+    r = TestClient(app).get("/api/v1/sports")
+    flags = {s["slug"]: s["individual"] for s in r.json()["data"]}
+    assert {slug for slug, on in flags.items() if on} == {
+        "tennis", "badminton", "table-tennis", "padel", "snooker", "darts", "mma"}
+    assert flags == {spec.slug: spec.individual for spec in sports.SPORTS}

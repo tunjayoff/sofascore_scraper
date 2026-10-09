@@ -19,8 +19,12 @@
   * Hangisi: `--schema raw` ham dışa aktarmadır; `--dataset` ya da `--schema normalized` normalleştirilmiş veri
     kümesidir; ikisi de yoksa (bugünkü gibi) geniş CSV'dir.
   * Süzgeçler (`--sport`, `--tournament`, `--season`, `--event`, `--status`, `--from`, `--to`) birlikte (VE)
-    uygulanır ve API v1'in `GET /events` süzgeçleriyle aynı anlamdadır. Geniş CSV yalnızca `--tournament` ve
-    `--event`'i bilir; `changes` sezon ve durum süzgeci almaz, `--from`/`--to` onda kaydın zamanıdır.
+    uygulanır ve API v1'in `GET /events` süzgeçleriyle aynı anlamdadır. Geniş CSV yalnızca `--tournament`,
+    `--event`, `--team` ve `--player`'ı bilir; `changes` sezon ve durum süzgeci almaz, `--from`/`--to` onda kaydın
+    zamanıdır.
+  * `--team ID` ve `--player ID` (tekrarlanabilir; B1) katılımcı süzgecidir: bu takımlardan ya da oyunculardan
+    birinin maçları (ikisi tek süzgeç). Takım, maçın iki tarafından biridir (takım takibinin kimliği; bireysel
+    sporlarda oyuncu); oyuncu, maçın saklanan kadrosunda adı geçendir (oyuncu takibinin kimliği).
   * Yazılacak kayıt yoksa hiçbir dosya yazılmaz ve komut `not_found` ile biter (çıkış kodu 1). Ham dışa aktarma
     ve geniş CSV yalnızca detayı (olay yükü) saklanan maçları yazar.
   * Dışa aktarma kilit almaz: bir indirme sürerken de çalışır, o anki katalogdan okur.
@@ -77,6 +81,10 @@ def _arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
                         help=t("ssc_help_export_season"))
     parser.add_argument("--event", dest="events", action="append", type=_positive_id, metavar="ID",
                         help=t("ssc_help_export_event"))
+    parser.add_argument("--team", dest="teams", action="append", type=_positive_id, metavar="ID",
+                        help=t("ssc_help_export_team"))
+    parser.add_argument("--player", dest="players", action="append", type=_positive_id, metavar="ID",
+                        help=t("ssc_help_export_player"))
     parser.add_argument("--status", dest="statuses", action="append", choices=STATUS_CLASSES,
                         help=t("ssc_help_export_status"))
     parser.add_argument("--from", dest="start_from", metavar="DATE", help=t("ssc_help_export_from"))
@@ -85,7 +93,10 @@ def _arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
 
 
 def _filters(args: argparse.Namespace) -> Dict[str, Any]:
-    return {"tournaments": list(args.tournaments or ()), "events": list(args.events or ())}
+    found: Dict[str, Any] = {"tournaments": list(args.tournaments or ()), "events": list(args.events or ())}
+    if args.teams or args.players:
+        found.update(teams=list(args.teams or ()), players=list(args.players or ()))
+    return found
 
 
 def _dataset_spec(args: argparse.Namespace, dataset: str, fmt: str, schema: str) -> "DatasetSpec":
@@ -103,7 +114,8 @@ def _dataset_spec(args: argparse.Namespace, dataset: str, fmt: str, schema: str)
         filter=DatasetFilter(sport=args.sport, tournament_ids=tuple(args.tournaments or ()),
                              season_ids=tuple(args.seasons or ()), event_ids=tuple(args.events or ()),
                              status_classes=tuple(args.statuses or ()), start_from=moments["from"],
-                             start_to=moments["to"]))
+                             start_to=moments["to"], team_ids=tuple(args.teams or ()),
+                             player_ids=tuple(args.players or ())))
 
 
 class _TextSink:
@@ -194,11 +206,12 @@ def export(inv: Invocation) -> CommandResult:
     if args.fmt not in (None, "csv"):
         raise UsageError("the legacy-wide-csv profile writes --format csv; use --dataset for the other formats")
     if args.sport or args.seasons or args.statuses or args.start_from or args.start_to:
-        raise UsageError("the legacy-wide-csv profile filters by --tournament and --event only")
+        raise UsageError("the legacy-wide-csv profile filters by --tournament, --event, --team and --player only")
     store = open_store(data_dir)
 
     spec = ExportSpec(profile=LEGACY_WIDE_CSV, tournament_ids=tuple(args.tournaments or ()),
-                      event_ids=tuple(args.events or ()))
+                      event_ids=tuple(args.events or ()), team_ids=tuple(args.teams or ()),
+                      player_ids=tuple(args.players or ()))
     service = ExportService(store)
     prepared = service.prepare(spec)
     if prepared.rows == 0:

@@ -143,7 +143,7 @@ class SearchHit:
 
     category_*   turnuvanın kategorisi (takım ve oyuncuda boş)
     country_*    ülke: turnuvada kategorinin `alpha2`'si, takımda ve oyuncuda varlığın `country`'si
-    team_*       oyuncunun takımı
+    team_*       oyuncunun takımı; kulübü olmayan oyuncuda (SofaScore'un yer tutucusu "No team") None
     followed     aynı türden bir takip bu varlığı zaten adlandırıyor
     gender       takımın cinsiyeti, SofaScore'un yazdığı gibi ("M" erkek, "F" kadın); bilinmiyorsa None (FX-23, F26:
                  aynı adlı erkek ve kadın takımları ayırt edilsin)
@@ -588,6 +588,16 @@ def _mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
+# SofaScore'un kulübü olmayan oyuncuya verdiği yer tutucu takımın adları (küçük harf; B1, e2e F32)
+NO_TEAM_NAMES = frozenset({"no team", "no-team"})
+
+
+def _club(team: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Oyuncunun takımı; SofaScore'un yer tutucusu "No team" bir takım değildir (boş eşleme)."""
+    name = _text(team.get("name"))
+    return {} if name is not None and name.strip().lower() in NO_TEAM_NAMES else team
+
+
 def _sport_of(*holders: Mapping[str, Any]) -> Optional[str]:
     for holder in holders:
         sport = _mapping(holder.get("sport"))
@@ -643,7 +653,7 @@ def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Op
         id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_entity_sport(item, entity, team),
         category_id=None, category_name=None, category_slug=None, country_code=_text(country.get("alpha2")),
         followed=(kind, entity_id) in followed, kind=kind, country_name=_text(country.get("name")),
-        team_id=_number(team.get("id")), team_name=_text(team.get("name")),
+        team_id=_number(_club(team).get("id")), team_name=_text(_club(team).get("name")),
         gender=_text(entity.get("gender")), national=national if isinstance(national, bool) else None,
     )
 

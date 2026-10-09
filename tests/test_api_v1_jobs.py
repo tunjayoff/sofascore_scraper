@@ -758,7 +758,9 @@ def test_sports_are_the_registry() -> None:
     assert body["page"] == {"limit": len(sports.SPORTS), "next_cursor": None}
     football = data(client.get("/api/v1/sports/football"))
     assert football == body["data"][0]
-    assert list(football) == ["slug", "name", "i18n_key", "score_family", "slices"]
+    assert list(football) == ["slug", "name", "i18n_key", "score_family", "individual", "slices"]
+    # B1 (e2e F31): bireysel sporun oyuncuları SofaScore'da takımdır
+    assert football["individual"] is False and data(client.get("/api/v1/sports/tennis"))["individual"] is True
     # P28: kayıt defterinin bütün dilimleri (oranlar ve maç dışı dilimler dahil; sahibi `owner`'da)
     assert [s["key"] for s in football["slices"]] == [s.key for s in sports.registered_slices()
                                                       if s.applies_to("football")]
