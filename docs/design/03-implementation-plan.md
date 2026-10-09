@@ -5187,8 +5187,7 @@ Open, in no fixed order:
 - Small leftovers of P30 (section 16): `ssc export` still names its files with epoch seconds while the
   export jobs use the UTC date; `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
   neutral `/search` for `/tournaments/search`; one `FetchPipeline` per `DetailPhase` call instead of one
-  session per job; `_task_row` prints a task's `options` as they are. The help text of `fetch.only_finished`
-  in the web UI still names the 2.x match lists (`frontend/src/locales/ui/en.ts`, `05-web-ui.md` 6.16).
+  session per job; `_task_row` prints a task's `options` as they are.
 
 Decided not to do in 3.1: a localized date picker (owner, 2026-10-09; the native date input stays) and
 serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).

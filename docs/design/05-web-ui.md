@@ -1823,7 +1823,7 @@ test had found the SofaScore address first (F20). The wireframe's "Base address"
 said that it only filters the lists and does not change what is downloaded, which was wrong: with it on, a
 league download fetches the details of finished matches only (`QueryService.detail_candidates`), and the
 Overview counts count finished (or detailed) matches (and so did the 2.x `/api` lists until P30 removed
-them; the help text in `frontend/src/locales/ui/en.ts:1838` at `216c2f9` still names them). The help says so, and that
+them; FX-34 took them out of the help text, which names `ssc status` instead). The help says so, and that
 the Matches screen and team, player and match follows are not affected; the setting's description in
 `sofascore_scraper/config/settings.py` says the same. It stays in the UI, because it changes downloads. In
 the defaults for all sports, an optional data type says "not available in every sport" ("her sporda

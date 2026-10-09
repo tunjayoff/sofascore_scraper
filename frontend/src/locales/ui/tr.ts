@@ -1840,7 +1840,7 @@ const tr: typeof en = {
       odds_provider: 'Oranları indirilen bahis şirketinin SofaScore’daki numarası. Bilinen bir şirketi seçin ya da herhangi bir numara yazın; hangi şirketlerin yanıt verdiği SofaScore’un gördüğü ülkeye bağlıdır.',
     },
     fetch: {
-      only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki maç sayıları ve eski /api maç listeleri de yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada ne görüneceğini Oynananlar / Gelecek / Tümü seçimi ve durum süzgeci belirler); takım, oyuncu ve tek maç takiplerini de.',
+      only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki ve ssc status çıktısındaki maç sayıları da yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada ne görüneceğini Oynananlar / Gelecek / Tümü seçimi ve durum süzgeci belirler); takım, oyuncu ve tek maç takiplerini de.',
       confirm_empty_after_seconds: 'SofaScore bitmiş bir maçın bir veri türü için “veri yok” dediğinde, bunu doğrulamak için en erken bu kadar saniye sonra bir kez daha sorulur; ondan önceki indirme onu atlar. 0 sonraki indirmede yeniden sorar.',
     },
     defaults: {
