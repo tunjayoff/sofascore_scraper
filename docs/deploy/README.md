@@ -25,7 +25,7 @@ The platform is a few independent processes that share one data folder:
 
 | Process | Runs | How long | Locks it takes |
 |---|---|---|---|
-| `ssc serve` | the web app and the HTTP API (`/api/v1`, the legacy `/api`) and, when sinks are configured, their dispatcher | until stopped | `writer` while a job started from the web app runs; `sinks` while it delivers |
+| `ssc serve` | the web app and the HTTP API (`/api/v1`) and, when sinks are configured, their dispatcher | until stopped | `writer` while a job started from the web app runs; `sinks` while it delivers |
 | `ssc watch` | the live service (the only place it runs; there is no live service inside `serve`) and the sink dispatcher | until stopped | `live`, `sinks` |
 | `ssc sync`, `ssc refresh`, `ssc fetch …` | one download job | until done | `writer` |
 
@@ -34,9 +34,9 @@ One writer at a time per data folder: a second download exits with code 6 and na
 holds the `sinks` lock delivers, the other waits. `ssc status` shows the locks, the running job and the state
 of the live service.
 
-`python main.py --web` still starts the server for one more release: it runs `ssc serve --host 127.0.0.1
---port 8000` (or the `--host` / `--port` it was given) and prints one line that says so. Replace it with
-`ssc serve` in your own scripts.
+The 2.x flags of `python main.py` (`--web`, `--headless --update-all`, `--watch`, …) were removed in 3.1: each
+is a usage error (exit code 2) that names the command replacing it. Use `ssc serve` (or `python main.py serve`)
+in your own scripts.
 
 ## `ssc serve` as a systemd service
 
@@ -122,8 +122,8 @@ the proxy be the only way in.
 
 - **Host header.** The proxy must pass the original `Host` on (nginx: `proxy_set_header Host $host`; Caddy does
   it by default), and that name must be on the allow-list. Otherwise every request gets `400 Invalid host header`.
-- **Server-sent events.** Job progress is a long-lived event stream (`/api/v1/jobs/{id}/events`,
-  `/api/scrape/stream`): turn response buffering off and allow long reads.
+- **Server-sent events.** Job progress is a long-lived event stream (`/api/v1/jobs/{id}/events`): turn
+  response buffering off and allow long reads.
 - **Client addresses and the attempt limit.** The limit on wrong tokens counts per client address and lives in
   memory. Which address the server sees depends on the proxy:
   - A proxy on the same machine that connects to `127.0.0.1` or `::1` and sends `X-Forwarded-For` (nginx with
@@ -156,7 +156,7 @@ server {
         proxy_read_timeout 1h;
     }
 
-    location /api/auth/login {
+    location /api/v1/auth/login {
         limit_req zone=sofascore_auth burst=5 nodelay;
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
@@ -235,13 +235,13 @@ busy waits (`--wait`), exits with 6 or, for a scheduler task, skips that run.
 ## Backups
 
 `ssc backup create` writes a zip under `<data folder>/backups/` (`--scope`: `all`, the default; `state`, the
-follows, job history and event log; `data`, the match files and the change log; `config`, the settings files
-only; or one old 2.x folder: `seasons`, `matches`, `match_details`). Every scope except `config` takes the writer
+follows, job history and event log; `data`, the match files and the change log). Every scope takes the writer
 lock: while a download runs it exits with 6, so schedule it between downloads (or as a `backup` task of the
-in-app scheduler). `.env` goes in only with `--include-secrets`, and the file name then says `_with_env`.
-The scopes `all`, `state` and `config` also take `config/overrides.json`, the settings saved on the web app's
-**Settings** page; it can hold the proxy URL with its password, so a backup that has it is readable by its
-owner only (like a `_with_env` backup; its name does not change).
+in-app scheduler). `.env` goes in only with `--include-secrets` (scopes `all` and `state`), and the file name
+then says `_with_env`. The scopes `all` and `state` also take `config/overrides.json`, the settings saved on the
+web app's **Settings** page; it can hold the proxy URL with its password, so a backup that has it is readable by
+its owner only (like a `_with_env` backup; its name does not change). The 2.x scopes `config`, `seasons`,
+`matches` and `match_details` were removed in 3.1; backups made with them still verify and restore.
 
 ```bash
 ssc backup create
@@ -293,7 +293,8 @@ writable. A data folder that an earlier version created may have lock and databa
 can write. Repair it once, while nothing runs, as the owner of the files or as root:
 
 ```bash
-chmod g+w DATA_DIR/.meta/locks/*.lock DATA_DIR/.meta/state.db* DATA_DIR/.meta/catalog.db*
+cd /path/to/data   # the data folder (storage.data_dir)
+chmod g+w .meta/locks/*.lock .meta/state.db* .meta/catalog.db*
 ```
 
 The `*` after the database names matters: it also covers `-wal` and `-shm` files that a failed attempt of the
