@@ -76,7 +76,8 @@ an `env` source of Settings), FX-33 (#188: the `dotenv` label and the `sofascore
 and player), B2 (#191: every follow's coverage from `/status`, a player follow's Matches tab, request
 counters and season names in Job detail, the connection state by the last outcome, the token check under a
 root path) and B3 (#189: e-sports maps in the match header, single-set darts as legs). The screen sections
-say "As built (FX-28)", "(B1)", "(B2)" or "(B3)" where they changed them; section 11 items 85 to 94.
+say "As built (FX-28)", "(B1)", "(B2)", "(B3)" or "(B4)" where they changed them; section 11 items 85 to 95. B4
+(#192, merged after `216c2f9`, at `ff6fd7c`) names the odds providers.
 
 ## Contents
 
@@ -1267,9 +1268,12 @@ reader's language, others SofaScore's English marked `lang="en"`; the line, for 
 2.5"; suspended or in play), each outcome with its decimal price (the fraction under it), the opening
 price, the direction of the last change (word and arrow; the arrow only on a phone) and the winner. A
 market that the featured list names twice (`default`, `fullTime`) is shown once. The stored odds slices
-with their raw view follow under "SofaScore's answer". The bookmaker is shown as "Bookmaker 1": `Odds`
-carries only `provider_id`, and a provider name is open after 3.0.0 (7.3). The end-to-end test had found
-only the raw viewer with "readable view coming soon" (F11).
+with their raw view follow under "SofaScore's answer". The end-to-end test had found only the raw viewer
+with "readable view coming soon" (F11). **As built (B4, #192; G38; finding M20 of the live validation):**
+the heading names the bookmaker ("bet365"), from `GET /api/v1/odds/providers`, read once per page; an id
+with no known name, or every id when the list cannot be read, stays numbered ("Bookmaker 5"). `Odds` still
+carries only `provider_id`. The sub-key of an odds slice in the raw list and in the Data table shows the
+name too. No betting link, campaign field or colour of SofaScore's provider listing is stored or shown.
 
 **As built (FX-26, #174): the score of every sport.** The multi-sport pass of the live validation
 (2026-10-08, one finished match of each of 20 sports) found headers that showed less than the record holds
@@ -1769,7 +1773,10 @@ from.
 ```
 
 Sections: **Requests** (`client.*`, `breaker.*`), **Data** (`fetch.only_finished`; the default data
-selection `defaults.slices` and `slices.<sport>` with the SlicePicker, from P27; the odds provider, P28),
+selection `defaults.slices` and `slices.<sport>` with the SlicePicker, from P27; the odds provider, P28,
+which since B4 (#192) has a "Known bookmakers" select next to the number, with options like "bet365 · 1";
+free entry of any id still works and the select then says "Another number", and a locked row reads
+"1528 · bet365 Türkiye"),
 **Refresh** (`refresh.window_hours`), **Display** (`display.language`, `display.date_format`), **Logging**
 (`log.level`, `log.debug`), **Storage** (`storage.data_dir`), **Server (read-only)** (bind address, allowed
 hosts, token in use yes/no, live source, sinks, schedule, config file path), **This browser** (language of
@@ -1900,6 +1907,7 @@ Added since, at `216c2f9` (FX-28 and the 3.1 work):
 | `GET /teams/{team_id}` (`TeamRecord`, G35); `individual` on `Sport` (G36); `ExportFilter.team_ids`, `player_ids` (G39); `gender` and `national` on catalog team hits; a "No team" placeholder reported as `team: null` | B1 (#190) | Follow detail, Follow editor, quick search, Exports |
 | `/status.summary.follows[]` (G40); `GET /events?follow=kind:id`; `progress.requests` and `result.requests` (G41); `league_name`, `season_name`, `season_year` in sync log parameters (G37); `last_check.superseded` in `/status.connection`; setting `fetch.confirm_empty_after_seconds` | B2 (#191) | Follows, Follow detail, Job detail, Health, Settings › Data |
 | `SetsScore.sets` of e-sports (`games_won`) and `legs_won` for darts in one set (G43) | B3 (#189) | Event detail, Events |
+| `GET /odds/providers` (`OddsProviderInfo`: `id`, `name`, `country`, `configured`; G38) | B4 (#192) | Event detail (Odds), Data table, Settings |
 
 P30 (#186) removed the 2.x `/api` routes; a 2.x path answers 404. No screen used them.
 
@@ -1975,7 +1983,7 @@ state at `43ecdfc`. The rows of G33, G35 to G41 and G43 give the state at `216c2
 | G35 | A team record route with gender and country (`GET /teams/{id}` or a participant route; `FollowRecord` has neither), for a team follow's header (F5, F26; FX-24 gap 2) | **Built** by B1 (#190): `GET /api/v1/teams/{team_id}` → `TeamRecord` (the stored participant: `sport`, `type`, `name`, `country_code`, `gender`, `national`, … and `followed`), from the catalog, no SofaScore request; 404 `not_found` until a match of the team is stored. `/catalog/suggest` team hits carry `gender` and `national` too. UI: the header of a team follow (6.4), with the search hit as the fallback. | done (B1) |
 | G36 | Whether a sport's participants are players (`participants: "individual" \| "team"` on `Sport`, F31; FX-24 gap 3) | **Built** by B1 (#190) as a required boolean `individual` on `Sport` (`SportSpec.individual`: tennis, badminton, table tennis, padel, snooker, darts, MMA; e-sports is a team sport). UI: `isIndividual()` reads the registry; `INDIVIDUAL_SPORTS` is gone (6.3), so R4 holds. | done (B1) |
 | G37 | The season's name in the log parameters of `sync_schedule` and `sync_season_outdated` (F8; FX-24 gap 4) | **Built** by B2 (#191): sync log lines carry `league_name`, `season_name`, `season_year` (`resolved_name`, `resolved_year` for an outdated season). UI: Job detail writes them and reads a season list only for an older server's lines (6.9). | done (B2) |
-| G38 | An odds provider's name (F11; FX-24 gap 5) | **Missing**: `Odds.provider_id` only; the Odds tab says "Bookmaker 1" (6.6). Which provider ids map to which names needs research on the real site. | open for 3.1 (`03` section 19) |
+| G38 | An odds provider's name (F11; FX-24 gap 5) | **Built** by B4 (#192): `GET /odds/providers` (`listOddsProviders`: `id`, `name`, `country`, `configured`) from the built-in table `sports.ODDS_PROVIDERS`, no SofaScore request; the Odds tab, the Data table and the Settings row name the bookmaker (6.6, 6.16). `Odds.provider_id` stays the only field of the record; a `provider_name` in schema v1 and a fetch of SofaScore's provider listing are open (`03` section 19). | B4 (#192) |
 | G39 | Export by team or player: a participant field on `ExportFilter` (F13; FX-24 gap 6) | **Built** by B1 (#190): `ExportFilter.team_ids`, `player_ids` (one filter, ANDed with the others; a player's matches are those whose stored line-ups name the player), also `ssc export --team/--player`. UI: the export dialog sends teams and players as such (6.10). | done (B1) |
 | G40 | Coverage per follow in `/status` (`summary.follows[]` or `FollowRecord.coverage`), and a way to count a player's matches (F23; FX-24 gap 7) | **Built** by B2 (#191): `/status.summary.follows[]` (`events`, `finished`, `finished_details`, `coverage`, `counted`) for every follow; a player's from the match ids of the player's last match list, kept in `state.db` (`follow_events:player:<id>`); `GET /events?follow=kind:id`. UI: the Follows list, a follow's facts and a player's Matches tab (6.2, 6.4); the `/events` counting stays only for an older server. | done (B2) |
 | G41 | Request counters in job progress (requests sent, expected requests per match), for an ETA in requests (F17; FX-24 gap 8) | **Built** by B2 (#191): `progress.requests` and `result.requests` (`sent`, `budget_wait_seconds`, `backoff_seconds`); the league detail phase plans by need, so the server's request-based ETA covers league downloads (no expected-requests field). UI: Job detail (6.9); the recent-pace rule stays. | done (B2) |
@@ -2497,7 +2505,10 @@ at `216c2f9`). FX-28 (#177) merged before the release; 3.0.0 was tagged on 2026-
     access token was not checked on `/…/api/v1`, which B2 fixed; the cancel of an aborted search and the job
     stream were checked offline with a proxy-like client.
 94. **Open** (4.10, 7.3). The owner decided on 2026-10-09 against a localized date picker for now (the native
-    picker stays; not in 3.1). Bookmaker names (G38) need research on the real site and are open for 3.1.
+    picker stays; not in 3.1).
+95. **Bookmaker names** (6.6, 6.16, 7.3 G38). The Odds tab said "Bookmaker 1". B4 (#192) names the known
+    providers from a built-in table (`GET /odds/providers`), in the Odds tab, the Data table and the Settings
+    row of `client.odds_provider`; unknown ids stay numbered.
 
 The words, as built (FX-14a, #154; design word → Turkish → English):
 

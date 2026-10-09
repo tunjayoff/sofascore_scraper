@@ -4561,6 +4561,24 @@ As built at `216c2f9` (P30 #186, FX-30 #180, B1 #190, B2 #191). `docs/api/openap
 - **Removed** (P30): the 2.x `/api/…` routes (6.1) and the `'unsafe-eval'` Content-Security-Policy that pages
   of a frontend build without the `sofascore-csp` marker got (#43): every page except `/docs` and `/redoc`
   gets the strict policy, and the marker left `index.html` with FX-33 (#188).
+- **`GET /odds/providers`** (`listOddsProviders`, B4 #192, merged after `216c2f9`;
+  `sofascore_scraper/web/api/v1/meta.py:797-813` at `ff6fd7c`) answers `OddsProviderListResponse` with
+  `OddsProviderInfo {id, name, country, configured}` for every entry of the built-in table
+  `sports.ODDS_PROVIDERS` (`sofascore_scraper/sports.py:428`; `odds_provider(id)` and `odds_provider_label(id)`,
+  "Provider N" for an unknown id). `configured` marks the id of `client.odds_provider`. The route reads only
+  the table and sends no SofaScore request. The table holds an id, a name and a country, nothing else: 1 is
+  bet365 (international), the odds source behind most country affiliates, and the others are the ids of the
+  country listings recorded on 2026-10-09 (1528 bet365 Türkiye, …); provider 5 answers odds but is in no
+  listing, so it has no name. SofaScore's provider listing (`/odds/providers/{cc}/web`) is per country and
+  carries affiliate links (`defaultBetSlipLink`, `betSlipLink`, `impressionCostEncrypted`, campaign fields,
+  colours); none of them is stored or given out. Why a table and not a fetch: the Store has no place for such
+  reference data, and the platform never derives a country from the machine (`client.odds_country` comes
+  only from the user). Open (`03-implementation-plan.md` section 19): an optional reference fetch of the
+  listing, at most weekly, only when `client.odds_country` is set, through the client and the throttle and
+  never part of a match download, with every link stripped and the result merged over the table; and a
+  `provider_name` field in schema v1 (`Odds.provider_id` and `OddsLine.provider_id` are unchanged; an
+  additive change with the generated tables of `04-schema-v1.md`). The help text of `client.odds_provider`
+  (`ssc describe config`, the config JSON Schema) names `1 = bet365 (international)` and the route.
 
 ### 6.1 Existing `/api` routes
 

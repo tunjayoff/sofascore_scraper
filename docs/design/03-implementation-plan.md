@@ -18,15 +18,16 @@ that revision was checked against `origin/main` at `48e4c4c`. Revised a ninth ti
 the live validation against the real site, its fix items FX-26 and FX-27, and FX-16 (pull requests #174 to
 #176); that revision was checked against `origin/main` at `43ecdfc`. Revised a tenth time, on 2026-10-09,
 after the 3.0.0 release (pull request #179 and the tag `v3.0.0`), P30 and the first items of 3.1 (pull
-requests #177 and #180 to #191); this revision was checked against `origin/main` at `216c2f9`.
+requests #177 and #180 to #192); this revision was checked against `origin/main` at `216c2f9`, and B4
+(#192), which merged while it was written, at `ff6fd7c`.
 This is the one ordered list of pull requests for `01-storage.md` and `02-services.md`. It replaces the two
 separate PR lists the designs were drafted with; section 12 maps the old ids to the ids used here.
 
 The plan has 97 items: the 67 of the first version, one more live item (P31) and twenty-nine small fix items
 (FX-1 to FX-28, with FX-14 split into FX-14a and FX-14b) that came out of the batches, the end-to-end test and
 the live validation. Most items are one
-pull request; P21 took five, FE-2 three and FX-13 two. After the release the orchestrator gave eight more
-items from the list of work after 3.0.0 (FX-29 to FX-33 and B1 to B3; FX-29 took three pull requests). They
+pull request; P21 took five, FE-2 three and FX-13 two. After the release the orchestrator gave nine more
+items from the list of work after 3.0.0 (FX-29 to FX-33 and B1 to B4; FX-29 took three pull requests). They
 were written from the orchestrator's instructions, not from a brief of this plan, and have no node in the
 diagram and no row in sections 5, 6 and 9; section 19 records them with what is still open for 3.1. Each has an id, a lane, its dependencies, the files it owns, the behaviour change it makes (if any),
 a size (S: up to about 200 changed lines, M: up to about 600, L: more) and a brief that an implementer can
@@ -178,8 +179,9 @@ work from without reading the other briefs.
 | B3 | #189 | merged | new on 2026-10-09 (batch B of the work after 3.0.0): single-set darts as legs won, e-sports game scores; `DERIVE_VERSION` 8 |
 | B1 | #190 | merged | batch B: the team record route, the sports' `individual` flag, the export's team and player filter |
 | B2 | #191 | merged | batch B: coverage per follow and a player's matches in `/status`, request counters of a job, season names in the log, the wait before a confirming request (F29), the connection rule, the access token under a root path |
+| B4 | #192 | merged | batch B: the odds providers by name (built-in table, `GET /api/v1/odds/providers`, the Odds tab, the Data table and the Settings row); merged while this revision was written |
 
-Every item is merged or done: the 97 of the plan and the eight items after the release (section 19). 3.0.0
+Every item is merged or done: the 97 of the plan and the nine items after the release (section 19). 3.0.0
 was released on 2026-10-08 (section 18); 3.1 is being built on main, and section 19 says what it has and
 what is open. What this revision, the tenth (2026-10-09), changed:
 
@@ -193,11 +195,11 @@ what is open. What this revision, the tenth (2026-10-09), changed:
 - **The plan is complete.** FX-28 (#177) and P30 (#186) are merged; P30 removed the 2.x flags, routes,
   environment names, backup scopes, shims and fetcher faces for 3.1. Its brief has "As built"; what it left
   went to FX-32 and FX-33, and two points are open (section 19).
-- **Eight items after the release**, all merged, given by the orchestrator from the list of work after 3.0.0
+- **Nine items after the release**, all merged, given by the orchestrator from the list of work after 3.0.0
   (owner, 2026-10-08: start it now, P30 included): FX-29 (#181, #182, #184; the research explorer works
   again and redacts what it writes), FX-30 (#180), FX-31 (#185; the evidence regenerated and the slice rows
-  that follow it), FX-32 (#187), FX-33 (#188), and batch B: B3 (#189), B1 (#190), B2 (#191). Section 19 has a
-  row for each.
+  that follow it), FX-32 (#187), FX-33 (#188), and batch B: B3 (#189), B1 (#190), B2 (#191) and B4 (#192).
+  Section 19 has a row for each.
 - **Design changes** described in `01-storage.md`, `02-services.md`, `04-schema-v1.md` and `05-web-ui.md`:
   the configuration without a dotenv layer (`.env` lines are the environment layer and lock a setting;
   2.x names give a `legacy_name` warning; an invalid `SOFASCORE_*` value is a configuration error); the
@@ -207,7 +209,8 @@ what is open. What this revision, the tenth (2026-10-09), changed:
   and a player's matches (state.db runtime key `follow_events:player:<id>`); request counters of a job;
   `fetch.confirm_empty_after_seconds`; the connection state by the last recorded outcome; the access token
   checked on the routed path under a root path; the stream's proxy headers; single-set darts and e-sports
-  game scores; the slice rows of FX-31 and the rules of the evidence; the explorer's interception, liveness
+  game scores; the odds providers by name from a built-in table (`GET /api/v1/odds/providers`); the slice
+  rows of FX-31 and the rules of the evidence; the explorer's interception, liveness
   check, probe, budget per run and redaction. Section 11 lists the corrections.
 - **Decisions of 2026-10-08 and 2026-10-09** (section 13). The owner's: the tag; the work after 3.0.0 started
   at once, P30 included; FX-31's additions kept; the slice rows of rugby, floorball, volleyball and
@@ -218,7 +221,7 @@ what is open. What this revision, the tenth (2026-10-09), changed:
 - **Estimates.** By lines added in the pull request (without the research data of #183 and #185, about
   281,700 lines, which #185 carries too): P30 about 7,070 (and 25,560 removed) in 348 files, B2 about 1,780, B1 about 1,290,
   FX-29 about 2,110 over three pull requests, FX-28 about 410, B3 about 480, FX-33 about 240, FX-32 about 190,
-  FX-31 about 1,390 (most of it the regenerated `evidence.json`) and FX-30 about 50. P30, estimated S, was L: two steps larger; read
+  FX-31 about 1,390 (most of it the regenerated `evidence.json`), B4 about 600 and FX-30 about 50. P30, estimated S, was L: two steps larger; read
   every size of the open 3.1 work one step up.
 
 What the ninth revision (PR #178, 2026-10-08) changed. At that time 95 of the then 97 items were merged or
@@ -598,10 +601,10 @@ to FX-19 (#134 to #161), those from FX-20 to REN-1 with the two documentation pu
 #168), the seventh revision of these documents (#169), the fix items of the end-to-end test, FX-23 to
 FX-25 (#170 to #172), the eighth revision (#173), the fix items of the live validation, FX-26 and FX-27, and
 FX-16 (#174 to #176), the ninth revision (#178), FX-28 (#177), the release pull request (#179), P30 (#186)
-and the eight items after the release (#180 to #185 and #187 to #191, with the research data of #183). The
+and the nine items after the release (#180 to #185 and #187 to #192, with the research data of #183). The
 gate "after open PRs" no longer exists, and at `216c2f9` nothing is in progress. The changelog entries up to
 3.0.0 are in `CHANGELOG.md`: bookkeeping pull requests added them up to #156 (#63, #66, #76, #94, #114 and
-#158), and the release pull request (#179) the rest. The entries of 3.1 (#180 to #191) are still in the
+#158), and the release pull request (#179) the rest. The entries of 3.1 (#180 to #192) are still in the
 descriptions of their pull requests, for the 3.1 release pull request (section 19). Section 5 says what can
 start. What the merged pull requests mean for every pull request from now on:
 
@@ -957,7 +960,9 @@ start. What the merged pull requests mean for every pull request from now on:
   (`test_frontend_keeps_no_list_of_individual_sports`). Every progress event and job result carries
   `requests` (`sent`, `budget_wait_seconds`, `backoff_seconds`). Tests pin `fetch.confirm_empty_after_seconds`
   to 0 (`tests/conftest.py` and the CLI golden environment) as they pin `client.rate`. The security layer and
-  the v1 error handlers read the routed path (`web.api.route_path`), not `scope["path"]`.
+  the v1 error handlers read the routed path (`web.api.route_path`), not `scope["path"]`. The names of the
+  odds providers are one table, `sports.ODDS_PROVIDERS` (id, name, country only; #192): no betting link of
+  SofaScore's listing is stored, and a committed fixture of the listing replaces its addresses.
 
 Pull requests that are not plan work: the dependency updates. #27 (the frontend's minor and patch updates)
 and #29 (the GitHub Actions, among them `actions/checkout` and `setup-python` to v7) change no file of `src/`
@@ -3747,6 +3752,9 @@ items after it (PRs #177 and #179 to #191), and where each was corrected:
     `default`, `overrides`, `file`, `env`, `flag`; no marker). Corrected (FX-33, the tenth revision).
 13. `00-platform.md` sections 1 and 10, `docs/design/README.md` and this plan (sections 1, 5 and 18): the
     release pull request, the Docker smoke test and the tag as to do. Corrected (the tenth revision).
+14. `05-web-ui.md` 6.6 and G38, `00-platform.md` section 1, and this plan (sections 14, 16, 17 and 19): the
+    odds providers known only by number (named from a built-in table, `GET /odds/providers`). Corrected (B4,
+    the tenth revision).
 
 ## 12. Old ids
 
@@ -3905,7 +3913,7 @@ marked; recorded by the tenth revision):
 - The tag (owner, 2026-10-08, in chat): `v3.0.0` on `1c5bab2`, the merge commit of the release pull request
   (#179). Section 18 records the release.
 - The work after 3.0.0 starts at once, P30 included (owner, 2026-10-08): a first batch (P30, FX-29 for the
-  research tool, FX-30 for the Windows flake of the release run), then batch B after P30 (B1 to B3, from
+  research tool, FX-30 for the Windows flake of the release run), then batch B after P30 (B1 to B4, from
   the API and data gaps of the list of section 17). FX-31, FX-32 and FX-33 came from what FX-29 and P30 left
   (orchestrator). None of them had a brief of this plan; section 19 records them.
 - FX-31's rows stay (owner, 2026-10-09): badminton and table tennis `point_by_point` and `esports_games`
@@ -3922,7 +3930,8 @@ marked; recorded by the tenth revision):
   connection state is the last recorded outcome, not "success at or after failure" (B2); a player's matches
   for the export filter are the matches whose stored line-ups name the player (B1); a team and a single match
   chosen together in the export dialog narrow each other, like every other filter (B1); single-set darts
-  read as legs won, and e-sports game scores keep the form SofaScore sends (B3); the evidence counts answers
+  read as legs won, and e-sports game scores keep the form SofaScore sends (B3); the odds providers' names
+  come from a built-in table, not from a fetch of SofaScore's per-country listing (B4); the evidence counts answers
   from every explorer run and absence only from the repaired one (FX-31).
 
 Open:
@@ -3986,7 +3995,7 @@ Open:
 ## 14. Open questions
 
 - Push channel, after the endurance run (`docs/push-channel/README.md`, PR #42). Answered for one evening, one region and three sports: `sport.{sport}` carried practically every status change (football 234 of 234, tennis 92 of 92, basketball 128 of 129); the site reconnects by itself about every 30 minutes; its client pings every 120 s; a blocked sport page costs 1.8 to 2.6 GB of memory. Still open: how often the `CONNECT` credential changes (it was constant across 15 connections in that window; days and weeks are unknown); whether the server refuses plain, non-browser clients in the long run or with several connections (one connection for 38 minutes was accepted); whether `sport.{sport}` carries every event at quiet hours and for the other 18 sports; why the connection is dropped after 30 minutes (server or client); how a direct client behaves with several subjects and over hours. P31 (#101) states these limits in both READMEs ("What was measured and what was not", `README.md:644` at `b3cb819`) and builds its re-read of a rejected credential without knowing the interval (back-off from 1 to 30 minutes). Not checked offline either: whether the push server accepts the standard-library client of P31 (stdlib TLS, the `Origin` header, no User-Agent; the measured client was aiohttp), whether the page's `CONNECT` options sent verbatim hold over hours, the credential reader in Chromium, and for P24 (#95) whether the abort rules keep the site's push code working, Scrapling's `max_pages=2` with several sport pages, and `HOME_URL/{sport}` for sports other than football, tennis and basketball. The live validation at the end of the project runs the `page` source and, with the owner's approval, the `direct` source once; it can answer only what one busy match window shows. Partly answered by the live validation (2026-10-08): next to a running `ssc serve` the `page` source opened its live pages in about 40 s and its push connections in about 2 minutes, then delivered real events (handball goals, basketball points, a volleyball set, a minifootball goal and finish), with pages for 13 sports, so `HOME_URL/{sport}` works beyond the three measured ones; `direct`, run for five minutes with the owner's approval, connected in 6 s with 13 subjects and delivered handball and basketball score changes, and wrote no credential anywhere. Still open: how long the credential lives over days, quiet hours, runs of hours, and the abort rules and `max_pages=2` on their own.
-- Odds: which provider id works without login and per region, whether `/event/{id}/odds/{provider}/all` still answers after the finish (closing odds), whether the changes endpoint exists for every sport. Seen only in `docs/all-sports/endpoints.csv`; not verified (no requests were made). Partly answered by P28 (#140): every recorded sample used provider 1, the default of `[client] odds_provider`; `winning_odds` and `season_odds` have only 404 samples, so their shape is unknown; odds are requested in a 7-day window before kick-off and once after the finish. The live validation checks which provider ids answer without login (section 18); the country is recorded only when the user sets it (section 13). Answered for the providers by the live validation (2026-10-08, one live football match, from one country): 1 and 5 answer with data, 2, 3, 4, 6, 7, 8, 10 and 15 answer 404. Live odds of football, basketball, tennis, handball and e-sports matches answered; those of ice hockey, futsal, minifootball, volleyball, badminton, table tennis, cricket and MMA did not. `winning_odds` has the shape `{"home": null | {fractionalValue, expected, actual, id}, "away": …}` (FX-27 gave it its own body rule), and `season_odds` answered one market, "To Win Outright". Odds payloads carry a `liveStreamUrl` (kept out of committed fixtures). Not checked: other regions, closing odds after the finish, the changes endpoint per sport. The providers' names (the API knows them only by number) need a live research run (section 19).
+- Odds: which provider id works without login and per region, whether `/event/{id}/odds/{provider}/all` still answers after the finish (closing odds), whether the changes endpoint exists for every sport. Seen only in `docs/all-sports/endpoints.csv`; not verified (no requests were made). Partly answered by P28 (#140): every recorded sample used provider 1, the default of `[client] odds_provider`; `winning_odds` and `season_odds` have only 404 samples, so their shape is unknown; odds are requested in a 7-day window before kick-off and once after the finish. The live validation checks which provider ids answer without login (section 18); the country is recorded only when the user sets it (section 13). Answered for the providers by the live validation (2026-10-08, one live football match, from one country): 1 and 5 answer with data, 2, 3, 4, 6, 7, 8, 10 and 15 answer 404. Live odds of football, basketball, tennis, handball and e-sports matches answered; those of ice hockey, futsal, minifootball, volleyball, badminton, table tennis, cricket and MMA did not. `winning_odds` has the shape `{"home": null | {fractionalValue, expected, actual, id}, "away": …}` (FX-27 gave it its own body rule), and `season_odds` answered one market, "To Win Outright". Odds payloads carry a `liveStreamUrl` (kept out of committed fixtures). Not checked: other regions, closing odds after the finish, the changes endpoint per sport. The providers' names: B4 (#192) names the known ids from a built-in table built from the country listings of 2026-10-09; a fetch of the listing is open (section 19).
 - Non-match data: the exact endpoint list, which sports each applies to, sensible `max_age` values, and the fan-out of player-level statistics under a 5 req/s budget. Partly answered by P28 (#140): the owner slices are the endpoints of the catalog (no team `players` and no standings `away`); `top_players` and `top_teams` are limited to football and `team_rankings` to tennis, as the catalog shows, and the others to no sport; player statistics come only from player follows. Open, for the live validation: `player_statistics` and standings `home` (catalog only, no sample), the WTA id of `rankings` (5 is the ATP page's), and the sports in which each owner slice exists. Answered by the live validation (2026-10-08): `player_statistics` (`/player/{id}/statistics/seasons`) answers `uniqueTournamentSeasons` and `typesMap`; standings `home` and `total` have data; `/rankings/6` is the WTA list and `/rankings/5` the ATP list (FX-27 reads both; `/rankings/type/5` and `/type/6` exist with another shape). Still open: the sports in which each owner slice exists.
 - Are per-player or per-team slices of an event in scope (heat maps, player statistics per event)? They decide whether one file per slice stays reasonable.
 - Does the public schema expose a third settlement value ('open') next to provisional/final, or only the boolean? Answered by SC-1 and decision P2: it exposes `quality.settlement` (open, provisional, final) next to the boolean `quality.provisional`.
@@ -4600,7 +4609,7 @@ Pinned, and kept on purpose (not defects of the target design):
 | End-to-end test F12: with the kind "Team" chosen the list still shows players | end-to-end test | kept as built: one search across kinds (FX-20); the pick fills the kind |
 | End-to-end test F19: the wide CSV still has the 2.x columns `league_folder` and `season_folder` | end-to-end test | kept as built: the legacy wide table (EX-1) keeps its columns for one release (section 17) |
 | End-to-end test F27: on a 390 px phone the match tabs overflow (Data and Odds off-screen, scrollable) | end-to-end test | not planned before 3.0.0 (section 17) |
-| FX-24's API gaps: a team record route (gender, country), an individual flag on `Sport`, the season name in the log parameters, odds provider names, a participant field in `ExportFilter`, coverage per follow and countable player matches in `/status`, request counters in the job progress | FX-24 #170 | after 3.0.0 (section 17); the gender of search hits: done, FX-23 and FX-25; done: the team record route, the `individual` flag and the participant filter, B1 (#190); the season name in the log, coverage per follow, a player's matches and the request counters, B2 (#191); the odds provider names: open (section 19) |
+| FX-24's API gaps: a team record route (gender, country), an individual flag on `Sport`, the season name in the log parameters, odds provider names, a participant field in `ExportFilter`, coverage per follow and countable player matches in `/status`, request counters in the job progress | FX-24 #170 | after 3.0.0 (section 17); the gender of search hits: done, FX-23 and FX-25; done: the team record route, the `individual` flag and the participant filter, B1 (#190); the season name in the log, coverage per follow, a player's matches and the request counters, B2 (#191); the odds provider names, B4 (#192) |
 | FX-24's question whether one "no data" answer of a finished match is final for completeness | FX-24 #170 | done, FX-23 (#171) as the orchestrator chose (section 13) |
 | Odds markets other than SofaScore's common ones keep their English names (`lang="en"`) | FX-24 #170 | kept as built (`05-web-ui.md` 6.6); FX-26 (#174) named more markets, groups and periods |
 | A Playwright script with `time.sleep` while `page.route` is set stalls the page; `getByRole` ignores `inert` | FX-24 #170 | a note for scripts (section 1, #170) |
@@ -4665,7 +4674,8 @@ Pinned, and kept on purpose (not defects of the target design):
 | Under an ASGI root path, `/<prefix>/api/v1` was answered without the access token | B2 #191 | done, B2 (#191); 3.0.0's default deployments never set a root path |
 | The web UI cannot be served under a path prefix; an aborted search's cancel relies on the proxy closing its upstream connection | B2 #191 | documented in `docs/deploy/README.md`; the prefix: not planned (section 17) |
 | The help text of `fetch.only_finished` in the web UI still names the 2.x match lists | this revision | open, a text fix (section 19; `05-web-ui.md` 6.16) |
-| The changelog entries of #180 to #191 (in their descriptions; P30's and FX-33's list the removals) | #180 to #191 | the 3.1 release pull request (section 19) |
+| The Odds tab says "Bookmaker 1" (live validation M20); the providers' names are known only from SofaScore's per-country listing, which carries affiliate links | live validation, FX-24 gap 5 | done, B4 (#192): a built-in table and `GET /odds/providers`; a fetch of the listing and a schema field `provider_name`: open (section 19) |
+| The changelog entries of #180 to #192 (in their descriptions; P30's and FX-33's list the removals) | #180 to #192 | the 3.1 release pull request (section 19) |
 | The design documents were not updated by the live validation, FX-26, FX-27 and FX-16 | #174 to #176 | this revision (the ninth) |
 
 ## 17. Deliberately not planned
@@ -4846,8 +4856,8 @@ Pinned, and kept on purpose (not defects of the target design):
   publishing to PyPI (section 13). None is needed for the release; each is a small item of its own. Done
   in 3.1 (section 19): the team record route, the `individual` flag and the participant filter (B1); the
   season names, coverage per follow, a player's matches, the request counters, the English issue texts and
-  the wait before a confirming request (B2). Still open: the odds provider names (they need a live research
-  run) and publishing to PyPI (no date).
+  the wait before a confirming request (B2). The odds provider names: B4 (#192), from a built-in
+  table. Still open: publishing to PyPI (no date).
 - Queueing an export behind a running download (F14). FX-23 let an export run next to the download under the
   lease `export`; a queue would still make the user wait for the whole download.
 - Rewriting export files written before FX-23 with the corrected extra-time score. Exports are files the
@@ -5131,7 +5141,7 @@ descriptions of the pull requests below, for the 3.1 release pull request (rule 
 the plan (section 10 has its brief and "As built"); the other items were written from the orchestrator's
 instructions and have no brief here.
 
-Done (all merged by 2026-10-09, `216c2f9`):
+Done (all merged by 2026-10-09, `216c2f9`; B4 at `ff6fd7c`):
 
 | Item | PR | What it did |
 |---|---|---|
@@ -5146,6 +5156,7 @@ Done (all merged by 2026-10-09, `216c2f9`):
 | B3 | #189 | darts in one set read as legs won (`legs_won`, no sets); e-sports `sets` are the games from `periodN` (the game's score, or 1-0 for its winner; 0-0 left out); the web header shows the maps; `DERIVE_VERSION` 8 |
 | B1 | #190 | `GET /api/v1/teams/{team_id}` (a stored team, player or pair with gender, national flag, country, sport, `followed`); the team follow's header; `SportSpec.individual` in `/sports`; the export filter's `team_ids` and `player_ids` (a player by the stored line-ups), `ssc export --team/--player` and the dialog, every filter combined with AND; "No team" reported as `team: null` |
 | B2 | #191 | `summary.follows[]` in `/status` and `GET /events?follow=kind:id`; a player follow's match ids in `state.db` (`follow_events:player:<id>`) and its Matches tab; `requests` in the job progress and result; the league detail phase planned by need; season and league names in the sync log; `verify`, scan and breaker texts in English; `fetch.confirm_empty_after_seconds` (60); the connection state by the last recorded outcome and `last_check.superseded`; the access token checked on the routed path under a root path; the stream's `X-Accel-Buffering: no` |
+| B4 | #192 | the odds providers by name: the built-in table `sports.ODDS_PROVIDERS` (id, name, country), `GET /api/v1/odds/providers` (`id`, `name`, `country`, `configured`; no SofaScore request), the bookmaker's name in the Odds tab, the Data table and the Settings row of `client.odds_provider` (a select of the known ones next to the free id); no betting link of SofaScore's listing stored |
 
 Open, in no fixed order:
 
@@ -5156,8 +5167,13 @@ Open, in no fixed order:
   (section 13).
 - **Baseball `/umpires`, `/weather`, `/comments` and `/at-bats`.** They answer 200 on finished and live
   matches; slices for them are a proposal (section 13).
-- **The odds providers' names.** The Odds tab says "Bookmaker 1"; which provider ids map to which names needs
-  a live research run (`05-web-ui.md` G38).
+- **A fetch of SofaScore's odds provider listing** (B4's proposal). An optional reference fetch of
+  `/odds/providers/{cc}/web`, at most weekly, only when `client.odds_country` is set (never from the
+  machine's address), through the client and the throttle and never part of a match download, every link
+  field stripped before it is stored and the result merged over the built-in table; `GET /odds/providers`
+  would then say where each entry comes from. It needs a place in the Store for reference data.
+- **A `provider_name` field in schema v1** (`Odds`, `OddsLine`). Additive, with the generated tables of
+  `04-schema-v1.md`; until then a consumer reads the names from `GET /odds/providers`.
 - **Live pages of the repaired explorer.** Run `lv-20261009` had no live match; the daytime run adds them.
 - **A replacement for `stage_name` and `listed_in`.** P30 dropped only the two score columns of the events
   table: schema v1 reads `stage.name` from `stage_name`, and the listing rules (staleness, the reconcile of
@@ -5178,5 +5194,5 @@ Decided not to do in 3.1: a localized date picker (owner, 2026-10-09; the native
 serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).
 
 The 3.1 release pull request, when the owner asks for it, follows section 18: the version, the changelog
-close from the descriptions of #180 to #191 (P30's and FX-33's bodies have the entries of the removals),
+close from the descriptions of #180 to #192 (P30's and FX-33's bodies have the entries of the removals),
 the README, the checks of release point D and the Docker smoke test on its commit; the tag is the owner's.

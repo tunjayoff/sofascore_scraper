@@ -16,7 +16,7 @@ an eighth, on 2026-10-08 after the end-to-end test against the real site and its
 (pull requests #170 to #172), marks its references `48e4c4c`, a ninth, later that day after the live
 validation against the real site, its fixes FX-26 and FX-27, and FX-16 (pull requests #174 to #176), marks
 its references `43ecdfc`, and a tenth, on 2026-10-09 after the 3.0.0 release, P30 and the first items of
-3.1 (pull requests #177 and #179 to #191), marks its references `216c2f9`.
+3.1 (pull requests #177 and #179 to #192), marks its references `216c2f9` (B4, #192, `ff6fd7c`).
 Since REN-1 the import package is `sofascore_scraper` (it was `src`): the documents write its paths with
 the new name, and a `file:line` reference keeps the line it had at the commit its revision names (the rename
 moved no line). Paths of files removed before the rename keep the old `src/` form. Where a section
@@ -90,10 +90,11 @@ top of `03`; the release in its section 18, 3.1 in its section 19):
   scripts and installers on the 3.1 names (FX-32, FX-33), a Windows timing flake (FX-30), and batch B: single
   set darts and e-sports game scores (B3, `DERIVE_VERSION` 8), a team record route, the sports' individual
   flag and a team and player filter for exports (B1), coverage per follow, a player's matches, request
-  counters of a job, the wait before a confirming request and a security fix under a root path (B2).
+  counters of a job, the wait before a confirming request and a security fix under a root path (B2), and the
+  odds providers by name from a built-in table (B4).
 - **Open for 3.1**: the slice rows of rugby, floorball, volleyball and minifootball (the owner decides after
   more evidence), a rule for team streaks that answer 200 with an empty body, baseball's umpires, weather,
-  comments and at-bats, the odds providers' names, live pages of the repaired explorer, a replacement for
+  comments and at-bats, a fetch of the odds providers' listing and a `provider_name` field, live pages of the repaired explorer, a replacement for
   the events columns `stage_name` and `listed_in`, the Store's durability from its caller, the explorer's
   unthrottled live-match-tracker document, and a few small leftovers of P30. Not in 3.1: a localized date
   picker (owner) and the web UI under a path prefix.

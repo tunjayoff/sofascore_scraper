@@ -80,7 +80,7 @@ proposals of #121 (applied by FX-16). The notes of sections 8, 10 and 11 and the
 section 1 and "Every data type is selectable" of section 13 say so.
 
 Revised a tenth time, on 2026-10-09, after the 3.0.0 release and the first work for 3.1 (pull requests #177
-and #179 to #191; checked at `216c2f9`). No decision of the draft changed. 3.0.0 was released on
+and #179 to #192; checked at `216c2f9`, B4 at `ff6fd7c`). No decision of the draft changed. 3.0.0 was released on
 2026-10-08: the tag `v3.0.0`, the GitHub Release with its archives and checksums, and the Docker image
 `ghcr.io/tunjayoff/sofascore_scraper:3.0.0`; no PyPI package (owner, 2026-10-08). The release pull request
 (#179) also added `ssc watch --idle`, so the Compose live service waits for a live follow instead of
@@ -88,8 +88,8 @@ restarting in a loop. Since then main is 3.1 in preparation: P30 (#186) removed 
 the 2.x `/api` routes, the 2.x environment names and the compatibility shims that 3.0.0 deprecated, with
 FX-32 (#187) and FX-33 (#188) for what it left; the research tool that records a page's requests was
 repaired (FX-29, #181, #182, #184), and the per-sport evidence was regenerated from its first run (FX-31,
-#185); B1 to B3 (#190, #191, #189) closed the API gaps of the end-to-end test and the score mapping of
-single-set darts and e-sports maps. The owner decided on 2026-10-09: the slice rows that FX-31 added stay;
+#185); B1 to B4 (#190, #191, #189, #192) closed the API gaps of the end-to-end test, the score mapping of
+single-set darts and e-sports maps, and the odds providers' names. The owner decided on 2026-10-09: the slice rows that FX-31 added stay;
 the proposal for rugby, floorball, volleyball and minifootball waits for more evidence (a daytime run with
 top-league matches of the four sports); a localized date picker is not added now. The state column of
 section 1, the notes of sections 5, 6, 8, 10 and 11 and the rows of section 13 on the environment, polling,
@@ -101,7 +101,7 @@ data types and installation say what changed.
 |---|---|---|
 | Product position | A data foundation: products are built on it, it runs on servers as automation, applications and agents use it | |
 | Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | done: all 21 are in the sport registry with their score mapping (PRs #112, #115, #118). Which detail data each sport requests rests on one match page per sport (PR #121), on the app's own downloads in the live validation for football, basketball and tennis (PR #176), and, since PR #185, on the evidence of the repaired research tool (39 match pages of 21 sports, 2026-10-09). A proposal for rugby, floorball, volleyball and minifootball waits for more evidence (owner, 2026-10-09) |
-| Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched | done: the selection of data slices end to end, per follow, in the configuration and in the web UI (PRs #134, #161); odds (four slices, the provider id recorded, off by default) and the data of a season, team, player or sport (PR #140). The odds country is recorded only when the user sets `[client] odds_country` (delegated decision of 2026-10-06; PR #155). The live validation found that providers 1 and 5 answer without login and settled the shapes of the odds slices that had only 404 samples; the providers' names are not known yet (open for 3.1) |
+| Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched | done: the selection of data slices end to end, per follow, in the configuration and in the web UI (PRs #134, #161); odds (four slices, the provider id recorded, off by default) and the data of a season, team, player or sport (PR #140). The odds country is recorded only when the user sets `[client] odds_country` (delegated decision of 2026-10-06; PR #155). The live validation found that providers 1 and 5 answer without login and settled the shapes of the odds slices that had only 404 samples; the known providers are named from a built-in table since PR #192 (`GET /api/v1/odds/providers`; no betting link stored); fetching SofaScore's per-country listing is open for 3.1 |
 | History / live | History: by requests. Live: the push channel, with polling as the fallback. How the push channel is used was decided after the draft: see the two rows at the end of this table | measured, PR #42; built, PRs #95 and #101 (the last two rows) |
 | Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table). Changed on 2026-10-02 (owner): the web UI is designed and built from scratch on the same technology stack (Vue 3, TypeScript, Pinia, the same build tooling), as a professional interface for the new platform, not as an incremental change of today's views; only what fits is carried over as code (the API client, the locale files, the eval-free build, the token handling). Added on 2026-10-06 (owner): team, player and single-match follows work in 3.0.0 (search by name, their matches downloaded), and search suggests as the user types, like the site | done for the CLI: the data commands, `serve` and the removal of the terminal menu (PRs #119, #125, #131). The new web UI is built (screen design PR #105, approved with all 22 of its decisions on 2026-10-02; implementation PRs #107, #132, #133). A first-time-user review on 2026-10-06 found it hard for a newcomer; a newcomer pass (PR #154), the backend gaps (PR #156: team, player and match follows that download, per-league delete, the connection state) and the last screens (PR #161) followed, and the old views under `/classic` were removed (PR #161). Search as the user types, one search across kinds and job names are built (PR #167, FX-20). The web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer (Tailwind CSS 4, PR #136) |
 | Request rate | Default 5 requests per second; the user may take the risk and remove the limit | done, PR #33 |
@@ -512,8 +512,8 @@ README with screenshots of real data), the Docker smoke test on its commit and t
 Note (2026-10-09). 3.0.0 is released (2026-10-08: the tag, the GitHub Release, the image on GHCR; FX-28,
 PR #177, merged before it). The work for 3.1 has started and is on main: P30 (PR #186) with FX-32 and FX-33
 (PRs #187, #188), the repair of the research tool (FX-29, PRs #181, #182, #184), the regenerated slice
-evidence (FX-31, PR #185), a timing flake of the Windows tests (FX-30, PR #180) and the API gaps B1 to B3
-(PRs #190, #191, #189). `03-implementation-plan.md` has the release record (section 18) and what is done
+evidence (FX-31, PR #185), a timing flake of the Windows tests (FX-30, PR #180) and the API gaps B1 to B4
+(PRs #190, #191, #189, #192). `03-implementation-plan.md` has the release record (section 18) and what is done
 and open for 3.1.
 
 ## 11. Open questions
@@ -562,8 +562,8 @@ and open for 3.1.
   live or finished).
   The cancel of a search behind a reverse proxy was checked offline with a proxy-like client (PR #191). Still
   open: live match pages for the evidence, top-league pages of rugby, floorball, volleyball and minifootball
-  before the owner decides their slice rows, the odds providers' names, and how long the push credential
-  lives.
+  before the owner decides their slice rows, a fetch of the odds providers' listing (the known names are a
+  built-in table since PR #192), and how long the push credential lives.
 
 ## 12. Old data and migration (detail of the decision)
 
