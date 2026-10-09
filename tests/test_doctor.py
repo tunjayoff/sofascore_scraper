@@ -631,14 +631,47 @@ def test_env_proxy_password_never_reaches_the_report(make_ctx):
     ],
 )
 def test_env_legacy_names_are_warnings_that_name_the_new_name(make_ctx, line, name, new):
-    """3.1 2.x'in adlarını okumaz (plan maddesi P30): eski .env'i olan kullanıcıya neyi yeniden adlandıracağı söylenir."""
-    for ctx in (make_ctx(env_text=line + "\n"), make_ctx(environ=dict([line.split("=", 1)]))):
+    """
+    3.1 2.x'in adlarını okumaz (plan maddesi P30): kullanıcıya neyi yeniden adlandıracağı ve adın nerede durduğu
+    söylenir. Çözüm satırı `.env`'i yalnızca ad oradaysa gösterir (FX-33).
+    """
+    in_file = make_ctx(env_text=line + "\n")
+    in_environ = make_ctx(env_text="", environ=dict([line.split("=", 1)]))  # .env boş (aynı kök)
+    for ctx, where, origin in ((in_file, ".env", "env_file"), (in_environ, "the environment", "environment")):
         res = doctor.check_env(ctx)
         assert (res.status, res.code) == (WARN, "env_invalid")
-        assert res.summary == f"{name} is no longer read (the 2.x names were removed in 3.1): use {new}"
-        assert [p["key"] for p in res.detail["problems"]] == [name]
+        assert res.summary == f"{name} (set in {where}) is no longer read (the 2.x names were removed in 3.1): use {new}"
+        assert [(p["key"], p["origin"]) for p in res.detail["problems"]] == [(name, origin)]
+    assert doctor.check_env(in_file).fix.startswith(f"Edit {in_file.env_file} ")
+    fix = doctor.check_env(in_environ).fix
+    assert fix.startswith(f"Remove or rename {name} where the environment of the app is set") and ".env " not in fix
     # Boş bırakılmış eski ad (2.x'in .env.example'ı böyle kopyalanmış olabilir) sessiz
     assert doctor.check_env(make_ctx(env_text=line.split("=")[0] + "=\n")).status == OK
+
+
+def test_env_legacy_name_origin_follows_the_loader_rule(make_ctx):
+    """
+    Uygulama `.env`'i ortama yükler: ortamda `.env`'deki değerle duran ad `.env`'indir; başka bir değerle duran ad
+    ortamındır (yükleyicinin `legacy_warnings` kuralı). İkisi birden varsa çözüm ikisini de söyler.
+    """
+    loaded = doctor.check_env(make_ctx(env_text="DATA_DIR=data\n", environ={"DATA_DIR": "data"}))
+    assert [p["origin"] for p in loaded.detail["problems"]] == ["env_file"]
+    assert "(set in .env)" in loaded.summary and loaded.fix.startswith("Edit ")
+
+    shadowed = doctor.check_env(make_ctx(env_text="DATA_DIR=data\n", environ={"DATA_DIR": "other"}))
+    assert "(set in the environment)" in shadowed.summary and shadowed.fix.startswith("Remove or rename DATA_DIR ")
+
+    ctx = make_ctx(env_text="MAX_CONCURRENT=4\n", environ={"DATA_DIR": "data", "LOG_LEVEL": "debug"})
+    both = doctor.check_env(ctx)
+    assert {(p["key"], p["origin"]) for p in both.detail["problems"]} == {
+        ("MAX_CONCURRENT", "env_file"), ("DATA_DIR", "environment"), ("LOG_LEVEL", "environment"),
+    }
+    assert both.fix.startswith(f"Edit {ctx.env_file}, and remove or rename ")
+    assert "DATA_DIR" in both.fix and "LOG_LEVEL" in both.fix and "MAX_CONCURRENT" not in both.fix
+
+    tr = doctor.check_env(make_ctx(env_text="", environ={"DATA_DIR": "data"}, lang="tr"))
+    assert "DATA_DIR (ortamda tanımlı) artık okunmuyor" in tr.summary
+    assert tr.fix.startswith("DATA_DIR değişkenini uygulamanın ortamının kurulduğu yerde")
 
 
 def test_env_soft_problems_are_warnings(make_ctx):
