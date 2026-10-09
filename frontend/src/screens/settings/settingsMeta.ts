@@ -45,6 +45,7 @@ export const META: Record<string, Meta> = {
   'breaker.server_error_consecutive': { section: 'requests', control: int(1, 1000) },
   'breaker.ignore': { section: 'requests', control: bool },
   'fetch.only_finished': { section: 'data', control: bool },
+  'fetch.confirm_empty_after_seconds': { section: 'data', control: float(0, 86400, 1), advanced: true },
   'defaults.slices': { section: 'data', control: list },
   'defaults.seasons': { section: 'data', control: text() },
   'client.odds_provider': { section: 'data', control: int(1) },

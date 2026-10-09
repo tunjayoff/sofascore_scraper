@@ -64,3 +64,34 @@ def test_a_league_plan_honors_cancel_in_one_session(fake: FakeSofaScore, tmp_pat
 
     assert ok == 1 and failed == []
     assert _events(fake) == [f"/event/{IDS[0]}"] and len(fake.sessions) == 1
+
+
+def test_a_resume_right_after_a_cancel_does_not_ask_the_stored_matches_again(
+        fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Bulgu F29: durdurup hemen sürdürmek, saniyeler önce saklanan maçları yeniden istiyordu. Sebep, "veri yok"
+    yanıtı alan dilimlerin (9100002: iki dilim) doğrulanmak için hemen yeniden istenmesiydi. Varsayılan bekleme
+    (`fetch.confirm_empty_after_seconds`, 60 sn) içinde sürdürülen iş yalnızca kalan maçları ister; bekleme
+    geçince (burada 0) doğrulama yapılır ve dilimler artık beklenmez.
+    """
+    monkeypatch.delenv("SOFASCORE_FETCH__CONFIRM_EMPTY_AFTER_SECONDS", raising=False)  # varsayılan bekleme
+    done: List[int] = []
+    first = _details(tmp_path)
+    first.fetch([str(mid) for mid in IDS], progress=lambda n, _t, _m: done.append(n),
+                cancelled=lambda: bool(done) and done[-1] >= 3)
+    stored = [mid for mid in IDS if f"/event/{mid}" in _events(fake)]
+    assert stored == IDS[:3]
+
+    fake.reset_log()
+    resumed = _details(tmp_path)
+    assert resumed.pending([str(mid) for mid in IDS]) == [str(mid) for mid in IDS[3:]]
+    resumed.fetch(resumed.pending([str(mid) for mid in IDS]))
+    asked = {path.split("/")[2] for path in fake.paths() if path.startswith("/event/")}
+    assert asked == {str(mid) for mid in IDS[3:]}
+
+    # Bekleme geçti: 9100002'nin "veri yok" yanıtları bir kez doğrulanır, sonra hiçbir şey istenmez
+    monkeypatch.setenv("SOFASCORE_FETCH__CONFIRM_EMPTY_AFTER_SECONDS", "0")
+    later = _details(tmp_path)
+    assert "9100002" in later.pending([str(mid) for mid in IDS])
+    later.fetch(later.pending([str(mid) for mid in IDS]))
+    assert _details(tmp_path).pending([str(mid) for mid in IDS]) == []

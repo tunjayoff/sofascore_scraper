@@ -358,3 +358,62 @@ def test_identifiers_that_are_not_event_ids_are_left_out(tmp_path: Path) -> None
     stored = fx.detail_ids[0]
     needs = planning.event_needs(store, ["0" + str(stored), "abc", True, 2 ** 64, str(stored), stored], POLICY)
     assert list(needs) == [stored]
+
+
+# --- doğrulama beklemesi (bulgu F29; fetch.confirm_empty_after_seconds) -----------------------------------
+
+WAIT = 60.0
+
+
+def _answered(seconds_ago: float, *, empty: int = 1, key: str = "lineups", state: str = "empty") -> SliceInfo:
+    """`seconds_ago` saniye önce "veri yok" yanıtı almış dilim (checked_at o an)."""
+    at = dt.datetime.fromtimestamp(POLICY.now - seconds_ago, tz=dt.timezone.utc)
+    return dataclasses.replace(info(key, state, empty=empty), checked_at=at)
+
+
+def _policy(wait: float) -> RefreshPolicy:
+    return dataclasses.replace(POLICY, confirm_after_s=wait)
+
+
+def test_a_fresh_no_data_answer_is_not_confirmed_at_once() -> None:
+    """
+    F29: durdurulup hemen sürdürülen iş, saniyeler önce "veri yok" yanıtı alan dilimi yeniden istiyordu
+    (doğrulayan ikinci istek hemen gidiyordu). Yanıt beklemeden genç olduğu sürece maç `refill` olmaz.
+    """
+    fresh = with_slice(without_slice(complete(), "lineups"), _answered(10))
+    assert compute_need(fresh, None, _policy(WAIT)) == NEED_NONE
+    assert planning.confirmation_pending(fresh.slice("lineups"), now=POLICY.now, wait_s=WAIT)
+    # bekleme geçti: doğrulayan istek gider
+    old = with_slice(without_slice(complete(), "lineups"), _answered(WAIT + 1))
+    assert compute_need(old, None, _policy(WAIT)) == NEED_REFILL
+    # bekleme 0 (eski davranış) ve beklemesi olmayan politika: hemen
+    assert compute_need(fresh, None, _policy(0)) == NEED_REFILL
+    assert compute_need(fresh, None, POLICY) == NEED_REFILL
+
+
+def test_the_wait_leaves_settled_uncounted_and_failed_slices_alone() -> None:
+    base = without_slice(complete(), "lineups")
+    # iki kesin yanıt: zaten beklenmez
+    assert compute_need(with_slice(base, _answered(1, empty=2)), None, _policy(WAIT)) == NEED_NONE
+    # sayılmamış "veri yok" (maç oynanırken alınan, FX-27): maç bitince ilk sayılan yanıtı alır, beklemez
+    assert compute_need(with_slice(base, _answered(1, empty=0)), None, _policy(WAIT)) == NEED_REFILL
+    # başarısız istek ("veri yok" değil) beklemez
+    assert compute_need(with_slice(base, _answered(1, state="error")), None, _policy(WAIT)) == NEED_REFILL
+    # zamanı bilinmeyen eski sayım beklemez
+    assert compute_need(with_slice(base, info("lineups", "empty", empty=1)), None, _policy(WAIT)) == NEED_REFILL
+
+
+def test_a_refill_for_another_slice_leaves_out_the_one_waiting_for_its_confirmation() -> None:
+    state = with_slice(without_slice(without_slice(complete(), "lineups"), "statistics"), _answered(5))
+    assert compute_need(state, None, _policy(WAIT)) == NEED_REFILL  # statistics hiç istenmemiş
+    item = work_item(1, state, NEED_REFILL, None, now=POLICY.now, confirm_after_s=WAIT)
+    assert item is not None and [key for key, _sub in item.slices] == ["statistics"]
+    item = work_item(1, state, NEED_REFILL, None, now=POLICY.now)
+    assert item is not None and {key for key, _sub in item.slices} == {"statistics", "lineups"}
+
+
+def test_the_refresh_policy_reads_the_wait(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SOFASCORE_FETCH__CONFIRM_EMPTY_AFTER_SECONDS", raising=False)
+    assert RefreshPolicy.current(now=0).confirm_after_s == 60.0  # varsayılan
+    monkeypatch.setenv("SOFASCORE_FETCH__CONFIRM_EMPTY_AFTER_SECONDS", "5")
+    assert RefreshPolicy.current(now=0).confirm_after_s == 5.0

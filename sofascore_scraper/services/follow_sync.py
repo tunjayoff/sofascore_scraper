@@ -274,7 +274,8 @@ def plan_items(store: "Store", listings: Iterable[FollowListing], event_follows:
             first.append(WorkItem(Ref.event(event_id), "refill", (), event.sport if event else None,
                                   EVENT_ONLY_REASON))
             continue
-        item = planning.work_item(event_id, state, need, policy, threshold=threshold, now=refresh.now)
+        item = planning.work_item(event_id, state, need, policy, threshold=threshold, now=refresh.now,
+                                  confirm_after_s=refresh.confirm_after_s)
         if item is not None:
             (later if item.need == NEED_REFRESH else first).append(item)
     return first + later, policy

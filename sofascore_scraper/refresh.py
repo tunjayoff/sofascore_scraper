@@ -41,6 +41,16 @@ def refresh_min_interval_hours() -> float:
     return max(0.0, float(_settings().min_interval_hours))
 
 
+def confirm_empty_after_seconds() -> float:
+    """
+    `fetch.confirm_empty_after_seconds`: bitmiş maçta bir dilimin "veri yok" yanıtını doğrulayan istek ilk
+    yanıttan en az bu kadar saniye sonra gider (bulgu F29); 0 beklemez. Çağrı anında okunur.
+    """
+    from sofascore_scraper.config import loader
+
+    return max(0.0, float(loader.active_settings().fetch.confirm_empty_after_seconds))
+
+
 def refresh_legacy_enabled() -> bool:
     """Gözlemi olmayan eski kayıtlar da bir kez yenilensin mi (`refresh.include_legacy`, `--include-legacy`)."""
     return bool(_settings().include_legacy)

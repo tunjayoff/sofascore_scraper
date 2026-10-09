@@ -90,13 +90,16 @@ def required_detail_keys(selection: Any = None, store: Optional["Store"] = None)
 class RefreshPolicy:
     """
     Yenileme politikası (sofascore_scraper/refresh.py) saniye cinsinden, bir an için. window_s <= 0: politika kapalı.
-    include_unobserved: gözlemi olmayan (eski) kayıtlar da yenilenir (--refresh-legacy).
+    include_unobserved: gözlemi olmayan (eski) kayıtlar da yenilenir (--refresh-legacy). confirm_after_s: bitmiş
+    maçta "veri yok" yanıtını doğrulayan istek ilk yanıttan en az bu kadar sonra gider (planning modül belgesi,
+    bulgu F29; `fetch.confirm_empty_after_seconds`); 0 beklemez.
     """
 
     now: float
     window_s: float
     min_interval_s: float
     include_unobserved: bool = False
+    confirm_after_s: float = 0.0
 
     @classmethod
     def current(cls, now: Optional[float] = None) -> "RefreshPolicy":
@@ -106,6 +109,7 @@ class RefreshPolicy:
             window_s=refresh.refresh_window_hours() * 3600,
             min_interval_s=refresh.refresh_min_interval_hours() * 3600,
             include_unobserved=refresh.refresh_legacy_enabled(),
+            confirm_after_s=refresh.confirm_empty_after_seconds(),
         )
 
 
