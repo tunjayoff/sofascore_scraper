@@ -6,10 +6,11 @@ Ağ yok: yalnızca research/all_sports/requests.jsonl, pages.jsonl ve events/*.j
 tests/fixtures/sport_slices/evidence.json'a yazılıdır; tests/test_sport_slices.py yazılı tablonun araştırma
 verisinden yeniden türediğini ve kayıt defterinin tabloya uyduğunu denetler.
 
-Veride üç koşu var: 2026-10-01'in keşfi (PR #17; satırlarında `run_id` yok) ve onarılmış keşif aracının
-iki koşusu (FX-29 ve FX-29b'den sonra, her satırda `run_id`): `lv-20261009` (PR #183; her spordan maç sayfaları)
+Veride beş koşu var: 2026-10-01'in keşfi (PR #17; satırlarında `run_id` yok) ve onarılmış keşif aracının
+koşuları (FX-29 ve FX-29b'den sonra, her satırda `run_id`): `lv-20261009` (PR #183; her spordan maç sayfaları)
 ve `lv-20261009b` (FX-36; ragbi, voleybol, florbol ve mini futbolun en çok takip edilen üç liginden 12 bitmiş
-maç sayfası). Eski araç maç sayfalarının
+maç sayfası). FX-37 iki onarılmış koşu daha ekledi: `lv-20261009c` (14 sporun 25 canlı maç sayfası) ve
+`lv-20261009d` (bunlardan 13 maçın bitmiş sayfası, dört canlı sayfa daha). Eski araç maç sayfalarının
 isteklerinin çoğunu kaybetti: kaybolan istek ne gönderildi ne kaydedildi, iz bırakmadı (FX-29, FX-29b). İki
 kural buradan çıkar:
 
@@ -58,7 +59,7 @@ EVIDENCE_FILE = Path(__file__).resolve().parent / "fixtures" / "sport_slices" / 
 
 # Keşif aracının onarılmış sürümüyle (FX-29, FX-29b) kaydedilmiş koşular: yalnızca bunların maç sayfaları yokluk
 # kanıtıdır. Eski koşunun satırlarında run_id yoktur.
-REPAIRED_RUNS = frozenset({"lv-20261009", "lv-20261009b"})
+REPAIRED_RUNS = frozenset({"lv-20261009", "lv-20261009b", "lv-20261009c", "lv-20261009d"})
 
 # Maçın durumu, olayın status.type'ından: bitmiş, başlamış (canlı) ya da başlamamış
 FINISHED, LIVE, NOT_STARTED = "finished", "live", "notstarted"
@@ -187,7 +188,8 @@ def derive(research: Path = RESEARCH) -> Dict[str, Any]:
                              "complete": "/" in states and "/pregame-form" in states, "run_id": run_id})
     return {
         "source": "research/all_sports: requests.jsonl, pages.jsonl, events/*.jsonl; answers from every run "
-                  "(2026-10-01, PR #17; lv-20261009, PR #183; lv-20261009b, FX-36), pages from the repaired runs "
+                  "(2026-10-01, PR #17; lv-20261009, PR #183; lv-20261009b, FX-36; lv-20261009c and lv-20261009d, "
+                  "FX-37), pages from the repaired runs "
                   f"({', '.join(sorted(REPAIRED_RUNS))})",
         "pages": {sport: pages[sport] for sport in sorted(pages)},
         "answers": {sport: {suffix: sorted(codes) for suffix, codes in sorted(by_suffix.items())}
