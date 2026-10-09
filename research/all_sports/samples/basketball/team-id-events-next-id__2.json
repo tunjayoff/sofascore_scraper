@@ -1,0 +1,613 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/268073/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:04:39+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/amintas-ne-megaridos/xZgcsylhc#id:16624761",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Elite League",
+          "slug": "elite-league",
+          "category": {
+            "name": "Greece",
+            "slug": "greece",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "GR",
+              "alpha3": "GRC",
+              "name": "Greece",
+              "slug": "greece"
+            },
+            "id": 108,
+            "flag": "greece",
+            "alpha2": "GR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "اليونان",
+                "ru": "Греция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Elite League",
+            "slug": "elite-league",
+            "primaryColorHex": "#1db3c1",
+            "secondaryColorHex": "#4788c9",
+            "category": {
+              "name": "Greece",
+              "slug": "greece",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "GR",
+                "alpha3": "GRC",
+                "name": "Greece",
+                "slug": "greece"
+              },
+              "id": 108,
+              "flag": "greece",
+              "alpha2": "GR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اليونان",
+                  "ru": "Греция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 625,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 10599,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Элитная лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 43377,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري الممتاز",
+              "ru": "Элитная Лига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Elite League 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99222
+        },
+        "roundInfo": {
+          "round": 3
+        },
+        "customId": "ylhcsIpuc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Kronos Agiou Dimitriou",
+          "slug": "kronos-agiou-dimitriou",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 34,
+          "nameCode": "KAD",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 298283,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كرونوس أجيou ديميتريو",
+              "ru": "Кронос Агиу Димитриу"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Amintas",
+          "slug": "amintas",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 128,
+          "nameCode": "AMI",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 268073,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#15317e",
+            "secondary": "#f88017",
+            "text": "#f88017"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمينتاس",
+              "ru": "Аминтас"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16624768,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "kronos-agiou-dimitriou-amintas",
+        "startTimestamp": 1792242000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Elite League",
+          "slug": "elite-league",
+          "category": {
+            "name": "Greece",
+            "slug": "greece",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "GR",
+              "alpha3": "GRC",
+              "name": "Greece",
+              "slug": "greece"
+            },
+            "id": 108,
+            "flag": "greece",
+            "alpha2": "GR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "اليونان",
+                "ru": "Греция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Elite League",
+            "slug": "elite-league",
+            "primaryColorHex": "#1db3c1",
+            "secondaryColorHex": "#4788c9",
+            "category": {
+              "name": "Greece",
+              "slug": "greece",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "GR",
+                "alpha3": "GRC",
+                "name": "Greece",
+                "slug": "greece"
+              },
+              "id": 108,
+              "flag": "greece",
+              "alpha2": "GR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اليونان",
+                  "ru": "Греция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 625,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 10599,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Элитная лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 43377,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري الممتاز",
+              "ru": "Элитная Лига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Elite League 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99222
+        },
+        "roundInfo": {
+          "round": 4
+        },
+        "customId": "oHvbsylhc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Amintas",
+          "slug": "amintas",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 128,
+          "nameCode": "AMI",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 268073,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#15317e",
+            "secondary": "#f88017",
+            "text": "#f88017"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمينتاس",
+              "ru": "Аминтас"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Koroivos Amaliadas BC",
+          "slug": "koroivos-amaliadas-bc",
+          "shortName": "Koroivos",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 249,
+          "nameCode": "ASA",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 176614,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#151b54",
+            "text": "#151b54"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كورويفوس أمالياداس ب سي",
+              "ru": "Короивос Амалиадас БК"
+            },
+            "shortNameTranslation": {
+              "ar": "كورويفوس",
+              "ru": "Короивос"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16624783,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "amintas-koroivos-amaliadas-bc",
+        "startTimestamp": 1792591200,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Elite League",
+          "slug": "elite-league",
+          "category": {
+            "name": "Greece",
+            "slug": "greece",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "GR",
+              "alpha3": "GRC",
+              "name": "Greece",
+              "slug": "greece"
+            },
+            "id": 108,
+            "flag": "greece",
+            "alpha2": "GR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "اليونان",
+                "ru": "Греция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Elite League",
+            "slug": "elite-league",
+            "primaryColorHex": "#1db3c1",
+            "secondaryColorHex": "#4788c9",
+            "category": {
+              "name": "Greece",
+              "slug": "greece",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "GR",
+                "alpha3": "GRC",
+                "name": "Greece",
+                "slug": "greece"
+              },
+              "id": 108,
+              "flag": "greece",
+              "alpha2": "GR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اليونان",
+                  "ru": "Греция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 625,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 10599,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Элитная лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 43377,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري الممتاز",
+              "ru": "Элитная Лига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Elite League 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99222
+        },
+        "roundInfo": {
+          "round": 5
+        },
+        "customId": "lvbsylhc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Panionios BC",
+          "slug": "panionios-bc",
+          "shortName": "Panionios",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 1747,
+          "nameCode": "PAN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 3511,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#0000ff",
+            "secondary": "#e41b17",
+            "text": "#e41b17"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بانيونيوس بي سي",
+              "ru": "Паниониос Телекомс"
+            },
+            "shortNameTranslation": {
+              "ar": "بانيونيوس",
+              "bn": "প্যানিওনিওস",
+              "hi": "पैनियोनिओस"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Amintas",
+          "slug": "amintas",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 128,
+          "nameCode": "AMI",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 268073,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#15317e",
+            "secondary": "#f88017",
+            "text": "#f88017"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمينتاس",
+              "ru": "Аминтас"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16624790,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "amintas-panionios-bc",
+        "startTimestamp": 1792850400,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 25
+      }
+    ],
+    "hasNextPage": false
+  }
+}

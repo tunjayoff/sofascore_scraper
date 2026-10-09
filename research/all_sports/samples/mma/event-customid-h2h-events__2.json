@@ -1,0 +1,519 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/qXkeshZke/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:24:15+00:00",
+  "page": "https://www.sofascore.com/tr/mma/match/freddie-haggerty-kaichon-sor-yingcharoenkarnchang/qXkeshZke#id:12606166",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "venue": {
+          "city": {
+            "name": "Bangkok",
+            "country": {
+              "alpha2": "TH",
+              "alpha3": "THA",
+              "name": "Thailand",
+              "slug": "thailand"
+            },
+            "id": 19152
+          },
+          "hidden": true,
+          "slug": "lumpinee-stadium",
+          "name": "Lumpinee Stadium",
+          "country": {
+            "alpha2": "TH",
+            "alpha3": "THA",
+            "name": "Thailand",
+            "slug": "thailand"
+          },
+          "id": 40152,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب لومبيني",
+              "hi": "लुम्पिनी स्टेडियम",
+              "bn": "লুম্পিনি স্টেডিয়াম"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Lumpinee Stadium"
+          }
+        },
+        "fightType": "maincard",
+        "weightClass": "fly",
+        "tournament": {
+          "name": "ONE Friday Fights 72",
+          "slug": "one-friday-fights-72",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Mixed Martial Arts",
+              "slug": "mma",
+              "id": 76
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1708,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "विश्व",
+                "bn": "বিশ্ব",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "ONE Fighting Championship",
+            "slug": "one-fighting-championship",
+            "category": {
+              "name": "World",
+              "slug": "world",
+              "sport": {
+                "name": "Mixed Martial Arts",
+                "slug": "mma",
+                "id": 76
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1708,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "विश्व",
+                  "bn": "বিশ্ব",
+                  "ru": "Мир"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5846,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {
+              "alpha2": "SG",
+              "alpha3": "SGP",
+              "name": "Singapore",
+              "slug": "singapore"
+            },
+            "id": 20269,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة ون للقتال",
+                "ru": "Чемпионат боев ONE"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 136381,
+          "endTimestamp": 1722000600,
+          "startTimestamp": 1721997450,
+          "location": "Bangkok, Thailand",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة ONE لمباريات الجمعة 72",
+              "ru": "Пятничные бои ONE 72"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "ONE Friday Fights 72",
+          "year": "2024",
+          "editor": false,
+          "id": 64491
+        },
+        "customId": "qXkeshZke",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "homeTeam": {
+          "name": "Freddie Haggerty",
+          "slug": "freddie-haggerty",
+          "shortName": "F. Haggerty",
+          "gender": "M",
+          "sport": {
+            "name": "Mixed Martial Arts",
+            "slug": "mma",
+            "id": 76
+          },
+          "userCount": 3,
+          "playerTeamInfo": {
+            "nickname": " ",
+            "id": 15800
+          },
+          "nameCode": "FHA",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 527457,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "wdlRecord": {
+            "wins": 26,
+            "draws": 1,
+            "losses": 5
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فريدي هاغرتي",
+              "ru": "Фредди Хаггерти"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. هاغرتي",
+              "ru": "Ф. Хаггерти"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Kaichon Sor Yingcharoenkarnchang",
+          "slug": "kaichon-sor-yingcharoenkarnchang",
+          "shortName": "K. S. Yingcharoenkarnchang",
+          "gender": "M",
+          "sport": {
+            "name": "Mixed Martial Arts",
+            "slug": "mma",
+            "id": 76
+          },
+          "userCount": 0,
+          "playerTeamInfo": {
+            "id": 15709
+          },
+          "nameCode": "KSY",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "TH",
+            "alpha3": "THA",
+            "name": "Thailand",
+            "slug": "thailand"
+          },
+          "id": 527366,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "wdlRecord": {
+            "wins": 0,
+            "draws": 0,
+            "losses": 2
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كايتشون سور ينغشارونغكارنشانغ",
+              "ru": "Кайчон Сор Ингчаройнкарнчан"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. ينغشارونغكارنشانغ",
+              "ru": "К. Ингчаройнкарнчан"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {
+          "totalPeriodCount": 3
+        },
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 12607782,
+        "order": 5,
+        "fightDiscipline": "mma",
+        "gender": "M",
+        "slug": "freddie-haggerty-kaichon-sor-yingcharoenkarnchang",
+        "startTimestamp": 1722007800,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "venue": {
+          "city": {
+            "name": "Bangkok",
+            "country": {
+              "alpha2": "TH",
+              "alpha3": "THA",
+              "name": "Thailand",
+              "slug": "thailand"
+            },
+            "id": 19152
+          },
+          "hidden": true,
+          "slug": "lumpinee-stadium",
+          "name": "Lumpinee Stadium",
+          "country": {
+            "alpha2": "TH",
+            "alpha3": "THA",
+            "name": "Thailand",
+            "slug": "thailand"
+          },
+          "id": 40152,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب لومبيني",
+              "hi": "लुम्पिनी स्टेडियम",
+              "bn": "লুম্পিনি স্টেডিয়াম"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Lumpinee Stadium"
+          }
+        },
+        "fightType": "maincard",
+        "weightClass": "fly",
+        "winType": "KO",
+        "tournament": {
+          "name": "ONE Friday Fights 72",
+          "slug": "one-friday-fights-72",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Mixed Martial Arts",
+              "slug": "mma",
+              "id": 76
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1708,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "विश्व",
+                "bn": "বিশ্ব",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "ONE Fighting Championship",
+            "slug": "one-fighting-championship",
+            "category": {
+              "name": "World",
+              "slug": "world",
+              "sport": {
+                "name": "Mixed Martial Arts",
+                "slug": "mma",
+                "id": 76
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1708,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "विश्व",
+                  "bn": "বিশ্ব",
+                  "ru": "Мир"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5846,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {
+              "alpha2": "SG",
+              "alpha3": "SGP",
+              "name": "Singapore",
+              "slug": "singapore"
+            },
+            "id": 20269,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة ون للقتال",
+                "ru": "Чемпионат боев ONE"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 136381,
+          "endTimestamp": 1722000600,
+          "startTimestamp": 1721997450,
+          "location": "Bangkok, Thailand",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة ONE لمباريات الجمعة 72",
+              "ru": "Пятничные бои ONE 72"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "ONE Friday Fights 72",
+          "year": "2024",
+          "editor": false,
+          "id": 64491
+        },
+        "customId": "qXkeshZke",
+        "status": {
+          "code": 58,
+          "description": "Awaiting announcement",
+          "type": "inprogress"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Freddie Haggerty",
+          "slug": "freddie-haggerty",
+          "shortName": "F. Haggerty",
+          "gender": "M",
+          "sport": {
+            "name": "Mixed Martial Arts",
+            "slug": "mma",
+            "id": 76
+          },
+          "userCount": 3,
+          "playerTeamInfo": {
+            "nickname": " ",
+            "id": 15800
+          },
+          "nameCode": "FHA",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 527457,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "wdlRecord": {
+            "wins": 26,
+            "draws": 1,
+            "losses": 5
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فريدي هاغرتي",
+              "ru": "Фредди Хаггерти"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. هاغرتي",
+              "ru": "Ф. Хаггерти"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Kaichon Sor Yingcharoenkarnchang",
+          "slug": "kaichon-sor-yingcharoenkarnchang",
+          "shortName": "K. S. Yingcharoenkarnchang",
+          "gender": "M",
+          "sport": {
+            "name": "Mixed Martial Arts",
+            "slug": "mma",
+            "id": 76
+          },
+          "userCount": 0,
+          "playerTeamInfo": {
+            "id": 15709
+          },
+          "nameCode": "KSY",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "TH",
+            "alpha3": "THA",
+            "name": "Thailand",
+            "slug": "thailand"
+          },
+          "id": 527366,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "wdlRecord": {
+            "wins": 0,
+            "draws": 0,
+            "losses": 2
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كايتشون سور ينغشارونغكارنشانغ",
+              "ru": "Кайчон Сор Ингчаройнкарнчан"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. ينغشارونغكارنشانغ",
+              "ru": "К. Ингчаройнкарнчан"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {
+          "current": 179,
+          "period1": 179,
+          "totalPeriodCount": 3
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "time.current"
+          ],
+          "changeTimestamp": 1722003004
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 12606166,
+        "order": 5,
+        "fightDiscipline": "muay-thai",
+        "finalRound": 1,
+        "gender": "M",
+        "slug": "freddie-haggerty-kaichon-sor-yingcharoenkarnchang",
+        "startTimestamp": 1722002391,
+        "lastPeriod": "awaitingannouncement",
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ]
+  }
+}

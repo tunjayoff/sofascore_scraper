@@ -1,0 +1,651 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16653102/average-positions",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:01:54+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/al-kholood-al-qadsiah/CvxsZIhc#id:16653102",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "home": [
+      {
+        "player": {
+          "name": "Muhammad Sawan",
+          "firstName": "Muhammad Sawan",
+          "slug": "muhammad-sawan",
+          "shortName": "M. Sawan",
+          "position": "M",
+          "jerseyNumber": "70",
+          "userCount": 32,
+          "gender": "M",
+          "sofascoreId": "hiq-g8p",
+          "id": 1549247,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "محمد صوعان",
+              "ru": "Мухаммад Саван"
+            },
+            "shortNameTranslation": {
+              "ar": "م. صوعان",
+              "ru": "М. Саван"
+            }
+          }
+        },
+        "averageX": 56.3125,
+        "averageY": 19.995833333333,
+        "pointsCount": 24
+      },
+      {
+        "player": {
+          "name": "Mansour Camara",
+          "firstName": "Mansour Camara",
+          "slug": "mansour-camara",
+          "shortName": "M. Camara",
+          "position": "D",
+          "jerseyNumber": "25",
+          "userCount": 322,
+          "sofascoreId": "tfw-t9j",
+          "id": 2442170,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "منصور كمارا",
+              "ru": "Мансур Камара"
+            },
+            "shortNameTranslation": {
+              "ar": "م. كمارا",
+              "ru": "М. Камара"
+            }
+          }
+        },
+        "averageX": 35.085714285714,
+        "averageY": 62.714285714286,
+        "pointsCount": 28
+      },
+      {
+        "player": {
+          "name": "Hamed Al-Shanqity",
+          "firstName": "Hamed",
+          "lastName": "Al-Shanqity",
+          "slug": "hamed-al-shanqity",
+          "shortName": "H. Al-Shanqity",
+          "position": "G",
+          "jerseyNumber": "1",
+          "userCount": 3047,
+          "gender": "M",
+          "sofascoreId": "c8i-3qf",
+          "id": 1857290,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "حامد الشنقيطي",
+              "ru": "Хамед Аль-Шанкити"
+            },
+            "shortNameTranslation": {
+              "ar": "ح. الشنقيطي",
+              "ru": "Х. Аль-Шанкити"
+            }
+          }
+        },
+        "averageX": 19.372413793103,
+        "averageY": 49.279310344828,
+        "pointsCount": 29
+      },
+      {
+        "player": {
+          "name": "Iker Kortajarena",
+          "firstName": "",
+          "lastName": "",
+          "slug": "iker-kortajarena",
+          "shortName": "I. Kortajarena",
+          "position": "M",
+          "jerseyNumber": "10",
+          "userCount": 339,
+          "gender": "M",
+          "sofascoreId": "cer-hpf",
+          "id": 1130805,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيكر كورتاجارينا",
+              "ru": "Икер Кортахарена"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. كورتاجارينا",
+              "ru": "И. Кортахарена"
+            }
+          }
+        },
+        "averageX": 54.34,
+        "averageY": 42.376,
+        "pointsCount": 25
+      },
+      {
+        "player": {
+          "name": "Adi",
+          "firstName": "Adi",
+          "slug": "adi",
+          "shortName": "Adi",
+          "position": "M",
+          "jerseyNumber": "24",
+          "userCount": 13,
+          "sofascoreId": "ejf-2ya",
+          "id": 2316776,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أدي",
+              "ru": "Ади"
+            },
+            "shortNameTranslation": {
+              "ar": "أدي"
+            }
+          }
+        },
+        "averageX": 59.526315789474,
+        "averageY": 20.344736842105,
+        "pointsCount": 38
+      },
+      {
+        "player": {
+          "name": "Abdulrahman Al Obaid",
+          "firstName": "Abdulrahman Al Obaid",
+          "slug": "abdulrahman-al-obaid",
+          "shortName": "A. A. Obaid",
+          "position": "D",
+          "jerseyNumber": "47",
+          "userCount": 40,
+          "gender": "M",
+          "sofascoreId": "xdf-9m7",
+          "id": 1945815,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "عبد الرحمن العبيّد",
+              "ru": "Абдулрахман Аль Обайд"
+            },
+            "shortNameTranslation": {
+              "ar": "ع. العبيّد",
+              "ru": "А. Обайд"
+            }
+          }
+        },
+        "averageX": 32.544827586207,
+        "averageY": 35.703448275862,
+        "pointsCount": 29
+      },
+      {
+        "player": {
+          "name": "Julien Domingues",
+          "firstName": "Julien Domingues",
+          "slug": "julien-domingues",
+          "shortName": "J. Domingues",
+          "position": "F",
+          "jerseyNumber": "22",
+          "userCount": 213,
+          "gender": "M",
+          "sofascoreId": "g8s-syy",
+          "id": 1170369,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جوليان دومينغيز",
+              "ru": "Жюльен Домингес"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. دومينغيز",
+              "ru": "Ж. Домингес"
+            }
+          }
+        },
+        "averageX": 64.86,
+        "averageY": 56.23,
+        "pointsCount": 10
+      },
+      {
+        "player": {
+          "name": "John Buckley",
+          "firstName": "",
+          "lastName": "",
+          "slug": "john-buckley",
+          "shortName": "J. Buckley",
+          "position": "M",
+          "jerseyNumber": "6",
+          "userCount": 185,
+          "gender": "M",
+          "sofascoreId": "8jj-php",
+          "id": 970441,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جون باكلي",
+              "ru": "Джон Бакли"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. باكلي",
+              "ru": "Д. Бакли"
+            }
+          }
+        },
+        "averageX": 59.11,
+        "averageY": 72.8175,
+        "pointsCount": 40
+      },
+      {
+        "player": {
+          "name": "Coba Da Costa",
+          "firstName": "Coba",
+          "lastName": "Da Costa",
+          "slug": "coba-da-costa",
+          "shortName": "C. Da Costa",
+          "position": "M",
+          "jerseyNumber": "11",
+          "userCount": 409,
+          "gender": "M",
+          "sofascoreId": "dq8-swd",
+          "id": 1392054,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كوبا دا كوستا",
+              "ru": "Коба Да Коста"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. دا كوستا",
+              "ru": "К. Коста"
+            }
+          }
+        },
+        "averageX": 60.189189189189,
+        "averageY": 88.375675675676,
+        "pointsCount": 37
+      },
+      {
+        "player": {
+          "name": "Sultan Al Shehri",
+          "firstName": "Sultan Al Shehri",
+          "slug": "sultan-al-shehri",
+          "shortName": "S. A. Shehri",
+          "position": "D",
+          "jerseyNumber": "7",
+          "userCount": 24,
+          "gender": "M",
+          "sofascoreId": "cep-iwn",
+          "id": 1549237,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سلطان الشهري",
+              "ru": "Султан Аль Шехри"
+            },
+            "shortNameTranslation": {
+              "ar": "س. الشهري",
+              "ru": "С. Шехри"
+            }
+          }
+        },
+        "averageX": 44.245454545455,
+        "averageY": 87.586363636364,
+        "pointsCount": 44
+      },
+      {
+        "player": {
+          "name": "Seydouba Cisse",
+          "firstName": "Seydouba",
+          "lastName": "Cisse",
+          "slug": "seydouba-cisse",
+          "shortName": "S. Cisse",
+          "position": "M",
+          "jerseyNumber": "8",
+          "userCount": 3093,
+          "gender": "M",
+          "sofascoreId": "kkf-g8j",
+          "id": 906065,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سيدوبا سيسي",
+              "bn": "সাইদৌবা সিসে",
+              "hi": "सेयदौबा सिस्से",
+              "ru": "Сейдуба Сиссе"
+            },
+            "shortNameTranslation": {
+              "ar": "س. سيسي",
+              "bn": "এস. সিসে",
+              "hi": "एस. सिस्से",
+              "ru": "С. Сиссе"
+            }
+          }
+        },
+        "averageX": 42.85641025641,
+        "averageY": 50.958974358974,
+        "pointsCount": 39
+      }
+    ],
+    "away": [
+      {
+        "player": {
+          "name": "Julian Weigl",
+          "firstName": "Julian",
+          "lastName": "Weigl",
+          "slug": "julian-weigl",
+          "shortName": "J. Weigl",
+          "position": "M",
+          "jerseyNumber": "5",
+          "userCount": 1153,
+          "gender": "M",
+          "sofascoreId": "e3i-9t8",
+          "id": 237068,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جوليان فايغل",
+              "bn": "জুলিয়ান উইগল",
+              "hi": "जूलियन वीगल",
+              "ru": "Юлиан Вайгл"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. فايغل",
+              "bn": "জে. উইগল",
+              "hi": "जे. वीगल",
+              "ru": "Ю. Вайгл"
+            }
+          }
+        },
+        "averageX": 46.003571428571,
+        "averageY": 49.453571428571,
+        "pointsCount": 28
+      },
+      {
+        "player": {
+          "name": "Julián Quiñones",
+          "firstName": "Julian",
+          "lastName": "Quinones",
+          "slug": "julian-quinones",
+          "shortName": "J. Quiñones",
+          "position": "F",
+          "jerseyNumber": "33",
+          "userCount": 49331,
+          "gender": "M",
+          "sofascoreId": "c6s-3mg",
+          "id": 843114,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جوليان كينونيس",
+              "bn": "জুলিয়ান কুইনোনস",
+              "hi": "जूलियन क्वीनोनेस",
+              "ru": "Хулиан Киньонес"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. كينونيس",
+              "bn": "জে. কুইনোনস",
+              "hi": "जे. क्वीनोनेस",
+              "ru": "Х. Киньонес"
+            }
+          }
+        },
+        "averageX": 61.03,
+        "averageY": 36.293333333333,
+        "pointsCount": 30
+      },
+      {
+        "player": {
+          "name": "Tijjani Reijnders",
+          "slug": "tijjani-reijnders",
+          "shortName": "T. Reijnders",
+          "position": "M",
+          "jerseyNumber": "14",
+          "userCount": 39463,
+          "gender": "M",
+          "sofascoreId": "w8w-c3k",
+          "id": 893549,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تياني ريندرز",
+              "bn": "তিজানি রেইজেন্ডার্স",
+              "hi": "तिजानी रेइंडर्स",
+              "ru": "Тейани Рейндерс"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. ريندرز",
+              "bn": "টি. রেইজেন্ডার্স",
+              "hi": "टी. रेइंडर्स",
+              "ru": "Т. Рейндерс"
+            }
+          }
+        },
+        "averageX": 54.736111111111,
+        "averageY": 43.430555555556,
+        "pointsCount": 36
+      },
+      {
+        "player": {
+          "name": "Gastón Álvarez",
+          "slug": "gaston-alvarez",
+          "shortName": "G. Álvarez",
+          "position": "D",
+          "jerseyNumber": "17",
+          "userCount": 541,
+          "gender": "M",
+          "sofascoreId": "rss-kba",
+          "id": 980578,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جاستون الفاريز",
+              "bn": "গ্যাস্টন আলভারেজ",
+              "hi": "गैस्टन अल्वारेज़",
+              "ru": "Гастон Альварес"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. الفاريز",
+              "bn": "জি. আলভারেজ",
+              "hi": "जी. अल्वारेज़",
+              "ru": "Г. Альварес"
+            }
+          }
+        },
+        "averageX": 33.60625,
+        "averageY": 78.510416666667,
+        "pointsCount": 48
+      },
+      {
+        "player": {
+          "name": "Koen Casteels",
+          "slug": "koen-casteels",
+          "shortName": "K. Casteels",
+          "position": "G",
+          "jerseyNumber": "1",
+          "userCount": 1344,
+          "gender": "M",
+          "sofascoreId": "vnp-krs",
+          "id": 70987,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كوين كاستيلس",
+              "bn": "কোয়েন কাস্টিলস",
+              "hi": "कोएन कास्टेल्स",
+              "ru": "Коэн Кастелс"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. كاستيلس",
+              "bn": "কে. কাস্টিলস",
+              "hi": "के. कास्टेल्स",
+              "ru": "К. Кастелс"
+            }
+          }
+        },
+        "averageX": 9.9794117647059,
+        "averageY": 52.047058823529,
+        "pointsCount": 34
+      },
+      {
+        "player": {
+          "name": "Mateo Retegui",
+          "slug": "mateo-retegui",
+          "shortName": "M. Retegui",
+          "position": "F",
+          "jerseyNumber": "32",
+          "userCount": 14012,
+          "gender": "M",
+          "sofascoreId": "zzm-jbd",
+          "id": 914501,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماتيو ريتيجي",
+              "bn": "ম্যাথিউ রেটেগুই",
+              "hi": "माटेओ रेटेगुई",
+              "ru": "Матео Ретеги"
+            },
+            "shortNameTranslation": {
+              "ar": "م. ريتيجي",
+              "bn": "এম. রেটেগুই",
+              "hi": "एम. रेटेगुई",
+              "ru": "М. Ретеги"
+            }
+          }
+        },
+        "averageX": 54.142857142857,
+        "averageY": 56.47619047619,
+        "pointsCount": 21
+      },
+      {
+        "player": {
+          "name": "Jehad Thakri",
+          "firstName": "Jehad",
+          "lastName": "Thakri",
+          "slug": "jehad-thakri",
+          "shortName": "J. Thakri",
+          "position": "D",
+          "jerseyNumber": "4",
+          "userCount": 325,
+          "gender": "M",
+          "sofascoreId": "kmk-wm9",
+          "id": 1845169,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جهاد ذكري",
+              "ru": "Джехад Такри"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. ذكري",
+              "ru": "Д. Такри"
+            }
+          }
+        },
+        "averageX": 27.264285714286,
+        "averageY": 25.635714285714,
+        "pointsCount": 42
+      },
+      {
+        "player": {
+          "name": "Mohammed Abu Al-Shamat",
+          "firstName": "Mohammed Waheeb Abu Al-Shamat",
+          "slug": "mohammed-waheeb-abu-al-shamat",
+          "shortName": "M. A. Al-Shamat",
+          "position": "M",
+          "jerseyNumber": "2",
+          "userCount": 524,
+          "gender": "M",
+          "sofascoreId": "kmw-49q",
+          "id": 1804369,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "محمد أبو الشامات",
+              "ru": "Мохаммед Абу Аль-Шамат"
+            },
+            "shortNameTranslation": {
+              "ar": "م. الشامات",
+              "ru": "М. Аль-Шамат"
+            }
+          }
+        },
+        "averageX": 48.168,
+        "averageY": 22.806,
+        "pointsCount": 50
+      },
+      {
+        "player": {
+          "name": "Nacho Fernández",
+          "slug": "nacho-fernandez",
+          "shortName": "N. Fernández",
+          "position": "D",
+          "jerseyNumber": "6",
+          "userCount": 12423,
+          "gender": "M",
+          "sofascoreId": "hes-jac",
+          "id": 69404,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ناتشو",
+              "bn": "নাচো ফার্নান্ডেজ",
+              "hi": "नाचो फर्नांडीज",
+              "ru": "Нахо Фернандес"
+            },
+            "shortNameTranslation": {
+              "ar": "ناتشو",
+              "bn": "এন. ফার্নান্ডেজ",
+              "hi": "एन. फर्नांडीज",
+              "ru": "Н. Фернандес"
+            }
+          }
+        },
+        "averageX": 32.033333333333,
+        "averageY": 56.011904761905,
+        "pointsCount": 42
+      },
+      {
+        "player": {
+          "name": "Musab Al Juwayr",
+          "firstName": "Musab Fahz Aljuwayr",
+          "slug": "musab-fahd-aljuwayr",
+          "shortName": "M. A. Juwayr",
+          "position": "M",
+          "jerseyNumber": "10",
+          "userCount": 1182,
+          "gender": "M",
+          "sofascoreId": "td7-qbt",
+          "id": 1106234,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مصعب الجوير",
+              "bn": "মুসাব ফাহাদ আলজুওয়াইর",
+              "hi": "मुसाब फ़हद अलजुवायर",
+              "ru": "Мусаб Аль-Джуваир"
+            },
+            "shortNameTranslation": {
+              "ar": "م. الجوير",
+              "bn": "এম. এফ. আলজুওয়ার",
+              "hi": "एम.एफ. अलजुवायर",
+              "ru": "М. Аль-Джуваир"
+            }
+          }
+        },
+        "averageX": 55.527083333333,
+        "averageY": 70.6625,
+        "pointsCount": 48
+      },
+      {
+        "player": {
+          "name": "Christopher Baah",
+          "firstName": "Christopher Baah",
+          "lastName": "",
+          "slug": "christopher-baah",
+          "shortName": "C. Baah",
+          "position": "M",
+          "jerseyNumber": "22",
+          "userCount": 4364,
+          "gender": "M",
+          "sofascoreId": "p9s-s3m",
+          "id": 1477662,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كريستوفر بونسو باه",
+              "bn": "ক্রিস্টোফার বাহ",
+              "hi": "क्रिस्टोफर बाह",
+              "ru": "Кристофер Баа"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. بونسو باه",
+              "bn": "সি. বাহ",
+              "hi": "सी. बाह",
+              "ru": "К. Баа"
+            }
+          }
+        },
+        "averageX": 58.739534883721,
+        "averageY": 71.918604651163,
+        "pointsCount": 43
+      }
+    ],
+    "substitutions": []
+  }
+}

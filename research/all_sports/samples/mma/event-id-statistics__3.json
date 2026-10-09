@@ -1,0 +1,310 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/12909585/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:25:42+00:00",
+  "page": "https://www.sofascore.com/tr/mma/match/youcef-saad-dahyun-kim/pClesXXwh#id:12909585",
+  "cache_control": "max-age=10, public, s-maxage=172800",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "General",
+            "statisticsItems": [
+              {
+                "name": "Statistics time",
+                "home": "475",
+                "away": "475",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 475,
+                "awayValue": 475,
+                "renderType": 1,
+                "key": "time"
+              }
+            ]
+          },
+          {
+            "groupName": "Distance",
+            "statisticsItems": [
+              {
+                "name": "Distance Seconds",
+                "home": "464",
+                "away": "464",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 464,
+                "awayValue": 464,
+                "renderType": 1,
+                "key": "distanceSeconds"
+              },
+              {
+                "name": "Distance Percent",
+                "home": "100.00",
+                "away": "100.00",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 100,
+                "awayValue": 100,
+                "renderType": 1,
+                "key": "distancePercent"
+              }
+            ]
+          },
+          {
+            "groupName": "Ground",
+            "statisticsItems": [
+              {
+                "name": "Ground Seconds",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundSeconds"
+              },
+              {
+                "name": "Ground Percent",
+                "home": "0.00",
+                "away": "0.00",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundPercent"
+              },
+              {
+                "name": "Ground Clinch Seconds",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundClinchSeconds"
+              },
+              {
+                "__trimmed__": 18
+              }
+            ]
+          },
+          {
+            "__trimmed__": 2
+          }
+        ]
+      },
+      {
+        "period": "ALL15MIN",
+        "groups": [
+          {
+            "groupName": "General",
+            "statisticsItems": [
+              {
+                "name": "Statistics time",
+                "home": "900",
+                "away": "900",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 900,
+                "awayValue": 900,
+                "renderType": 1,
+                "key": "time"
+              }
+            ]
+          },
+          {
+            "groupName": "Distance",
+            "statisticsItems": [
+              {
+                "name": "Distance Seconds",
+                "home": "879",
+                "away": "879",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 879,
+                "awayValue": 879,
+                "renderType": 1,
+                "key": "distanceSeconds"
+              },
+              {
+                "name": "Distance Percent",
+                "home": "100.00",
+                "away": "100.00",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 100,
+                "awayValue": 100,
+                "renderType": 1,
+                "key": "distancePercent"
+              }
+            ]
+          },
+          {
+            "groupName": "Ground",
+            "statisticsItems": [
+              {
+                "name": "Ground Seconds",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundSeconds"
+              },
+              {
+                "name": "Ground Percent",
+                "home": "0.00",
+                "away": "0.00",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundPercent"
+              },
+              {
+                "name": "Ground Clinch Seconds",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundClinchSeconds"
+              },
+              {
+                "__trimmed__": 18
+              }
+            ]
+          },
+          {
+            "__trimmed__": 2
+          }
+        ]
+      },
+      {
+        "period": "1ST",
+        "groups": [
+          {
+            "groupName": "General",
+            "statisticsItems": [
+              {
+                "name": "Statistics time",
+                "home": "180",
+                "away": "180",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 180,
+                "awayValue": 180,
+                "renderType": 1,
+                "key": "time"
+              }
+            ]
+          },
+          {
+            "groupName": "Distance",
+            "statisticsItems": [
+              {
+                "name": "Distance Seconds",
+                "home": "176",
+                "away": "176",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 176,
+                "awayValue": 176,
+                "renderType": 1,
+                "key": "distanceSeconds"
+              },
+              {
+                "name": "Distance Percent",
+                "home": "100.00",
+                "away": "100.00",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 100,
+                "awayValue": 100,
+                "renderType": 1,
+                "key": "distancePercent"
+              }
+            ]
+          },
+          {
+            "groupName": "Ground",
+            "statisticsItems": [
+              {
+                "name": "Ground Seconds",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundSeconds"
+              },
+              {
+                "name": "Ground Percent",
+                "home": "0.00",
+                "away": "0.00",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundPercent"
+              },
+              {
+                "name": "Ground Clinch Seconds",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "groundClinchSeconds"
+              },
+              {
+                "__trimmed__": 18
+              }
+            ]
+          },
+          {
+            "__trimmed__": 2
+          }
+        ]
+      },
+      {
+        "__trimmed__": 2
+      }
+    ]
+  }
+}

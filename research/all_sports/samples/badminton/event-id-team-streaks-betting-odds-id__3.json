@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17289295/team-streaks/betting-odds/1",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T15:14:42+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/nebel-soby-laiy-tsaic/jUDdsFTvj#id:17289295",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

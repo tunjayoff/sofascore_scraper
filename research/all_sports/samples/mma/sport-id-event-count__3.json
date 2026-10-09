@@ -1,0 +1,91 @@
+{
+  "url": "https://www.sofascore.com/api/v1/sport/10800/event-count",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:23:58+00:00",
+  "page": "https://www.sofascore.com/tr/mma/match/freddie-haggerty-kaichon-sor-yingcharoenkarnchang/qXkeshZke#id:12606166",
+  "cache_control": "max-age=10, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "badminton": {
+      "live": 8,
+      "total": 111
+    },
+    "futsal": {
+      "live": 1,
+      "total": 157
+    },
+    "ice-hockey": {
+      "live": 4,
+      "total": 169
+    },
+    "minifootball": {
+      "live": 2,
+      "total": 134
+    },
+    "darts": {
+      "live": 1,
+      "total": 41
+    },
+    "table-tennis": {
+      "live": 20,
+      "total": 1168
+    },
+    "american-football": {
+      "live": 0,
+      "total": 8
+    },
+    "aussie-rules": {
+      "live": 0,
+      "total": 1
+    },
+    "floorball": {
+      "live": 0,
+      "total": 13
+    },
+    "football": {
+      "live": 107,
+      "total": 1279
+    },
+    "tennis": {
+      "live": 23,
+      "total": 292
+    },
+    "baseball": {
+      "live": 0,
+      "total": 17
+    },
+    "basketball": {
+      "live": 11,
+      "total": 268
+    },
+    "padel": {
+      "live": 0,
+      "total": 97
+    },
+    "handball": {
+      "live": 1,
+      "total": 99
+    },
+    "cricket": {
+      "live": 6,
+      "total": 25
+    },
+    "rugby": {
+      "live": 0,
+      "total": 19
+    },
+    "waterpolo": {
+      "live": 0,
+      "total": 20
+    },
+    "esports": {
+      "live": 14,
+      "total": 67
+    },
+    "volleyball": {
+      "live": 3,
+      "total": 98
+    }
+  }
+}

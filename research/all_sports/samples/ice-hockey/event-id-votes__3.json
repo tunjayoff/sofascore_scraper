@@ -1,0 +1,29 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16347609/votes",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:07:23+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/salavat-yulaev-ufa-metallurg-magnitogorsk/NDbsUDb#id:16347609",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "vote": {
+      "vote1": 602,
+      "vote2": 147,
+      "voteX": null
+    },
+    "bothTeamsToScoreVote": {
+      "voteYes": 0,
+      "voteNo": 0
+    },
+    "firstTeamToScoreVote": {
+      "voteHome": 0,
+      "voteNoGoal": 0,
+      "voteAway": 0
+    },
+    "whoShouldHaveWonVote": {
+      "vote1": 0,
+      "vote2": 0
+    }
+  }
+}

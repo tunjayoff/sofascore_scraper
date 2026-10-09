@@ -1,0 +1,410 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16144769/best-players",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T18:50:41+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/alabama-state-hornets-florida-a-and-m-rattlers/QFtcsVFtc#id:16144769",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009d",
+  "body": {
+    "bestHomeTeamPlayer": {
+      "value": "54",
+      "label": "yds",
+      "player": {
+        "name": "Aaron Frye",
+        "firstName": "Aaron Frye",
+        "slug": "aaron-frye",
+        "shortName": "A. Frye",
+        "userCount": 0,
+        "sofascoreId": "xdn-sxj",
+        "id": 2736919,
+        "marketValueCurrency": "EUR"
+      },
+      "team": {
+        "name": "Alabama State Hornets",
+        "slug": "alabama-state-hornets",
+        "shortName": "Alabama State",
+        "gender": "M",
+        "sport": {
+          "name": "American football",
+          "slug": "american-football",
+          "id": 63
+        },
+        "userCount": 83,
+        "nameCode": "ALST",
+        "national": false,
+        "type": 0,
+        "id": 296545,
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ألاباما ستيت هورنتس",
+            "ru": "Алабама Стейт Хорнетс"
+          },
+          "shortNameTranslation": {
+            "ar": "ألاباما ستيت",
+            "ru": "Алабама Стейт"
+          }
+        }
+      }
+    },
+    "bestAwayTeamPlayer": {
+      "value": "111",
+      "label": "yds",
+      "player": {
+        "name": "Armond Parker",
+        "firstName": "Armond Parker",
+        "slug": "armond-parker",
+        "shortName": "A. Parker",
+        "position": "QB",
+        "userCount": 0,
+        "gender": "M",
+        "sofascoreId": "dpd-ygs",
+        "id": 2748854,
+        "marketValueCurrency": "EUR"
+      },
+      "team": {
+        "name": "Florida A&M Rattlers",
+        "slug": "florida-a-and-m-rattlers",
+        "shortName": "Florida A&M",
+        "gender": "M",
+        "sport": {
+          "name": "American football",
+          "slug": "american-football",
+          "id": 63
+        },
+        "userCount": 112,
+        "nameCode": "FAMU",
+        "national": false,
+        "type": 0,
+        "id": 296541,
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "فلوريدا ايه اند ام",
+            "ru": "ФК Флорида A&M Гремучие Змеи"
+          },
+          "shortNameTranslation": {
+            "ru": "Флорида A&M"
+          }
+        }
+      }
+    },
+    "leaderboard": [
+      {
+        "value": "111",
+        "label": "yds",
+        "player": {
+          "name": "Armond Parker",
+          "firstName": "Armond Parker",
+          "slug": "armond-parker",
+          "shortName": "A. Parker",
+          "position": "QB",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "dpd-ygs",
+          "id": 2748854,
+          "marketValueCurrency": "EUR"
+        },
+        "team": {
+          "name": "Florida A&M Rattlers",
+          "slug": "florida-a-and-m-rattlers",
+          "shortName": "Florida A&M",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 112,
+          "nameCode": "FAMU",
+          "national": false,
+          "type": 0,
+          "id": 296541,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فلوريدا ايه اند ام",
+              "ru": "ФК Флорида A&M Гремучие Змеи"
+            },
+            "shortNameTranslation": {
+              "ru": "Флорида A&M"
+            }
+          }
+        }
+      },
+      {
+        "value": "54",
+        "label": "yds",
+        "player": {
+          "name": "Aaron Frye",
+          "firstName": "Aaron Frye",
+          "slug": "aaron-frye",
+          "shortName": "A. Frye",
+          "userCount": 0,
+          "sofascoreId": "xdn-sxj",
+          "id": 2736919,
+          "marketValueCurrency": "EUR"
+        },
+        "team": {
+          "name": "Alabama State Hornets",
+          "slug": "alabama-state-hornets",
+          "shortName": "Alabama State",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 83,
+          "nameCode": "ALST",
+          "national": false,
+          "type": 0,
+          "id": 296545,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ألاباما ستيت هورنتس",
+              "ru": "Алабама Стейт Хорнетс"
+            },
+            "shortNameTranslation": {
+              "ar": "ألاباما ستيت",
+              "ru": "Алабама Стейт"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "yds",
+        "player": {
+          "name": "Jamarie Hostzclaw",
+          "slug": "hostzclaw-jamarie",
+          "shortName": "J. Hostzclaw",
+          "position": "RB",
+          "height": 175,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "6ig-jsv",
+          "id": 1883911,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هوستزكلاو، جاماري",
+              "ru": "Джамари Хостзкло"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. هوستزكلاو",
+              "ru": "Д. Хостзкло"
+            }
+          }
+        },
+        "team": {
+          "name": "Alabama State Hornets",
+          "slug": "alabama-state-hornets",
+          "shortName": "Alabama State",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 83,
+          "nameCode": "ALST",
+          "national": false,
+          "type": 0,
+          "id": 296545,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ألاباما ستيت هورنتس",
+              "ru": "Алабама Стейт Хорнетс"
+            },
+            "shortNameTranslation": {
+              "ar": "ألاباما ستيت",
+              "ru": "Алабама Стейт"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "yds",
+        "player": {
+          "name": "Jamal Hailey",
+          "slug": "hailey-jamal",
+          "shortName": "J. Hailey",
+          "position": "RB",
+          "jerseyNumber": "28",
+          "height": 180,
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "wra-5ue",
+          "id": 1529165,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هايلي، جمال",
+              "ru": "Джамал Хейли"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. هايلي",
+              "ru": "Д. Хейли"
+            }
+          }
+        },
+        "team": {
+          "name": "Florida A&M Rattlers",
+          "slug": "florida-a-and-m-rattlers",
+          "shortName": "Florida A&M",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 112,
+          "nameCode": "FAMU",
+          "national": false,
+          "type": 0,
+          "id": 296541,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فلوريدا ايه اند ام",
+              "ru": "ФК Флорида A&M Гремучие Змеи"
+            },
+            "shortNameTranslation": {
+              "ru": "Флорида A&M"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "yds",
+        "player": {
+          "name": "TJ Ramsey",
+          "firstName": "TJ Ramsey",
+          "slug": "tj-ramsey",
+          "shortName": "T. Ramsey",
+          "userCount": 0,
+          "sofascoreId": "f7d-g4x",
+          "id": 2721670,
+          "marketValueCurrency": "EUR"
+        },
+        "team": {
+          "name": "Alabama State Hornets",
+          "slug": "alabama-state-hornets",
+          "shortName": "Alabama State",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 83,
+          "nameCode": "ALST",
+          "national": false,
+          "type": 0,
+          "id": 296545,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ألاباما ستيت هورنتس",
+              "ru": "Алабама Стейт Хорнетс"
+            },
+            "shortNameTranslation": {
+              "ar": "ألاباما ستيت",
+              "ru": "Алабама Стейт"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "yds",
+        "player": {
+          "name": "Armand Burris",
+          "firstName": "Armand Burris",
+          "slug": "armand-burris",
+          "shortName": "A. Burris",
+          "position": "WR",
+          "jerseyNumber": "87",
+          "userCount": 0,
+          "sofascoreId": "dp9-cdg",
+          "id": 2007510,
+          "marketValueCurrency": "EUR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أرماند بوريس",
+              "ru": "Арманд, Буррис"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. بوريس",
+              "ru": "Б. Арманд"
+            }
+          }
+        },
+        "team": {
+          "name": "Florida A&M Rattlers",
+          "slug": "florida-a-and-m-rattlers",
+          "shortName": "Florida A&M",
+          "gender": "M",
+          "sport": {
+            "name": "American football",
+            "slug": "american-football",
+            "id": 63
+          },
+          "userCount": 112,
+          "nameCode": "FAMU",
+          "national": false,
+          "type": 0,
+          "id": 296541,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فلوريدا ايه اند ام",
+              "ru": "ФК Флорида A&M Гремучие Змеи"
+            },
+            "shortNameTranslation": {
+              "ru": "Флорида A&M"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

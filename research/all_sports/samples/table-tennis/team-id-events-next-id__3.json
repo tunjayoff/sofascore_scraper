@@ -1,0 +1,392 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/800664/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:16:41+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/wichowski-nowak/EEodsonvg#id:17289647",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "TT Elite Series",
+          "slug": "tt-elite-series",
+          "category": {
+            "name": "Poland",
+            "slug": "poland",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "PL",
+              "alpha3": "POL",
+              "name": "Poland",
+              "slug": "poland"
+            },
+            "id": 1340,
+            "flag": "poland",
+            "alpha2": "PL",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بولندا",
+                "ru": "Польша"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "TT Elite Series",
+            "slug": "tt-elite-series",
+            "category": {
+              "name": "Poland",
+              "slug": "poland",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "PL",
+                "alpha3": "POL",
+                "name": "Poland",
+                "slug": "poland"
+              },
+              "id": 1340,
+              "flag": "poland",
+              "alpha2": "PL",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "بولندا",
+                  "ru": "Польша"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 834,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 19041,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة النخبة لتنس الطاولة",
+                "ru": "Элитная серия TT"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 99281,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة النخبة لتنس الطاولة (TT)",
+              "ru": "TT Элитная Серия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 96789
+        },
+        "customId": "onvgsBYrk",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Dlugaj R.",
+          "slug": "dlugaj-rafal",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 1,
+          "nameCode": "DRA",
+          "national": false,
+          "type": 0,
+          "country": {},
+          "id": 1294926,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "Wichowski G.",
+          "slug": "wichowski-grzegorz",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 159,
+          "playerTeamInfo": {
+            "id": 22171
+          },
+          "nameCode": "WIC",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "PL",
+            "alpha3": "POL",
+            "name": "Poland",
+            "slug": "poland"
+          },
+          "id": 800664,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويتشوسكي، غريغورز",
+              "ru": "Виховский, Гжегож"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17289656,
+        "slug": "dlugaj-wichowski",
+        "startTimestamp": 1791559800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "TT Elite Series",
+          "slug": "tt-elite-series",
+          "category": {
+            "name": "Poland",
+            "slug": "poland",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "PL",
+              "alpha3": "POL",
+              "name": "Poland",
+              "slug": "poland"
+            },
+            "id": 1340,
+            "flag": "poland",
+            "alpha2": "PL",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بولندا",
+                "ru": "Польша"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "TT Elite Series",
+            "slug": "tt-elite-series",
+            "category": {
+              "name": "Poland",
+              "slug": "poland",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "PL",
+                "alpha3": "POL",
+                "name": "Poland",
+                "slug": "poland"
+              },
+              "id": 1340,
+              "flag": "poland",
+              "alpha2": "PL",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "بولندا",
+                  "ru": "Польша"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 834,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 19041,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة النخبة لتنس الطاولة",
+                "ru": "Элитная серия TT"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 99281,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بطولة النخبة لتنس الطاولة (TT)",
+              "ru": "TT Элитная Серия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 96789
+        },
+        "customId": "onvgsmPwh",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Wrzalik T.",
+          "slug": "wrzalik-tomasz",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 92,
+          "playerTeamInfo": {
+            "id": 29240
+          },
+          "nameCode": "WRZ",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "PL",
+            "alpha3": "POL",
+            "name": "Poland",
+            "slug": "poland"
+          },
+          "id": 929512,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ورزالِك، توماس",
+              "ru": "Вржалик, Томаш"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Wichowski G.",
+          "slug": "wichowski-grzegorz",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 159,
+          "playerTeamInfo": {
+            "id": 22171
+          },
+          "nameCode": "WIC",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "PL",
+            "alpha3": "POL",
+            "name": "Poland",
+            "slug": "poland"
+          },
+          "id": 800664,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويتشوسكي، غريغورز",
+              "ru": "Виховский, Гжегож"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17289666,
+        "slug": "wrzalik-wichowski",
+        "startTimestamp": 1791562800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ],
+    "hasNextPage": false
+  }
+}

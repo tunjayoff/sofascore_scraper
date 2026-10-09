@@ -1,0 +1,686 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/268073/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:04:38+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/amintas-ne-megaridos/xZgcsylhc#id:16624761",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "B Ethniki - Group 1",
+          "slug": "b-ethniki-group-1",
+          "category": {
+            "name": "Greece",
+            "slug": "greece",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "GR",
+              "alpha3": "GRC",
+              "name": "Greece",
+              "slug": "greece"
+            },
+            "id": 108,
+            "flag": "greece",
+            "alpha2": "GR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "اليونان",
+                "ru": "Греция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "National League 1",
+            "slug": "national-league-1",
+            "category": {
+              "name": "Greece",
+              "slug": "greece",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "GR",
+                "alpha3": "GRC",
+                "name": "Greece",
+                "slug": "greece"
+              },
+              "id": 108,
+              "flag": "greece",
+              "alpha2": "GR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اليونان",
+                  "ru": "Греция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 205,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 19769,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني 1",
+                "ru": "Лига 1 Национальная"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group 1",
+          "isLive": false,
+          "id": 110234,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري B إيثنيكي - المجموعة 1",
+              "ru": "Лига B Этники, Группа 1"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "National League 1 25/26",
+          "year": "25/26",
+          "editor": true,
+          "id": 78412
+        },
+        "roundInfo": {
+          "round": 6
+        },
+        "customId": "ylhcsQxyc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Akadimia Basket Eleusinas",
+          "slug": "akadimia-basket-eleusinas",
+          "shortName": "Akadimia Basket Eleusinas",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 48,
+          "nameCode": "ABE",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 308641,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أكاديميا باسكت إيلوسيناس",
+              "ru": "Академия Баскет Элевсинас"
+            },
+            "shortNameTranslation": {
+              "ar": "أكاديميا باسكت إيلوسيناس",
+              "ru": "Академия Баскет Элевсинас"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Amintas",
+          "slug": "amintas",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 128,
+          "nameCode": "AMI",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 268073,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#15317e",
+            "secondary": "#f88017",
+            "text": "#f88017"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمينتاس",
+              "ru": "Аминтас"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 65,
+          "display": 65,
+          "period1": 14,
+          "period2": 12,
+          "period3": 20,
+          "period4": 19,
+          "normaltime": 65
+        },
+        "awayScore": {
+          "current": 73,
+          "display": 73,
+          "period1": 16,
+          "period2": 23,
+          "period3": 20,
+          "period4": 14,
+          "normaltime": 73
+        },
+        "coverage": -1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "homeScore.period2",
+            "homeScore.period3",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1775623655
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14922503,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "akadimia-basket-eleusinas-amintas",
+        "startTimestamp": 1762614000,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": true
+      },
+      {
+        "tournament": {
+          "name": "B Ethniki - Group 1",
+          "slug": "b-ethniki-group-1",
+          "category": {
+            "name": "Greece",
+            "slug": "greece",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "GR",
+              "alpha3": "GRC",
+              "name": "Greece",
+              "slug": "greece"
+            },
+            "id": 108,
+            "flag": "greece",
+            "alpha2": "GR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "اليونان",
+                "ru": "Греция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "National League 1",
+            "slug": "national-league-1",
+            "category": {
+              "name": "Greece",
+              "slug": "greece",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "GR",
+                "alpha3": "GRC",
+                "name": "Greece",
+                "slug": "greece"
+              },
+              "id": 108,
+              "flag": "greece",
+              "alpha2": "GR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اليونان",
+                  "ru": "Греция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 205,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 19769,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني 1",
+                "ru": "Лига 1 Национальная"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group 1",
+          "isLive": false,
+          "id": 110234,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري B إيثنيكي - المجموعة 1",
+              "ru": "Лига B Этники, Группа 1"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "National League 1 25/26",
+          "year": "25/26",
+          "editor": true,
+          "id": 78412
+        },
+        "roundInfo": {
+          "round": 7
+        },
+        "customId": "ylhcsuFId",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Amintas",
+          "slug": "amintas",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 128,
+          "nameCode": "AMI",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 268073,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#15317e",
+            "secondary": "#f88017",
+            "text": "#f88017"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمينتاس",
+              "ru": "Аминтас"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "GS Dafni Dafniou BC",
+          "slug": "gs-dafni-dafniou-bc",
+          "shortName": "Dafni Dafniou",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 83,
+          "nameCode": "GDD",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 459019,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#026a37",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جي إس دافني دافنيou بي سي",
+              "ru": "ГС Дафни Дафниу БК"
+            },
+            "shortNameTranslation": {
+              "ar": "دافني دافنيou",
+              "ru": "Дафни Дафниу"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 79,
+          "display": 79,
+          "period1": 20,
+          "period2": 18,
+          "period3": 22,
+          "period4": 19,
+          "normaltime": 79
+        },
+        "awayScore": {
+          "current": 69,
+          "display": 69,
+          "period1": 17,
+          "period2": 11,
+          "period3": 20,
+          "period4": 21,
+          "normaltime": 69
+        },
+        "coverage": -1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "homeScore.period2",
+            "homeScore.period3",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1775623698
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15020327,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "gs-dafni-dafniou-bc-amintas",
+        "startTimestamp": 1763218800,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": true
+      },
+      {
+        "tournament": {
+          "name": "B Ethniki - Group 1",
+          "slug": "b-ethniki-group-1",
+          "category": {
+            "name": "Greece",
+            "slug": "greece",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "GR",
+              "alpha3": "GRC",
+              "name": "Greece",
+              "slug": "greece"
+            },
+            "id": 108,
+            "flag": "greece",
+            "alpha2": "GR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "اليونان",
+                "ru": "Греция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "National League 1",
+            "slug": "national-league-1",
+            "category": {
+              "name": "Greece",
+              "slug": "greece",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "GR",
+                "alpha3": "GRC",
+                "name": "Greece",
+                "slug": "greece"
+              },
+              "id": 108,
+              "flag": "greece",
+              "alpha2": "GR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اليونان",
+                  "ru": "Греция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 205,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 19769,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الوطني 1",
+                "ru": "Лига 1 Национальная"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Group 1",
+          "isLive": false,
+          "id": 110234,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري B إيثنيكي - المجموعة 1",
+              "ru": "Лига B Этники, Группа 1"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "National League 1 25/26",
+          "year": "25/26",
+          "editor": true,
+          "id": 78412
+        },
+        "roundInfo": {
+          "round": 8
+        },
+        "customId": "mogcsylhc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Ionikos Nikeas",
+          "slug": "ionikos-nikeas",
+          "shortName": "Ionikos",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 342,
+          "nameCode": "ION",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 265712,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ffffff",
+            "secondary": "#000080",
+            "text": "#000080"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "يونكوس نيكاس",
+              "ru": "АС Ионикос"
+            },
+            "shortNameTranslation": {
+              "ar": "يونكوس",
+              "bn": "আয়নিকোস",
+              "hi": "आयोनिकोस"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Amintas",
+          "slug": "amintas",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 128,
+          "nameCode": "AMI",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 268073,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#15317e",
+            "secondary": "#f88017",
+            "text": "#f88017"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمينتاس",
+              "ru": "Аминтас"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 76,
+          "display": 76,
+          "period1": 19,
+          "period2": 18,
+          "period3": 17,
+          "period4": 22,
+          "normaltime": 76
+        },
+        "awayScore": {
+          "current": 75,
+          "display": 75,
+          "period1": 22,
+          "period2": 14,
+          "period3": 22,
+          "period4": 17,
+          "normaltime": 75
+        },
+        "coverage": -1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "homeScore.period2",
+            "homeScore.period3",
+            {
+              "__trimmed__": 7
+            }
+          ],
+          "changeTimestamp": 1763976731
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15020336,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "amintas-ionikos-nikeas",
+        "startTimestamp": 1763823600,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

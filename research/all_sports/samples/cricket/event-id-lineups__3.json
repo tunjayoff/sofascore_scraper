@@ -1,0 +1,325 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16869131/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:19:35+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/sri-lanka-pakistan/efAbsgfAb#id:16869131",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Abrar Ahmed",
+            "slug": "abrar-ahmed",
+            "shortName": "A Ahmed",
+            "position": "B",
+            "userCount": 102,
+            "gender": "M",
+            "sofascoreId": "h6r-yxc",
+            "country": {
+              "alpha2": "PK",
+              "alpha3": "PAK",
+              "name": "Pakistan",
+              "slug": "pakistan"
+            },
+            "id": 871548,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 908496000,
+            "cricketPlayerInfo": {
+              "batting": "Right",
+              "bowling": "Leg break googly"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أبرار أحمد",
+                "bn": "আবরার আহমেদ",
+                "hi": "अबरार अहमद",
+                "ru": "Абрар Ахмед"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. أحمد",
+                "bn": "এ আহমেদ",
+                "hi": "ए अहमद",
+                "ru": "А. Ахмед"
+              }
+            }
+          },
+          "teamId": 377178,
+          "position": "B",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Fakhar Zaman",
+            "slug": "fakhar-zaman",
+            "shortName": "F Zaman",
+            "position": "BM",
+            "jerseyNumber": "39",
+            "height": 180,
+            "userCount": 308,
+            "gender": "M",
+            "sofascoreId": "5ur-wiz",
+            "country": {
+              "alpha2": "PK",
+              "alpha3": "PAK",
+              "name": "Pakistan",
+              "slug": "pakistan"
+            },
+            "id": 795320,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 639705600,
+            "cricketPlayerInfo": {
+              "batting": "Left",
+              "bowling": "Slow left-arm orthodox"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فخر زمان",
+                "bn": "ফখর জামান",
+                "hi": "फखर ज़मान",
+                "ru": "Фахар Зааман"
+              },
+              "shortNameTranslation": {
+                "ar": "ف. زمان",
+                "bn": "এফ টাইমস",
+                "hi": "एफ ज़मान",
+                "ru": "Ф. Зааман"
+              }
+            }
+          },
+          "teamId": 517843,
+          "position": "BM",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Hasan Nawaz",
+            "slug": "hassan-nawaz",
+            "shortName": "H Nawaz",
+            "position": "BM",
+            "jerseyNumber": "14",
+            "userCount": 171,
+            "gender": "M",
+            "sofascoreId": "8jb-ec5",
+            "country": {
+              "alpha2": "PK",
+              "alpha3": "PAK",
+              "name": "Pakistan",
+              "slug": "pakistan"
+            },
+            "id": 1399072,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1029888000,
+            "cricketPlayerInfo": {
+              "batting": "Right",
+              "bowling": "Right-arm medium"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "حسن نواز",
+                "ru": "Хасан Наваз"
+              },
+              "shortNameTranslation": {
+                "ar": "ح. نواز",
+                "ru": "Х. Наваз"
+              }
+            }
+          },
+          "teamId": 1275841,
+          "position": "BM",
+          "substitute": false
+        },
+        {
+          "__trimmed__": 12
+        }
+      ],
+      "supportStaff": [
+        {
+          "name": "Mike Hesson",
+          "role": "coach",
+          "country": {
+            "alpha2": "NZ",
+            "alpha3": "NZL",
+            "name": "New Zealand",
+            "slug": "new-zealand"
+          },
+          "id": 532
+        }
+      ],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Dasun Shanaka",
+            "slug": "dasun-shanaka",
+            "shortName": "D Shanaka",
+            "position": "BM",
+            "height": 183,
+            "userCount": 54,
+            "gender": "M",
+            "sofascoreId": "pdb-t37",
+            "country": {
+              "alpha2": "LK",
+              "alpha3": "LKA",
+              "name": "Sri Lanka",
+              "slug": "sri-lanka"
+            },
+            "id": 802206,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 684374400,
+            "cricketPlayerInfo": {
+              "batting": "Right",
+              "bowling": "Right-arm medium"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "داسون شاناكا",
+                "bn": "দাসুন শানাকা",
+                "hi": "दसुन शनाका",
+                "ru": "Дасун Шанака"
+              },
+              "shortNameTranslation": {
+                "ar": "د شاناكا",
+                "bn": "ডি শানাকা",
+                "hi": "डी शनाका",
+                "ru": "Д. Шанака"
+              }
+            }
+          },
+          "teamId": 193209,
+          "position": "BM",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Dunith Wellalage",
+            "slug": "dunith-wellalage",
+            "shortName": "D Wellalage",
+            "position": "B",
+            "userCount": 35,
+            "gender": "M",
+            "sofascoreId": "iww-jqn",
+            "country": {
+              "alpha2": "LK",
+              "alpha3": "LKA",
+              "name": "Sri Lanka",
+              "slug": "sri-lanka"
+            },
+            "id": 956763,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1042070400,
+            "cricketPlayerInfo": {
+              "batting": "Left",
+              "bowling": "Slow left-arm orthodox"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دونيث ويلاج",
+                "bn": "দুনিথ ওয়েললাগে",
+                "hi": "डुनिथ वेल्लालेज",
+                "ru": "Дунит Веллаладж"
+              },
+              "shortNameTranslation": {
+                "ar": "دونيث ويلاج",
+                "bn": "দুনিথ ওয়েললাগে",
+                "hi": "डुनिथ वेल्लालेज",
+                "ru": "Д. Веллаладж"
+              }
+            }
+          },
+          "teamId": 416409,
+          "position": "B",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Dushmantha Chameera",
+            "slug": "dushmantha-chameera",
+            "shortName": "D Chameera",
+            "position": "B",
+            "jerseyNumber": "5",
+            "height": 191,
+            "userCount": 51,
+            "gender": "M",
+            "sofascoreId": "pdj-987",
+            "country": {
+              "alpha2": "LK",
+              "alpha3": "LKA",
+              "name": "Sri Lanka",
+              "slug": "sri-lanka"
+            },
+            "id": 788062,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 695088000,
+            "cricketPlayerInfo": {
+              "batting": "Right",
+              "bowling": "Right-arm fast"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوشمانثا تشاميرا",
+                "bn": "দুষ্মন্ত চামেরা",
+                "hi": "दुष्मंथा चमीरा",
+                "ru": "Душманта Чамера"
+              },
+              "shortNameTranslation": {
+                "ar": "د تشاميرا",
+                "bn": "ডি চামেরা",
+                "hi": "डी. चमीरा",
+                "ru": "Д. Чамера"
+              }
+            }
+          },
+          "teamId": 187841,
+          "position": "B",
+          "substitute": false
+        },
+        {
+          "__trimmed__": 12
+        }
+      ],
+      "supportStaff": [
+        {
+          "name": "Gary Kirsten",
+          "role": "coach",
+          "country": {
+            "alpha2": "ZA",
+            "alpha3": "ZAF",
+            "name": "South Africa",
+            "slug": "south-africa"
+          },
+          "id": 244
+        }
+      ],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

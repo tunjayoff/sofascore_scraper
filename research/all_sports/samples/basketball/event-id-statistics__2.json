@@ -1,0 +1,175 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17220735/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:03:45+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/clube-de-campo-de-tatui-aabt-tatui-botafogo/pJhcstAed#id:17220735",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "Scoring",
+            "statisticsItems": [
+              {
+                "name": "Free throws",
+                "home": "5/6 (83%)",
+                "away": "4/4 (100%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 5,
+                "awayValue": 4,
+                "homeTotal": 6,
+                "awayTotal": 4,
+                "renderType": 3,
+                "key": "freeThrowsScored"
+              },
+              {
+                "name": "2 pointers",
+                "home": "6/19 (32%)",
+                "away": "7/16 (44%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 6,
+                "awayValue": 7,
+                "homeTotal": 19,
+                "awayTotal": 16,
+                "renderType": 3,
+                "key": "twoPointersScored"
+              },
+              {
+                "name": "3 pointers",
+                "home": "3/8 (38%)",
+                "away": "6/13 (46%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 3,
+                "awayValue": 6,
+                "homeTotal": 8,
+                "awayTotal": 13,
+                "renderType": 3,
+                "key": "threePointersScored"
+              },
+              {
+                "name": "Field goals",
+                "home": "9/27 (33%)",
+                "away": "13/29 (45%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 9,
+                "awayValue": 13,
+                "homeTotal": 27,
+                "awayTotal": 29,
+                "renderType": 3,
+                "key": "fieldGoalsScored"
+              }
+            ]
+          },
+          {
+            "groupName": "Other",
+            "statisticsItems": [
+              {
+                "name": "Rebounds",
+                "home": "19",
+                "away": "16",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 19,
+                "awayValue": 16,
+                "renderType": 2,
+                "key": "rebounds"
+              },
+              {
+                "name": "Fouls",
+                "home": "7",
+                "away": "5",
+                "compareCode": 1,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 7,
+                "awayValue": 5,
+                "renderType": 1,
+                "key": "totalFouls"
+              },
+              {
+                "name": "Timeouts",
+                "home": "1",
+                "away": "0",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "timeouts"
+              }
+            ]
+          },
+          {
+            "groupName": "Lead",
+            "statisticsItems": [
+              {
+                "name": "Max points in a row",
+                "home": "5",
+                "away": "6",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 6,
+                "renderType": 1,
+                "key": "maxPointsInARow"
+              },
+              {
+                "name": "Time spent in lead",
+                "home": "0:17",
+                "away": "15:08",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "time",
+                "homeValue": 17,
+                "awayValue": 908,
+                "homeTotal": 0,
+                "awayTotal": 0,
+                "renderType": 1,
+                "key": "timeSpentInLead"
+              },
+              {
+                "name": "Lead changes",
+                "home": "1",
+                "away": "1",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "leadChanges"
+              },
+              {
+                "name": "Biggest lead",
+                "home": "2",
+                "away": "10",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 2,
+                "awayValue": 10,
+                "renderType": 1,
+                "key": "biggestLead"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

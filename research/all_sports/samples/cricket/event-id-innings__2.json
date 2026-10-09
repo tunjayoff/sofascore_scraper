@@ -1,0 +1,737 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15884178/innings",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:18:35+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884178",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "innings": [
+      {
+        "number": 1,
+        "battingTeam": {
+          "name": "India",
+          "slug": "india",
+          "shortName": "IND",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 162413,
+          "nameCode": "IND",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 187765,
+          "teamColors": {
+            "primary": "#00b8ff",
+            "secondary": "#ff4500",
+            "text": "#ff4500"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الهند",
+              "ru": "Индия"
+            },
+            "shortNameTranslation": {
+              "bn": "আইএনডি",
+              "hi": "आईएनडी",
+              "ru": "ИНД"
+            }
+          }
+        },
+        "bowlingTeam": {
+          "name": "West Indies",
+          "slug": "west-indies",
+          "shortName": "WI",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 10789,
+          "nameCode": "WIN",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "id": 187760,
+          "teamColors": {
+            "primary": "#7c003f",
+            "secondary": "#ffff00",
+            "text": "#ffff00"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جزر الهند الغربية",
+              "bn": "ওয়েস্ট ইন্ডিজ",
+              "hi": "वेस्ट इंडीज",
+              "ru": "Вест-Индии"
+            },
+            "shortNameTranslation": {
+              "bn": "ডব্লিউ আই",
+              "hi": "डब्ल्यूआई"
+            }
+          }
+        },
+        "score": 244,
+        "wickets": 4,
+        "overs": 19.3,
+        "extra": 9,
+        "wide": 6,
+        "noBall": 2,
+        "bye": 0,
+        "legBye": 1,
+        "penalty": 0,
+        "currentBatsman": {
+          "name": "Tilak Varma",
+          "slug": "tilak-varma",
+          "shortName": "T Varma",
+          "position": "BM",
+          "jerseyNumber": "9",
+          "userCount": 394,
+          "gender": "M",
+          "sofascoreId": "n5z-2d9",
+          "id": 994738,
+          "cricketPlayerInfo": {
+            "batting": "Left",
+            "bowling": "Off break"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تيلاك فارما",
+              "bn": "তিলক বর্মা",
+              "hi": "तिलक वर्मा",
+              "ru": "Тилак Варма"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. فارما",
+              "bn": "টি ভার্মা",
+              "hi": "टी वर्मा",
+              "ru": "Т. Варма"
+            }
+          }
+        },
+        "currentBowler": {
+          "name": "Shamar Springer",
+          "slug": "shamar-springer",
+          "shortName": "S Springer",
+          "position": "AR",
+          "jerseyNumber": "52",
+          "userCount": 10,
+          "gender": "M",
+          "sofascoreId": "n39-r3x",
+          "id": 844530,
+          "cricketPlayerInfo": {
+            "batting": "Right",
+            "bowling": "Right-arm fast medium"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شامار سبرينغر",
+              "bn": "শামার স্প্রিংগার",
+              "hi": "शमर स्प्रिंगर",
+              "ru": "Шамар Спрингер"
+            },
+            "shortNameTranslation": {
+              "ar": "شامار سبرينغر",
+              "bn": "শামার স্প্রিংগার",
+              "hi": "शमर स्प्रिंगर",
+              "ru": "Ш. Спрингер"
+            }
+          }
+        },
+        "id": 85965,
+        "bowlingLine": [
+          {
+            "player": {
+              "name": "Akeal Hosein",
+              "slug": "akeal-hosein",
+              "shortName": "A Hosein",
+              "position": "B",
+              "jerseyNumber": "7",
+              "userCount": 139,
+              "gender": "M",
+              "sofascoreId": "wgd-64k",
+              "id": 786829,
+              "cricketPlayerInfo": {
+                "batting": "Left",
+                "bowling": "Slow left-arm orthodox"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "عقيل حسين",
+                  "bn": "আকিল হোসেন",
+                  "hi": "अकील होसेन",
+                  "ru": "Акеал Хосейн"
+                },
+                "shortNameTranslation": {
+                  "ar": "ع حسين",
+                  "bn": "এ হোসেইন",
+                  "hi": "ए होसेन",
+                  "ru": "А. Хосейн"
+                }
+              }
+            },
+            "playerName": "A Hosein",
+            "over": 3,
+            "maiden": 0,
+            "run": 46,
+            "wicket": 0,
+            "wide": 0,
+            "noBall": 1
+          },
+          {
+            "player": {
+              "name": "Romario Shepherd",
+              "slug": "romario-shepherd",
+              "shortName": "R Shepherd",
+              "position": "AR",
+              "jerseyNumber": "16",
+              "userCount": 177,
+              "gender": "M",
+              "sofascoreId": "g8e-hky",
+              "id": 950548,
+              "cricketPlayerInfo": {
+                "batting": "Right",
+                "bowling": "Right-arm fast medium"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روماريو شيبرد",
+                  "bn": "রোমারিও শেফার্ড",
+                  "hi": "रोमारियो शेफर्ड",
+                  "ru": "Ромарио Шепард"
+                },
+                "shortNameTranslation": {
+                  "ar": "ر شيبرد",
+                  "bn": "আর শেফার্ড",
+                  "hi": "आर शेफर्ड",
+                  "ru": "Р. Шепард"
+                }
+              }
+            },
+            "playerName": "R Shepherd",
+            "over": 3.4,
+            "maiden": 0,
+            "run": 47,
+            "wicket": 0,
+            "wide": 4,
+            "noBall": 0
+          },
+          {
+            "player": {
+              "name": "Roston Chase",
+              "slug": "roston-chase",
+              "shortName": "R Chase",
+              "position": "AR",
+              "jerseyNumber": "10",
+              "userCount": 169,
+              "gender": "M",
+              "sofascoreId": "jwd-9xr",
+              "id": 844291,
+              "cricketPlayerInfo": {
+                "batting": "Right",
+                "bowling": "Off break"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روستون تشايس",
+                  "bn": "রোস্টন চেজ",
+                  "hi": "रोस्टन चेस",
+                  "ru": "Ростон Чейз"
+                },
+                "shortNameTranslation": {
+                  "ar": "ر. تشايس",
+                  "bn": "রোস্টন চেজ",
+                  "hi": "रोस्टन चेस",
+                  "ru": "Р. Чейз"
+                }
+              }
+            },
+            "playerName": "R Chase",
+            "over": 4,
+            "maiden": 0,
+            "run": 24,
+            "wicket": 3,
+            "wide": 1,
+            "noBall": 0
+          },
+          {
+            "__trimmed__": 4
+          }
+        ],
+        "battingLine": [
+          {
+            "player": {
+              "name": "Abhishek Sharma",
+              "slug": "abhishek-sharma",
+              "shortName": "A Sharma",
+              "position": "BM",
+              "jerseyNumber": "4",
+              "userCount": 1202,
+              "gender": "M",
+              "sofascoreId": "fpq-i6p",
+              "id": 935302,
+              "cricketPlayerInfo": {
+                "batting": "Left",
+                "bowling": "Slow left-arm orthodox"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أبيشيك شارما",
+                  "bn": "অভিষেক শর্মা",
+                  "hi": "अभिषेक शर्मा",
+                  "ru": "Абхишек Шарма"
+                },
+                "shortNameTranslation": {
+                  "ar": "أبيشيك شارما",
+                  "bn": "অভিষেক শর্মা",
+                  "hi": "अभिषेक शर्मा",
+                  "ru": "А. Шарма"
+                }
+              }
+            },
+            "playerName": "A Sharma",
+            "score": 20,
+            "balls": 12,
+            "s4": 2,
+            "s6": 1,
+            "fowScore": 42,
+            "fowOver": 3.6,
+            "wicketBowler": {
+              "name": "Roston Chase",
+              "slug": "roston-chase",
+              "shortName": "R Chase",
+              "position": "AR",
+              "jerseyNumber": "10",
+              "userCount": 169,
+              "gender": "M",
+              "sofascoreId": "jwd-9xr",
+              "id": 844291,
+              "cricketPlayerInfo": {
+                "batting": "Right",
+                "bowling": "Off break"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روستون تشايس",
+                  "bn": "রোস্টন চেজ",
+                  "hi": "रोस्टन चेस",
+                  "ru": "Ростон Чейз"
+                },
+                "shortNameTranslation": {
+                  "ar": "ر. تشايس",
+                  "bn": "রোস্টন চেজ",
+                  "hi": "रोस्टन चेस",
+                  "ru": "Р. Чейз"
+                }
+              }
+            },
+            "wicketBowlerName": "Roston Chase",
+            "wicketCatch": {
+              "name": "Gudakesh Motie",
+              "slug": "gudakesh-motie",
+              "shortName": "G Motie",
+              "position": "B",
+              "jerseyNumber": "68",
+              "userCount": 43,
+              "gender": "M",
+              "sofascoreId": "8ju-smd",
+              "id": 1136969,
+              "cricketPlayerInfo": {
+                "batting": "Left",
+                "bowling": "Slow left-arm orthodox"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "جوداكش موتي",
+                  "bn": "গুদাকেশ মতি",
+                  "hi": "गुडाकेश मोती",
+                  "ru": "Гудакеш Моти"
+                },
+                "shortNameTranslation": {
+                  "ar": "جوداكش موتي",
+                  "bn": "গুদাকেশ মতি",
+                  "hi": "गुडाकेश मोती",
+                  "ru": "Г. Моти"
+                }
+              }
+            },
+            "wicketCatchName": "Gudakesh Motie",
+            "wicketTypeId": 3,
+            "wicketTypeName": "Caught"
+          },
+          {
+            "player": {
+              "name": "Sanju Samson",
+              "firstName": "",
+              "lastName": "",
+              "slug": "sanju-samson",
+              "shortName": "S Samson",
+              "position": "WK",
+              "jerseyNumber": "11",
+              "userCount": 4713,
+              "gender": "M",
+              "sofascoreId": "t3h-qy5",
+              "id": 787194,
+              "cricketPlayerInfo": {
+                "batting": "Right"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "Санджу Самсон"
+                },
+                "shortNameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "С. Самсон"
+                }
+              }
+            },
+            "playerName": "S Samson",
+            "score": 82,
+            "balls": 41,
+            "s4": 9,
+            "s6": 4,
+            "fowScore": 162,
+            "fowOver": 14.3,
+            "wicketBowler": {
+              "name": "Shamar Springer",
+              "slug": "shamar-springer",
+              "shortName": "S Springer",
+              "position": "AR",
+              "jerseyNumber": "52",
+              "userCount": 10,
+              "gender": "M",
+              "sofascoreId": "n39-r3x",
+              "id": 844530,
+              "cricketPlayerInfo": {
+                "batting": "Right",
+                "bowling": "Right-arm fast medium"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "شامار سبرينغر",
+                  "bn": "শামার স্প্রিংগার",
+                  "hi": "शमर स्प्रिंगर",
+                  "ru": "Шамар Спрингер"
+                },
+                "shortNameTranslation": {
+                  "ar": "شامار سبرينغر",
+                  "bn": "শামার স্প্রিংগার",
+                  "hi": "शमर स्प्रिंगर",
+                  "ru": "Ш. Спрингер"
+                }
+              }
+            },
+            "wicketBowlerName": "Shamar Springer",
+            "wicketCatch": {
+              "name": "Kamil Pooran",
+              "slug": "kamil-pooran",
+              "shortName": "K Pooran",
+              "position": "BM",
+              "userCount": 4,
+              "gender": "M",
+              "sofascoreId": "q4v-trw",
+              "id": 1483332,
+              "cricketPlayerInfo": {
+                "batting": "Right",
+                "bowling": "Right-arm medium"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كامل بوران",
+                  "ru": "Камиль Пурана"
+                },
+                "shortNameTranslation": {
+                  "ar": "ك. بوران",
+                  "ru": "К. Пурана"
+                }
+              }
+            },
+            "wicketCatchName": "Kamil Pooran",
+            "wicketTypeId": 3,
+            "wicketTypeName": "Caught"
+          },
+          {
+            "player": {
+              "name": "Ishan Kishan",
+              "slug": "ishan-kishan",
+              "shortName": "I Kishan",
+              "position": "WK",
+              "jerseyNumber": "23",
+              "userCount": 547,
+              "gender": "M",
+              "sofascoreId": "n3f-2kx",
+              "id": 838386,
+              "cricketPlayerInfo": {
+                "batting": "Left",
+                "bowling": "Leg break"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ايشان كيشان",
+                  "bn": "ইশান কিষাণ",
+                  "hi": "ईशान किशन",
+                  "ru": "Ишан Кишан"
+                },
+                "shortNameTranslation": {
+                  "ar": "ايشان كيشان",
+                  "bn": "ইশান কিষাণ",
+                  "hi": "ईशान किशन",
+                  "ru": "И. Кишан"
+                }
+              }
+            },
+            "playerName": "I Kishan",
+            "score": 43,
+            "balls": 22,
+            "s4": 6,
+            "s6": 2,
+            "fowScore": 139,
+            "fowOver": 11.1,
+            "wicketBowler": {
+              "name": "Roston Chase",
+              "slug": "roston-chase",
+              "shortName": "R Chase",
+              "position": "AR",
+              "jerseyNumber": "10",
+              "userCount": 169,
+              "gender": "M",
+              "sofascoreId": "jwd-9xr",
+              "id": 844291,
+              "cricketPlayerInfo": {
+                "batting": "Right",
+                "bowling": "Off break"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روستون تشايس",
+                  "bn": "রোস্টন চেজ",
+                  "hi": "रोस्टन चेस",
+                  "ru": "Ростон Чейз"
+                },
+                "shortNameTranslation": {
+                  "ar": "ر. تشايس",
+                  "bn": "রোস্টন চেজ",
+                  "hi": "रोस्टन चेस",
+                  "ru": "Р. Чейз"
+                }
+              }
+            },
+            "wicketBowlerName": "Roston Chase",
+            "wicketTypeId": 1,
+            "wicketTypeName": "Bowled"
+          },
+          {
+            "__trimmed__": 8
+          }
+        ],
+        "partnerships": [
+          {
+            "player1": {
+              "name": "Abhishek Sharma",
+              "slug": "abhishek-sharma",
+              "shortName": "A Sharma",
+              "position": "BM",
+              "jerseyNumber": "4",
+              "userCount": 1202,
+              "gender": "M",
+              "sofascoreId": "fpq-i6p",
+              "id": 935302,
+              "cricketPlayerInfo": {
+                "batting": "Left",
+                "bowling": "Slow left-arm orthodox"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أبيشيك شارما",
+                  "bn": "অভিষেক শর্মা",
+                  "hi": "अभिषेक शर्मा",
+                  "ru": "Абхишек Шарма"
+                },
+                "shortNameTranslation": {
+                  "ar": "أبيشيك شارما",
+                  "bn": "অভিষেক শর্মা",
+                  "hi": "अभिषेक शर्मा",
+                  "ru": "А. Шарма"
+                }
+              }
+            },
+            "player2": {
+              "name": "Sanju Samson",
+              "firstName": "",
+              "lastName": "",
+              "slug": "sanju-samson",
+              "shortName": "S Samson",
+              "position": "WK",
+              "jerseyNumber": "11",
+              "userCount": 4713,
+              "gender": "M",
+              "sofascoreId": "t3h-qy5",
+              "id": 787194,
+              "cricketPlayerInfo": {
+                "batting": "Right"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "Санджу Самсон"
+                },
+                "shortNameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "С. Самсон"
+                }
+              }
+            },
+            "score": 42,
+            "balls": 25
+          },
+          {
+            "player1": {
+              "name": "Ishan Kishan",
+              "slug": "ishan-kishan",
+              "shortName": "I Kishan",
+              "position": "WK",
+              "jerseyNumber": "23",
+              "userCount": 547,
+              "gender": "M",
+              "sofascoreId": "n3f-2kx",
+              "id": 838386,
+              "cricketPlayerInfo": {
+                "batting": "Left",
+                "bowling": "Leg break"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ايشان كيشان",
+                  "bn": "ইশান কিষাণ",
+                  "hi": "ईशान किशन",
+                  "ru": "Ишан Кишан"
+                },
+                "shortNameTranslation": {
+                  "ar": "ايشان كيشان",
+                  "bn": "ইশান কিষাণ",
+                  "hi": "ईशान किशन",
+                  "ru": "И. Кишан"
+                }
+              }
+            },
+            "player2": {
+              "name": "Sanju Samson",
+              "firstName": "",
+              "lastName": "",
+              "slug": "sanju-samson",
+              "shortName": "S Samson",
+              "position": "WK",
+              "jerseyNumber": "11",
+              "userCount": 4713,
+              "gender": "M",
+              "sofascoreId": "t3h-qy5",
+              "id": 787194,
+              "cricketPlayerInfo": {
+                "batting": "Right"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "Санджу Самсон"
+                },
+                "shortNameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "С. Самсон"
+                }
+              }
+            },
+            "score": 97,
+            "balls": 43
+          },
+          {
+            "player1": {
+              "name": "Shivam Dube",
+              "firstName": "",
+              "lastName": "",
+              "slug": "shivam-dube",
+              "shortName": "S Dube",
+              "position": "AR",
+              "jerseyNumber": "25",
+              "userCount": 511,
+              "gender": "M",
+              "sofascoreId": "g88-ey6",
+              "id": 954145,
+              "cricketPlayerInfo": {
+                "batting": "Left",
+                "bowling": "Right-arm medium"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "شيفام دوبي",
+                  "bn": "শিবম দুবে",
+                  "hi": "शिवम दुबे",
+                  "ru": "Шивам Дубе"
+                },
+                "shortNameTranslation": {
+                  "ar": "شيفام دوبي",
+                  "bn": "শিবম দুবে",
+                  "hi": "शिवम दुबे",
+                  "ru": "Ш. Дубе"
+                }
+              }
+            },
+            "player2": {
+              "name": "Sanju Samson",
+              "firstName": "",
+              "lastName": "",
+              "slug": "sanju-samson",
+              "shortName": "S Samson",
+              "position": "WK",
+              "jerseyNumber": "11",
+              "userCount": 4713,
+              "gender": "M",
+              "sofascoreId": "t3h-qy5",
+              "id": 787194,
+              "cricketPlayerInfo": {
+                "batting": "Right"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "Санджу Самсон"
+                },
+                "shortNameTranslation": {
+                  "ar": "سانجو سامسون",
+                  "bn": "সঞ্জু স্যামসন",
+                  "hi": "संजू सैमसन",
+                  "ru": "С. Самсон"
+                }
+              }
+            },
+            "score": 19,
+            "balls": 14
+          },
+          {
+            "__trimmed__": 2
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16982330/managers",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:10:30+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/iraero-irkutsk-surgut/HiXcsjBae#id:16982330",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "homeManager": {
+      "name": "Temur Alekberov",
+      "slug": "temur-alekberov",
+      "shortName": "T. Alekberov",
+      "id": 803733,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "تيمور أليكبيروف",
+          "ru": "Темур Алекберов"
+        },
+        "shortNameTranslation": {
+          "ar": "ت. أليكبيروف",
+          "ru": "Т. Алекберов"
+        }
+      }
+    },
+    "awayManager": {
+      "name": "Éder",
+      "slug": "eder",
+      "shortName": "Éder",
+      "id": 806576,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إيدر",
+          "ru": "Эдер"
+        },
+        "shortNameTranslation": {
+          "ar": "إيدر",
+          "ru": "Эдер"
+        }
+      }
+    }
+  }
+}

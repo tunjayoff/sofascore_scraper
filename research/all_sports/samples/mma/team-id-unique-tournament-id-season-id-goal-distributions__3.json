@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/527457/unique-tournament/20269/season/64491/goal-distributions",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T15:24:20+00:00",
+  "page": "https://www.sofascore.com/tr/mma/match/freddie-haggerty-kaichon-sor-yingcharoenkarnchang/qXkeshZke#id:12606166",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

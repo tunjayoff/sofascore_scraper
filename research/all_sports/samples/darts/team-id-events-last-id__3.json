@@ -1,0 +1,616 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/1222497/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:22:32+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/mitchell-alex-spellman/KGMdsXZNj#id:17278965",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Players Championship 13 2026",
+          "slug": "players-championship-13-2026",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Players Championship",
+            "slug": "players-championship-1",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 646,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 2066,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة اللاعبين",
+                "ru": "Чемпионат игроков"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 183541,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Чемпионат игроков 13 2026"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "roundInfo": {
+          "round": 57,
+          "name": "Round of 128",
+          "slug": "round-of-128"
+        },
+        "customId": "RxijsXZNj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Mitchell O.",
+          "slug": "mitchell-oliver",
+          "gender": "X",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 27,
+          "playerTeamInfo": {
+            "id": 47669
+          },
+          "nameCode": "MIT",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 1222497,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Митчелл, Оливер"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Thorpe T.",
+          "slug": "thorpe-tyler",
+          "gender": "X",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 33,
+          "playerTeamInfo": {
+            "id": 31028
+          },
+          "nameCode": "TYL",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 1146142,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ثورب، تايلر",
+              "ru": "Торп, Тайлер"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 6,
+          "display": 6,
+          "normaltime": 6
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1777895203
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1777895282
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16124409,
+        "slug": "mitchell-thorpe",
+        "startTimestamp": 1777893900,
+        "finalResultOnly": false,
+        "feedLocked": true
+      },
+      {
+        "tournament": {
+          "name": "Players Championship 14 2026",
+          "slug": "players-championship-14-2026",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Players Championship",
+            "slug": "players-championship-1",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 646,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 2066,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة اللاعبين",
+                "ru": "Чемпионат игроков"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 183614,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Чемпионат игроков 14 2026"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "roundInfo": {
+          "round": 57,
+          "name": "Round of 128",
+          "slug": "round-of-128"
+        },
+        "customId": "ipzcsXZNj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Niels Zonneveld",
+          "slug": "zonneveld-niels",
+          "shortName": "Zonneveld N.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 605,
+          "playerTeamInfo": {
+            "id": 32219
+          },
+          "nameCode": "ZON",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "NL",
+            "alpha3": "NLD",
+            "name": "Netherlands",
+            "slug": "netherlands"
+          },
+          "id": 310758,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "زونيفيلد، نيلس",
+              "ru": "Зонненвельд, Нильс"
+            },
+            "shortNameTranslation": {
+              "ar": "ن. زونيفيلد",
+              "bn": "জোনভেল্ড এন.",
+              "hi": "ज़ोननेवेल्ड एन."
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Mitchell O.",
+          "slug": "mitchell-oliver",
+          "gender": "X",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 27,
+          "playerTeamInfo": {
+            "id": 47669
+          },
+          "nameCode": "MIT",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 1222497,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Митчелл, Оливер"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "awayScore": {
+          "current": 6,
+          "display": 6,
+          "normaltime": 6
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1777983505
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1777983613
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16130871,
+        "slug": "mitchell-niels-zonneveld",
+        "startTimestamp": 1777981800,
+        "finalResultOnly": false,
+        "feedLocked": true
+      },
+      {
+        "firstToServe": 1,
+        "firstToServeInMatch": 1,
+        "tournament": {
+          "name": "Modus Super Series",
+          "slug": "modus-super-series",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Modus Super Series",
+            "slug": "modus-super-series",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 544,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16756,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري مودوس دارتس المباشر عبر الإنترنت",
+                "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+                "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+                "ru": "Суперсерия Modus"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 2,
+          "isGroup": false,
+          "isLive": false,
+          "id": 91878,
+          "endTimestamp": 1798675200,
+          "startTimestamp": 1767225600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+              "ar": "دوري Modus Darts المباشر عبر الإنترنت",
+              "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+              "ru": "Суперсерия Modus"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Modus Super Series 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89749
+        },
+        "customId": "JexesXZNj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Mitchell O.",
+          "slug": "mitchell-oliver",
+          "gender": "X",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 27,
+          "playerTeamInfo": {
+            "id": 47669
+          },
+          "nameCode": "MIT",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 1222497,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Митчелл, Оливер"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Ham R.",
+          "slug": "ham-ricardo",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 61,
+          "playerTeamInfo": {
+            "id": 26564
+          },
+          "nameCode": "HAM",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "NL",
+            "alpha3": "NLD",
+            "name": "Netherlands",
+            "slug": "netherlands"
+          },
+          "id": 555234,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هام، ريكاردو",
+              "ru": "Хэм, Рикардо"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1781184083
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "awayScore.period1"
+          ],
+          "changeTimestamp": 1781184840
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16306117,
+        "bestOfSets": 1,
+        "bestOfLegs": 7,
+        "slug": "mitchell-ham",
+        "startTimestamp": 1781183100,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 23
+      }
+    ],
+    "hasNextPage": false
+  }
+}

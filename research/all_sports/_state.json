@@ -1,10 +1,10 @@
 {
-  "run_id": "lv-20261009b",
-  "started": 1791538258.0824769,
-  "api_requests": 565,
-  "max_requests": 1500,
+  "run_id": "lv-20261009d",
+  "started": 1791569785.7076786,
+  "api_requests": 842,
+  "max_requests": 1800,
   "max_seconds": 14400.0,
-  "updated": "2026-10-09T09:41:55+00:00",
+  "updated": "2026-10-09T18:51:40+00:00",
   "previous_runs": [
     {
       "started": 1790856030.3660078,
@@ -18,6 +18,22 @@
       "max_requests": 2000,
       "max_seconds": 10800.0,
       "updated": "2026-10-09T00:29:57+00:00"
+    },
+    {
+      "run_id": "lv-20261009b",
+      "started": 1791538258.0824769,
+      "api_requests": 565,
+      "max_requests": 1500,
+      "max_seconds": 14400.0,
+      "updated": "2026-10-09T10:07:57+00:00"
+    },
+    {
+      "run_id": "lv-20261009c",
+      "started": 1791558046.7427948,
+      "api_requests": 1375,
+      "max_requests": 2000,
+      "max_seconds": 21600.0,
+      "updated": "2026-10-09T18:16:22+00:00"
     }
   ]
 }

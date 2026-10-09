@@ -1,0 +1,699 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16642082/best-players",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:09:12+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/khf-shqipona-bnei-herzliya/yGysoiYb#id:16642082",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "bestHomeTeamPlayer": {
+      "value": "9",
+      "label": "gls",
+      "player": {
+        "name": "Shira Gerbi",
+        "firstName": "Shira",
+        "lastName": "Gerbi",
+        "slug": "shira-gerbi",
+        "shortName": "S. Gerbi",
+        "position": "LB",
+        "jerseyNumber": "16",
+        "height": 170,
+        "userCount": 1,
+        "gender": "F",
+        "sofascoreId": "g88-nzr",
+        "id": 964353,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 1012089600,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "جيربي، شيرا",
+            "ru": "Шира Герби"
+          },
+          "shortNameTranslation": {
+            "ar": "ش. جيربي",
+            "ru": "Ш. Герби"
+          }
+        }
+      },
+      "team": {
+        "name": "Bnei Herzliya",
+        "slug": "bnei-herzliya",
+        "shortName": "B. Herzliya",
+        "gender": "F",
+        "sport": {
+          "name": "Handball",
+          "slug": "handball",
+          "id": 6
+        },
+        "userCount": 20,
+        "nameCode": "BHE",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "id": 59073,
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بني هيرتسليا",
+            "ru": "Бней Херцлия"
+          },
+          "shortNameTranslation": {
+            "ar": "ب. هيرتسليا",
+            "ru": "Б. Херцлия"
+          }
+        }
+      }
+    },
+    "bestAwayTeamPlayer": {
+      "value": "8",
+      "label": "gls",
+      "player": {
+        "name": "Ana Carolini Dos Santos",
+        "firstName": "Ana Carolini",
+        "lastName": "Goncalves Pereira Dos Santos",
+        "slug": "ana-carolini-dos-santos",
+        "shortName": "A. Dos Santos",
+        "jerseyNumber": "10",
+        "userCount": 0,
+        "gender": "F",
+        "sofascoreId": "jsp-imh",
+        "id": 2288163,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 1075420800,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "آنا كاروليني دوس سانتوس",
+            "ru": "Ана Каролини Дос Сантос"
+          },
+          "shortNameTranslation": {
+            "ar": "آ. دوس سانتوس",
+            "ru": "А. Сантос"
+          }
+        }
+      },
+      "team": {
+        "name": "KHF Shqipona",
+        "slug": "khf-shqipona",
+        "gender": "F",
+        "sport": {
+          "name": "Handball",
+          "slug": "handball",
+          "id": 6
+        },
+        "userCount": 4,
+        "nameCode": "SHQ",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "id": 245414,
+        "teamColors": {
+          "primary": "#ed1b24",
+          "secondary": "#000000",
+          "text": "#000000"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كي إتش إف شكيبونا",
+            "ru": "КХФ Шкипона"
+          },
+          "shortNameTranslation": {}
+        }
+      }
+    },
+    "leaderboard": [
+      {
+        "value": "9",
+        "label": "gls",
+        "player": {
+          "name": "Shira Gerbi",
+          "firstName": "Shira",
+          "lastName": "Gerbi",
+          "slug": "shira-gerbi",
+          "shortName": "S. Gerbi",
+          "position": "LB",
+          "jerseyNumber": "16",
+          "height": 170,
+          "userCount": 1,
+          "gender": "F",
+          "sofascoreId": "g88-nzr",
+          "id": 964353,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1012089600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جيربي، شيرا",
+              "ru": "Шира Герби"
+            },
+            "shortNameTranslation": {
+              "ar": "ش. جيربي",
+              "ru": "Ш. Герби"
+            }
+          }
+        },
+        "team": {
+          "name": "Bnei Herzliya",
+          "slug": "bnei-herzliya",
+          "shortName": "B. Herzliya",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 20,
+          "nameCode": "BHE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 59073,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بني هيرتسليا",
+              "ru": "Бней Херцлия"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. هيرتسليا",
+              "ru": "Б. Херцлия"
+            }
+          }
+        }
+      },
+      {
+        "value": "9",
+        "label": "gls",
+        "player": {
+          "name": "Khrystsina Akhramenka",
+          "slug": "khrystsina-akhramenka",
+          "shortName": "K. Akhramenka",
+          "position": "RW",
+          "jerseyNumber": "87",
+          "height": 170,
+          "userCount": 0,
+          "gender": "F",
+          "sofascoreId": "kmm-zdk",
+          "id": 963293,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 811555200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "خريستينا أخرامنكا",
+              "ru": "Христина Ахраменко"
+            },
+            "shortNameTranslation": {
+              "ar": "خ. أخرامنكا",
+              "ru": "Х. Ахраменко"
+            }
+          }
+        },
+        "team": {
+          "name": "Bnei Herzliya",
+          "slug": "bnei-herzliya",
+          "shortName": "B. Herzliya",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 20,
+          "nameCode": "BHE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 59073,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بني هيرتسليا",
+              "ru": "Бней Херцлия"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. هيرتسليا",
+              "ru": "Б. Херцлия"
+            }
+          }
+        }
+      },
+      {
+        "value": "8",
+        "label": "gls",
+        "player": {
+          "name": "Ana Carolini Dos Santos",
+          "firstName": "Ana Carolini",
+          "lastName": "Goncalves Pereira Dos Santos",
+          "slug": "ana-carolini-dos-santos",
+          "shortName": "A. Dos Santos",
+          "jerseyNumber": "10",
+          "userCount": 0,
+          "gender": "F",
+          "sofascoreId": "jsp-imh",
+          "id": 2288163,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1075420800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آنا كاروليني دوس سانتوس",
+              "ru": "Ана Каролини Дос Сантос"
+            },
+            "shortNameTranslation": {
+              "ar": "آ. دوس سانتوس",
+              "ru": "А. Сантос"
+            }
+          }
+        },
+        "team": {
+          "name": "KHF Shqipona",
+          "slug": "khf-shqipona",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 4,
+          "nameCode": "SHQ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 245414,
+          "teamColors": {
+            "primary": "#ed1b24",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كي إتش إف شكيبونا",
+              "ru": "КХФ Шкипона"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "6",
+        "label": "gls",
+        "player": {
+          "name": "Daniella Dragojevic",
+          "slug": "dragojevic-daniella",
+          "shortName": "D. Dragojevic",
+          "position": "P",
+          "jerseyNumber": "2",
+          "userCount": 0,
+          "gender": "F",
+          "sofascoreId": "h8i-ng5",
+          "id": 2812863,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 607132800
+        },
+        "team": {
+          "name": "Bnei Herzliya",
+          "slug": "bnei-herzliya",
+          "shortName": "B. Herzliya",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 20,
+          "nameCode": "BHE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 59073,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بني هيرتسليا",
+              "ru": "Бней Херцлия"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. هيرتسليا",
+              "ru": "Б. Херцлия"
+            }
+          }
+        }
+      },
+      {
+        "value": "5",
+        "label": "gls",
+        "player": {
+          "name": "Alma Nivokazi",
+          "firstName": "Alma",
+          "lastName": "Nivokazi",
+          "slug": "alma-nivokazi",
+          "shortName": "A. Nivokazi",
+          "position": "LB",
+          "jerseyNumber": "11",
+          "height": 175,
+          "userCount": 1,
+          "gender": "F",
+          "sofascoreId": "hii-gu3",
+          "id": 953695,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1018915200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نيفوكازي، ألما",
+              "ru": "Алма Нивокази"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. نيفوكازي",
+              "ru": "А. Нивокази"
+            }
+          }
+        },
+        "team": {
+          "name": "KHF Shqipona",
+          "slug": "khf-shqipona",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 4,
+          "nameCode": "SHQ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 245414,
+          "teamColors": {
+            "primary": "#ed1b24",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كي إتش إف شكيبونا",
+              "ru": "КХФ Шкипона"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "4",
+        "label": "gls",
+        "player": {
+          "name": "May Ulzari",
+          "firstName": "May",
+          "lastName": "Ulzari",
+          "slug": "may-ulzari",
+          "shortName": "M. Ulzari",
+          "position": "LW",
+          "jerseyNumber": "5",
+          "height": 163,
+          "userCount": 1,
+          "gender": "F",
+          "sofascoreId": "jvx-8cu",
+          "id": 1128931,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1083628800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أولزاري، ماي",
+              "ru": "Май Ульзари"
+            },
+            "shortNameTranslation": {
+              "ar": "م. أولزاري",
+              "ru": "М. Ульзари"
+            }
+          }
+        },
+        "team": {
+          "name": "Bnei Herzliya",
+          "slug": "bnei-herzliya",
+          "shortName": "B. Herzliya",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 20,
+          "nameCode": "BHE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 59073,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بني هيرتسليا",
+              "ru": "Бней Херцлия"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. هيرتسليا",
+              "ru": "Б. Херцлия"
+            }
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Sia Celine Tolno",
+          "slug": "tolno-sia-celine",
+          "shortName": "S. C. Tolno",
+          "position": "LB",
+          "jerseyNumber": "18",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "cwe-xe6",
+          "id": 2812906,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1051488000
+        },
+        "team": {
+          "name": "KHF Shqipona",
+          "slug": "khf-shqipona",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 4,
+          "nameCode": "SHQ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 245414,
+          "teamColors": {
+            "primary": "#ed1b24",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كي إتش إف شكيبونا",
+              "ru": "КХФ Шкипона"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Helen Cristine Da Souza",
+          "firstName": "Helen Cristine",
+          "lastName": "Da Silva Souza",
+          "slug": "helen-cristine-da-souza",
+          "shortName": "H. Da Silva Souza",
+          "jerseyNumber": "64",
+          "userCount": 0,
+          "gender": "F",
+          "sofascoreId": "dpe-nb6",
+          "id": 2288150,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 794620800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هيلين كريستين دا سوزا",
+              "ru": "Хелен Кристине Да Соуза"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. دا سوزا",
+              "ru": "Х. Соуза"
+            }
+          }
+        },
+        "team": {
+          "name": "KHF Shqipona",
+          "slug": "khf-shqipona",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 4,
+          "nameCode": "SHQ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 245414,
+          "teamColors": {
+            "primary": "#ed1b24",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كي إتش إف شكيبونا",
+              "ru": "КХФ Шкипона"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      },
+      {
+        "value": "3",
+        "label": "gls",
+        "player": {
+          "name": "Shir Machmali",
+          "firstName": "Shir",
+          "lastName": "Machmali",
+          "slug": "shir-machmali",
+          "shortName": "S. Machmali",
+          "position": "CB",
+          "jerseyNumber": "11",
+          "height": 165,
+          "userCount": 0,
+          "gender": "F",
+          "sofascoreId": "p99-ev6",
+          "id": 963454,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1034467200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماخمالي، شير",
+              "ru": "Шир Махмали"
+            },
+            "shortNameTranslation": {
+              "ar": "ش. ماخمالي",
+              "ru": "Ш. Махмали"
+            }
+          }
+        },
+        "team": {
+          "name": "Bnei Herzliya",
+          "slug": "bnei-herzliya",
+          "shortName": "B. Herzliya",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 20,
+          "nameCode": "BHE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 59073,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بني هيرتسليا",
+              "ru": "Бней Херцлия"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. هيرتسليا",
+              "ru": "Б. Херцлия"
+            }
+          }
+        }
+      },
+      {
+        "value": "1",
+        "label": "gls",
+        "player": {
+          "name": "Orgesa Gola",
+          "firstName": "Orgesa",
+          "lastName": "Gola",
+          "slug": "orgesa-gola",
+          "shortName": "O. Gola",
+          "position": "CB",
+          "jerseyNumber": "15",
+          "height": 164,
+          "userCount": 2,
+          "gender": "F",
+          "sofascoreId": "uti-8yu",
+          "id": 1510195,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1174348800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غولا، أورغيسا",
+              "ru": "Оргеса Гола"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. غولا",
+              "ru": "О. Гола"
+            }
+          }
+        },
+        "team": {
+          "name": "KHF Shqipona",
+          "slug": "khf-shqipona",
+          "gender": "F",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "userCount": 4,
+          "nameCode": "SHQ",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 245414,
+          "teamColors": {
+            "primary": "#ed1b24",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كي إتش إف شكيبونا",
+              "ru": "КХФ Шкипона"
+            },
+            "shortNameTranslation": {}
+          }
+        }
+      }
+    ]
+  }
+}

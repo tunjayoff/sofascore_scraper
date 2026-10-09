@@ -1,0 +1,653 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/udmdsozpd/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:17:35+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/krikunov-rakhmanovskii/udmdsozpd#id:17286659",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Liga Pro",
+          "slug": "liga-pro",
+          "category": {
+            "name": "Russia",
+            "slug": "russia",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 1554,
+            "flag": "russia",
+            "alpha2": "RU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "روسيا",
+                "ru": "Россия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Liga Pro",
+            "slug": "liga-pro",
+            "category": {
+              "name": "Russia",
+              "slug": "russia",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "RU",
+                "alpha3": "RUS",
+                "name": "Russia",
+                "slug": "russia"
+              },
+              "id": 1554,
+              "flag": "russia",
+              "alpha2": "RU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روسيا",
+                  "ru": "Россия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 572,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 15006,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري المحترفين",
+                "ru": "Лига Pro"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 78895,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري المحترفين",
+              "ru": "Лига Pro"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 88262
+        },
+        "customId": "udmdsozpd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Rakhmanovskii V.",
+          "slug": "rakhmanovskii-viktor",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 19,
+          "nameCode": "RAK",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 405169,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "رحمانوفسكي، فيكتور",
+              "ru": "Рахмановский, Виктор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Krikunov I.",
+          "slug": "krikunov-igor",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 11,
+          "nameCode": "KRI",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 413714,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كريكوف، إيغور",
+              "ru": "Крикунов, Игорь"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 11,
+          "period2": 11,
+          "period3": 11
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 5,
+          "period2": 4,
+          "period3": 5
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.current",
+            "homeScore.display",
+            "homeScore.period3"
+          ],
+          "changeTimestamp": 1791558334
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17286659,
+        "slug": "krikunov-rakhmanovskii",
+        "startTimestamp": 1791556200,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Liga Pro",
+          "slug": "liga-pro",
+          "category": {
+            "name": "Russia",
+            "slug": "russia",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 1554,
+            "flag": "russia",
+            "alpha2": "RU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "روسيا",
+                "ru": "Россия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Liga Pro",
+            "slug": "liga-pro",
+            "category": {
+              "name": "Russia",
+              "slug": "russia",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "RU",
+                "alpha3": "RUS",
+                "name": "Russia",
+                "slug": "russia"
+              },
+              "id": 1554,
+              "flag": "russia",
+              "alpha2": "RU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روسيا",
+                  "ru": "Россия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 572,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 15006,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري المحترفين",
+                "ru": "Лига Pro"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 78895,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري المحترفين",
+              "ru": "Лига Pro"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 88262
+        },
+        "customId": "udmdsozpd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Rakhmanovskii V.",
+          "slug": "rakhmanovskii-viktor",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 19,
+          "nameCode": "RAK",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 405169,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "رحمانوفسكي، فيكتور",
+              "ru": "Рахмановский, Виктор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Krikunov I.",
+          "slug": "krikunov-igor",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 11,
+          "nameCode": "KRI",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 413714,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كريكوف، إيغور",
+              "ru": "Крикунов, Игорь"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 3,
+          "period2": 11,
+          "period3": 11,
+          "period4": 13
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 11,
+          "period2": 9,
+          "period3": 13,
+          "period4": 15
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period4"
+          ],
+          "changeTimestamp": 1790431481
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17185972,
+        "slug": "krikunov-rakhmanovskii",
+        "startTimestamp": 1790429400,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Liga Pro",
+          "slug": "liga-pro",
+          "category": {
+            "name": "Russia",
+            "slug": "russia",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 1554,
+            "flag": "russia",
+            "alpha2": "RU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "روسيا",
+                "ru": "Россия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Liga Pro",
+            "slug": "liga-pro",
+            "category": {
+              "name": "Russia",
+              "slug": "russia",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "RU",
+                "alpha3": "RUS",
+                "name": "Russia",
+                "slug": "russia"
+              },
+              "id": 1554,
+              "flag": "russia",
+              "alpha2": "RU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روسيا",
+                  "ru": "Россия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 572,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 15006,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري المحترفين",
+                "ru": "Лига Pro"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 78895,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري المحترفين",
+              "ru": "Лига Pro"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 88262
+        },
+        "customId": "udmdsozpd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Krikunov I.",
+          "slug": "krikunov-igor",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 11,
+          "nameCode": "KRI",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 413714,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كريكوف، إيغور",
+              "ru": "Крикунов, Игорь"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Rakhmanovskii V.",
+          "slug": "rakhmanovskii-viktor",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 19,
+          "nameCode": "RAK",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 405169,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "رحمانوفسكي، فيكتور",
+              "ru": "Рахмановский, Виктор"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 8,
+          "period2": 11,
+          "period3": 7,
+          "period4": 6
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 11,
+          "period2": 6,
+          "period3": 11,
+          "period4": 11
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "awayScore.current",
+            "awayScore.display",
+            "awayScore.period4",
+            "status.code",
+            "status.description",
+            "status.type"
+          ],
+          "changeTimestamp": 1789802897
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17131719,
+        "slug": "krikunov-rakhmanovskii",
+        "startTimestamp": 1789801200,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ]
+  }
+}

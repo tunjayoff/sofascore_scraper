@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tv/event/16982330/country-channels",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T15:10:14+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/iraero-irkutsk-surgut/HiXcsjBae#id:16982330",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}
