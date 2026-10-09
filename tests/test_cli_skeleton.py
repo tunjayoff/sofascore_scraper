@@ -525,10 +525,21 @@ def _keys_used_by_the_cli() -> set:
     return used
 
 
+def _catalog_code_labels() -> set:
+    """`catalog` komutlarının sorun kodlarına göre kurduğu açıklama anahtarları (B2)."""
+    from sofascore_scraper.store import changes, indexer, legacy, verify
+
+    kinds = {value for name, value in vars(verify).items() if name.startswith("KIND_")}
+    problems = {value for module in (legacy, indexer, changes)
+                for name, value in vars(module).items() if name.startswith("PROBLEM_")}
+    return {f"ssc_catalog_kind_{k}" for k in kinds} | {f"ssc_catalog_problem_{p}" for p in problems}
+
+
 def test_every_text_of_the_new_cli_exists_in_both_languages_and_is_used():
     en, tr = _locale("en"), _locale("tr")
     used = _keys_used_by_the_cli()
     labels = {"ssc_error_" + spec.code for spec in errors.ERROR_TABLE if spec.raised and spec.exit_code is not None}
+    labels |= _catalog_code_labels()
     assert len(used) > 40
     assert used | labels <= set(en), sorted((used | labels) - set(en))
     ours = {key for key in en if key.startswith("ssc_")}
