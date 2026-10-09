@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/187765/unique-tournament/11191/season/77257/goal-distributions",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T00:08:36+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884177",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

@@ -1,0 +1,723 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17263404/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:03:51+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/miyazaki-nidaira/idDbsNbWd#id:17263404",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "2. set",
+        "homeScore": 14,
+        "awayScore": 21,
+        "isLive": false,
+        "period": "period2",
+        "time": -1,
+        "timeSeconds": -60,
+        "incidentType": "period"
+      },
+      {
+        "homeScore": 14,
+        "awayScore": 21,
+        "period": "period2",
+        "id": 364229923,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 14,
+        "awayScore": 20,
+        "period": "period2",
+        "id": 364229823,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 13,
+        "awayScore": 20,
+        "period": "period2",
+        "id": 364229822,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 13,
+        "awayScore": 19,
+        "period": "period2",
+        "id": 364229765,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 13,
+        "awayScore": 18,
+        "period": "period2",
+        "id": 364229764,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 13,
+        "awayScore": 17,
+        "period": "period2",
+        "id": 364229663,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 13,
+        "awayScore": 16,
+        "period": "period2",
+        "id": 364229593,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 12,
+        "awayScore": 16,
+        "period": "period2",
+        "id": 364229592,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 12,
+        "awayScore": 15,
+        "period": "period2",
+        "id": 364229591,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 15,
+        "period": "period2",
+        "id": 364229590,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 10,
+        "awayScore": 15,
+        "period": "period2",
+        "id": 364229428,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 10,
+        "awayScore": 14,
+        "period": "period2",
+        "id": 364229427,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 10,
+        "awayScore": 13,
+        "period": "period2",
+        "id": 364229426,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 9,
+        "awayScore": 13,
+        "period": "period2",
+        "id": 364229222,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 9,
+        "awayScore": 12,
+        "period": "period2",
+        "id": 364229221,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 9,
+        "awayScore": 11,
+        "period": "period2",
+        "id": 364229141,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 9,
+        "awayScore": 10,
+        "period": "period2",
+        "id": 364229140,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 9,
+        "awayScore": 9,
+        "period": "period2",
+        "id": 364229139,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 8,
+        "awayScore": 9,
+        "period": "period2",
+        "id": 364228807,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 9,
+        "period": "period2",
+        "id": 364228634,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 8,
+        "period": "period2",
+        "id": 364228633,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 7,
+        "period": "period2",
+        "id": 364228632,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 6,
+        "period": "period2",
+        "id": 364228530,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 5,
+        "period": "period2",
+        "id": 364228529,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 4,
+        "period": "period2",
+        "id": 364228528,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 6,
+        "awayScore": 4,
+        "period": "period2",
+        "id": 364228408,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 6,
+        "awayScore": 3,
+        "period": "period2",
+        "id": 364228407,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 5,
+        "awayScore": 3,
+        "period": "period2",
+        "id": 364228281,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 5,
+        "awayScore": 2,
+        "period": "period2",
+        "id": 364228280,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 4,
+        "awayScore": 2,
+        "period": "period2",
+        "id": 364228059,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 4,
+        "awayScore": 1,
+        "period": "period2",
+        "id": 364228058,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 4,
+        "awayScore": 0,
+        "period": "period2",
+        "id": 364227981,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 3,
+        "awayScore": 0,
+        "period": "period2",
+        "id": 364227980,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 2,
+        "awayScore": 0,
+        "period": "period2",
+        "id": 364227979,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 1,
+        "awayScore": 0,
+        "period": "period2",
+        "id": 364227978,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "text": "1. set",
+        "homeScore": 13,
+        "awayScore": 21,
+        "isLive": false,
+        "period": "period1",
+        "time": -1,
+        "timeSeconds": -60,
+        "incidentType": "period"
+      },
+      {
+        "homeScore": 13,
+        "awayScore": 21,
+        "period": "period1",
+        "id": 364227318,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 13,
+        "awayScore": 20,
+        "period": "period1",
+        "id": 364227178,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 12,
+        "awayScore": 20,
+        "period": "period1",
+        "id": 364227177,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 12,
+        "awayScore": 19,
+        "period": "period1",
+        "id": 364227176,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 19,
+        "period": "period1",
+        "id": 364227113,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 18,
+        "period": "period1",
+        "id": 364227112,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 17,
+        "period": "period1",
+        "id": 364227111,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 16,
+        "period": "period1",
+        "id": 364227019,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 15,
+        "period": "period1",
+        "id": 364226906,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 14,
+        "period": "period1",
+        "id": 364226815,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 13,
+        "period": "period1",
+        "id": 364226814,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 11,
+        "awayScore": 12,
+        "period": "period1",
+        "id": 364226716,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 10,
+        "awayScore": 12,
+        "period": "period1",
+        "id": 364226715,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 9,
+        "awayScore": 12,
+        "period": "period1",
+        "id": 364226661,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 9,
+        "awayScore": 11,
+        "period": "period1",
+        "id": 364226660,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 8,
+        "awayScore": 11,
+        "period": "period1",
+        "id": 364226588,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 8,
+        "awayScore": 10,
+        "period": "period1",
+        "id": 364226461,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 10,
+        "period": "period1",
+        "id": 364226460,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 9,
+        "period": "period1",
+        "id": 364226459,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 7,
+        "awayScore": 8,
+        "period": "period1",
+        "id": 364226372,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 6,
+        "awayScore": 8,
+        "period": "period1",
+        "id": 364226311,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 6,
+        "awayScore": 7,
+        "period": "period1",
+        "id": 364226310,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 6,
+        "awayScore": 6,
+        "period": "period1",
+        "id": 364226197,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 5,
+        "awayScore": 6,
+        "period": "period1",
+        "id": 364226196,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 4,
+        "awayScore": 6,
+        "period": "period1",
+        "id": 364226195,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 3,
+        "awayScore": 6,
+        "period": "period1",
+        "id": 364226068,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 3,
+        "awayScore": 5,
+        "period": "period1",
+        "id": 364226003,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 3,
+        "awayScore": 4,
+        "period": "period1",
+        "id": 364226002,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 3,
+        "awayScore": 3,
+        "period": "period1",
+        "id": 364225758,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 2,
+        "awayScore": 3,
+        "period": "period1",
+        "id": 364225757,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 2,
+        "awayScore": 2,
+        "period": "period1",
+        "id": 364225701,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 2,
+        "awayScore": 1,
+        "period": "period1",
+        "id": 364225700,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 1,
+        "awayScore": 1,
+        "period": "period1",
+        "id": 364225699,
+        "time": -1,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      },
+      {
+        "homeScore": 0,
+        "awayScore": 1,
+        "period": "period1",
+        "id": 364225698,
+        "time": -1,
+        "isHome": false,
+        "incidentClass": "regular",
+        "incidentType": "goal"
+      }
+    ]
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16832233/best-players",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:46+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/brooklyn-nets-charlotte-hornets/FtbsLtb#id:16832233",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "bestHomeTeamPlayer": {
+      "value": "14",
+      "label": "pts",
+      "additionalStatistics": {
+        "points": 14,
+        "assists": 0,
+        "rebounds": 1,
+        "steals": 0,
+        "blocks": 0
+      },
+      "player": {
+        "name": "Liam McNeeley",
+        "firstName": "Liam",
+        "lastName": "McNeeley",
+        "slug": "liam-mcneeley",
+        "shortName": "L. McNeeley",
+        "position": "F",
+        "primaryPosition": "SF",
+        "jerseyNumber": "33",
+        "height": 201,
+        "userCount": 177,
+        "gender": "M",
+        "sofascoreId": "vnx-jva",
+        "id": 1963307,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 1128902400,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ماكنيلي، ليام",
+            "ru": "Лиам МакНили"
+          },
+          "shortNameTranslation": {
+            "ar": "ل. ماكنيلي",
+            "ru": "Л. МакНили"
+          }
+        }
+      },
+      "team": {
+        "name": "Charlotte Hornets",
+        "slug": "charlotte-hornets",
+        "shortName": "Hornets",
+        "gender": "M",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "userCount": 44695,
+        "nameCode": "CHA",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "id": 3430,
+        "teamColors": {
+          "primary": "#008ca8",
+          "secondary": "#1d1160",
+          "text": "#1d1160"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تشارلوت هورنيتس",
+            "ru": "Шарлотт Хорнетс"
+          },
+          "shortNameTranslation": {
+            "ar": "هورنتس",
+            "bn": "হর্নেটস",
+            "hi": "हॉर्नेट्स"
+          }
+        }
+      }
+    },
+    "bestAwayTeamPlayer": {
+      "value": "16",
+      "label": "pts",
+      "additionalStatistics": {
+        "points": 16,
+        "assists": 2,
+        "rebounds": 5,
+        "steals": 1,
+        "blocks": 0
+      },
+      "player": {
+        "name": "Michael Porter Jr.",
+        "firstName": "Michael",
+        "lastName": "Porter Jr. ",
+        "slug": "porter-jr-michael",
+        "shortName": "M. Porter Jr.",
+        "position": "F",
+        "primaryPosition": "SF",
+        "jerseyNumber": "17",
+        "height": 208,
+        "userCount": 7035,
+        "gender": "M",
+        "sofascoreId": "zbf-w58",
+        "id": 940773,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 899078400,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بورتر جونيور، مايكل",
+            "bn": "পোর্টার জুনিয়র, মাইকেল",
+            "hi": "पोर्टर जूनियर, माइकल",
+            "ru": "Портер младший, Майкл"
+          },
+          "shortNameTranslation": {
+            "ar": "م. بورتر جونيور",
+            "bn": "এম. পোর্টার জুনিয়র",
+            "hi": "एम. पोर्टर जूनियर",
+            "ru": "М. Портер младший"
+          }
+        }
+      },
+      "team": {
+        "name": "Brooklyn Nets",
+        "slug": "brooklyn-nets",
+        "shortName": "Nets",
+        "gender": "M",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "userCount": 43995,
+        "nameCode": "BKN",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "id": 3436,
+        "teamColors": {
+          "primary": "#ffffff",
+          "secondary": "#000000",
+          "text": "#000000"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بروكلين نيتس",
+            "ru": "Бруклин Нетс"
+          },
+          "shortNameTranslation": {
+            "ar": "نتس",
+            "bn": "নেটস",
+            "hi": "नेट्स"
+          }
+        }
+      }
+    }
+  }
+}

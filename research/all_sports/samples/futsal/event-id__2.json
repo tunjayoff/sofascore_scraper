@@ -1,0 +1,241 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17256669",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:00:18+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/boca-juniors-secla-futsal/fkpdsKXHi#id:17256669",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "Copa Argentina Futsal Femenina - Playoff",
+        "slug": "copa-argentina-futsal-femenina",
+        "category": {
+          "name": "Argentina",
+          "slug": "argentina",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 1253,
+          "flag": "argentina",
+          "alpha2": "AR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الأرجنتين",
+              "ru": "Аргентина"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Copa Argentina Futsal Femenina",
+          "slug": "copa-argentina-futsal-femenina",
+          "category": {
+            "name": "Argentina",
+            "slug": "argentina",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AR",
+              "alpha3": "ARG",
+              "name": "Argentina",
+              "slug": "argentina"
+            },
+            "id": 1253,
+            "flag": "argentina",
+            "alpha2": "AR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الأرجنتين",
+                "ru": "Аргентина"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 16,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 27735,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس الأرجنتين لكرة الصالات للسيدات",
+              "ru": "Кубок Аргентины по футзалу среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 2,
+        "id": 156879,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس الأرجنتين لكرة الصالات للسيدات",
+            "ru": "Кубок Аргентины по футзалу среди женщин, Плей-офф"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "Copa Argentina Futsal Femenina 2026",
+        "year": "2026",
+        "editor": true,
+        "id": 93628
+      },
+      "roundInfo": {
+        "round": 27,
+        "name": "Quarterfinals",
+        "slug": "quarterfinals",
+        "cupRoundType": 4
+      },
+      "customId": "fkpdsKXHi",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "aggregatedWinnerCode": 1,
+      "homeTeam": {
+        "name": "Boca Juniors",
+        "slug": "boca-juniors",
+        "shortName": "Boca Juniors",
+        "gender": "F",
+        "sport": {
+          "name": "Futsal",
+          "slug": "futsal",
+          "id": 29
+        },
+        "userCount": 232,
+        "nameCode": "BJU",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "AR",
+          "alpha3": "ARG",
+          "name": "Argentina",
+          "slug": "argentina"
+        },
+        "id": 1082385,
+        "fullName": "Boca Juniors",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بوكا جونيورز",
+            "ru": "Бока Хуниорс"
+          },
+          "shortNameTranslation": {
+            "ar": "بوكا جونيورز",
+            "ru": "Бока Хуниорс"
+          }
+        },
+        "createdByEditor": true,
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Secla Futsal",
+        "slug": "secla-futsal-f",
+        "shortName": "Secla",
+        "gender": "F",
+        "sport": {
+          "name": "Futsal",
+          "slug": "futsal",
+          "id": 29
+        },
+        "userCount": 6,
+        "nameCode": "SFU",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "AR",
+          "alpha3": "ARG",
+          "name": "Argentina",
+          "slug": "argentina"
+        },
+        "id": 413005,
+        "fullName": "Secla Futsal",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "سيكلا فوتسال",
+            "ru": "Секла Футзал"
+          },
+          "shortNameTranslation": {
+            "ar": "سيكلا فوتسال",
+            "ru": "Секла Футзал"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 1,
+        "display": 1
+      },
+      "awayScore": {
+        "current": 0,
+        "display": 0
+      },
+      "time": {},
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.current",
+          "homeScore.display",
+          "awayScore.current",
+          "awayScore.display"
+        ],
+        "changeTimestamp": 1791425045
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17256669,
+      "slug": "boca-juniors-secla-futsal",
+      "startTimestamp": 1791414000,
+      "defaultPeriodCount": 2,
+      "defaultPeriodLength": 20,
+      "defaultOvertimeLength": 5,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "createdByNickname": "Henrique Ferrassa",
+      "eventEditorName": "Henrique Ferrassa",
+      "eventEditor": {
+        "id": "63e39019e36efa62b5dfc437",
+        "name": "Henrique Ferrassa"
+      },
+      "showTotoPromo": true,
+      "isEditor": true
+    },
+    "editorEntity": true
+  }
+}

@@ -1,0 +1,398 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16832233",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:53+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/brooklyn-nets-charlotte-hornets/FtbsLtb#id:16832233",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "officials": [],
+      "tournament": {
+        "name": "NBA Preseason",
+        "slug": "nba-preseason",
+        "category": {
+          "name": "USA",
+          "slug": "usa",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 10,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 15,
+          "flag": "usa",
+          "alpha2": "US",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الولايات المتحدة",
+              "hi": "संयुक्त राज्य अमेरिका",
+              "bn": "যুক্তরাষ্ট্র",
+              "ru": "Соединенные Штаты"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "NBA Preseason",
+          "slug": "nba-preseason",
+          "primaryColorHex": "#045daf",
+          "secondaryColorHex": "#cc2b31",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 10,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 15,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 28360,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 2329,
+          "hasEventPlayerStatistics": false,
+          "hasBoxScore": true,
+          "displayInverseHomeAwayTeams": true,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ro": "NBA Presezon",
+              "bn": "এনবিএ প্রিসিজন",
+              "ar": "موسم ما قبل الدوري الأميركي للمحترفين",
+              "hi": "एनबीए प्रीसीज़न",
+              "ru": "Предсезонная лига НБА"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 163,
+        "isGroup": false,
+        "competitionType": 1,
+        "isLive": false,
+        "id": 9154,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ro": "NBA Presezon",
+            "hi": "एनबीए प्रीसीज़न",
+            "ar": "دوري NBA التحضيري",
+            "bn": "এনবিএ প্রিসিজন",
+            "ru": "Предсезонные матчи НБА"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "NBA Preseason 2026",
+        "year": "2026",
+        "editor": false,
+        "id": 99742
+      },
+      "customId": "FtbsLtb",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 2,
+      "attendance": 10922,
+      "homeTeam": {
+        "name": "Charlotte Hornets",
+        "slug": "charlotte-hornets",
+        "shortName": "Hornets",
+        "gender": "M",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "userCount": 44531,
+        "manager": {
+          "name": "Charles Lee",
+          "slug": "lee-charles",
+          "shortName": "C. Lee",
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 805642,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تشارلز لي",
+              "ru": "Чарльз Ли"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. لي",
+              "ru": "Ч. Ли"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Charlotte",
+            "state": "US-NC",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 18680
+          },
+          "hidden": true,
+          "slug": "spectrum-center",
+          "name": "Spectrum Center",
+          "capacity": 19077,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 6146,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مركز سبيكتروم",
+              "hi": "स्पेक्ट्रम सेंटर",
+              "bn": "স্পেকট্রাম সেন্টার",
+              "ru": "Центр Spectrum"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Spectrum Center",
+            "capacity": 19077
+          }
+        },
+        "nameCode": "CHA",
+        "class": 0,
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 3430,
+        "fullName": "Charlotte Hornets",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#008ca8",
+          "secondary": "#1d1160",
+          "text": "#1d1160"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تشارلوت هورنيتس",
+            "ru": "Шарлотт Хорнетс"
+          },
+          "shortNameTranslation": {
+            "ar": "هورنتس",
+            "bn": "হর্নেটস",
+            "hi": "हॉर्नेट्स"
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Brooklyn Nets",
+        "slug": "brooklyn-nets",
+        "shortName": "Nets",
+        "gender": "M",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "userCount": 43790,
+        "manager": {
+          "name": "Jordi Fernandez",
+          "slug": "fernandez-jordi",
+          "shortName": "J. Fernandez",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 805643,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جوردي فرنانديز",
+              "ru": "Хорди Фернандес"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. فرنانديز",
+              "ru": "Х. Фернандес"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Brooklyn",
+            "state": "US-NY",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 18715
+          },
+          "hidden": true,
+          "slug": "barclays-center",
+          "name": "Barclays Center",
+          "capacity": 18732,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 6918,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "باركليز سنتر",
+              "hi": "बार्कलेज सेंटर",
+              "bn": "বার্কলেস সেন্টার",
+              "ru": "Арена Barclays"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Barclays Center",
+            "capacity": 18732
+          }
+        },
+        "nameCode": "BKN",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 3436,
+        "fullName": "Brooklyn Nets",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#ffffff",
+          "secondary": "#000000",
+          "text": "#000000"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بروكلين نيتس",
+            "ru": "Бруклин Нетс"
+          },
+          "shortNameTranslation": {
+            "ar": "نتس",
+            "bn": "নেটস",
+            "hi": "नेट्स"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 90,
+        "display": 90,
+        "period1": 31,
+        "period2": 21,
+        "period3": 21,
+        "period4": 17,
+        "normaltime": 90
+      },
+      "awayScore": {
+        "current": 124,
+        "display": 124,
+        "period1": 33,
+        "period2": 23,
+        "period3": 36,
+        "period4": 32,
+        "normaltime": 124
+      },
+      "time": {
+        "played": 2880,
+        "periodLength": 720,
+        "overtimeLength": 300,
+        "totalPeriodCount": 4,
+        "clockRunning": true,
+        "clockRunningLastUpdated": "2026-10-07T01:38:20+00:00"
+      },
+      "changes": {
+        "changes": [
+          "time.clockRunning",
+          "time.clockRunningLastUpdated"
+        ],
+        "changeTimestamp": 1791337100
+      },
+      "hasGlobalHighlights": true,
+      "hasEventPlayerStatistics": true,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 16832233,
+      "defaultPeriodCount": 4,
+      "defaultPeriodLength": 12,
+      "defaultOvertimeLength": 5,
+      "periods": {
+        "current": "Score",
+        "period1": "1st quarter",
+        "period2": "2nd quarter",
+        "period3": "3rd quarter",
+        "period4": "4th quarter",
+        "overtime": "Overtime"
+      },
+      "slug": "brooklyn-nets-charlotte-hornets",
+      "startTimestamp": 1791327600,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "seasonStatisticsType": "overall",
+      "showTotoPromo": true,
+      "isEditor": false,
+      "eventFilters": {
+        "category": [
+          "club"
+        ],
+        "level": [
+          "top-competitions",
+          "pro"
+        ],
+        "gender": [
+          "M"
+        ]
+      }
+    }
+  }
+}

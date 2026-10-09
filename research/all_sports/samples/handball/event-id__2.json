@@ -1,0 +1,377 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16634075",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:58:33+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/rk-partizan-one-veszprem/DHcsQKc#id:16634075",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "EHF Champions League, Group A",
+        "slug": "ehf-champions-league-group-a",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Handball",
+            "slug": "handball",
+            "id": 6
+          },
+          "priority": 11,
+          "country": {},
+          "id": 73,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "EHF Champions League",
+          "slug": "ehf-champions-league",
+          "primaryColorHex": "#e40214",
+          "secondaryColorHex": "#aca06f",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 11,
+            "country": {},
+            "id": 73,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 9738,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 30,
+          "hasEventPlayerStatistics": false,
+          "hasBoxScore": true,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري أبطال أوروبا",
+              "hi": "चैंपियंस लीग",
+              "bn": "চ্যাম্পিয়ন্স লীগ",
+              "ru": "Лига чемпионов ЕГФ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 99,
+        "isGroup": true,
+        "groupName": "Group A",
+        "groupSign": "A",
+        "competitionType": 1,
+        "isLive": false,
+        "id": 2465,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "चैम्पियंस लीग, ग्रुप ए",
+            "ar": "دوري أبطال أوروبا، المجموعة A",
+            "bn": "চ্যাম্পিয়ন্স লীগ, গ্রুপ এ",
+            "ru": "Лига чемпионов ЕГФ, Группа A"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "EHF Champions League 26/27",
+        "year": "26/27",
+        "editor": false,
+        "id": 99334
+      },
+      "roundInfo": {
+        "round": 3
+      },
+      "customId": "DHcsQKc",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 2,
+      "venue": {
+        "city": {
+          "name": "Belgrade",
+          "country": {
+            "alpha2": "RS",
+            "alpha3": "SRB",
+            "name": "Serbia",
+            "slug": "serbia"
+          },
+          "id": 18126
+        },
+        "hidden": true,
+        "slug": "aleksandar-nikolic-hall",
+        "name": "Aleksandar Nikolic Hall",
+        "capacity": 8000,
+        "country": {
+          "alpha2": "RS",
+          "alpha3": "SRB",
+          "name": "Serbia",
+          "slug": "serbia"
+        },
+        "id": 6724,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة ألكسندر نيكوليتش",
+            "hi": "एलेक्ज़ेंडर निकोलिक हॉल",
+            "bn": "আলেকসান্ডার নিকোলিক হল",
+            "ru": "Спортивный комплекс Aleksandar Nikolic"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Aleksandar Nikolic Hall",
+          "capacity": 8000
+        }
+      },
+      "homeTeam": {
+        "name": "RK Partizan",
+        "slug": "rk-partizan",
+        "shortName": "RK Partizan",
+        "gender": "M",
+        "sport": {
+          "name": "Handball",
+          "slug": "handball",
+          "id": 6
+        },
+        "userCount": 5138,
+        "manager": {
+          "name": "Raul Gonzales",
+          "slug": "raul-gonzales",
+          "shortName": "R. Gonzales",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 825577
+        },
+        "venue": {
+          "city": {
+            "name": "Belgrade",
+            "country": {
+              "alpha2": "RS",
+              "alpha3": "SRB",
+              "name": "Serbia",
+              "slug": "serbia"
+            },
+            "id": 18126
+          },
+          "hidden": true,
+          "slug": "sportski-centar-vo-dovac",
+          "name": "Sportski Centar Voždovac",
+          "capacity": 2300,
+          "country": {
+            "alpha2": "RS",
+            "alpha3": "SRB",
+            "name": "Serbia",
+            "slug": "serbia"
+          },
+          "id": 24205,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مركز فوزدوفيتش الرياضي",
+              "hi": "स्पोर्ट्सकी सेंटर वोज़्दोवैक",
+              "bn": "স্পোর্টসকি সেন্টার ভোজডোভাক",
+              "ru": "Спортивный комплекс Sportski Centar Voždovac"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Sportski Centar Voždovac",
+            "capacity": 2300
+          }
+        },
+        "nameCode": "PAR",
+        "class": 1,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "RS",
+          "alpha3": "SRB",
+          "name": "Serbia",
+          "slug": "serbia"
+        },
+        "id": 6791,
+        "fullName": "RK Partizan",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#000000",
+          "secondary": "#ffffff",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "آر كيه بارتيزان",
+            "ru": "Партизан"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "One Veszprém",
+        "slug": "telekom-veszprem",
+        "shortName": "Veszprém",
+        "gender": "M",
+        "sport": {
+          "name": "Handball",
+          "slug": "handball",
+          "id": 6
+        },
+        "userCount": 7717,
+        "venue": {
+          "city": {
+            "name": "Veszprém",
+            "country": {
+              "alpha2": "HU",
+              "alpha3": "HUN",
+              "name": "Hungary",
+              "slug": "hungary"
+            },
+            "id": 20505
+          },
+          "hidden": true,
+          "slug": "veszpr-m-ar-na",
+          "name": "Veszprém Aréna",
+          "capacity": 5096,
+          "country": {
+            "alpha2": "HU",
+            "alpha3": "HUN",
+            "name": "Hungary",
+            "slug": "hungary"
+          },
+          "id": 6416,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أرينا فيسبريم",
+              "hi": "वेस्ज़्प्रेम एरिना",
+              "bn": "ভেজপ্রেম এরিনা",
+              "ru": "Арена Veszprém"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Veszprém Aréna",
+            "capacity": 5096
+          }
+        },
+        "nameCode": "VEZ",
+        "class": 1,
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "HU",
+          "alpha3": "HUN",
+          "name": "Hungary",
+          "slug": "hungary"
+        },
+        "id": 6628,
+        "fullName": "One Veszprém",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#ee1212",
+          "secondary": "#ffffff",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "وان فزبرم",
+            "ru": "Оне Веспрем"
+          },
+          "shortNameTranslation": {
+            "ar": "فزبرم",
+            "bn": "ভেজপ্রেম",
+            "hi": "वेस्प्रेम",
+            "ru": "Веспрем"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 26,
+        "display": 26,
+        "period1": 12,
+        "period2": 14,
+        "normaltime": 26
+      },
+      "awayScore": {
+        "current": 37,
+        "display": 37,
+        "period1": 17,
+        "period2": 20,
+        "normaltime": 37
+      },
+      "time": {
+        "played": 3523,
+        "periodLength": 1800,
+        "overtimeLength": 300,
+        "totalPeriodCount": 2,
+        "currentPeriodStartTimestamp": 1791396538
+      },
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.period2",
+          "homeScore.normaltime",
+          "awayScore.period2",
+          "awayScore.normaltime",
+          "time.currentPeriodStart"
+        ],
+        "changeTimestamp": 1791396545
+      },
+      "hasGlobalHighlights": true,
+      "hasEventPlayerStatistics": true,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 16634075,
+      "defaultPeriodCount": 2,
+      "defaultPeriodLength": 30,
+      "slug": "rk-partizan-one-veszprem",
+      "currentPeriodStartTimestamp": 1791396538,
+      "startTimestamp": 1791391500,
+      "defaultOvertimeLength": 5,
+      "finalResultOnly": false,
+      "hasBet365LiveStream": true,
+      "bet365ExcludedCountryCodes": [
+        "",
+        "IR",
+        "GR",
+        "RU",
+        "CH",
+        "CA"
+      ],
+      "feedLocked": false,
+      "seasonStatisticsType": "overall",
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

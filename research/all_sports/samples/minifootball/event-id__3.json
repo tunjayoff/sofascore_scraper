@@ -1,0 +1,301 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17268351",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:21:08+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/sahin-united-mfc-baku-juniors/TYjjswRpk#id:17268351",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "Summer Cup Baku, Group A",
+        "slug": "summer-cup-baku-group-a",
+        "category": {
+          "name": "Azerbaijan",
+          "slug": "azerbaijan",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "AZ",
+            "alpha3": "AZE",
+            "name": "Azerbaijan",
+            "slug": "azerbaijan"
+          },
+          "id": 1808,
+          "flag": "azerbaijan",
+          "alpha2": "AZ",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أذربيجان",
+              "ru": "Азербайджан"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Summer Cup Baku",
+          "slug": "summer-cup-baku",
+          "category": {
+            "name": "Azerbaijan",
+            "slug": "azerbaijan",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AZ",
+              "alpha3": "AZE",
+              "name": "Azerbaijan",
+              "slug": "azerbaijan"
+            },
+            "id": 1808,
+            "flag": "azerbaijan",
+            "alpha2": "AZ",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أذربيجان",
+                "ru": "Азербайджан"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 55,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 30841,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس الصيف باكو",
+              "ru": "Летний Кубок Баку"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": true,
+        "groupName": "Group A",
+        "competitionType": 1,
+        "id": 168704,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس الصيف باكو، المجموعة ا",
+            "ru": "Кубок Лета Баку, Группа A"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "Summer Cup Baku 2026",
+        "year": "2026",
+        "editor": true,
+        "id": 104839
+      },
+      "roundInfo": {
+        "round": 2
+      },
+      "customId": "TYjjswRpk",
+      "status": {
+        "code": 0,
+        "description": "Not started",
+        "type": "notstarted"
+      },
+      "venue": {
+        "city": {
+          "name": "Bakı",
+          "country": {
+            "alpha2": "AZ",
+            "alpha3": "AZE",
+            "name": "Azerbaijan",
+            "slug": "azerbaijan"
+          },
+          "id": 18268
+        },
+        "venueCoordinates": {
+          "latitude": 40.4150341,
+          "longitude": 49.9280665
+        },
+        "hidden": true,
+        "slug": "amasya-idman-saglamliq-kompleksi",
+        "name": "Amasya İdman Sağlamlıq Kompleksi",
+        "capacity": 100,
+        "country": {
+          "alpha2": "AZ",
+          "alpha3": "AZE",
+          "name": "Azerbaijan",
+          "slug": "azerbaijan"
+        },
+        "id": 54872,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Спортивный комплекс Amasya İdman Sağlamlıq Kompleksi"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Amasya İdman Sağlamlıq Kompleksi",
+          "capacity": 100
+        }
+      },
+      "homeTeam": {
+        "name": "Şahin United MFC",
+        "slug": "sahin-united-mfc",
+        "shortName": "Şahin United",
+        "gender": "M",
+        "sport": {
+          "name": "Minifootball",
+          "slug": "minifootball",
+          "id": 109
+        },
+        "userCount": 1,
+        "venue": {
+          "city": {
+            "name": "Baku",
+            "country": {
+              "alpha2": "AZ",
+              "alpha3": "AZE",
+              "name": "Azerbaijan",
+              "slug": "azerbaijan"
+            },
+            "id": 17970
+          },
+          "venueCoordinates": {
+            "latitude": 40.423097,
+            "longitude": 49.843715
+          },
+          "hidden": false,
+          "slug": "azfar-azadliq",
+          "name": "Azfar Azadlıq",
+          "capacity": 500,
+          "country": {
+            "alpha2": "AZ",
+            "alpha3": "AZE",
+            "name": "Azerbaijan",
+            "slug": "azerbaijan"
+          },
+          "id": 49728,
+          "stadium": {
+            "name": "Azfar Azadlıq",
+            "capacity": 500
+          }
+        },
+        "nameCode": "AUM",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "AZ",
+          "alpha3": "AZE",
+          "name": "Azerbaijan",
+          "slug": "azerbaijan"
+        },
+        "id": 1289621,
+        "fullName": "Şahin United MFC",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "createdByEditor": true,
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Baku Juniors",
+        "slug": "baku-juniors",
+        "shortName": "Baku Juniors",
+        "gender": "M",
+        "sport": {
+          "name": "Minifootball",
+          "slug": "minifootball",
+          "id": 109
+        },
+        "userCount": 32,
+        "manager": {
+          "name": "Zülfüqar İsmayılov",
+          "slug": "zulfuqar-ismayilov",
+          "shortName": "Z. İsmayılov",
+          "country": {
+            "alpha2": "AZ",
+            "alpha3": "AZE",
+            "name": "Azerbaijan",
+            "slug": "azerbaijan"
+          },
+          "id": 815989,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "زلفقار إسمائيلوف",
+              "ru": "Зульфугар Исмаилов"
+            },
+            "shortNameTranslation": {
+              "ru": "З. Исмаилов"
+            }
+          }
+        },
+        "nameCode": "BJU",
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "AZ",
+          "alpha3": "AZE",
+          "name": "Azerbaijan",
+          "slug": "azerbaijan"
+        },
+        "id": 1149943,
+        "fullName": "Baku Juniors",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "باكو جونيورز",
+            "ru": "Баку Юниорс"
+          },
+          "shortNameTranslation": {
+            "ar": "باكو جونيورز",
+            "ru": "Баку Юниорс"
+          }
+        },
+        "createdByEditor": true,
+        "timeActive": []
+      },
+      "homeScore": {},
+      "awayScore": {},
+      "time": {},
+      "changes": {
+        "changeTimestamp": 0
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17268351,
+      "slug": "sahin-united-mfc-baku-juniors",
+      "startTimestamp": 1791630000,
+      "defaultPeriodCount": 2,
+      "defaultPeriodLength": 20,
+      "defaultOvertimeLength": 5,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "createdByNickname": "Cup Baku",
+      "eventEditorName": "Cup Baku",
+      "eventEditor": {
+        "id": "69123af9b72fa9db8528936e",
+        "name": "Cup Baku"
+      },
+      "showTotoPromo": true,
+      "isEditor": true
+    },
+    "editorEntity": true
+  }
+}

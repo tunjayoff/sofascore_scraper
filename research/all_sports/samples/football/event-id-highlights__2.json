@@ -1,0 +1,113 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15534082/highlights",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:09+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "highlights": [
+      {
+        "incidentId": 364267989,
+        "title": "Croatia 1 - 0 Spain",
+        "subtitle": "17' Ivan Perišić",
+        "url": "https://www.youtube.com/watch?v=L0Gl9YDsXEw",
+        "thumbnailUrl": "https://i.ytimg.com/vi/L0Gl9YDsXEw/hqdefault.jpg",
+        "mediaType": 6,
+        "forCountries": [
+          "BA",
+          "HR",
+          "ME",
+          "MK",
+          "RS",
+          "SI"
+        ],
+        "doFollow": false,
+        "keyHighlight": false,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137543,
+        "createdAtTimestamp": 1791314414,
+        "sourceUrl": "https://www.youtube.com/watch?v=L0Gl9YDsXEw"
+      },
+      {
+        "incidentId": 364275228,
+        "title": "Croatia 1 - 1 Spain",
+        "subtitle": "61' Mikel Merino",
+        "url": "https://www.youtube.com/watch?v=1IFG0DryAt8",
+        "thumbnailUrl": "https://i.ytimg.com/vi/1IFG0DryAt8/hqdefault.jpg",
+        "mediaType": 6,
+        "forCountries": [
+          "BA",
+          "HR",
+          "ME",
+          "MK",
+          "RS",
+          "SI"
+        ],
+        "doFollow": false,
+        "keyHighlight": false,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137566,
+        "createdAtTimestamp": 1791317868,
+        "sourceUrl": "https://www.youtube.com/watch?v=1IFG0DryAt8"
+      },
+      {
+        "incidentId": 364277877,
+        "title": "Croatia 1 - 2 Spain",
+        "subtitle": "88' Mikel Merino",
+        "url": "https://www.youtube.com/watch?v=foaoLYbl7S4",
+        "thumbnailUrl": "https://i.ytimg.com/vi/foaoLYbl7S4/hqdefault.jpg",
+        "mediaType": 6,
+        "forCountries": [
+          "BA",
+          "HR",
+          "ME",
+          "MK",
+          "RS",
+          "SI"
+        ],
+        "doFollow": false,
+        "keyHighlight": false,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137574,
+        "createdAtTimestamp": 1791319472,
+        "sourceUrl": "https://www.youtube.com/watch?v=foaoLYbl7S4"
+      },
+      {
+        "title": "Croatia 1 - 2 Spain",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=ARPvC6C1psw",
+        "thumbnailUrl": "https://i.ytimg.com/vi/ARPvC6C1psw/hqdefault.jpg",
+        "mediaType": 6,
+        "doFollow": false,
+        "keyHighlight": true,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137629,
+        "createdAtTimestamp": 1791330620,
+        "sourceUrl": "https://www.youtube.com/watch?v=ARPvC6C1psw"
+      },
+      {
+        "title": "Croatia 1 - 2 Spain",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=1gXbpxiBXlM",
+        "thumbnailUrl": "https://i.ytimg.com/vi/1gXbpxiBXlM/hqdefault.jpg",
+        "mediaType": 6,
+        "forCountries": [
+          "ES"
+        ],
+        "doFollow": false,
+        "keyHighlight": false,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137709,
+        "createdAtTimestamp": 1791354599,
+        "sourceUrl": "https://www.youtube.com/watch?v=1gXbpxiBXlM"
+      }
+    ]
+  }
+}

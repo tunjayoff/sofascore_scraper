@@ -1,0 +1,44 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/15894/unique-tournament/2519/season/82375/statistics/overall",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:14:20+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/flavio-cobolli-adrian-mannarino/UrgsFyjc#id:17218921",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "statistics": {
+      "totalServeAttempts": 43,
+      "tiebreakLosses": 0,
+      "tiebreaksWon": 0,
+      "wins": 1,
+      "aces": 3,
+      "firstServePointsScored": 21,
+      "firstServePointsTotal": 23,
+      "firstServeTotal": 33,
+      "secondServePointsScored": 7,
+      "secondServePointsTotal": 9,
+      "secondServeTotal": 10,
+      "breakPointsScored": 1,
+      "breakPointsTotal": 1,
+      "opponentBreakPointsTotal": 0,
+      "opponentBreakPointsScored": 0,
+      "doubleFaults": 1,
+      "avgDoubleFaults": 1,
+      "firstServePercentage": 69.69696969697,
+      "firstServePointsWonPercentage": 91.304347826087,
+      "secondServePercentage": 90,
+      "secondServePointsWonPercentage": 70,
+      "avgAces": 3,
+      "breakPointsSavedConvertedPercentage": 100,
+      "tiebreakWinPercentage": 0,
+      "id": 106854,
+      "matches": 1,
+      "awardedMatches": 0,
+      "statisticsType": {
+        "sportSlug": "tennis",
+        "statisticsType": "team"
+      }
+    }
+  }
+}

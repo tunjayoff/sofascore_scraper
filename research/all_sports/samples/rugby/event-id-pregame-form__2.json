@@ -1,0 +1,34 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16534955/pregame-form",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:19:09+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/stade-francais-paris-montpellier-herault-rugby/epcipc#id:16534955",
+  "cache_control": "max-age=60, public, s-maxage=9600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "homeTeam": {
+      "position": 10,
+      "value": "10",
+      "form": [
+        "W",
+        "L",
+        "L",
+        "W",
+        "L"
+      ]
+    },
+    "awayTeam": {
+      "position": 5,
+      "value": "14",
+      "form": [
+        "L",
+        "W",
+        "W",
+        "L",
+        "W"
+      ]
+    },
+    "label": "Pts"
+  }
+}

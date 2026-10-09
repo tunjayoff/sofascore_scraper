@@ -1,0 +1,994 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/Nxbsgyb/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:07:58+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/atlanta-braves-los-angeles-dodgers/Nxbsgyb#id:17199139",
+  "cache_control": "max-age=3600, public",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "Nxbsgyb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Atlanta Braves",
+          "slug": "atlanta-braves",
+          "shortName": "Braves",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 38770,
+          "nameCode": "ATL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3656,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000066",
+            "secondary": "#000066",
+            "text": "#000066"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أتلانتا برافز",
+              "ru": "Атланта Брейвс"
+            },
+            "shortNameTranslation": {
+              "ar": "برافز",
+              "bn": "ব্রেভস",
+              "hi": "ब्रेव्स",
+              "ru": "Брейвс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 1,
+          "period2": 0,
+          "period3": 0,
+          "period4": 0,
+          "period5": 0,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 1,
+          "series": 1,
+          "innings": {
+            "inning1": {
+              "run": 1
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 1,
+            "hits": 3,
+            "errors": 2
+          }
+        },
+        "awayScore": {
+          "current": 4,
+          "display": 4,
+          "period1": 0,
+          "period2": 1,
+          "period3": 0,
+          "period4": 0,
+          "period5": 0,
+          "period6": 0,
+          "period7": 2,
+          "period8": 0,
+          "period9": 1,
+          "normaltime": 4,
+          "series": 3,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 1
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 2
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 1
+            }
+          },
+          "inningsBaseball": {
+            "run": 4,
+            "hits": 5,
+            "errors": 0
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791421449
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1791421513
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17212666,
+        "slug": "atlanta-braves-los-angeles-dodgers",
+        "previousLegEventId": 17199139,
+        "startTimestamp": 1791410400,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 5,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "Nxbsgyb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Atlanta Braves",
+          "slug": "atlanta-braves",
+          "shortName": "Braves",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 38770,
+          "nameCode": "ATL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3656,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000066",
+            "secondary": "#000066",
+            "text": "#000066"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أتلانتا برافز",
+              "ru": "Атланта Брейвс"
+            },
+            "shortNameTranslation": {
+              "ar": "برافز",
+              "bn": "ব্রেভস",
+              "hi": "ब्रेव्स",
+              "ru": "Брейвс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 0,
+          "period5": 1,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 1,
+          "series": 1,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 1
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 1,
+            "hits": 5,
+            "errors": 2
+          }
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 3,
+          "period5": 0,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 3,
+          "series": 2,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 3
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 3,
+            "hits": 8,
+            "errors": 0
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791335298
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1791335306
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17199139,
+        "slug": "atlanta-braves-los-angeles-dodgers",
+        "previousLegEventId": 17193371,
+        "startTimestamp": 1791324000,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 5,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "Nxbsgyb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Atlanta Braves",
+          "slug": "atlanta-braves",
+          "shortName": "Braves",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 38770,
+          "nameCode": "ATL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3656,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000066",
+            "secondary": "#000066",
+            "text": "#000066"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أتلانتا برافز",
+              "ru": "Атланта Брейвс"
+            },
+            "shortNameTranslation": {
+              "ar": "برافز",
+              "bn": "ব্রেভস",
+              "hi": "ब्रेव्स",
+              "ru": "Брейвс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 1,
+          "period5": 0,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 1,
+          "normaltime": 2,
+          "series": 1,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 1
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 1
+            }
+          },
+          "inningsBaseball": {
+            "run": 2,
+            "hits": 6,
+            "errors": 0
+          }
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 1,
+          "period2": 0,
+          "period3": 0,
+          "period4": 0,
+          "period5": 1,
+          "period6": 0,
+          "period7": 1,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 3,
+          "series": 1,
+          "innings": {
+            "inning1": {
+              "run": 1
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 1
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 1
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 3,
+            "hits": 6,
+            "errors": 0
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791170538
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1791170553
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17193371,
+        "slug": "atlanta-braves-los-angeles-dodgers",
+        "previousLegEventId": 17193370,
+        "startTimestamp": 1791158400,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 5,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 172
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17236047/odds/1/featured",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T00:11:02+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/alex-spellman-heneghan/lIedsKGMd#id:17236047",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

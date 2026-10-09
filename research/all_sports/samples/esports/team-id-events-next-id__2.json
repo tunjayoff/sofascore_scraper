@@ -1,0 +1,184 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/365258/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:28:29+00:00",
+  "page": "https://www.sofascore.com/tr/esports/match/aurora-gaming-1win/ifWcsBXud#id:17280906",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "ESL Pro League Playoffs",
+          "slug": "esl-pro-league-playoffs",
+          "category": {
+            "name": "Counter Strike",
+            "slug": "csgo",
+            "sport": {
+              "name": "E-sports",
+              "slug": "esports",
+              "id": 72
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1572,
+            "flag": "counter-strike",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كاونتر سترايك",
+                "hi": "काउंटर स्ट्राइक",
+                "bn": "কাউন্টার স্ট্রাইক",
+                "ru": "Counter Strike"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "ESL Pro League",
+            "slug": "esl-pro-league",
+            "category": {
+              "name": "Counter Strike",
+              "slug": "csgo",
+              "sport": {
+                "name": "E-sports",
+                "slug": "esports",
+                "id": 72
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1572,
+              "flag": "counter-strike",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كاونتر سترايك",
+                  "hi": "काउंटर स्ट्राइक",
+                  "bn": "কাউন্টার স্ট্রাইক",
+                  "ru": "Counter Strike"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1608,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16925,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "ইএসএল প্রো লীগ",
+                "hi": "ईएसएल प्रो लीग",
+                "ar": "دوري ESL المحترفين",
+                "ru": "Лига Pro ESL"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 94964,
+          "endTimestamp": 1791748800,
+          "startTimestamp": 1791534600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "ईएसएल प्रो लीग प्लेऑफ्स",
+              "ar": "تصفيات دوري المحترفين ESL",
+              "bn": "ইএসএল প্রো লীগ প্লেঅফ",
+              "ru": "Лига ESL Pro, Плей-офф"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Season 24 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 104235
+        },
+        "customId": "ifWcsBXud",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "1WIN",
+          "slug": "1win",
+          "gender": "M",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 183,
+          "nameCode": "1WIN",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 365258,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "Aurora Gaming",
+          "slug": "aurora-gaming",
+          "shortName": "Aurora Gaming",
+          "sport": {
+            "name": "E-sports",
+            "slug": "esports",
+            "id": 72
+          },
+          "userCount": 4045,
+          "nameCode": "AUR",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 424876,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "coverage": 92,
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17280906,
+        "bestOf": 3,
+        "eventType": "best_of",
+        "roundsInAHalf": 12,
+        "slug": "aurora-gaming-1win",
+        "startTimestamp": 1791534600,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ],
+    "hasNextPage": false
+  }
+}

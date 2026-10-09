@@ -1,0 +1,506 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/155911/season/99986/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:03:27+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/ok-napredak-odzak-ok-borac/hYvcsZtve#id:17063542",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 297416,
+        "type": "total",
+        "tournament": {
+          "name": "Premijer Liga",
+          "slug": "premijer-liga",
+          "category": {
+            "name": "Bosnia & Herzegovina",
+            "slug": "bosnia-herzegovina",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "id": 1050,
+            "flag": "bosnia-herzegovina",
+            "alpha2": "BA",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البوسنة والهرسك",
+                "ru": "Босния и Герцеговина"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Premijer Liga",
+            "slug": "premijer-liga",
+            "category": {
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-herzegovina",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "id": 1050,
+              "flag": "bosnia-herzegovina",
+              "alpha2": "BA",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البوسنة والهرسك",
+                  "ru": "Босния и Герцеговина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 22,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 27514,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الممتاز",
+                "ru": "Премьер-лига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 155911,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري الممتاز",
+              "ru": "Премиер Лига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "Premijer Liga 26/27",
+        "descriptions": [],
+        "rows": [
+          {
+            "id": 2501886,
+            "team": {
+              "name": "OK Tempo",
+              "slug": "ok-tempo",
+              "shortName": "Tempo",
+              "gender": "M",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 7,
+              "nameCode": "OTE",
+              "national": false,
+              "type": 0,
+              "id": 1128181,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أو كيه تيمبو",
+                  "ru": "ОК Темпо"
+                },
+                "shortNameTranslation": {
+                  "ar": "أ. تيمبو",
+                  "ru": "Темпо"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 1,
+            "matches": 1,
+            "wins": 1,
+            "losses": 0,
+            "scoresFor": 3,
+            "scoresAgainst": 0,
+            "points": 3,
+            "secondaryScoresFor": 75,
+            "secondaryScoresAgainst": 38,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2501881,
+            "team": {
+              "name": "OK Napredak Odžak",
+              "slug": "ok-napredak-odzak",
+              "shortName": "OK Napredak Odžak",
+              "gender": "M",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 102,
+              "nameCode": "NAP",
+              "national": false,
+              "type": 0,
+              "id": 550949,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أو كيه نابريدك أودجاك",
+                  "ru": "ОК Напредак Оджак"
+                },
+                "shortNameTranslation": {
+                  "ar": "أو كيه نابريدك أودجاك",
+                  "ru": "ОК Напредак Оджак"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 2,
+            "matches": 1,
+            "wins": 1,
+            "losses": 0,
+            "scoresFor": 3,
+            "scoresAgainst": 0,
+            "points": 3,
+            "secondaryScoresFor": 75,
+            "secondaryScoresAgainst": 49,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2501882,
+            "team": {
+              "name": "OK Kakanj 78",
+              "slug": "kakanj",
+              "shortName": "Kakanj",
+              "gender": "M",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 30,
+              "nameCode": "KAK",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 43340,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أو كيه كاكانج 78",
+                  "ru": "Какань"
+                },
+                "shortNameTranslation": {
+                  "ar": "كاكانج"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 3,
+            "matches": 1,
+            "wins": 1,
+            "losses": 0,
+            "scoresFor": 3,
+            "scoresAgainst": 0,
+            "points": 3,
+            "secondaryScoresFor": 83,
+            "secondaryScoresAgainst": 66,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2501885,
+            "team": {
+              "name": "OK Bosna Sarajevo",
+              "slug": "ok-bosna-sarajevo",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 39,
+              "nameCode": "BSA",
+              "national": false,
+              "type": 0,
+              "id": 338966,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أو كيه بوسنا سراييفو",
+                  "ru": "ОК Босна Сараево"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 4,
+            "matches": 1,
+            "wins": 1,
+            "losses": 0,
+            "scoresFor": 3,
+            "scoresAgainst": 0,
+            "points": 3,
+            "secondaryScoresFor": 75,
+            "secondaryScoresAgainst": 63,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2501888,
+            "team": {
+              "name": "HOK Domaljevac",
+              "slug": "hok-domaljevac",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 31,
+              "nameCode": "DOM",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 335876,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "HOK دومالييفاتس",
+                  "ru": "ХОК Домалевец"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 5,
+            "matches": 1,
+            "wins": 1,
+            "losses": 0,
+            "scoresFor": 3,
+            "scoresAgainst": 1,
+            "points": 3,
+            "secondaryScoresFor": 97,
+            "secondaryScoresAgainst": 71,
+            "scoreDiffFormatted": "+2"
+          },
+          {
+            "id": 2501887,
+            "team": {
+              "name": "OK Modriča Novoprom",
+              "slug": "modrica-optima",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 11,
+              "nameCode": "MOP",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 336952,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أو كيه مودريتشا نوفوبروم",
+                  "ru": "ОК Модрича Новопром"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 6,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "scoresFor": 1,
+            "scoresAgainst": 3,
+            "points": 0,
+            "secondaryScoresFor": 71,
+            "secondaryScoresAgainst": 97,
+            "scoreDiffFormatted": "-2"
+          },
+          {
+            "id": 2501884,
+            "team": {
+              "name": "OK Ilidža",
+              "slug": "ok-ilidza",
+              "shortName": "Ilidža",
+              "gender": "M",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 11,
+              "nameCode": "OIL",
+              "national": false,
+              "type": 0,
+              "id": 1128180,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أو كيه إيلدجا",
+                  "ru": "ОК Илиджа"
+                },
+                "shortNameTranslation": {
+                  "ar": "أ. إيلدجا",
+                  "ru": "Илиджа"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 7,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "scoresFor": 0,
+            "scoresAgainst": 3,
+            "points": 0,
+            "secondaryScoresFor": 63,
+            "secondaryScoresAgainst": 75,
+            "scoreDiffFormatted": "-3"
+          },
+          {
+            "id": 2501890,
+            "team": {
+              "name": "OK 7 Lukavac",
+              "slug": "ok-7-lukavac",
+              "shortName": "OK 7 Lukavac",
+              "gender": "M",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 2,
+              "nameCode": "O7L",
+              "national": false,
+              "type": 0,
+              "id": 1257542,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              }
+            },
+            "descriptions": [],
+            "position": 8,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "scoresFor": 0,
+            "scoresAgainst": 3,
+            "points": 0,
+            "secondaryScoresFor": 66,
+            "secondaryScoresAgainst": 83,
+            "scoreDiffFormatted": "-3"
+          },
+          {
+            "id": 2501883,
+            "team": {
+              "name": "OK Borac",
+              "slug": "ok-borac",
+              "gender": "M",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 23,
+              "nameCode": "BOR",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 302407,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أو كيه بوراك",
+                  "ru": "ОК Борац"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 9,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "scoresFor": 0,
+            "scoresAgainst": 3,
+            "points": 0,
+            "secondaryScoresFor": 49,
+            "secondaryScoresAgainst": 75,
+            "scoreDiffFormatted": "-3"
+          },
+          {
+            "id": 2501889,
+            "team": {
+              "name": "OK Gacko",
+              "slug": "ok-gacko",
+              "shortName": "OK Gacko",
+              "gender": "M",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "userCount": 1,
+              "nameCode": "OGA",
+              "national": false,
+              "type": 0,
+              "id": 1257543,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              }
+            },
+            "descriptions": [],
+            "position": 10,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "scoresFor": 0,
+            "scoresAgainst": 3,
+            "points": 0,
+            "secondaryScoresFor": 38,
+            "secondaryScoresAgainst": 75,
+            "scoreDiffFormatted": "-3"
+          }
+        ],
+        "updatedAtTimestamp": 1791316508
+      }
+    ]
+  }
+}

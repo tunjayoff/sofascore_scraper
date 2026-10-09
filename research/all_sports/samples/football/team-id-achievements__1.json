@@ -1,0 +1,475 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/42/achievements",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:12:22+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/arsenal-leeds-united/JsR#id:16363871",
+  "cache_control": "max-age=7200, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "totalTrophies": 50,
+    "achievements": [
+      {
+        "uniqueTournament": {
+          "name": "FA Cup",
+          "slug": "fa-cup",
+          "primaryColorHex": "#bc1821",
+          "secondaryColorHex": "#e60411",
+          "category": {
+            "name": "England",
+            "slug": "england",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 10,
+            "id": 1,
+            "flag": "england",
+            "alpha2": "EN",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إنجلترا",
+                "hi": "इंग्लैंड",
+                "bn": "ইংল্যান্ড",
+                "ru": "Англия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 179207,
+          "liveActivityEnabled": true,
+          "id": 19,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس الاتحاد الإنجليزي",
+              "bn": "এফএ কাপ",
+              "hi": "एफए कप",
+              "ru": "Кубок ФА"
+            },
+            "shortNameTranslation": {}
+          },
+          "competitionType": "domestic-cup",
+          "majorTrophy": true,
+          "hasAchievements": true
+        },
+        "trophiesWon": 14,
+        "seasons": [
+          {
+            "year": "19/20"
+          },
+          {
+            "year": "16/17"
+          },
+          {
+            "year": "14/15"
+          },
+          {
+            "year": "13/14"
+          },
+          {
+            "year": "04/05"
+          },
+          {
+            "year": "02/03"
+          },
+          {
+            "year": "01/02"
+          },
+          {
+            "year": "97/98"
+          },
+          {
+            "year": "92/93"
+          },
+          {
+            "year": "78/79"
+          },
+          {
+            "year": "70/71"
+          },
+          {
+            "year": "1949/1950"
+          },
+          {
+            "year": "1935/1936"
+          },
+          {
+            "year": "1929/1930"
+          }
+        ]
+      },
+      {
+        "uniqueTournament": {
+          "name": "EFL Cup",
+          "slug": "efl-cup",
+          "primaryColorHex": "#203e93",
+          "secondaryColorHex": "#bc1723",
+          "category": {
+            "name": "England",
+            "slug": "england",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 10,
+            "id": 1,
+            "flag": "england",
+            "alpha2": "EN",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إنجلترا",
+                "hi": "इंग्लैंड",
+                "bn": "ইংল্যান্ড",
+                "ru": "Англия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 163290,
+          "liveActivityEnabled": true,
+          "id": 21,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس رابطة الدوري الإنجليزي",
+              "bn": "ইএফএল কাপ",
+              "hi": "ईएफएल कप",
+              "ru": "Кубок EFL"
+            },
+            "shortNameTranslation": {}
+          },
+          "competitionType": "domestic-cup",
+          "majorTrophy": true,
+          "hasAchievements": true
+        },
+        "trophiesWon": 2,
+        "seasons": [
+          {
+            "year": "92/93"
+          },
+          {
+            "year": "86/87"
+          }
+        ]
+      },
+      {
+        "uniqueTournament": {
+          "name": "Premier League",
+          "slug": "premier-league",
+          "primaryColorHex": "#3c1c5a",
+          "secondaryColorHex": "#f80158",
+          "category": {
+            "name": "England",
+            "slug": "england",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 10,
+            "id": 1,
+            "flag": "england",
+            "alpha2": "EN",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إنجلترا",
+                "hi": "इंग्लैंड",
+                "bn": "ইংল্যান্ড",
+                "ru": "Англия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 1225789,
+          "liveActivityEnabled": true,
+          "id": 17,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري الإنجليزي الممتاز",
+              "hi": "प्रिमियर लीग",
+              "bn": "প্রিমিয়ার লীগ",
+              "ru": "Премьер-лига"
+            },
+            "shortNameTranslation": {}
+          },
+          "competitionType": "domestic-league",
+          "majorTrophy": true,
+          "hasAchievements": true
+        },
+        "trophiesWon": 14,
+        "seasons": [
+          {
+            "year": "25/26"
+          },
+          {
+            "year": "03/04",
+            "id": 1
+          },
+          {
+            "year": "01/02",
+            "id": 47
+          },
+          {
+            "year": "97/98",
+            "id": 51
+          },
+          {
+            "year": "90/91"
+          },
+          {
+            "year": "88/89"
+          },
+          {
+            "year": "70/71"
+          },
+          {
+            "year": "52/53"
+          },
+          {
+            "year": "1947/1948"
+          },
+          {
+            "year": "1937/1938"
+          },
+          {
+            "year": "1934/1935"
+          },
+          {
+            "year": "1933/1934"
+          },
+          {
+            "year": "1932/1933"
+          },
+          {
+            "year": "1930/1931"
+          }
+        ]
+      },
+      {
+        "uniqueTournament": {
+          "name": "Inter Cities Fairs Cup",
+          "slug": "inter-cities-fairs-cup",
+          "category": {
+            "name": "Europe",
+            "slug": "europe",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 19,
+            "id": 1465,
+            "flag": "europe",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوروبا",
+                "hi": "यूरोप",
+                "bn": "ইউরোপ",
+                "ru": "Европа"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 100,
+          "liveActivityEnabled": false,
+          "id": 29691,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس المعارض بين المدن",
+              "ru": "Кубок ярмарок межгородов"
+            },
+            "shortNameTranslation": {}
+          },
+          "competitionType": "international-cup",
+          "majorTrophy": true,
+          "hasAchievements": false
+        },
+        "trophiesWon": 1,
+        "seasons": [
+          {
+            "year": "69/70"
+          }
+        ]
+      },
+      {
+        "uniqueTournament": {
+          "name": "Cup Winners Cup",
+          "slug": "cup-winners-cup",
+          "category": {
+            "name": "Europe",
+            "slug": "europe",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 19,
+            "id": 1465,
+            "flag": "europe",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوروبا",
+                "hi": "यूरोप",
+                "bn": "ইউরোপ",
+                "ru": "Европа"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 207,
+          "liveActivityEnabled": false,
+          "id": 29690,
+          "displayInverseHomeAwayTeams": false,
+          "competitionType": "international-cup",
+          "majorTrophy": true,
+          "hasAchievements": false
+        },
+        "trophiesWon": 1,
+        "seasons": [
+          {
+            "year": "93/94"
+          }
+        ]
+      },
+      {
+        "uniqueTournament": {
+          "name": "Community Shield",
+          "slug": "community-shield",
+          "primaryColorHex": "#e4051f",
+          "secondaryColorHex": "#949fa4",
+          "category": {
+            "name": "England",
+            "slug": "england",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 10,
+            "id": 1,
+            "flag": "england",
+            "alpha2": "EN",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إنجلترا",
+                "hi": "इंग्लैंड",
+                "bn": "ইংল্যান্ড",
+                "ru": "Англия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 44723,
+          "liveActivityEnabled": false,
+          "id": 346,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "درع الاتحاد",
+              "bn": "কমিউনিটি শিল্ড",
+              "hi": "कम्युनिटी शील्ड",
+              "ru": "Кубок Сообщества"
+            },
+            "shortNameTranslation": {}
+          },
+          "competitionType": "domestic-cup",
+          "majorTrophy": false,
+          "hasAchievements": true
+        },
+        "trophiesWon": 18,
+        "seasons": [
+          {
+            "year": "26/27"
+          },
+          {
+            "year": "23/24"
+          },
+          {
+            "year": "20/21"
+          },
+          {
+            "year": "17/18"
+          },
+          {
+            "year": "15/16"
+          },
+          {
+            "year": "14/15"
+          },
+          {
+            "year": "04/05"
+          },
+          {
+            "year": "02/03"
+          },
+          {
+            "year": "99/00"
+          },
+          {
+            "year": "98/99"
+          },
+          {
+            "year": "91/92"
+          },
+          {
+            "year": "53/54"
+          },
+          {
+            "year": "1948/1949"
+          },
+          {
+            "year": "1938/1939"
+          },
+          {
+            "year": "1934/1935"
+          },
+          {
+            "year": "1933/1934"
+          },
+          {
+            "year": "1931/1932"
+          },
+          {
+            "year": "1930/1931"
+          }
+        ]
+      }
+    ],
+    "team": {
+      "name": "Arsenal",
+      "slug": "arsenal",
+      "shortName": "Arsenal",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 3802960,
+      "nameCode": "ARS",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "id": 42,
+      "teamColors": {
+        "primary": "#cc0000",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ارسنال",
+          "bn": "আর্সেনাল",
+          "hi": "आर्सेनल",
+          "ru": "Арсенал"
+        },
+        "shortNameTranslation": {}
+      }
+    }
+  }
+}

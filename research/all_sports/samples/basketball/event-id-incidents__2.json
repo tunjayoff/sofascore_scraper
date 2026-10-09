@@ -1,0 +1,69 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16832233/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:45+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/brooklyn-nets-charlotte-hornets/FtbsLtb#id:16832233",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "FT",
+        "homeScore": 90,
+        "awayScore": 124,
+        "isLive": false,
+        "period": "period4",
+        "time": 48,
+        "addedTime": 999,
+        "timeSeconds": 2880,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 720
+      },
+      {
+        "text": "Q3",
+        "homeScore": 73,
+        "awayScore": 92,
+        "isLive": false,
+        "period": "period3",
+        "time": 36,
+        "addedTime": 999,
+        "timeSeconds": 2160,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 720
+      },
+      {
+        "text": "Q2",
+        "homeScore": 52,
+        "awayScore": 56,
+        "isLive": false,
+        "period": "period2",
+        "time": 24,
+        "addedTime": 999,
+        "timeSeconds": 1440,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 720
+      },
+      {
+        "text": "Q1",
+        "homeScore": 31,
+        "awayScore": 33,
+        "isLive": false,
+        "period": "period1",
+        "time": 12,
+        "addedTime": 999,
+        "timeSeconds": 720,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 720
+      }
+    ]
+  }
+}

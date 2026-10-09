@@ -1,0 +1,743 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/1785/season/101648/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:20:37+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/vinumitaly-petrarca-active-network/rXUdsloae#id:16904548",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 306752,
+        "type": "total",
+        "tournament": {
+          "name": "Serie A",
+          "slug": "serie-a",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "id": 185,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "ইতালি",
+                "hi": "इटली",
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A",
+            "slug": "serie-a",
+            "primaryColorHex": "#105da7",
+            "secondaryColorHex": "#009f42",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "id": 185,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "ইতালি",
+                  "hi": "इटली",
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1205,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 595,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الإيطالي أ",
+                "hi": "सीरी ए",
+                "bn": "সিরি আ",
+                "ru": "Серия А"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 6,
+          "isGroup": false,
+          "isLive": false,
+          "id": 1785,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "सीरी ए",
+              "ar": "الدوري الإيطالي",
+              "bn": "সিরি আ",
+              "ru": "Серия А"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "Serie A 26/27",
+        "descriptions": [],
+        "rows": [
+          {
+            "id": 2591276,
+            "team": {
+              "name": "Meta Catania",
+              "slug": "meta-catania",
+              "shortName": "Meta Catania",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 890,
+              "nameCode": "MEC",
+              "national": false,
+              "type": 0,
+              "id": 297022,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ميتا كاتانيا",
+                  "bn": "মেটা ক্যাটানিয়া",
+                  "hi": "मेटा कैटानिया",
+                  "ru": "Мета"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 19,
+            "scoresAgainst": 1,
+            "points": 12,
+            "scoreDiffFormatted": "+18"
+          },
+          {
+            "id": 2591275,
+            "team": {
+              "name": "L84",
+              "slug": "l84",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 361,
+              "nameCode": "L84",
+              "national": false,
+              "type": 0,
+              "id": 374231,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "L84",
+                  "bn": "এল84",
+                  "hi": "एल84",
+                  "ru": "Л84"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 18,
+            "scoresAgainst": 9,
+            "points": 12,
+            "scoreDiffFormatted": "+9"
+          },
+          {
+            "id": 2591277,
+            "team": {
+              "name": "Napoli Futsal",
+              "slug": "napoli-futsal",
+              "shortName": "Napoli",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 1400,
+              "nameCode": "NAP",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 26142,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "نابولي فوتسال",
+                  "ru": "Наполи"
+                },
+                "shortNameTranslation": {
+                  "ar": "نابولي",
+                  "bn": "নাপোলি",
+                  "hi": "नेपोली"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 3,
+            "matches": 4,
+            "wins": 3,
+            "losses": 0,
+            "draws": 1,
+            "scoresFor": 25,
+            "scoresAgainst": 12,
+            "points": 10,
+            "scoreDiffFormatted": "+13"
+          },
+          {
+            "id": 2591279,
+            "team": {
+              "name": "Sporting Sala Consilina",
+              "slug": "sporting-sala-consilina",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 100,
+              "nameCode": "SPO",
+              "national": false,
+              "type": 0,
+              "id": 487368,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سبورتنج سالا كونسيلينا",
+                  "bn": "স্পোর্টিং সালা কনসিলিনা",
+                  "hi": "स्पोर्टिंग साला कंसिलिना",
+                  "ru": "Спортинг Сала Консилина"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 4,
+            "matches": 4,
+            "wins": 3,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 12,
+            "scoresAgainst": 9,
+            "points": 9,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2591271,
+            "team": {
+              "name": "Came Dosson",
+              "slug": "came-dosson",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 157,
+              "nameCode": "CTR",
+              "national": false,
+              "type": 0,
+              "id": 234235,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كامي دوسون",
+                  "bn": "এলো ডসন",
+                  "hi": "काम डोस्सोन",
+                  "ru": "Каме Доссон"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 5,
+            "matches": 4,
+            "wins": 2,
+            "losses": 1,
+            "draws": 1,
+            "scoresFor": 11,
+            "scoresAgainst": 7,
+            "points": 7,
+            "scoreDiffFormatted": "+4"
+          },
+          {
+            "id": 2591267,
+            "team": {
+              "name": "S.S.D. Benevento 5",
+              "slug": "asd-benevento-5",
+              "shortName": "Benevento 5",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 107,
+              "nameCode": "AB5",
+              "national": false,
+              "type": 0,
+              "id": 500744,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أ.س.د. بينيفينتو 5",
+                  "ru": "С.С.Д. Беневенто 5"
+                },
+                "shortNameTranslation": {
+                  "ar": "بينيفينتو 5",
+                  "ru": "Беневенто 5"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 6,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 12,
+            "scoresAgainst": 12,
+            "points": 6,
+            "scoreDiffFormatted": "0"
+          },
+          {
+            "id": 2591272,
+            "team": {
+              "name": "Feldi Eboli",
+              "slug": "feldi-eboli",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 392,
+              "nameCode": "FEE",
+              "national": false,
+              "type": 0,
+              "id": 266368,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فيلدي إيبولي",
+                  "bn": "ফেলদি এবোলি",
+                  "hi": "फेल्दी एबोली",
+                  "ru": "Фелди Эболи"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 7,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 11,
+            "scoresAgainst": 12,
+            "points": 6,
+            "scoreDiffFormatted": "-1"
+          },
+          {
+            "id": 2591268,
+            "team": {
+              "name": "Roma 1927 Futsal",
+              "slug": "olimpus-roma",
+              "shortName": "Roma 1927 Futsal",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 325,
+              "nameCode": "OLI",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 395555,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أوليمبوس روما",
+                  "bn": "অলিম্পাস রোমা",
+                  "hi": "ओलिम्पस रोमा",
+                  "ru": "Рома 1927 Футзал"
+                },
+                "shortNameTranslation": {
+                  "ru": "Рома 1927 Футзал"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 8,
+            "matches": 4,
+            "wins": 1,
+            "losses": 2,
+            "draws": 1,
+            "scoresFor": 10,
+            "scoresAgainst": 15,
+            "points": 4,
+            "scoreDiffFormatted": "-5"
+          },
+          {
+            "id": 2591270,
+            "team": {
+              "name": "Calcio A 5 Giovinazzo",
+              "slug": "calcio-a-5-giovinazzo",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 29,
+              "nameCode": "CAL",
+              "national": false,
+              "type": 0,
+              "id": 1265960,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 9,
+            "matches": 4,
+            "wins": 1,
+            "losses": 2,
+            "draws": 1,
+            "scoresFor": 6,
+            "scoresAgainst": 16,
+            "points": 4,
+            "scoreDiffFormatted": "-10"
+          },
+          {
+            "id": 2591274,
+            "team": {
+              "name": "A.S.D. Bulldog Capurso",
+              "slug": "asd-bulldog-capurso",
+              "shortName": "Bulldog Capurso",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 68,
+              "nameCode": "ABC",
+              "national": false,
+              "type": 0,
+              "id": 500743,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أ.س.د. بولدوج كابورسو",
+                  "ru": "А.С.Д. Буллдог Капурсо"
+                },
+                "shortNameTranslation": {
+                  "ar": "بولدوج كابورسو",
+                  "ru": "Буллдог Капурсо"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 10,
+            "matches": 4,
+            "wins": 1,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 19,
+            "scoresAgainst": 26,
+            "points": 3,
+            "scoreDiffFormatted": "-7"
+          },
+          {
+            "id": 2591273,
+            "team": {
+              "name": "Fortitudo Pomezia",
+              "slug": "fortitudo-pomezia",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 43,
+              "nameCode": "FOR",
+              "national": false,
+              "type": 0,
+              "id": 447831,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فورتيتودو بوميزيا",
+                  "bn": "ফোর্টিটুডো পোমেজিয়া",
+                  "hi": "फोर्टिटुडो पोमेज़िया",
+                  "ru": "Фортидудо Помеция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 11,
+            "matches": 4,
+            "wins": 0,
+            "losses": 2,
+            "draws": 2,
+            "scoresFor": 8,
+            "scoresAgainst": 11,
+            "points": 2,
+            "scoreDiffFormatted": "-3"
+          },
+          {
+            "id": 2591269,
+            "team": {
+              "name": "ASD Sandro Abate",
+              "slug": "asd-sandro-abate",
+              "shortName": "Sandro Abate",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 288,
+              "nameCode": "ASD",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 327739,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيه إس دي ساندرو أباتي",
+                  "ru": "АСД Сандро Абате"
+                },
+                "shortNameTranslation": {
+                  "ar": "ساندرو أباتي",
+                  "bn": "স্যান্ড্রো আবেতে",
+                  "hi": "सैंड्रो अबेटे",
+                  "ru": "Сандро Абате"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 12,
+            "matches": 4,
+            "wins": 0,
+            "losses": 2,
+            "draws": 2,
+            "scoresFor": 9,
+            "scoresAgainst": 16,
+            "points": 2,
+            "scoreDiffFormatted": "-7"
+          },
+          {
+            "id": 2591266,
+            "team": {
+              "name": "Active Network",
+              "slug": "active-network",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 53,
+              "nameCode": "ACT",
+              "national": false,
+              "type": 0,
+              "id": 487367,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أكتيف ناتوورك",
+                  "bn": "এক্টিভ নেটওয়ার্ক",
+                  "hi": "एक्टिव नेटवर्क",
+                  "ru": "Активная Сеть"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 13,
+            "matches": 4,
+            "wins": 0,
+            "losses": 3,
+            "draws": 1,
+            "scoresFor": 7,
+            "scoresAgainst": 12,
+            "points": 1,
+            "scoreDiffFormatted": "-5"
+          },
+          {
+            "id": 2591278,
+            "team": {
+              "name": "Vinumitaly Petrarca",
+              "slug": "vinumitaly-petrarca",
+              "shortName": "Vinumitaly Petrarca",
+              "gender": "M",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "userCount": 76,
+              "nameCode": "VPE",
+              "national": false,
+              "type": 0,
+              "id": 500711,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فينوميتالي بتراركا",
+                  "bn": "ভিনুমিতালি পেট্রারকা",
+                  "hi": "विनुमइटली पेट्रार्का",
+                  "ru": "Винумиталия Петрарка"
+                },
+                "shortNameTranslation": {
+                  "ru": "Винумиталия"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 14,
+            "matches": 4,
+            "wins": 0,
+            "losses": 3,
+            "draws": 1,
+            "scoresFor": 6,
+            "scoresAgainst": 15,
+            "points": 1,
+            "scoreDiffFormatted": "-9"
+          }
+        ],
+        "updatedAtTimestamp": 1791052881
+      }
+    ]
+  }
+}

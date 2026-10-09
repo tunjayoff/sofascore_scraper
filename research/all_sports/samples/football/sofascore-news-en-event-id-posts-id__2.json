@@ -1,0 +1,83 @@
+{
+  "url": "https://www.sofascore.com/api/v1/sofascore-news/en/event/15534082/posts/1",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:53:48+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=60, public, s-maxage=43200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": [
+    {
+      "id": 152189,
+      "slug": "croatia-1-2-spain-merinos-brace-turns-group-3-on-its-head",
+      "date": "2026-10-06T22:44:08",
+      "title": "Croatia 1-2 Spain: Merino’s brace turns Group 3 on its head",
+      "excerpt": "Spain came from behind to win 2-1 in Split, with Mikel Merino’s brace overturning Ivan Perišić’s opener. We break down xG, passing and key moments.",
+      "imageUrl": "https://files.sofascore.com/news/2026/10/imago1084215745h-1024x683.jpg",
+      "tags": [
+        {
+          "id": 69557,
+          "slug": "croatia-1-2-spain",
+          "name": "Croatia 1-2 Spain"
+        },
+        {
+          "id": 86,
+          "slug": "football",
+          "name": "Football"
+        },
+        {
+          "id": 6178,
+          "slug": "nations-league",
+          "name": "Nations League"
+        }
+      ],
+      "categories": [
+        {
+          "id": 17523,
+          "slug": "football",
+          "name": "Football",
+          "level": 2
+        },
+        {
+          "id": 17467,
+          "slug": "sport",
+          "name": "Sport",
+          "level": 1
+        }
+      ]
+    },
+    {
+      "id": 151726,
+      "slug": "croatia-vs-spain-preview-form-h2h-sofascore-rating",
+      "date": "2026-10-06T07:30:00",
+      "title": "Croatia vs Spain preview: form, H2H, Sofascore Rating",
+      "excerpt": "Croatia face Spain at Poljud in the UEFA Nations League. Form trends, head-to-head, team news and the standout Sofascore Rating leaders ahead of kickoff.",
+      "imageUrl": "https://files.sofascore.com/news/2026/10/imago1065007324h-1024x683.jpg",
+      "tags": [
+        {
+          "id": 69114,
+          "slug": "croatia-vs-spain",
+          "name": "Croatia vs Spain"
+        },
+        {
+          "id": 86,
+          "slug": "football",
+          "name": "Football"
+        },
+        {
+          "id": 6178,
+          "slug": "nations-league",
+          "name": "Nations League"
+        }
+      ],
+      "categories": [
+        {
+          "id": 17523,
+          "slug": "football",
+          "name": "Football",
+          "level": 2
+        }
+      ]
+    }
+  ]
+}

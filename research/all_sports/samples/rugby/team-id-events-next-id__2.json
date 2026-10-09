@@ -1,0 +1,597 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/5758/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:19:29+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/stade-francais-paris-montpellier-herault-rugby/epcipc#id:16534955",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "France - Top 14",
+          "slug": "france-top-14",
+          "category": {
+            "name": "Rugby Union",
+            "slug": "rugby-union",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "priority": 0,
+            "country": {},
+            "id": 82,
+            "flag": "rugby-union",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "रग्बी यूनियन",
+                "bn": "রাগবি ইউনিয়ন",
+                "ru": "Регби-союз"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "France - Top 14",
+            "slug": "france-top-14",
+            "primaryColorHex": "#c9a752",
+            "secondaryColorHex": "#705b2c",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "country": {},
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4969,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 420,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فرنسا - توب 14",
+                "hi": "फ्रांस - टॉप 14",
+                "bn": "ফ্রান্স - টপ 14",
+                "ru": "Франция — Топ 14"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 1600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "फ्रांस - टॉप 14",
+              "ar": "فرنسا - أفضل 14 فريقًا",
+              "bn": "ফ্রান্স - টপ 14",
+              "ru": "Франция — Топ 14"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Top 14 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 98426
+        },
+        "roundInfo": {
+          "round": 6
+        },
+        "customId": "epcipc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Stade Français Paris",
+          "slug": "stade-francais-paris",
+          "shortName": "Paris",
+          "gender": "M",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "userCount": 1982,
+          "nameCode": "FPA",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 5758,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ستاد فرانسوا باريس",
+              "ru": "Стэйд Франсе Париж"
+            },
+            "shortNameTranslation": {
+              "ar": "باريس",
+              "bn": "প্যারিস",
+              "hi": "पेरिस"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Montpellier Hérault Rugby",
+          "slug": "montpellier-herault-rugby",
+          "shortName": "Montpellier",
+          "gender": "M",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "userCount": 1543,
+          "nameCode": "MON",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 5754,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مونبلييه هيرولت رغبي",
+              "ru": "Монпелье Эро"
+            },
+            "shortNameTranslation": {
+              "ar": "مونبلييه",
+              "bn": "মন্টপেলিয়ার",
+              "hi": "मॉंटपेलीयर"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16534955,
+        "slug": "stade-francais-paris-montpellier-herault-rugby",
+        "startTimestamp": 1791635400,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "European Rugby Champions Cup, Pool 4",
+          "slug": "european-rugby-champions-cup-pool-4",
+          "category": {
+            "name": "Rugby Union",
+            "slug": "rugby-union",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "priority": 0,
+            "country": {},
+            "id": 82,
+            "flag": "rugby-union",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "रग्बी यूनियन",
+                "bn": "রাগবি ইউনিয়ন",
+                "ru": "Регби-союз"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "European Rugby Champions Cup",
+            "slug": "european-rugby-champions-cup",
+            "primaryColorHex": "#00549f",
+            "secondaryColorHex": "#ff2b00",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "country": {},
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4862,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 401,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كأس أبطال أوروبا للرغبي",
+                "bn": "ইউরোপীয়ান রাগবি চ্যাম্পিয়ন্স কাপ",
+                "hi": "यूरोपियन रग्बी चैंपियंस कप",
+                "ru": "Кубок чемпионов Европы по регби"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 118595,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كأس أبطال أوروبا للرغبي، المجموعة 4",
+              "bn": "ইউরোপীয়ান রাগবি চ্যাম্পিয়ন্স কাপ, পুল 4",
+              "hi": "यूरोपीयन रग्बी चैंपियंस कप, पूल 4",
+              "ru": "Кубок чемпионов по регби Европы, Группа 4"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "European Rugby Champions Cup 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 98417
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "ipcsbkYb",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Vodacom Bulls XV",
+          "slug": "bulls",
+          "shortName": "Bulls",
+          "gender": "M",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "userCount": 2233,
+          "nameCode": "BUL",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "ZA",
+            "alpha3": "ZAF",
+            "name": "South Africa",
+            "slug": "south-africa"
+          },
+          "id": 245501,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بولز",
+              "bn": "বুলস",
+              "hi": "बुल्स",
+              "ru": "Булз"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Stade Français Paris",
+          "slug": "stade-francais-paris",
+          "shortName": "Paris",
+          "gender": "M",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "userCount": 1982,
+          "nameCode": "FPA",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 5758,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ستاد فرانسوا باريس",
+              "ru": "Стэйд Франсе Париж"
+            },
+            "shortNameTranslation": {
+              "ar": "باريس",
+              "bn": "প্যারিস",
+              "hi": "पेरिस"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16527944,
+        "slug": "bulls-stade-francais-paris",
+        "startTimestamp": 1792238400,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "France - Top 14",
+          "slug": "france-top-14",
+          "category": {
+            "name": "Rugby Union",
+            "slug": "rugby-union",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "priority": 0,
+            "country": {},
+            "id": 82,
+            "flag": "rugby-union",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "रग्बी यूनियन",
+                "bn": "রাগবি ইউনিয়ন",
+                "ru": "Регби-союз"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "France - Top 14",
+            "slug": "france-top-14",
+            "primaryColorHex": "#c9a752",
+            "secondaryColorHex": "#705b2c",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "country": {},
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4969,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 420,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فرنسا - توب 14",
+                "hi": "फ्रांस - टॉप 14",
+                "bn": "ফ্রান্স - টপ 14",
+                "ru": "Франция — Топ 14"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 1600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "फ्रांस - टॉप 14",
+              "ar": "فرنسا - أفضل 14 فريقًا",
+              "bn": "ফ্রান্স - টপ 14",
+              "ru": "Франция — Топ 14"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Top 14 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 98426
+        },
+        "roundInfo": {
+          "round": 7
+        },
+        "customId": "cpcsipc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Castres Olympique",
+          "slug": "castres-olympique",
+          "shortName": "Castres",
+          "gender": "M",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "userCount": 894,
+          "nameCode": "CAS",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 5752,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كاستر أوليمبيك",
+              "ru": "Кастрес Олимпик"
+            },
+            "shortNameTranslation": {
+              "ar": "كاستر",
+              "bn": "ক্যাস্ট্রেস",
+              "hi": "कास्त्रेस"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Stade Français Paris",
+          "slug": "stade-francais-paris",
+          "shortName": "Paris",
+          "gender": "M",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "userCount": 1982,
+          "nameCode": "FPA",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 5758,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ستاد فرانسوا باريس",
+              "ru": "Стэйд Франсе Париж"
+            },
+            "shortNameTranslation": {
+              "ar": "باريس",
+              "bn": "প্যারিস",
+              "hi": "पेरिस"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16534958,
+        "slug": "stade-francais-paris-castres-olympique",
+        "startTimestamp": 1792852500,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 22
+      }
+    ],
+    "hasNextPage": false
+  }
+}

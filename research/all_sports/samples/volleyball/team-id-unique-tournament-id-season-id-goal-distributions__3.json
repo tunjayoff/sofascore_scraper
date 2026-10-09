@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/273631/unique-tournament/24470/season/104927/goal-distributions",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T00:23:19+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/elbasani-volleyball-studenti-tirana/mlrsGxjc#id:17259128",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

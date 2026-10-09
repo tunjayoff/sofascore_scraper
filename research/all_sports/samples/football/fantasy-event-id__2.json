@@ -1,0 +1,1706 @@
+{
+  "url": "https://www.sofascore.com/api/v1/fantasy/event/15534082",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:14+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=60, public, s-maxage=300",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "competitionId": 172,
+    "eventStatusType": "finished",
+    "playerScores": {
+      "964994": 3,
+      "190419": 1,
+      "136710": 4,
+      "38710": 4,
+      "1405212": 2,
+      "927407": 1,
+      "37318": 0,
+      "1091303": 1,
+      "67647": 0,
+      "190437": 1,
+      "827668": null,
+      "949156": 0,
+      "1103333": null,
+      "357596": 2,
+      "995773": 0,
+      "1019321": 2,
+      "954836": 3,
+      "1066802": 0,
+      "835678": 0,
+      "789234": null,
+      "974581": null,
+      "243713": 0,
+      "943212": 0,
+      "1402912": 4,
+      "992587": 5,
+      "1153270": 1,
+      "827606": 4,
+      "789071": 6,
+      "1402913": 4,
+      "1176744": 0,
+      "794939": 4,
+      "823622": 1,
+      "592010": 13,
+      "581310": 0,
+      "784655": null,
+      "1085400": null,
+      "913654": null,
+      "876214": null,
+      "841947": null,
+      "1167818": 0,
+      "787751": 0,
+      "177177": null,
+      "855833": null,
+      "796206": 4,
+      "1094106": 3,
+      "15466": 2,
+      "1090019": 1,
+      "1145642": -1,
+      "966837": 5,
+      "910031": 1,
+      "149734": 5,
+      "797291": 8,
+      "984624": 1,
+      "845291": 0,
+      "1392592": 0,
+      "847467": 0
+    },
+    "playerStatistics": [
+      {
+        "playerId": 15466,
+        "fantasyPlayerId": 101995,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.9"
+          },
+          {
+            "key": "yellowCard",
+            "value": "1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "66"
+          },
+          {
+            "key": "longBalls",
+            "value": "2/2 (100.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "passes",
+            "value": "24/27 (88.9%)"
+          },
+          {
+            "key": "keyPass",
+            "value": "2"
+          },
+          {
+            "key": "wonContest",
+            "value": "1/1 (100.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 38710,
+        "fantasyPlayerId": 102015,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.3"
+          },
+          {
+            "key": "goals",
+            "value": "1"
+          },
+          {
+            "key": "yellowCard",
+            "value": "1"
+          },
+          {
+            "key": "secondYellow",
+            "value": "1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "79"
+          },
+          {
+            "key": "longBalls",
+            "value": "2/2 (100.0%)"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "1/6 (16.7%)"
+          },
+          {
+            "key": "passes",
+            "value": "12/17 (70.6%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "2"
+          },
+          {
+            "key": "keyPass",
+            "value": "1"
+          },
+          {
+            "key": "wonContest",
+            "value": "1/1 (100.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 136710,
+        "fantasyPlayerId": 102013,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.6"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "88"
+          },
+          {
+            "key": "duels",
+            "value": "3/6 (50.0%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "17/21 (81.0%)"
+          },
+          {
+            "key": "keyPass",
+            "value": "2"
+          },
+          {
+            "key": "wonContest",
+            "value": "0/1 (0.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 149734,
+        "fantasyPlayerId": 102053,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "7.5"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "1"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/2 (50.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "4/5 (80.0%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "2"
+          },
+          {
+            "key": "passes",
+            "value": "126/132 (95.5%)"
+          },
+          {
+            "key": "keyPass",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "playerId": 190419,
+        "fantasyPlayerId": 101993,
+        "fantasyPlayerPosition": "G",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "5.7"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "2"
+          },
+          {
+            "key": "savedShotsFromInsideTheBox",
+            "value": "1"
+          },
+          {
+            "key": "punchesAndGoodHighClaims",
+            "value": "4"
+          },
+          {
+            "key": "runsOut",
+            "value": "1"
+          },
+          {
+            "key": "longBalls",
+            "value": "4/22 (18.2%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "11/30 (36.7%)"
+          }
+        ]
+      },
+      {
+        "playerId": 190437,
+        "fantasyPlayerId": 101994,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "minutesPlayed",
+            "value": "2"
+          },
+          {
+            "key": "passes",
+            "value": "2/3 (66.7%)"
+          }
+        ]
+      },
+      {
+        "playerId": 357596,
+        "fantasyPlayerId": 102005,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.8"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "71"
+          },
+          {
+            "key": "totalClearances",
+            "value": "2"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "2/9 (22.2%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "12/16 (75.0%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "3"
+          },
+          {
+            "key": "keyPass",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 592010,
+        "fantasyPlayerId": 102066,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "8.3"
+          },
+          {
+            "key": "goals",
+            "value": "2"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "45"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "duels",
+            "value": "1/3 (33.3%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "14/19 (73.7%)"
+          }
+        ]
+      },
+      {
+        "playerId": 789071,
+        "fantasyPlayerId": 102047,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.9"
+          },
+          {
+            "key": "assists",
+            "value": "1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "71"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "wonTackles",
+            "value": "2"
+          },
+          {
+            "key": "duels",
+            "value": "5/7 (71.4%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "23/28 (82.1%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "1"
+          },
+          {
+            "key": "keyPass",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 794939,
+        "fantasyPlayerId": 102062,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.5"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "1"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "4/6 (66.7%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "2"
+          },
+          {
+            "key": "passes",
+            "value": "55/59 (93.2%)"
+          },
+          {
+            "key": "offsides",
+            "value": "1"
+          },
+          {
+            "key": "keyPass",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "playerId": 796206,
+        "fantasyPlayerId": 102016,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.7"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "longBalls",
+            "value": "3/5 (60.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "3"
+          },
+          {
+            "key": "blockedShots",
+            "value": "1"
+          },
+          {
+            "key": "interceptions",
+            "value": "3"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "3/8 (37.5%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "23/30 (76.7%)"
+          },
+          {
+            "key": "wonContest",
+            "value": "0/1 (0.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 797291,
+        "fantasyPlayerId": 102050,
+        "fantasyPlayerPosition": "G",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "7.3"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "1"
+          },
+          {
+            "key": "savedShotsFromInsideTheBox",
+            "value": "4"
+          },
+          {
+            "key": "runsOut",
+            "value": "2"
+          },
+          {
+            "key": "longBalls",
+            "value": "3/4 (75.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "21/22 (95.5%)"
+          }
+        ]
+      },
+      {
+        "playerId": 823622,
+        "fantasyPlayerId": 102048,
+        "fantasyPlayerPosition": "F",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "duels",
+            "value": "0/1 (0.0%)"
+          },
+          {
+            "key": "passes",
+            "value": "11/21 (52.4%)"
+          }
+        ]
+      },
+      {
+        "playerId": 827606,
+        "fantasyPlayerId": 102058,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "7.1"
+          },
+          {
+            "key": "yellowCard",
+            "value": "1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "71"
+          },
+          {
+            "key": "longBalls",
+            "value": "4/4 (100.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "2/3 (66.7%)"
+          },
+          {
+            "key": "passes",
+            "value": "87/92 (94.6%)"
+          },
+          {
+            "key": "wonContest",
+            "value": "1/1 (100.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 910031,
+        "fantasyPlayerId": 102052,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.8"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "45"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "1/3 (33.3%)"
+          },
+          {
+            "key": "passes",
+            "value": "24/27 (88.9%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 927407,
+        "fantasyPlayerId": 102000,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.9"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "2"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/2 (50.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "4"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "26/27 (96.3%)"
+          },
+          {
+            "key": "keyPass",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 954836,
+        "fantasyPlayerId": 102002,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.6"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "2"
+          },
+          {
+            "key": "longBalls",
+            "value": "3/4 (75.0%)"
+          },
+          {
+            "key": "interceptions",
+            "value": "2"
+          },
+          {
+            "key": "duels",
+            "value": "3/3 (100.0%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "38/43 (88.4%)"
+          },
+          {
+            "key": "wonContest",
+            "value": "1/1 (100.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 964994,
+        "fantasyPlayerId": 102012,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.5"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "2"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "3"
+          },
+          {
+            "key": "blockedShots",
+            "value": "1"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "wonTackles",
+            "value": "3"
+          },
+          {
+            "key": "duels",
+            "value": "3/6 (50.0%)"
+          },
+          {
+            "key": "passes",
+            "value": "22/25 (88.0%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 966837,
+        "fantasyPlayerId": 102049,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "7"
+          },
+          {
+            "key": "assists",
+            "value": "1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "19"
+          },
+          {
+            "key": "longBalls",
+            "value": "0/1 (0.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "16/18 (88.9%)"
+          },
+          {
+            "key": "offsides",
+            "value": "1"
+          },
+          {
+            "key": "keyPass",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 984624,
+        "fantasyPlayerId": 102046,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "minutesPlayed",
+            "value": "3"
+          },
+          {
+            "key": "passes",
+            "value": "1/2 (50.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 992587,
+        "fantasyPlayerId": 102059,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "7.3"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "87"
+          },
+          {
+            "key": "longBalls",
+            "value": "2/3 (66.7%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "5/9 (55.6%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "2"
+          },
+          {
+            "key": "passes",
+            "value": "100/111 (90.1%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "1"
+          },
+          {
+            "key": "keyPass",
+            "value": "1"
+          },
+          {
+            "key": "wonContest",
+            "value": "1/2 (50.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 995773,
+        "fantasyPlayerId": 102363,
+        "fantasyPlayerPosition": "F",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.3"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "25"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "0/2 (0.0%)"
+          },
+          {
+            "key": "passes",
+            "value": "1/2 (50.0%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 1019321,
+        "fantasyPlayerId": 102006,
+        "fantasyPlayerPosition": "F",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.8"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "65"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/2 (50.0%)"
+          },
+          {
+            "key": "duels",
+            "value": "3/7 (42.9%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "2"
+          },
+          {
+            "key": "passes",
+            "value": "4/10 (40.0%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "playerId": 1090019,
+        "fantasyPlayerId": 102010,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.6"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "19"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "blockedShots",
+            "value": "1"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "2/3 (66.7%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "2"
+          },
+          {
+            "key": "passes",
+            "value": "2/2 (100.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 1091303,
+        "fantasyPlayerId": 101997,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.5"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "24"
+          },
+          {
+            "key": "longBalls",
+            "value": "0/1 (0.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "passes",
+            "value": "11/13 (84.6%)"
+          }
+        ]
+      },
+      {
+        "playerId": 1094106,
+        "fantasyPlayerId": 102067,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.6"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "1"
+          },
+          {
+            "key": "longBalls",
+            "value": "0/2 (0.0%)"
+          },
+          {
+            "key": "blockedShots",
+            "value": "1"
+          },
+          {
+            "key": "interceptions",
+            "value": "1"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "3/6 (50.0%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "2"
+          },
+          {
+            "key": "passes",
+            "value": "75/80 (93.8%)"
+          }
+        ]
+      },
+      {
+        "playerId": 1145642,
+        "fantasyPlayerId": 102060,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.4"
+          },
+          {
+            "key": "yellowCard",
+            "value": "1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "12"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/1 (100.0%)"
+          },
+          {
+            "key": "duels",
+            "value": "0/2 (0.0%)"
+          },
+          {
+            "key": "passes",
+            "value": "6/7 (85.7%)"
+          },
+          {
+            "key": "wonContest",
+            "value": "0/1 (0.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 1153270,
+        "fantasyPlayerId": 102641,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.6"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "19"
+          },
+          {
+            "key": "passes",
+            "value": "3/5 (60.0%)"
+          }
+        ]
+      },
+      {
+        "playerId": 1402912,
+        "fantasyPlayerId": 102069,
+        "fantasyPlayerPosition": "M",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "7.1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "78"
+          },
+          {
+            "key": "longBalls",
+            "value": "0/1 (0.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "1"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "4/6 (66.7%)"
+          },
+          {
+            "key": "passes",
+            "value": "41/55 (74.5%)"
+          },
+          {
+            "key": "dispossessed",
+            "value": "1"
+          },
+          {
+            "key": "keyPass",
+            "value": "1"
+          },
+          {
+            "key": "wonContest",
+            "value": "2/3 (66.7%)"
+          }
+        ]
+      },
+      {
+        "playerId": 1402913,
+        "fantasyPlayerId": 102057,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "7.1"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "1"
+          },
+          {
+            "key": "longBalls",
+            "value": "1/5 (20.0%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "5"
+          },
+          {
+            "key": "blockedShots",
+            "value": "1"
+          },
+          {
+            "key": "interceptions",
+            "value": "2"
+          },
+          {
+            "key": "wonTackles",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "3/6 (50.0%)"
+          },
+          {
+            "key": "passes",
+            "value": "93/99 (93.9%)"
+          }
+        ]
+      },
+      {
+        "playerId": 1405212,
+        "fantasyPlayerId": 102017,
+        "fantasyPlayerPosition": "D",
+        "statistics": [
+          {
+            "key": "rating",
+            "value": "6.5"
+          },
+          {
+            "key": "minutesPlayed",
+            "value": "90"
+          },
+          {
+            "key": "goalsConceded",
+            "value": "2"
+          },
+          {
+            "key": "longBalls",
+            "value": "3/7 (42.9%)"
+          },
+          {
+            "key": "totalClearances",
+            "value": "6"
+          },
+          {
+            "key": "blockedShots",
+            "value": "1"
+          },
+          {
+            "key": "duels",
+            "value": "2/4 (50.0%)"
+          },
+          {
+            "key": "wasFouled",
+            "value": "1"
+          },
+          {
+            "key": "passes",
+            "value": "26/34 (76.5%)"
+          }
+        ]
+      }
+    ],
+    "config": {
+      "id": 6,
+      "calculator": {
+        "rating": {
+          "pointLevels": [
+            {
+              "maxValue": 3,
+              "points": {
+                "G": 0,
+                "D": 0,
+                "M": 0,
+                "F": 0
+              }
+            },
+            {
+              "minValue": 3,
+              "maxValue": 6,
+              "points": {
+                "G": -2,
+                "D": -2,
+                "M": -2,
+                "F": -2
+              }
+            },
+            {
+              "minValue": 6,
+              "maxValue": 6.5,
+              "points": {
+                "G": -1,
+                "D": -1,
+                "M": -1,
+                "F": -1
+              }
+            },
+            {
+              "minValue": 6.5,
+              "maxValue": 7,
+              "points": {
+                "G": 0,
+                "D": 0,
+                "M": 0,
+                "F": 0
+              }
+            },
+            {
+              "minValue": 7,
+              "maxValue": 8,
+              "points": {
+                "G": 1,
+                "D": 1,
+                "M": 1,
+                "F": 1
+              }
+            },
+            {
+              "minValue": 8,
+              "maxValue": 9,
+              "points": {
+                "G": 2,
+                "D": 2,
+                "M": 2,
+                "F": 2
+              }
+            },
+            {
+              "minValue": 9,
+              "points": {
+                "G": 3,
+                "D": 3,
+                "M": 3,
+                "F": 3
+              }
+            }
+          ]
+        },
+        "goals": {
+          "points": {
+            "G": 7,
+            "D": 6,
+            "M": 5,
+            "F": 4
+          }
+        },
+        "assists": {
+          "points": {
+            "G": 5,
+            "D": 4,
+            "M": 3,
+            "F": 3
+          }
+        },
+        "ownGoals": {
+          "points": {
+            "G": -2,
+            "D": -2,
+            "M": -2,
+            "F": -2
+          }
+        },
+        "yellowCard": {
+          "points": {
+            "G": -1,
+            "D": -1,
+            "M": -1,
+            "F": -1
+          }
+        },
+        "secondYellow": {
+          "pointLevels": [
+            {
+              "minValue": 3,
+              "points": {
+                "G": -3,
+                "D": -3,
+                "M": -3,
+                "F": -3
+              }
+            },
+            {
+              "minValue": 2,
+              "maxValue": 3,
+              "points": {
+                "G": -2,
+                "D": -2,
+                "M": -2,
+                "F": -2
+              }
+            },
+            {
+              "minValue": 1,
+              "maxValue": 2,
+              "points": {
+                "G": -1,
+                "D": -1,
+                "M": -1,
+                "F": -1
+              }
+            }
+          ]
+        },
+        "redCard": {
+          "pointLevels": [
+            {
+              "minValue": 3,
+              "points": {
+                "G": -4,
+                "D": -4,
+                "M": -4,
+                "F": -4
+              }
+            },
+            {
+              "minValue": 2,
+              "maxValue": 3,
+              "points": {
+                "G": -3,
+                "D": -3,
+                "M": -3,
+                "F": -3
+              }
+            },
+            {
+              "minValue": 1,
+              "maxValue": 2,
+              "points": {
+                "G": -2,
+                "D": -2,
+                "M": -2,
+                "F": -2
+              }
+            }
+          ]
+        },
+        "minutesPlayed": {
+          "pointLevels": [
+            {
+              "maxValue": 1,
+              "points": {
+                "G": 0,
+                "D": 0,
+                "M": 0,
+                "F": 0
+              }
+            },
+            {
+              "minValue": 1,
+              "maxValue": 60,
+              "points": {
+                "G": 1,
+                "D": 1,
+                "M": 1,
+                "F": 1
+              }
+            },
+            {
+              "minValue": 60,
+              "points": {
+                "G": 2,
+                "D": 2,
+                "M": 2,
+                "F": 2
+              }
+            }
+          ]
+        },
+        "cleanSheet": {
+          "points": {
+            "G": 4,
+            "D": 4
+          }
+        },
+        "goalsConceded": {
+          "modifier": 2,
+          "points": {
+            "G": -1,
+            "D": -1
+          }
+        },
+        "penaltySaves": {
+          "points": {
+            "G": 5,
+            "D": 5,
+            "M": 5,
+            "F": 5
+          }
+        },
+        "penaltyWon": {
+          "points": {
+            "G": 2,
+            "D": 2,
+            "M": 2,
+            "F": 2
+          }
+        },
+        "penaltyConceded": {
+          "points": {
+            "G": -2,
+            "D": -2,
+            "M": -2,
+            "F": -2
+          }
+        },
+        "attemptPenaltyMiss": {
+          "points": {
+            "G": -3,
+            "D": -3,
+            "M": -3,
+            "F": -3
+          }
+        },
+        "penaltyShootoutGoal": {
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "penaltyShootoutMiss": {
+          "points": {
+            "G": -2,
+            "D": -2,
+            "M": -2,
+            "F": -2
+          }
+        },
+        "penaltyShootoutSave": {
+          "points": {
+            "G": 3,
+            "D": 3,
+            "M": 3,
+            "F": 3
+          }
+        },
+        "savedShotsFromInsideTheBox": {
+          "modifier": 2,
+          "points": {
+            "G": 1
+          }
+        },
+        "savedShotsFromOutsideTheBox": {
+          "modifier": 3,
+          "points": {
+            "G": 1
+          }
+        },
+        "punchesAndGoodHighClaims": {
+          "modifier": 3,
+          "points": {
+            "G": 1
+          }
+        },
+        "runsOut": {
+          "points": {
+            "G": 1
+          }
+        },
+        "longBalls": {
+          "pctThreshold": 60,
+          "valueThreshold": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "clearanceOffLine": {
+          "points": {
+            "G": 2,
+            "D": 2,
+            "M": 2,
+            "F": 2
+          }
+        },
+        "totalClearances": {
+          "modifier": 6,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "blockedShots": {
+          "modifier": 2,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "interceptions": {
+          "modifier": 3,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "wonTackles": {
+          "modifier": 3,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "duels": {
+          "pctThreshold": 50,
+          "valueThreshold": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "wasFouled": {
+          "modifier": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "passes": {
+          "pctThreshold": 90,
+          "totalThreshold": 40,
+          "points": {
+            "M": 1,
+            "F": 1
+          }
+        },
+        "offsides": {
+          "modifier": 2,
+          "points": {
+            "G": -1,
+            "D": -1,
+            "M": -1,
+            "F": -1
+          }
+        },
+        "dispossessed": {
+          "modifier": 4,
+          "points": {
+            "G": -1,
+            "D": -1,
+            "M": -1,
+            "F": -1
+          }
+        },
+        "keyPass": {
+          "modifier": 2,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "wonContest": {
+          "modifier": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        }
+      }
+    }
+  }
+}

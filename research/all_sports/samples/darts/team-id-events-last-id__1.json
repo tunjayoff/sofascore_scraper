@@ -1,0 +1,657 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/469085/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:10:39+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/alex-spellman-heneghan/lIedsKGMd#id:17236047",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "firstToServe": 1,
+        "firstToServeInMatch": 1,
+        "tournament": {
+          "name": "Modus Super Series",
+          "slug": "modus-super-series",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Modus Super Series",
+            "slug": "modus-super-series",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 543,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16756,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري مودوس دارتس المباشر عبر الإنترنت",
+                "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+                "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+                "ru": "Суперсерия Modus"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 2,
+          "isGroup": false,
+          "isLive": false,
+          "id": 91878,
+          "endTimestamp": 1798675200,
+          "startTimestamp": 1767225600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+              "ar": "دوري Modus Darts المباشر عبر الإنترنت",
+              "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+              "ru": "Суперсерия Modus"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Modus Super Series 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89749
+        },
+        "customId": "KGMdsHkZi",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Alex Spellman",
+          "slug": "spellman-alex",
+          "shortName": "Spellman A.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 71,
+          "playerTeamInfo": {
+            "id": 32186
+          },
+          "nameCode": "SPE",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 469085,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سبلمان، أليكس",
+              "ru": "Алекс Спеллман"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. سبلمان",
+              "bn": "স্পেলম্যান এ.",
+              "hi": "स्पेलमैन ए.",
+              "ru": "А. Спеллман"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Scarrott J.",
+          "slug": "scarrott-jasper",
+          "gender": "X",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 26,
+          "playerTeamInfo": {
+            "id": 29060
+          },
+          "nameCode": "SCA",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 1123032,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سکاروت، ياسبر",
+              "ru": "Скарротт, Джаспер"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "awayScore": {
+          "current": 1,
+          "display": 1,
+          "normaltime": 1
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1775638032
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "awayScore.period1"
+          ],
+          "changeTimestamp": 1775639042
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15940517,
+        "bestOfSets": 1,
+        "bestOfLegs": 7,
+        "slug": "scarrott-alex-spellman",
+        "startTimestamp": 1775637360,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "firstToServe": 2,
+        "firstToServeInMatch": 1,
+        "tournament": {
+          "name": "Modus Super Series",
+          "slug": "modus-super-series",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Modus Super Series",
+            "slug": "modus-super-series",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 543,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16756,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري مودوس دارتس المباشر عبر الإنترنت",
+                "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+                "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+                "ru": "Суперсерия Modus"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 2,
+          "isGroup": false,
+          "isLive": false,
+          "id": 91878,
+          "endTimestamp": 1798675200,
+          "startTimestamp": 1767225600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+              "ar": "دوري Modus Darts المباشر عبر الإنترنت",
+              "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+              "ru": "Суперсерия Modus"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Modus Super Series 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89749
+        },
+        "customId": "KGMdsQClj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "David Munyua",
+          "slug": "munyua-david",
+          "shortName": "Munyua D.",
+          "gender": "X",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 435,
+          "playerTeamInfo": {
+            "id": 32193
+          },
+          "nameCode": "MUN",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "KE",
+            "alpha3": "KEN",
+            "name": "Kenya",
+            "slug": "kenya"
+          },
+          "id": 1153891,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديفيد مونيوا",
+              "ru": "Дэвид Муньюа"
+            },
+            "shortNameTranslation": {
+              "ar": "مونيوا د.",
+              "ru": "Д. Муньюа"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Alex Spellman",
+          "slug": "spellman-alex",
+          "shortName": "Spellman A.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 71,
+          "playerTeamInfo": {
+            "id": 32186
+          },
+          "nameCode": "SPE",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 469085,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سبلمان، أليكس",
+              "ru": "Алекс Спеллман"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. سبلمان",
+              "bn": "স্পেলম্যান এ.",
+              "hi": "स्पेलमैन ए.",
+              "ru": "А. Спеллман"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1775642917
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "awayScore.period1"
+          ],
+          "changeTimestamp": 1775643841
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15940521,
+        "bestOfSets": 1,
+        "bestOfLegs": 7,
+        "slug": "david-munyua-alex-spellman",
+        "startTimestamp": 1775642100,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "firstToServe": 2,
+        "firstToServeInMatch": 1,
+        "tournament": {
+          "name": "Modus Super Series",
+          "slug": "modus-super-series",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Darts",
+              "slug": "darts",
+              "id": 22
+            },
+            "priority": 11,
+            "country": {},
+            "id": 104,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Modus Super Series",
+            "slug": "modus-super-series",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Darts",
+                "slug": "darts",
+                "id": 22
+              },
+              "priority": 11,
+              "country": {},
+              "id": 104,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 543,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 16756,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري مودوس دارتس المباشر عبر الإنترنت",
+                "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+                "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+                "ru": "Суперсерия Modus"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 2,
+          "isGroup": false,
+          "isLive": false,
+          "id": 91878,
+          "endTimestamp": 1798675200,
+          "startTimestamp": 1767225600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "मोडस डार्ट्स ऑनलाइन लाइव लीग",
+              "ar": "دوري Modus Darts المباشر عبر الإنترنت",
+              "bn": "মোডাস ডার্টস অনলাইন লাইভ লীগ",
+              "ru": "Суперсерия Modus"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Modus Super Series 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 89749
+        },
+        "customId": "KGMdsjJJj",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Alex Spellman",
+          "slug": "spellman-alex",
+          "shortName": "Spellman A.",
+          "gender": "M",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 71,
+          "playerTeamInfo": {
+            "id": 32186
+          },
+          "nameCode": "SPE",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 469085,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سبلمان، أليكس",
+              "ru": "Алекс Спеллман"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. سبلمان",
+              "bn": "স্পেলম্যান এ.",
+              "hi": "स्पेलमैन ए.",
+              "ru": "А. Спеллман"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Rogov D.",
+          "slug": "rogov-dmitrii",
+          "gender": "X",
+          "sport": {
+            "name": "Darts",
+            "slug": "darts",
+            "id": 22
+          },
+          "userCount": 21,
+          "playerTeamInfo": {
+            "id": 43729
+          },
+          "nameCode": "ROG",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "IL",
+            "alpha3": "ISR",
+            "name": "Israel",
+            "slug": "israel"
+          },
+          "id": 1211709,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "روغوف، ديمتري",
+              "ru": "Рогов, Дмитрий"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 4,
+          "display": 4,
+          "normaltime": 4
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1775647842
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "awayScore.period1"
+          ],
+          "changeTimestamp": 1775648764
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15940525,
+        "bestOfSets": 1,
+        "bestOfLegs": 7,
+        "slug": "rogov-alex-spellman",
+        "startTimestamp": 1775646780,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

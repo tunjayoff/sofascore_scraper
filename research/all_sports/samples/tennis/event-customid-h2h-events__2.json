@@ -1,0 +1,238 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/UrgsFyjc/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:14:38+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/flavio-cobolli-adrian-mannarino/UrgsFyjc#id:17218921",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "awayTeamSeed": "6",
+        "tournament": {
+          "name": "Shanghai, China",
+          "slug": "shanghai-china",
+          "category": {
+            "name": "ATP",
+            "slug": "atp",
+            "sport": {
+              "name": "Tennis",
+              "slug": "tennis",
+              "id": 5
+            },
+            "priority": 8,
+            "country": {},
+            "id": 3,
+            "flag": "atp",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "এটিপি",
+                "hi": "डब्ल्यूटीए",
+                "ar": "رابطة محترفي التنس",
+                "ru": "ATP"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Shanghai",
+            "slug": "shanghai",
+            "primaryColorHex": "#002c61",
+            "secondaryColorHex": "#315384",
+            "category": {
+              "name": "ATP",
+              "slug": "atp",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "priority": 8,
+              "country": {},
+              "id": 3,
+              "flag": "atp",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "এটিপি",
+                  "hi": "डब्ल्यूटीए",
+                  "ar": "رابطة محترفي التنس",
+                  "ru": "ATP"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4679,
+            "groundType": "Hardcourt outdoor",
+            "tennisPoints": 1000,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 2519,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "شنغهاي",
+                "hi": "शंघाई",
+                "bn": "সাংহাই",
+                "ru": "Шанхай"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 202664,
+          "endTimestamp": 1792281600,
+          "startTimestamp": 1791331200
+        },
+        "season": {
+          "name": "ATP Shanghai, China Men Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 82375
+        },
+        "roundInfo": {
+          "round": 32,
+          "name": "Round of 64",
+          "slug": "round-of-64"
+        },
+        "customId": "UrgsFyjc",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Adrian Mannarino",
+          "slug": "mannarino-adrian",
+          "shortName": "A. Mannarino",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 8654,
+          "playerTeamInfo": {
+            "id": 51
+          },
+          "nameCode": "MAN",
+          "ranking": 83,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 15894,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أدريان مانارينوا",
+              "ru": "Адриан Маннарино"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. مانارينوا",
+              "bn": "এ. মান্নারিনো",
+              "hi": "ए. मनारिनो",
+              "ru": "А. Маннарино"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Flavio Cobolli",
+          "slug": "flavio-cobolli",
+          "shortName": "F. Cobolli",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 39013,
+          "playerTeamInfo": {
+            "id": 4435
+          },
+          "nameCode": "COB",
+          "ranking": 7,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 273680,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فلافيو كوبولي",
+              "ru": "Флавио Коболли"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. كوبولي",
+              "bn": "এফ. কোবলি",
+              "hi": "एफ. कोबोल्ली",
+              "ru": "Ф. Коболли"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17218921,
+        "slug": "flavio-cobolli-adrian-mannarino",
+        "startTimestamp": 1791518400,
+        "periods": {
+          "point": "Game",
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "groundType": "Hardcourt outdoor",
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "singles"
+          ],
+          "level": [
+            "pro"
+          ],
+          "tournament": [
+            "p1000"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      }
+    ]
+  }
+}

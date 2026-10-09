@@ -1,0 +1,1362 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/5447/unique-tournament/149/season/97291/top-players/overall",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:18:48+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/tsv-hannover-burgdorf-sg-flensburg-handewitt/TEbsXic#id:16419114",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "topPlayers": {
+      "goals": [
+        {
+          "statistics": {
+            "goals": 40,
+            "shootingEfficiencyPercentage": 76.923076923077,
+            "id": 127847,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "August Pedersen",
+            "slug": "august-baskar-pedersen",
+            "shortName": "A. Pedersen",
+            "position": "LW",
+            "userCount": 85,
+            "gender": "M",
+            "id": 912523,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوغست باسكار بيدرسن",
+                "bn": "পেডারসেন, আগস্ট বাস্কার",
+                "hi": "पेडरसन, ऑगस्ट बस्कर",
+                "ru": "Огюст Баскар Педерсен"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. بيدرسن",
+                "bn": "এ. বি. পেডারসেন",
+                "hi": "ए. बी. पेडरसन",
+                "ru": "О. Педерсен"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "goals": 29,
+            "shootingEfficiencyPercentage": 72.5,
+            "id": 127818,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Justus Fischer",
+            "slug": "justus-fischer",
+            "shortName": "J. Fischer",
+            "position": "P",
+            "userCount": 142,
+            "gender": "M",
+            "id": 1092416,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فيشر، جوستوس",
+                "bn": "ফিশার, জাস্টাস",
+                "hi": "फिशर, जस्टस",
+                "ru": "Юстус Фишер"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. فيشر",
+                "bn": "জে. ফিশার",
+                "hi": "जे. फिशर",
+                "ru": "Ю. Фишер"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "goals": 25,
+            "shootingEfficiencyPercentage": 56.818181818182,
+            "id": 127825,
+            "type": "overall",
+            "appearances": 6,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Renars Uscins",
+            "slug": "renars-uscins",
+            "shortName": "R. Uščins",
+            "position": "RB",
+            "userCount": 245,
+            "gender": "M",
+            "id": 1102685,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوشينس، رينارز",
+                "bn": "উসকিন, রেনারস",
+                "hi": "उस्किन्स, रेनार्स",
+                "ru": "Ренарс Ушчинс"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. أوشينس",
+                "bn": "আর. উসকিন",
+                "hi": "आर. उस्किन्स",
+                "ru": "Р. Ушчинс"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 11
+        }
+      ],
+      "assists": [
+        {
+          "statistics": {
+            "assists": 21,
+            "id": 127827,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Marian Michalczik",
+            "slug": "marian-michalczik",
+            "shortName": "M. Michalczik",
+            "position": "CB",
+            "userCount": 39,
+            "gender": "M",
+            "id": 835552,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ميشالشيك، ماريان",
+                "bn": "মাইকেলজিক, মারিয়ান",
+                "hi": "मिचल्ज़िक, मैरिएन",
+                "ru": "Мариан Михальчик"
+              },
+              "shortNameTranslation": {
+                "ar": "م. ميشالشيك",
+                "bn": "এম. মাইকেলজিক",
+                "hi": "एम. मिचल्ज़िक",
+                "ru": "М. Михальчик"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "assists": 13,
+            "id": 127825,
+            "type": "overall",
+            "appearances": 6,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Renars Uscins",
+            "slug": "renars-uscins",
+            "shortName": "R. Uščins",
+            "position": "RB",
+            "userCount": 245,
+            "gender": "M",
+            "id": 1102685,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوشينس، رينارز",
+                "bn": "উসকিন, রেনারস",
+                "hi": "उस्किन्स, रेनार्स",
+                "ru": "Ренарс Ушчинс"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. أوشينس",
+                "bn": "আর. উসকিন",
+                "hi": "आर. उस्किन्स",
+                "ru": "Р. Ушчинс"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "assists": 13,
+            "id": 127839,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Jonathan Edvardsson",
+            "slug": "jonathan-edvardsson",
+            "shortName": "J. Edvardsson",
+            "position": "CB",
+            "userCount": 43,
+            "gender": "M",
+            "id": 995768,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إدفاردسون، جوناثان",
+                "bn": "এডভার্ডসন, জোনাথন",
+                "hi": "एडवर्डसन, जोनाथन",
+                "ru": "Йонас Эдвардссон"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. إدفاردسون",
+                "bn": "জে. এডভার্ডসন",
+                "hi": "जे. एडवर्डसन",
+                "ru": "Й. Эдвардссон"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 7
+        }
+      ],
+      "goals7m": [
+        {
+          "statistics": {
+            "goals7m": 18,
+            "shots7m": 20,
+            "id": 127847,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "August Pedersen",
+            "slug": "august-baskar-pedersen",
+            "shortName": "A. Pedersen",
+            "position": "LW",
+            "userCount": 85,
+            "gender": "M",
+            "id": 912523,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوغست باسكار بيدرسن",
+                "bn": "পেডারসেন, আগস্ট বাস্কার",
+                "hi": "पेडरसन, ऑगस्ट बस्कर",
+                "ru": "Огюст Баскар Педерсен"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. بيدرسن",
+                "bn": "এ. বি. পেডারসেন",
+                "hi": "ए. बी. पेडरसन",
+                "ru": "О. Педерсен"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        }
+      ],
+      "steals": [
+        {
+          "statistics": {
+            "steals": 7,
+            "id": 127818,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Justus Fischer",
+            "slug": "justus-fischer",
+            "shortName": "J. Fischer",
+            "position": "P",
+            "userCount": 142,
+            "gender": "M",
+            "id": 1092416,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فيشر، جوستوس",
+                "bn": "ফিশার, জাস্টাস",
+                "hi": "फिशर, जस्टस",
+                "ru": "Юстус Фишер"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. فيشر",
+                "bn": "জে. ফিশার",
+                "hi": "जे. फिशर",
+                "ru": "Ю. Фишер"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "steals": 4,
+            "id": 127825,
+            "type": "overall",
+            "appearances": 6,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Renars Uscins",
+            "slug": "renars-uscins",
+            "shortName": "R. Uščins",
+            "position": "RB",
+            "userCount": 245,
+            "gender": "M",
+            "id": 1102685,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أوشينس، رينارز",
+                "bn": "উসকিন, রেনারস",
+                "hi": "उस्किन्स, रेनार्स",
+                "ru": "Ренарс Ушчинс"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. أوشينس",
+                "bn": "আর. উসকিন",
+                "hi": "आर. उस्किन्स",
+                "ru": "Р. Ушчинс"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "steals": 3,
+            "id": 127814,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Sebastian Heymann",
+            "slug": "sebastian-heymann",
+            "shortName": "S. Heymann",
+            "position": "LB",
+            "userCount": 65,
+            "gender": "M",
+            "id": 806868,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هايمان، سيباستيان",
+                "bn": "হেম্যান, সেবাস্টিয়ান",
+                "hi": "हेमैन, सेबेस्टियन",
+                "ru": "Себастьян Хейман"
+              },
+              "shortNameTranslation": {
+                "ar": "س. هايمان",
+                "bn": "এস. হেম্যান",
+                "hi": "एस. हेमैन",
+                "ru": "С. Хейман"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 7
+        }
+      ],
+      "twoMinutePenalties": [
+        {
+          "statistics": {
+            "twoMinutePenalties": 4,
+            "id": 127827,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Marian Michalczik",
+            "slug": "marian-michalczik",
+            "shortName": "M. Michalczik",
+            "position": "CB",
+            "userCount": 39,
+            "gender": "M",
+            "id": 835552,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ميشالشيك، ماريان",
+                "bn": "মাইকেলজিক, মারিয়ান",
+                "hi": "मिचल्ज़िक, मैरिएन",
+                "ru": "Мариан Михальчик"
+              },
+              "shortNameTranslation": {
+                "ar": "م. ميشالشيك",
+                "bn": "এম. মাইকেলজিক",
+                "hi": "एम. मिचल्ज़िक",
+                "ru": "М. Михальчик"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "twoMinutePenalties": 3,
+            "id": 127814,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Sebastian Heymann",
+            "slug": "sebastian-heymann",
+            "shortName": "S. Heymann",
+            "position": "LB",
+            "userCount": 65,
+            "gender": "M",
+            "id": 806868,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هايمان، سيباستيان",
+                "bn": "হেম্যান, সেবাস্টিয়ান",
+                "hi": "हेमैन, सेबेस्टियन",
+                "ru": "Себастьян Хейман"
+              },
+              "shortNameTranslation": {
+                "ar": "س. هايمان",
+                "bn": "এস. হেম্যান",
+                "hi": "एस. हेमैन",
+                "ru": "С. Хейман"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "twoMinutePenalties": 1,
+            "id": 127818,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Justus Fischer",
+            "slug": "justus-fischer",
+            "shortName": "J. Fischer",
+            "position": "P",
+            "userCount": 142,
+            "gender": "M",
+            "id": 1092416,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فيشر، جوستوس",
+                "bn": "ফিশার, জাস্টাস",
+                "hi": "फिशर, जस्टस",
+                "ru": "Юстус Фишер"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. فيشر",
+                "bn": "জে. ফিশার",
+                "hi": "जे. फिशर",
+                "ru": "Ю. Фишер"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 4
+        }
+      ],
+      "saves": [
+        {
+          "statistics": {
+            "saves": 45,
+            "id": 127812,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Joel Birlehm",
+            "slug": "joel-birlehm",
+            "shortName": "J. Birlehm",
+            "position": "G",
+            "userCount": 49,
+            "gender": "M",
+            "id": 830799,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بيرلهيم، جويل",
+                "bn": "বিরলেহম, জোয়েল",
+                "hi": "बिरलेहम, जोएल",
+                "ru": "Джоэль Бирлехм"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيرلهيم",
+                "bn": "জি. বিরলেহম",
+                "hi": "जे. बिरलेहम",
+                "ru": "Д. Бирлехм"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "saves": 27,
+            "id": 127851,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Gade",
+            "slug": "simon-gade",
+            "shortName": "S. Gade",
+            "position": "G",
+            "userCount": 38,
+            "gender": "M",
+            "id": 912622,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جادي، سيمون",
+                "bn": "গেড, সাইমন",
+                "hi": "गैड, साइमन",
+                "ru": "Саймон Гаде"
+              },
+              "shortNameTranslation": {
+                "ar": "س. جادي",
+                "bn": "এস. গেড",
+                "hi": "एस. गैड",
+                "ru": "С. Гаде"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        }
+      ],
+      "goalkeeperEfficiencyPercentage": [
+        {
+          "statistics": {
+            "goalkeeperEfficiencyPercentage": 28.421052631579,
+            "id": 127851,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Gade",
+            "slug": "simon-gade",
+            "shortName": "S. Gade",
+            "position": "G",
+            "userCount": 38,
+            "gender": "M",
+            "id": 912622,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جادي، سيمون",
+                "bn": "গেড, সাইমন",
+                "hi": "गैड, साइमन",
+                "ru": "Саймон Гаде"
+              },
+              "shortNameTranslation": {
+                "ar": "س. جادي",
+                "bn": "এস. গেড",
+                "hi": "एस. गैड",
+                "ru": "С. Гаде"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "goalkeeperEfficiencyPercentage": 25.423728813559,
+            "id": 127812,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Joel Birlehm",
+            "slug": "joel-birlehm",
+            "shortName": "J. Birlehm",
+            "position": "G",
+            "userCount": 49,
+            "gender": "M",
+            "id": 830799,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بيرلهيم، جويل",
+                "bn": "বিরলেহম, জোয়েল",
+                "hi": "बिरलेहम, जोएल",
+                "ru": "Джоэль Бирлехм"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيرلهيم",
+                "bn": "জি. বিরলেহম",
+                "hi": "जे. बिरलेहम",
+                "ru": "Д. Бирлехм"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        }
+      ],
+      "gk7mSaves": [
+        {
+          "statistics": {
+            "gk7mShots": 11,
+            "gk7mSaves": 3,
+            "id": 127851,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Gade",
+            "slug": "simon-gade",
+            "shortName": "S. Gade",
+            "position": "G",
+            "userCount": 38,
+            "gender": "M",
+            "id": 912622,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جادي، سيمون",
+                "bn": "গেড, সাইমন",
+                "hi": "गैड, साइमन",
+                "ru": "Саймон Гаде"
+              },
+              "shortNameTranslation": {
+                "ar": "س. جادي",
+                "bn": "এস. গেড",
+                "hi": "एस. गैड",
+                "ru": "С. Гаде"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "gk7mShots": 10,
+            "gk7mSaves": 2,
+            "id": 127812,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Joel Birlehm",
+            "slug": "joel-birlehm",
+            "shortName": "J. Birlehm",
+            "position": "G",
+            "userCount": 49,
+            "gender": "M",
+            "id": 830799,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بيرلهيم، جويل",
+                "bn": "বিরলেহম, জোয়েল",
+                "hi": "बिरलेहम, जोएल",
+                "ru": "Джоэль Бирлехм"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. بيرلهيم",
+                "bn": "জি. বিরলেহম",
+                "hi": "जे. बिरलेहम",
+                "ru": "Д. Бирлехм"
+              }
+            }
+          },
+          "team": {
+            "name": "TSV Hannover Burgdorf",
+            "slug": "tsv-hannover-burgdorf",
+            "shortName": "Burgdorf",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 1494,
+            "nameCode": "HAN",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 5447,
+            "teamColors": {
+              "primary": "#004500",
+              "secondary": "#000000",
+              "text": "#000000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تي إس في هانوفر بورغدورف",
+                "ru": "Ганновер Бюргдорф"
+              },
+              "shortNameTranslation": {
+                "ar": "بورغدورف",
+                "bn": "বার্গডর্ফ",
+                "hi": "बुर्गडॉर्फ"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "statisticsType": {
+      "sportSlug": "handball",
+      "statisticsType": "player"
+    }
+  }
+}

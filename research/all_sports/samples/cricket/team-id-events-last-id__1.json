@@ -1,0 +1,709 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/187765/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:08:33+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884177",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Afghanistan in India, One-off Test",
+          "slug": "afghanistan-in-india-one-off-test",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Cricket",
+              "slug": "cricket",
+              "id": 62
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1343,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "विश्व",
+                "bn": "বিশ্ব",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Test Series",
+            "slug": "test-series",
+            "primaryColorHex": "#0680b1",
+            "secondaryColorHex": "#00c6ad",
+            "category": {
+              "name": "World",
+              "slug": "world",
+              "sport": {
+                "name": "Cricket",
+                "slug": "cricket",
+                "id": 62
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1343,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "विश्व",
+                  "bn": "বিশ্ব",
+                  "ru": "Мир"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 3113,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11189,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سلسلة الاختبار",
+                "hi": "टेस्ट सीरीज",
+                "bn": "টেস্ট সিরিজ",
+                "ru": "Тестовая серия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 176350,
+          "endTimestamp": 1781049600,
+          "startTimestamp": 1780704000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفغانستان في الهند، اختبار واحد",
+              "ru": "Тестовый матч Афганистан в Индии, Один раз"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 79087
+        },
+        "customId": "AbAbspfAb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "India",
+          "slug": "india",
+          "shortName": "IND",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 165248,
+          "nameCode": "IND",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 187765,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#00b8ff",
+            "secondary": "#ff4500",
+            "text": "#ff4500"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الهند",
+              "ru": "Индия"
+            },
+            "shortNameTranslation": {
+              "bn": "আইএনডি",
+              "hi": "आईएनडी",
+              "ru": "ИНД"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Afghanistan",
+          "slug": "afghanistan",
+          "shortName": "AFG",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 10737,
+          "nameCode": "AFG",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "AF",
+            "alpha3": "AFG",
+            "name": "Afghanistan",
+            "slug": "afghanistan"
+          },
+          "id": 187575,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#313131",
+            "text": "#313131"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفغانستان",
+              "ru": "Афганистан"
+            },
+            "shortNameTranslation": {
+              "bn": "এএফজি",
+              "hi": "एएफजी",
+              "ru": "АФГ"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 564,
+          "display": 564,
+          "innings": {
+            "inning1": {
+              "score": 564,
+              "wickets": 8,
+              "overs": 127,
+              "runRate": 4.44
+            }
+          }
+        },
+        "awayScore": {
+          "current": 264,
+          "display": 264,
+          "innings": {
+            "inning1": {
+              "score": 152,
+              "wickets": 10,
+              "overs": 58.4,
+              "runRate": 2.59
+            },
+            "inning2": {
+              "score": 112,
+              "wickets": 10,
+              "overs": 35.5,
+              "runRate": 3.13
+            }
+          }
+        },
+        "coverage": 1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type"
+          ],
+          "changeTimestamp": 1780911295
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15644318,
+        "note": "India beat Afghanistan by an innings and 300 runs",
+        "endTimestamp": 1780911240,
+        "slug": "india-afghanistan",
+        "startTimestamp": 1780718400,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Afghanistan in India, 3 ODI Series",
+          "slug": "afghanistan-in-india-3-odi-series",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Cricket",
+              "slug": "cricket",
+              "id": 62
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1343,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "विश्व",
+                "bn": "বিশ্ব",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "One Day International",
+            "slug": "one-day-international",
+            "primaryColorHex": "#0680b1",
+            "secondaryColorHex": "#00c6ad",
+            "category": {
+              "name": "World",
+              "slug": "world",
+              "sport": {
+                "name": "Cricket",
+                "slug": "cricket",
+                "id": 62
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1343,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "विश्व",
+                  "bn": "বিশ্ব",
+                  "ru": "Мир"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4722,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11190,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مباراة دولية لوان داي",
+                "hi": "वन डे इंटरनेशनल",
+                "bn": "ওয়ান ডে ইন্টারন্যাশনাল",
+                "ru": "Однодневный международный матч"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 91,
+          "isGroup": false,
+          "id": 176351,
+          "endTimestamp": 1781913600,
+          "startTimestamp": 1781395200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفغانستان في الهند، سلسلة 3 ودي",
+              "ru": "Афганистан в Индии, 3 ODI Серия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 77922
+        },
+        "customId": "AbAbspfAb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "India",
+          "slug": "india",
+          "shortName": "IND",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 165248,
+          "nameCode": "IND",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 187765,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#00b8ff",
+            "secondary": "#ff4500",
+            "text": "#ff4500"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الهند",
+              "ru": "Индия"
+            },
+            "shortNameTranslation": {
+              "bn": "আইএনডি",
+              "hi": "आईएनडी",
+              "ru": "ИНД"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Afghanistan",
+          "slug": "afghanistan",
+          "shortName": "AFG",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 10737,
+          "nameCode": "AFG",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "AF",
+            "alpha3": "AFG",
+            "name": "Afghanistan",
+            "slug": "afghanistan"
+          },
+          "id": 187575,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#313131",
+            "text": "#313131"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفغانستان",
+              "ru": "Афганистан"
+            },
+            "shortNameTranslation": {
+              "bn": "এএফজি",
+              "hi": "एएफजी",
+              "ru": "АФГ"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 195,
+          "display": 195,
+          "innings": {
+            "inning1": {
+              "score": 195,
+              "wickets": 3,
+              "overs": 22.5,
+              "runRate": 8.54,
+              "targetRunRate": 7.8
+            }
+          }
+        },
+        "awayScore": {
+          "current": 194,
+          "display": 194,
+          "innings": {
+            "inning1": {
+              "score": 194,
+              "wickets": 10,
+              "overs": 24.5,
+              "runRate": 7.81
+            }
+          }
+        },
+        "coverage": 1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type"
+          ],
+          "changeTimestamp": 1781368735
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15644319,
+        "note": "India beat Afghanistan by 7 wickets",
+        "endTimestamp": 1781368680,
+        "slug": "india-afghanistan",
+        "startTimestamp": 1781337600,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Afghanistan in India, 3 ODI Series",
+          "slug": "afghanistan-in-india-3-odi-series",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Cricket",
+              "slug": "cricket",
+              "id": 62
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1343,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "विश्व",
+                "bn": "বিশ্ব",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "One Day International",
+            "slug": "one-day-international",
+            "primaryColorHex": "#0680b1",
+            "secondaryColorHex": "#00c6ad",
+            "category": {
+              "name": "World",
+              "slug": "world",
+              "sport": {
+                "name": "Cricket",
+                "slug": "cricket",
+                "id": 62
+              },
+              "priority": 0,
+              "country": {},
+              "id": 1343,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "विश्व",
+                  "bn": "বিশ্ব",
+                  "ru": "Мир"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4722,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11190,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مباراة دولية لوان داي",
+                "hi": "वन डे इंटरनेशनल",
+                "bn": "ওয়ান ডে ইন্টারন্যাশনাল",
+                "ru": "Однодневный международный матч"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 91,
+          "isGroup": false,
+          "id": 176351,
+          "endTimestamp": 1781913600,
+          "startTimestamp": 1781395200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفغانستان في الهند، سلسلة 3 ودي",
+              "ru": "Афганистан в Индии, 3 ODI Серия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "2026",
+          "year": "2026",
+          "editor": false,
+          "id": 77922
+        },
+        "customId": "AbAbspfAb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "India",
+          "slug": "india",
+          "shortName": "IND",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 165248,
+          "nameCode": "IND",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 187765,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#00b8ff",
+            "secondary": "#ff4500",
+            "text": "#ff4500"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الهند",
+              "ru": "Индия"
+            },
+            "shortNameTranslation": {
+              "bn": "আইএনডি",
+              "hi": "आईएनडी",
+              "ru": "ИНД"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Afghanistan",
+          "slug": "afghanistan",
+          "shortName": "AFG",
+          "gender": "M",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "userCount": 10737,
+          "nameCode": "AFG",
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "AF",
+            "alpha3": "AFG",
+            "name": "Afghanistan",
+            "slug": "afghanistan"
+          },
+          "id": 187575,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#313131",
+            "text": "#313131"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفغانستان",
+              "ru": "Афганистан"
+            },
+            "shortNameTranslation": {
+              "bn": "এএফজি",
+              "hi": "एएफजी",
+              "ru": "АФГ"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 402,
+          "display": 402,
+          "innings": {
+            "inning1": {
+              "score": 402,
+              "wickets": 10,
+              "overs": 49.5,
+              "runRate": 8.07
+            }
+          }
+        },
+        "awayScore": {
+          "current": 232,
+          "display": 232,
+          "innings": {
+            "inning1": {
+              "score": 232,
+              "wickets": 10,
+              "overs": 44.3,
+              "runRate": 5.21,
+              "targetRunRate": 8.06
+            }
+          }
+        },
+        "coverage": 1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type"
+          ],
+          "changeTimestamp": 1781711650
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15644320,
+        "note": "India beat Afghanistan by 170 runs",
+        "endTimestamp": 1781711640,
+        "slug": "india-afghanistan",
+        "startTimestamp": 1781683200,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

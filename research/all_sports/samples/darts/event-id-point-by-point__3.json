@@ -1,0 +1,312 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17236047/point-by-point",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:11:03+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/alex-spellman-heneghan/lIedsKGMd#id:17236047",
+  "cache_control": "max-age=0, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "pointByPoint": [
+      {
+        "set": 1,
+        "legs": [
+          {
+            "leg": 1,
+            "points": [
+              {
+                "homePoint": 443,
+                "awayPoint": 501,
+                "isHome": true
+              },
+              {
+                "homePoint": 443,
+                "awayPoint": 366,
+                "isHome": false
+              },
+              {
+                "homePoint": 322,
+                "awayPoint": 366,
+                "isHome": true
+              },
+              {
+                "homePoint": 322,
+                "awayPoint": 308,
+                "isHome": false
+              },
+              {
+                "homePoint": 182,
+                "awayPoint": 308,
+                "isHome": true
+              },
+              {
+                "homePoint": 182,
+                "awayPoint": 280,
+                "isHome": false
+              },
+              {
+                "homePoint": 97,
+                "awayPoint": 280,
+                "isHome": true
+              },
+              {
+                "homePoint": 97,
+                "awayPoint": 197,
+                "isHome": false
+              },
+              {
+                "homePoint": 0,
+                "awayPoint": 197,
+                "isHome": true
+              }
+            ],
+            "score": {
+              "homeScore": 1,
+              "awayScore": 0,
+              "throwing": 1,
+              "scoring": 1
+            }
+          },
+          {
+            "leg": 2,
+            "points": [
+              {
+                "homePoint": 501,
+                "awayPoint": 458,
+                "isHome": false
+              },
+              {
+                "homePoint": 365,
+                "awayPoint": 458,
+                "isHome": true
+              },
+              {
+                "homePoint": 365,
+                "awayPoint": 401,
+                "isHome": false
+              },
+              {
+                "homePoint": 265,
+                "awayPoint": 401,
+                "isHome": true
+              },
+              {
+                "homePoint": 265,
+                "awayPoint": 341,
+                "isHome": false
+              },
+              {
+                "homePoint": 170,
+                "awayPoint": 341,
+                "isHome": true
+              },
+              {
+                "homePoint": 170,
+                "awayPoint": 287,
+                "isHome": false
+              },
+              {
+                "homePoint": 72,
+                "awayPoint": 287,
+                "isHome": true
+              },
+              {
+                "homePoint": 72,
+                "awayPoint": 228,
+                "isHome": false
+              },
+              {
+                "homePoint": 40,
+                "awayPoint": 228,
+                "isHome": true
+              },
+              {
+                "homePoint": 40,
+                "awayPoint": 188,
+                "isHome": false
+              },
+              {
+                "homePoint": 0,
+                "awayPoint": 188,
+                "isHome": true
+              }
+            ],
+            "score": {
+              "homeScore": 2,
+              "awayScore": 0,
+              "throwing": 2,
+              "scoring": 1
+            }
+          },
+          {
+            "leg": 3,
+            "points": [
+              {
+                "homePoint": 441,
+                "awayPoint": 501,
+                "isHome": true
+              },
+              {
+                "homePoint": 441,
+                "awayPoint": 460,
+                "isHome": false
+              },
+              {
+                "homePoint": 341,
+                "awayPoint": 460,
+                "isHome": true
+              },
+              {
+                "homePoint": 341,
+                "awayPoint": 379,
+                "isHome": false
+              },
+              {
+                "homePoint": 256,
+                "awayPoint": 379,
+                "isHome": true
+              },
+              {
+                "homePoint": 256,
+                "awayPoint": 336,
+                "isHome": false
+              },
+              {
+                "homePoint": 156,
+                "awayPoint": 336,
+                "isHome": true
+              },
+              {
+                "homePoint": 156,
+                "awayPoint": 295,
+                "isHome": false
+              },
+              {
+                "homePoint": 56,
+                "awayPoint": 295,
+                "isHome": true
+              },
+              {
+                "homePoint": 56,
+                "awayPoint": 200,
+                "isHome": false
+              },
+              {
+                "homePoint": 0,
+                "awayPoint": 200,
+                "isHome": true
+              }
+            ],
+            "score": {
+              "homeScore": 3,
+              "awayScore": 0,
+              "throwing": 1,
+              "scoring": 1
+            }
+          },
+          {
+            "leg": 4,
+            "points": [
+              {
+                "homePoint": 501,
+                "awayPoint": 457,
+                "isHome": false
+              },
+              {
+                "homePoint": 401,
+                "awayPoint": 457,
+                "isHome": true
+              },
+              {
+                "homePoint": 401,
+                "awayPoint": 397,
+                "isHome": false
+              },
+              {
+                "homePoint": 321,
+                "awayPoint": 397,
+                "isHome": true
+              },
+              {
+                "homePoint": 321,
+                "awayPoint": 338,
+                "isHome": false
+              },
+              {
+                "homePoint": 236,
+                "awayPoint": 338,
+                "isHome": true
+              },
+              {
+                "homePoint": 236,
+                "awayPoint": 253,
+                "isHome": false
+              },
+              {
+                "homePoint": 136,
+                "awayPoint": 253,
+                "isHome": true
+              },
+              {
+                "homePoint": 136,
+                "awayPoint": 169,
+                "isHome": false
+              },
+              {
+                "homePoint": 63,
+                "awayPoint": 169,
+                "isHome": true
+              },
+              {
+                "homePoint": 63,
+                "awayPoint": 105,
+                "isHome": false
+              },
+              {
+                "homePoint": 40,
+                "awayPoint": 105,
+                "isHome": true
+              },
+              {
+                "homePoint": 40,
+                "awayPoint": 40,
+                "isHome": false
+              },
+              {
+                "homePoint": 32,
+                "awayPoint": 40,
+                "isHome": true
+              },
+              {
+                "homePoint": 32,
+                "awayPoint": 40,
+                "isHome": false
+              },
+              {
+                "homePoint": 8,
+                "awayPoint": 40,
+                "isHome": true
+              },
+              {
+                "homePoint": 8,
+                "awayPoint": 20,
+                "isHome": false
+              },
+              {
+                "homePoint": 0,
+                "awayPoint": 20,
+                "isHome": true
+              }
+            ],
+            "score": {
+              "homeScore": 4,
+              "awayScore": 0,
+              "throwing": 2,
+              "scoring": 1
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

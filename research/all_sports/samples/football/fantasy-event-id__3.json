@@ -1,0 +1,505 @@
+{
+  "url": "https://www.sofascore.com/api/v1/fantasy/event/16363871",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:12:55+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/arsenal-leeds-united/JsR#id:16363871",
+  "cache_control": "max-age=60, public, s-maxage=300",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "competitionId": 163,
+    "eventStatusType": "notstarted",
+    "playerScores": {
+      "794839": 0,
+      "1170693": 0,
+      "829570": 0,
+      "871290": 0,
+      "826167": 0,
+      "850823": 0,
+      "1912995": 0,
+      "1899485": 0,
+      "906075": 0,
+      "1144630": 6,
+      "847097": 5.8,
+      "973431": 1,
+      "803185": 2,
+      "190161": 0,
+      "1031259": 3.6,
+      "828639": 1.33,
+      "1590853": 0,
+      "827681": 6.8,
+      "906076": 0,
+      "1471588": 0,
+      "1146148": 1,
+      "162417": 0,
+      "834308": 6.33,
+      "1015164": 0,
+      "1899739": 0,
+      "794962": 0,
+      "922573": 0,
+      "836705": 3.6,
+      "355528": 2,
+      "904835": 0,
+      "846036": 6.5,
+      "889861": 5.6,
+      "866469": 4.33,
+      "1899736": 0,
+      "1401702": 0,
+      "871886": 3.75,
+      "856714": 5.8,
+      "1808314": 0,
+      "1899740": 0,
+      "1917627": 0,
+      "865523": 4.4,
+      "282229": 4.5,
+      "135666": 0,
+      "998951": 0,
+      "864921": 1.25,
+      "1002837": 1,
+      "869792": 5.6,
+      "1917626": 1,
+      "966837": 1,
+      "934235": 8.6,
+      "1158066": 0,
+      "828640": 4.5,
+      "909966": 0,
+      "1842987": 0,
+      "980643": 7,
+      "1423711": 4.5,
+      "966547": 2,
+      "1566881": 0,
+      "254713": 0,
+      "547410": 7.6,
+      "827679": 2.75,
+      "581310": 8.2,
+      "372344": 4.8,
+      "957602": 6.4,
+      "1118177": 7.4,
+      "826139": 0,
+      "866191": 1,
+      "1584929": 0,
+      "232422": 0,
+      "911679": 0,
+      "804508": 0.5,
+      "941168": 0,
+      "592010": 1,
+      "886930": 3.67,
+      "929132": 6.8,
+      "958959": 1,
+      "1809530": 0
+    },
+    "playerStatistics": [],
+    "config": {
+      "id": 6,
+      "calculator": {
+        "rating": {
+          "pointLevels": [
+            {
+              "maxValue": 3,
+              "points": {
+                "G": 0,
+                "D": 0,
+                "M": 0,
+                "F": 0
+              }
+            },
+            {
+              "minValue": 3,
+              "maxValue": 6,
+              "points": {
+                "G": -2,
+                "D": -2,
+                "M": -2,
+                "F": -2
+              }
+            },
+            {
+              "minValue": 6,
+              "maxValue": 6.5,
+              "points": {
+                "G": -1,
+                "D": -1,
+                "M": -1,
+                "F": -1
+              }
+            },
+            {
+              "minValue": 6.5,
+              "maxValue": 7,
+              "points": {
+                "G": 0,
+                "D": 0,
+                "M": 0,
+                "F": 0
+              }
+            },
+            {
+              "minValue": 7,
+              "maxValue": 8,
+              "points": {
+                "G": 1,
+                "D": 1,
+                "M": 1,
+                "F": 1
+              }
+            },
+            {
+              "minValue": 8,
+              "maxValue": 9,
+              "points": {
+                "G": 2,
+                "D": 2,
+                "M": 2,
+                "F": 2
+              }
+            },
+            {
+              "minValue": 9,
+              "points": {
+                "G": 3,
+                "D": 3,
+                "M": 3,
+                "F": 3
+              }
+            }
+          ]
+        },
+        "goals": {
+          "points": {
+            "G": 7,
+            "D": 6,
+            "M": 5,
+            "F": 4
+          }
+        },
+        "assists": {
+          "points": {
+            "G": 5,
+            "D": 4,
+            "M": 3,
+            "F": 3
+          }
+        },
+        "ownGoals": {
+          "points": {
+            "G": -2,
+            "D": -2,
+            "M": -2,
+            "F": -2
+          }
+        },
+        "yellowCard": {
+          "points": {
+            "G": -1,
+            "D": -1,
+            "M": -1,
+            "F": -1
+          }
+        },
+        "secondYellow": {
+          "pointLevels": [
+            {
+              "minValue": 3,
+              "points": {
+                "G": -3,
+                "D": -3,
+                "M": -3,
+                "F": -3
+              }
+            },
+            {
+              "minValue": 2,
+              "maxValue": 3,
+              "points": {
+                "G": -2,
+                "D": -2,
+                "M": -2,
+                "F": -2
+              }
+            },
+            {
+              "minValue": 1,
+              "maxValue": 2,
+              "points": {
+                "G": -1,
+                "D": -1,
+                "M": -1,
+                "F": -1
+              }
+            }
+          ]
+        },
+        "redCard": {
+          "pointLevels": [
+            {
+              "minValue": 3,
+              "points": {
+                "G": -4,
+                "D": -4,
+                "M": -4,
+                "F": -4
+              }
+            },
+            {
+              "minValue": 2,
+              "maxValue": 3,
+              "points": {
+                "G": -3,
+                "D": -3,
+                "M": -3,
+                "F": -3
+              }
+            },
+            {
+              "minValue": 1,
+              "maxValue": 2,
+              "points": {
+                "G": -2,
+                "D": -2,
+                "M": -2,
+                "F": -2
+              }
+            }
+          ]
+        },
+        "minutesPlayed": {
+          "pointLevels": [
+            {
+              "maxValue": 1,
+              "points": {
+                "G": 0,
+                "D": 0,
+                "M": 0,
+                "F": 0
+              }
+            },
+            {
+              "minValue": 1,
+              "maxValue": 60,
+              "points": {
+                "G": 1,
+                "D": 1,
+                "M": 1,
+                "F": 1
+              }
+            },
+            {
+              "minValue": 60,
+              "points": {
+                "G": 2,
+                "D": 2,
+                "M": 2,
+                "F": 2
+              }
+            }
+          ]
+        },
+        "cleanSheet": {
+          "points": {
+            "G": 4,
+            "D": 4
+          }
+        },
+        "goalsConceded": {
+          "modifier": 2,
+          "points": {
+            "G": -1,
+            "D": -1
+          }
+        },
+        "penaltySaves": {
+          "points": {
+            "G": 5,
+            "D": 5,
+            "M": 5,
+            "F": 5
+          }
+        },
+        "penaltyWon": {
+          "points": {
+            "G": 2,
+            "D": 2,
+            "M": 2,
+            "F": 2
+          }
+        },
+        "penaltyConceded": {
+          "points": {
+            "G": -2,
+            "D": -2,
+            "M": -2,
+            "F": -2
+          }
+        },
+        "attemptPenaltyMiss": {
+          "points": {
+            "G": -3,
+            "D": -3,
+            "M": -3,
+            "F": -3
+          }
+        },
+        "penaltyShootoutGoal": {
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "penaltyShootoutMiss": {
+          "points": {
+            "G": -2,
+            "D": -2,
+            "M": -2,
+            "F": -2
+          }
+        },
+        "penaltyShootoutSave": {
+          "points": {
+            "G": 3,
+            "D": 3,
+            "M": 3,
+            "F": 3
+          }
+        },
+        "savedShotsFromInsideTheBox": {
+          "modifier": 2,
+          "points": {
+            "G": 1
+          }
+        },
+        "savedShotsFromOutsideTheBox": {
+          "modifier": 3,
+          "points": {
+            "G": 1
+          }
+        },
+        "punchesAndGoodHighClaims": {
+          "modifier": 3,
+          "points": {
+            "G": 1
+          }
+        },
+        "runsOut": {
+          "points": {
+            "G": 1
+          }
+        },
+        "longBalls": {
+          "pctThreshold": 60,
+          "valueThreshold": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "clearanceOffLine": {
+          "points": {
+            "G": 2,
+            "D": 2,
+            "M": 2,
+            "F": 2
+          }
+        },
+        "totalClearances": {
+          "modifier": 6,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "blockedShots": {
+          "modifier": 2,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "interceptions": {
+          "modifier": 3,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "wonTackles": {
+          "modifier": 3,
+          "points": {
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "duels": {
+          "pctThreshold": 50,
+          "valueThreshold": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "wasFouled": {
+          "modifier": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "passes": {
+          "pctThreshold": 90,
+          "totalThreshold": 40,
+          "points": {
+            "M": 1,
+            "F": 1
+          }
+        },
+        "offsides": {
+          "modifier": 2,
+          "points": {
+            "G": -1,
+            "D": -1,
+            "M": -1,
+            "F": -1
+          }
+        },
+        "dispossessed": {
+          "modifier": 4,
+          "points": {
+            "G": -1,
+            "D": -1,
+            "M": -1,
+            "F": -1
+          }
+        },
+        "keyPass": {
+          "modifier": 2,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        },
+        "wonContest": {
+          "modifier": 3,
+          "points": {
+            "G": 1,
+            "D": 1,
+            "M": 1,
+            "F": 1
+          }
+        }
+      }
+    }
+  }
+}

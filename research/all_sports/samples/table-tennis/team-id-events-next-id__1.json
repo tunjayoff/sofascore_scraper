@@ -1,0 +1,362 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/481194/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:05:07+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/junsung-oh-karlsson/QmQsUyRd#id:17257062",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "China Smash, MD",
+          "slug": "china-smash-2025-md",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "China Smash, MD",
+            "slug": "china-smash-md",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 14,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 23723,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة الصين سماش، MD",
+                "ru": "China Smash, парный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 164813,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تشاينا سماش 2025، زوجي",
+              "ru": "Китайский Смеш 2025, мужской парный"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "China Smash, MD 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 103516
+        },
+        "roundInfo": {
+          "round": 28,
+          "name": "Semifinals",
+          "slug": "semifinals",
+          "cupRoundType": 2
+        },
+        "customId": "JljcsnCOi",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Lim J / OH J",
+          "slug": "lim-j-oh-j",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 24,
+          "nameCode": "L/O",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "KR",
+            "alpha3": "KOR",
+            "name": "South Korea",
+            "slug": "south-korea"
+          },
+          "id": 1098863,
+          "subTeams": [
+            {
+              "name": "Lim J.",
+              "slug": "lim-jonghoon",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 100,
+              "playerTeamInfo": {
+                "id": 37265
+              },
+              "nameCode": "LIM",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 158498,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ليم، جونغهون",
+                  "bn": "লিম, জংহুন",
+                  "hi": "लिम, जोंगहून",
+                  "ru": "Лим Дж."
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Junsung Oh",
+              "slug": "oh-junsung",
+              "shortName": "Junsung Oh",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 113,
+              "playerTeamInfo": {
+                "id": 21367
+              },
+              "nameCode": "JUN",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "KR",
+                "alpha3": "KOR",
+                "name": "South Korea",
+                "slug": "south-korea"
+              },
+              "id": 481194,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أوه، جونسونغ",
+                  "bn": "ওহ, জুনসুং",
+                  "hi": "ओएच, जंसुंग",
+                  "ru": "Джунсунг ОХ."
+                },
+                "shortNameTranslation": {
+                  "ru": "Д. ОХ."
+                }
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ليم ج / أوه ج",
+              "ru": "Лим Дж / ОХ Дж"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Shah M U / Thakkar M V",
+          "slug": "shah-m-u-thakkar-m-v",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 21,
+          "nameCode": "S/T",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 273084,
+          "subTeams": [
+            {
+              "name": "Shah M.",
+              "slug": "shah-manush-utpalbhai",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 71,
+              "playerTeamInfo": {
+                "id": 32806
+              },
+              "nameCode": "SHA",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "IN",
+                "alpha3": "IND",
+                "name": "India",
+                "slug": "india"
+              },
+              "id": 272620,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "شاه، مانوش أوتبالبهاي",
+                  "bn": "শাহ, মানুষ উৎপলভাই",
+                  "hi": "शाह, मनुश उत्पलबाई",
+                  "ru": "Шах, Мануш Утпальбхай"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Thakkar M.",
+              "slug": "thakkar-manav-vikash",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 145,
+              "nameCode": "THA",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "IN",
+                "alpha3": "IND",
+                "name": "India",
+                "slug": "india"
+              },
+              "id": 230844,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ثكار، ماناف فيكاش",
+                  "bn": "ঠক্কর, মানব বিকাশ",
+                  "hi": "ठाक्कर, मानव विकाश",
+                  "ru": "Таккар, Манав Викаш"
+                },
+                "shortNameTranslation": {}
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شاه م ي / ثاكر م ف",
+              "ru": "Шах М У / Таккар М В"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17283323,
+        "slug": "lim-oh-shahu-thakkarv",
+        "startTimestamp": 1791517500,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ],
+    "hasNextPage": false
+  }
+}

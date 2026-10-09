@@ -1,0 +1,650 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17212667/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:26:14+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/cleveland-guardians-chicago-white-sox/Uxbsayb#id:17212667",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Chase Meidroth",
+            "firstName": "Chase",
+            "lastName": "Meidroth",
+            "slug": "meidroth-chase",
+            "shortName": "C. Meidroth",
+            "position": "2B",
+            "jerseyNumber": "10",
+            "height": 175,
+            "userCount": 89,
+            "gender": "M",
+            "sofascoreId": "kv5-35w",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 2119313,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 995846400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ميدروث، تشيس",
+                "ru": "Чейз Мейдроут"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. ميدروث",
+                "ru": "Ч. Мейдроут"
+              }
+            }
+          },
+          "teamId": 3644,
+          "position": "IF",
+          "substitute": false,
+          "statistics": {
+            "fieldingAssists": 0,
+            "fieldingPutOuts": 0,
+            "battingPitchesSeen": 0,
+            "fieldingDoublePlays": 0,
+            "fieldingTriplePlays": 0,
+            "fieldingTotalChances": 0,
+            "fieldingPercentage": 0,
+            "fieldingCatcherWildPitches": 0,
+            "fieldingPassedBalls": 0,
+            "fieldingRangeFactor": 0,
+            "fieldingInningsPlayed": 1,
+            "fieldingStolenBasesCaught": 0,
+            "fieldingStolenBasesAllowed": 0,
+            "fieldingPickoffs": 0,
+            "fieldingStolenBasePercentage": 0,
+            "fieldingOutfieldAssists": 0,
+            "fieldingTotalAssists": 0,
+            "fieldingGamesStarted": 0,
+            "fieldingGamesPlayed": 0,
+            "fieldingGamesFinished": 0,
+            "fieldingCompleteGames": 0,
+            "pitchingInningsPitched": 0,
+            "pitchingInningsPitchedToDate": 0,
+            "statisticsType": {
+              "sportSlug": "baseball",
+              "statisticsType": "player"
+            }
+          },
+          "baseballAllPositions": {
+            "battingOrder": 1,
+            "roles": [
+              "2B"
+            ],
+            "sequence": 2
+          }
+        },
+        {
+          "player": {
+            "name": "Randal Grichuk",
+            "firstName": "Randal",
+            "lastName": "Grichuk",
+            "slug": "grichuk-randal",
+            "shortName": "R. Grichuk",
+            "position": "DH",
+            "jerseyNumber": "34",
+            "height": 183,
+            "userCount": 36,
+            "gender": "M",
+            "sofascoreId": "iww-s6k",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 960847,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 682041600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جريشوك، راندال",
+                "bn": "গ্রিচুক, রান্ডাল",
+                "hi": "ग्रिचुक, रैंडल",
+                "ru": "Рэндал Гричук"
+              },
+              "shortNameTranslation": {
+                "ar": "ر. جريشوك",
+                "bn": "আর. গ্রিচুক",
+                "hi": "आर. ग्रिचुक",
+                "ru": "Р. Гричук"
+              }
+            }
+          },
+          "teamId": 3644,
+          "position": "DH",
+          "substitute": false,
+          "statistics": {
+            "fieldingAssists": 0,
+            "fieldingPutOuts": 0,
+            "battingPitchesSeen": 0,
+            "fieldingDoublePlays": 0,
+            "fieldingTriplePlays": 0,
+            "fieldingTotalChances": 0,
+            "fieldingPercentage": 0,
+            "fieldingCatcherWildPitches": 0,
+            "fieldingPassedBalls": 0,
+            "fieldingRangeFactor": 0,
+            "fieldingInningsPlayed": 1,
+            "fieldingStolenBasesCaught": 0,
+            "fieldingStolenBasesAllowed": 0,
+            "fieldingPickoffs": 0,
+            "fieldingStolenBasePercentage": 0,
+            "fieldingOutfieldAssists": 0,
+            "fieldingTotalAssists": 0,
+            "fieldingGamesStarted": 0,
+            "fieldingGamesPlayed": 0,
+            "fieldingGamesFinished": 0,
+            "fieldingCompleteGames": 0,
+            "pitchingInningsPitched": 0,
+            "pitchingInningsPitchedToDate": 0,
+            "statisticsType": {
+              "sportSlug": "baseball",
+              "statisticsType": "player"
+            }
+          },
+          "baseballAllPositions": {
+            "battingOrder": 2,
+            "roles": [
+              "LF"
+            ],
+            "sequence": 3
+          }
+        },
+        {
+          "player": {
+            "name": "Miguel Vargas",
+            "firstName": "Miguel",
+            "lastName": "Vargas",
+            "slug": "vargas-miguel",
+            "shortName": "M. Vargas",
+            "position": "3B",
+            "jerseyNumber": "20",
+            "height": 188,
+            "userCount": 298,
+            "gender": "M",
+            "sofascoreId": "hi8-vzj",
+            "country": {
+              "alpha2": "CU",
+              "alpha3": "CUB",
+              "name": "Cuba",
+              "slug": "cuba"
+            },
+            "id": 1022076,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 942796800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فارغاس، ميغيل",
+                "ru": "Мигель Варгас"
+              },
+              "shortNameTranslation": {
+                "ar": "م. فارغاس",
+                "ru": "М. Варгас"
+              }
+            }
+          },
+          "teamId": 3644,
+          "position": "IF",
+          "substitute": false,
+          "statistics": {
+            "fieldingAssists": 0,
+            "fieldingPutOuts": 0,
+            "battingPitchesSeen": 0,
+            "fieldingDoublePlays": 0,
+            "fieldingTriplePlays": 0,
+            "fieldingTotalChances": 0,
+            "fieldingPercentage": 0,
+            "fieldingCatcherWildPitches": 0,
+            "fieldingPassedBalls": 0,
+            "fieldingRangeFactor": 0,
+            "fieldingInningsPlayed": 1,
+            "fieldingStolenBasesCaught": 0,
+            "fieldingStolenBasesAllowed": 0,
+            "fieldingPickoffs": 0,
+            "fieldingStolenBasePercentage": 0,
+            "fieldingOutfieldAssists": 0,
+            "fieldingTotalAssists": 0,
+            "fieldingGamesStarted": 0,
+            "fieldingGamesPlayed": 0,
+            "fieldingGamesFinished": 0,
+            "fieldingCompleteGames": 0,
+            "pitchingInningsPitched": 0,
+            "pitchingInningsPitchedToDate": 0,
+            "statisticsType": {
+              "sportSlug": "baseball",
+              "statisticsType": "player"
+            }
+          },
+          "baseballAllPositions": {
+            "battingOrder": 3,
+            "roles": [
+              "3B"
+            ],
+            "sequence": 4
+          }
+        },
+        {
+          "__trimmed__": 8
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "ffffff",
+        "number": "000000",
+        "outline": "ffffff",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Steven Kwan",
+            "firstName": "Steven",
+            "lastName": "Kwan",
+            "slug": "kwan-steven",
+            "shortName": "S. Kwan",
+            "position": "LF",
+            "jerseyNumber": "38",
+            "height": 173,
+            "userCount": 130,
+            "gender": "M",
+            "sofascoreId": "b77-zvr",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 979865,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 873417600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كوان، ستيفن",
+                "bn": "কোয়ান, স্টিভেন",
+                "hi": "क्वान, स्टीवन",
+                "ru": "Стивен Кван"
+              },
+              "shortNameTranslation": {
+                "ar": "س. كوان",
+                "bn": "এস. কোয়ান",
+                "hi": "एस. क्वान",
+                "ru": "С. Кван"
+              }
+            }
+          },
+          "teamId": 3650,
+          "position": "OF",
+          "substitute": false,
+          "statistics": {
+            "battingFlyOuts": 0,
+            "battingGroundOuts": 0,
+            "battingRuns": 0,
+            "battingRunsCreatedToDate": 1,
+            "battingDoubles": 0,
+            "battingTriples": 0,
+            "battingHomeRuns": 0,
+            "battingStrikeOuts": 0,
+            "battingBaseOnBalls": 1,
+            "battingBaseOnBallsToDate": 2,
+            "battingHits": 0,
+            "battingHitsToDate": 2,
+            "battingHitByPitch": 0,
+            "battingRbi": 0,
+            "battingCaughtStealing": 0,
+            "battingCaughtStealingToDate": 0,
+            "battingStolenBases": 0,
+            "battingStolenBasesToDate": 0,
+            "battingAtBats": 0,
+            "battingAtBatsToDate": 13,
+            "battingLeftOnBase": 0,
+            "battingSacBunts": 0,
+            "battingSacBuntsToDate": 0,
+            "battingSacFlies": 0,
+            "battingSacFliesToDate": 0,
+            "battingAverage": 0,
+            "battingAverageToDate": 0.154,
+            "battingSingles": 0,
+            "battingTotalBases": 0,
+            "battingTotalBasesToDate": 2,
+            "battingSluggingPercentage": 0,
+            "battingSluggingPercentageToDate": 0.154,
+            "battingOps": 1,
+            "battingOpsToDate": 0.421,
+            "battingBabip": 0,
+            "battingIsolatedPower": 0,
+            "battingIsolatedPowerToDate": 0,
+            "battingSecondaryAverage": 0,
+            "battingAbPerHomeRun": 0,
+            "battingWalkRate": 1,
+            "battingStolenBasePercentage": 0,
+            "battingGroundToFlyRatio": 0,
+            "battingPitchesPerPlateAppearance": 1,
+            "battingWalkToStrikeoutRatio": 0,
+            "battingIntentionalWalks": 0,
+            "battingIntentionalWalksToDate": 0,
+            "battingReachedOnError": 0,
+            "battingGroundedIntoDoublePlay": 0,
+            "battingGroundedIntoDoublePlayToDate": 1,
+            "battingPlateAppearances": 1,
+            "battingOnBasePercentage": 1,
+            "battingOnBasePercentageToDate": 0.267,
+            "battingLineDrives": 0,
+            "battingPopUps": 0,
+            "battingGroundBalls": 0,
+            "battingFlyBalls": 0,
+            "battingPitchesSeen": 6,
+            "battingAbPerStrikeout": 0,
+            "battingExtraBaseHits": 0,
+            "battingAtBatsRisp": 0,
+            "battingHitsRisp": 0,
+            "battingRbiTwoOuts": 0,
+            "battingStrikeoutsLooking": 0,
+            "battingStrikeoutsSwinging": 0,
+            "battingTotalPitchesSeen": 6,
+            "battingTotalStrikesSeen": 2,
+            "battingGamesStarted": 0,
+            "battingGamesPlayed": 0,
+            "battingGamesFinished": 0,
+            "battingCompleteGames": 0,
+            "pitchingInningsPitched": 0,
+            "pitchingInningsPitchedToDate": 0,
+            "statisticsType": {
+              "sportSlug": "baseball",
+              "statisticsType": "player"
+            }
+          },
+          "baseballAllPositions": {
+            "battingOrder": 1,
+            "roles": [
+              "CF"
+            ],
+            "sequence": 2
+          }
+        },
+        {
+          "player": {
+            "name": "José Ramírez",
+            "firstName": "José",
+            "lastName": "Ramírez",
+            "slug": "ramirez-jose",
+            "shortName": "J. Ramírez",
+            "position": "3B",
+            "jerseyNumber": "11",
+            "height": 173,
+            "userCount": 235,
+            "gender": "M",
+            "sofascoreId": "n55-p3p",
+            "country": {
+              "alpha2": "DO",
+              "alpha3": "DOM",
+              "name": "Dominican Republic",
+              "slug": "dominican-republic"
+            },
+            "id": 960914,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 716688000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "راميريز، خوسيه",
+                "bn": "রামিরেজ, জোসে",
+                "hi": "रामिरेज़, जोस",
+                "ru": "Хосе Рамирес"
+              },
+              "shortNameTranslation": {
+                "ar": "خ. راميريز",
+                "bn": "জে. রামিরেজ",
+                "hi": "जे. रामिरेज़",
+                "ru": "Х. Рамирес"
+              }
+            }
+          },
+          "teamId": 3650,
+          "position": "IF",
+          "substitute": false,
+          "statistics": {
+            "battingFlyOuts": 1,
+            "battingGroundOuts": 0,
+            "battingRuns": 0,
+            "battingRunsCreatedToDate": 2,
+            "battingDoubles": 0,
+            "battingTriples": 0,
+            "battingHomeRuns": 0,
+            "battingStrikeOuts": 0,
+            "battingBaseOnBalls": 0,
+            "battingBaseOnBallsToDate": 3,
+            "battingHits": 0,
+            "battingHitsToDate": 2,
+            "battingHitByPitch": 0,
+            "battingRbi": 0,
+            "battingCaughtStealing": 0,
+            "battingCaughtStealingToDate": 0,
+            "battingStolenBases": 0,
+            "battingStolenBasesToDate": 1,
+            "battingAtBats": 1,
+            "battingAtBatsToDate": 11,
+            "battingLeftOnBase": 1,
+            "battingSacBunts": 0,
+            "battingSacBuntsToDate": 0,
+            "battingSacFlies": 0,
+            "battingSacFliesToDate": 0,
+            "battingAverage": 0,
+            "battingAverageToDate": 0.182,
+            "battingSingles": 0,
+            "battingTotalBases": 0,
+            "battingTotalBasesToDate": 5,
+            "battingSluggingPercentage": 0,
+            "battingSluggingPercentageToDate": 0.455,
+            "battingOps": 0,
+            "battingOpsToDate": 0.812,
+            "battingBabip": 0,
+            "battingIsolatedPower": 0,
+            "battingIsolatedPowerToDate": 0.273,
+            "battingSecondaryAverage": 0,
+            "battingAbPerHomeRun": 0,
+            "battingWalkRate": 0,
+            "battingStolenBasePercentage": 0,
+            "battingGroundToFlyRatio": 0,
+            "battingPitchesPerPlateAppearance": 0,
+            "battingWalkToStrikeoutRatio": 0,
+            "battingIntentionalWalks": 0,
+            "battingIntentionalWalksToDate": 0,
+            "battingReachedOnError": 0,
+            "battingGroundedIntoDoublePlay": 0,
+            "battingGroundedIntoDoublePlayToDate": 0,
+            "battingPlateAppearances": 1,
+            "battingOnBasePercentage": 0,
+            "battingOnBasePercentageToDate": 0.357,
+            "battingLineDrives": 0,
+            "battingPopUps": 0,
+            "battingGroundBalls": 0,
+            "battingFlyBalls": 1,
+            "battingPitchesSeen": 2,
+            "battingAbPerStrikeout": 0,
+            "battingExtraBaseHits": 0,
+            "battingAtBatsRisp": 0,
+            "battingHitsRisp": 0,
+            "battingRbiTwoOuts": 0,
+            "battingStrikeoutsLooking": 0,
+            "battingStrikeoutsSwinging": 0,
+            "battingTotalPitchesSeen": 2,
+            "battingTotalStrikesSeen": 1,
+            "battingGamesStarted": 0,
+            "battingGamesPlayed": 0,
+            "battingGamesFinished": 0,
+            "battingCompleteGames": 0,
+            "pitchingInningsPitched": 0,
+            "pitchingInningsPitchedToDate": 0,
+            "statisticsType": {
+              "sportSlug": "baseball",
+              "statisticsType": "player"
+            }
+          },
+          "baseballAllPositions": {
+            "battingOrder": 2,
+            "roles": [
+              "3B"
+            ],
+            "sequence": 3
+          }
+        },
+        {
+          "player": {
+            "name": "Chase DeLauter",
+            "firstName": "Chase",
+            "lastName": "DeLauter",
+            "slug": "delauter-chase",
+            "shortName": "C. DeLauter",
+            "position": "RF",
+            "jerseyNumber": "24",
+            "height": 191,
+            "userCount": 148,
+            "gender": "M",
+            "sofascoreId": "b7t-n3k",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1691065,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1002499200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ديلاوتر، تشيس",
+                "ru": "Чейз ДеЛотер"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. ديلاوتر",
+                "ru": "Ч. ДеЛотер"
+              }
+            }
+          },
+          "teamId": 3650,
+          "position": "OF",
+          "substitute": false,
+          "statistics": {
+            "battingFlyOuts": 0,
+            "battingGroundOuts": 1,
+            "battingRuns": 0,
+            "battingRunsCreatedToDate": 1,
+            "battingDoubles": 0,
+            "battingTriples": 0,
+            "battingHomeRuns": 0,
+            "battingStrikeOuts": 0,
+            "battingBaseOnBalls": 0,
+            "battingBaseOnBallsToDate": 0,
+            "battingHits": 0,
+            "battingHitsToDate": 3,
+            "battingHitByPitch": 0,
+            "battingRbi": 0,
+            "battingCaughtStealing": 0,
+            "battingCaughtStealingToDate": 0,
+            "battingStolenBases": 0,
+            "battingStolenBasesToDate": 0,
+            "battingAtBats": 1,
+            "battingAtBatsToDate": 13,
+            "battingLeftOnBase": 1,
+            "battingSacBunts": 0,
+            "battingSacBuntsToDate": 0,
+            "battingSacFlies": 0,
+            "battingSacFliesToDate": 0,
+            "battingAverage": 0,
+            "battingAverageToDate": 0.231,
+            "battingSingles": 0,
+            "battingTotalBases": 0,
+            "battingTotalBasesToDate": 3,
+            "battingSluggingPercentage": 0,
+            "battingSluggingPercentageToDate": 0.231,
+            "battingOps": 0,
+            "battingOpsToDate": 0.517,
+            "battingBabip": 0,
+            "battingIsolatedPower": 0,
+            "battingIsolatedPowerToDate": 0,
+            "battingSecondaryAverage": 0,
+            "battingAbPerHomeRun": 0,
+            "battingWalkRate": 0,
+            "battingStolenBasePercentage": 0,
+            "battingGroundToFlyRatio": 0,
+            "battingPitchesPerPlateAppearance": 0,
+            "battingWalkToStrikeoutRatio": 0,
+            "battingIntentionalWalks": 0,
+            "battingIntentionalWalksToDate": 1,
+            "battingReachedOnError": 0,
+            "battingGroundedIntoDoublePlay": 0,
+            "battingGroundedIntoDoublePlayToDate": 0,
+            "battingPlateAppearances": 1,
+            "battingOnBasePercentage": 0,
+            "battingOnBasePercentageToDate": 0.286,
+            "battingLineDrives": 0,
+            "battingPopUps": 0,
+            "battingGroundBalls": 1,
+            "battingFlyBalls": 0,
+            "battingPitchesSeen": 3,
+            "battingAbPerStrikeout": 0,
+            "battingExtraBaseHits": 0,
+            "battingAtBatsRisp": 0,
+            "battingHitsRisp": 0,
+            "battingRbiTwoOuts": 0,
+            "battingStrikeoutsLooking": 0,
+            "battingStrikeoutsSwinging": 0,
+            "battingTotalPitchesSeen": 3,
+            "battingTotalStrikesSeen": 2,
+            "battingGamesStarted": 0,
+            "battingGamesPlayed": 0,
+            "battingGamesFinished": 0,
+            "battingCompleteGames": 0,
+            "pitchingInningsPitched": 0,
+            "pitchingInningsPitchedToDate": 0,
+            "statisticsType": {
+              "sportSlug": "baseball",
+              "statisticsType": "player"
+            }
+          },
+          "baseballAllPositions": {
+            "battingOrder": 3,
+            "roles": [
+              "RF"
+            ],
+            "sequence": 4
+          }
+        },
+        {
+          "__trimmed__": 7
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "808080",
+        "number": "ff0000",
+        "outline": "ffffff",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

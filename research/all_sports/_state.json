@@ -1,5 +1,15 @@
 {
-  "started": 1790856030.3660078,
-  "api_requests": 3788,
-  "updated": "2026-10-01T14:01:57+00:00"
+  "run_id": "lv-20261009",
+  "started": 1791503538.8513606,
+  "api_requests": 1971,
+  "max_requests": 2000,
+  "max_seconds": 10800.0,
+  "updated": "2026-10-09T00:29:57+00:00",
+  "previous_runs": [
+    {
+      "started": 1790856030.3660078,
+      "api_requests": 3788,
+      "updated": "2026-10-01T14:01:57+00:00"
+    }
+  ]
 }

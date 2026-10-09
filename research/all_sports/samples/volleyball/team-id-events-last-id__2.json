@@ -1,0 +1,679 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/273631/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:23:15+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/elbasani-volleyball-studenti-tirana/mlrsGxjc#id:17259128",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "FSHV Superliga",
+          "slug": "fshv-superliga",
+          "category": {
+            "name": "Albania",
+            "slug": "albania",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AL",
+              "alpha3": "ALB",
+              "name": "Albania",
+              "slug": "albania"
+            },
+            "id": 1028,
+            "flag": "albania",
+            "alpha2": "AL",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألبانيا",
+                "ru": "Албания"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "FSHV Superliga",
+            "slug": "fshv-superliga",
+            "primaryColorHex": "#ed1a25",
+            "secondaryColorHex": "#ed1a25",
+            "category": {
+              "name": "Albania",
+              "slug": "albania",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AL",
+                "alpha3": "ALB",
+                "name": "Albania",
+                "slug": "albania"
+              },
+              "id": 1028,
+              "flag": "albania",
+              "alpha2": "AL",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألبانيا",
+                  "ru": "Албания"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 27,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 24470,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري السوبر FSHV",
+                "ru": "Суперлига FSHV"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "FSHV Superliga",
+          "id": 144059,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "السوبرليغا FSHV",
+              "ru": "FSHV Суперлига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "23/24",
+          "year": "23/24",
+          "editor": false,
+          "id": 73849
+        },
+        "roundInfo": {
+          "round": 10
+        },
+        "customId": "BKCbsGxjc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "KV Tirana",
+          "slug": "kv-tirana",
+          "shortName": "Tirana",
+          "gender": "M",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 37,
+          "nameCode": "TIR",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AL",
+            "alpha3": "ALB",
+            "name": "Albania",
+            "slug": "albania"
+          },
+          "id": 194276,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كي في تيرانا",
+              "ru": "КВ Тирана"
+            },
+            "shortNameTranslation": {
+              "ar": "تيرانا",
+              "ru": "Тирана"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Elbasani Volleyball",
+          "slug": "elbasani-volleyball",
+          "shortName": "Elbasani",
+          "gender": "M",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 25,
+          "nameCode": "ELB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AL",
+            "alpha3": "ALB",
+            "name": "Albania",
+            "slug": "albania"
+          },
+          "id": 273631,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إلباساني فوليبول",
+              "ru": "Элбасани Волейбол"
+            },
+            "shortNameTranslation": {
+              "ar": "إلباساني",
+              "ru": "Элбасани"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3
+        },
+        "awayScore": {
+          "current": 1,
+          "display": 1
+        },
+        "coverage": -1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1742935346
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 13674728,
+        "slug": "elbasani-volleyball-kv-tirana",
+        "startTimestamp": 1708192800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "FSHV Superliga",
+          "slug": "fshv-superliga",
+          "category": {
+            "name": "Albania",
+            "slug": "albania",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AL",
+              "alpha3": "ALB",
+              "name": "Albania",
+              "slug": "albania"
+            },
+            "id": 1028,
+            "flag": "albania",
+            "alpha2": "AL",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألبانيا",
+                "ru": "Албания"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "FSHV Superliga",
+            "slug": "fshv-superliga",
+            "primaryColorHex": "#ed1a25",
+            "secondaryColorHex": "#ed1a25",
+            "category": {
+              "name": "Albania",
+              "slug": "albania",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AL",
+                "alpha3": "ALB",
+                "name": "Albania",
+                "slug": "albania"
+              },
+              "id": 1028,
+              "flag": "albania",
+              "alpha2": "AL",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألبانيا",
+                  "ru": "Албания"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 27,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 24470,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري السوبر FSHV",
+                "ru": "Суперлига FSHV"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "FSHV Superliga",
+          "id": 144059,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "السوبرليغا FSHV",
+              "ru": "FSHV Суперлига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "23/24",
+          "year": "23/24",
+          "editor": false,
+          "id": 73849
+        },
+        "roundInfo": {
+          "round": 11
+        },
+        "customId": "GxjcsOZvi",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Elbasani Volleyball",
+          "slug": "elbasani-volleyball",
+          "shortName": "Elbasani",
+          "gender": "M",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 25,
+          "nameCode": "ELB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AL",
+            "alpha3": "ALB",
+            "name": "Albania",
+            "slug": "albania"
+          },
+          "id": 273631,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إلباساني فوليبول",
+              "ru": "Элбасани Волейбол"
+            },
+            "shortNameTranslation": {
+              "ar": "إلباساني",
+              "ru": "Элбасани"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "KA Skënderbeu Korçë",
+          "slug": "ka-skenderbeu-korce",
+          "shortName": "Skënderbeu",
+          "gender": "M",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 19,
+          "nameCode": "KSK",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AL",
+            "alpha3": "ALB",
+            "name": "Albania",
+            "slug": "albania"
+          },
+          "id": 1052489,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كا سكندربي كورش",
+              "ru": "КА Скендербеу Корча"
+            },
+            "shortNameTranslation": {
+              "ar": "سكندربي",
+              "ru": "КА"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3
+        },
+        "awayScore": {
+          "current": 1,
+          "display": 1
+        },
+        "coverage": -1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1742935371
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 13674729,
+        "slug": "ka-skenderbeu-korce-elbasani-volleyball",
+        "startTimestamp": 1708704000,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "FSHV Superliga",
+          "slug": "fshv-superliga",
+          "category": {
+            "name": "Albania",
+            "slug": "albania",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AL",
+              "alpha3": "ALB",
+              "name": "Albania",
+              "slug": "albania"
+            },
+            "id": 1028,
+            "flag": "albania",
+            "alpha2": "AL",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألبانيا",
+                "ru": "Албания"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "FSHV Superliga",
+            "slug": "fshv-superliga",
+            "primaryColorHex": "#ed1a25",
+            "secondaryColorHex": "#ed1a25",
+            "category": {
+              "name": "Albania",
+              "slug": "albania",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "AL",
+                "alpha3": "ALB",
+                "name": "Albania",
+                "slug": "albania"
+              },
+              "id": 1028,
+              "flag": "albania",
+              "alpha2": "AL",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألبانيا",
+                  "ru": "Албания"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 27,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 24470,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري السوبر FSHV",
+                "ru": "Суперлига FSHV"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "FSHV Superliga",
+          "id": 144059,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "السوبرليغا FSHV",
+              "ru": "FSHV Суперлига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "23/24",
+          "year": "23/24",
+          "editor": false,
+          "id": 73849
+        },
+        "roundInfo": {
+          "round": 12
+        },
+        "customId": "GxjcsJyjc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Erzeni",
+          "slug": "erzeni",
+          "gender": "M",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 27,
+          "nameCode": "ERZ",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AL",
+            "alpha3": "ALB",
+            "name": "Albania",
+            "slug": "albania"
+          },
+          "id": 273684,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيرزيني",
+              "ru": "Эрзени"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Elbasani Volleyball",
+          "slug": "elbasani-volleyball",
+          "shortName": "Elbasani",
+          "gender": "M",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 25,
+          "nameCode": "ELB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "AL",
+            "alpha3": "ALB",
+            "name": "Albania",
+            "slug": "albania"
+          },
+          "id": 273631,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إلباساني فوليبول",
+              "ru": "Элбасани Волейбол"
+            },
+            "shortNameTranslation": {
+              "ar": "إلباساني",
+              "ru": "Элбасани"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3
+        },
+        "awayScore": {
+          "current": 1,
+          "display": 1
+        },
+        "coverage": -1,
+        "time": {},
+        "changes": {
+          "changes": [
+            "status",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1742935479
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 13674736,
+        "slug": "erzeni-elbasani-volleyball",
+        "startTimestamp": 1710522000,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

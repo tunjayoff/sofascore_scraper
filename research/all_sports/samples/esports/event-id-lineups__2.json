@@ -1,0 +1,270 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17264020/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:09:22+00:00",
+  "page": "https://www.sofascore.com/tr/esports/match/parivision-g2/XMVcsJkXd#id:17264020",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": false,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "HeavyGod",
+            "firstName": "Nikita",
+            "lastName": "Martynenko",
+            "slug": "heavygod",
+            "shortName": "HeavyGod",
+            "userCount": 1,
+            "sofascoreId": "b72-3kn",
+            "country": {
+              "alpha2": "IL",
+              "alpha3": "ISR",
+              "name": "Israel",
+              "slug": "israel"
+            },
+            "id": 1093145,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1027468800
+          },
+          "teamId": 364397,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "MATYS",
+            "firstName": "Matúš",
+            "lastName": "Šimko",
+            "slug": "matys",
+            "shortName": "MATYS",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "dqa-bdn",
+            "country": {
+              "alpha2": "SK",
+              "alpha3": "SVK",
+              "name": "Slovakia",
+              "slug": "slovakia"
+            },
+            "id": 1103222,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1019347200
+          },
+          "teamId": 364397,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "NertZ",
+            "firstName": "Guy",
+            "lastName": "Iluz",
+            "slug": "nertz",
+            "shortName": "Nertz",
+            "userCount": 0,
+            "sofascoreId": "6gw-eub",
+            "country": {
+              "alpha2": "IL",
+              "alpha3": "ISR",
+              "name": "Israel",
+              "slug": "israel"
+            },
+            "id": 1075783,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 931737600
+          },
+          "teamId": 365583,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "huNter-",
+            "firstName": "Nemanja",
+            "lastName": "Kovač",
+            "slug": "hunter",
+            "shortName": "huNter",
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "dq9-2j9",
+            "country": {
+              "alpha2": "BA",
+              "alpha3": "BIH",
+              "name": "Bosnia & Herzegovina",
+              "slug": "bosnia-and-herzegovina"
+            },
+            "id": 1079766,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 820627200
+          },
+          "teamId": 364397,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "r1nkle",
+            "firstName": "Artem",
+            "lastName": "Moroz",
+            "slug": "r1nkle",
+            "shortName": "r1nkle",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "g8r-ptg",
+            "country": {
+              "alpha2": "UA",
+              "alpha3": "UKR",
+              "name": "Ukraine",
+              "slug": "ukraine"
+            },
+            "id": 1092129,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1098835200
+          },
+          "teamId": 388937,
+          "substitute": false
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "FL1T",
+            "firstName": "Evgeny",
+            "lastName": "Lebedev",
+            "slug": "fl1t",
+            "shortName": "FL1T",
+            "userCount": 0,
+            "sofascoreId": "8js-3eg",
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 1079168,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 977356800
+          },
+          "teamId": 364229,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "HObbit",
+            "firstName": "Abay",
+            "lastName": "Khasenov",
+            "slug": "hobbit",
+            "shortName": "Hobbit",
+            "userCount": 0,
+            "sofascoreId": "5f7-acf",
+            "country": {
+              "alpha2": "KZ",
+              "alpha3": "KAZ",
+              "name": "Kazakhstan",
+              "slug": "kazakhstan"
+            },
+            "id": 1080568,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 769219200
+          },
+          "teamId": 364032,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Jame",
+            "firstName": "Ali",
+            "lastName": "Djami",
+            "slug": "jame",
+            "shortName": "Jame",
+            "userCount": 0,
+            "sofascoreId": "8js-ug6",
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 1080064,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 903830400
+          },
+          "teamId": 364227,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "xiELO",
+            "firstName": "Vladislav",
+            "lastName": "Lysov",
+            "slug": "xielo",
+            "shortName": "xiELO",
+            "userCount": 0,
+            "sofascoreId": "wrq-w4p",
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 1399790,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1138406400
+          },
+          "teamId": 447260,
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "zweih",
+            "firstName": "Ivan ",
+            "lastName": "Gogin",
+            "slug": "zweih",
+            "shortName": "zweih",
+            "userCount": 0,
+            "sofascoreId": "vui-ygt",
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 1595915,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1190160000
+          },
+          "teamId": 497457,
+          "substitute": false
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

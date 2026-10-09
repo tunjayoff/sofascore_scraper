@@ -1,0 +1,427 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16546907",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:57:32+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/minnesota-wild-buffalo-sabres/DybsOyb#id:16546907",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "NHL",
+        "slug": "nhl",
+        "category": {
+          "name": "North America",
+          "slug": "north-america",
+          "sport": {
+            "name": "Hockey",
+            "slug": "ice-hockey",
+            "id": 4
+          },
+          "priority": 11,
+          "country": {},
+          "id": 1171,
+          "flag": "north-america",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمريكا الشمالية",
+              "ru": "Северная Америка"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "NHL",
+          "slug": "nhl",
+          "secondaryColorHex": "#808291",
+          "category": {
+            "name": "North America",
+            "slug": "north-america",
+            "sport": {
+              "name": "Hockey",
+              "slug": "ice-hockey",
+              "id": 4
+            },
+            "priority": 11,
+            "country": {},
+            "id": 1171,
+            "flag": "north-america",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أمريكا الشمالية",
+                "ru": "Северная Америка"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 18728,
+          "hasRounds": false,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 234,
+          "hasEventPlayerStatistics": false,
+          "hasBoxScore": true,
+          "displayInverseHomeAwayTeams": true,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الهوكي الوطني",
+              "hi": "एनएचएल",
+              "bn": "এনএইচএল",
+              "ru": "НХЛ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 20,
+        "isGroup": false,
+        "competitionType": 1,
+        "isLive": false,
+        "id": 142,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "एनएचएल",
+            "ar": "الدوري الوطني للهوكي",
+            "bn": "এনএইচএলব",
+            "ru": "НХЛ"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "NHL 26/27",
+        "year": "26/27",
+        "editor": false,
+        "id": 98450
+      },
+      "roundInfo": {
+        "round": 1
+      },
+      "customId": "DybsOyb",
+      "status": {
+        "code": 110,
+        "description": "AET",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "attendance": 19070,
+      "venue": {
+        "city": {
+          "name": "Buffalo",
+          "state": "US-NY",
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 21420
+        },
+        "hidden": true,
+        "slug": "keybank-center",
+        "name": "KeyBank Center",
+        "capacity": 19070,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 5950,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كي بانك سنتر",
+            "hi": "कीबैंक सेंटर",
+            "bn": "কীব্যাঙ্ক সেন্টার",
+            "ru": "Центр KeyBank"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "KeyBank Center",
+          "capacity": 19070
+        }
+      },
+      "homeTeam": {
+        "name": "Buffalo Sabres",
+        "slug": "buffalo-sabres",
+        "shortName": "Sabres",
+        "gender": "M",
+        "sport": {
+          "name": "Hockey",
+          "slug": "ice-hockey",
+          "id": 4
+        },
+        "userCount": 6645,
+        "manager": {
+          "name": "Lindy Ruff",
+          "slug": "ruff-lindy",
+          "shortName": "L. Ruff",
+          "country": {
+            "alpha2": "CA",
+            "alpha3": "CAN",
+            "name": "Canada",
+            "slug": "canada"
+          },
+          "id": 799713,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ليندي روف",
+              "bn": "লিন্ডি রাফ",
+              "hi": "लिंडी रफ",
+              "ru": "Линди Рафф"
+            },
+            "shortNameTranslation": {
+              "ar": "ل. روف",
+              "hi": "एल. रफ",
+              "bn": "এল. রাফ",
+              "ru": "Л. Рафф"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Buffalo",
+            "state": "US-NY",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 21420
+          },
+          "hidden": true,
+          "slug": "keybank-center",
+          "name": "KeyBank Center",
+          "capacity": 19070,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 5950,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كي بانك سنتر",
+              "hi": "कीबैंक सेंटर",
+              "bn": "কীব্যাঙ্ক সেন্টার",
+              "ru": "Центр KeyBank"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "KeyBank Center",
+            "capacity": 19070
+          }
+        },
+        "nameCode": "BUF",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 3678,
+        "fullName": "Buffalo Sabres",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#002654",
+          "secondary": "#fcb514",
+          "text": "#fcb514"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بافالو سابرز",
+            "ru": "Баффало Сейбрз"
+          },
+          "shortNameTranslation": {
+            "ar": "سابرز",
+            "bn": "সাবার্স",
+            "hi": "सेबर्स",
+            "ru": " Баффало Сейбрз"
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Minnesota Wild",
+        "slug": "minnesota-wild",
+        "shortName": "Wild",
+        "gender": "M",
+        "sport": {
+          "name": "Hockey",
+          "slug": "ice-hockey",
+          "id": 4
+        },
+        "userCount": 8151,
+        "manager": {
+          "name": "John Hynes",
+          "slug": "john-hynes",
+          "shortName": "J. Hynes",
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 791845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جون هاينس",
+              "ru": "Джон Хайнс"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. هاينس",
+              "ru": "Д. Хайнс"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "St. Paul",
+            "state": "US-MN",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 34169
+          },
+          "hidden": true,
+          "slug": "xcel-energy-center",
+          "name": "Xcel Energy Center",
+          "capacity": 18064,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 6020,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مركز إكسل إنيرجي",
+              "hi": "एक्सेल एनर्जी सेंटर",
+              "bn": "এক্সেল এনার্জি সেন্টার",
+              "ru": "Центр Xcel Energy"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Xcel Energy Center",
+            "capacity": 18064
+          }
+        },
+        "nameCode": "MIN",
+        "class": 1,
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 3689,
+        "fullName": "Minnesota Wild",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#024930",
+          "secondary": "#af1e24",
+          "text": "#af1e24"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مينيسوتا وايلد",
+            "ru": "Миннесота Уайлд"
+          },
+          "shortNameTranslation": {
+            "ar": "وايلد",
+            "bn": "ওয়াইল্ড",
+            "hi": "वाइल्ड",
+            "ru": "Миннесота Уайлд"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 3,
+        "display": 3,
+        "period1": 0,
+        "period2": 0,
+        "period3": 2,
+        "normaltime": 2,
+        "overtime": 1
+      },
+      "awayScore": {
+        "current": 2,
+        "display": 2,
+        "period1": 0,
+        "period2": 2,
+        "period3": 0,
+        "normaltime": 2,
+        "overtime": 0
+      },
+      "time": {
+        "played": 4800,
+        "periodLength": 1200,
+        "overtimeLength": 300,
+        "totalPeriodCount": 3,
+        "currentPeriodStartTimestamp": 1791337356
+      },
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.normaltime",
+          "awayScore.normaltime",
+          "time.played",
+          "time.playedLastUpdated"
+        ],
+        "changeTimestamp": 1791337528
+      },
+      "hasGlobalHighlights": true,
+      "hasEventPlayerStatistics": true,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 16546907,
+      "defaultPeriodCount": 3,
+      "defaultPeriodLength": 20,
+      "defaultOvertimeLength": 5,
+      "slug": "minnesota-wild-buffalo-sabres",
+      "currentPeriodStartTimestamp": 1791337356,
+      "startTimestamp": 1791327600,
+      "periods": {
+        "current": "Score",
+        "period1": "1st period",
+        "period2": "2nd period",
+        "period3": "3rd period",
+        "overtime": "Overtime",
+        "penalties": "Penalty"
+      },
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "seasonStatisticsType": "regularSeason",
+      "showTotoPromo": true,
+      "isEditor": false,
+      "homeTeamSeasonHistoricalForm": {
+        "wins": 1,
+        "draws": 0,
+        "losses": 1
+      },
+      "awayTeamSeasonHistoricalForm": {
+        "wins": 2,
+        "draws": 0,
+        "losses": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,361 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16534955",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:19:12+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/stade-francais-paris-montpellier-herault-rugby/epcipc#id:16534955",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "France - Top 14",
+        "slug": "france-top-14",
+        "category": {
+          "name": "Rugby Union",
+          "slug": "rugby-union",
+          "sport": {
+            "name": "Rugby",
+            "slug": "rugby",
+            "id": 12
+          },
+          "priority": 0,
+          "country": {},
+          "id": 82,
+          "flag": "rugby-union",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "रग्बी यूनियन",
+              "bn": "রাগবি ইউনিয়ন",
+              "ru": "Регби-союз"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "France - Top 14",
+          "slug": "france-top-14",
+          "primaryColorHex": "#c9a752",
+          "secondaryColorHex": "#705b2c",
+          "category": {
+            "name": "Rugby Union",
+            "slug": "rugby-union",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "priority": 0,
+            "country": {},
+            "id": 82,
+            "flag": "rugby-union",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "रग्बी यूनियन",
+                "bn": "রাগবি ইউনিয়ন",
+                "ru": "Регби-союз"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 4969,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 420,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فرنسا - توب 14",
+              "hi": "फ्रांस - टॉप 14",
+              "bn": "ফ্রান্স - টপ 14",
+              "ru": "Франция — Топ 14"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 1,
+        "isLive": false,
+        "id": 1600,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "फ्रांस - टॉप 14",
+            "ar": "فرنسا - أفضل 14 فريقًا",
+            "bn": "ফ্রান্স - টপ 14",
+            "ru": "Франция — Топ 14"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "Top 14 26/27",
+        "year": "26/27",
+        "editor": false,
+        "id": 98426
+      },
+      "roundInfo": {
+        "round": 6
+      },
+      "customId": "epcipc",
+      "status": {
+        "code": 0,
+        "description": "Not started",
+        "type": "notstarted"
+      },
+      "referee": {
+        "name": "Thomas Charabas",
+        "slug": "charabas-thomas",
+        "yellowCards": 47,
+        "redCards": 5,
+        "yellowRedCards": 0,
+        "games": 34,
+        "sport": {
+          "id": 12,
+          "slug": "rugby",
+          "name": "Rugby"
+        },
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 789649,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "توماس شارباس",
+            "ru": "Томас Шарабас"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "homeTeam": {
+        "name": "Stade Français Paris",
+        "slug": "stade-francais-paris",
+        "shortName": "Paris",
+        "gender": "M",
+        "sport": {
+          "name": "Rugby",
+          "slug": "rugby",
+          "id": 12
+        },
+        "userCount": 1982,
+        "manager": {
+          "name": "Paul Gustard",
+          "slug": "paul-gustard",
+          "shortName": "P. Gustard",
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 793799,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بول غوستارد",
+              "ru": "Пол Густард"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. غوستارد",
+              "ru": "П. Густард"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Issy-les-Moulineaux",
+            "country": {
+              "alpha2": "FR",
+              "alpha3": "FRA",
+              "name": "France",
+              "slug": "france"
+            },
+            "id": 20136
+          },
+          "venueCoordinates": {
+            "latitude": 48.82548,
+            "longitude": 2.263703
+          },
+          "hidden": true,
+          "slug": "stade-jean-bouin",
+          "name": "Stade Jean Bouin",
+          "capacity": 20000,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 9325,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب جان بوان",
+              "hi": "स्टेड जीन बौइन",
+              "bn": "জিন বুইন স্টেডিয়াম",
+              "ru": "Стадион Stade Jean Bouin"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Stade Jean Bouin",
+            "capacity": 20000
+          }
+        },
+        "nameCode": "FPA",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 5758,
+        "fullName": "Stade Français Paris",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ستاد فرانسوا باريس",
+            "ru": "Стэйд Франсе Париж"
+          },
+          "shortNameTranslation": {
+            "ar": "باريس",
+            "bn": "প্যারিস",
+            "hi": "पेरिस"
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Montpellier Hérault Rugby",
+        "slug": "montpellier-herault-rugby",
+        "shortName": "Montpellier",
+        "gender": "M",
+        "sport": {
+          "name": "Rugby",
+          "slug": "rugby",
+          "id": 12
+        },
+        "userCount": 1543,
+        "manager": {
+          "name": "Joan Caudullo",
+          "slug": "jcaudullo",
+          "shortName": "J. Caudullo",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 806585,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ج. كودولو",
+              "ru": "Дж. Кадулло"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. كودولو"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Montpellier",
+            "country": {
+              "alpha2": "FR",
+              "alpha3": "FRA",
+              "name": "France",
+              "slug": "france"
+            },
+            "id": 19219
+          },
+          "hidden": true,
+          "slug": "ggl-stadium",
+          "name": "GGL Stadium",
+          "capacity": 15697,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 32657,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب جي جي إل",
+              "hi": "जीजीएल स्टेडियम",
+              "bn": "জিজিএল স্টেডিয়াম",
+              "ru": "Стадион GGL"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "GGL Stadium",
+            "capacity": 15697
+          }
+        },
+        "nameCode": "MON",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 5754,
+        "fullName": "Montpellier Hérault Rugby",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مونبلييه هيرولت رغبي",
+            "ru": "Монпелье Эро"
+          },
+          "shortNameTranslation": {
+            "ar": "مونبلييه",
+            "bn": "মন্টপেলিয়ার",
+            "hi": "मॉंटपेलीयर"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {},
+      "awayScore": {},
+      "time": {},
+      "changes": {
+        "changeTimestamp": 0
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 16534955,
+      "defaultPeriodCount": 2,
+      "defaultPeriodLength": 40,
+      "slug": "stade-francais-paris-montpellier-herault-rugby",
+      "startTimestamp": 1791635400,
+      "defaultOvertimeLength": 10,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

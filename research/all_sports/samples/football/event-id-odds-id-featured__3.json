@@ -1,0 +1,115 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16363871/odds/1/featured",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:12:38+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/arsenal-leeds-united/JsR#id:16363871",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "featured": {
+      "default": {
+        "sourceId": 200549688,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 200549688,
+        "suspended": false,
+        "id": 429160740,
+        "marketGroup": "1X2",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "19/50",
+            "fractionalValue": "2/5",
+            "sourceId": 2042740141,
+            "name": "1",
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "7/2",
+            "fractionalValue": "4/1",
+            "sourceId": 2042740144,
+            "name": "X",
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "13/2",
+            "fractionalValue": "6/1",
+            "sourceId": 2042740146,
+            "name": "2",
+            "change": -1
+          }
+        ]
+      },
+      "asian": {
+        "sourceId": 200549688,
+        "structureType": 1,
+        "marketId": 17,
+        "marketName": "Asian handicap",
+        "isLive": false,
+        "fid": 200549689,
+        "suspended": false,
+        "id": 435136017,
+        "marketGroup": "Asian Handicap",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "7/8",
+            "fractionalValue": "9/10",
+            "sourceId": 2042740153,
+            "name": "(-1.25) Arsenal",
+            "slipContent": "/?bs=200549689-2042740153~9/10~10",
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "39/40",
+            "fractionalValue": "19/20",
+            "sourceId": 2042740155,
+            "name": "(1.25) Leeds United",
+            "slipContent": "/?bs=200549689-2042740155~19/20~10",
+            "change": -1
+          }
+        ]
+      },
+      "fullTime": {
+        "sourceId": 200549688,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 200549688,
+        "suspended": false,
+        "id": 429160740,
+        "marketGroup": "1X2",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "19/50",
+            "fractionalValue": "2/5",
+            "sourceId": 2042740141,
+            "name": "1",
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "7/2",
+            "fractionalValue": "4/1",
+            "sourceId": 2042740144,
+            "name": "X",
+            "change": 1
+          },
+          {
+            "initialFractionalValue": "13/2",
+            "fractionalValue": "6/1",
+            "sourceId": 2042740146,
+            "name": "2",
+            "change": -1
+          }
+        ]
+      }
+    },
+    "hasMoreOdds": true,
+    "liveStreamUrl": null
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16546907/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:57:26+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/minnesota-wild-buffalo-sabres/DybsOyb#id:16546907",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "Overtime",
+        "homeScore": 3,
+        "awayScore": 2,
+        "isLive": false,
+        "time": 990,
+        "addedTime": 999,
+        "timeSeconds": 59400,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 300
+      },
+      {
+        "from": "regular",
+        "homeScore": 3,
+        "awayScore": 2,
+        "player": {
+          "name": "Owen Power",
+          "firstName": "Owen",
+          "lastName": "Power",
+          "slug": "owen-power",
+          "shortName": "O. Power",
+          "position": "D",
+          "jerseyNumber": "25",
+          "height": 198,
+          "userCount": 70,
+          "gender": "M",
+          "sofascoreId": "eks-4g6",
+          "id": 1122380,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1037923200,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "باور، أوين",
+              "bn": "পাওয়ার, ওয়েন",
+              "hi": "पावर, ओवेन",
+              "ru": "Пауэр, Оуэн"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. باور",
+              "bn": "ও. পাওয়ার",
+              "hi": "ओ. पावर",
+              "ru": "О. Пауэр"
+            }
+          }
+        },
+        "assist1": {
+          "name": "Jiri Kulich",
+          "firstName": "Jiri",
+          "lastName": "Kulich",
+          "slug": "jiri-kulich",
+          "shortName": "J. Kulich",
+          "position": "C",
+          "jerseyNumber": "20",
+          "height": 185,
+          "userCount": 92,
+          "gender": "M",
+          "sofascoreId": "kmn-mnx",
+          "id": 1103421,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1081900800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كوليتش، جيري",
+              "bn": "কুলিচ, জিরি",
+              "hi": "कुलिच, जिरी",
+              "ru": "Кулич, Йири"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. كوليش",
+              "bn": "জে. কুলিচ",
+              "hi": "जे. कुलिच",
+              "ru": "Й. Кулич"
+            }
+          }
+        },
+        "assist2": {
+          "name": "Tage Thompson",
+          "slug": "thompson-tage",
+          "shortName": "T. Thompson",
+          "position": "C",
+          "jerseyNumber": "72",
+          "height": 198,
+          "userCount": 1328,
+          "gender": "M",
+          "sofascoreId": "wws-83k",
+          "id": 898478,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 878169600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "طومسون، تاج",
+              "bn": "থম্পসন, টেজ",
+              "hi": "थॉम्पसन, टेज",
+              "ru": "Томпсон, Тейдж"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. طومسون",
+              "bn": "টি. থম্পসন",
+              "hi": "टी. थॉम्पसन",
+              "ru": "Т. Томпсон"
+            }
+          }
+        },
+        "seasonCount": 1,
+        "assist1SeasonCount": 1,
+        "assist2SeasonCount": 2,
+        "id": 364293594,
+        "time": 65,
+        "timeSeconds": 3862,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 38,
+        "periodTimeSeconds": 262
+      },
+      {
+        "text": "3rd Period",
+        "homeScore": 2,
+        "awayScore": 2,
+        "isLive": false,
+        "time": 60,
+        "addedTime": 999,
+        "timeSeconds": 3600,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 1200
+      },
+      {
+        "__trimmed__": 12
+      }
+    ]
+  }
+}

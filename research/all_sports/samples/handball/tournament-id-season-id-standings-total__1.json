@@ -1,0 +1,955 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/95/season/97291/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:18:42+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/tsv-hannover-burgdorf-sg-flensburg-handewitt/TEbsXic#id:16419114",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 283299,
+        "type": "total",
+        "tournament": {
+          "name": "Bundesliga",
+          "slug": "bundesliga",
+          "category": {
+            "name": "Germany",
+            "slug": "germany",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "priority": 0,
+            "id": 53,
+            "flag": "germany",
+            "alpha2": "DE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ألمانيا",
+                "hi": "जर्मनी",
+                "bn": "জার্মানি",
+                "ru": "Германия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Bundesliga",
+            "slug": "bundesliga",
+            "primaryColorHex": "#124568",
+            "secondaryColorHex": "#4997e4",
+            "category": {
+              "name": "Germany",
+              "slug": "germany",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "priority": 0,
+              "id": 53,
+              "flag": "germany",
+              "alpha2": "DE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ألمانيا",
+                  "hi": "जर्मनी",
+                  "bn": "জার্মানি",
+                  "ru": "Германия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5934,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 149,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري الألماني",
+                "hi": "बुंडेसलीगा",
+                "bn": "বুন্দেসলীগা",
+                "ru": "Бундеслига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 79,
+          "isGroup": false,
+          "isLive": false,
+          "id": 95,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "बुंडेसलीगा",
+              "ar": "الدوري الألماني",
+              "bn": "বুন্দেসলীগা",
+              "ru": "Бундеслига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "Bundesliga 26/27",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 7034,
+          "text": "If teams are tied, the following rules break the tie:\n1. Points (if teams have played an unequal number of matches points per game will be applied)\n2. Goal difference\n3. Head-to-head (points, goal difference, away goals)"
+        },
+        "rows": [
+          {
+            "id": 2380810,
+            "team": {
+              "name": "SC Magdeburg",
+              "slug": "sc-magdeburg",
+              "shortName": "Magdeburg",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 9698,
+              "nameCode": "SCM",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 3982,
+              "teamColors": {
+                "primary": "#008c62",
+                "secondary": "#e2001a",
+                "text": "#e2001a"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ماجدبورغ SC",
+                  "ru": "ГК Магдебург"
+                },
+                "shortNameTranslation": {
+                  "ar": "ماغديبورغ",
+                  "bn": "ম্যাগডেবার্গ",
+                  "hi": "मैगडेबर्ग"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 804,
+              "text": "Champions League"
+            },
+            "position": 1,
+            "matches": 8,
+            "wins": 7,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 272,
+            "scoresAgainst": 238,
+            "points": 14,
+            "scoreDiffFormatted": "+34"
+          },
+          {
+            "id": 2380813,
+            "team": {
+              "name": "SG Flensburg Handewitt",
+              "slug": "sg-flensburg-handewitt",
+              "shortName": "Flensburg",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 5999,
+              "nameCode": "SGF",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 3993,
+              "teamColors": {
+                "primary": "#000044",
+                "secondary": "#ff0000",
+                "text": "#ff0000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إس جي فلنسبورغ هاندفيت",
+                  "ru": "Фленсбург-Хандэвитт"
+                },
+                "shortNameTranslation": {
+                  "ar": "فلنسبورغ",
+                  "bn": "ফ্লেনসবার্গ",
+                  "hi": "फ्लेंसबर्ग"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 804,
+              "text": "Champions League"
+            },
+            "position": 2,
+            "matches": 7,
+            "wins": 6,
+            "losses": 0,
+            "draws": 1,
+            "scoresFor": 244,
+            "scoresAgainst": 215,
+            "points": 13,
+            "scoreDiffFormatted": "+29"
+          },
+          {
+            "id": 2380817,
+            "team": {
+              "name": "THW Kiel",
+              "slug": "thw-kiel",
+              "shortName": "Kiel",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 9147,
+              "nameCode": "THW",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 3980,
+              "teamColors": {
+                "primary": "#ffffff",
+                "secondary": "#000000",
+                "text": "#000000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ثو كيل",
+                  "ru": "ТХВ Киль"
+                },
+                "shortNameTranslation": {
+                  "ar": "كييل",
+                  "bn": "কিয়েল",
+                  "hi": "कील"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 507,
+              "text": "European League EHF"
+            },
+            "position": 3,
+            "matches": 8,
+            "wins": 6,
+            "losses": 1,
+            "draws": 1,
+            "scoresFor": 246,
+            "scoresAgainst": 228,
+            "points": 13,
+            "scoreDiffFormatted": "+18"
+          },
+          {
+            "id": 2380802,
+            "team": {
+              "name": "Füchse Berlin",
+              "slug": "fuchse-berlin",
+              "shortName": "Füchse Berlin",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 8310,
+              "nameCode": "BER",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 5453,
+              "teamColors": {
+                "primary": "#006d12",
+                "secondary": "#fd0000",
+                "text": "#fd0000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فوش برلين",
+                  "bn": "ফুচসে বার্লিন",
+                  "hi": "फुच्से बर्लिन",
+                  "ru": "Фюхсе Берлин"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 507,
+              "text": "European League EHF"
+            },
+            "position": 4,
+            "matches": 6,
+            "wins": 5,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 201,
+            "scoresAgainst": 185,
+            "points": 10,
+            "scoreDiffFormatted": "+16"
+          },
+          {
+            "id": 2380808,
+            "team": {
+              "name": "MT Melsungen",
+              "slug": "mt-melsungen",
+              "shortName": "Melsungen",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 2413,
+              "nameCode": "MTM",
+              "national": false,
+              "type": 0,
+              "id": 4007,
+              "teamColors": {
+                "primary": "#ff0000",
+                "secondary": "#000000",
+                "text": "#000000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ملزونجن MT",
+                  "ru": "ГК Мелсунген"
+                },
+                "shortNameTranslation": {
+                  "ar": "ميلسونجين",
+                  "bn": "মেলসুঞ্জেন",
+                  "hi": "मेलसंगेन"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 507,
+              "text": "European League EHF"
+            },
+            "position": 5,
+            "matches": 7,
+            "wins": 4,
+            "losses": 2,
+            "draws": 1,
+            "scoresFor": 218,
+            "scoresAgainst": 195,
+            "points": 9,
+            "scoreDiffFormatted": "+23"
+          },
+          {
+            "id": 2380818,
+            "team": {
+              "name": "TSV Hannover Burgdorf",
+              "slug": "tsv-hannover-burgdorf",
+              "shortName": "Burgdorf",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 1494,
+              "nameCode": "HAN",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 5447,
+              "teamColors": {
+                "primary": "#004500",
+                "secondary": "#000000",
+                "text": "#000000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تي إس في هانوفر بورغدورف",
+                  "ru": "Ганновер Бюргдорф"
+                },
+                "shortNameTranslation": {
+                  "ar": "بورغدورف",
+                  "bn": "বার্গডর্ফ",
+                  "hi": "बुर्गडॉर्फ"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 6,
+            "matches": 7,
+            "wins": 4,
+            "losses": 2,
+            "draws": 1,
+            "scoresFor": 205,
+            "scoresAgainst": 201,
+            "points": 9,
+            "scoreDiffFormatted": "+4"
+          },
+          {
+            "id": 2380819,
+            "team": {
+              "name": "TVB 1898 Stuttgart",
+              "slug": "tvb-1898-stuttgart",
+              "shortName": "TVB Stuttgart",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 906,
+              "nameCode": "TVB",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 6272,
+              "teamColors": {
+                "primary": "#ffffff",
+                "secondary": "#0000ff",
+                "text": "#0000ff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تي في بي 1 8 9 8 شتوتغارت",
+                  "ru": "ТВБ 1898 Штутгарт"
+                },
+                "shortNameTranslation": {
+                  "ar": "تي في بي شتوتغارت",
+                  "bn": "টিভিবি স্টুটগার্ট",
+                  "hi": "टीवीबी स्टुटगार्ट",
+                  "ru": "ТВБ Штутгарт"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 7,
+            "matches": 8,
+            "wins": 4,
+            "losses": 3,
+            "draws": 1,
+            "scoresFor": 244,
+            "scoresAgainst": 241,
+            "points": 9,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2380814,
+            "team": {
+              "name": "TBV Lemgo",
+              "slug": "tbv-lemgo",
+              "shortName": "Lemgo",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 1101,
+              "nameCode": "TBV",
+              "national": false,
+              "type": 0,
+              "id": 3996,
+              "teamColors": {
+                "primary": "#224d7d",
+                "secondary": "#000000",
+                "text": "#000000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تي بي في ليمغو",
+                  "ru": "ТБВ Лемго"
+                },
+                "shortNameTranslation": {
+                  "ar": "ليمغو",
+                  "bn": "লেমগো",
+                  "hi": "लेमगो",
+                  "ru": "Лемго"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 8,
+            "matches": 7,
+            "wins": 4,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 216,
+            "scoresAgainst": 220,
+            "points": 8,
+            "scoreDiffFormatted": "-4"
+          },
+          {
+            "id": 2380821,
+            "team": {
+              "name": "VfL Gummersbach",
+              "slug": "vfl-gummersbach",
+              "shortName": "Gummersbach",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 1872,
+              "nameCode": "GUM",
+              "national": false,
+              "type": 0,
+              "id": 3994,
+              "teamColors": {
+                "primary": "#174ea0",
+                "secondary": "#000000",
+                "text": "#000000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "في إف إل جومرسباخ",
+                  "bn": "গুমারসবাচ",
+                  "ru": "ВфЛ Гуммерсбах"
+                },
+                "shortNameTranslation": {
+                  "ar": "جومرسباخ",
+                  "hi": "गम्मर्सबाख",
+                  "ru": "Гуммерсбах"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 9,
+            "matches": 7,
+            "wins": 3,
+            "losses": 3,
+            "draws": 1,
+            "scoresFor": 221,
+            "scoresAgainst": 215,
+            "points": 7,
+            "scoreDiffFormatted": "+6"
+          },
+          {
+            "id": 2380804,
+            "team": {
+              "name": "HC Erlangen",
+              "slug": "hc-erlangen",
+              "shortName": "Erlangen",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 843,
+              "nameCode": "HCE",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 6288,
+              "teamColors": {
+                "primary": "#000000",
+                "secondary": "#ff0000",
+                "text": "#ff0000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ارلانجن HC",
+                  "ru": "ГК Эрланген"
+                },
+                "shortNameTranslation": {
+                  "ar": "إرلانجن",
+                  "bn": "এরলাঞ্জেন",
+                  "hi": "एरलांगेन"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 10,
+            "matches": 7,
+            "wins": 3,
+            "losses": 3,
+            "draws": 1,
+            "scoresFor": 209,
+            "scoresAgainst": 208,
+            "points": 7,
+            "scoreDiffFormatted": "+1"
+          },
+          {
+            "id": 2380809,
+            "team": {
+              "name": "Rhein Neckar Löwen",
+              "slug": "rhein-neckar-lowen",
+              "shortName": "RN Löwen",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 3021,
+              "nameCode": "RNL",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4004,
+              "teamColors": {
+                "primary": "#ffed00",
+                "secondary": "#000000",
+                "text": "#000000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "راين نيكار ليوين",
+                  "ru": "Рейн-Неккар Львы"
+                },
+                "shortNameTranslation": {
+                  "ar": "آر إن ليوين",
+                  "bn": "আরএন লোভেন",
+                  "hi": "आरएन लोवेन",
+                  "ru": "РН Львы"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 11,
+            "matches": 8,
+            "wins": 3,
+            "losses": 4,
+            "draws": 1,
+            "scoresFor": 230,
+            "scoresAgainst": 236,
+            "points": 7,
+            "scoreDiffFormatted": "-6"
+          },
+          {
+            "id": 2380800,
+            "team": {
+              "name": "Frisch Auf Göppingen",
+              "slug": "frisch-auf-goppingen",
+              "shortName": "Göppingen",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 877,
+              "nameCode": "FAG",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 3995,
+              "teamColors": {
+                "primary": "#008753",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فريش أوف غوبينغن",
+                  "ru": "Фрисх Гёппинген"
+                },
+                "shortNameTranslation": {
+                  "ar": "غوبينغن",
+                  "bn": "গোপিংগেন",
+                  "hi": "गोपिंगेन"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 12,
+            "matches": 7,
+            "wins": 3,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 197,
+            "scoresAgainst": 220,
+            "points": 6,
+            "scoreDiffFormatted": "-23"
+          },
+          {
+            "id": 2380816,
+            "team": {
+              "name": "ThSV Eisenach",
+              "slug": "thsv-eisenach",
+              "shortName": "Eisenach",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 985,
+              "nameCode": "EIS",
+              "national": false,
+              "type": 0,
+              "id": 3981,
+              "teamColors": {
+                "primary": "#006ab2",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تي إس في آيزناخ",
+                  "ru": "ГК Эйзенах"
+                },
+                "shortNameTranslation": {
+                  "ar": "آيزناخ",
+                  "bn": "আইসেনাচ",
+                  "hi": "ईसेनच"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 13,
+            "matches": 8,
+            "wins": 2,
+            "losses": 5,
+            "draws": 1,
+            "scoresFor": 227,
+            "scoresAgainst": 243,
+            "points": 5,
+            "scoreDiffFormatted": "-16"
+          },
+          {
+            "id": 2380803,
+            "team": {
+              "name": "HBW Balingen/Weilstetten",
+              "slug": "hbw-balingenweilstetten",
+              "shortName": "Balingen/W",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 616,
+              "nameCode": "HBW",
+              "national": false,
+              "type": 0,
+              "id": 5463,
+              "teamColors": {
+                "primary": "#0040ff",
+                "secondary": "#ff0000",
+                "text": "#ff0000"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إتش بي دبليو بالينغن/فايلشتاتين",
+                  "ru": "Балинген/Вейлштеттен"
+                },
+                "shortNameTranslation": {
+                  "ar": "بالينغن/و",
+                  "bn": "ব্যালিঞ্জেন/ডব্লিউ",
+                  "hi": "बालिंजेन/डब्ल्यू"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 14,
+            "matches": 6,
+            "wins": 2,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 179,
+            "scoresAgainst": 171,
+            "points": 4,
+            "scoreDiffFormatted": "+8"
+          },
+          {
+            "id": 2380807,
+            "team": {
+              "name": "Handball Club Hamburg",
+              "slug": "hsv-hamburg",
+              "shortName": "HCH",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 1394,
+              "nameCode": "HCH",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 3997,
+              "teamColors": {
+                "primary": "#e31e25",
+                "secondary": "#00579b",
+                "text": "#00579b"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "هامبورغ HSV",
+                  "ru": "ХСВ Гамбург"
+                },
+                "shortNameTranslation": {
+                  "ar": "أتش أس في",
+                  "bn": "এইচএসভি",
+                  "hi": "एचएसवी"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 15,
+            "matches": 7,
+            "wins": 1,
+            "losses": 5,
+            "draws": 1,
+            "scoresFor": 220,
+            "scoresAgainst": 229,
+            "points": 3,
+            "scoreDiffFormatted": "-9"
+          },
+          {
+            "id": 2380799,
+            "team": {
+              "name": "Bergischer HC",
+              "slug": "bergischer-hc",
+              "shortName": "BHC",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 958,
+              "nameCode": "BHC",
+              "national": false,
+              "type": 0,
+              "id": 6268,
+              "teamColors": {
+                "primary": "#00008b",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "بيرجيشر HC",
+                  "ru": "ГК Бергишер"
+                },
+                "shortNameTranslation": {
+                  "ar": "بي أتش سي",
+                  "bn": "বিএইচসি",
+                  "hi": "बीएचसी"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 16,
+            "matches": 7,
+            "wins": 1,
+            "losses": 6,
+            "draws": 0,
+            "scoresFor": 197,
+            "scoresAgainst": 223,
+            "points": 2,
+            "scoreDiffFormatted": "-26"
+          },
+          {
+            "id": 2380812,
+            "team": {
+              "name": "SG Bietigheim-Metterzimmern",
+              "slug": "sg-bietigheim-metterzimmern",
+              "shortName": "Bietigheim",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 554,
+              "nameCode": "SGB",
+              "national": false,
+              "type": 0,
+              "id": 5462,
+              "teamColors": {
+                "primary": "#b40404",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دي جي كيه ريمبار وولف",
+                  "ru": "СГ Бетигхайм-Меттерциммерн"
+                },
+                "shortNameTranslation": {
+                  "ru": "Бетигхайм"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 3,
+              "text": "Relegation"
+            },
+            "position": 17,
+            "matches": 7,
+            "wins": 1,
+            "losses": 6,
+            "draws": 0,
+            "scoresFor": 201,
+            "scoresAgainst": 232,
+            "points": 2,
+            "scoreDiffFormatted": "-31"
+          },
+          {
+            "id": 2380805,
+            "team": {
+              "name": "HSG Wetzlar",
+              "slug": "hsg-wetzlar",
+              "shortName": "Wetzlar",
+              "gender": "M",
+              "sport": {
+                "name": "Handball",
+                "slug": "handball",
+                "id": 6
+              },
+              "userCount": 804,
+              "nameCode": "WET",
+              "national": false,
+              "type": 0,
+              "id": 3984,
+              "teamColors": {
+                "primary": "#1e7251",
+                "secondary": "#ffffff",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ڢتزلار HSV",
+                  "ru": "Д/М Ветцлар"
+                },
+                "shortNameTranslation": {
+                  "ar": "فيتسلار",
+                  "bn": "ওয়েটজলার",
+                  "hi": "वेट्जलार"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 3,
+              "text": "Relegation"
+            },
+            "position": 18,
+            "matches": 8,
+            "wins": 0,
+            "losses": 6,
+            "draws": 2,
+            "scoresFor": 242,
+            "scoresAgainst": 269,
+            "points": 2,
+            "scoreDiffFormatted": "-27"
+          }
+        ],
+        "updatedAtTimestamp": 1791485563
+      }
+    ]
+  }
+}

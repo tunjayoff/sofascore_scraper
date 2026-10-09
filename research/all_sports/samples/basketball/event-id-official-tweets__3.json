@@ -1,0 +1,75 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16685163/official-tweets",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:14:00+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/cleveland-cavaliers-boston-celtics/xtbsHtb#id:16685163",
+  "cache_control": "max-age=60, public, s-maxage=36000",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "tweets": [
+      {
+        "id": "2108347056851202061",
+        "account": {
+          "id": "19263978",
+          "name": "Cleveland Cavaliers",
+          "handle": "cavs",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2094420137319284736/fxZglZef_normal.jpg"
+        },
+        "text": "PWat is getting going! \n\n@peytonwatson_ | #LetEmKnow",
+        "media": [
+          {
+            "id": "2108347008540987392",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108347008540987392/img/60Wt_n7XfTZd5BBb.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108347008540987392/vid/avc1/320x400/wcc5z6o9PavmM5G-.mp4?tag=29"
+          },
+          {
+            "id": "2108346999732932608",
+            "imageUrl": "https://pbs.twimg.com/amplify_video_thumb/2108346999732932608/img/H4xjSXxjbMgW3xWx.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108346999732932608/vid/avc1/320x400/E_fC191J9YhvZuia.mp4?tag=29"
+          }
+        ],
+        "createdAtTimestamp": 1791504084,
+        "externalUrl": "https://x.com/cavs/status/2108347056851202061"
+      },
+      {
+        "id": "2108345150590398666",
+        "account": {
+          "id": "19263978",
+          "name": "Cleveland Cavaliers",
+          "handle": "cavs",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/2094420137319284736/fxZglZef_normal.jpg"
+        },
+        "text": "Want more JA dunks? \n\nTUNE-IN HERE:  \n\n@_daznus | #LetEmKnow",
+        "media": [],
+        "createdAtTimestamp": 1791503629,
+        "externalUrl": "https://x.com/cavs/status/2108345150590398666"
+      },
+      {
+        "id": "2108345124027560107",
+        "account": {
+          "id": "18139461",
+          "name": "Boston Celtics",
+          "handle": "celtics",
+          "verified": true,
+          "profilePictureUrl": "https://pbs.twimg.com/profile_images/1986995495269478400/CqJpOIXu_normal.jpg"
+        },
+        "text": "Look at the rook running the floor like this 😈",
+        "media": [
+          {
+            "id": "2108345105824231424",
+            "imageUrl": "https://pbs.twimg.com/media/HUJYs1hWEAAPX05.jpg",
+            "videoUrl": "https://video.twimg.com/amplify_video/2108345105824231424/vid/avc1/320x320/tZ1DP-F7_8HCK2Tl.mp4?tag=16"
+          }
+        ],
+        "createdAtTimestamp": 1791503623,
+        "externalUrl": "https://x.com/celtics/status/2108345124027560107"
+      },
+      {
+        "__trimmed__": 31
+      }
+    ]
+  }
+}

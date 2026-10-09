@@ -1,0 +1,256 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17236299",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:16:19+00:00",
+  "page": "https://www.sofascore.com/tr/aussie-rules/match/essendon-bombers-western-bulldogs/BbYbsHBDd#id:17236299",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "AFL, Women",
+        "slug": "afl-women",
+        "category": {
+          "name": "Australia",
+          "slug": "australia",
+          "sport": {
+            "name": "Aussie rules",
+            "slug": "aussie-rules",
+            "id": 13
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 87,
+          "flag": "australia",
+          "alpha2": "AU",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أستراليا",
+              "ru": "Австралия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "AFL, Women",
+          "slug": "afl-women",
+          "primaryColorHex": "#f27b62",
+          "secondaryColorHex": "#ed4623",
+          "category": {
+            "name": "Australia",
+            "slug": "australia",
+            "sport": {
+              "name": "Aussie rules",
+              "slug": "aussie-rules",
+              "id": 13
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 87,
+            "flag": "australia",
+            "alpha2": "AU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أستراليا",
+                "ru": "Австралия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 412,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 10159,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+              "ru": "AFL среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 1,
+        "isLive": false,
+        "id": 57591,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "(AFL, W) دوري كرة القدم الأسترالية للسيدات",
+            "ru": "AFL, Женщины"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "AFL, Women 2026",
+        "year": "2026",
+        "editor": false,
+        "id": 95427
+      },
+      "roundInfo": {
+        "round": 9
+      },
+      "customId": "BbYbsHBDd",
+      "status": {
+        "code": 0,
+        "description": "Not started",
+        "type": "notstarted"
+      },
+      "venue": {
+        "city": {
+          "name": "Melbourne",
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 17959
+        },
+        "hidden": true,
+        "slug": "victoria-university-whitten-oval",
+        "name": "Victoria University Whitten Oval",
+        "capacity": 12000,
+        "country": {
+          "alpha2": "AU",
+          "alpha3": "AUS",
+          "name": "Australia",
+          "slug": "australia"
+        },
+        "id": 20269,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب فيكتوريا الجامعي ويتن أوفال",
+            "hi": "विक्टोरिया यूनिवर्सिटी व्हिटेन ओवल",
+            "bn": "ভিক্টোরিয়া ইউনিভার্সিটি হুইটেন ওভাল"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Victoria University Whitten Oval",
+          "capacity": 12000
+        }
+      },
+      "homeTeam": {
+        "name": "Western Bulldogs",
+        "slug": "western-bulldogs",
+        "shortName": "Bulldogs",
+        "gender": "F",
+        "sport": {
+          "name": "Aussie rules",
+          "slug": "aussie-rules",
+          "id": 13
+        },
+        "userCount": 67,
+        "nameCode": "WEB",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "AU",
+          "alpha3": "AUS",
+          "name": "Australia",
+          "slug": "australia"
+        },
+        "id": 245076,
+        "fullName": "Western Bulldogs",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "غرب البلدغ",
+            "ru": "Вестерн Бульдогс"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Essendon Bombers",
+        "slug": "essendon-bombers",
+        "shortName": "Essendon",
+        "gender": "F",
+        "sport": {
+          "name": "Aussie rules",
+          "slug": "aussie-rules",
+          "id": 13
+        },
+        "userCount": 78,
+        "nameCode": "ESS",
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "AU",
+          "alpha3": "AUS",
+          "name": "Australia",
+          "slug": "australia"
+        },
+        "id": 446332,
+        "fullName": "Essendon Bombers",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إيسندون بومبرز",
+            "ru": "Эссендон Бомберс"
+          },
+          "shortNameTranslation": {
+            "ar": "إيسندون",
+            "ru": "Эссендон"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {},
+      "awayScore": {},
+      "time": {},
+      "changes": {
+        "changeTimestamp": 0
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17236299,
+      "defaultPeriodCount": 4,
+      "defaultPeriodLength": 15,
+      "slug": "essendon-bombers-western-bulldogs",
+      "startTimestamp": 1791533700,
+      "periods": {
+        "current": "Score",
+        "period1": "1st quarter",
+        "period2": "2nd quarter",
+        "period3": "3rd quarter",
+        "period4": "4th quarter",
+        "overtime": "Overtime"
+      },
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

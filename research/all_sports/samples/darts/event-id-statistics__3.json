@@ -1,0 +1,109 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17279017/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:29:32+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/lauby-jr-borland/oQocsfuqc#id:17279017",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "Attacking",
+            "statisticsItems": [
+              {
+                "name": "Average 3 darts",
+                "home": "89.67",
+                "away": "79.97",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 89.67,
+                "awayValue": 79.97,
+                "renderType": 1,
+                "key": "Average3Darts"
+              },
+              {
+                "name": "Thrown 180",
+                "home": "2",
+                "away": "0",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 2,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "Thrown180"
+              },
+              {
+                "name": "Thrown over 140",
+                "home": "6",
+                "away": "4",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 6,
+                "awayValue": 4,
+                "renderType": 1,
+                "key": "ThrownOver140"
+              },
+              {
+                "name": "Thrown over 100",
+                "home": "5",
+                "away": "9",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 9,
+                "renderType": 1,
+                "key": "ThrownOver100"
+              },
+              {
+                "name": "Highest checkout",
+                "home": "80",
+                "away": "40",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 80,
+                "awayValue": 40,
+                "renderType": 1,
+                "key": "HighestCheckout"
+              },
+              {
+                "name": "Checkouts over 100",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "CheckoutsOver100"
+              },
+              {
+                "name": "Checkouts accuracy",
+                "home": "4/16 (25%)",
+                "away": "2/4 (50%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 4,
+                "awayValue": 2,
+                "homeTotal": 16,
+                "awayTotal": 4,
+                "renderType": 1,
+                "key": "CheckoutsAccuracy"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,505 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17256969/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:53:01+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/mas-de-fes-raja-club-athletic/hKqsKax#id:17256969",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Salaheddine Chihab",
+            "firstName": "Salaheddine Chihab",
+            "lastName": "",
+            "slug": "salaheddine-chihab",
+            "shortName": "S. Chihab",
+            "position": "G",
+            "jerseyNumber": "16",
+            "height": 198,
+            "userCount": 776,
+            "gender": "M",
+            "sofascoreId": "g8v-3kp",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 1140820,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 730425600,
+            "proposedMarketValueRaw": {
+              "value": 875000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "صلاح الدين شهاب",
+                "ru": "Чихаб, Салахеддин"
+              },
+              "shortNameTranslation": {
+                "ar": "ص. شهاب",
+                "ru": "С. Чихаб"
+              }
+            }
+          },
+          "teamId": 55035,
+          "shirtNumber": 16,
+          "jerseyNumber": "16",
+          "position": "G",
+          "substitute": false,
+          "captain": true,
+          "statistics": {
+            "goalAssist": 0,
+            "goals": 0,
+            "ownGoals": 0,
+            "minutesPlayed": 90,
+            "totalShots": 0,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Hamza Ait Allal",
+            "firstName": "",
+            "lastName": "",
+            "slug": "hamza-ait-allal",
+            "shortName": "H. A. Allal",
+            "position": "D",
+            "jerseyNumber": "22",
+            "height": 184,
+            "userCount": 272,
+            "gender": "M",
+            "sofascoreId": "vun-ifv",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 1004523,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 978307200,
+            "proposedMarketValueRaw": {
+              "value": 530000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "حمزة آيت علال",
+                "ru": "Хамза Айт Аллал"
+              },
+              "shortNameTranslation": {
+                "ar": "ح. آيت علال",
+                "ru": "Х. Аллал"
+              }
+            }
+          },
+          "teamId": 55035,
+          "shirtNumber": 22,
+          "jerseyNumber": "22",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "goalAssist": 0,
+            "goals": 0,
+            "ownGoals": 0,
+            "minutesPlayed": 90,
+            "totalShots": 0,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Ayman Chabani",
+            "slug": "chabani-ayman",
+            "shortName": "A. Chabani",
+            "position": "D",
+            "jerseyNumber": "5",
+            "height": 189,
+            "userCount": 97,
+            "gender": "M",
+            "sofascoreId": "ce8-7j2",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 1004426,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 899251200,
+            "proposedMarketValueRaw": {
+              "value": 225000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أيمن الشباني",
+                "ru": "Чабани, Айман"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. الشباني",
+                "ru": "А. Чабани"
+              }
+            }
+          },
+          "teamId": 55035,
+          "shirtNumber": 5,
+          "jerseyNumber": "5",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "goalAssist": 0,
+            "goals": 0,
+            "ownGoals": 0,
+            "minutesPlayed": 90,
+            "totalShots": 0,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 17
+        }
+      ],
+      "supportStaff": [],
+      "formation": "4-3-3",
+      "playerColor": {
+        "primary": "ffdf00",
+        "number": "ffffff",
+        "outline": "ffdf00",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "fafb00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      },
+      "missingPlayers": [
+        {
+          "player": {
+            "name": "Adil Rhaili",
+            "firstName": "",
+            "lastName": "",
+            "slug": "adil-rhaili",
+            "shortName": "A. Rhaili",
+            "position": "D",
+            "jerseyNumber": "2",
+            "height": 192,
+            "userCount": 110,
+            "gender": "M",
+            "sofascoreId": "6vd-ush",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 316583,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 672537600,
+            "proposedMarketValueRaw": {
+              "value": 105000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "عادل الرحيلي",
+                "ru": "Ади́л Рхайли"
+              },
+              "shortNameTranslation": {
+                "ar": "ع. الرحيلي",
+                "ru": "А. Рхайли"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 1,
+          "description": "Knock Injury",
+          "externalType": 5,
+          "expectedEndDate": "2026-10-31T00:00:00+00:00"
+        },
+        {
+          "player": {
+            "name": "Diogo Calila",
+            "firstName": "Diogo",
+            "lastName": "Calila",
+            "slug": "diogo-calila",
+            "shortName": "D. Calila",
+            "position": "D",
+            "jerseyNumber": "2",
+            "height": 173,
+            "userCount": 620,
+            "gender": "M",
+            "sofascoreId": "u33-pvn",
+            "country": {
+              "alpha2": "MZ",
+              "alpha3": "MOZ",
+              "name": "Mozambique",
+              "slug": "mozambique"
+            },
+            "id": 892083,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 907977600,
+            "proposedMarketValueRaw": {
+              "value": 465000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ديغو كاليلا",
+                "ru": "Диогу Калила"
+              },
+              "shortNameTranslation": {
+                "ar": "د. كاليلا",
+                "ru": "Д. Калила"
+              }
+            }
+          },
+          "type": "missing",
+          "reason": 1,
+          "description": "Broken Foot",
+          "externalType": 5,
+          "expectedEndDate": "2026-11-10T00:00:00+00:00"
+        },
+        {
+          "player": {
+            "name": "Samba Mbengue",
+            "firstName": "Samba Mbengue",
+            "slug": "samba-mbengue",
+            "shortName": "S. Mbengue",
+            "position": "D",
+            "jerseyNumber": "4",
+            "height": 183,
+            "userCount": 35,
+            "sofascoreId": "wme-xmm",
+            "country": {
+              "alpha2": "SN",
+              "alpha3": "SEN",
+              "name": "Senegal",
+              "slug": "senegal"
+            },
+            "id": 2688942,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1183593600,
+            "proposedMarketValueRaw": {
+              "value": 215000,
+              "currency": "EUR"
+            }
+          },
+          "type": "missing",
+          "reason": 1,
+          "description": "Muscle Injury",
+          "externalType": 5,
+          "expectedEndDate": "2026-11-10T00:00:00+00:00"
+        },
+        {
+          "__trimmed__": 1
+        }
+      ]
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Mehdi Al Harrar",
+            "firstName": "Mehdi Harrar",
+            "slug": "mehdi-harrar",
+            "shortName": "M. Harrar",
+            "position": "G",
+            "jerseyNumber": "1",
+            "height": 192,
+            "userCount": 2995,
+            "gender": "M",
+            "sofascoreId": "cem-sj4",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 1140885,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 975542400,
+            "proposedMarketValueRaw": {
+              "value": 960000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "المهدي الحرار",
+                "ru": "Мехди Аль Харрар"
+              },
+              "shortNameTranslation": {
+                "ar": "ا. الحرار",
+                "ru": "М. Харрар"
+              }
+            }
+          },
+          "teamId": 41757,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "position": "G",
+          "substitute": false,
+          "statistics": {
+            "goalAssist": 0,
+            "goals": 0,
+            "ownGoals": 0,
+            "minutesPlayed": 90,
+            "totalShots": 0,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Mohamed Boulacsout",
+            "firstName": "",
+            "lastName": "",
+            "slug": "mohamed-boulacsout",
+            "shortName": "H. Boulacsout",
+            "position": "D",
+            "jerseyNumber": "7",
+            "height": 179,
+            "userCount": 2058,
+            "gender": "M",
+            "sofascoreId": "jvv-axc",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 970819,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 906508800,
+            "proposedMarketValueRaw": {
+              "value": 740000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "محمد بولكسوت",
+                "ru": "Мохамед Булаксут"
+              },
+              "shortNameTranslation": {
+                "ar": "م. بولكسوت",
+                "ru": "М. Булаксут"
+              }
+            }
+          },
+          "teamId": 41757,
+          "shirtNumber": 7,
+          "jerseyNumber": "7",
+          "position": "D",
+          "substitute": false,
+          "statistics": {
+            "goalAssist": 0,
+            "goals": 0,
+            "ownGoals": 0,
+            "minutesPlayed": 90,
+            "totalShots": 0,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Badr Benoun",
+            "firstName": "",
+            "lastName": "",
+            "slug": "badr-benoun",
+            "shortName": "B. Benoun",
+            "position": "D",
+            "jerseyNumber": "13",
+            "height": 193,
+            "userCount": 2090,
+            "gender": "M",
+            "sofascoreId": "zzg-cqd",
+            "country": {
+              "alpha2": "MA",
+              "alpha3": "MAR",
+              "name": "Morocco",
+              "slug": "morocco"
+            },
+            "id": 906597,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 749347200,
+            "proposedMarketValueRaw": {
+              "value": 730000,
+              "currency": "EUR"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بدر بانون",
+                "bn": "বদর বেনাউন",
+                "hi": "बद्र बेनून",
+                "ru": "Бадр Бенун"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. بانون",
+                "bn": "বি. বেনাউন",
+                "hi": "बी. बेनून",
+                "ru": "Б. Бенун"
+              }
+            }
+          },
+          "teamId": 41757,
+          "shirtNumber": 13,
+          "jerseyNumber": "13",
+          "position": "D",
+          "substitute": false,
+          "captain": true,
+          "statistics": {
+            "goalAssist": 0,
+            "goals": 0,
+            "ownGoals": 0,
+            "minutesPlayed": 78,
+            "totalShots": 0,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 17
+        }
+      ],
+      "supportStaff": [],
+      "formation": "4-2-3-1",
+      "playerColor": {
+        "primary": "0066cc",
+        "number": "ffffff",
+        "outline": "0066cc",
+        "fancyNumber": "ffffff"
+      },
+      "goalkeeperColor": {
+        "primary": "663300",
+        "number": "000000",
+        "outline": "663300",
+        "fancyNumber": "ffffff"
+      },
+      "missingPlayers": []
+    },
+    "statisticalVersion": 3
+  }
+}

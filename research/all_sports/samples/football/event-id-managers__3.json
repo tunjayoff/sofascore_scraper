@@ -1,0 +1,51 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16363871/managers",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:12:42+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/arsenal-leeds-united/JsR#id:16363871",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "homeManager": {
+      "name": "Mikel Arteta",
+      "slug": "mikel-arteta",
+      "shortName": "M. Arteta",
+      "id": 794075,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ميكيل أرتيتا",
+          "bn": "মিকেল আর্তেতা",
+          "hi": "मिकेल आर्टेटा",
+          "ru": "Микель Артета"
+        },
+        "shortNameTranslation": {
+          "ar": "م. أرتيتا",
+          "hi": "एम. आर्टेटा",
+          "bn": "এম. আরতেতা",
+          "ru": "М. Артета"
+        }
+      }
+    },
+    "awayManager": {
+      "name": "Daniel Farke",
+      "slug": "daniel-farke",
+      "shortName": "D. Farke",
+      "id": 265307,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دانييل فاركي",
+          "bn": "ড্যানিয়েল ফারকে",
+          "hi": "डैनियल फ़ार्के",
+          "ru": "Даниэль Фарке"
+        },
+        "shortNameTranslation": {
+          "ar": "د. فاركي",
+          "hi": "डी. फ़ार्के",
+          "bn": "ডি. ফারকে",
+          "ru": "Д. Фарке"
+        }
+      }
+    }
+  }
+}

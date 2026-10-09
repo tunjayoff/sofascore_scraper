@@ -1,0 +1,23 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17218921/provider/1/winning-odds",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:14:45+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/flavio-cobolli-adrian-mannarino/UrgsFyjc#id:17218921",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "home": {
+      "fractionalValue": "163/100",
+      "expected": 38,
+      "actual": 47,
+      "id": 25971865
+    },
+    "away": {
+      "fractionalValue": "1/2",
+      "expected": 67,
+      "actual": 57,
+      "id": 25971866
+    }
+  }
+}

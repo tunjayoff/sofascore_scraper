@@ -1,0 +1,18 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17283335/provider/1/winning-odds",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:25:06+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/matsushima-feng/viWbshNCc#id:17283335",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "home": null,
+    "away": {
+      "fractionalValue": "1/7",
+      "expected": 88,
+      "actual": 97,
+      "id": 26016122
+    }
+  }
+}

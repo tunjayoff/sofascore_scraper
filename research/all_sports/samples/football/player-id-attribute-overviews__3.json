@@ -1,0 +1,66 @@
+{
+  "url": "https://www.sofascore.com/api/v1/player/282229/attribute-overviews",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:12:50+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/arsenal-leeds-united/JsR#id:16363871",
+  "cache_control": "max-age=600, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "playerAttributeOverviews": [
+      {
+        "id": 13371,
+        "attacking": 39,
+        "technical": 46,
+        "tactical": 77,
+        "defending": 85,
+        "creativity": 46,
+        "position": "D",
+        "yearShift": 0
+      },
+      {
+        "id": 13372,
+        "attacking": 38,
+        "technical": 46,
+        "tactical": 74,
+        "defending": 84,
+        "creativity": 42,
+        "position": "D",
+        "yearShift": 1
+      },
+      {
+        "id": 13373,
+        "attacking": 39,
+        "technical": 49,
+        "tactical": 64,
+        "defending": 76,
+        "creativity": 39,
+        "position": "D",
+        "yearShift": 2
+      },
+      {
+        "id": 28774,
+        "attacking": 39,
+        "technical": 48,
+        "tactical": 62,
+        "defending": 72,
+        "creativity": 42,
+        "position": "D",
+        "yearShift": 3
+      }
+    ],
+    "averageAttributeOverviews": [
+      {
+        "id": 19810,
+        "attacking": 38,
+        "technical": 47,
+        "tactical": 46,
+        "defending": 59,
+        "creativity": 42,
+        "position": "D",
+        "yearShift": 0
+      }
+    ],
+    "sportSlug": "football"
+  }
+}

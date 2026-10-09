@@ -1,0 +1,226 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/baseball/17212666/top-performers",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:07:27+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/atlanta-braves-los-angeles-dodgers/Nxbsgyb#id:17199139",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "topPerformers": [
+      {
+        "role": "pitcher",
+        "rating": 0.327,
+        "statistics": {
+          "pitchingInningsPitched": 6.1,
+          "pitchingHitsAllowed": 3
+        },
+        "player": {
+          "name": "Tyler Mahle",
+          "firstName": "Tyler",
+          "lastName": "Mahle",
+          "slug": "mahle-tyler",
+          "shortName": "T. Mahle",
+          "position": "SP",
+          "jerseyNumber": "54",
+          "height": 191,
+          "userCount": 101,
+          "gender": "M",
+          "sofascoreId": "cee-vv3",
+          "id": 961258,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 780796800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماهل، تايلر",
+              "bn": "মাহলে, টাইলার",
+              "hi": "महले, टायलर",
+              "ru": "Тайлер Махле"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. ماهل",
+              "bn": "টি. মাহলে",
+              "hi": "टी. महले",
+              "ru": "Т. Махле"
+            }
+          }
+        },
+        "team": {
+          "name": "Atlanta Braves",
+          "slug": "atlanta-braves",
+          "shortName": "Braves",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 39203,
+          "nameCode": "ATL",
+          "national": false,
+          "type": 0,
+          "id": 3656,
+          "teamColors": {
+            "primary": "#000066",
+            "secondary": "#000066",
+            "text": "#000066"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أتلانتا برافز",
+              "ru": "Атланта Брейвс"
+            },
+            "shortNameTranslation": {
+              "ar": "برافز",
+              "bn": "ব্রেভস",
+              "hi": "ब्रेव्स",
+              "ru": "Брейвс"
+            }
+          }
+        }
+      },
+      {
+        "role": "batter",
+        "rating": 0.233,
+        "statistics": {
+          "battingHits": 1,
+          "battingAtBats": 4,
+          "battingHomeRuns": 1
+        },
+        "player": {
+          "name": "Max Muncy",
+          "firstName": "Maxwell",
+          "lastName": "Muncy",
+          "slug": "muncy-max",
+          "shortName": "M. Muncy",
+          "position": "3B",
+          "jerseyNumber": "13",
+          "height": 178,
+          "userCount": 348,
+          "gender": "M",
+          "sofascoreId": "cee-vvp",
+          "id": 961269,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 651542400,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مونسي، ماكس",
+              "bn": "মুন্সি, ম্যাক্স",
+              "hi": "मुन्सी, मैक्स",
+              "ru": "Макс Мансі"
+            },
+            "shortNameTranslation": {
+              "ar": "م. مونسي",
+              "bn": "এম. মুন্সি",
+              "hi": "एम. मुन्सी",
+              "ru": "М. Мансі"
+            }
+          }
+        },
+        "team": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69344,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3638,
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        }
+      },
+      {
+        "role": "batter",
+        "rating": 0.167,
+        "statistics": {
+          "battingHits": 2,
+          "battingAtBats": 3,
+          "battingRbi": 2
+        },
+        "player": {
+          "name": "Andy Pages",
+          "firstName": "Andy",
+          "lastName": "Pages",
+          "slug": "pages-andy",
+          "shortName": "A. Pages",
+          "position": "CF",
+          "jerseyNumber": "44",
+          "height": 185,
+          "userCount": 580,
+          "gender": "M",
+          "sofascoreId": "wru-vde",
+          "id": 1105550,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 976233600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بايجز، آندي",
+              "ru": "Энди Пэйджес"
+            },
+            "shortNameTranslation": {
+              "ar": "آ. بايجز",
+              "ru": "Э. Пэйджес"
+            }
+          }
+        },
+        "team": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69344,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3638,
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

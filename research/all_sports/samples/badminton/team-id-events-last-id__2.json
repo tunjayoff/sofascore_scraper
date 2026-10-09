@@ -1,0 +1,637 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/87940/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:24:09+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/miyazaki-okuhara/PiKsNbWd#id:17287651",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Swiss Open 2026, WS",
+          "slug": "swiss-open-2026-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Swiss Open, WS",
+            "slug": "swiss-open-ws",
+            "primaryColorHex": "#d8b566",
+            "secondaryColorHex": "#0467b0",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 45,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11019,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة سويسرا المفتوحة، WS",
+                "ru": "Швейцарский Оупен, WS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 176779,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Швейцарский Оупен 2026, женский одиночный разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Swiss Open, WS 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 90774
+        },
+        "roundInfo": {
+          "round": 27,
+          "name": "Quarterfinals",
+          "slug": "quarterfinals",
+          "cupRoundType": 4
+        },
+        "customId": "PiKsyuAc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Gunji R.",
+          "slug": "gunji-riko",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 71,
+          "nameCode": "GUN",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 313473,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غونجي، ريكو",
+              "ru": "Гунджи, Рико"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 21,
+          "period2": 21,
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 19,
+          "period2": 18,
+          "normaltime": 0
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1773415636
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1773415638
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15721606,
+        "slug": "gunji-okuhara",
+        "startTimestamp": 1773412500,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Swiss Open 2026, WS",
+          "slug": "swiss-open-2026-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Swiss Open, WS",
+            "slug": "swiss-open-ws",
+            "primaryColorHex": "#d8b566",
+            "secondaryColorHex": "#0467b0",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 45,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11019,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة سويسرا المفتوحة، WS",
+                "ru": "Швейцарский Оупен, WS"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 176779,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Швейцарский Оупен 2026, женский одиночный разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Swiss Open, WS 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 90774
+        },
+        "roundInfo": {
+          "round": 28,
+          "name": "Semifinals",
+          "slug": "semifinals",
+          "cupRoundType": 2
+        },
+        "customId": "PiKsaKuc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Wardani P.",
+          "slug": "wardani-putri-kusuma",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 617,
+          "nameCode": "WAR",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "ID",
+            "alpha3": "IDN",
+            "name": "Indonesia",
+            "slug": "indonesia"
+          },
+          "id": 299250,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ورداني، بوتري كوسوما",
+              "ru": "Уардани, Путри Кусума"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 21,
+          "period2": 21,
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 16,
+          "period2": 13,
+          "normaltime": 0
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1773500775
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1773500782
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15729515,
+        "slug": "wardani-okuhara",
+        "startTimestamp": 1773498000,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Orleans Masters 2026, WS",
+          "slug": "orleans-masters-2026-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Orleans Masters",
+            "slug": "orleans-masters",
+            "primaryColorHex": "#4e2378",
+            "secondaryColorHex": "#833fc7",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 38,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11053,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماسترز أورليان",
+                "ru": "Мастерс Орлеана"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 177143,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Мастера Орлеана 2026, женский одиночный разряд"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Orleans Masters, Women, Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 91052
+        },
+        "roundInfo": {
+          "round": 6,
+          "name": "Round of 32",
+          "slug": "round-of-32",
+          "cupRoundType": 16
+        },
+        "customId": "PiKsMzYd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Akechi H.",
+          "slug": "akechi-hina",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 69,
+          "nameCode": "AKE",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 496237,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أكيشي، هينا",
+              "ru": "Акетчи, Хина"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 21,
+          "period2": 13,
+          "period3": 17,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 19,
+          "period2": 21,
+          "period3": 21,
+          "normaltime": 2
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1773825417
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1773825420
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15732505,
+        "slug": "akechi-okuhara",
+        "startTimestamp": 1773821400,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

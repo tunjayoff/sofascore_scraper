@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/branding/providers/TR/web",
+  "status": 404,
+  "fetched_at_utc": "2026-10-08T23:59:48+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/cardiff-university-cardiff-met/byUiseyUi#id:16793649",
+  "cache_control": "max-age=3600, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

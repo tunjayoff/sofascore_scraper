@@ -1,0 +1,420 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15884177",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:08:26+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884177",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "West Indies in India, 5 T20I Series",
+        "slug": "west-indies-in-india-5-t20i-series",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Cricket",
+            "slug": "cricket",
+            "id": 62
+          },
+          "priority": 0,
+          "country": {},
+          "id": 1343,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "T20 International",
+          "slug": "t20-international",
+          "primaryColorHex": "#0680b1",
+          "secondaryColorHex": "#00c6ad",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Cricket",
+              "slug": "cricket",
+              "id": 62
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1343,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "विश्व",
+                "bn": "বিশ্ব",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 4470,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 11191,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مباراة دولية T20",
+              "hi": "टी20 इंटरनेशनल",
+              "bn": "টি-20 ইন্টারন্যাশনাল",
+              "ru": "Международный T20"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 106,
+        "isGroup": false,
+        "id": 179155,
+        "endTimestamp": 1792195200,
+        "startTimestamp": 1791244800,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "سلسلة ت20ي من 5 مباريات بين جزر الهند الغربية والهند",
+            "ru": "Вест-Индия в Индии, 5 T20I Серия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "2026",
+        "year": "2026",
+        "editor": false,
+        "id": 77257
+      },
+      "customId": "kfAbspfAb",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 1,
+      "venue": {
+        "city": {
+          "name": "Lucknow",
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 19809
+        },
+        "hidden": true,
+        "slug": "bharat-ratna-shri-atal-bihari-vajpayee-ekana-cricket-stadium",
+        "name": "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium",
+        "country": {
+          "alpha2": "IN",
+          "alpha3": "IND",
+          "name": "India",
+          "slug": "india"
+        },
+        "id": 35779,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب بهارات راتنا شري أتال بيهاري فاجبايي إكانا للكريكيت",
+            "hi": "भारत रत्न श्री अटल बिहारी वाजपेई इकाना क्रिकेट स्टेडियम",
+            "bn": "ভারতরত্ন শ্রী অটল বিহারী বাজপেয়ী একনা ক্রিকেট স্টেডিয়াম"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium"
+        }
+      },
+      "referee": {
+        "name": "Prakash Bhatt",
+        "slug": "prakash-bhatt",
+        "yellowCards": 0,
+        "redCards": 0,
+        "yellowRedCards": 0,
+        "games": 134,
+        "sport": {
+          "id": 62,
+          "slug": "cricket",
+          "name": "Cricket"
+        },
+        "country": {},
+        "id": 790032,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "براكاش بهات",
+            "ru": "Пракеш Бхатт"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "homeTeam": {
+        "name": "India",
+        "slug": "india",
+        "shortName": "IND",
+        "gender": "M",
+        "sport": {
+          "name": "Cricket",
+          "slug": "cricket",
+          "id": 62
+        },
+        "userCount": 170374,
+        "manager": {
+          "name": "Gautam Gambhir",
+          "slug": "gautam-gambhir",
+          "shortName": "G. Gambhir",
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 805904,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "غوتام غامبير",
+              "ru": "Гаутам Гамбир"
+            },
+            "shortNameTranslation": {
+              "ar": "غ. غامبير",
+              "ru": "Г. Гамбир"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Mumbai",
+            "country": {
+              "alpha2": "IN",
+              "alpha3": "IND",
+              "name": "India",
+              "slug": "india"
+            },
+            "id": 18332
+          },
+          "hidden": true,
+          "slug": "wankhede-stadium",
+          "name": "Wankhede Stadium",
+          "capacity": 33000,
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 24773,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ملعب وانكيدي",
+              "hi": "वानखेड़े स्टेडियम",
+              "bn": "ওয়াংখেড়ে স্টেডিয়াম",
+              "ru": "Стадион Wankhede"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Wankhede Stadium",
+            "capacity": 33000
+          }
+        },
+        "nameCode": "IND",
+        "class": 1,
+        "disabled": false,
+        "national": true,
+        "type": 0,
+        "country": {
+          "alpha2": "IN",
+          "alpha3": "IND",
+          "name": "India",
+          "slug": "india"
+        },
+        "id": 187765,
+        "fullName": "India",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#00b8ff",
+          "secondary": "#ff4500",
+          "text": "#ff4500"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الهند",
+            "ru": "Индия"
+          },
+          "shortNameTranslation": {
+            "bn": "আইএনডি",
+            "hi": "आईएनडी",
+            "ru": "ИНД"
+          }
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "West Indies",
+        "slug": "west-indies",
+        "shortName": "WI",
+        "gender": "M",
+        "sport": {
+          "name": "Cricket",
+          "slug": "cricket",
+          "id": 62
+        },
+        "userCount": 11021,
+        "venue": {
+          "city": {
+            "name": "Bridgetown",
+            "country": {
+              "alpha2": "BB",
+              "alpha3": "BRB",
+              "name": "Barbados",
+              "slug": "barbados"
+            },
+            "id": 20301
+          },
+          "hidden": true,
+          "slug": "kensington-oval",
+          "name": "Kensington Oval",
+          "capacity": 28000,
+          "country": {
+            "alpha2": "BB",
+            "alpha3": "BRB",
+            "name": "Barbados",
+            "slug": "barbados"
+          },
+          "id": 25009,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوفال كنسينغتون",
+              "hi": "केंसिंग्टन ओवल",
+              "bn": "কেনসিংটন ওভাল",
+              "ru": "Овал Kensington"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Kensington Oval",
+            "capacity": 28000
+          }
+        },
+        "nameCode": "WIN",
+        "disabled": false,
+        "national": true,
+        "type": 0,
+        "country": {},
+        "id": 187760,
+        "fullName": "West Indies",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#7c003f",
+          "secondary": "#ffff00",
+          "text": "#ffff00"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "جزر الهند الغربية",
+            "bn": "ওয়েস্ট ইন্ডিজ",
+            "hi": "वेस्ट इंडीज",
+            "ru": "Вест-Индии"
+          },
+          "shortNameTranslation": {
+            "bn": "ডব্লিউ আই",
+            "hi": "डब्ल्यूआई"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 172,
+        "display": 172,
+        "innings": {
+          "inning1": {
+            "score": 172,
+            "wickets": 2,
+            "overs": 14.4,
+            "runRate": 11.73,
+            "targetRunRate": 8.6
+          }
+        }
+      },
+      "awayScore": {
+        "current": 171,
+        "display": 171,
+        "innings": {
+          "inning1": {
+            "score": 171,
+            "wickets": 10,
+            "overs": 19.1,
+            "runRate": 8.92
+          }
+        }
+      },
+      "coverage": 1,
+      "time": {},
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type"
+        ],
+        "changeTimestamp": 1791304814
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 15884177,
+      "umpire1Name": "Nitin Menon (IND)",
+      "umpire2Name": "Virender Sharma (IND)",
+      "tvUmpireName": "Rohan Pandit (IND)",
+      "refereeName": "Prakash Bhatt",
+      "tossWin": "India",
+      "tossDecision": "Bowling",
+      "note": "India beat West Indies by 8 wickets",
+      "endTimestamp": 1791304740,
+      "slug": "india-west-indies",
+      "startTimestamp": 1791293400,
+      "periods": {
+        "current": "Match",
+        "inning1": "1st Inning",
+        "inning2": "2nd Inning",
+        "inning3": "3rd Inning",
+        "inning4": "4th Inning"
+      },
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "cricketBallProperties": [
+        "time",
+        "number",
+        "over",
+        "ball",
+        "runs",
+        "zone",
+        "angle",
+        "score",
+        "scored",
+        "wicket",
+        "missed",
+        "incidentClassLabel",
+        "incidentClassColor",
+        "batsman",
+        "bowler",
+        "ballDetails",
+        "commentary",
+        "id",
+        "bowlDetail",
+        "fielder"
+      ],
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

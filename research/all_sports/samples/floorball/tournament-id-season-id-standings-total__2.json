@@ -1,0 +1,750 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/111/season/99642/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:22:26+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/mullsjo-ais-jonkopings-ik/THbsxHj#id:16672337",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 295831,
+        "type": "total",
+        "tournament": {
+          "name": "Svenska Superligan",
+          "slug": "svenska-superligan",
+          "category": {
+            "name": "Sweden",
+            "slug": "sweden",
+            "sport": {
+              "name": "Floorball",
+              "slug": "floorball",
+              "id": 7
+            },
+            "priority": 0,
+            "id": 63,
+            "flag": "sweden",
+            "alpha2": "SE",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السويد",
+                "hi": "स्वीडन",
+                "bn": "সুইডেন",
+                "ru": "Швеция"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Svenska Superligan",
+            "slug": "svenska-superligan",
+            "secondaryColorHex": "#777777",
+            "category": {
+              "name": "Sweden",
+              "slug": "sweden",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "priority": 0,
+              "id": 63,
+              "flag": "sweden",
+              "alpha2": "SE",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "السويد",
+                  "hi": "स्वीडन",
+                  "bn": "সুইডেন",
+                  "ru": "Швеция"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 224,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 255,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الدوري السويدي الممتاز",
+                "hi": "स्वेन्स्का सुपरलीगन",
+                "bn": "সভেনস্কা সুপারলীগান",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 111,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "সুইডিশ সুপারলীগা",
+              "hi": "स्वेन्स्का सुपरलीगन",
+              "ar": "الدوري السويدي الممتاز",
+              "ru": "Суперлига Швеции"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "Svenska Superligan 26/27",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 17763,
+          "text": "In the event that two (or more) teams have an equal number of points, the following rules break the tie:\n1. Goal difference\n2. Goals scored"
+        },
+        "rows": [
+          {
+            "id": 2488019,
+            "team": {
+              "name": "FBC Kalmarsund",
+              "slug": "fbc-kalmarsund",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 123,
+              "nameCode": "KAL",
+              "national": false,
+              "type": 0,
+              "id": 118114,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إف بي سي كالمارسوند",
+                  "bn": "এফবিসি কালমারসুন্ড",
+                  "hi": "एफबीसी कालमारसुंड",
+                  "ru": "ФБК Кальмарсунд"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 32,
+            "scoresAgainst": 18,
+            "points": 11,
+            "scoreDiffFormatted": "+14"
+          },
+          {
+            "id": 2488028,
+            "team": {
+              "name": "Storvreta IBK",
+              "slug": "storvreta-ibk",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 281,
+              "nameCode": "STO",
+              "national": false,
+              "type": 0,
+              "id": 4144,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ستورفريتا آي بي كيه",
+                  "bn": "স্টরভরেটা আইবিকে",
+                  "hi": "स्टॉरव्रेटा आईबीके",
+                  "ru": "Сторврета ИБК"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 4,
+            "wins": 4,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 31,
+            "scoresAgainst": 18,
+            "points": 11,
+            "scoreDiffFormatted": "+13"
+          },
+          {
+            "id": 2488020,
+            "team": {
+              "name": "IBF Falun",
+              "slug": "ibf-falun",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 323,
+              "nameCode": "FAL",
+              "national": false,
+              "type": 0,
+              "id": 5745,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اي بي اف فالون",
+                  "bn": "আইবিএফ ফালুন",
+                  "hi": "आईबीएफ फालुन",
+                  "ru": "ИБФ Фалун"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 3,
+            "matches": 4,
+            "wins": 3,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 34,
+            "scoresAgainst": 17,
+            "points": 10,
+            "scoreDiffFormatted": "+17"
+          },
+          {
+            "id": 2488025,
+            "team": {
+              "name": "Mullsjö AIS",
+              "slug": "mullsjo-ais",
+              "shortName": "Mullsjö AIS",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 69,
+              "nameCode": "MUL",
+              "national": false,
+              "type": 0,
+              "id": 24122,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "مولشو أي أي أس",
+                  "bn": "মুলসজো এআইএস",
+                  "hi": "मुल्सजो एआईएस",
+                  "ru": "Мулльсйо АИС"
+                },
+                "shortNameTranslation": {
+                  "ru": "Мулльсйо АИС"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 4,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 23,
+            "scoresAgainst": 23,
+            "points": 7,
+            "scoreDiffFormatted": "0"
+          },
+          {
+            "id": 2488021,
+            "team": {
+              "name": "IBK Dalen",
+              "slug": "ibk-dalen",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 34,
+              "nameCode": "DAL",
+              "national": false,
+              "type": 0,
+              "id": 4135,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "اي بي كيه دالين",
+                  "bn": "আইবিকে ডালেন",
+                  "hi": "आईबीके डेलन",
+                  "ru": "ИБК Дален"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 5,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 26,
+            "scoresAgainst": 30,
+            "points": 7,
+            "scoreDiffFormatted": "-4"
+          },
+          {
+            "id": 2488026,
+            "team": {
+              "name": "Nykvarns IBF Ungdom",
+              "slug": "nykvarns-ibf-ungdom",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 45,
+              "nameCode": "NYK",
+              "national": false,
+              "type": 0,
+              "id": 328707,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "نيكفارنز آي بي إف أونغدوم",
+                  "bn": "নাইকভার্নস আইবিএফ উংডম",
+                  "hi": "नाइकवार्न्स आईबीएफ उन्गडॉम",
+                  "ru": "Ныкварнс ИБФ Югнум"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 6,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 26,
+            "scoresAgainst": 21,
+            "points": 6,
+            "scoreDiffFormatted": "+5"
+          },
+          {
+            "id": 2488023,
+            "team": {
+              "name": "Jönköpings IK",
+              "slug": "jonkopings-ik",
+              "shortName": "Jönköping",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 80,
+              "nameCode": "JIK",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4143,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "يونشوبينغ آي كيه",
+                  "ru": "Йонкёпингс ИК"
+                },
+                "shortNameTranslation": {
+                  "ar": "يونشوبينغ",
+                  "bn": "জঙ্কোপিং",
+                  "hi": "जोंकोपिंग्स "
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 7,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 23,
+            "scoresAgainst": 22,
+            "points": 6,
+            "scoreDiffFormatted": "+1"
+          },
+          {
+            "id": 2488029,
+            "team": {
+              "name": "Växjö Vipers",
+              "slug": "vaxjo-vipers",
+              "shortName": "Vipers",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 159,
+              "nameCode": "VAX",
+              "national": false,
+              "type": 0,
+              "id": 34558,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فاستجو فيبرز",
+                  "ru": "Векшё ИБК"
+                },
+                "shortNameTranslation": {
+                  "ar": "فيبرز",
+                  "bn": "ভাইপার",
+                  "hi": "वाइपर्स"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 8,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 27,
+            "scoresAgainst": 30,
+            "points": 6,
+            "scoreDiffFormatted": "-3"
+          },
+          {
+            "id": 2488024,
+            "team": {
+              "name": "Linköping IBK",
+              "slug": "linkoping-ibk",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 143,
+              "nameCode": "LIN",
+              "national": false,
+              "type": 0,
+              "id": 41254,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "لينشوبينغ أي بي كيه",
+                  "bn": "লিঙ্কোপিং আইবি্কে",
+                  "hi": "लिंकपिंग आईबीके",
+                  "ru": "Линкёпинг ИБК"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 9,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 18,
+            "scoresAgainst": 22,
+            "points": 6,
+            "scoreDiffFormatted": "-4"
+          },
+          {
+            "id": 2488030,
+            "team": {
+              "name": "Visby IBK",
+              "slug": "visby-ibk",
+              "shortName": "Visby IBK",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 51,
+              "nameCode": "VIS",
+              "national": false,
+              "type": 0,
+              "id": 205613,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فيسبي آي بي كيه",
+                  "bn": "ভিসবি আইবিকে",
+                  "hi": "विस्बी आईबीके",
+                  "ru": "Висбю ИБК"
+                },
+                "shortNameTranslation": {
+                  "ru": "Висбю ИБК"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 10,
+            "matches": 4,
+            "wins": 2,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 23,
+            "scoresAgainst": 31,
+            "points": 6,
+            "scoreDiffFormatted": "-8"
+          },
+          {
+            "id": 2488027,
+            "team": {
+              "name": "Pixbo Wallenstam",
+              "slug": "pixbo-wallenstam",
+              "shortName": "Pixbo",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 125,
+              "nameCode": "PIX",
+              "national": false,
+              "type": 0,
+              "id": 4138,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "بكسب واللنستم",
+                  "ru": "Пиксбо Валленстам"
+                },
+                "shortNameTranslation": {
+                  "ar": "بيكسبور",
+                  "bn": "পিক্সবো",
+                  "hi": "पिक्सबो",
+                  "ru": "Пиксбо"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 11,
+            "matches": 4,
+            "wins": 1,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 23,
+            "scoresAgainst": 26,
+            "points": 4,
+            "scoreDiffFormatted": "-3"
+          },
+          {
+            "id": 2488031,
+            "team": {
+              "name": "Warbergs IC",
+              "slug": "warbergs-ic",
+              "shortName": "Warbergs IC",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 73,
+              "nameCode": "WAR",
+              "national": false,
+              "type": 0,
+              "id": 4146,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "واربيرج آي سي",
+                  "bn": "ওয়ারবার্গস আইসি",
+                  "hi": "वारबर्ग्स आईसी",
+                  "ru": "Варбергс ИК"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 12,
+            "matches": 4,
+            "wins": 1,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 21,
+            "scoresAgainst": 28,
+            "points": 2,
+            "scoreDiffFormatted": "-7"
+          },
+          {
+            "id": 2488022,
+            "team": {
+              "name": "IBK Lund Elit",
+              "slug": "ibk-lund-elit",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 28,
+              "nameCode": "IBK",
+              "national": false,
+              "type": 0,
+              "id": 448795,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إي بي كيه لوند إليت",
+                  "ru": "ИБК Лунд Элит"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 3,
+              "text": "Relegation"
+            },
+            "position": 13,
+            "matches": 4,
+            "wins": 1,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 20,
+            "scoresAgainst": 29,
+            "points": 2,
+            "scoreDiffFormatted": "-9"
+          },
+          {
+            "id": 2488018,
+            "team": {
+              "name": "AIK",
+              "slug": "aik",
+              "gender": "M",
+              "sport": {
+                "name": "Floorball",
+                "slug": "floorball",
+                "id": 7
+              },
+              "userCount": 125,
+              "nameCode": "AIK",
+              "national": false,
+              "type": 0,
+              "id": 4142,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "آيك",
+                  "bn": "এআইকে",
+                  "hi": "एआईके",
+                  "ru": "АИК Иннебенди"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 3,
+              "text": "Relegation"
+            },
+            "position": 14,
+            "matches": 4,
+            "wins": 0,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 14,
+            "scoresAgainst": 26,
+            "points": 0,
+            "scoreDiffFormatted": "-12"
+          }
+        ],
+        "updatedAtTimestamp": 1791126302
+      }
+    ]
+  }
+}

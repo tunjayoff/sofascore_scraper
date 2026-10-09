@@ -1,0 +1,791 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/240420/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:25:00+00:00",
+  "page": "https://www.sofascore.com/tr/table-tennis/match/matsushima-feng/viWbshNCc#id:17283335",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "WTT Contender Zagreb, MS, Qualifying",
+          "slug": "wtt-contender-zagreb-ms-qualifying",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "WTT Contender Zagreb",
+            "slug": "wtt-contender-zagreb",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 23,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 20653,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "منافسة WTT زغرب",
+                "hi": "डब्ल्यूटीटी कंटेंडर ज़ाग्रेब",
+                "bn": "ডব্লিউটিটি কনটেনডার জাগ্রেব",
+                "ru": "WTT Contender Загреб"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 187685,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Турнир WTT Contender Загреб, мужской разряд, отбор"
+            },
+            "shortNameTranslation": {}
+          },
+          "qualificationOrPreliminary": true
+        },
+        "season": {
+          "name": "WTT Contender Zagreb 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 95528
+        },
+        "customId": "viWbsJdTd",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Vovk Petrovski B.",
+          "slug": "vovk-petrovski-brin",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 7,
+          "nameCode": "VOV",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "SI",
+            "alpha3": "SVN",
+            "name": "Slovenia",
+            "slug": "slovenia"
+          },
+          "id": 482684,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فوفك بتروفسكي، برين",
+              "ru": "Вовк Петровски, Брин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Feng Y.",
+          "slug": "feng-yi-hsin",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 80,
+          "playerTeamInfo": {
+            "id": 43573
+          },
+          "nameCode": "FEN",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "TW",
+            "alpha3": "TWN",
+            "name": "Chinese Taipei",
+            "slug": "chinese-taipei"
+          },
+          "id": 240420,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فينغ، يي-هسين",
+              "ru": "Фэн Й."
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 8,
+          "period2": 5,
+          "period3": 4,
+          "normaltime": 0
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 11,
+          "period2": 11,
+          "period3": 11,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1781013250
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1781013315
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16300001,
+        "slug": "vovk-petrovski-feng",
+        "startTimestamp": 1781012100,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "WTT Contender Zagreb, MS, Qualifying",
+          "slug": "wtt-contender-zagreb-ms-qualifying",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "WTT Contender Zagreb",
+            "slug": "wtt-contender-zagreb",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 23,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 20653,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "منافسة WTT زغرب",
+                "hi": "डब्ल्यूटीटी कंटेंडर ज़ाग्रेब",
+                "bn": "ডব্লিউটিটি কনটেনডার জাগ্রেব",
+                "ru": "WTT Contender Загреб"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 187685,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Турнир WTT Contender Загреб, мужской разряд, отбор"
+            },
+            "shortNameTranslation": {}
+          },
+          "qualificationOrPreliminary": true
+        },
+        "season": {
+          "name": "WTT Contender Zagreb 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 95528
+        },
+        "customId": "viWbsyUDc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Jain P.",
+          "slug": "jain-payas",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 41,
+          "nameCode": "JAI",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 322223,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جاين، باياس",
+              "bn": "জৈন, পায়াস",
+              "hi": "जैन, पायस",
+              "ru": "Джайн, Паяс"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Feng Y.",
+          "slug": "feng-yi-hsin",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 80,
+          "playerTeamInfo": {
+            "id": 43573
+          },
+          "nameCode": "FEN",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "TW",
+            "alpha3": "TWN",
+            "name": "Chinese Taipei",
+            "slug": "chinese-taipei"
+          },
+          "id": 240420,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فينغ، يي-هسين",
+              "ru": "Фэн Й."
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 6,
+          "period2": 9,
+          "period3": 11,
+          "period4": 8,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 11,
+          "period2": 11,
+          "period3": 9,
+          "period4": 11,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1781085202
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1781085254
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16301253,
+        "slug": "jain-feng",
+        "startTimestamp": 1781082900,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "WTT Contender Zagreb, MD, Qualifying",
+          "slug": "wtt-contender-zagreb-md-qualifying",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Table tennis",
+              "slug": "table-tennis",
+              "id": 20
+            },
+            "priority": 11,
+            "country": {},
+            "id": 88,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "WTT Contender Zagreb, Double",
+            "slug": "wtt-contender-zagreb-double",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "priority": 11,
+              "country": {},
+              "id": 88,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 20648,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بطولة WTT المتنافسة في زغرب، زوجي",
+                "ru": "WTT Contender Загреб, парный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 187690,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Турнир WTT Contender Загреб, парный разряд, отбор"
+            },
+            "shortNameTranslation": {}
+          },
+          "qualificationOrPreliminary": true
+        },
+        "season": {
+          "name": "WTT Contender Zagreb, Double 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 95529
+        },
+        "customId": "qCOisxyPi",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Feng Y-H / Kuo G-H",
+          "slug": "feng-y-h-kuo-g-h",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 2,
+          "nameCode": "F/K",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "TW",
+            "alpha3": "TWN",
+            "name": "Chinese Taipei",
+            "slug": "chinese-taipei"
+          },
+          "id": 1098866,
+          "subTeams": [
+            {
+              "name": "Feng Y.",
+              "slug": "feng-yi-hsin",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 80,
+              "playerTeamInfo": {
+                "id": 43573
+              },
+              "nameCode": "FEN",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "TW",
+                "alpha3": "TWN",
+                "name": "Chinese Taipei",
+                "slug": "chinese-taipei"
+              },
+              "id": 240420,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "فينغ، يي-هسين",
+                  "ru": "Фэн Й."
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Kuo G.",
+              "slug": "kuo-guan-hong",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 47,
+              "nameCode": "KUO",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "TW",
+                "alpha3": "TWN",
+                "name": "Chinese Taipei",
+                "slug": "chinese-taipei"
+              },
+              "id": 512903,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كوان، جوان-هونغ",
+                  "ru": "Куо, Гуан-Хонг"
+                },
+                "shortNameTranslation": {}
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فنغ ي-ه / قوه ج-ه",
+              "ru": "Фэн И-Х / Куо Г-Х"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Petek B / Zeljko F",
+          "slug": "petek-b-zeljko-f",
+          "gender": "M",
+          "sport": {
+            "name": "Table tennis",
+            "slug": "table-tennis",
+            "id": 20
+          },
+          "userCount": 1,
+          "nameCode": "P/Z",
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 1101172,
+          "subTeams": [
+            {
+              "name": "Petek B.",
+              "slug": "petek-borna",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 12,
+              "playerTeamInfo": {
+                "id": 21938
+              },
+              "nameCode": "PET",
+              "disabled": false,
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "HR",
+                "alpha3": "HRV",
+                "name": "Croatia",
+                "slug": "croatia"
+              },
+              "id": 322739,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "بيتيك، بورنا",
+                  "bn": "পেটেক, বর্না",
+                  "hi": "पेतक, बोर्ना",
+                  "ru": "Петек, Борна"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Zeljko F.",
+              "slug": "zeljko-filip",
+              "gender": "M",
+              "sport": {
+                "name": "Table tennis",
+                "slug": "table-tennis",
+                "id": 20
+              },
+              "userCount": 59,
+              "nameCode": "ZEL",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "HR",
+                "alpha3": "HRV",
+                "name": "Croatia",
+                "slug": "croatia"
+              },
+              "id": 205199,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "زيليكو، فيليب",
+                  "bn": "জেলজকো, ফিলিপ",
+                  "hi": "ज़ेल्को, फिलिप",
+                  "ru": "Желько, Филип"
+                },
+                "shortNameTranslation": {}
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بيتيك ب / زيلجكو ف",
+              "ru": "Петек Б / Желько Ф"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 11,
+          "period2": 11,
+          "period3": 11,
+          "normaltime": 3
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 3,
+          "period2": 4,
+          "period3": 4,
+          "normaltime": 0
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1781098211
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1781098267
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16295290,
+        "slug": "petek-zeljko-feng-y-h-kuo-g-h",
+        "startTimestamp": 1781097300,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

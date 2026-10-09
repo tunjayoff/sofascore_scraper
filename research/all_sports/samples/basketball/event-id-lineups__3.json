@@ -1,0 +1,471 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16685163/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:13:25+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/cleveland-cavaliers-boston-celtics/xtbsHtb#id:16685163",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Tyrese Proctor",
+            "firstName": "Tyrese",
+            "lastName": "Proctor",
+            "slug": "tyrese-proctor",
+            "shortName": "T. Proctor",
+            "position": "G",
+            "primaryPosition": "PG",
+            "jerseyNumber": "24",
+            "height": 196,
+            "userCount": 305,
+            "gender": "M",
+            "sofascoreId": "rsa-vr9",
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 1430914,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1080777600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تايريس بروكتور",
+                "ru": "Тайриз Проктор"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. بروكتور",
+                "ru": "Т. Проктор"
+              }
+            }
+          },
+          "teamId": 3432,
+          "shirtNumber": 24,
+          "jerseyNumber": "24",
+          "position": "G",
+          "substitute": true,
+          "inPlay": false,
+          "statistics": {
+            "secondsPlayed": 279,
+            "points": 3,
+            "twoPointsMade": 0,
+            "twoPointAttempts": 1,
+            "threePointsMade": 1,
+            "threePointAttempts": 1,
+            "freeThrowsMade": 0,
+            "freeThrowAttempts": 0,
+            "fieldGoalsMade": 1,
+            "fieldGoalAttempts": 2,
+            "rebounds": 0,
+            "defensiveRebounds": 0,
+            "offensiveRebounds": 0,
+            "turnovers": 0,
+            "blocks": 0,
+            "personalFouls": 1,
+            "assists": 0,
+            "steals": 1,
+            "plusMinus": -6,
+            "fieldGoalPct": 50,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Mario Hezonja",
+            "firstName": "Mario",
+            "lastName": "Hezonja",
+            "slug": "hezonja-mario",
+            "shortName": "M. Hezonja",
+            "position": "F",
+            "primaryPosition": "PF",
+            "jerseyNumber": "11",
+            "height": 206,
+            "userCount": 3670,
+            "gender": "M",
+            "sofascoreId": "pfk-in7",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 817150,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 793670400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماريو هيزونيا",
+                "bn": "হেজোনজা, মারিও",
+                "hi": "हेज़ोन्जा, मारियो",
+                "ru": "Марио Хезоня"
+              },
+              "shortNameTranslation": {
+                "ar": "م. هيزونيا",
+                "bn": "এম. হেজোনজা",
+                "hi": "एम. हेज़ोन्जा",
+                "ru": "М. Хезоня"
+              }
+            }
+          },
+          "teamId": 3432,
+          "shirtNumber": 33,
+          "jerseyNumber": "33",
+          "position": "F",
+          "substitute": true,
+          "inPlay": false,
+          "statistics": {
+            "secondsPlayed": 580,
+            "points": 2,
+            "twoPointsMade": 1,
+            "twoPointAttempts": 3,
+            "threePointsMade": 0,
+            "threePointAttempts": 0,
+            "freeThrowsMade": 0,
+            "freeThrowAttempts": 0,
+            "fieldGoalsMade": 1,
+            "fieldGoalAttempts": 3,
+            "rebounds": 4,
+            "defensiveRebounds": 4,
+            "offensiveRebounds": 0,
+            "turnovers": 0,
+            "blocks": 0,
+            "personalFouls": 1,
+            "assists": 1,
+            "steals": 0,
+            "plusMinus": -6,
+            "fieldGoalPct": 33,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Sam Merrill",
+            "firstName": "Sam",
+            "lastName": "Merrill",
+            "slug": "sam-merrill",
+            "shortName": "S. Merrill",
+            "position": "G",
+            "primaryPosition": "SG",
+            "jerseyNumber": "5",
+            "height": 193,
+            "userCount": 1015,
+            "gender": "M",
+            "sofascoreId": "b7k-zaj",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1396473,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 832118400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سام ميريل",
+                "bn": "স্যাম মেরিল",
+                "hi": "सैम मेरिल",
+                "ru": "Сэм Меррилл"
+              },
+              "shortNameTranslation": {
+                "ar": "س. ميريل",
+                "bn": "এস. মেরিল",
+                "hi": "एस. मेरिल",
+                "ru": "С. Меррилл"
+              }
+            }
+          },
+          "teamId": 3432,
+          "shirtNumber": 5,
+          "jerseyNumber": "5",
+          "position": "G",
+          "substitute": true,
+          "inPlay": false,
+          "statistics": {
+            "secondsPlayed": 580,
+            "points": 8,
+            "twoPointsMade": 1,
+            "twoPointAttempts": 1,
+            "threePointsMade": 2,
+            "threePointAttempts": 3,
+            "freeThrowsMade": 0,
+            "freeThrowAttempts": 0,
+            "fieldGoalsMade": 3,
+            "fieldGoalAttempts": 4,
+            "rebounds": 0,
+            "defensiveRebounds": 0,
+            "offensiveRebounds": 0,
+            "turnovers": 0,
+            "blocks": 0,
+            "personalFouls": 1,
+            "assists": 1,
+            "steals": 0,
+            "plusMinus": -6,
+            "fieldGoalPct": 75,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 7
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "871539",
+        "number": "fdbb30",
+        "outline": "871539",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "fafb00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Devin Carter",
+            "firstName": "Devin",
+            "lastName": "Carter",
+            "slug": "devin-carter",
+            "shortName": "D. Carter",
+            "position": "G",
+            "primaryPosition": "PG",
+            "jerseyNumber": "67",
+            "height": 191,
+            "userCount": 201,
+            "gender": "M",
+            "sofascoreId": "cev-dbc",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1178805,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1016409600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ماركوس مايا",
+                "ru": "Девин Картер"
+              },
+              "shortNameTranslation": {
+                "ar": "م. مايا",
+                "ru": "Д. Картер"
+              }
+            }
+          },
+          "teamId": 3422,
+          "shirtNumber": 22,
+          "jerseyNumber": "22",
+          "position": "G",
+          "substitute": true,
+          "inPlay": true,
+          "statistics": {
+            "secondsPlayed": 888,
+            "points": 15,
+            "twoPointsMade": 4,
+            "twoPointAttempts": 6,
+            "threePointsMade": 1,
+            "threePointAttempts": 3,
+            "freeThrowsMade": 4,
+            "freeThrowAttempts": 4,
+            "fieldGoalsMade": 5,
+            "fieldGoalAttempts": 9,
+            "rebounds": 3,
+            "defensiveRebounds": 2,
+            "offensiveRebounds": 1,
+            "turnovers": 0,
+            "blocks": 0,
+            "personalFouls": 0,
+            "assists": 2,
+            "steals": 1,
+            "plusMinus": 15,
+            "fieldGoalPct": 56,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Hugo Gonzalez",
+            "firstName": "Hugo",
+            "lastName": "Gonzalez",
+            "slug": "hugo-gonzalez",
+            "shortName": "H. González",
+            "position": "G",
+            "primaryPosition": "SG",
+            "jerseyNumber": "28",
+            "height": 201,
+            "userCount": 2334,
+            "gender": "M",
+            "sofascoreId": "hi5-uhg",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 1412639,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1139097600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "هوجو جونزاليس بينا",
+                "bn": "গঞ্জালেজ পেনা, হুগো",
+                "hi": "गोंजालेज पेना, ह्यूगो",
+                "ru": "Уго Гонсалес"
+              },
+              "shortNameTranslation": {
+                "ar": "ه. جونزاليس بينا",
+                "bn": "এইচ. গনজালেজ",
+                "hi": "एच. गोंजालेज",
+                "ru": "У. Гонсалес"
+              }
+            }
+          },
+          "teamId": 3422,
+          "shirtNumber": 28,
+          "jerseyNumber": "28",
+          "position": "G",
+          "substitute": false,
+          "inPlay": false,
+          "statistics": {
+            "secondsPlayed": 1087,
+            "points": 10,
+            "twoPointsMade": 1,
+            "twoPointAttempts": 2,
+            "threePointsMade": 2,
+            "threePointAttempts": 4,
+            "freeThrowsMade": 2,
+            "freeThrowAttempts": 2,
+            "fieldGoalsMade": 3,
+            "fieldGoalAttempts": 6,
+            "rebounds": 3,
+            "defensiveRebounds": 2,
+            "offensiveRebounds": 1,
+            "turnovers": 1,
+            "blocks": 0,
+            "personalFouls": 1,
+            "assists": 5,
+            "steals": 0,
+            "plusMinus": 11,
+            "fieldGoalPct": 50,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Mike Conley",
+            "firstName": "Mike",
+            "lastName": "Conley ",
+            "slug": "mike-conley",
+            "shortName": "M. Conley",
+            "position": "G",
+            "primaryPosition": "PG",
+            "jerseyNumber": "44",
+            "height": 183,
+            "userCount": 1427,
+            "gender": "M",
+            "sofascoreId": "wif-umk",
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 817038,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 560908800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مايك كونلي",
+                "bn": "মাইক কনলি",
+                "hi": "माइक कॉनले",
+                "ru": "Майк Конли"
+              },
+              "shortNameTranslation": {
+                "ar": "م. كونلي",
+                "bn": "এম. কনলি",
+                "hi": "एम. कॉनले",
+                "ru": "М. Конли"
+              }
+            }
+          },
+          "teamId": 3422,
+          "shirtNumber": 45,
+          "jerseyNumber": "45",
+          "position": "G",
+          "substitute": false,
+          "inPlay": false,
+          "statistics": {
+            "secondsPlayed": 809,
+            "points": 3,
+            "twoPointsMade": 1,
+            "twoPointAttempts": 1,
+            "threePointsMade": 0,
+            "threePointAttempts": 2,
+            "freeThrowsMade": 1,
+            "freeThrowAttempts": 1,
+            "fieldGoalsMade": 1,
+            "fieldGoalAttempts": 3,
+            "rebounds": 1,
+            "defensiveRebounds": 0,
+            "offensiveRebounds": 1,
+            "turnovers": 2,
+            "blocks": 0,
+            "personalFouls": 1,
+            "assists": 3,
+            "steals": 1,
+            "plusMinus": -1,
+            "fieldGoalPct": 33,
+            "statisticsType": {
+              "sportSlug": "basketball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 6
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "ffffff",
+        "outline": "008348",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "00ff00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

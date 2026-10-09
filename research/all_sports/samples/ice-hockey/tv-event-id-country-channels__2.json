@@ -1,0 +1,48 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tv/event/16546323/country-channels",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:17:15+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/utah-mammoth-boston-bruins/Cybsxjme#id:16546323",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "countryChannels": {
+      "NO": [
+        375
+      ],
+      "SE": [
+        8425,
+        448
+      ],
+      "US": [
+        4778,
+        8418,
+        7196,
+        8022
+      ],
+      "DE": [
+        7666,
+        7639,
+        4427,
+        709,
+        4254
+      ],
+      "CH": [
+        709
+      ],
+      "DK": [
+        263
+      ],
+      "FI": [
+        274
+      ],
+      "LU": [
+        709
+      ],
+      "GL": [
+        263
+      ]
+    }
+  }
+}

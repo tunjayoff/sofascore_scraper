@@ -1,0 +1,28 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16793649/pregame-form",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:59:17+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/cardiff-university-cardiff-met/byUiseyUi#id:16793649",
+  "cache_control": "max-age=60, public, s-maxage=9600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "homeTeam": {
+      "position": 7,
+      "value": "4",
+      "form": [
+        "L",
+        "D"
+      ]
+    },
+    "awayTeam": {
+      "position": 10,
+      "value": "1",
+      "form": [
+        "L",
+        "L"
+      ]
+    },
+    "label": "Pts"
+  }
+}

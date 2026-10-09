@@ -1,0 +1,1424 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/3993/unique-tournament/149/season/97291/top-players/overall",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:18:49+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/tsv-hannover-burgdorf-sg-flensburg-handewitt/TEbsXic#id:16419114",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "topPlayers": {
+      "goals": [
+        {
+          "statistics": {
+            "goals": 46,
+            "shootingEfficiencyPercentage": 67.647058823529,
+            "id": 127341,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Pytlick",
+            "slug": "pytlick-simon",
+            "shortName": "S. Pytlick",
+            "position": "LB",
+            "userCount": 1388,
+            "gender": "M",
+            "id": 944871,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سايمون بيتليك",
+                "bn": "পাইটলিক, সাইমন",
+                "hi": "पाइटलिक, साइमन",
+                "ru": "Саймон Питлик"
+              },
+              "shortNameTranslation": {
+                "ar": "س. بيتليك",
+                "bn": "এস. পাইটলিক",
+                "hi": "एस. पाइटलिक",
+                "ru": "С. Питлик"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "goals": 45,
+            "shootingEfficiencyPercentage": 83.333333333333,
+            "id": 127336,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Emil Jakobsen",
+            "slug": "emil-jakobsen",
+            "shortName": "E. Jakobsen",
+            "position": "LW",
+            "userCount": 1649,
+            "gender": "M",
+            "id": 964460,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جاكوبسن، إميل",
+                "bn": "জ্যাকবসেন, এমিল",
+                "hi": "जैकबसेन, एमिल",
+                "ru": "Эмиль Якобсен"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. جاكوبسن",
+                "bn": "ই. জ্যাকবসেন",
+                "hi": "ई. जैकबसेन",
+                "ru": "Э. Якобсен"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "goals": 34,
+            "shootingEfficiencyPercentage": 68,
+            "id": 127352,
+            "type": "overall",
+            "appearances": 6,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Aymeric Minne",
+            "slug": "aymeric-minne",
+            "shortName": "A. Minne",
+            "position": "CB",
+            "userCount": 266,
+            "gender": "M",
+            "id": 958535,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مين، أيمريك",
+                "bn": "মিনে, আইমেরিক",
+                "hi": "मिन्ने, एमेरिक",
+                "ru": "Аймерик Минне"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. مين",
+                "bn": "এ. মিনে",
+                "hi": "ए. मिन्ने",
+                "ru": "А. Минне"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 9
+        }
+      ],
+      "assists": [
+        {
+          "statistics": {
+            "assists": 18,
+            "id": 127317,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Niclas Kirkelokke",
+            "slug": "kirkelokke-niclas",
+            "shortName": "N. Kirkeløkke",
+            "position": "RB",
+            "userCount": 183,
+            "gender": "M",
+            "id": 921650,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كيركيلوك، نيكلاس",
+                "bn": "কিরকেলোকে, নিকলাস",
+                "hi": "किर्केलोक्के, निक्लास",
+                "ru": "Никлас Киркелокке"
+              },
+              "shortNameTranslation": {
+                "ar": "ن. كيركيلوك",
+                "bn": "এন. কির্কেলোক্কে",
+                "hi": "एन. किर्केलोक्के",
+                "ru": "Н. Киркелокке"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "assists": 15,
+            "id": 127341,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Pytlick",
+            "slug": "pytlick-simon",
+            "shortName": "S. Pytlick",
+            "position": "LB",
+            "userCount": 1388,
+            "gender": "M",
+            "id": 944871,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سايمون بيتليك",
+                "bn": "পাইটলিক, সাইমন",
+                "hi": "पाइटलिक, साइमन",
+                "ru": "Саймон Питлик"
+              },
+              "shortNameTranslation": {
+                "ar": "س. بيتليك",
+                "bn": "এস. পাইটলিক",
+                "hi": "एस. पाइटलिक",
+                "ru": "С. Питлик"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "assists": 11,
+            "id": 127342,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Marko Grgic",
+            "slug": "marko-grgic",
+            "shortName": "M. Grgić",
+            "position": "LB",
+            "userCount": 402,
+            "gender": "M",
+            "id": 1399848,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جرجيتش، ماركو",
+                "bn": "গ্রিক, মার্কো",
+                "hi": "ग्रिगिक, मार्को",
+                "ru": "Марко Гргич"
+              },
+              "shortNameTranslation": {
+                "ar": "م. جرجيتش",
+                "bn": "এম. গ্রিক",
+                "hi": "एम. ग्रिगिक",
+                "ru": "М. Гргич"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 7
+        }
+      ],
+      "goals7m": [
+        {
+          "statistics": {
+            "goals7m": 23,
+            "shots7m": 26,
+            "id": 127336,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Emil Jakobsen",
+            "slug": "emil-jakobsen",
+            "shortName": "E. Jakobsen",
+            "position": "LW",
+            "userCount": 1649,
+            "gender": "M",
+            "id": 964460,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جاكوبسن، إميل",
+                "bn": "জ্যাকবসেন, এমিল",
+                "hi": "जैकबसेन, एमिल",
+                "ru": "Эмиль Якобсен"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. جاكوبسن",
+                "bn": "ই. জ্যাকবসেন",
+                "hi": "ई. जैकबसेन",
+                "ru": "Э. Якобсен"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "goals7m": 1,
+            "shots7m": 2,
+            "id": 127342,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Marko Grgic",
+            "slug": "marko-grgic",
+            "shortName": "M. Grgić",
+            "position": "LB",
+            "userCount": 402,
+            "gender": "M",
+            "id": 1399848,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جرجيتش، ماركو",
+                "bn": "গ্রিক, মার্কো",
+                "hi": "ग्रिगिक, मार्को",
+                "ru": "Марко Гргич"
+              },
+              "shortNameTranslation": {
+                "ar": "م. جرجيتش",
+                "bn": "এম. গ্রিক",
+                "hi": "एम. ग्रिगिक",
+                "ru": "М. Гргич"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        }
+      ],
+      "steals": [
+        {
+          "statistics": {
+            "steals": 3,
+            "id": 127356,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Arnar Freyr Arnarsson",
+            "slug": "arnar-freyr-arnarsson",
+            "shortName": "A. Arnarsson",
+            "position": "P",
+            "userCount": 73,
+            "gender": "M",
+            "id": 902455,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أرنا ر فريار أرنارسون",
+                "bn": "আর্নারসন, আরনার ফ্রেয়ার",
+                "hi": "अर्नार्सन, अर्नार फ्रेयर",
+                "ru": "Арнар Фрейр Арнарссон"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. أرنارسون",
+                "bn": "এ. এফ. আর্নারসন",
+                "hi": "ए. एफ. अर्नार्सन",
+                "ru": "А. Арнарссон"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "steals": 2,
+            "id": 127342,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Marko Grgic",
+            "slug": "marko-grgic",
+            "shortName": "M. Grgić",
+            "position": "LB",
+            "userCount": 402,
+            "gender": "M",
+            "id": 1399848,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جرجيتش، ماركو",
+                "bn": "গ্রিক, মার্কো",
+                "hi": "ग्रिगिक, मार्को",
+                "ru": "Марко Гргич"
+              },
+              "shortNameTranslation": {
+                "ar": "م. جرجيتش",
+                "bn": "এম. গ্রিক",
+                "hi": "एम. ग्रिगिक",
+                "ru": "М. Гргич"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "steals": 2,
+            "id": 127323,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Emil Siersaek Bergholt",
+            "slug": "emil-siersaek-bergholt",
+            "shortName": "E. Bergholt",
+            "position": "P",
+            "userCount": 121,
+            "gender": "M",
+            "id": 1426398,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بيرغولت، إميل سيرساك",
+                "ru": "Эмиль Сиерсэк Бергхольт"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. بيرغولت",
+                "ru": "Э. Бергхольт"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 5
+        }
+      ],
+      "twoMinutePenalties": [
+        {
+          "statistics": {
+            "twoMinutePenalties": 4,
+            "id": 127323,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Emil Siersaek Bergholt",
+            "slug": "emil-siersaek-bergholt",
+            "shortName": "E. Bergholt",
+            "position": "P",
+            "userCount": 121,
+            "gender": "M",
+            "id": 1426398,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بيرغولت، إميل سيرساك",
+                "ru": "Эмиль Сиерсэк Бергхольт"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. بيرغولت",
+                "ru": "Э. Бергхольт"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "twoMinutePenalties": 2,
+            "id": 127356,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Arnar Freyr Arnarsson",
+            "slug": "arnar-freyr-arnarsson",
+            "shortName": "A. Arnarsson",
+            "position": "P",
+            "userCount": 73,
+            "gender": "M",
+            "id": 902455,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أرنا ر فريار أرنارسون",
+                "bn": "আর্নারসন, আরনার ফ্রেয়ার",
+                "hi": "अर्नार्सन, अर्नार फ्रेयर",
+                "ru": "Арнар Фрейр Арнарссон"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. أرنارسون",
+                "bn": "এ. এফ. আর্নারসন",
+                "hi": "ए. एफ. अर्नार्सन",
+                "ru": "А. Арнарссон"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "twoMinutePenalties": 2,
+            "id": 140983,
+            "type": "overall",
+            "appearances": 3,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Kent Robin Tonnesen",
+            "slug": "kent-robin-tonnesen",
+            "shortName": "K. R. Tønnesen",
+            "position": "RB",
+            "userCount": 82,
+            "gender": "M",
+            "id": 806655,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "تونيسن، كينت روبن",
+                "bn": "টোনেসেন, কেন্ট রবিন",
+                "hi": "टोनसेन, केंट रॉबिन",
+                "ru": "Кент Робин Тённесен"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. ر. تونيسن",
+                "bn": "কে. আর. টোনেসেন",
+                "hi": "के.आर. टोनसेन",
+                "ru": "К. Тённесен"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "__trimmed__": 6
+        }
+      ],
+      "saves": [
+        {
+          "statistics": {
+            "saves": 43,
+            "id": 127330,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Moller",
+            "slug": "simon-moller",
+            "shortName": "S. Moller",
+            "position": "G",
+            "userCount": 39,
+            "gender": "M",
+            "id": 944815,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مولر، سيمون",
+                "bn": "মোলার, সাইমন",
+                "hi": "मोलर, साइमन",
+                "ru": "Симон Моллер"
+              },
+              "shortNameTranslation": {
+                "ar": "س. مولر",
+                "bn": "এস. মোলার",
+                "hi": "एस. मोलर",
+                "ru": "С. Моллер"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "saves": 34,
+            "id": 127314,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Benjamin Buric",
+            "slug": "benjamin-buric",
+            "shortName": "B. Burić",
+            "position": "G",
+            "userCount": 147,
+            "gender": "M",
+            "id": 848777,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بوريتش، بنجامين",
+                "bn": "বুরিক, বেঞ্জামিন",
+                "hi": "ब्यूरिक, बेंजामिन",
+                "ru": "Бенжамин Бурич"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. بوريتش",
+                "bn": "বি. বুরিক",
+                "hi": "बी. ब्यूरिक",
+                "ru": "Б. Бурич"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        }
+      ],
+      "goalkeeperEfficiencyPercentage": [
+        {
+          "statistics": {
+            "goalkeeperEfficiencyPercentage": 34.126984126984,
+            "id": 127330,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Moller",
+            "slug": "simon-moller",
+            "shortName": "S. Moller",
+            "position": "G",
+            "userCount": 39,
+            "gender": "M",
+            "id": 944815,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مولر، سيمون",
+                "bn": "মোলার, সাইমন",
+                "hi": "मोलर, साइमन",
+                "ru": "Симон Моллер"
+              },
+              "shortNameTranslation": {
+                "ar": "س. مولر",
+                "bn": "এস. মোলার",
+                "hi": "एस. मोलर",
+                "ru": "С. Моллер"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "goalkeeperEfficiencyPercentage": 20.481927710843,
+            "id": 127314,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Benjamin Buric",
+            "slug": "benjamin-buric",
+            "shortName": "B. Burić",
+            "position": "G",
+            "userCount": 147,
+            "gender": "M",
+            "id": 848777,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بوريتش، بنجامين",
+                "bn": "বুরিক, বেঞ্জামিন",
+                "hi": "ब्यूरिक, बेंजामिन",
+                "ru": "Бенжамин Бурич"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. بوريتش",
+                "bn": "বি. বুরিক",
+                "hi": "बी. ब्यूरिक",
+                "ru": "Б. Бурич"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        }
+      ],
+      "gk7mSaves": [
+        {
+          "statistics": {
+            "gk7mShots": 13,
+            "gk7mSaves": 5,
+            "id": 127330,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Simon Moller",
+            "slug": "simon-moller",
+            "shortName": "S. Moller",
+            "position": "G",
+            "userCount": 39,
+            "gender": "M",
+            "id": 944815,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مولر، سيمون",
+                "bn": "মোলার, সাইমন",
+                "hi": "मोलर, साइमन",
+                "ru": "Симон Моллер"
+              },
+              "shortNameTranslation": {
+                "ar": "س. مولر",
+                "bn": "এস. মোলার",
+                "hi": "एस. मोलर",
+                "ru": "С. Моллер"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        },
+        {
+          "statistics": {
+            "gk7mShots": 17,
+            "gk7mSaves": 3,
+            "id": 127314,
+            "type": "overall",
+            "appearances": 7,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          },
+          "playedEnough": true,
+          "player": {
+            "name": "Benjamin Buric",
+            "slug": "benjamin-buric",
+            "shortName": "B. Burić",
+            "position": "G",
+            "userCount": 147,
+            "gender": "M",
+            "id": 848777,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بوريتش، بنجامين",
+                "bn": "বুরিক, বেঞ্জামিন",
+                "hi": "ब्यूरिक, बेंजामिन",
+                "ru": "Бенжамин Бурич"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. بوريتش",
+                "bn": "বি. বুরিক",
+                "hi": "बी. ब्यूरिक",
+                "ru": "Б. Бурич"
+              }
+            }
+          },
+          "team": {
+            "name": "SG Flensburg Handewitt",
+            "slug": "sg-flensburg-handewitt",
+            "shortName": "Flensburg",
+            "gender": "M",
+            "sport": {
+              "name": "Handball",
+              "slug": "handball",
+              "id": 6
+            },
+            "userCount": 5999,
+            "nameCode": "SGF",
+            "disabled": false,
+            "national": false,
+            "type": 0,
+            "id": 3993,
+            "teamColors": {
+              "primary": "#000044",
+              "secondary": "#ff0000",
+              "text": "#ff0000"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إس جي فلنسبورغ هاندفيت",
+                "ru": "Фленсбург-Хандэвитт"
+              },
+              "shortNameTranslation": {
+                "ar": "فلنسبورغ",
+                "bn": "ফ্লেনসবার্গ",
+                "hi": "फ्लेंसबर्ग"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "statisticsType": {
+      "sportSlug": "handball",
+      "statisticsType": "player"
+    }
+  }
+}

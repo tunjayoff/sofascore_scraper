@@ -1,0 +1,266 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/IfVsicAb/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:56:01+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/aleksandar-kovacevic-matteo-berrettini/IfVsicAb#id:17257382",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "firstToServe": 2,
+        "tournament": {
+          "name": "Shanghai, China",
+          "slug": "shanghai-china",
+          "category": {
+            "name": "ATP",
+            "slug": "atp",
+            "sport": {
+              "name": "Tennis",
+              "slug": "tennis",
+              "id": 5
+            },
+            "priority": 8,
+            "country": {},
+            "id": 3,
+            "flag": "atp",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "এটিপি",
+                "hi": "डब्ल्यूटीए",
+                "ar": "رابطة محترفي التنس",
+                "ru": "ATP"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Shanghai",
+            "slug": "shanghai",
+            "primaryColorHex": "#002c61",
+            "secondaryColorHex": "#315384",
+            "category": {
+              "name": "ATP",
+              "slug": "atp",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "priority": 8,
+              "country": {},
+              "id": 3,
+              "flag": "atp",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "এটিপি",
+                  "hi": "डब्ल्यूटीए",
+                  "ar": "رابطة محترفي التنس",
+                  "ru": "ATP"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4679,
+            "groundType": "Hardcourt outdoor",
+            "tennisPoints": 1000,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 2519,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "شنغهاي",
+                "hi": "शंघाई",
+                "bn": "সাংহাই",
+                "ru": "Шанхай"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 202664,
+          "endTimestamp": 1792281600,
+          "startTimestamp": 1791331200
+        },
+        "season": {
+          "name": "ATP Shanghai, China Men Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 82375
+        },
+        "roundInfo": {
+          "round": 64,
+          "name": "Round of 128",
+          "slug": "round-of-128"
+        },
+        "customId": "IfVsicAb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Aleksandar Kovačević",
+          "slug": "kovacevic-aleksandar",
+          "shortName": "A. Kovačević",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 4568,
+          "playerTeamInfo": {
+            "id": 2488
+          },
+          "nameCode": "KOV",
+          "ranking": 81,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 187608,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ألكسندر كوفاتشيفيتش",
+              "ru": "Александар Ковачевич"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. كوفاتشيفيتش",
+              "bn": "এ. কোভাসেভিক",
+              "hi": "ए. कोवाचेविच",
+              "ru": "А. Ковачевич"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Matteo Berrettini",
+          "slug": "berrettini-matteo",
+          "shortName": "M. Berrettini",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 41171,
+          "playerTeamInfo": {
+            "id": 56
+          },
+          "nameCode": "BER",
+          "ranking": 46,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 112783,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماتيو بيريتيني",
+              "ru": "Маттео Берреттини"
+            },
+            "shortNameTranslation": {
+              "ar": "م. بيريتيني",
+              "bn": "এম. বেরেটিনি",
+              "hi": "एम. बेरेटिनी",
+              "ru": "М. Берреттини"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 7,
+          "period2": 1,
+          "period3": 4,
+          "period1TieBreak": 7,
+          "point": "15",
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 6,
+          "period2": 6,
+          "period3": 6,
+          "period1TieBreak": 3,
+          "point": "40",
+          "normaltime": 2
+        },
+        "time": {
+          "period1": 3527,
+          "period2": 1725,
+          "period3": 2872,
+          "currentPeriodStartTimestamp": 1791351573
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart"
+          ],
+          "changeTimestamp": 1791354543
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "correctAiInsight": true,
+        "id": 17257382,
+        "slug": "aleksandar-kovacevic-matteo-berrettini",
+        "startTimestamp": 1791345600,
+        "periods": {
+          "point": "Game",
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "groundType": "Hardcourt outdoor",
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "singles"
+          ],
+          "level": [
+            "pro"
+          ],
+          "tournament": [
+            "p1000"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      }
+    ]
+  }
+}

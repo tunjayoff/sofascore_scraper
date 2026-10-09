@@ -1,0 +1,79 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17199139/media/summary/country/TR",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:07:54+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/atlanta-braves-los-angeles-dodgers/Nxbsgyb#id:17199139",
+  "cache_control": "max-age=30, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "highlightedItem": {
+      "type": "highlight",
+      "item": {
+        "title": "Braves 1 - 3 Dodgers",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=gPEXU8g2Fo0",
+        "thumbnailUrl": "https://i.ytimg.com/vi/gPEXU8g2Fo0/hqdefault.jpg",
+        "mediaType": 6,
+        "doFollow": false,
+        "keyHighlight": true,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137644,
+        "createdAtTimestamp": 1791337835,
+        "sourceUrl": "https://www.youtube.com/watch?v=gPEXU8g2Fo0"
+      }
+    },
+    "mediaItems": [
+      {
+        "type": "highlight",
+        "item": {
+          "title": "Braves 1 - 3 Dodgers",
+          "subtitle": "Full Highlights",
+          "url": "https://www.youtube.com/watch?v=gPEXU8g2Fo0",
+          "thumbnailUrl": "https://i.ytimg.com/vi/gPEXU8g2Fo0/hqdefault.jpg",
+          "mediaType": 6,
+          "doFollow": false,
+          "keyHighlight": true,
+          "livestream": false,
+          "removeOnFinish": false,
+          "id": 8137644,
+          "createdAtTimestamp": 1791337835,
+          "sourceUrl": "https://www.youtube.com/watch?v=gPEXU8g2Fo0"
+        }
+      },
+      {
+        "type": "newsArticle",
+        "item": {
+          "source": 10,
+          "description": "Dodgers beat Braves 3-1 at Truist Park as Freeman and Enrique Hernández homers and Yamamoto’s 10 K gem put LA up 2-1 in the MLB Postseason.",
+          "thumbnailUrl": "https://files.sofascore.com/news/2026/10/freddie-freeman-home-run-dodgers-braves-fox-news_.webp",
+          "id": 689322,
+          "fieldTranslations": {
+            "headerTranslation": {
+              "fr": "Les Dodgers battent les Braves 3-1 à Atlanta grâce à la performance éclatante de Yamamoto",
+              "es": "Dodgers vencen a Braves 3-1 en Atlanta con brillante actuación de Yamamoto",
+              "pt": "Dodgers vencem Braves por 3-1 em Atlanta com destaque para Yamamoto",
+              "it": "I Dodgers battono i Braves 3-1 ad Atlanta, Yamamoto brilla"
+            },
+            "descriptionTranslation": {
+              "fr": "Les Dodgers battent les Braves 3-1 au Truist Park grâce aux circuits de Freeman et Enrique Hernández et à la démonstration de 10 retraits sur prises de Yamamoto, plaçant LA en tête 2-1 dans la MLB Postseason.",
+              "es": "Los Dodgers vencen a los Braves 3-1 en Truist Park gracias a los jonrones de Freeman y Enrique Hernández y la joya de 10 ponches de Yamamoto, poniéndose 2-1 arriba en la MLB Postseason.",
+              "pt": "Dodgers vencem os Braves por 3-1 no Truist Park: home runs de Freeman e Enrique Hernández e a joia de 10 eliminações de Yamamoto colocam LA em vantagem de 2-1 na MLB Postseason.",
+              "it": "I Dodgers battono i Braves 3-1 al Truist Park grazie ai fuoricampo di Freeman ed Enrique Hernández e alla gemma da 10 K di Yamamoto, portando LA sul 2-1 nella MLB Postseason."
+            }
+          },
+          "header": "Dodgers beat Braves 3-1 in Atlanta as Yamamoto shines",
+          "externalUrl": "https://www.sofascore.com/web-view/news/dodgers-beat-braves-3-1-in-atlanta-as-yamamoto-shines/",
+          "contentId": "10:152318",
+          "publishedAtTimestamp": 1791376127,
+          "newsProvider": {
+            "id": 10,
+            "name": "Sofascore News"
+          }
+        }
+      }
+    ],
+    "itemsCount": 9
+  }
+}

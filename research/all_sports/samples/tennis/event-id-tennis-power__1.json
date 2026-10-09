@@ -1,0 +1,193 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17257382/tennis-power",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:56:09+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/aleksandar-kovacevic-matteo-berrettini/IfVsicAb#id:17257382",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "tennisPowerRankings": [
+      {
+        "set": 1,
+        "game": 1,
+        "value": 18.446341100609,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 2,
+        "value": -54.22,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 3,
+        "value": 47.4,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 4,
+        "value": -54.94,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 5,
+        "value": 18.446341100609,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 6,
+        "value": -71.16,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 7,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 8,
+        "value": -37.438278205601,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 9,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 10,
+        "value": -35.035057710099,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 11,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 12,
+        "value": -62.38,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 13,
+        "value": 65,
+        "breakOccurred": false
+      },
+      {
+        "set": 2,
+        "game": 1,
+        "value": -22.473359228206,
+        "breakOccurred": false
+      },
+      {
+        "set": 2,
+        "game": 2,
+        "value": -40.867738804588,
+        "breakOccurred": true
+      },
+      {
+        "set": 2,
+        "game": 3,
+        "value": -78.02,
+        "breakOccurred": false
+      },
+      {
+        "set": 2,
+        "game": 4,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 2,
+        "game": 5,
+        "value": -66.54,
+        "breakOccurred": false
+      },
+      {
+        "set": 2,
+        "game": 6,
+        "value": -19.659263465349,
+        "breakOccurred": true
+      },
+      {
+        "set": 2,
+        "game": 7,
+        "value": -82.98,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 1,
+        "value": -10,
+        "breakOccurred": true
+      },
+      {
+        "set": 3,
+        "game": 2,
+        "value": -10,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 3,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 4,
+        "value": -57.36,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 5,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 6,
+        "value": -10,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 7,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 8,
+        "value": -55.24,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 9,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 3,
+        "game": 10,
+        "value": -29.04649204293,
+        "breakOccurred": false
+      }
+    ]
+  }
+}

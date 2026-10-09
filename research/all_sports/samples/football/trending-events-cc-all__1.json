@@ -1,0 +1,859 @@
+{
+  "url": "https://www.sofascore.com/api/v1/trending/events/XX/all",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:52:58+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/mas-de-fes-raja-club-athletic/hKqsKax#id:17256969",
+  "cache_control": "max-age=60, public",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "NBA Preseason",
+          "slug": "nba-preseason",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 10,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 15,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "bn": "যুক্তরাষ্ট্র",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NBA Preseason",
+            "slug": "nba-preseason",
+            "primaryColorHex": "#045daf",
+            "secondaryColorHex": "#cc2b31",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 10,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 15,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 28360,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 2329,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ro": "NBA Presezon",
+                "bn": "এনবিএ প্রিসিজন",
+                "ar": "موسم ما قبل الدوري الأميركي للمحترفين",
+                "hi": "एनबीए प्रीसीज़न",
+                "ru": "Предсезонная лига НБА"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 163,
+          "isGroup": false,
+          "isLive": false,
+          "id": 9154,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ro": "NBA Presezon",
+              "hi": "एनबीए प्रीसीज़न",
+              "ar": "دوري NBA التحضيري",
+              "bn": "এনবিএ প্রিসিজন",
+              "ru": "Предсезонные матчи НБА"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NBA Preseason 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 99742
+        },
+        "customId": "ktbsBtb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Milwaukee Bucks",
+          "slug": "milwaukee-bucks",
+          "shortName": "Bucks",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 88088,
+          "nameCode": "MIL",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3410,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#00471b",
+            "secondary": "#eee1c6",
+            "text": "#eee1c6"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميلواكي باكس",
+              "ru": "Милуоки Бакс"
+            },
+            "shortNameTranslation": {
+              "ar": "باكز",
+              "bn": "বাক্স",
+              "hi": "बक्स"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Minnesota Timberwolves",
+          "slug": "minnesota-timberwolves",
+          "shortName": "Timberwolves",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 82691,
+          "nameCode": "MIN",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3426,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#005083",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مينيسوتا تمبروولفز",
+              "ru": "Миннесота Тимбервулвз"
+            },
+            "shortNameTranslation": {
+              "ar": "تمبروولفز",
+              "bn": "টিম্বারওলভস",
+              "hi": "टिम्बरवॉल्व्स"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 97,
+          "display": 97,
+          "period1": 20,
+          "period2": 28,
+          "period3": 29,
+          "period4": 20,
+          "normaltime": 97
+        },
+        "awayScore": {
+          "current": 116,
+          "display": 116,
+          "period1": 31,
+          "period2": 29,
+          "period3": 21,
+          "period4": 35,
+          "normaltime": 116
+        },
+        "time": {
+          "played": 2880,
+          "periodLength": 720,
+          "overtimeLength": 300,
+          "totalPeriodCount": 4,
+          "clockRunning": true,
+          "clockRunningLastUpdated": "2026-10-06T02:44:04+00:00"
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 4
+            }
+          ],
+          "changeTimestamp": 1791254645
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16869057,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "minnesota-timberwolves-milwaukee-bucks",
+        "startTimestamp": 1791244800,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "club"
+          ],
+          "level": [
+            "top-competitions",
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "bn": "যুক্তরাষ্ট্র",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "dybseyb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Tampa Bay Rays",
+          "slug": "tampa-bay-rays",
+          "shortName": "Rays",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 38379,
+          "nameCode": "TB",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3653,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000066",
+            "secondary": "#000066",
+            "text": "#000066"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تامبا باي رايز",
+              "ru": "Тампа-Бэй Рейс"
+            },
+            "shortNameTranslation": {
+              "ar": "رايز",
+              "bn": "রে",
+              "hi": "रेज",
+              "ru": "Рейс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "New York Yankees",
+          "slug": "new-york-yankees",
+          "shortName": "Yankees",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 73826,
+          "nameCode": "NYY",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3654,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000066",
+            "secondary": "#000066",
+            "text": "#000066"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نيويورك يانكيز",
+              "ru": "Нью-Йорк Янкиз"
+            },
+            "shortNameTranslation": {
+              "ar": "يانكيز",
+              "bn": "ইয়াঙ্কিস",
+              "hi": "यांकीज",
+              "ru": "Янкиз"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 5,
+          "display": 5,
+          "period1": 1,
+          "period2": 0,
+          "period3": 0,
+          "period4": 0,
+          "period5": 4,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 5,
+          "series": 2,
+          "innings": {
+            "inning1": {
+              "run": 1
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 4
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": -1
+            }
+          },
+          "inningsBaseball": {
+            "run": 5,
+            "hits": 8,
+            "errors": 0
+          }
+        },
+        "awayScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 1,
+          "period5": 0,
+          "period6": 0,
+          "period7": 0,
+          "period8": 1,
+          "period9": 0,
+          "normaltime": 2,
+          "series": 0,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 1
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 1
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 2,
+            "hits": 4,
+            "errors": 4
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791256403
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 4
+            }
+          ],
+          "changeTimestamp": 1791256445
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17193001,
+        "slug": "new-york-yankees-tampa-bay-rays",
+        "previousLegEventId": 17193002,
+        "startTimestamp": 1791244800,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 5,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "NBA Preseason",
+          "slug": "nba-preseason",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 10,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 15,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "bn": "যুক্তরাষ্ট্র",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NBA Preseason",
+            "slug": "nba-preseason",
+            "primaryColorHex": "#045daf",
+            "secondaryColorHex": "#cc2b31",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 10,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 15,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 28360,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 2329,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ro": "NBA Presezon",
+                "bn": "এনবিএ প্রিসিজন",
+                "ar": "موسم ما قبل الدوري الأميركي للمحترفين",
+                "hi": "एनबीए प्रीसीज़न",
+                "ru": "Предсезонная лига НБА"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 163,
+          "isGroup": false,
+          "isLive": false,
+          "id": 9154,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ro": "NBA Presezon",
+              "hi": "एनबीए प्रीसीज़न",
+              "ar": "دوري NBA التحضيري",
+              "bn": "এনবিএ প্রিসিজন",
+              "ru": "Предсезонные матчи НБА"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NBA Preseason 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 99742
+        },
+        "customId": "ntbsCtb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Sacramento Kings",
+          "slug": "sacramento-kings",
+          "shortName": "Kings",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 35396,
+          "nameCode": "SAC",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3413,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#724c9f",
+            "secondary": "#8e9090",
+            "text": "#8e9090"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ساكرامينتو كينغس",
+              "ru": "Сакраменто Кингз"
+            },
+            "shortNameTranslation": {
+              "ar": "كينغز",
+              "bn": "কিংস",
+              "hi": "किंग्स"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Los Angeles Lakers",
+          "slug": "los-angeles-lakers",
+          "shortName": "Lakers",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 300223,
+          "nameCode": "LAL",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3427,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#fdb927",
+            "secondary": "#552582",
+            "text": "#552582"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس ليكرز",
+              "ru": "Лос-Анджелес Лейкерс"
+            },
+            "shortNameTranslation": {
+              "ar": "ليكرز",
+              "bn": "লেকার্স",
+              "hi": "लेकर्स"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 103,
+          "display": 103,
+          "period1": 28,
+          "period2": 19,
+          "period3": 30,
+          "period4": 26
+        },
+        "awayScore": {
+          "current": 127,
+          "display": 127,
+          "period1": 36,
+          "period2": 37,
+          "period3": 26,
+          "period4": 28
+        },
+        "time": {
+          "played": 2880,
+          "periodLength": 720,
+          "overtimeLength": 300,
+          "totalPeriodCount": 4,
+          "clockRunning": false,
+          "clockRunningLastUpdated": "2026-10-06T04:29:51+00:00"
+        },
+        "changes": {
+          "changes": [
+            "homeScore.current",
+            "homeScore.display",
+            "homeScore.period4",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1791264820
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17061576,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "los-angeles-lakers-sacramento-kings",
+        "startTimestamp": 1791252000,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "club"
+          ],
+          "level": [
+            "top-competitions",
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "__trimmed__": 56
+      }
+    ]
+  }
+}

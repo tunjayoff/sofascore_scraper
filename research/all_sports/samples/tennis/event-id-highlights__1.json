@@ -1,0 +1,27 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17257382/highlights",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:56:16+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/aleksandar-kovacevic-matteo-berrettini/IfVsicAb#id:17257382",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "highlights": [
+      {
+        "title": "A. Kovačević 1 - 2 M. Berrettini",
+        "subtitle": "Full Highlights",
+        "url": "https://www.youtube.com/watch?v=BENjhNE3j7Q",
+        "thumbnailUrl": "https://i.ytimg.com/vi/BENjhNE3j7Q/hqdefault.jpg",
+        "mediaType": 6,
+        "doFollow": false,
+        "keyHighlight": true,
+        "livestream": false,
+        "removeOnFinish": false,
+        "id": 8137739,
+        "createdAtTimestamp": 1791363703,
+        "sourceUrl": "https://www.youtube.com/watch?v=BENjhNE3j7Q"
+      }
+    ]
+  }
+}

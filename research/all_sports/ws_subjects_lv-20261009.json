@@ -1,0 +1,158 @@
+{
+  "event.16832235": {
+    "count": 197,
+    "keys": {
+      "time.played": 171,
+      "time.playedLastUpdated": 171,
+      "changes.changeTimestamp": 197,
+      "id": 197,
+      "homeScore.current": 14,
+      "homeScore.display": 14,
+      "homeScore.period1": 14,
+      "awayScore.current": 15,
+      "awayScore.display": 15,
+      "awayScore.period1": 15,
+      "timeouts.activeTimeout": 8,
+      "time.clockRunning": 43,
+      "time.clockRunningLastUpdated": 43,
+      "timeouts.homeTimeoutsRemaining": 1,
+      "timeouts.awayTimeoutsRemaining": 1,
+      "status.code": 3,
+      "status.description": 3,
+      "statusDescription": 3,
+      "lastPeriod": 3
+    },
+    "first_ts": 1791503589.87
+  },
+  "event.16869062": {
+    "count": 217,
+    "keys": {
+      "time.played": 196,
+      "time.playedLastUpdated": 196,
+      "changes.changeTimestamp": 217,
+      "id": 217,
+      "awayScore.current": 13,
+      "awayScore.display": 13,
+      "awayScore.period1": 13,
+      "time.clockRunning": 28,
+      "time.clockRunningLastUpdated": 28,
+      "timeouts.activeTimeout": 7,
+      "homeScore.current": 14,
+      "homeScore.display": 14,
+      "homeScore.period1": 14,
+      "timeouts.homeTimeoutsRemaining": 1,
+      "timeouts.awayTimeoutsRemaining": 1,
+      "status.code": 1,
+      "status.description": 1,
+      "statusDescription": 1,
+      "lastPeriod": 1
+    },
+    "first_ts": 1791503592.735
+  },
+  "event.16685163": {
+    "count": 203,
+    "keys": {
+      "time.played": 177,
+      "time.playedLastUpdated": 177,
+      "changes.changeTimestamp": 203,
+      "id": 203,
+      "timeouts.activeTimeout": 3,
+      "homeScore.current": 12,
+      "homeScore.display": 12,
+      "homeScore.period2": 12,
+      "time.clockRunning": 35,
+      "time.clockRunningLastUpdated": 35,
+      "awayScore.current": 18,
+      "awayScore.display": 18,
+      "awayScore.period2": 18,
+      "timeouts.homeTimeoutsRemaining": 1,
+      "timeouts.awayTimeoutsRemaining": 1
+    },
+    "first_ts": 1791503595.627
+  },
+  "event.16183708": {
+    "count": 75,
+    "keys": {
+      "id": 75,
+      "changes.changeTimestamp": 75,
+      "time.played": 18,
+      "time.playedLastUpdated": 18,
+      "time.periodLength": 1,
+      "time.overtimeLength": 1,
+      "time.totalPeriodCount": 1,
+      "status.code": 3,
+      "status.description": 3,
+      "status.type": 3,
+      "statusDescription": 3,
+      "lastPeriod": 3,
+      "currentYardsToFirstDown": 28,
+      "currentDown": 28,
+      "currentYardline": 28,
+      "currentTeamHalf": 27,
+      "isGoalPossession": 5,
+      "homeScore.current": 7,
+      "homeScore.display": 7,
+      "homeScore.period1": 3,
+      "awayScore.current": 2,
+      "awayScore.display": 2,
+      "awayScore.period1": 1
+    },
+    "first_ts": 1791503610.868
+  },
+  "event.15237997": {
+    "count": 8,
+    "keys": {
+      "time.currentPeriodStartTimestamp": 1,
+      "time.initial": 1,
+      "time.max": 1,
+      "time.extra": 1,
+      "currentPeriodStartTimestamp": 1,
+      "statusTime": 1,
+      "changes.changeTimestamp": 8,
+      "id": 8,
+      "status.code": 1,
+      "status.description": 1,
+      "statusDescription": 1,
+      "lastPeriod": 1,
+      "homeScore.period2": 3,
+      "awayScore.period2": 1,
+      "homeScore.current": 2,
+      "homeScore.display": 2,
+      "eventState.statusIndicator": 2,
+      "eventState.timestamp": 2,
+      "varInProgress": 2,
+      "cardsCode": 1
+    },
+    "first_ts": 1791504377.21
+  },
+  "event.15237992": {
+    "count": 7,
+    "keys": {
+      "eventState.statusIndicator": 2,
+      "eventState.timestamp": 3,
+      "varInProgress": 2,
+      "changes.changeTimestamp": 7,
+      "id": 7,
+      "homeScore.current": 2,
+      "homeScore.display": 2,
+      "homeScore.period2": 2,
+      "homeScore.normaltime": 2,
+      "cardsCode": 1,
+      "time.injuryTime2": 1
+    },
+    "first_ts": 1791504378.652
+  },
+  "event.16546323": {
+    "count": 2,
+    "keys": {
+      "time.played": 2,
+      "time.playedLastUpdated": 2,
+      "changes.changeTimestamp": 2,
+      "id": 2,
+      "homeScore.current": 1,
+      "homeScore.display": 1,
+      "homeScore.period2": 1
+    },
+    "first_ts": 1791505025.759
+  }
+}

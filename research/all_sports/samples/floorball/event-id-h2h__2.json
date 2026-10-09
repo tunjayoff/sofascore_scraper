@@ -1,0 +1,17 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16672337/h2h",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:22:14+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/mullsjo-ais-jonkopings-ik/THbsxHj#id:16672337",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "teamDuel": {
+      "homeWins": 3,
+      "awayWins": 7,
+      "draws": 0
+    },
+    "managerDuel": null
+  }
+}

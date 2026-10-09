@@ -1,0 +1,27 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17256969/pregame-form",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:52:51+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/mas-de-fes-raja-club-athletic/hKqsKax#id:17256969",
+  "cache_control": "max-age=60, public, s-maxage=9600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "homeTeam": {
+      "position": 3,
+      "value": "6",
+      "form": [
+        "W",
+        "W"
+      ]
+    },
+    "awayTeam": {
+      "position": 6,
+      "value": "3",
+      "form": [
+        "W"
+      ]
+    },
+    "label": "Pts"
+  }
+}

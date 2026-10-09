@@ -1,0 +1,984 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16546907/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:57:49+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/minnesota-wild-buffalo-sabres/DybsOyb#id:16546907",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Shots on goal",
+                "home": "28",
+                "away": "20",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 28,
+                "awayValue": 20,
+                "renderType": 1,
+                "key": "Shots"
+              },
+              {
+                "name": "Penalties",
+                "home": "4",
+                "away": "2",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "suspensions"
+              },
+              {
+                "name": "Penalty minutes",
+                "home": "8",
+                "away": "4",
+                "compareCode": 1,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 8,
+                "awayValue": 4,
+                "renderType": 1,
+                "key": "SuspensionMinutes"
+              },
+              {
+                "name": "Hits",
+                "home": "12",
+                "away": "26",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 12,
+                "awayValue": 26,
+                "renderType": 1,
+                "key": "Hits"
+              },
+              {
+                "name": "Blocked shots",
+                "home": "16",
+                "away": "17",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 16,
+                "awayValue": 17,
+                "renderType": 1,
+                "key": "Blocked"
+              },
+              {
+                "name": "Takeaways",
+                "home": "3",
+                "away": "3",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 3,
+                "awayValue": 3,
+                "renderType": 1,
+                "key": "Takeaways"
+              },
+              {
+                "name": "Giveaways",
+                "home": "18",
+                "away": "20",
+                "compareCode": 2,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 18,
+                "awayValue": 20,
+                "renderType": 1,
+                "key": "Giveaways"
+              },
+              {
+                "name": "Power play %",
+                "home": "0/2 (0%)",
+                "away": "1/4 (25%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 2,
+                "awayTotal": 4,
+                "renderType": 3,
+                "key": "PowerPlayPercentage"
+              },
+              {
+                "name": "Faceoffs won %",
+                "home": "28/54 (52%)",
+                "away": "26/54 (48%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 28,
+                "awayValue": 26,
+                "homeTotal": 54,
+                "awayTotal": 54,
+                "renderType": 3,
+                "key": "FaceOffWinPercentage"
+              }
+            ]
+          },
+          {
+            "groupName": "Special teams",
+            "statisticsItems": [
+              {
+                "name": "Power play shot %",
+                "home": "0/2 (0%)",
+                "away": "1/1 (100%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 2,
+                "awayTotal": 1,
+                "renderType": 3,
+                "key": "powerPlayShotPercentage"
+              },
+              {
+                "name": "Shorthanded shot %",
+                "home": "0/2 (0%)",
+                "away": "0/0 (0%)",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 0,
+                "homeTotal": 2,
+                "awayTotal": 0,
+                "renderType": 3,
+                "key": "shortHandedShotPercentage"
+              },
+              {
+                "name": "Even strength shot %",
+                "home": "3/24 (12%)",
+                "away": "1/19 (5%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 3,
+                "awayValue": 1,
+                "homeTotal": 24,
+                "awayTotal": 19,
+                "renderType": 3,
+                "key": "evenStrengthShotPercentage"
+              },
+              {
+                "name": "Power play faceoffs",
+                "home": "2/4 (50%)",
+                "away": "4/5 (80%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 2,
+                "awayValue": 4,
+                "homeTotal": 4,
+                "awayTotal": 5,
+                "renderType": 3,
+                "key": "powerPlayFaceoffWinPercentage"
+              },
+              {
+                "name": "Shorthanded faceoffs",
+                "home": "1/5 (20%)",
+                "away": "2/4 (50%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 1,
+                "awayValue": 2,
+                "homeTotal": 5,
+                "awayTotal": 4,
+                "renderType": 3,
+                "key": "shortHandedFaceoffWinPercentage"
+              },
+              {
+                "name": "Even strength faceoffs",
+                "home": "25/45 (55%)",
+                "away": "20/45 (44%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 25,
+                "awayValue": 20,
+                "homeTotal": 45,
+                "awayTotal": 45,
+                "renderType": 3,
+                "key": "evenStrengthFaceoffWinPercentage"
+              },
+              {
+                "name": "5v4 conversion",
+                "home": "0/2 (0%)",
+                "away": "1/4 (25%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 2,
+                "awayTotal": 4,
+                "renderType": 3,
+                "key": "fiveVsFourConversionPercentage"
+              }
+            ]
+          },
+          {
+            "groupName": "Advanced",
+            "statisticsItems": [
+              {
+                "name": "Corsi %",
+                "home": "54.8%",
+                "away": "45.2%",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 54.8,
+                "awayValue": 45.2,
+                "renderType": 2,
+                "key": "corsiPct"
+              },
+              {
+                "name": "Fenwick %",
+                "home": "56.1%",
+                "away": "43.9%",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 56.1,
+                "awayValue": 43.9,
+                "renderType": 2,
+                "key": "fenwickPct"
+              },
+              {
+                "name": "Average shot distance",
+                "home": "10.6",
+                "away": "12.2",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 10.61,
+                "awayValue": 12.16,
+                "renderType": 1,
+                "key": "averageShotDistance"
+              }
+            ]
+          },
+          {
+            "groupName": "Shots",
+            "statisticsItems": [
+              {
+                "name": "Wrist",
+                "home": "1/15 (6%)",
+                "away": "0/8 (0%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 1,
+                "awayValue": 0,
+                "homeTotal": 15,
+                "awayTotal": 8,
+                "renderType": 3,
+                "key": "wristGoals"
+              },
+              {
+                "name": "Slap",
+                "home": "0/3 (0%)",
+                "away": "1/1 (100%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 3,
+                "awayTotal": 1,
+                "renderType": 3,
+                "key": "slapGoals"
+              },
+              {
+                "name": "Tip",
+                "home": "0/1 (0%)",
+                "away": "0/2 (0%)",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 0,
+                "homeTotal": 1,
+                "awayTotal": 2,
+                "renderType": 3,
+                "key": "tipGoals"
+              },
+              {
+                "name": "Snap",
+                "home": "1/8 (12%)",
+                "away": "1/9 (11%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 1,
+                "awayValue": 1,
+                "homeTotal": 8,
+                "awayTotal": 9,
+                "renderType": 3,
+                "key": "snapGoals"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "period": "1ST",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Shots on goal",
+                "home": "4",
+                "away": "4",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 4,
+                "renderType": 1,
+                "key": "Shots"
+              },
+              {
+                "name": "Penalties",
+                "home": "2",
+                "away": "1",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 2,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "suspensions"
+              },
+              {
+                "name": "Penalty minutes",
+                "home": "4",
+                "away": "2",
+                "compareCode": 1,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "SuspensionMinutes"
+              },
+              {
+                "name": "Hits",
+                "home": "3",
+                "away": "14",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 3,
+                "awayValue": 14,
+                "renderType": 1,
+                "key": "Hits"
+              },
+              {
+                "name": "Blocked shots",
+                "home": "7",
+                "away": "4",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 7,
+                "awayValue": 4,
+                "renderType": 1,
+                "key": "Blocked"
+              },
+              {
+                "name": "Giveaways",
+                "home": "8",
+                "away": "8",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 8,
+                "awayValue": 8,
+                "renderType": 1,
+                "key": "Giveaways"
+              },
+              {
+                "name": "Faceoffs won %",
+                "home": "5/9 (56%)",
+                "away": "4/9 (44%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 5,
+                "awayValue": 4,
+                "homeTotal": 9,
+                "awayTotal": 9,
+                "renderType": 3,
+                "key": "FaceOffWinPercentage"
+              }
+            ]
+          },
+          {
+            "groupName": "Special teams",
+            "statisticsItems": [
+              {
+                "name": "Shorthanded shot %",
+                "home": "0/1 (0%)",
+                "away": "0/0 (0%)",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 0,
+                "homeTotal": 1,
+                "awayTotal": 0,
+                "renderType": 3,
+                "key": "shortHandedShotPercentage"
+              },
+              {
+                "name": "Even strength shot %",
+                "home": "0/3 (0%)",
+                "away": "0/4 (0%)",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 0,
+                "homeTotal": 3,
+                "awayTotal": 4,
+                "renderType": 3,
+                "key": "evenStrengthShotPercentage"
+              },
+              {
+                "name": "Power play faceoffs",
+                "home": "0/1 (0%)",
+                "away": "1/2 (50%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 1,
+                "awayTotal": 2,
+                "renderType": 3,
+                "key": "powerPlayFaceoffWinPercentage"
+              },
+              {
+                "name": "Shorthanded faceoffs",
+                "home": "1/2 (50%)",
+                "away": "1/1 (100%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 1,
+                "awayValue": 1,
+                "homeTotal": 2,
+                "awayTotal": 1,
+                "renderType": 3,
+                "key": "shortHandedFaceoffWinPercentage"
+              },
+              {
+                "name": "Even strength faceoffs",
+                "home": "4/6 (66%)",
+                "away": "2/6 (33%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 4,
+                "awayValue": 2,
+                "homeTotal": 6,
+                "awayTotal": 6,
+                "renderType": 3,
+                "key": "evenStrengthFaceoffWinPercentage"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "period": "2ND",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Shots on goal",
+                "home": "8",
+                "away": "8",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 8,
+                "awayValue": 8,
+                "renderType": 1,
+                "key": "Shots"
+              },
+              {
+                "name": "Penalties",
+                "home": "2",
+                "away": "0",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 2,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "suspensions"
+              },
+              {
+                "name": "Penalty minutes",
+                "home": "4",
+                "away": "0",
+                "compareCode": 1,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "SuspensionMinutes"
+              },
+              {
+                "name": "Hits",
+                "home": "4",
+                "away": "8",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 8,
+                "renderType": 1,
+                "key": "Hits"
+              },
+              {
+                "name": "Blocked shots",
+                "home": "4",
+                "away": "3",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 3,
+                "renderType": 1,
+                "key": "Blocked"
+              },
+              {
+                "name": "Takeaways",
+                "home": "3",
+                "away": "2",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 3,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "Takeaways"
+              },
+              {
+                "name": "Giveaways",
+                "home": "5",
+                "away": "7",
+                "compareCode": 2,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 7,
+                "renderType": 1,
+                "key": "Giveaways"
+              },
+              {
+                "name": "Faceoffs won %",
+                "home": "11/20 (55%)",
+                "away": "9/20 (45%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 11,
+                "awayValue": 9,
+                "homeTotal": 20,
+                "awayTotal": 20,
+                "renderType": 3,
+                "key": "FaceOffWinPercentage"
+              }
+            ]
+          },
+          {
+            "groupName": "Special teams",
+            "statisticsItems": [
+              {
+                "name": "Power play shot %",
+                "home": "0/0 (0%)",
+                "away": "1/1 (100%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 0,
+                "awayTotal": 1,
+                "renderType": 3,
+                "key": "powerPlayShotPercentage"
+              },
+              {
+                "name": "Shorthanded shot %",
+                "home": "0/1 (0%)",
+                "away": "0/0 (0%)",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 0,
+                "homeTotal": 1,
+                "awayTotal": 0,
+                "renderType": 3,
+                "key": "shortHandedShotPercentage"
+              },
+              {
+                "name": "Even strength shot %",
+                "home": "0/7 (0%)",
+                "away": "1/7 (14%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 7,
+                "awayTotal": 7,
+                "renderType": 3,
+                "key": "evenStrengthShotPercentage"
+              },
+              {
+                "name": "Power play faceoffs",
+                "home": "0/0 (0%)",
+                "away": "3/3 (100%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 3,
+                "homeTotal": 0,
+                "awayTotal": 3,
+                "renderType": 3,
+                "key": "powerPlayFaceoffWinPercentage"
+              },
+              {
+                "name": "Shorthanded faceoffs",
+                "home": "0/3 (0%)",
+                "away": "0/0 (0%)",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 0,
+                "homeTotal": 3,
+                "awayTotal": 0,
+                "renderType": 3,
+                "key": "shortHandedFaceoffWinPercentage"
+              },
+              {
+                "name": "Even strength faceoffs",
+                "home": "11/17 (64%)",
+                "away": "6/17 (35%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 11,
+                "awayValue": 6,
+                "homeTotal": 17,
+                "awayTotal": 17,
+                "renderType": 3,
+                "key": "evenStrengthFaceoffWinPercentage"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "period": "3RD",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Shots on goal",
+                "home": "11",
+                "away": "5",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 11,
+                "awayValue": 5,
+                "renderType": 1,
+                "key": "Shots"
+              },
+              {
+                "name": "Penalties",
+                "home": "0",
+                "away": "1",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "suspensions"
+              },
+              {
+                "name": "Penalty minutes",
+                "home": "0",
+                "away": "2",
+                "compareCode": 2,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "SuspensionMinutes"
+              },
+              {
+                "name": "Hits",
+                "home": "5",
+                "away": "4",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 4,
+                "renderType": 1,
+                "key": "Hits"
+              },
+              {
+                "name": "Blocked shots",
+                "home": "5",
+                "away": "8",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 8,
+                "renderType": 1,
+                "key": "Blocked"
+              },
+              {
+                "name": "Takeaways",
+                "home": "0",
+                "away": "1",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "Takeaways"
+              },
+              {
+                "name": "Giveaways",
+                "home": "5",
+                "away": "3",
+                "compareCode": 1,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 3,
+                "renderType": 1,
+                "key": "Giveaways"
+              },
+              {
+                "name": "Faceoffs won %",
+                "home": "10/23 (43%)",
+                "away": "13/23 (57%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 10,
+                "awayValue": 13,
+                "homeTotal": 23,
+                "awayTotal": 23,
+                "renderType": 3,
+                "key": "FaceOffWinPercentage"
+              }
+            ]
+          },
+          {
+            "groupName": "Special teams",
+            "statisticsItems": [
+              {
+                "name": "Power play shot %",
+                "home": "0/2 (0%)",
+                "away": "0/0 (0%)",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 0,
+                "homeTotal": 2,
+                "awayTotal": 0,
+                "renderType": 3,
+                "key": "powerPlayShotPercentage"
+              },
+              {
+                "name": "Even strength shot %",
+                "home": "2/9 (22%)",
+                "away": "0/5 (0%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 2,
+                "awayValue": 0,
+                "homeTotal": 9,
+                "awayTotal": 5,
+                "renderType": 3,
+                "key": "evenStrengthShotPercentage"
+              },
+              {
+                "name": "Power play faceoffs",
+                "home": "2/3 (66%)",
+                "away": "0/0 (0%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 2,
+                "awayValue": 0,
+                "homeTotal": 3,
+                "awayTotal": 0,
+                "renderType": 3,
+                "key": "powerPlayFaceoffWinPercentage"
+              },
+              {
+                "name": "Shorthanded faceoffs",
+                "home": "0/0 (0%)",
+                "away": "1/3 (33%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 0,
+                "awayValue": 1,
+                "homeTotal": 0,
+                "awayTotal": 3,
+                "renderType": 3,
+                "key": "shortHandedFaceoffWinPercentage"
+              },
+              {
+                "name": "Even strength faceoffs",
+                "home": "8/20 (40%)",
+                "away": "12/20 (60%)",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 8,
+                "awayValue": 12,
+                "homeTotal": 20,
+                "awayTotal": 20,
+                "renderType": 3,
+                "key": "evenStrengthFaceoffWinPercentage"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "period": "OT1",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Shots on goal",
+                "home": "5",
+                "away": "3",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 3,
+                "renderType": 1,
+                "key": "Shots"
+              },
+              {
+                "name": "Blocked shots",
+                "home": "0",
+                "away": "2",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "Blocked"
+              },
+              {
+                "name": "Giveaways",
+                "home": "0",
+                "away": "2",
+                "compareCode": 2,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "Giveaways"
+              },
+              {
+                "name": "Faceoffs won %",
+                "home": "2/2 (100%)",
+                "away": "0/2 (0%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 2,
+                "awayValue": 0,
+                "homeTotal": 2,
+                "awayTotal": 2,
+                "renderType": 3,
+                "key": "FaceOffWinPercentage"
+              }
+            ]
+          },
+          {
+            "groupName": "Special teams",
+            "statisticsItems": [
+              {
+                "name": "Even strength shot %",
+                "home": "1/5 (20%)",
+                "away": "0/3 (0%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 1,
+                "awayValue": 0,
+                "homeTotal": 5,
+                "awayTotal": 3,
+                "renderType": 3,
+                "key": "evenStrengthShotPercentage"
+              },
+              {
+                "name": "Even strength faceoffs",
+                "home": "2/2 (100%)",
+                "away": "0/2 (0%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 2,
+                "awayValue": 0,
+                "homeTotal": 2,
+                "awayTotal": 2,
+                "renderType": 3,
+                "key": "evenStrengthFaceoffWinPercentage"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

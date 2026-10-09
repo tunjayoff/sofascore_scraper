@@ -1,0 +1,50 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17259128/team-streaks",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:23:16+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/elbasani-volleyball-studenti-tirana/mlrsGxjc#id:17259128",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "general": [
+      {
+        "name": "Losses",
+        "value": "26",
+        "team": "home"
+      },
+      {
+        "name": "Game points average (Last 10)",
+        "value": "126",
+        "team": "home"
+      },
+      {
+        "name": "Game points average (Last 10)",
+        "value": "151",
+        "team": "away"
+      },
+      {
+        "name": "First set loser",
+        "value": "10/10",
+        "team": "home"
+      },
+      {
+        "name": "First set loser",
+        "value": "7/8",
+        "team": "away"
+      }
+    ],
+    "head2head": [
+      {
+        "name": "Wins",
+        "value": "7",
+        "team": "away"
+      },
+      {
+        "name": "Game points average (Last 10)",
+        "value": "61",
+        "team": "both"
+      }
+    ]
+  }
+}

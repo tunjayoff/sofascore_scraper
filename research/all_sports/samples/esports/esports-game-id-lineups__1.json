@@ -1,0 +1,238 @@
+{
+  "url": "https://www.sofascore.com/api/v1/esports-game/588949/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:09:55+00:00",
+  "page": "https://www.sofascore.com/tr/esports/match/parivision-g2/XMVcsJkXd#id:17264020",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "homeTeamPlayers": [
+      {
+        "adr": 70.8,
+        "alive": true,
+        "assists": 4,
+        "deaths": 10,
+        "firstKillsDiff": 1,
+        "flashAssists": 2,
+        "headshots": 5,
+        "kdDiff": 4,
+        "kast": 75,
+        "kills": 14,
+        "player": {
+          "name": "r1nkle",
+          "firstName": "Artem",
+          "lastName": "Moroz",
+          "slug": "r1nkle",
+          "shortName": "r1nkle",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "g8r-ptg",
+          "id": 1092129
+        }
+      },
+      {
+        "adr": 110.4,
+        "alive": true,
+        "assists": 5,
+        "deaths": 17,
+        "firstKillsDiff": -2,
+        "flashAssists": 0,
+        "headshots": 8,
+        "kdDiff": 1,
+        "kast": 70,
+        "kills": 18,
+        "player": {
+          "name": "NertZ",
+          "firstName": "Guy",
+          "lastName": "Iluz",
+          "slug": "nertz",
+          "shortName": "Nertz",
+          "userCount": 0,
+          "sofascoreId": "6gw-eub",
+          "id": 1075783
+        }
+      },
+      {
+        "adr": 71.7,
+        "alive": true,
+        "assists": 6,
+        "deaths": 14,
+        "firstKillsDiff": 1,
+        "flashAssists": 0,
+        "headshots": 9,
+        "kdDiff": -2,
+        "kast": 80,
+        "kills": 12,
+        "player": {
+          "name": "MATYS",
+          "firstName": "Matúš",
+          "lastName": "Šimko",
+          "slug": "matys",
+          "shortName": "MATYS",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "dqa-bdn",
+          "id": 1103222
+        }
+      },
+      {
+        "adr": 57,
+        "alive": true,
+        "assists": 3,
+        "deaths": 13,
+        "firstKillsDiff": 1,
+        "flashAssists": 2,
+        "headshots": 6,
+        "kdDiff": -3,
+        "kast": 80,
+        "kills": 10,
+        "player": {
+          "name": "huNter-",
+          "firstName": "Nemanja",
+          "lastName": "Kovač",
+          "slug": "hunter",
+          "shortName": "huNter",
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "dq9-2j9",
+          "id": 1079766
+        }
+      },
+      {
+        "adr": 20.5,
+        "alive": true,
+        "assists": 0,
+        "deaths": 13,
+        "firstKillsDiff": -1,
+        "flashAssists": 0,
+        "headshots": 3,
+        "kdDiff": -9,
+        "kast": 45,
+        "kills": 4,
+        "player": {
+          "name": "HeavyGod",
+          "firstName": "Nikita",
+          "lastName": "Martynenko",
+          "slug": "heavygod",
+          "shortName": "HeavyGod",
+          "userCount": 1,
+          "sofascoreId": "b72-3kn",
+          "id": 1093145
+        }
+      }
+    ],
+    "awayTeamPlayers": [
+      {
+        "adr": 75.2,
+        "alive": true,
+        "assists": 6,
+        "deaths": 9,
+        "firstKillsDiff": 1,
+        "flashAssists": 2,
+        "headshots": 4,
+        "kdDiff": 6,
+        "kast": 80,
+        "kills": 15,
+        "player": {
+          "name": "Jame",
+          "firstName": "Ali",
+          "lastName": "Djami",
+          "slug": "jame",
+          "shortName": "Jame",
+          "userCount": 0,
+          "sofascoreId": "8js-ug6",
+          "id": 1080064
+        }
+      },
+      {
+        "adr": 71,
+        "alive": true,
+        "assists": 5,
+        "deaths": 12,
+        "firstKillsDiff": 1,
+        "flashAssists": 3,
+        "headshots": 8,
+        "kdDiff": 2,
+        "kast": 70,
+        "kills": 14,
+        "player": {
+          "name": "zweih",
+          "firstName": "Ivan ",
+          "lastName": "Gogin",
+          "slug": "zweih",
+          "shortName": "zweih",
+          "userCount": 0,
+          "sofascoreId": "vui-ygt",
+          "id": 1595915
+        }
+      },
+      {
+        "adr": 86.2,
+        "alive": true,
+        "assists": 2,
+        "deaths": 15,
+        "firstKillsDiff": -2,
+        "flashAssists": 0,
+        "headshots": 8,
+        "kdDiff": 1,
+        "kast": 75,
+        "kills": 16,
+        "player": {
+          "name": "HObbit",
+          "firstName": "Abay",
+          "lastName": "Khasenov",
+          "slug": "hobbit",
+          "shortName": "Hobbit",
+          "userCount": 0,
+          "sofascoreId": "5f7-acf",
+          "id": 1080568
+        }
+      },
+      {
+        "adr": 56.1,
+        "alive": true,
+        "assists": 3,
+        "deaths": 12,
+        "firstKillsDiff": 0,
+        "flashAssists": 0,
+        "headshots": 9,
+        "kdDiff": 0,
+        "kast": 80,
+        "kills": 12,
+        "player": {
+          "name": "xiELO",
+          "firstName": "Vladislav",
+          "lastName": "Lysov",
+          "slug": "xielo",
+          "shortName": "xiELO",
+          "userCount": 0,
+          "sofascoreId": "wrq-w4p",
+          "id": 1399790
+        }
+      },
+      {
+        "adr": 58.6,
+        "alive": true,
+        "assists": 4,
+        "deaths": 11,
+        "firstKillsDiff": 0,
+        "flashAssists": 0,
+        "headshots": 6,
+        "kdDiff": -1,
+        "kast": 75,
+        "kills": 10,
+        "player": {
+          "name": "FL1T",
+          "firstName": "Evgeny",
+          "lastName": "Lebedev",
+          "slug": "fl1t",
+          "shortName": "FL1T",
+          "userCount": 0,
+          "sofascoreId": "8js-3eg",
+          "id": 1079168
+        }
+      }
+    ]
+  }
+}

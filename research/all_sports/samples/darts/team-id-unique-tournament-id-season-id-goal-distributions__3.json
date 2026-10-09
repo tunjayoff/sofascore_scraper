@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/287064/unique-tournament/16756/season/89749/goal-distributions",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T00:29:27+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/lauby-jr-borland/oQocsfuqc#id:17279017",
+  "cache_control": "max-age=60, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

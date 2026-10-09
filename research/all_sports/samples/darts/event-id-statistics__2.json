@@ -1,0 +1,109 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17236047/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:11:05+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/alex-spellman-heneghan/lIedsKGMd#id:17236047",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "Attacking",
+            "statisticsItems": [
+              {
+                "name": "Average 3 darts",
+                "home": "78.08",
+                "away": "58.29",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 78.08,
+                "awayValue": 58.29,
+                "renderType": 1,
+                "key": "Average3Darts"
+              },
+              {
+                "name": "Thrown 180",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "Thrown180"
+              },
+              {
+                "name": "Thrown over 140",
+                "home": "1",
+                "away": "0",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "ThrownOver140"
+              },
+              {
+                "name": "Thrown over 100",
+                "home": "8",
+                "away": "1",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 8,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "ThrownOver100"
+              },
+              {
+                "name": "Highest checkout",
+                "home": "97",
+                "away": "0",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 97,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "HighestCheckout"
+              },
+              {
+                "name": "Checkouts over 100",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "CheckoutsOver100"
+              },
+              {
+                "name": "Checkouts accuracy",
+                "home": "4/14 (29%)",
+                "away": "0/6 (0%)",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "team",
+                "homeValue": 4,
+                "awayValue": 0,
+                "homeTotal": 14,
+                "awayTotal": 6,
+                "renderType": 1,
+                "key": "CheckoutsAccuracy"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

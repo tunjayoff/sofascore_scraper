@@ -1,0 +1,189 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/87940/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:24:10+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/miyazaki-okuhara/PiKsNbWd#id:17287651",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Arctic Open, WS",
+          "slug": "arctic-open-ws",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Arctic Open, WS",
+            "slug": "arctic-open-ws",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 36,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 21265,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البطولة المفتوحة في القطب الشمالي، السيدات فردي",
+                "ru": "Арктический Открытый, среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 203378
+        },
+        "season": {
+          "name": "Arctic Open, WS 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 104790
+        },
+        "roundInfo": {
+          "round": 27,
+          "name": "Quarterfinals",
+          "slug": "quarterfinals",
+          "cupRoundType": 4
+        },
+        "customId": "PiKsNbWd",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Okuhara N.",
+          "slug": "okuhara-nozomi",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 306,
+          "nameCode": "OKU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 87940,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكوهارا، نوزومي",
+              "ru": "Окухара, Нозоми"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Miyazaki T.",
+          "slug": "miyazaki-tomoka",
+          "gender": "F",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 457,
+          "nameCode": "MIY",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "JP",
+            "alpha3": "JPN",
+            "name": "Japan",
+            "slug": "japan"
+          },
+          "id": 490088,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مييازكي، توموكا",
+              "ru": "Миядзаки, Томока"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17287651,
+        "slug": "miyazaki-okuhara",
+        "startTimestamp": 1791541800,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ],
+    "hasNextPage": false
+  }
+}

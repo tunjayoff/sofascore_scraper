@@ -1,0 +1,94 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17264020/esports-games",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:09:57+00:00",
+  "page": "https://www.sofascore.com/tr/esports/match/parivision-g2/XMVcsJkXd#id:17264020",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "games": [
+      {
+        "length": 2960,
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "map": {
+          "name": "Ancient",
+          "id": 23
+        },
+        "homeScore": {
+          "display": 7,
+          "period1": 4,
+          "period2": 3
+        },
+        "awayScore": {
+          "display": 13,
+          "period1": 8,
+          "period2": 5
+        },
+        "homeTeamStartingSide": 5,
+        "hasCompleteStatistics": true,
+        "id": 588949,
+        "startTimestamp": 1791288150
+      },
+      {
+        "length": 3125,
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "map": {
+          "name": "Anubis",
+          "id": 21
+        },
+        "homeScore": {
+          "display": 13,
+          "period1": 6,
+          "period2": 7
+        },
+        "awayScore": {
+          "display": 9,
+          "period1": 6,
+          "period2": 3
+        },
+        "homeTeamStartingSide": 4,
+        "hasCompleteStatistics": true,
+        "id": 588950,
+        "startTimestamp": 1791292068
+      },
+      {
+        "length": 3714,
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "map": {
+          "name": "Inferno",
+          "id": 19
+        },
+        "homeScore": {
+          "display": 11,
+          "period1": 3,
+          "period2": 8
+        },
+        "awayScore": {
+          "display": 13,
+          "period1": 9,
+          "period2": 4
+        },
+        "homeTeamStartingSide": 5,
+        "hasCompleteStatistics": true,
+        "id": 588951,
+        "startTimestamp": 1791296143
+      }
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tv/event/16183708/country-channels",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:14+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "countryChannels": {
+      "SE": [
+        6565,
+        7991
+      ],
+      "DK": [
+        7989
+      ],
+      "US": [
+        2719,
+        8171
+      ],
+      "DE": [
+        7885,
+        7634,
+        7657,
+        7639,
+        4427,
+        7658
+      ],
+      "ES": [
+        2719
+      ],
+      "FI": [
+        7987
+      ],
+      "BR": [
+        7159,
+        2719,
+        7214
+      ],
+      "AT": [
+        2719
+      ],
+      "BE": [
+        2719
+      ],
+      "NO": [
+        7990
+      ]
+    }
+  }
+}

@@ -1,0 +1,1024 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/3638/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:07:59+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/atlanta-braves-los-angeles-dodgers/Nxbsgyb#id:17199139",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "MLB",
+          "slug": "mlb",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 18,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108806,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "NxbsYxb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Detroit Tigers",
+          "slug": "detroit-tigers",
+          "shortName": "Tigers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 39686,
+          "nameCode": "DET",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3648,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ffffff",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديترويت تايجرز",
+              "ru": "Детройт Тайгерс"
+            },
+            "shortNameTranslation": {
+              "ar": "تايجرز",
+              "bn": "টাইগারস",
+              "hi": "टाइगर्स",
+              "ru": "Тайгерс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 1,
+          "period5": 0,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 1,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 1
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 1,
+            "hits": 2,
+            "errors": 1
+          }
+        },
+        "awayScore": {
+          "current": 6,
+          "display": 6,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 1,
+          "period5": 0,
+          "period6": 2,
+          "period7": 0,
+          "period8": 3,
+          "period9": 0,
+          "normaltime": 6,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 1
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 2
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 3
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 6,
+            "hits": 9,
+            "errors": 0
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1788124774
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1788124836
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15507642,
+        "slug": "detroit-tigers-los-angeles-dodgers",
+        "startTimestamp": 1788111600,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "homeTeamSeasonHistoricalForm": {
+          "wins": 63,
+          "losses": 72
+        },
+        "awayTeamSeasonHistoricalForm": {
+          "wins": 81,
+          "losses": 55
+        }
+      },
+      {
+        "tournament": {
+          "name": "MLB",
+          "slug": "mlb",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 18,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108806,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "HxbsNxb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "St. Louis Cardinals",
+          "slug": "st-louis-cardinals",
+          "shortName": "Cardinals",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 20651,
+          "nameCode": "STL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3632,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#aa0114",
+            "secondary": "#aa0114",
+            "text": "#aa0114"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سانت لويس كاردينالز",
+              "ru": "Сент-Луис Кардиналс"
+            },
+            "shortNameTranslation": {
+              "ar": "كاردينالز",
+              "bn": "কার্ডিনাল",
+              "hi": "कार्डिनल्स",
+              "ru": "Кардиналс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 8,
+          "display": 8,
+          "period1": 0,
+          "period2": 0,
+          "period3": 3,
+          "period4": 0,
+          "period5": 1,
+          "period6": 0,
+          "period7": 1,
+          "period8": 0,
+          "period9": 3,
+          "normaltime": 8,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 3
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 1
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 1
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 3
+            }
+          },
+          "inningsBaseball": {
+            "run": 8,
+            "hits": 9,
+            "errors": 1
+          }
+        },
+        "awayScore": {
+          "current": 13,
+          "display": 13,
+          "period1": 0,
+          "period2": 2,
+          "period3": 5,
+          "period4": 2,
+          "period5": 1,
+          "period6": 0,
+          "period7": 1,
+          "period8": 2,
+          "period9": 0,
+          "normaltime": 13,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 2
+            },
+            "inning3": {
+              "run": 5
+            },
+            "inning4": {
+              "run": 2
+            },
+            "inning5": {
+              "run": 1
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 1
+            },
+            "inning8": {
+              "run": 2
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 13,
+            "hits": 13,
+            "errors": 1
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1788325760
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1788325793
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15507373,
+        "slug": "los-angeles-dodgers-st-louis-cardinals",
+        "startTimestamp": 1788315000,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "homeTeamSeasonHistoricalForm": {
+          "wins": 82,
+          "losses": 55
+        },
+        "awayTeamSeasonHistoricalForm": {
+          "wins": 68,
+          "losses": 70
+        }
+      },
+      {
+        "tournament": {
+          "name": "MLB",
+          "slug": "mlb",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "bn": "যুক্তরাষ্ট্র",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19885,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 18,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108806,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "HxbsNxb",
+        "status": {
+          "code": 110,
+          "description": "AET",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69386,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "St. Louis Cardinals",
+          "slug": "st-louis-cardinals",
+          "shortName": "Cardinals",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 20651,
+          "nameCode": "STL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3632,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#aa0114",
+            "secondary": "#aa0114",
+            "text": "#aa0114"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سانت لويس كاردينالز",
+              "ru": "Сент-Луис Кардиналс"
+            },
+            "shortNameTranslation": {
+              "ar": "كاردينالز",
+              "bn": "কার্ডিনাল",
+              "hi": "कार्डिनल्स",
+              "ru": "Кардиналс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 6,
+          "display": 6,
+          "period1": 3,
+          "period2": 0,
+          "period3": 0,
+          "period4": 0,
+          "period5": 0,
+          "period6": 2,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 5,
+          "overtime": 1,
+          "innings": {
+            "inning1": {
+              "run": 3
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 2
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            },
+            "inning10": {
+              "run": 1
+            }
+          },
+          "inningsBaseball": {
+            "run": 6,
+            "hits": 11,
+            "errors": 0
+          }
+        },
+        "awayScore": {
+          "current": 8,
+          "display": 8,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 0,
+          "period5": 0,
+          "period6": 2,
+          "period7": 2,
+          "period8": 1,
+          "period9": 0,
+          "normaltime": 5,
+          "overtime": 3,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 2
+            },
+            "inning7": {
+              "run": 2
+            },
+            "inning8": {
+              "run": 1
+            },
+            "inning9": {
+              "run": 0
+            },
+            "inning10": {
+              "run": 3
+            }
+          },
+          "inningsBaseball": {
+            "run": 8,
+            "hits": 9,
+            "errors": 0
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1788412439
+        },
+        "changes": {
+          "changes": [
+            "homeScore.overtime",
+            "homeScore.innings",
+            "awayScore.overtime",
+            {
+              "__trimmed__": 1
+            }
+          ],
+          "changeTimestamp": 1788412575
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 15507438,
+        "slug": "los-angeles-dodgers-st-louis-cardinals",
+        "startTimestamp": 1788401400,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "homeTeamSeasonHistoricalForm": {
+          "wins": 82,
+          "losses": 56
+        },
+        "awayTeamSeasonHistoricalForm": {
+          "wins": 69,
+          "losses": 70
+        }
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

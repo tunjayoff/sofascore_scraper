@@ -1,0 +1,81 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16183708/media/summary/country/TR",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:15:27+00:00",
+  "page": "https://www.sofascore.com/tr/american-football/match/dallas-cowboys-tampa-bay-buccaneers/NMbsRMb#id:16183708",
+  "cache_control": "max-age=30, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "highlightedItem": {
+      "type": "sportVideoHighlight",
+      "item": {
+        "id": "F34BF32AFFE928A63581D7B795AE2F70295CB350",
+        "title": "Tampa Bay Buccaneers vs. Dallas Cowboys highlights",
+        "description": "Tampa Bay Buccaneers vs. Dallas Cowboys highlights, 09-10-26, Week 5, Regular Season, 2026",
+        "sdkId": "6ac58ff3c068284c36ed07c1",
+        "game": {
+          "eventId": 16183708,
+          "uniqueTournamentId": 9464,
+          "seasonId": 94366,
+          "gameDate": 1791504900,
+          "teams": [
+            {
+              "teamId": 4392,
+              "name": "Dallas Cowboys",
+              "locale": "Home"
+            },
+            {
+              "teamId": 4388,
+              "name": "Tampa Bay Buccaneers",
+              "locale": "Visitor"
+            }
+          ],
+          "roundId": 5
+        },
+        "publishDate": 1791332349,
+        "publishMethod": "AUTOMATIC",
+        "live": false,
+        "competitionId": "50814",
+        "storyThumbnailUrl": "https://editorsprodeus2-feeds.prod-cdn.clipro.tv/thumbnails/298ad923-7f2a-4981-b2b7-f9dae4b22054_0.jpg",
+        "storyThumbnailUrls": [
+          {
+            "url": "https://graphicsfeprodeus2.prod-cdn.clipro.tv/dynamicassets/359d602f-6354-4980-974b-96470b84664d.jpg",
+            "aspectRatio": "1x1"
+          },
+          {
+            "url": "https://graphicsfeprodeus2.prod-cdn.clipro.tv/dynamicassets/4c37eecb-a584-4cd2-ac95-4cca35d86d2f.jpg",
+            "aspectRatio": "2x3"
+          },
+          {
+            "url": "https://editorsprodeus2-feeds.prod-cdn.clipro.tv/thumbnails/298ad923-7f2a-4981-b2b7-f9dae4b22054_0.jpg",
+            "aspectRatio": "16x9"
+          }
+        ],
+        "lastUpdateTime": 1791332352,
+        "type": "pre-game",
+        "storyUrl": "https://stories.dazn.com/en-global/6ac58ff3c068284c36ed07c1.html?utm_source=Sofascore"
+      }
+    },
+    "mediaItems": [
+      {
+        "type": "newsArticle",
+        "item": {
+          "source": 3,
+          "description": "Colin Cowherd said it took him a long time to figure out Prescott before he landed on an analogy ahead of the Cowboys’ Thursday night game against the Tampa Bay Buccaneers.",
+          "thumbnailUrl": "https://statics.foxsports.com/www.foxsports.com/content/uploads/2026/10/dak-prescott-the-herd.jpg",
+          "id": 691210,
+          "header": "Dak Prescott Is The ‘Manager’ Of The Cowboys’ Rock Band",
+          "externalUrl": "https://www.foxsports.com/stories/nfl/colin-cowherd-dak-prescott-manager-cowboys-rock-band",
+          "contentId": "3:colin-cowherd-dak-prescott-manager-cowboys-rock-band",
+          "publishedAtTimestamp": 1791499645,
+          "newsProvider": {
+            "id": 3,
+            "name": "Fox Sports"
+          }
+        }
+      }
+    ],
+    "itemsCount": 9
+  }
+}

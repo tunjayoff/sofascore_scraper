@@ -1,0 +1,433 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15534082/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:54:13+00:00",
+  "page": "https://www.sofascore.com/tr/football/match/croatia-spain/YTbspUb#id:15534082",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Ball possession",
+                "home": "28%",
+                "away": "72%",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 28,
+                "awayValue": 72,
+                "renderType": 2,
+                "key": "ballPossession"
+              },
+              {
+                "name": "Expected goals",
+                "home": "1.02",
+                "away": "1.15",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1.02,
+                "awayValue": 1.15,
+                "renderType": 1,
+                "key": "expectedGoals"
+              },
+              {
+                "name": "Big chances",
+                "home": "4",
+                "away": "4",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 4,
+                "renderType": 1,
+                "key": "bigChanceCreated"
+              },
+              {
+                "__trimmed__": 10
+              }
+            ]
+          },
+          {
+            "groupName": "Shots",
+            "statisticsItems": [
+              {
+                "name": "Total shots",
+                "home": "10",
+                "away": "10",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 10,
+                "awayValue": 10,
+                "renderType": 1,
+                "key": "totalShotsOnGoal"
+              },
+              {
+                "name": "Shots on target",
+                "home": "5",
+                "away": "3",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 5,
+                "awayValue": 3,
+                "renderType": 1,
+                "key": "shotsOnGoal"
+              },
+              {
+                "name": "Expected goals",
+                "home": "1.02",
+                "away": "1.15",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1.02,
+                "awayValue": 1.15,
+                "renderType": 1,
+                "key": "expectedGoals"
+              },
+              {
+                "__trimmed__": 5
+              }
+            ]
+          },
+          {
+            "groupName": "Attack",
+            "statisticsItems": [
+              {
+                "name": "Big chances scored",
+                "home": "1",
+                "away": "1",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "bigChanceScored"
+              },
+              {
+                "name": "Big chances missed",
+                "home": "3",
+                "away": "3",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 3,
+                "awayValue": 3,
+                "renderType": 1,
+                "key": "bigChanceMissed"
+              },
+              {
+                "name": "Through balls",
+                "home": "0",
+                "away": "4",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 4,
+                "renderType": 1,
+                "key": "accurateThroughBall"
+              },
+              {
+                "__trimmed__": 3
+              }
+            ]
+          },
+          {
+            "__trimmed__": 4
+          }
+        ]
+      },
+      {
+        "period": "1ST",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Ball possession",
+                "home": "33%",
+                "away": "67%",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 33,
+                "awayValue": 67,
+                "renderType": 2,
+                "key": "ballPossession"
+              },
+              {
+                "name": "Expected goals",
+                "home": "0.81",
+                "away": "0.59",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0.81,
+                "awayValue": 0.59,
+                "renderType": 1,
+                "key": "expectedGoals"
+              },
+              {
+                "name": "Big chances",
+                "home": "3",
+                "away": "2",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 3,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "bigChanceCreated"
+              },
+              {
+                "__trimmed__": 9
+              }
+            ]
+          },
+          {
+            "groupName": "Shots",
+            "statisticsItems": [
+              {
+                "name": "Total shots",
+                "home": "9",
+                "away": "5",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 9,
+                "awayValue": 5,
+                "renderType": 1,
+                "key": "totalShotsOnGoal"
+              },
+              {
+                "name": "Shots on target",
+                "home": "4",
+                "away": "1",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 4,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "shotsOnGoal"
+              },
+              {
+                "name": "Expected goals",
+                "home": "0.81",
+                "away": "0.59",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0.81,
+                "awayValue": 0.59,
+                "renderType": 1,
+                "key": "expectedGoals"
+              },
+              {
+                "__trimmed__": 5
+              }
+            ]
+          },
+          {
+            "groupName": "Attack",
+            "statisticsItems": [
+              {
+                "name": "Big chances scored",
+                "home": "1",
+                "away": "0",
+                "compareCode": 1,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "bigChanceScored"
+              },
+              {
+                "name": "Big chances missed",
+                "home": "2",
+                "away": "2",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 2,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "bigChanceMissed"
+              },
+              {
+                "name": "Through balls",
+                "home": "0",
+                "away": "3",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 3,
+                "renderType": 1,
+                "key": "accurateThroughBall"
+              },
+              {
+                "__trimmed__": 2
+              }
+            ]
+          },
+          {
+            "__trimmed__": 4
+          }
+        ]
+      },
+      {
+        "period": "2ND",
+        "groups": [
+          {
+            "groupName": "Match overview",
+            "statisticsItems": [
+              {
+                "name": "Ball possession",
+                "home": "23%",
+                "away": "77%",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 23,
+                "awayValue": 77,
+                "renderType": 2,
+                "key": "ballPossession"
+              },
+              {
+                "name": "Expected goals",
+                "home": "0.21",
+                "away": "0.56",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0.21,
+                "awayValue": 0.56,
+                "renderType": 1,
+                "key": "expectedGoals"
+              },
+              {
+                "name": "Big chances",
+                "home": "1",
+                "away": "2",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "bigChanceCreated"
+              },
+              {
+                "__trimmed__": 9
+              }
+            ]
+          },
+          {
+            "groupName": "Shots",
+            "statisticsItems": [
+              {
+                "name": "Total shots",
+                "home": "1",
+                "away": "5",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 5,
+                "renderType": 1,
+                "key": "totalShotsOnGoal"
+              },
+              {
+                "name": "Shots on target",
+                "home": "1",
+                "away": "2",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "shotsOnGoal"
+              },
+              {
+                "name": "Expected goals",
+                "home": "0.21",
+                "away": "0.56",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0.21,
+                "awayValue": 0.56,
+                "renderType": 1,
+                "key": "expectedGoals"
+              },
+              {
+                "__trimmed__": 5
+              }
+            ]
+          },
+          {
+            "groupName": "Attack",
+            "statisticsItems": [
+              {
+                "name": "Big chances scored",
+                "home": "0",
+                "away": "1",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "bigChanceScored"
+              },
+              {
+                "name": "Big chances missed",
+                "home": "1",
+                "away": "1",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "bigChanceMissed"
+              },
+              {
+                "name": "Through balls",
+                "home": "0",
+                "away": "1",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "accurateThroughBall"
+              },
+              {
+                "__trimmed__": 2
+              }
+            ]
+          },
+          {
+            "__trimmed__": 4
+          }
+        ]
+      }
+    ]
+  }
+}

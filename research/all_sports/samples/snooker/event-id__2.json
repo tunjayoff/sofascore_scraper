@@ -1,0 +1,222 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17264352",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:06:28+00:00",
+  "page": "https://www.sofascore.com/tr/snooker/match/evans-white/nbksIdQ#id:17264352",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "tournament": {
+        "name": "Snooker 900",
+        "slug": "snooker-900",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Snooker",
+            "slug": "snooker",
+            "id": 19
+          },
+          "priority": 11,
+          "country": {},
+          "id": 55,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Snooker 900",
+          "slug": "snooker-900",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Snooker",
+              "slug": "snooker",
+              "id": 19
+            },
+            "priority": 11,
+            "country": {},
+            "id": 55,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 74,
+          "hasRounds": false,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {},
+          "id": 32050,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سنوكر 900",
+              "ru": "Снукер 900"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "competitionType": 2,
+        "id": 173461,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بلياردو 900",
+            "ru": "Снукер 900"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "season": {
+        "name": "Snooker 900 2026",
+        "year": "2026",
+        "editor": false,
+        "id": 88811
+      },
+      "customId": "nbksIdQ",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 2,
+      "homeTeam": {
+        "name": "White J.",
+        "slug": "white-jimmy",
+        "shortName": "White J.",
+        "gender": "M",
+        "sport": {
+          "name": "Snooker",
+          "slug": "snooker",
+          "id": 19
+        },
+        "userCount": 503,
+        "playerTeamInfo": {
+          "id": 30269,
+          "underage": false
+        },
+        "nameCode": "WHI",
+        "disabled": false,
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 25063,
+        "fullName": "White J.",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "وايت، جيمي",
+            "bn": "হোয়াইট, জিমি",
+            "hi": "व्हाइट, जिमी",
+            "ru": "Джимми Уайт"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Evans R.",
+        "slug": "evans-reanne",
+        "shortName": "Evans R.",
+        "gender": "M",
+        "sport": {
+          "name": "Snooker",
+          "slug": "snooker",
+          "id": 19
+        },
+        "userCount": 209,
+        "nameCode": "EVA",
+        "disabled": false,
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 102683,
+        "fullName": "Evans, Reanne",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إيفانز، رين",
+            "bn": "ইভান্স, রেইন",
+            "hi": "इवांस, रीन",
+            "ru": "Реанне Эванс"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "homeScore": {
+        "current": 1,
+        "display": 1,
+        "normaltime": 1
+      },
+      "awayScore": {
+        "current": 3,
+        "display": 3,
+        "normaltime": 3
+      },
+      "time": {},
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "homeScore.current",
+          "homeScore.display",
+          "homeScore.normaltime",
+          "awayScore.current",
+          "awayScore.display",
+          "awayScore.normaltime"
+        ],
+        "changeTimestamp": 1791305842
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17264352,
+      "slug": "evans-white",
+      "startTimestamp": 1791288000,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

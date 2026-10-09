@@ -1,0 +1,771 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/1600/season/98426/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:19:38+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/stade-francais-paris-montpellier-herault-rugby/epcipc#id:16534955",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "standings": [
+      {
+        "id": 307380,
+        "type": "total",
+        "tournament": {
+          "name": "France - Top 14",
+          "slug": "france-top-14",
+          "category": {
+            "name": "Rugby Union",
+            "slug": "rugby-union",
+            "sport": {
+              "name": "Rugby",
+              "slug": "rugby",
+              "id": 12
+            },
+            "priority": 0,
+            "id": 82,
+            "flag": "rugby-union",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "रग्बी यूनियन",
+                "bn": "রাগবি ইউনিয়ন",
+                "ru": "Регби-союз"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "France - Top 14",
+            "slug": "france-top-14",
+            "primaryColorHex": "#c9a752",
+            "secondaryColorHex": "#705b2c",
+            "category": {
+              "name": "Rugby Union",
+              "slug": "rugby-union",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "priority": 0,
+              "id": 82,
+              "flag": "rugby-union",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "hi": "रग्बी यूनियन",
+                  "bn": "রাগবি ইউনিয়ন",
+                  "ru": "Регби-союз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 4969,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 420,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فرنسا - توب 14",
+                "hi": "फ्रांस - टॉप 14",
+                "bn": "ফ্রান্স - টপ 14",
+                "ru": "Франция — Топ 14"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 1600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "फ्रांस - टॉप 14",
+              "ar": "فرنسا - أفضل 14 فريقًا",
+              "bn": "ফ্রান্স - টপ 14",
+              "ru": "Франция — Топ 14"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "name": "Top 14 26/27",
+        "descriptions": [],
+        "tieBreakingRule": {
+          "id": 17831,
+          "text": "If teams are tied the following rules break the tie:\n1. Head-to-head\n2. Game point difference"
+        },
+        "rows": [
+          {
+            "id": 2597685,
+            "team": {
+              "name": "Stade Toulousain",
+              "slug": "stade-toulousain",
+              "shortName": "Toulouse",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 9153,
+              "nameCode": "TOU",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 4217,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ستاد تولوزان",
+                  "ru": "Тулуза"
+                },
+                "shortNameTranslation": {
+                  "ar": "تولوز",
+                  "bn": "টুলুজ",
+                  "hi": "टूलूज़"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 1,
+            "matches": 5,
+            "wins": 4,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 152,
+            "scoresAgainst": 90,
+            "points": 19,
+            "scoreDiffFormatted": "+62"
+          },
+          {
+            "id": 2597682,
+            "team": {
+              "name": "Section Paloise",
+              "slug": "section-paloise",
+              "shortName": "Section Paloise",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 1344,
+              "nameCode": "SEC",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 78973,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سيكشن بالواز",
+                  "bn": "সেকশন পালোঐস",
+                  "hi": "सेक्शन पॉलोइस",
+                  "ru": "Сексьон Палуаз"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 6,
+              "text": "Playoffs"
+            },
+            "position": 2,
+            "matches": 5,
+            "wins": 4,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 204,
+            "scoresAgainst": 155,
+            "points": 18,
+            "scoreDiffFormatted": "+49"
+          },
+          {
+            "id": 2597675,
+            "team": {
+              "name": "Aviron Bayonnais",
+              "slug": "aviron-bayonnais",
+              "shortName": "Bayonne",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 1578,
+              "nameCode": "BAY",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 5748,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "أفيرون بايون",
+                  "ru": "Байонн"
+                },
+                "shortNameTranslation": {
+                  "ar": "بايون",
+                  "bn": "বেয়ন",
+                  "hi": "बेयोन"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 3,
+            "matches": 5,
+            "wins": 4,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 156,
+            "scoresAgainst": 169,
+            "points": 17,
+            "scoreDiffFormatted": "-13"
+          },
+          {
+            "id": 2597686,
+            "team": {
+              "name": "Union Bordeaux Bègles",
+              "slug": "union-bordeaux-begles",
+              "shortName": "Bordeaux Bègles",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 5144,
+              "nameCode": "UNI",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 52813,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "يونيون بوردو بيغليز",
+                  "ru": "Уньон Бордо-Бегль"
+                },
+                "shortNameTranslation": {
+                  "ar": "بوردو بيغليز",
+                  "bn": "বোর্দো বেগেলস",
+                  "hi": "बोर्डो बेग्लेस"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 4,
+            "matches": 5,
+            "wins": 3,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 192,
+            "scoresAgainst": 129,
+            "points": 15,
+            "scoreDiffFormatted": "+63"
+          },
+          {
+            "id": 2597678,
+            "team": {
+              "name": "Montpellier Hérault Rugby",
+              "slug": "montpellier-herault-rugby",
+              "shortName": "Montpellier",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 1543,
+              "nameCode": "MON",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 5754,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "مونبلييه هيرولت رغبي",
+                  "ru": "Монпелье Эро"
+                },
+                "shortNameTranslation": {
+                  "ar": "مونبلييه",
+                  "bn": "মন্টপেলিয়ার",
+                  "hi": "मॉंटपेलीयर"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 5,
+            "matches": 5,
+            "wins": 3,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 141,
+            "scoresAgainst": 92,
+            "points": 14,
+            "scoreDiffFormatted": "+49"
+          },
+          {
+            "id": 2597677,
+            "team": {
+              "name": "Lyon Olympique Universitaire",
+              "slug": "lyon-olympique-universitaire",
+              "shortName": "Lyon",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 1866,
+              "nameCode": "LOU",
+              "national": false,
+              "type": 0,
+              "id": 52812,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ليون أولمبيك يوني فيرسيتي",
+                  "ru": "Лион"
+                },
+                "shortNameTranslation": {
+                  "ar": "ليون",
+                  "bn": "লিয়ন",
+                  "hi": "लियोन"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 14,
+              "text": "Qualification Playoffs"
+            },
+            "position": 6,
+            "matches": 5,
+            "wins": 3,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 177,
+            "scoresAgainst": 174,
+            "points": 14,
+            "scoreDiffFormatted": "+3"
+          },
+          {
+            "id": 2597684,
+            "team": {
+              "name": "Stade Rochelais",
+              "slug": "stade-rochelais",
+              "shortName": "Stade Rochelais",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 2988,
+              "nameCode": "ROC",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 43847,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ستاد روشيليه",
+                  "bn": "স্টেড রোচেলাইস",
+                  "hi": "स्टेड रोशेलाइस",
+                  "ru": "Ла Рошелль"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 7,
+            "matches": 5,
+            "wins": 3,
+            "losses": 2,
+            "draws": 0,
+            "scoresFor": 116,
+            "scoresAgainst": 119,
+            "points": 13,
+            "scoreDiffFormatted": "-3"
+          },
+          {
+            "id": 2597674,
+            "team": {
+              "name": "ASM Clermont Auvergne",
+              "slug": "asm-clermont-auvergne",
+              "shortName": "Clermont",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 2465,
+              "nameCode": "ASM",
+              "national": false,
+              "type": 0,
+              "id": 5753,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيه إس إم كليرمون أوفيرني",
+                  "ru": "Клермон Овернь"
+                },
+                "shortNameTranslation": {
+                  "ar": "كليرمون",
+                  "bn": "ক্লারমন্ট",
+                  "hi": "क्लेरमोंट"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 8,
+            "matches": 5,
+            "wins": 2,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 118,
+            "scoresAgainst": 146,
+            "points": 10,
+            "scoreDiffFormatted": "-28"
+          },
+          {
+            "id": 2597679,
+            "team": {
+              "name": "Racing 92",
+              "slug": "racing-92",
+              "shortName": "Racing 92",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 1783,
+              "nameCode": "RAC",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 36538,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "راسينغ 92",
+                  "bn": "রেসিং 92",
+                  "hi": "रेसिंग 92",
+                  "ru": "Расинг 92"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "descriptions": [],
+            "position": 9,
+            "matches": 5,
+            "wins": 2,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 128,
+            "scoresAgainst": 167,
+            "points": 10,
+            "scoreDiffFormatted": "-39"
+          },
+          {
+            "id": 2597683,
+            "team": {
+              "name": "Stade Français Paris",
+              "slug": "stade-francais-paris",
+              "shortName": "Paris",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 1982,
+              "nameCode": "FPA",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 5758,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "ستاد فرانسوا باريس",
+                  "ru": "Стэйд Франсе Париж"
+                },
+                "shortNameTranslation": {
+                  "ar": "باريس",
+                  "bn": "প্যারিস",
+                  "hi": "पेरिस"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 10,
+            "matches": 5,
+            "wins": 2,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 117,
+            "scoresAgainst": 136,
+            "points": 10,
+            "scoreDiffFormatted": "-19"
+          },
+          {
+            "id": 2597687,
+            "team": {
+              "name": "US Arlequins Perpignanais",
+              "slug": "us-arlequins-perpignanais",
+              "shortName": "USAP",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 1469,
+              "nameCode": "USA",
+              "national": false,
+              "type": 0,
+              "id": 4220,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "يو إس أرليكوينز بيربينيا",
+                  "ru": "Перпиньян"
+                },
+                "shortNameTranslation": {
+                  "ar": "يو إس إيه بي",
+                  "bn": "ইউএসএপি",
+                  "hi": "यूएसएपी"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 11,
+            "matches": 5,
+            "wins": 2,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 145,
+            "scoresAgainst": 187,
+            "points": 9,
+            "scoreDiffFormatted": "-42"
+          },
+          {
+            "id": 2597676,
+            "team": {
+              "name": "Castres Olympique",
+              "slug": "castres-olympique",
+              "shortName": "Castres",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 894,
+              "nameCode": "CAS",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 5752,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كاستر أوليمبيك",
+                  "ru": "Кастрес Олимпик"
+                },
+                "shortNameTranslation": {
+                  "ar": "كاستر",
+                  "bn": "ক্যাস্ট্রেস",
+                  "hi": "कास्त्रेस"
+                }
+              }
+            },
+            "descriptions": [],
+            "position": 12,
+            "matches": 5,
+            "wins": 2,
+            "losses": 3,
+            "draws": 0,
+            "scoresFor": 100,
+            "scoresAgainst": 118,
+            "points": 9,
+            "scoreDiffFormatted": "-18"
+          },
+          {
+            "id": 2597680,
+            "team": {
+              "name": "RC Toulon",
+              "slug": "rc-toulon",
+              "shortName": "Toulon",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 2747,
+              "nameCode": "RCT",
+              "disabled": false,
+              "national": false,
+              "type": 0,
+              "id": 5760,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "آر سي تولون",
+                  "ru": "Тулон"
+                },
+                "shortNameTranslation": {
+                  "ar": "تولون",
+                  "bn": "টুলন",
+                  "hi": "टूलॉन"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 45,
+              "text": "Relegation Playoffs"
+            },
+            "position": 13,
+            "matches": 5,
+            "wins": 1,
+            "losses": 4,
+            "draws": 0,
+            "scoresFor": 101,
+            "scoresAgainst": 115,
+            "points": 8,
+            "scoreDiffFormatted": "-14"
+          },
+          {
+            "id": 2597681,
+            "team": {
+              "name": "RC Vannes",
+              "slug": "rc-vannes",
+              "shortName": "Vannes",
+              "gender": "M",
+              "sport": {
+                "name": "Rugby",
+                "slug": "rugby",
+                "id": 12
+              },
+              "userCount": 2446,
+              "nameCode": "RUG",
+              "national": false,
+              "type": 0,
+              "id": 228613,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "آر سي فانس",
+                  "ru": "Рагби Клёб Ва"
+                },
+                "shortNameTranslation": {
+                  "ar": "فانس",
+                  "bn": "ভ্যানেস",
+                  "hi": "वैनस"
+                }
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 3,
+              "text": "Relegation"
+            },
+            "position": 14,
+            "matches": 5,
+            "wins": 0,
+            "losses": 5,
+            "draws": 0,
+            "scoresFor": 105,
+            "scoresAgainst": 155,
+            "points": 1,
+            "scoreDiffFormatted": "-50"
+          }
+        ],
+        "updatedAtTimestamp": 1791176447
+      }
+    ]
+  }
+}

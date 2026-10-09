@@ -1,0 +1,430 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16634075/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:58:31+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/rk-partizan-one-veszprem/DHcsQKc#id:16634075",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Miguel Sánchez-Migallón",
+            "firstName": "Miguel",
+            "lastName": "Sanchez-Migallon ",
+            "slug": "miguel-sanchez-migallon-naranjo",
+            "shortName": "M. Sánchez-Migallón",
+            "position": "LW",
+            "jerseyNumber": "2",
+            "height": 200,
+            "userCount": 23,
+            "gender": "M",
+            "sofascoreId": "ww9-9zk",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 912589,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 792201600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سانشيز ميغيون نارانجو، ميغيل",
+                "bn": "সানচেজ-মিগালন নারাঞ্জো, মিগুয়েল",
+                "hi": "सांचेज़-मिगलोन नारंजो, मिगुएल",
+                "ru": "Мигель Санчес-Мигальон Наранхо"
+              },
+              "shortNameTranslation": {
+                "ar": "م. سانشيز-ميغيون",
+                "bn": "এম. সানচেজ-মিগালন",
+                "hi": "एम. सांचेज़-मिगलोन",
+                "ru": "М. Наранхо"
+              }
+            }
+          },
+          "teamId": 6791,
+          "position": "LW",
+          "substitute": true,
+          "statistics": {
+            "twoMinutePenalties": 1,
+            "technicalFaults": 0,
+            "yellowCards": 0,
+            "gk6mSaves": 0,
+            "gk6mShots": 0,
+            "gk9mSaves": 0,
+            "gk9mShots": 0,
+            "shotsTaken": 3,
+            "goals": 2,
+            "assists": 0,
+            "goals7m": 0,
+            "goals6m": 2,
+            "shots6m": 1,
+            "fastbreakGoals": 0,
+            "fastbreakShots": 0,
+            "wingGoals": 1,
+            "steals": 1,
+            "blockedShots": 0,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Tobias Wagner",
+            "firstName": "Tobias",
+            "lastName": "Wagner",
+            "slug": "tobias-wagner",
+            "shortName": "T. Wagner",
+            "position": "P",
+            "jerseyNumber": "55",
+            "height": 198,
+            "userCount": 60,
+            "gender": "M",
+            "sofascoreId": "62x-eph",
+            "country": {
+              "alpha2": "AT",
+              "alpha3": "AUT",
+              "name": "Austria",
+              "slug": "austria"
+            },
+            "id": 848679,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 796176000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فاغنر, توبياس",
+                "ru": "Тобиас Вагнер"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. فاغنر",
+                "ru": "Т. Вагнер"
+              }
+            }
+          },
+          "teamId": 6791,
+          "position": "P",
+          "substitute": true,
+          "statistics": {
+            "twoMinutePenalties": 0,
+            "technicalFaults": 0,
+            "yellowCards": 0,
+            "gk6mSaves": 0,
+            "gk6mShots": 0,
+            "gk9mSaves": 0,
+            "gk9mShots": 0,
+            "shotsTaken": 4,
+            "goals": 2,
+            "assists": 0,
+            "goals7m": 0,
+            "pivotGoals": 2,
+            "pivotShots": 4,
+            "fastbreakGoals": 0,
+            "fastbreakShots": 0,
+            "steals": 0,
+            "blockedShots": 0,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Ilija Abutović",
+            "firstName": "Ilija",
+            "lastName": "Abutovic",
+            "slug": "ilija-abutovic",
+            "shortName": "I. Abutović",
+            "position": "LB",
+            "jerseyNumber": "20",
+            "height": 202,
+            "userCount": 24,
+            "gender": "M",
+            "sofascoreId": "wwt-b7k",
+            "country": {
+              "alpha2": "RS",
+              "alpha3": "SRB",
+              "name": "Serbia",
+              "slug": "serbia"
+            },
+            "id": 902830,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 586483200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أبوتوفيتش، إليا",
+                "bn": "আবুতোভিক, ইলিজা",
+                "hi": "अबुटोविक, इलिजा",
+                "ru": "Илия Абутович"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. أبوتوفيتش",
+                "bn": "আই. আবুতোভিক",
+                "hi": "आई. अबुटोविक",
+                "ru": "И. Абутович"
+              }
+            }
+          },
+          "teamId": 6791,
+          "position": "LB",
+          "substitute": true,
+          "statistics": {
+            "twoMinutePenalties": 0,
+            "technicalFaults": 0,
+            "yellowCards": 0,
+            "gk6mSaves": 0,
+            "gk6mShots": 0,
+            "gk9mSaves": 0,
+            "gk9mShots": 0,
+            "shotsTaken": 0,
+            "goals": 0,
+            "assists": 0,
+            "goals7m": 0,
+            "fastbreakGoals": 0,
+            "fastbreakShots": 0,
+            "steals": 1,
+            "blockedShots": 0,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 13
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "fafb00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Mikael Appelgren",
+            "firstName": "Mikael",
+            "lastName": "Appelgren",
+            "slug": "mikael-appelgren",
+            "shortName": "M. Appelgren",
+            "position": "G",
+            "jerseyNumber": "1",
+            "height": 192,
+            "userCount": 68,
+            "gender": "M",
+            "sofascoreId": "j8u-67r",
+            "country": {
+              "alpha2": "SE",
+              "alpha3": "SWE",
+              "name": "Sweden",
+              "slug": "sweden"
+            },
+            "id": 808867,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 621043200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ميكايل أبلغرين",
+                "bn": "অ্যাপেলগ্রেন, মিকেল",
+                "hi": "एप्पलग्रेन, मिकाएल",
+                "ru": "Микаэль Аппельгрен"
+              },
+              "shortNameTranslation": {
+                "ar": "م. أبلغرين",
+                "bn": "এম. এ. অ্যাপেলগ্রেন",
+                "hi": "एम. ए. एप्पेलग्रेन",
+                "ru": "М. Аппельгрен"
+              }
+            }
+          },
+          "teamId": 6628,
+          "position": "G",
+          "substitute": true,
+          "statistics": {
+            "twoMinutePenalties": 0,
+            "technicalFaults": 0,
+            "yellowCards": 0,
+            "gk6mSaves": 0,
+            "gk6mShots": 0,
+            "gk9mSaves": 0,
+            "gk9mShots": 0,
+            "shotsTaken": 0,
+            "goals": 0,
+            "assists": 0,
+            "goals7m": 0,
+            "fastbreakGoals": 0,
+            "fastbreakShots": 0,
+            "steals": 0,
+            "blockedShots": 0,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Hugo Descat",
+            "firstName": "Hugo",
+            "lastName": "Descat",
+            "slug": "hugo-descat",
+            "shortName": "H. Descat",
+            "position": "LW",
+            "jerseyNumber": "9",
+            "height": 183,
+            "userCount": 340,
+            "gender": "M",
+            "sofascoreId": "ppi-8p7",
+            "country": {
+              "alpha2": "FR",
+              "alpha3": "FRA",
+              "name": "France",
+              "slug": "france"
+            },
+            "id": 902750,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 713923200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ديسكات، هوغو",
+                "bn": "ডেসকাট, হুগো",
+                "hi": "डेस्कैट, ह्यूगो",
+                "ru": "Уго Дескат"
+              },
+              "shortNameTranslation": {
+                "ar": "هـ. ديسكات",
+                "bn": "এইচ. ডেসকাট",
+                "hi": "एच. डेसकैट",
+                "ru": "У. Дескат"
+              }
+            }
+          },
+          "teamId": 6628,
+          "position": "LW",
+          "substitute": true,
+          "statistics": {
+            "twoMinutePenalties": 0,
+            "technicalFaults": 0,
+            "yellowCards": 0,
+            "gk6mSaves": 0,
+            "gk6mShots": 0,
+            "gk9mSaves": 0,
+            "gk9mShots": 0,
+            "shotsTaken": 7,
+            "goals": 5,
+            "assists": 0,
+            "goals7m": 0,
+            "shots7m": 1,
+            "goals6m": 4,
+            "shots6m": 1,
+            "fastbreakGoals": 1,
+            "fastbreakShots": 2,
+            "wingGoals": 3,
+            "steals": 0,
+            "blockedShots": 0,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Patrik Ligetvari",
+            "firstName": "Patrik",
+            "lastName": "Ligetvari",
+            "slug": "patrik-ligetvari",
+            "shortName": "P. Ligetvári",
+            "position": "LB",
+            "jerseyNumber": "23",
+            "height": 205,
+            "userCount": 68,
+            "gender": "M",
+            "sofascoreId": "55j-wjz",
+            "country": {
+              "alpha2": "HU",
+              "alpha3": "HUN",
+              "name": "Hungary",
+              "slug": "hungary"
+            },
+            "id": 913528,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 824169600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ليغتڤاري، باتريك",
+                "bn": "লিগেতভারী, পাট্রিক",
+                "hi": "लिगेटवारी, पैट्रिक",
+                "ru": "Патрик Лигетвари"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. ليغتڤاري",
+                "bn": "পিঁ. লিগেতভারী",
+                "hi": "पी. लिगेटवारी",
+                "ru": "П. Лигетвари"
+              }
+            }
+          },
+          "teamId": 6628,
+          "position": "LB",
+          "substitute": true,
+          "statistics": {
+            "twoMinutePenalties": 1,
+            "technicalFaults": 0,
+            "yellowCards": 0,
+            "gk6mSaves": 0,
+            "gk6mShots": 0,
+            "gk9mSaves": 0,
+            "gk9mShots": 0,
+            "shotsTaken": 0,
+            "goals": 0,
+            "assists": 0,
+            "goals7m": 0,
+            "fastbreakGoals": 0,
+            "fastbreakShots": 0,
+            "steals": 0,
+            "blockedShots": 0,
+            "statisticsType": {
+              "sportSlug": "handball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "__trimmed__": 13
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "00ff00",
+        "number": "000000",
+        "outline": "fafb00",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

@@ -1,0 +1,777 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17212667/at-bats",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:26:53+00:00",
+  "page": "https://www.sofascore.com/tr/baseball/match/cleveland-guardians-chicago-white-sox/Uxbsayb#id:17212667",
+  "cache_control": "max-age=10, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "atBats": [
+      {
+        "pitcher": {
+          "name": "Hagen Smith",
+          "firstName": "Hagen",
+          "lastName": "Smith",
+          "slug": "smith-hagen",
+          "shortName": "H. Smith",
+          "position": "SP",
+          "jerseyNumber": "32",
+          "userCount": 56,
+          "gender": "M",
+          "sofascoreId": "heg-n4k",
+          "id": 1860284,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سميث، هاغن",
+              "ru": "Хаген Смит"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. سميث",
+              "ru": "Х. Смит"
+            }
+          }
+        },
+        "pitcherTeam": {
+          "name": "Chicago White Sox",
+          "slug": "chicago-white-sox",
+          "shortName": "White Sox",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 36873,
+          "nameCode": "CWS",
+          "national": false,
+          "type": 0,
+          "id": 3644,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شيكاغو وايت سوكس",
+              "ru": "Чикаго Уайт Сокс"
+            },
+            "shortNameTranslation": {
+              "ar": "وايت سوكس",
+              "bn": "হোয়াইট সোক্স",
+              "hi": "व्हाइट सॉक्स",
+              "ru": "Уайт Сокс"
+            }
+          }
+        },
+        "hitter": {
+          "name": "Steven Kwan",
+          "firstName": "Steven",
+          "lastName": "Kwan",
+          "slug": "kwan-steven",
+          "shortName": "S. Kwan",
+          "position": "LF",
+          "jerseyNumber": "38",
+          "userCount": 130,
+          "gender": "M",
+          "sofascoreId": "b77-zvr",
+          "id": 979865,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كوان، ستيفن",
+              "bn": "কোয়ান, স্টিভেন",
+              "hi": "क्वान, स्टीवन",
+              "ru": "Стивен Кван"
+            },
+            "shortNameTranslation": {
+              "ar": "س. كوان",
+              "bn": "এস. কোয়ান",
+              "hi": "एस. क्वान",
+              "ru": "С. Кван"
+            }
+          }
+        },
+        "hitterTeam": {
+          "name": "Cleveland Guardians",
+          "slug": "cleveland-guardians",
+          "shortName": "Guardians",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 32098,
+          "nameCode": "CLE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3650,
+          "teamColors": {
+            "primary": "#e41937",
+            "secondary": "#e41937",
+            "text": "#e41937"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كليفلاند غارديانز",
+              "ru": "Кливленд Гардианс"
+            },
+            "shortNameTranslation": {
+              "ar": "غارديانز",
+              "bn": "গার্ডিয়ানস",
+              "hi": "गार्डियंस",
+              "ru": "Гардианс"
+            }
+          }
+        },
+        "inning": 1,
+        "homeTeamWinningProbabilityStart": 49.4,
+        "awayTeamWinningProbabilityStart": 50.6,
+        "homeTeamWinningProbability": 46,
+        "awayTeamWinningProbability": 54,
+        "inningHalf": "T",
+        "id": 2596324,
+        "time": 1791504619,
+        "incidentType": "baseballAtBat"
+      },
+      {
+        "pitcher": {
+          "name": "Hagen Smith",
+          "firstName": "Hagen",
+          "lastName": "Smith",
+          "slug": "smith-hagen",
+          "shortName": "H. Smith",
+          "position": "SP",
+          "jerseyNumber": "32",
+          "userCount": 56,
+          "gender": "M",
+          "sofascoreId": "heg-n4k",
+          "id": 1860284,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سميث، هاغن",
+              "ru": "Хаген Смит"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. سميث",
+              "ru": "Х. Смит"
+            }
+          }
+        },
+        "pitcherTeam": {
+          "name": "Chicago White Sox",
+          "slug": "chicago-white-sox",
+          "shortName": "White Sox",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 36873,
+          "nameCode": "CWS",
+          "national": false,
+          "type": 0,
+          "id": 3644,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شيكاغو وايت سوكس",
+              "ru": "Чикаго Уайт Сокс"
+            },
+            "shortNameTranslation": {
+              "ar": "وايت سوكس",
+              "bn": "হোয়াইট সোক্স",
+              "hi": "व्हाइट सॉक्स",
+              "ru": "Уайт Сокс"
+            }
+          }
+        },
+        "hitter": {
+          "name": "José Ramírez",
+          "firstName": "José",
+          "lastName": "Ramírez",
+          "slug": "ramirez-jose",
+          "shortName": "J. Ramírez",
+          "position": "3B",
+          "jerseyNumber": "11",
+          "userCount": 235,
+          "gender": "M",
+          "sofascoreId": "n55-p3p",
+          "id": 960914,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "راميريز، خوسيه",
+              "bn": "রামিরেজ, জোসে",
+              "hi": "रामिरेज़, जोस",
+              "ru": "Хосе Рамирес"
+            },
+            "shortNameTranslation": {
+              "ar": "خ. راميريز",
+              "bn": "জে. রামিরেজ",
+              "hi": "जे. रामिरेज़",
+              "ru": "Х. Рамирес"
+            }
+          }
+        },
+        "hitterTeam": {
+          "name": "Cleveland Guardians",
+          "slug": "cleveland-guardians",
+          "shortName": "Guardians",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 32098,
+          "nameCode": "CLE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3650,
+          "teamColors": {
+            "primary": "#e41937",
+            "secondary": "#e41937",
+            "text": "#e41937"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كليفلاند غارديانز",
+              "ru": "Кливленд Гардианс"
+            },
+            "shortNameTranslation": {
+              "ar": "غارديانز",
+              "bn": "গার্ডিয়ানস",
+              "hi": "गार्डियंस",
+              "ru": "Гардианс"
+            }
+          }
+        },
+        "inning": 1,
+        "homeTeamWinningProbabilityStart": 46,
+        "awayTeamWinningProbabilityStart": 54,
+        "homeTeamWinningProbability": 49.2,
+        "awayTeamWinningProbability": 50.8,
+        "inningHalf": "T",
+        "id": 2596325,
+        "time": 1791504671,
+        "incidentType": "baseballAtBat"
+      },
+      {
+        "pitcher": {
+          "name": "Hagen Smith",
+          "firstName": "Hagen",
+          "lastName": "Smith",
+          "slug": "smith-hagen",
+          "shortName": "H. Smith",
+          "position": "SP",
+          "jerseyNumber": "32",
+          "userCount": 56,
+          "gender": "M",
+          "sofascoreId": "heg-n4k",
+          "id": 1860284,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سميث، هاغن",
+              "ru": "Хаген Смит"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. سميث",
+              "ru": "Х. Смит"
+            }
+          }
+        },
+        "pitcherTeam": {
+          "name": "Chicago White Sox",
+          "slug": "chicago-white-sox",
+          "shortName": "White Sox",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 36873,
+          "nameCode": "CWS",
+          "national": false,
+          "type": 0,
+          "id": 3644,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شيكاغو وايت سوكس",
+              "ru": "Чикаго Уайт Сокс"
+            },
+            "shortNameTranslation": {
+              "ar": "وايت سوكس",
+              "bn": "হোয়াইট সোক্স",
+              "hi": "व्हाइट सॉक्स",
+              "ru": "Уайт Сокс"
+            }
+          }
+        },
+        "hitter": {
+          "name": "Chase DeLauter",
+          "firstName": "Chase",
+          "lastName": "DeLauter",
+          "slug": "delauter-chase",
+          "shortName": "C. DeLauter",
+          "position": "RF",
+          "jerseyNumber": "24",
+          "userCount": 148,
+          "gender": "M",
+          "sofascoreId": "b7t-n3k",
+          "id": 1691065,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديلاوتر، تشيس",
+              "ru": "Чейз ДеЛотер"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. ديلاوتر",
+              "ru": "Ч. ДеЛотер"
+            }
+          }
+        },
+        "hitterTeam": {
+          "name": "Cleveland Guardians",
+          "slug": "cleveland-guardians",
+          "shortName": "Guardians",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 32098,
+          "nameCode": "CLE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3650,
+          "teamColors": {
+            "primary": "#e41937",
+            "secondary": "#e41937",
+            "text": "#e41937"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كليفلاند غارديانز",
+              "ru": "Кливленд Гардианс"
+            },
+            "shortNameTranslation": {
+              "ar": "غارديانز",
+              "bn": "গার্ডিয়ানস",
+              "hi": "गार्डियंस",
+              "ru": "Гардианс"
+            }
+          }
+        },
+        "inning": 1,
+        "homeTeamWinningProbabilityStart": 49.2,
+        "awayTeamWinningProbabilityStart": 50.8,
+        "homeTeamWinningProbability": 51.6,
+        "awayTeamWinningProbability": 48.4,
+        "inningHalf": "T",
+        "id": 2596326,
+        "time": 1791504756,
+        "incidentType": "baseballAtBat"
+      },
+      {
+        "pitcher": {
+          "name": "Hagen Smith",
+          "firstName": "Hagen",
+          "lastName": "Smith",
+          "slug": "smith-hagen",
+          "shortName": "H. Smith",
+          "position": "SP",
+          "jerseyNumber": "32",
+          "userCount": 56,
+          "gender": "M",
+          "sofascoreId": "heg-n4k",
+          "id": 1860284,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سميث، هاغن",
+              "ru": "Хаген Смит"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. سميث",
+              "ru": "Х. Смит"
+            }
+          }
+        },
+        "pitcherTeam": {
+          "name": "Chicago White Sox",
+          "slug": "chicago-white-sox",
+          "shortName": "White Sox",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 36873,
+          "nameCode": "CWS",
+          "national": false,
+          "type": 0,
+          "id": 3644,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شيكاغو وايت سوكس",
+              "ru": "Чикаго Уайт Сокс"
+            },
+            "shortNameTranslation": {
+              "ar": "وايت سوكس",
+              "bn": "হোয়াইট সোক্স",
+              "hi": "व्हाइट सॉक्स",
+              "ru": "Уайт Сокс"
+            }
+          }
+        },
+        "hitter": {
+          "name": "Jo Adell",
+          "firstName": "Jordon",
+          "lastName": "Adell",
+          "slug": "adell-jo",
+          "shortName": "J. Adell",
+          "position": "RF",
+          "jerseyNumber": "7",
+          "userCount": 109,
+          "gender": "M",
+          "sofascoreId": "fpp-ns4",
+          "id": 977030,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أديل، جو",
+              "bn": "অ্যাডেল, জো",
+              "hi": "एडेल, जो",
+              "ru": "Джо Аделл"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. أديل",
+              "bn": "জে. অ্যাডেল",
+              "hi": "जे. एडेल",
+              "ru": "Д. Аделл"
+            }
+          }
+        },
+        "hitterTeam": {
+          "name": "Cleveland Guardians",
+          "slug": "cleveland-guardians",
+          "shortName": "Guardians",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 32098,
+          "nameCode": "CLE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3650,
+          "teamColors": {
+            "primary": "#e41937",
+            "secondary": "#e41937",
+            "text": "#e41937"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كليفلاند غارديانز",
+              "ru": "Кливленд Гардианс"
+            },
+            "shortNameTranslation": {
+              "ar": "غارديانز",
+              "bn": "গার্ডিয়ানস",
+              "hi": "गार्डियंस",
+              "ru": "Гардианс"
+            }
+          }
+        },
+        "inning": 1,
+        "homeTeamWinningProbabilityStart": 51.6,
+        "awayTeamWinningProbabilityStart": 48.4,
+        "homeTeamWinningProbability": 49.3,
+        "awayTeamWinningProbability": 50.7,
+        "inningHalf": "T",
+        "id": 2596327,
+        "time": 1791504959,
+        "incidentType": "baseballAtBat"
+      },
+      {
+        "pitcher": {
+          "name": "Hagen Smith",
+          "firstName": "Hagen",
+          "lastName": "Smith",
+          "slug": "smith-hagen",
+          "shortName": "H. Smith",
+          "position": "SP",
+          "jerseyNumber": "32",
+          "userCount": 56,
+          "gender": "M",
+          "sofascoreId": "heg-n4k",
+          "id": 1860284,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سميث، هاغن",
+              "ru": "Хаген Смит"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. سميث",
+              "ru": "Х. Смит"
+            }
+          }
+        },
+        "pitcherTeam": {
+          "name": "Chicago White Sox",
+          "slug": "chicago-white-sox",
+          "shortName": "White Sox",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 36873,
+          "nameCode": "CWS",
+          "national": false,
+          "type": 0,
+          "id": 3644,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شيكاغو وايت سوكس",
+              "ru": "Чикаго Уайт Сокс"
+            },
+            "shortNameTranslation": {
+              "ar": "وايت سوكس",
+              "bn": "হোয়াইট সোক্স",
+              "hi": "व्हाइट सॉक्स",
+              "ru": "Уайт Сокс"
+            }
+          }
+        },
+        "hitter": {
+          "name": "Nathaniel Lowe",
+          "firstName": "David",
+          "lastName": "Lowe",
+          "slug": "lowe-nathaniel",
+          "shortName": "N. Lowe",
+          "position": "1B",
+          "jerseyNumber": "46",
+          "userCount": 41,
+          "gender": "M",
+          "sofascoreId": "g88-avd",
+          "id": 976609,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوي، ناثانيال",
+              "bn": "লো, নাথানিয়েল",
+              "hi": "लोवे, नाथनियल",
+              "ru": "Натанил Лоу"
+            },
+            "shortNameTranslation": {
+              "ar": "ن. لوي",
+              "bn": "এন. লো",
+              "hi": "एन. लोवे",
+              "ru": "Н. Лоу"
+            }
+          }
+        },
+        "hitterTeam": {
+          "name": "Cleveland Guardians",
+          "slug": "cleveland-guardians",
+          "shortName": "Guardians",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 32098,
+          "nameCode": "CLE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3650,
+          "teamColors": {
+            "primary": "#e41937",
+            "secondary": "#e41937",
+            "text": "#e41937"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كليفلاند غارديانز",
+              "ru": "Кливленд Гардианс"
+            },
+            "shortNameTranslation": {
+              "ar": "غارديانز",
+              "bn": "গার্ডিয়ানস",
+              "hi": "गार्डियंस",
+              "ru": "Гардианс"
+            }
+          }
+        },
+        "inning": 1,
+        "homeTeamWinningProbabilityStart": 49.3,
+        "awayTeamWinningProbabilityStart": 50.7,
+        "homeTeamWinningProbability": 46.5,
+        "awayTeamWinningProbability": 53.5,
+        "inningHalf": "T",
+        "id": 2596328,
+        "time": 1791505172,
+        "incidentType": "baseballAtBat"
+      },
+      {
+        "pitcher": {
+          "name": "Erick Fedde",
+          "firstName": "Erick",
+          "lastName": "Fedde",
+          "slug": "fedde-erick",
+          "shortName": "E. Fedde",
+          "position": "SP",
+          "jerseyNumber": "47",
+          "userCount": 26,
+          "gender": "M",
+          "sofascoreId": "b77-hj7",
+          "id": 961497,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فيدي، إريك",
+              "bn": "ফেডে, এরিক",
+              "hi": "फेडे, एरिक",
+              "ru": "Эрик Федде"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. فيدي",
+              "bn": "ই. ফেড্ডে",
+              "hi": "ई. फेडे",
+              "ru": "Э. Федде"
+            }
+          }
+        },
+        "pitcherTeam": {
+          "name": "Chicago White Sox",
+          "slug": "chicago-white-sox",
+          "shortName": "White Sox",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 36873,
+          "nameCode": "CWS",
+          "national": false,
+          "type": 0,
+          "id": 3644,
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "شيكاغو وايت سوكس",
+              "ru": "Чикаго Уайт Сокс"
+            },
+            "shortNameTranslation": {
+              "ar": "وايت سوكس",
+              "bn": "হোয়াইট সোক্স",
+              "hi": "व्हाइट सॉक्स",
+              "ru": "Уайт Сокс"
+            }
+          }
+        },
+        "hitter": {
+          "name": "Angel Martínez",
+          "firstName": "Angel",
+          "lastName": "Martínez",
+          "slug": "martinez-angel",
+          "shortName": "A. Martínez",
+          "position": "LF",
+          "jerseyNumber": "1",
+          "userCount": 43,
+          "gender": "M",
+          "sofascoreId": "vub-zwz",
+          "id": 1198187,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "مارتينيز، أنجل",
+              "ru": "Анхель Мартинес"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. مارتينيز",
+              "ru": "А. Мартинес"
+            }
+          }
+        },
+        "hitterTeam": {
+          "name": "Cleveland Guardians",
+          "slug": "cleveland-guardians",
+          "shortName": "Guardians",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 32098,
+          "nameCode": "CLE",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "id": 3650,
+          "teamColors": {
+            "primary": "#e41937",
+            "secondary": "#e41937",
+            "text": "#e41937"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كليفلاند غارديانز",
+              "ru": "Кливленд Гардианс"
+            },
+            "shortNameTranslation": {
+              "ar": "غارديانز",
+              "bn": "গার্ডিয়ানস",
+              "hi": "गार्डियंस",
+              "ru": "Гардианс"
+            }
+          }
+        },
+        "inning": 1,
+        "homeTeamWinningProbabilityStart": 46.5,
+        "awayTeamWinningProbabilityStart": 53.5,
+        "homeTeamWinningProbability": 50.7,
+        "awayTeamWinningProbability": 49.3,
+        "inningHalf": "T",
+        "id": 2596329,
+        "time": 1791505467,
+        "incidentType": "baseballAtBat"
+      }
+    ]
+  }
+}

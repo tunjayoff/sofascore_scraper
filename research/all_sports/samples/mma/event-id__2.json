@@ -1,0 +1,268 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17057712",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:11:23+00:00",
+  "page": "https://www.sofascore.com/tr/mma/match/summer-onley-alivia-bierley/XFjjscjkk#id:17057712",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "event": {
+      "venue": {
+        "city": {
+          "name": "Las Vegas",
+          "state": "US-NV",
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 24666
+        },
+        "hidden": true,
+        "slug": "meta-apex",
+        "name": "Meta APEX",
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 56190,
+        "stadium": {
+          "name": "Meta APEX"
+        }
+      },
+      "fightType": "maincard",
+      "weightClass": "bantam",
+      "winType": "UD",
+      "tournament": {
+        "name": "Contender Series 2026: Week 9",
+        "slug": "contender-series-2026-week-9",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Mixed Martial Arts",
+            "slug": "mma",
+            "id": 76
+          },
+          "priority": 0,
+          "country": {},
+          "id": 1708,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "uniqueTournament": {
+          "name": "Dana White's Contender Series",
+          "slug": "dana-whites-contender-series",
+          "primaryColorHex": "#77CAE0",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Mixed Martial Arts",
+              "slug": "mma",
+              "id": 76
+            },
+            "priority": 0,
+            "country": {},
+            "id": 1708,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "hi": "विश्व",
+                "bn": "বিশ্ব",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "userCount": 6592,
+          "hasRounds": true,
+          "hasPerformanceGraphFeature": false,
+          "liveActivityEnabled": false,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 20264,
+          "hasEventPlayerStatistics": false,
+          "displayInverseHomeAwayTeams": false,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سلسلة المتنافسين لدانا وايت",
+              "hi": "डाना व्हाइट्स कंटेंडर सीरीज़",
+              "bn": "ডানা হোয়াইটস কন্টেন্ডার সিরিজ",
+              "ru": "Серия претендентов Даны Уайта"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "priority": 0,
+        "isGroup": false,
+        "isLive": false,
+        "id": 197783,
+        "endTimestamp": 1791342000,
+        "startTimestamp": 1791327600,
+        "location": "Las Vegas"
+      },
+      "season": {
+        "name": "Contender Series 2026: Week 9",
+        "year": "2026",
+        "editor": false,
+        "id": 102258
+      },
+      "customId": "XFjjscjkk",
+      "status": {
+        "code": 100,
+        "description": "Ended",
+        "type": "finished"
+      },
+      "winnerCode": 2,
+      "homeTeam": {
+        "name": "Summer Onley",
+        "slug": "summer-onley",
+        "shortName": "S. Onley",
+        "gender": "F",
+        "sport": {
+          "name": "Mixed Martial Arts",
+          "slug": "mma",
+          "id": 76
+        },
+        "userCount": 11,
+        "playerTeamInfo": {
+          "nickname": "Ice Cold",
+          "height": 1.7,
+          "reach": 1.7,
+          "weight": 61,
+          "weightClass": "bantam",
+          "id": 49215,
+          "underage": false
+        },
+        "nameCode": "ONL",
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 1275452,
+        "fullName": "Summer Onley",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "wdlRecord": {
+          "wins": 6,
+          "draws": 0,
+          "losses": 1
+        },
+        "timeActive": []
+      },
+      "awayTeam": {
+        "name": "Alivia  Bierley",
+        "slug": "alivia-bierley",
+        "shortName": "A. Bierley",
+        "gender": "F",
+        "sport": {
+          "name": "Mixed Martial Arts",
+          "slug": "mma",
+          "id": 76
+        },
+        "userCount": 17,
+        "playerTeamInfo": {
+          "nickname": "Yum Yum",
+          "height": 1.7,
+          "reach": 1.7,
+          "weight": 61,
+          "weightClass": "bantam",
+          "id": 31303,
+          "birthDateTimestamp": 843177600,
+          "underage": false
+        },
+        "nameCode": "BIE",
+        "national": false,
+        "type": 1,
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 1149047,
+        "fullName": "Alivia  Bierley",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "wdlRecord": {
+          "wins": 6,
+          "draws": 0,
+          "losses": 1
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أليفي  بيرلي",
+            "ru": "Аливия Бирли"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. بيرلي",
+            "ru": "А. Бирли"
+          }
+        },
+        "timeActive": []
+      },
+      "homeScore": {},
+      "awayScore": {},
+      "time": {
+        "period1": 300,
+        "period2": 300,
+        "period3": 300,
+        "played": 900,
+        "totalPeriodCount": 3
+      },
+      "changes": {
+        "changes": [
+          "status.code",
+          "status.description",
+          "status.type",
+          "time.current"
+        ],
+        "changeTimestamp": 1791329913
+      },
+      "hasGlobalHighlights": false,
+      "crowdsourcingDataDisplayEnabled": false,
+      "id": 17057712,
+      "order": 1,
+      "finalRound": 3,
+      "gender": "F",
+      "defaultPeriodCount": 5,
+      "defaultPeriodLength": 5,
+      "slug": "summer-onley-alivia-bierley",
+      "startTimestamp": 1791328765,
+      "finalResultOnly": false,
+      "feedLocked": false,
+      "showTotoPromo": true,
+      "isEditor": false
+    }
+  }
+}

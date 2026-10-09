@@ -1,0 +1,129 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16634075/odds/1/featured",
+  "status": 200,
+  "fetched_at_utc": "2026-10-08T23:58:43+00:00",
+  "page": "https://www.sofascore.com/tr/handball/match/rk-partizan-one-veszprem/DHcsQKc#id:16634075",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "featured": {
+      "default": {
+        "sourceId": 202065417,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202065417,
+        "suspended": false,
+        "id": 432249532,
+        "marketGroup": "1X2",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "19/1",
+            "fractionalValue": "13/1",
+            "sourceId": 112292011,
+            "name": "1",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "27/1",
+            "fractionalValue": "19/1",
+            "sourceId": 112292019,
+            "name": "X",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "1/50",
+            "fractionalValue": "3/50",
+            "sourceId": 112292016,
+            "name": "2",
+            "winning": true,
+            "change": 1
+          }
+        ]
+      },
+      "asian": {
+        "sourceId": 202065417,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202065417,
+        "suspended": false,
+        "id": 432249532,
+        "marketGroup": "1X2",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "19/1",
+            "fractionalValue": "13/1",
+            "sourceId": 112292011,
+            "name": "1",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "27/1",
+            "fractionalValue": "19/1",
+            "sourceId": 112292019,
+            "name": "X",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "1/50",
+            "fractionalValue": "3/50",
+            "sourceId": 112292016,
+            "name": "2",
+            "winning": true,
+            "change": 1
+          }
+        ]
+      },
+      "fullTime": {
+        "sourceId": 202065417,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": false,
+        "fid": 202065417,
+        "suspended": false,
+        "id": 432249532,
+        "marketGroup": "1X2",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "19/1",
+            "fractionalValue": "13/1",
+            "sourceId": 112292011,
+            "name": "1",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "27/1",
+            "fractionalValue": "19/1",
+            "sourceId": 112292019,
+            "name": "X",
+            "winning": false,
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "1/50",
+            "fractionalValue": "3/50",
+            "sourceId": 112292016,
+            "name": "2",
+            "winning": true,
+            "change": 1
+          }
+        ]
+      }
+    },
+    "hasMoreOdds": false,
+    "liveStreamUrl": null
+  }
+}

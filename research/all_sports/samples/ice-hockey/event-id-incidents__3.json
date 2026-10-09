@@ -1,0 +1,594 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16546323/incidents",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T00:17:11+00:00",
+  "page": "https://www.sofascore.com/tr/ice-hockey/match/utah-mammoth-boston-bruins/Cybsxjme#id:16546323",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009",
+  "body": {
+    "incidents": [
+      {
+        "text": "2nd Period",
+        "homeScore": 3,
+        "awayScore": 0,
+        "isLive": true,
+        "time": 40,
+        "addedTime": 999,
+        "timeSeconds": 2400,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 1200
+      },
+      {
+        "player": {
+          "name": "Vincent Trocheck",
+          "firstName": "Vincent",
+          "lastName": "Trocheck",
+          "slug": "vincent-trocheck",
+          "shortName": "V. Trocheck",
+          "position": "C",
+          "jerseyNumber": "16",
+          "height": 180,
+          "userCount": 262,
+          "gender": "M",
+          "sofascoreId": "nam-96x",
+          "id": 352050,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 742348800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تروشيك، فنسنت",
+              "bn": "ট্রোচেক, ভিনসেন্ট",
+              "hi": "ट्रोचेक, विन्सेंट",
+              "ru": "Трочек, Винсент"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. تروشيك",
+              "bn": "ভি. ট্রোচেক",
+              "hi": "वी. ट्रोचेक",
+              "ru": "В. Трочек"
+            }
+          }
+        },
+        "playerName": "Vincent Trocheck",
+        "suspensionDrawnByPlayer": {
+          "name": "Mason Lohrei",
+          "firstName": "Mason",
+          "lastName": "Lohrei",
+          "slug": "mason-lohrei",
+          "shortName": "M. Lohrei",
+          "position": "D",
+          "jerseyNumber": "6",
+          "height": 196,
+          "userCount": 112,
+          "gender": "M",
+          "sofascoreId": "vuh-xme",
+          "id": 1493355,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 979689600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوهري، ميسون",
+              "bn": "লোহরেই, ম্যাসন",
+              "hi": "लोहरेई, मेसन",
+              "ru": "Лорей, Мейсон"
+            },
+            "shortNameTranslation": {
+              "ar": "م. لوهري",
+              "bn": "এম. লোহরেই",
+              "hi": "एम. लोहरेई",
+              "ru": "М. Лорей"
+            }
+          }
+        },
+        "description": "Penalty to Vincent Trocheck 2 minutes for High Sticking (Drawn by Mason Lohrei)",
+        "duration": 120,
+        "id": 239556,
+        "time": 24,
+        "timeSeconds": 1409,
+        "incidentClass": "twoMinutes",
+        "isHome": false,
+        "iceHockeyPenaltyType": {
+          "id": 29,
+          "key": "hi_sticking",
+          "description": "High-Sticking",
+          "severity": "minor"
+        },
+        "incidentType": "suspension",
+        "reversedPeriodTime": 17,
+        "reversedPeriodTimeSeconds": 991,
+        "periodTimeSeconds": 209
+      },
+      {
+        "text": "1st Period",
+        "homeScore": 3,
+        "awayScore": 0,
+        "isLive": false,
+        "time": 20,
+        "addedTime": 999,
+        "timeSeconds": 1200,
+        "incidentType": "period",
+        "reversedPeriodTime": 1,
+        "reversedPeriodTimeSeconds": 0,
+        "periodTimeSeconds": 1200
+      },
+      {
+        "from": "regular",
+        "homeScore": 3,
+        "awayScore": 0,
+        "player": {
+          "name": "Mason Lohrei",
+          "firstName": "Mason",
+          "lastName": "Lohrei",
+          "slug": "mason-lohrei",
+          "shortName": "M. Lohrei",
+          "position": "D",
+          "jerseyNumber": "6",
+          "height": 196,
+          "userCount": 112,
+          "gender": "M",
+          "sofascoreId": "vuh-xme",
+          "id": 1493355,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 979689600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوهري، ميسون",
+              "bn": "লোহরেই, ম্যাসন",
+              "hi": "लोहरेई, मेसन",
+              "ru": "Лорей, Мейсон"
+            },
+            "shortNameTranslation": {
+              "ar": "م. لوهري",
+              "bn": "এম. লোহরেই",
+              "hi": "एम. लोहरेई",
+              "ru": "М. Лорей"
+            }
+          }
+        },
+        "assist1": {
+          "name": "Mark Kastelic",
+          "firstName": "Mark Kastelic",
+          "lastName": "",
+          "slug": "kastelic-mark",
+          "shortName": "M. Kastelic",
+          "position": "C",
+          "jerseyNumber": "47",
+          "height": 193,
+          "userCount": 49,
+          "gender": "M",
+          "sofascoreId": "8jn-fay",
+          "id": 1175977,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 921110400,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كاستيليتش، مارك",
+              "bn": "কাস্টেলিক, মার্ক",
+              "hi": "कास्टेलिक, मार्क",
+              "ru": "Кастелич, Марк"
+            },
+            "shortNameTranslation": {
+              "ar": "م. كاستيليتش",
+              "bn": "এম. কাস্টেলিক",
+              "hi": "एम. कास्टेलिक",
+              "ru": "М. Кастелич"
+            }
+          }
+        },
+        "assist2": {
+          "name": "Matthew Poitras",
+          "firstName": "Matthew",
+          "lastName": "Poitras",
+          "slug": "matthew-poitras",
+          "shortName": "M. Poitras",
+          "position": "C",
+          "jerseyNumber": "51",
+          "height": 183,
+          "userCount": 28,
+          "gender": "M",
+          "sofascoreId": "hi5-u3s",
+          "id": 1412060,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1078876800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بويتراس، ماثيو",
+              "bn": "পোইট্রাস, ম্যাথিউ",
+              "hi": "पोइट्रास, मैथ्यू",
+              "ru": "Мэтью Пуар"
+            },
+            "shortNameTranslation": {
+              "ar": "م. بويتراس",
+              "bn": "এম. পোইট্রাস",
+              "hi": "एम. पोइट्रास",
+              "ru": "М. Пуар"
+            }
+          }
+        },
+        "seasonCount": 1,
+        "assist1SeasonCount": 3,
+        "assist2SeasonCount": 1,
+        "id": 364540273,
+        "time": 16,
+        "timeSeconds": 951,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal",
+        "reversedPeriodTime": 5,
+        "reversedPeriodTimeSeconds": 249,
+        "periodTimeSeconds": 951
+      },
+      {
+        "from": "powerplay",
+        "homeScore": 2,
+        "awayScore": 0,
+        "player": {
+          "name": "David Pastrnak",
+          "firstName": "David",
+          "lastName": "Pastrnak",
+          "slug": "david-pastrnak",
+          "shortName": "D. Pastrnak",
+          "position": "R",
+          "jerseyNumber": "88",
+          "height": 183,
+          "userCount": 5658,
+          "gender": "M",
+          "sofascoreId": "t22-bx5",
+          "id": 307642,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 832982400,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "باسترناك، ديفيد",
+              "bn": "পাস্ট্রনাক, ডেভিড",
+              "hi": "पास्टर्नक, डेविड",
+              "ru": "Пастрнак, Дэвид"
+            },
+            "shortNameTranslation": {
+              "ar": "د. باسترناك",
+              "bn": "ডি. পাস্ট্রনাক",
+              "hi": "डी. पास्टर्नक",
+              "ru": "Д. Пастрнак"
+            }
+          }
+        },
+        "assist1": {
+          "name": "Frederic Brunet",
+          "firstName": "Frederic",
+          "lastName": "Brunet",
+          "slug": "frederic-brunet",
+          "shortName": "F. Brunet",
+          "position": "D",
+          "jerseyNumber": "42",
+          "height": 191,
+          "userCount": 10,
+          "gender": "M",
+          "sofascoreId": "b7j-ei6",
+          "id": 1412057,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1061424000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "برونيت، فريديريك",
+              "bn": "ব্রুনেট, ফ্রেডেরিক",
+              "hi": "ब्रूनेट, फ्रेडरिक",
+              "ru": "Фредерик Брунэ"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. برونيت",
+              "bn": "এফ. ব্রুনেট",
+              "hi": "एफ. ब्रूनेट",
+              "ru": "Ф. Брунэ"
+            }
+          }
+        },
+        "assist2": {
+          "name": "Morgan Geekie",
+          "firstName": "",
+          "lastName": "",
+          "slug": "geekie-morgan",
+          "shortName": "M. Geekie",
+          "position": "C",
+          "jerseyNumber": "39",
+          "height": 191,
+          "userCount": 713,
+          "gender": "M",
+          "sofascoreId": "uup-r5n",
+          "id": 902195,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 900892800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جيكي، مورغان",
+              "bn": "গিকি, মরগান",
+              "hi": "गीकी, मॉर्गन",
+              "ru": "Гики, Морган"
+            },
+            "shortNameTranslation": {
+              "ar": "م. جيكي",
+              "bn": "এম. গিকি",
+              "hi": "एम. गीकी",
+              "ru": "М. Гики"
+            }
+          }
+        },
+        "seasonCount": 1,
+        "assist1SeasonCount": 1,
+        "assist2SeasonCount": 2,
+        "id": 364539922,
+        "time": 15,
+        "timeSeconds": 862,
+        "isHome": true,
+        "incidentClass": "powerplay",
+        "incidentType": "goal",
+        "reversedPeriodTime": 6,
+        "reversedPeriodTimeSeconds": 338,
+        "periodTimeSeconds": 862
+      },
+      {
+        "player": {
+          "name": "Lawson Crouse",
+          "firstName": "Lawson",
+          "lastName": "Crouse",
+          "slug": "lawson-crouse",
+          "shortName": "L. Crouse",
+          "position": "L",
+          "jerseyNumber": "67",
+          "height": 193,
+          "userCount": 84,
+          "gender": "M",
+          "sofascoreId": "x32-6wt",
+          "id": 815351,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 867024000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كروس، لوسون",
+              "bn": "ক্রুস, লসন",
+              "hi": "क्राउज़, लॉसन",
+              "ru": "Краус, Лоусон"
+            },
+            "shortNameTranslation": {
+              "ar": "ل. كروس",
+              "bn": "এল. ক্রুস",
+              "hi": "एल. क्राउज़",
+              "ru": "Л. Краус"
+            }
+          }
+        },
+        "playerName": "Lawson Crouse",
+        "suspensionDrawnByPlayer": {
+          "name": "Marat Khusnutdinov",
+          "firstName": "Marat",
+          "lastName": "Khusnutdinov",
+          "slug": "marat-khusnutdinov",
+          "shortName": "M. Khusnutdinov",
+          "position": "C",
+          "jerseyNumber": "92",
+          "height": 178,
+          "userCount": 112,
+          "gender": "M",
+          "sofascoreId": "p9y-duf",
+          "id": 1068318,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1026864000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "خوسنودينوف، مارات",
+              "bn": "খুসনুতদিনভ, মারাত",
+              "hi": "खुसनुतदीनोव, मराट",
+              "ru": "Хуснутдинов, Марат"
+            },
+            "shortNameTranslation": {
+              "ar": "م. خوسنودينوف",
+              "bn": "এম. খুসনুতদিনভ",
+              "hi": "एम. खुसनुतदीनोव",
+              "ru": "М. Хуснутдинов"
+            }
+          }
+        },
+        "description": "Penalty to Lawson Crouse 2 minutes for Interference (Drawn by Marat Khusnutdinov)",
+        "duration": 120,
+        "id": 239543,
+        "time": 15,
+        "timeSeconds": 856,
+        "incidentClass": "twoMinutes",
+        "isHome": false,
+        "iceHockeyPenaltyType": {
+          "id": 37,
+          "key": "interference",
+          "description": "Interference",
+          "severity": "minor"
+        },
+        "incidentType": "suspension",
+        "reversedPeriodTime": 6,
+        "reversedPeriodTimeSeconds": 344,
+        "periodTimeSeconds": 856
+      },
+      {
+        "from": "regular",
+        "homeScore": 1,
+        "awayScore": 0,
+        "player": {
+          "name": "Casey Mittelstadt",
+          "firstName": "Casey",
+          "lastName": "Mittelstadt",
+          "slug": "casey-mittelstadt",
+          "shortName": "C. Mittelstadt",
+          "position": "C",
+          "jerseyNumber": "11",
+          "height": 185,
+          "userCount": 158,
+          "gender": "M",
+          "sofascoreId": "tts-8e5",
+          "id": 918330,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 911692800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميتلشتات، كيسي",
+              "bn": "মিটেলস্ট্যাড, কেসি",
+              "hi": "मिटेलस्टाट, केसी",
+              "ru": "Миттельштадт, Кейси"
+            },
+            "shortNameTranslation": {
+              "ar": "ك. ميتلشتات",
+              "bn": "সি. মিটেলস্ট্যাড",
+              "hi": "सी. मिटेलस्टाट",
+              "ru": "К. Миттельштадт"
+            }
+          }
+        },
+        "assist1": {
+          "name": "James Hagens",
+          "firstName": "James",
+          "lastName": "Hagens",
+          "slug": "james-hagens",
+          "shortName": "J. Hagens",
+          "position": "C",
+          "jerseyNumber": "44",
+          "height": 180,
+          "userCount": 53,
+          "gender": "M",
+          "sofascoreId": "8jy-a5z",
+          "id": 1629248,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1162512000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هاجنز، جيمس",
+              "ru": "Хагенс, Джеймс"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. هاجنز",
+              "ru": "Д. Хагенс"
+            }
+          }
+        },
+        "assist2": {
+          "name": "Elias Lindholm",
+          "firstName": "Elias",
+          "lastName": "Lindholm",
+          "slug": "elias-lindholm",
+          "shortName": "E. Lindholm",
+          "position": "C",
+          "jerseyNumber": "28",
+          "height": 185,
+          "userCount": 519,
+          "gender": "M",
+          "sofascoreId": "bhf-r3q",
+          "id": 266745,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 786326400,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ليندهولم، إلياس",
+              "bn": "লিন্ডহোম, ইলিয়াস",
+              "hi": "लिंडहोम, एलियास",
+              "ru": "Элиас Линдхольм"
+            },
+            "shortNameTranslation": {
+              "ar": "إ. ليندهولم",
+              "bn": "ই. লিন্ডহোম",
+              "hi": "ई. लिंडहोम",
+              "ru": "Э. Линдхольм"
+            }
+          }
+        },
+        "seasonCount": 1,
+        "assist1SeasonCount": 1,
+        "assist2SeasonCount": 2,
+        "id": 364539271,
+        "time": 11,
+        "timeSeconds": 606,
+        "isHome": true,
+        "incidentClass": "regular",
+        "incidentType": "goal",
+        "reversedPeriodTime": 10,
+        "reversedPeriodTimeSeconds": 594,
+        "periodTimeSeconds": 606
+      },
+      {
+        "player": {
+          "name": "Tanner Jeannot",
+          "slug": "jeannot-tanner",
+          "shortName": "T. Jeannot",
+          "position": "L",
+          "jerseyNumber": "84",
+          "height": 188,
+          "userCount": 42,
+          "gender": "M",
+          "sofascoreId": "ekw-h3y",
+          "id": 948748,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 864864000,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جانوت، تانر",
+              "bn": "জিনোট, ট্যানার",
+              "hi": "जीनोट, टान्नर",
+              "ru": "Жанно, Таннер"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. جانوت",
+              "bn": "টি. জিনোট",
+              "hi": "टी. जीनोट",
+              "ru": "Т. Жанно"
+            }
+          }
+        },
+        "playerName": "Tanner Jeannot",
+        "suspensionDrawnByPlayer": {
+          "name": "Vincent Trocheck",
+          "firstName": "Vincent",
+          "lastName": "Trocheck",
+          "slug": "vincent-trocheck",
+          "shortName": "V. Trocheck",
+          "position": "C",
+          "jerseyNumber": "16",
+          "height": 180,
+          "userCount": 262,
+          "gender": "M",
+          "sofascoreId": "nam-96x",
+          "id": 352050,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 742348800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تروشيك، فنسنت",
+              "bn": "ট্রোচেক, ভিনসেন্ট",
+              "hi": "ट्रोचेक, विन्सेंट",
+              "ru": "Трочек, Винсент"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. تروشيك",
+              "bn": "ভি. ট্রোচেক",
+              "hi": "वी. ट्रोचेक",
+              "ru": "В. Трочек"
+            }
+          }
+        },
+        "description": "Penalty to Tanner Jeannot 2 minutes for Slashing (Drawn by Vincent Trocheck)",
+        "duration": 120,
+        "id": 239538,
+        "time": 7,
+        "timeSeconds": 400,
+        "incidentClass": "twoMinutes",
+        "isHome": true,
+        "iceHockeyPenaltyType": {
+          "id": 49,
+          "key": "slashing",
+          "description": "Slashing",
+          "severity": "minor"
+        },
+        "incidentType": "suspension",
+        "reversedPeriodTime": 14,
+        "reversedPeriodTimeSeconds": 800,
+        "periodTimeSeconds": 400
+      }
+    ]
+  }
+}
