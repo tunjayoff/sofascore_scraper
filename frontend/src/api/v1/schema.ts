@@ -857,6 +857,23 @@ export interface OddsMarket {
   choices: OddsChoice[]
 }
 
+/** A bookmaker SofaScore lists, by the id the odds requests and records carry. */
+export interface OddsProviderInfo {
+  /** SofaScore's id of the bookmaker: `client.odds_provider`, `Odds.provider_id`, the sub-key of an odds slice. */
+  id: number
+  /** The bookmaker's name. */
+  name: string
+  /** The country SofaScore lists the bookmaker for (ISO 3166-1 alpha-2), or `international`. It is the bookmaker's country, not this machine's. */
+  country: string
+  /** The provider of `client.odds_provider`: the odds slices request it. */
+  configured: boolean
+}
+
+export interface OddsProviderListResponse {
+  data: OddsProviderInfo[]
+  page: PageInfo
+}
+
 /** Cursor pagination of a collection response. */
 export interface PageInfo {
   /** Maximum number of items in this page. */
@@ -1711,6 +1728,15 @@ export interface Operations {
     query: {}
     body: never
     response: SportResponse
+  }
+  /** List the known odds providers */
+  "listOddsProviders": {
+    method: "GET"
+    path: "/api/v1/odds/providers"
+    params: {}
+    query: {}
+    body: never
+    response: OddsProviderListResponse
   }
   /** List the output sinks */
   "listSinks": {

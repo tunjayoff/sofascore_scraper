@@ -1,5 +1,6 @@
 """
-API v1: sağlık, durum, sporlar ve sink'ler (docs/design/02-services.md bölüm 6; docs/design/05-web-ui.md 7).
+API v1: sağlık, durum, sporlar, bahis sağlayıcılarının adları ve sink'ler (docs/design/02-services.md bölüm 6;
+docs/design/05-web-ui.md 7).
 
     GET  /api/v1/health          sunucu ayakta mı, sürümü, SofaScore'a erişimin durumu, istek bütçesi
     GET  /api/v1/status          yukarıdakiler + çalışan iş + belirteç gerekiyor mu + canlı servisin durumu +
@@ -9,6 +10,7 @@ API v1: sağlık, durum, sporlar ve sink'ler (docs/design/02-services.md bölüm
     POST /api/v1/status/check    SofaScore'a tek bir istekle bağlantı denemesi (yalnızca kullanıcı istediğinde)
     GET  /api/v1/sports          kayıtlı sporlar ve maç detay dilimleri (sofascore_scraper/sports.py)
     GET  /api/v1/sports/{slug}   tek spor
+    GET  /api/v1/odds/providers  bilinen bahis sağlayıcılarının adları (B4; sports.ODDS_PROVIDERS)
     GET  /api/v1/sinks           yapılandırılmış sink'ler: konumları, gecikmeleri, son hataları (salt okunur)
 
 Sürümsüz `/health` yerinde durur (yük dengeleyiciler ve başlatıcı ona bakar; belirteçsiz çağırana yalnızca
@@ -401,6 +403,22 @@ class SportListResponse(BaseModel):
     page: PageInfo
 
 
+class OddsProviderInfo(BaseModel):
+    """A bookmaker SofaScore lists, by the id the odds requests and records carry."""
+
+    id: int = Field(description="SofaScore's id of the bookmaker: `client.odds_provider`, `Odds.provider_id`, "
+                                "the sub-key of an odds slice.")
+    name: str = Field(description="The bookmaker's name.")
+    country: str = Field(description="The country SofaScore lists the bookmaker for (ISO 3166-1 alpha-2), or "
+                                     "`international`. It is the bookmaker's country, not this machine's.")
+    configured: bool = Field(description="The provider of `client.odds_provider`: the odds slices request it.")
+
+
+class OddsProviderListResponse(BaseModel):
+    data: List[OddsProviderInfo]
+    page: PageInfo
+
+
 class SinkStatus(BaseModel):
     """A configured output sink and how far it has delivered the event log."""
 
@@ -774,6 +792,25 @@ def get_sport(slug: str) -> SportResponse:
     if spec is None:
         raise NotFoundError("No sport has this slug.", {"slug": slug})
     return SportResponse(data=_sport(spec))
+
+
+@router.get(
+    "/odds/providers",
+    response_model=OddsProviderListResponse,
+    operation_id="listOddsProviders",
+    summary="List the known odds providers",
+)
+def list_odds_providers() -> OddsProviderListResponse:
+    """
+    The bookmakers whose names the platform knows, by id, so that a provider id (`client.odds_provider`,
+    `Odds.provider_id`, an odds slice's `sub`) can be shown by name. A built-in table: the list depends on the
+    country SofaScore answers for, and the platform does not request it. An id missing here is still valid; it
+    has no known name. No betting link of SofaScore's list is kept or given.
+    """
+    configured = deps.loaded_settings().settings.client.odds_provider
+    items = [OddsProviderInfo(id=p.id, name=p.name, country=p.country, configured=p.id == configured)
+             for p in sports.ODDS_PROVIDERS]
+    return OddsProviderListResponse(data=items, page=PageInfo(limit=len(items), next_cursor=None))
 
 
 # --- sink'ler ------------------------------------------------------------------------------------

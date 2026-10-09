@@ -200,6 +200,7 @@ READ_ONLY_GETS = {
     "/api/v1/jobs/1",
     "/api/v1/jobs/1/events",
     "/api/v1/logs",
+    "/api/v1/odds/providers",  # B4: yerleşik tablo, istek atmaz
     "/api/v1/seasons/1",
     "/api/v1/seasons/1/slices",
     "/api/v1/seasons/1/slices/statistics",

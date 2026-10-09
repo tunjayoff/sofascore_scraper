@@ -306,6 +306,58 @@
         }
       }
     },
+    "/api/v1/odds/providers": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "List the known odds providers",
+        "description": "The bookmakers whose names the platform knows, by id, so that a provider id (`client.odds_provider`,\n`Odds.provider_id`, an odds slice's `sub`) can be shown by name. A built-in table: the list depends on the\ncountry SofaScore answers for, and the platform does not request it. An id missing here is still valid; it\nhas no known name. No betting link of SofaScore's list is kept or given.",
+        "operationId": "listOddsProviders",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OddsProviderListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sinks": {
       "get": {
         "tags": [
@@ -8658,6 +8710,59 @@
         ],
         "title": "OddsMarket",
         "description": "One betting market of an event with its outcomes."
+      },
+      "OddsProviderInfo": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's id of the bookmaker: `client.odds_provider`, `Odds.provider_id`, the sub-key of an odds slice."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The bookmaker's name."
+          },
+          "country": {
+            "type": "string",
+            "title": "Country",
+            "description": "The country SofaScore lists the bookmaker for (ISO 3166-1 alpha-2), or `international`. It is the bookmaker's country, not this machine's."
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured",
+            "description": "The provider of `client.odds_provider`: the odds slices request it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "country",
+          "configured"
+        ],
+        "title": "OddsProviderInfo",
+        "description": "A bookmaker SofaScore lists, by the id the odds requests and records carry."
+      },
+      "OddsProviderListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OddsProviderInfo"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "OddsProviderListResponse"
       },
       "PageInfo": {
         "properties": {

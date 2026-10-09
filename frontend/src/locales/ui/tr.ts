@@ -1734,6 +1734,8 @@ const tr: typeof en = {
     replace: 'Değiştir',
     secretEmpty: 'ayarlı değil',
     rateWarning: 'Saniyede {n} isteğin üstünde ya da sınırsız çalışırken SofaScore bu sunucuyu engelleyebilir. Risk sizde.',
+    knownProviders: 'Bilinen bahis şirketleri',
+    otherProvider: 'Başka bir numara',
     changes: '{n} kaydedilmemiş değişiklik',
     discard: 'Vazgeç',
     save: 'Değişiklikleri kaydet',
@@ -1835,6 +1837,7 @@ const tr: typeof en = {
     client: {
       rate: 'Bu makinedeki tüm süreçlerce paylaşılır. 0 sınırı kaldırır.',
       proxy: 'Parola hiçbir zaman gösterilmez; Değiştir yeni bir adres ayarlar.',
+      odds_provider: 'Oranları indirilen bahis şirketinin SofaScore’daki numarası. Bilinen bir şirketi seçin ya da herhangi bir numara yazın; hangi şirketlerin yanıt verdiği SofaScore’un gördüğü ülkeye bağlıdır.',
     },
     fetch: {
       only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki maç sayıları ve eski /api maç listeleri de yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada ne görüneceğini Oynananlar / Gelecek / Tümü seçimi ve durum süzgeci belirler); takım, oyuncu ve tek maç takiplerini de.',

@@ -405,6 +405,67 @@ DEFAULT_ODDS_PROVIDER = "1"  # [client] odds_provider'ın varsayılanı (sofasco
 
 
 @dataclass(frozen=True)
+class OddsProvider:
+    """
+    SofaScore'un bildiği bir bahis sağlayıcısı: kimliği, SofaScore'un yazdığı adı ve ülkesi ("international" ya da
+    ISO alpha-2). Sağlayıcının ülkesidir, makinenin değil: platform istemcinin konumunu saklamaz.
+    """
+
+    id: int
+    name: str
+    country: str
+
+
+# Bilinen sağlayıcılar (B4; canlı doğrulama M20: arayüz "Bahis şirketi 1" yazıyordu). Kaynak SofaScore'un
+# `/odds/providers/{cc}/web` listesidir (2026-10-09, 11 ülke; örneği research/all_sports/samples/*/
+# odds-providers-cc-web__*.json, testin fixture'ı tests/fixtures/odds_providers/tr_web.json). Liste ülkeye göre
+# değişir; burada yalnızca kimlik, ad ve ülke durur. Listenin bahis kuponu bağlantıları (`defaultBetSlipLink`,
+# `betSlipLink`; ortaklık adresleri), renkleri ve kampanya alanları hiçbir yerde saklanmaz ve gösterilmez.
+# Uygulama bu listeyi istemez: tablo elle yenilenir. Kayıtlı örnekte yalnızca 1 ve 1528 vardır; ötekiler aynı
+# günün araştırma notlarındandır (1781, 1773, 2947: İngiltere, İspanya ve İtalya'nın bet365 ortaklıkları, adları
+# notun ülkesiyle yazıldı). Tabloda olmayan bir kimlik (ör. oran veren ama hiçbir ülke listesinde görülmeyen 5)
+# adsız kalır; arayüz "Bahis şirketi 5" yazar. 1681 ("Unbranded", AU) bir ad taşımadığı için yok.
+ODDS_PROVIDERS: Tuple[OddsProvider, ...] = (
+    OddsProvider(1, "bet365", "international"),  # ülke listelerindeki bet365 ortaklıklarının oran kaynağı
+    OddsProvider(1528, "bet365 Türkiye", "TR"),
+    OddsProvider(1169, "bet365 USA", "US"),
+    OddsProvider(1781, "bet365 UK", "GB"),
+    OddsProvider(1773, "bet365 Spain", "ES"),
+    OddsProvider(2947, "bet365 Italy", "IT"),
+    OddsProvider(2318, "Betclic France", "FR"),
+    OddsProvider(2878, "Bwin France", "FR"),
+    OddsProvider(2331, "bwin Spain", "ES"),
+    OddsProvider(2069, "Daznbet Spain", "ES"),
+    OddsProvider(645, "AdmiralBet Italy", "IT"),
+    OddsProvider(814, "Sisal Italy", "IT"),
+    OddsProvider(1674, "StarVegas Italy", "IT"),
+    OddsProvider(1138, "Vbet Germany", "DE"),
+    OddsProvider(2909, "Letsbet Germany", "DE"),
+    OddsProvider(314, "1xBet India", "IN"),
+    OddsProvider(712, "Melbet India", "IN"),
+    OddsProvider(1123, "Parimatch India", "IN"),
+    OddsProvider(326, "1xBet Nigeria", "NG"),
+    OddsProvider(2084, "BetWinner Nigeria", "NG"),
+    OddsProvider(2370, "MSport Nigeria", "NG"),
+)
+_ODDS_PROVIDER_BY_ID: Dict[int, OddsProvider] = {p.id: p for p in ODDS_PROVIDERS}
+
+
+def odds_provider(provider_id: Any) -> Optional[OddsProvider]:
+    """Kimliği (sayı ya da ondalık rakamlı metin; dilimin alt anahtarı metindir) bilinen sağlayıcı; yoksa None."""
+    try:
+        return _ODDS_PROVIDER_BY_ID.get(int(str(provider_id).strip()))
+    except (TypeError, ValueError):
+        return None
+
+
+def odds_provider_label(provider_id: Any) -> str:
+    """İnsan için ad: "bet365", tanınmayan kimlikte "Provider 5" (İngilizce; CLI ve log metni)."""
+    found = odds_provider(provider_id)
+    return found.name if found else f"Provider {provider_id}"
+
+
+@dataclass(frozen=True)
 class SliceSpec:
     """
     Bir dilimin tanımı (docs/design/02-services.md 3.1). Bugünkü bütün dilimler bir maçın /event/{id} dışındaki

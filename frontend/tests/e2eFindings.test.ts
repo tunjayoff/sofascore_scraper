@@ -22,6 +22,7 @@ import SettingsScreen from '@/screens/settings/SettingsScreen.vue'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
+import { resetOddsProviders } from '@/app/oddsProviders'
 import { callsTo, flush, mockFetch } from './helpers'
 import { axeViolations, event, FakeES, follow, job, mountScreen, page, setting, settingsDoc, slice, sport, status, useFakeES } from './v1'
 
@@ -412,8 +413,15 @@ describe('F11: the odds of a match as a table', () => {
   }
   const odds = (key: string, markets: unknown[]) => list([{ event_id: 9100003, key, provider_id: 1, fetched_at_utc: '2026-10-07T19:45:45Z', markets }])
   const featured = [fullTime, { ...fullTime, label: 'fullTime' }]
+  // B4: the server's known bookmakers; no betting link is part of the answer
+  const providers = list([
+    { id: 1, name: 'bet365', country: 'international', configured: true },
+    { id: 1528, name: 'bet365 Türkiye', country: 'TR', configured: false },
+  ])
+  beforeEach(() => resetOddsProviders())
   const routes = (over: Record<string, unknown> = {}) => ({
     ...SPORTS,
+    'GET /api/v1/odds/providers': providers,
     'GET /api/v1/tournaments': page([]),
     'GET /api/v1/tournaments/17/seasons': list([]),
     'GET /api/v1/events/9100003': { data: event() },
@@ -435,7 +443,9 @@ describe('F11: the odds of a match as a table', () => {
     // the latest read only, of the featured list first
     expect(String(callsTo(f, 'GET /api/v1/events/9100003/odds/odds_featured')[0][0])).toContain('history=false')
     const view = w.find('[data-testid="odds-view"]')
-    expect(view.text()).toContain(t('ui.odds.provider', { id: 1 }))
+    // the bookmaker by name, not "Bookmaker 1" (B4, M20)
+    expect(view.find('[data-testid="odds-provider"]').text()).toBe('bet365')
+    expect(view.text()).not.toContain(t('ui.odds.provider', { id: 1 }))
     const markets = view.findAll('[data-testid="odds-market"]')
     // the featured list names the same market twice (default, fullTime): shown once
     expect(markets).toHaveLength(1)
@@ -457,6 +467,7 @@ describe('F11: the odds of a match as a table', () => {
     const raw = w.find('[data-testid="odds-raw"]')
     expect(raw.find('h2').text()).toBe('SofaScore yanıtı')
     expect(raw.findAll('button')).toHaveLength(2)
+    expect(raw.findAll('[data-testid="odds-raw-provider"]').map((x) => x.text())).toEqual(['· bet365', '· bet365'])
     expect(await axeViolations(w.find('[data-testid="event-odds"]').element)).toEqual([])
   })
 
@@ -474,6 +485,31 @@ describe('F11: the odds of a match as a table', () => {
     expect(title.text()).toBe('Penalty in match')
     expect(title.attributes('lang')).toBe('en')
     expect(w.find('[data-choice="1"]').text()).toContain('1.80')
+  })
+
+  it('a bookmaker without a known name stays numbered; without the list every id does (B4)', async () => {
+    setLocale('en')
+    const five = (key: string) => list([{ event_id: 9100003, key, provider_id: 5, fetched_at_utc: null, markets: [fullTime] }])
+    const f = mockFetch(routes({
+      'GET /api/v1/events/9100003/odds': list([slice('odds_featured', { sub: '5' })]),
+      'GET /api/v1/events/9100003/odds/odds_featured': five('odds_featured'),
+    }))
+    const { w } = await mountScreen(EventDetailScreen, '/events/9100003?tab=odds', '/events/:id')
+    wrappers.push(w)
+    await flush()
+    await flush()
+    expect(w.find('[data-testid="odds-provider"]').text()).toBe(t('ui.odds.provider', { id: 5 }))
+    expect(w.find('[data-testid="odds-raw-provider"]').text()).toBe(`· ${t('ui.odds.provider', { id: 5 })}`)
+    // the list is read once per page load
+    expect(callsTo(f, 'GET /api/v1/odds/providers')).toHaveLength(1)
+
+    resetOddsProviders()
+    mockFetch(routes({ 'GET /api/v1/odds/providers': () => new Response('{}', { status: 500 }) }))
+    const again = await mountScreen(EventDetailScreen, '/events/9100003?tab=odds', '/events/:id')
+    wrappers.push(again.w)
+    await flush()
+    await flush()
+    expect(again.w.find('[data-testid="odds-provider"]').text()).toBe(t('ui.odds.provider', { id: 1 }))
   })
 })
 

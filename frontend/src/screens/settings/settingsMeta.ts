@@ -16,8 +16,11 @@ export type Control =
   | { type: 'text'; maxLength?: number }
   | { type: 'list' }
 
-/** `advanced`: shown last, under a closed "Advanced" fold (FX-24 F20): rarely changed, risky to change. */
-export type Meta = { section: Section; control: Control; advanced?: boolean }
+/**
+ * `advanced`: shown last, under a closed "Advanced" fold (FX-24 F20): rarely changed, risky to change.
+ * `names`: the value is an id the server can name; the row shows the known names beside the free entry (B4).
+ */
+export type Meta = { section: Section; control: Control; advanced?: boolean; names?: 'oddsProviders' }
 
 const int = (min?: number, max?: number): Control => ({ type: 'int', min, max, step: 1 })
 const float = (min?: number, max?: number, step = 0.1): Control => ({ type: 'float', min, max, step })
@@ -48,7 +51,7 @@ export const META: Record<string, Meta> = {
   'fetch.confirm_empty_after_seconds': { section: 'data', control: float(0, 86400, 1), advanced: true },
   'defaults.slices': { section: 'data', control: list },
   'defaults.seasons': { section: 'data', control: text() },
-  'client.odds_provider': { section: 'data', control: int(1) },
+  'client.odds_provider': { section: 'data', control: int(1), names: 'oddsProviders' },
   'refresh.window_hours': { section: 'refresh', control: float(0, 720, 1) },
   'refresh.min_interval_hours': { section: 'refresh', control: float(0) },
   'refresh.include_legacy': { section: 'refresh', control: bool },

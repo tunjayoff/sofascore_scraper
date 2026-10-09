@@ -200,6 +200,8 @@ export const v1 = {
   sports: () => request<Op<'listSports'>['response']>('GET', '/api/v1/sports').then((r) => r.data),
   sport: (slug: string, signal?: AbortSignal): Promise<Data<'getSport'>> =>
     request<Op<'getSport'>['response']>('GET', `/api/v1/sports/${enc(slug)}`, { signal }).then((r) => r.data),
+  /** The bookmakers whose names the server knows (B4): a provider id is shown by name. */
+  oddsProviders: () => request<Op<'listOddsProviders'>['response']>('GET', '/api/v1/odds/providers').then((r) => r.data),
   sinks: (signal?: AbortSignal) => request<Op<'listSinks'>['response']>('GET', '/api/v1/sinks', { signal }).then((r) => r.data),
 
   // ---- follows and the catalog ----

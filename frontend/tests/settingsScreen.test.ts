@@ -5,6 +5,7 @@ import SettingsScreen from '@/screens/settings/SettingsScreen.vue'
 import { clearToasts, uiToasts } from '@/ui/toast'
 import { tokenInUse } from '@/app/session'
 import { density } from '@/ui/prefs'
+import { resetOddsProviders } from '@/app/oddsProviders'
 import { i18n, setLocale } from '@/i18n'
 import { callsTo, flush, json, mockFetch } from './helpers'
 import { axeViolations, setting, settingsDoc, status, v1Error } from './v1'
@@ -184,5 +185,64 @@ describe('Settings', () => {
     expect(localStorage.getItem('ss_lang')).toBe('tr')
     expect(w.text()).toContain(t('ui.menu.signOut'))
     expect(await axeViolations(w.element)).toEqual([])
+  })
+})
+
+describe('Settings › the odds provider by name (B4)', () => {
+  const PROVIDERS = {
+    data: [
+      { id: 1, name: 'bet365', country: 'international', configured: true },
+      { id: 1528, name: 'bet365 Türkiye', country: 'TR', configured: false },
+    ],
+    page: { limit: 2, next_cursor: null },
+  }
+  const EMPTY = { data: [], page: { limit: 0, next_cursor: null } }
+  beforeEach(() => resetOddsProviders())
+
+  async function openData(provider: ReturnType<typeof setting>, over: Record<string, unknown> = {}) {
+    const f = mockFetch({
+      'GET /api/v1/settings': { data: settingsDoc([provider]) },
+      'GET /api/v1/status': { data: status() },
+      'GET /api/v1/odds/providers': PROVIDERS,
+      'GET /api/v1/sports': EMPTY,
+      'GET /api/v1/follows': EMPTY,
+      ...over,
+    })
+    ;({ w, router } = await mountScreen('/settings?tab=data'))
+    await flush()
+    await flush()
+    return f
+  }
+
+  it('the known bookmakers beside the free entry: picking one sets the id, any other id can still be typed', async () => {
+    const f = await openData(setting('client.odds_provider', 1), {
+      'PATCH /api/v1/settings': { data: settingsDoc([setting('client.odds_provider', 5, { source: 'overrides' })]) },
+    })
+    const r = row('client.odds_provider')
+    expect(r.text()).toContain(t('ui.settingHelp.client.odds_provider'))
+    const pick = r.find('[data-testid="known-providers"]')
+    expect(pick.findAll('option').map((o) => o.text())).toEqual([t('ui.settings.otherProvider'), 'bet365 · 1', 'bet365 Türkiye · 1528'])
+    expect((pick.element as HTMLSelectElement).value).toBe('1')
+    expect(await axeViolations(w.element)).toEqual([])
+    await pick.setValue('1528')
+    const input = row('client.odds_provider').find('input[type="number"]')
+    expect((input.element as HTMLInputElement).value).toBe('1528')
+    // an id without a known name: typed, the list says "another number"
+    await input.setValue('5')
+    await input.trigger('change')
+    expect((row('client.odds_provider').find('[data-testid="known-providers"]').element as HTMLSelectElement).value).toBe('')
+    await w.find('[data-testid="save"]').trigger('click')
+    await flush()
+    expect(JSON.parse(String(callsTo(f, 'PATCH /api/v1/settings')[0][1]!.body))).toEqual({ values: { 'client.odds_provider': 5 } })
+  })
+
+  it('a locked provider shows its name; an unknown one only its id', async () => {
+    await openData(setting('client.odds_provider', 1528, { source: 'file', source_name: '/srv/sofascore.toml', locked: true, writable: false }))
+    expect(row('client.odds_provider').find('[data-testid="known-providers"]').exists()).toBe(false)
+    expect(row('client.odds_provider').find('.u-setting-value').text()).toBe('1528 · bet365 Türkiye')
+    w.unmount()
+    resetOddsProviders()
+    await openData(setting('client.odds_provider', 5, { writable: false }))
+    expect(row('client.odds_provider').find('.u-setting-value').text()).toBe('5')
   })
 })
