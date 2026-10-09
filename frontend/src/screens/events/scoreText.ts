@@ -10,7 +10,9 @@ import type { Aggregate, CricketInnings, Event, EventExtra, InningsScore, ScoreP
  *    note ("India beat West Indies by 8 wickets") comes from the record's `extra`;
  *  - baseball: runs, and under them each inning with R, H and E, and the series of a postseason ("Seri 1 – 2");
  *  - sets: the label of the second line follows `score.format` (sets, legs, frames, games won); tennis and
- *    padel sets show the tie-break points of the set's loser in brackets ("6-7(7) 7-6(2)");
+ *    padel sets show the tie-break points of the set's loser in brackets ("6-7(7) 7-6(2)"); e-sports add the
+ *    score of each game (map) after the games won ("Maps (games) 1 – 2 · 7-13 13-9 11-13": rounds in CS2, 1-0
+ *    for the winner of a game in titles SofaScore gives no round score for);
  *  - fight (MMA): the method as SofaScore abbreviates it and the round; under it the winner, the method in
  *    words and the round;
  *  - an aggregate without scores (only the side that went through) is not a score line.
@@ -48,17 +50,15 @@ export function setText(s: SetScore): string {
 }
 
 /** The label of the count under the score: what `score.format` says is counted. */
-export function setsLabelKey(s: Pick<SetsScore, 'format' | 'sets'>): string {
+export function setsLabelKey(s: Pick<SetsScore, 'format'>): string {
   switch (s.format) {
     case 'frames':
       return 'ui.eventDetail.score.frames'
     case 'games_won':
       return 'ui.eventDetail.score.maps'
     case 'legs_won':
+      // setsiz ya da tek setlik dart maçı (bestOfSets 1; sunucu 3.1'den beri `legs_won` verir)
       return 'ui.eventDetail.score.legs'
-    case 'legs':
-      // tek setlik dart maçında (bestOfSets 1) SofaScore set skoru vermez: sayılan leg'lerdir
-      return s.sets.length ? 'ui.eventDetail.score.sets' : 'ui.eventDetail.score.legs'
     default:
       return 'ui.eventDetail.score.sets'
   }
@@ -103,6 +103,7 @@ export function scoreDetail(e: Pick<Event, 'score' | 'aggregate' | 'winner' | 'p
     if (s.penalties) out.push(t('ui.eventDetail.score.pens', { score: pair(s.penalties) }))
   } else if (s.family === 'sets') {
     if (s.sets_won) out.push(t(setsLabelKey(s), { score: pair(s.sets_won) }))
+    if (s.format === 'games_won' && s.sets.length) out.push(s.sets.map(setText).join(' '))
   } else if (s.family === 'fight') {
     const winner = e.winner === 'home' ? e.participants.home?.name : e.winner === 'away' ? e.participants.away?.name : null
     const parts = [
