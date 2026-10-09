@@ -43,7 +43,7 @@ SCRIPTS = os.path.join(ROOT, "scripts")
 
 
 def _import_explorer():
-    """Script'ler içe aktarılırken ortam değişkeni (LOG_LEVEL) koyar: test sürecinin ortamı değişmesin."""
+    """Script'ler içe aktarılırken ortam değişkeni (SOFASCORE_LOG__LEVEL) koyar: test sürecinin ortamı değişmesin."""
     saved = dict(os.environ)
     sys.path.insert(0, SCRIPTS)
     try:
@@ -477,6 +477,45 @@ async def test_start_intercepts_through_cdp_not_context_route(tmp_path, rate_fil
     assert {"response", "requestfailed", "page"} <= set(bridge.context.handlers)
     assert getattr(extra, "closed", False)  # kesicisiz sayfa kalmaz
     assert cs.HOME_URL == "http://quiet.fakescore.test/robots.txt"  # açılış API çağırmayan sayfaya
+
+
+@pytest.mark.asyncio
+async def test_quiet_page_patch_reaches_the_attributes_the_bridge_reads(tmp_path, rate_file, monkeypatch):
+    """
+    FX-32: betik köprüyü `sofascore_scraper.client.bridge` adıyla içe aktarır (2.x takma adı kalktı). Açılış ve captcha
+    adresinin yaması köprünün okuduğu modül değişkenlerine ulaşır: ana sayfa `_home`, captcha çözümü `CAPTCHA_URL`.
+    """
+    from sofascore_scraper.client import bridge as bridge_mod
+
+    assert ex_mod.cs is bridge_mod and rc.cs is bridge_mod
+    assert "sofascore_scraper.challenge_solver" not in sys.modules
+    monkeypatch.setattr(bridge_mod, "HOME_URL", bridge_mod.HOME_URL)
+    monkeypatch.setattr(bridge_mod, "CAPTCHA_URL", bridge_mod.CAPTCHA_URL)
+    quiet = "http://quiet.fakescore.test/robots.txt"
+    await make_explorer(tmp_path, quiet_url=quiet).start()
+
+    assert bridge_mod.HOME_URL == quiet
+    assert bridge_mod.CAPTCHA_URL == "https://www.sofascore.com/captcha.html?redirectUrl=" + \
+        "http%3A%2F%2Fquiet.fakescore.test%2Frobots.txt"
+
+    # Gerçek köprü sınıfı (tarayıcısız): açılış adresini ve captcha sayfasını yamalı değişkenlerden okur
+    real = bridge_mod.BrowserBridge.__new__(bridge_mod.BrowserBridge)
+    assert real._home() == quiet
+    fetched = []
+    tokens = iter([None, "solved"])
+
+    class Session:
+        async def fetch(self, url, **_kw):
+            fetched.append(url)
+
+    class Context:
+        async def cookies(self, _url):
+            value = next(tokens, "solved")
+            return [{"name": "sofa_captcha", "value": value}] if value else []
+
+    real.session, real.context = Session(), Context()
+    assert await real._solve_on_captcha_page() == "solved"
+    assert fetched == [bridge_mod.CAPTCHA_URL]
 
 
 @pytest.mark.asyncio

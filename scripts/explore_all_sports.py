@@ -88,9 +88,11 @@ from collections import OrderedDict
 from typing import Any, Coroutine, Dict, List, Optional, Pattern
 from urllib.parse import parse_qs, quote, urlparse
 
-os.environ.setdefault("LOG_LEVEL", "WARNING")
+# 3.1'in okuduğu adlar (2.x'in LOG_LEVEL / SOFASCORE_BROWSER_PROFILE adları okunmaz; FX-32). Köprü profilini ilk
+# içe aktarılışında okur: bu satırlar sofascore_scraper'dan önce çalışmalı. Araştırma uygulamanın profilini paylaşmaz.
+os.environ.setdefault("SOFASCORE_LOG__LEVEL", "WARNING")
 os.environ.setdefault(
-    "SOFASCORE_BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_all_sports")
+    "SOFASCORE_CLIENT__BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_all_sports")
 )
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -98,7 +100,7 @@ import _research_common as rc  # noqa: E402
 from _all_sports_patterns import SOFA_HOST, api_pattern  # noqa: E402
 
 ROOT = rc.ROOT
-import sofascore_scraper.challenge_solver as cs  # noqa: E402
+from sofascore_scraper.client import bridge as cs  # noqa: E402
 
 OUT = os.path.join(ROOT, "research", "all_sports")
 MAX_API_REQUESTS = 5000

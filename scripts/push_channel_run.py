@@ -39,8 +39,8 @@ import time
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
-os.environ.setdefault("LOG_LEVEL", "WARNING")
-os.environ.setdefault("SOFASCORE_BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_push_run"))
+os.environ.setdefault("SOFASCORE_LOG__LEVEL", "WARNING")
+os.environ.setdefault("SOFASCORE_CLIENT__BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_push_run"))
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _research_common as rc  # noqa: E402
@@ -366,7 +366,7 @@ async def main_async(args: argparse.Namespace) -> None:
                         "() => performance.memory ? Math.round(performance.memory.usedJSHeapSize/1048576) : null")
                 except Exception as e:
                     heaps[sport] = f"error: {str(e)[:60]}"
-            rec.write("metrics.jsonl", {"ts": now, **chrome_metrics(os.environ["SOFASCORE_BROWSER_PROFILE"]),
+            rec.write("metrics.jsonl", {"ts": now, **chrome_metrics(os.environ["SOFASCORE_CLIENT__BROWSER_PROFILE"]),
                                         "js_heap_mb": heaps, "api_requests": rec.api_count,
                                         "ws_alive": dict(rec.ws_alive),
                                         "urls": {s: p.url for s, p in tabs.items()}})

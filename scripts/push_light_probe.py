@@ -23,8 +23,8 @@ import time
 from typing import Any, Dict
 from urllib.parse import urlparse
 
-os.environ.setdefault("LOG_LEVEL", "WARNING")
-os.environ.setdefault("SOFASCORE_BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_push_light"))
+os.environ.setdefault("SOFASCORE_LOG__LEVEL", "WARNING")
+os.environ.setdefault("SOFASCORE_CLIENT__BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_push_light"))
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import push_channel_run as pcr  # noqa: E402
@@ -110,7 +110,7 @@ async def sample(rec: LightRecorder, page: Any, profile: str, label: str) -> Non
 async def main_async(args: argparse.Namespace) -> None:
     cs.HOME_URL = pcr.QUIET_URL
     cs.CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Frobots.txt"
-    profile = os.environ["SOFASCORE_BROWSER_PROFILE"]
+    profile = os.environ["SOFASCORE_CLIENT__BROWSER_PROFILE"]
     rec = LightRecorder(args.out)
     bridge = cs.BrowserBridge.get_instance()
     await bridge.ensure_ready()
