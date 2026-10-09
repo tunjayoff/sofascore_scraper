@@ -18,18 +18,20 @@ that revision was checked against `origin/main` at `48e4c4c`. Revised a ninth ti
 the live validation against the real site, its fix items FX-26 and FX-27, and FX-16 (pull requests #174 to
 #176); that revision was checked against `origin/main` at `43ecdfc`. Revised a tenth time, on 2026-10-09,
 after the 3.0.0 release (pull request #179 and the tag `v3.0.0`), P30 and the first items of 3.1 (pull
-requests #177 and #180 to #192); this revision was checked against `origin/main` at `216c2f9`, and B4
-(#192), which merged while it was written, at `ff6fd7c`.
+requests #177 and #180 to #192); that revision was checked against `origin/main` at `216c2f9`, and B4
+(#192), which merged while it was written, at `ff6fd7c`. Revised an eleventh time, later on 2026-10-09,
+after FX-34, FX-35 and the 3.1.0 release (pull requests #194 to #196 and the tag `v3.1.0`); this revision
+was checked against `origin/main` at `054d8a2`.
 This is the one ordered list of pull requests for `01-storage.md` and `02-services.md`. It replaces the two
 separate PR lists the designs were drafted with; section 12 maps the old ids to the ids used here.
 
 The plan has 97 items: the 67 of the first version, one more live item (P31) and twenty-nine small fix items
 (FX-1 to FX-28, with FX-14 split into FX-14a and FX-14b) that came out of the batches, the end-to-end test and
 the live validation. Most items are one
-pull request; P21 took five, FE-2 three and FX-13 two. After the release the orchestrator gave nine more
-items from the list of work after 3.0.0 (FX-29 to FX-33 and B1 to B4; FX-29 took three pull requests). They
-were written from the orchestrator's instructions, not from a brief of this plan, and have no node in the
-diagram and no row in sections 5, 6 and 9; section 19 records them with what is still open for 3.1. Each has an id, a lane, its dependencies, the files it owns, the behaviour change it makes (if any),
+pull request; P21 took five, FE-2 three and FX-13 two. After the 3.0.0 release the orchestrator gave eleven
+more items for 3.1 (FX-29 to FX-35 and B1 to B4; FX-29 took three pull requests). They were written from
+the orchestrator's instructions, not from a brief of this plan, and have no node in the diagram and no row in
+sections 5, 6 and 9; section 19 records them with what is still open after 3.1. Each has an id, a lane, its dependencies, the files it owns, the behaviour change it makes (if any),
 a size (S: up to about 200 changed lines, M: up to about 600, L: more) and a brief that an implementer can
 work from without reading the other briefs.
 
@@ -179,11 +181,28 @@ work from without reading the other briefs.
 | B3 | #189 | merged | new on 2026-10-09 (batch B of the work after 3.0.0): single-set darts as legs won, e-sports game scores; `DERIVE_VERSION` 8 |
 | B1 | #190 | merged | batch B: the team record route, the sports' `individual` flag, the export's team and player filter |
 | B2 | #191 | merged | batch B: coverage per follow and a player's matches in `/status`, request counters of a job, season names in the log, the wait before a confirming request (F29), the connection rule, the access token under a root path |
-| B4 | #192 | merged | batch B: the odds providers by name (built-in table, `GET /api/v1/odds/providers`, the Odds tab, the Data table and the Settings row); merged while this revision was written |
+| B4 | #192 | merged | batch B: the odds providers by name (built-in table, `GET /api/v1/odds/providers`, the Odds tab, the Data table and the Settings row); merged while the tenth revision was written |
+| FX-34 | #194 | merged | new on 2026-10-09: the small leftovers the tenth revision found (the `fetch.only_finished` help text, the player export filter on the stored match ids, `ssc export` file names, task options masked, `services/stats.py` removed) |
+| FX-35 | #196 | merged | new on 2026-10-09, blocking the release: `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` are still read in 3.1 with a deprecation warning and removed in 3.2 (owner) |
+| (release) | #195 | merged | not a plan item: the 3.1.0 release pull request (the version, the changelog close with a Deprecated section, both READMEs with "Upgrading from 3.0", two small web fixes of the pre-release check); the tag `v3.1.0` on its merge commit `054d8a2`, 2026-10-09 (section 19) |
 
-Every item is merged or done: the 97 of the plan and the nine items after the release (section 19). 3.0.0
-was released on 2026-10-08 (section 18); 3.1 is being built on main, and section 19 says what it has and
-what is open. What this revision, the tenth (2026-10-09), changed:
+Every item is merged or done: the 97 of the plan and the eleven items of 3.1 (section 19). 3.0.0 was
+released on 2026-10-08 (section 18) and 3.1.0 on 2026-10-09 (section 19, which also lists what is open after
+it). What this revision, the eleventh (2026-10-09), changed:
+
+- **3.1.0 is released.** FX-34 (#194) and FX-35 (#196) merged before the release pull request (#195), which
+  merged at `054d8a2`; the owner approved the tag, and `v3.1.0` was set on that commit. `release.yml` ran
+  green, created the GitHub Release and pushed the image `ghcr.io/tunjayoff/sofascore_scraper:3.1.0` (also
+  `3.1` and `latest`). There is no PyPI package. Section 19 records the release.
+- **FX-35 and a new release rule.** P30 had stopped reading every 2.x environment name, among them the two
+  that 3.0.0's documents told users to protect the server with: an upgrade would have dropped the access
+  token and the host allow-list without a word (fail-open), and the proxy names would have sent requests
+  from the user's own address. The owner kept the four names for 3.1 (`02-services.md` 4.3); section 8 now
+  asks before every release whether a removed configuration name weakens security or privacy.
+- **Sections 1, 8, 13, 16 and 19** record #194 to #196, the owner's decision and the CI flake of the research
+  explorer's slot test; the open list of section 19 is the list after 3.1.
+
+What the tenth revision (PR #193, 2026-10-09) changed:
 
 - **3.0.0 is released.** The release pull request (#179) merged on 2026-10-08, and the owner tagged
   `v3.0.0` on its merge commit `1c5bab2`. `release.yml` checked the tag against the version, ran CI (the
@@ -600,13 +619,13 @@ batches eight to ten (#77 to #93), batches eleven to nineteen (#95 and #97 to #1
 to FX-19 (#134 to #161), those from FX-20 to REN-1 with the two documentation pull requests (#163 to
 #168), the seventh revision of these documents (#169), the fix items of the end-to-end test, FX-23 to
 FX-25 (#170 to #172), the eighth revision (#173), the fix items of the live validation, FX-26 and FX-27, and
-FX-16 (#174 to #176), the ninth revision (#178), FX-28 (#177), the release pull request (#179), P30 (#186)
-and the nine items after the release (#180 to #185 and #187 to #192, with the research data of #183). The
-gate "after open PRs" no longer exists, and at `216c2f9` nothing is in progress. The changelog entries up to
-3.0.0 are in `CHANGELOG.md`: bookkeeping pull requests added them up to #156 (#63, #66, #76, #94, #114 and
-#158), and the release pull request (#179) the rest. The entries of 3.1 (#180 to #192) are still in the
-descriptions of their pull requests, for the 3.1 release pull request (section 19). Section 5 says what can
-start. What the merged pull requests mean for every pull request from now on:
+FX-16 (#174 to #176), the ninth revision (#178), FX-28 (#177), the release pull request (#179), P30 (#186),
+the other items of 3.1 (#180 to #185, #187 to #192, #194 and #196, with the research data of #183), the tenth
+revision (#193) and the 3.1.0 release pull request (#195). The gate "after open PRs" no longer exists, and at
+`054d8a2` nothing is in progress. The changelog entries up to 3.1.0 are in `CHANGELOG.md`: bookkeeping pull
+requests added them up to #156 (#63, #66, #76, #94, #114 and #158), the 3.0.0 release pull request (#179)
+the rest of 3.0.0, and the 3.1.0 release pull request (#195) those of #180 to #196 from their descriptions.
+Section 5 says what can start. What the merged pull requests mean for every pull request from now on:
 
 - **#41 (G-04).** A pull request that changes a route signature, a docstring, a response model or the FastAPI
   and pydantic pins regenerates `tests/snapshots/openapi-legacy.json` (section 7) and lists the differences.
@@ -963,6 +982,17 @@ start. What the merged pull requests mean for every pull request from now on:
   the v1 error handlers read the routed path (`web.api.route_path`), not `scope["path"]`. The names of the
   odds providers are one table, `sports.ODDS_PROVIDERS` (id, name, country only; #192): no betting link of
   SofaScore's listing is stored, and a committed fixture of the listing replaces its addresses.
+- **#194 (FX-34).** `ssc export` without `--out` names its file like an export job's
+  (`data_jobs.export_subject` and `local_export_name`: the league, team, player or dataset, then the UTC date
+  and time), and the CLI golden harness normalises `_<date-time>`. A schedule task option that the task's
+  `run` does not define is shown as `***` (`loader.mask_task_options`), as sink options are.
+  `sofascore_scraper/services/stats.py` is gone (`format_size` is in `cli/commands/status.py`).
+- **#196 (FX-35).** `loader.DEPRECATED_NAMES` is the one list of 2.x names that are still read (four, until
+  3.2); every other 2.x name stays unread, and a test of P30 that needs an unread name uses one outside the
+  list. A setting row carries `replaced_by`. A name that protects the server or the user's address is not
+  removed without a deprecation release (section 8).
+- **#195 (the 3.1.0 release).** `CHANGELOG.md` has `## [3.1.0] - 2026-10-09` under an empty `## [Unreleased]`;
+  the entries of the next release go there (rule 3).
 
 Pull requests that are not plan work: the dependency updates. #27 (the frontend's minor and patch updates)
 and #29 (the GitHub Actions, among them `actions/checkout` and `setup-python` to v7) change no file of `src/`
@@ -1407,12 +1437,12 @@ selectable slices, odds and non-match data (P27, P28), the normalized exports (S
 the new web UI (FE-1, FE-2, FX-14a, FX-14b, FX-20), the rename of the package (REN-1), the detail slices of
 the three main sports (FX-16), the fix items FX-1 to FX-28 (FX-23 to FX-25 from the end-to-end test,
 FX-26 to FX-28 from the live validation), the 3.1 clean-up (P30), and X-01, X-02 and X-03, which were done
-outside their briefs. 3.0.0 is released (section 18).
+outside their briefs. 3.0.0 is released (section 18), and so is 3.1.0 (section 19).
 
-**In progress.** Nothing at `216c2f9`.
+**In progress.** Nothing at `054d8a2`.
 
-**Can start now.** No plan item is left. The open work of 3.1 is listed in section 19; most of it waits for
-the owner or for live evidence, and none of it has a brief yet.
+**Can start now.** No plan item is left. The work open after 3.1 is listed in section 19; most of it waits
+for the owner or for live evidence, and none of it has a brief yet.
 
 **Readiness levels.** A pull request of level *n* can start when its dependencies, all of a lower level, are
 merged. Pull requests on the same level can run in parallel; pull requests in the same lane are sequential.
@@ -1557,7 +1587,7 @@ pull request which files it touched.
 | `sofascore_scraper/cli/commands/sync.py` | P19 → P27 (the selection flags) → FX-13 (`--only seasons`; the sync of the follows) → [FX-15: `export=False` at the callers of `SyncSpec` removed] → FX-19 (`--follow KIND:ID`; the dry run of a follow) → FX-20 (the recorded spec through `job_spec.record`, with `names`) → REN-1 (the module paths) |
 | `sofascore_scraper/cli/commands/serve.py` | P25 → P29 |
 | `sofascore_scraper/services/status.py` | RD-4 → P15 (the coverage service) → FX-13 (a disk total that counts the v3 tree; the per-season counts) → [FX-15: a docstring] → FX-23 (coverage and the per-season counts with `unresolved_slice_keys`) → FX-26 (`finished_details`; complete and missing over finished matches with details; `coverage()` unchanged) → P30 (`missing_slice_keys` and `season_counts` with the follows table's selections) |
-| `sofascore_scraper/services/stats.py` | P08 → RD-4 → [ST-28: `league_stats` and `system_stats` removed with their boundary-baseline lines] → FX-13 and FX-15 (both owned it and made no change: ST-28 had removed what FX-15 was to remove) |
+| `sofascore_scraper/services/stats.py` | P08 → RD-4 → [ST-28: `league_stats` and `system_stats` removed with their boundary-baseline lines] → FX-13 and FX-15 (both owned it and made no change: ST-28 had removed what FX-15 was to remove) → FX-34 (deleted; `format_size` moved to `sofascore_scraper/cli/commands/status.py`) |
 | `sofascore_scraper/services/tournaments.py` | RD-5 → FX-13 (the listing of tournaments with a season list in `season_lists`; a v3 list over a name-only legacy file in `_named_only_lists`) |
 | `sofascore_scraper/services/data_jobs.py` | P21 (#126) → [SC-2: normalized requests, three filter fields, raw through the service] → [P28: one line, the two new datasets] → FX-13 (owned it and made no change) → FX-19 (the readable export file name `export_name`; the clear of one tournament or one season) |
 | `sofascore_scraper/web/api/v1/jobs.py` | P21 → [SC-2: `ExportJobSpec.dataset` gains `changes`, `ExportFilter` gains three fields] → [P28: one line, the two new datasets] → FX-13 (the season-list, follows and event-id specs; `?origin=` and `?target=`; the real restore) → [FX-15: `export=False` at the callers of `SyncSpec` removed] → FX-19 (`clear` with `tournament_id` and `season_id`; the follow specs of every kind) → FX-20 (the recorded spec in the body's shape, `names`; the `Job.spec` description) → [FX-22: the backup job passes `overrides.json` through the service] → REN-1 (the module paths) → FX-23 (an export job in a job store of its own, under `export`) → P30 (the four old backup scope names, deprecated in 3.0.0 and removed with the legacy aliases, decided on 2026-10-03) |
@@ -1888,7 +1918,7 @@ What FX-20 to REN-1 added to that list:
 | B. 3.0.0 alpha | ST-21, ST-22, ST-23, ST-24, ST-25 | New data is written in the v3 layout; `migrate`, backup format 2 and restore exist. From here a downgrade to 2.x no longer sees newly written data | `migrate --dry-run` and a full `migrate` on a copy of the owner's data: logical dump equal, `verify --deep` clean; backup and restore round trip |
 | C. 3.0.0 beta | P13 to P15, P19, P20, P21, P22, P23, P25, P26, ST-28 | One pipeline, the CLI, API v1 with the legacy adapters, sinks, the polling live service as `ssc watch`; the terminal UI is gone | Idempotency golden (a second sync makes no detail requests); exit-code tests; OpenAPI snapshot; the current web UI still works on the legacy adapters |
 | D. 3.0.0 release candidate | ST-27, P27, SC-2, SP-1 to SP-3, P28, P24, P31, P29, FE-2, FX-13 to FX-22, then REN-1, the end-to-end test through the web UI, the live validation and FX-16 | Feature complete: all statuses, selectable slices, 21 sports, odds and non-match data, both push sources, the new web UI | The whole suite on three platforms; Docker smoke test; changelog lists every behaviour change of this plan; the `direct` source is off in every default and its warnings are in the README |
-| E. 3.1 | P30 | Aliases, legacy routes and shims removed | One release has shipped with the deprecation notices |
+| E. 3.1 | P30 | Aliases, legacy routes and shims removed | One release has shipped with the deprecation notices; no removed name silently weakens security or privacy (below) |
 
 Do not cut a release between ST-21 and P26 without the notice ST-21 adds to the terminal UI: in that window its
 data menus see only the old layout. (That window is closed: ST-21 added the notices in #104, and P26 removed the
@@ -1901,6 +1931,18 @@ build and smoke test of this table run on the release commit before the tag, bec
 and smoke-tests the image only when a tag is pushed. Section 18 lists every step to the 3.0.0 tag. "The whole suite on three
 platforms" reads, since 2026-10-03: a green Linux CI and a local run of the full suite on the release commit,
 with the Windows and macOS jobs best-effort (rule 6).
+
+State on 2026-10-09: point D was released as 3.0.0 on 2026-10-08 (section 18) and point E as 3.1.0 on
+2026-10-09 (section 19).
+
+A check before every release, learned at point E: no configuration name that the release stops reading may
+weaken security or privacy without a word (fail-open). For each removed or renamed name (environment
+variable, config key, flag) ask what the default does when an old installation still sets it: an access
+token, a host allow-list, a proxy or a relay that is silently dropped leaves the server open or sends
+SofaScore requests from the user's own address. Such a name is deprecated and still read for one more
+release, with a warning naming its replacement, and removed after that release has shipped. P30 dropped the
+token and allow-list names that 3.0.0's documents recommended; FX-35 (#196) found it before the 3.1.0 tag
+and kept four names until 3.2 (section 19).
 
 ## 9. Plan table
 
@@ -3928,11 +3970,23 @@ marked; recorded by the tenth revision):
   request of a finished match's "no data" answer waits at least 60 s (`fetch.confirm_empty_after_seconds`,
   B2; F29 asked for "a few seconds", which would not cover a stop and a resume through the UI); the
   connection state is the last recorded outcome, not "success at or after failure" (B2); a player's matches
-  for the export filter are the matches whose stored line-ups name the player (B1); a team and a single match
+  for the export filter are the matches of the player follow's stored match list and those whose stored
+  line-ups name the player (B1, FX-34); a team and a single match
   chosen together in the export dialog narrow each other, like every other filter (B1); single-set darts
   read as legs won, and e-sports game scores keep the form SofaScore sends (B3); the odds providers' names
   come from a built-in table, not from a fetch of SofaScore's per-country listing (B4); the evidence counts answers
   from every explorer run and absence only from the repaired one (FX-31).
+
+Settled on 2026-10-09, after the tenth revision (the owner, and the orchestrator where marked; recorded by
+the eleventh):
+
+- The 2.x names that protect the server (owner, 2026-10-09, blocking the 3.1.0 release):
+  `SOFASCORE_API_TOKEN` and `SOFASCORE_ALLOWED_HOSTS` are still read in 3.1 with a deprecation warning and
+  removed in 3.2, announced under Deprecated in the changelog. The orchestrator added `USE_PROXY` and
+  `PROXY_URL` under the same rule, because losing them sends requests from the user's own address. FX-35
+  (#196) built it (`02-services.md` 4.3).
+- The tag (owner, 2026-10-09, in chat): `v3.1.0` on `054d8a2`, the merge commit of the release pull request
+  (#195). Section 19 records the release.
 
 Open:
 
@@ -4526,9 +4580,9 @@ Pinned, and kept on purpose (not defects of the target design):
 | `/status.summary.tournaments[].followed` reads the configured leagues, not the follows table | FX-13 #152, FX-15 #155 | done, FX-19 (#156): a follow of any origin names the tournament |
 | The tournament's own season-list age (the `seasons` slice's `fetched_at`) is in no route; the Seasons tab shows the age of each season's schedule | FX-13 #152, FX-14b #161 | not planned before 3.0.0 (section 17) |
 | The routes and bodies of FX-13 for the screens (`include=names`, `include=counts`, `only: "seasons"`, `fetch` and `refresh` with `event_ids`, `/jobs?target=` and `?origin=`, the restore's `dry_run: false` and `force`, `/status.sinks`, the texts of the job log codes); after a real restore the job list is the backup's and is read again | FX-13 #152, #153 | done, FX-14b (#161) |
-| `SyncService` reads the follows table through `sync_targets`; `ConfigManager.get_leagues()` is only the fallback when the store cannot be read | FX-13 #152 | P30 (with `SyncService` straight on the pipeline); kept as built by P30 (#186) (`sync_targets`, `sofascore_scraper/services/sync.py:168` at `216c2f9`) |
+| `SyncService` reads the follows table through `sync_targets`; `ConfigManager.get_leagues()` is only the fallback when the store cannot be read | FX-13 #152 | P30 (with `SyncService` straight on the pipeline); kept as built by P30 (#186) (`sync_targets`, `sofascore_scraper/services/sync.py:168` at `216c2f9`); the fallback is logged as an error since FX-34 (#194) |
 | `ssc_help_sync_only` is still used by `fetch tournament --only` | FX-13 #152 | nothing to do: it is that option's help text (`sofascore_scraper/cli/commands/sync.py:114` at `b6caf2f`); `ssc sync --only` has its own key |
-| `ssc export` still names its dataset files `<dataset>_<epoch seconds>.<ext>` (`sofascore_scraper/cli/commands/export.py:166` at `b6caf2f`), while the export jobs name theirs `<league or dataset>_<UTC date>_<8 characters of the job id>.<ext>` since FX-19 | FX-19 #156, 05 helper | P30 (one naming rule for both); not done by P30 (#186) (section 19) |
+| `ssc export` still names its dataset files `<dataset>_<epoch seconds>.<ext>` (`sofascore_scraper/cli/commands/export.py:166` at `b6caf2f`), while the export jobs name theirs `<league or dataset>_<UTC date>_<8 characters of the job id>.<ext>` since FX-19 | FX-19 #156, 05 helper | P30 (one naming rule for both); not done by P30 (#186); done, FX-34 (#194): the label, then the UTC date and time |
 | No CLI command deletes one league's data: `ssc data clear` takes scopes only, while the API's `clear` job takes `tournament_id` and `season_id` (FX-19) | FX-19 #156, 05 helper | not planned before 3.0.0 (section 17) |
 | The legacy `POST /api/settings` only rebinds the job store after a data-folder change (`sofascore_scraper/web/api/legacy.py:1051` at `b6caf2f`); it does not close the old folder's Store as `PATCH /api/v1/settings` does since FX-13 | FX-13 #152, 01 helper | P30 (the legacy route goes); removed, P30 (#186) |
 | `close_data_dir` (`sofascore_scraper/web/api/v1/settings.py:492` at `b6caf2f`) leaves the old folder's Store open while this process holds one of its leases (the `sinks` lease of `serve`), so on Windows the old folder can stay busy after a data-folder change under `serve` with sinks | FX-13 #152 | not planned (section 17) |
@@ -4669,14 +4723,20 @@ Pinned, and kept on purpose (not defects of the target design):
 | Design documents `01`, `02` and `03` still mention the `challenge_solver` alias | FX-32 #187 | done, this revision |
 | An uncreatable data folder raises a `StorageError` on the first store access instead of an `OSError` from `build_context` | FX-33 #188 | kept as built, before a job writes anything (`01-storage.md` 2.4) |
 | `02-services.md` (the export filter, `DatasetFilter`), `05-web-ui.md` 6.10 (the export dialog) and the routes of `02` and `04` lack the participant filter and `GET /teams/{id}` | B1 #190 | done, this revision |
-| A player filter finds only matches with stored line-ups; a player follow's match list is not stored | B1 #190 | the ids of the last list: B2 (#191), a runtime fact of `state.db`; a stored list: not planned (section 17) |
+| A player filter finds only matches with stored line-ups; a player follow's match list is not stored | B1 #190 | the ids of the last list: B2 (#191), a runtime fact of `state.db`, which the filter reads since FX-34 (#194); a stored list: not planned (section 17) |
 | The player filter reads the stored line-ups of every event in the other filters' scope (one payload read per event without another filter) | B1 #190 | as built; logged ("Player filter: N stored lineups read") |
 | Under an ASGI root path, `/<prefix>/api/v1` was answered without the access token | B2 #191 | done, B2 (#191); 3.0.0's default deployments never set a root path |
 | The web UI cannot be served under a path prefix; an aborted search's cancel relies on the proxy closing its upstream connection | B2 #191 | documented in `docs/deploy/README.md`; the prefix: not planned (section 17) |
-| The help text of `fetch.only_finished` in the web UI still names the 2.x match lists | this revision | open, a text fix (section 19; `05-web-ui.md` 6.16) |
+| The help text of `fetch.only_finished` in the web UI still names the 2.x match lists | the tenth revision | done, FX-34 (#194) (`05-web-ui.md` 6.16) |
 | The Odds tab says "Bookmaker 1" (live validation M20); the providers' names are known only from SofaScore's per-country listing, which carries affiliate links | live validation, FX-24 gap 5 | done, B4 (#192): a built-in table and `GET /odds/providers`; a fetch of the listing and a schema field `provider_name`: open (section 19) |
-| The changelog entries of #180 to #192 (in their descriptions; P30's and FX-33's list the removals) | #180 to #192 | the 3.1 release pull request (section 19) |
+| The changelog entries of #180 to #192 (in their descriptions; P30's and FX-33's list the removals) | #180 to #192 | the 3.1 release pull request (section 19); done, #195 |
 | The design documents were not updated by the live validation, FX-26, FX-27 and FX-16 | #174 to #176 | this revision (the ninth) |
+| The sync's fallback to `leagues.txt` when the follows table cannot be read; `services/stats.py` with one used function; the docstrings of `cli/commands/watch.py`, `services/live/supervisor.py` (`--watch`, `watcher:<sport>`) and `services/follow_sync.py` (the player list "not stored"); `_task_row` of `ssc config show` printing a task's options as they are | the tenth revision | done, FX-34 (#194): the fallback stays and is logged as an error; the module removed; the docstrings corrected; an option the task does not define shown as `***` |
+| Since FX-34 the web Exports list showed "unknown" for an `ssc export` file named after a league, team or player | FX-34 #194 | done, #195: an unknown schema, dataset or format is left out of the row |
+| P30 stopped reading `SOFASCORE_API_TOKEN` and `SOFASCORE_ALLOWED_HOSTS`, which 3.0.0's documents recommended: an upgrade dropped the access token and the allow-list without a word; `USE_PROXY` and `PROXY_URL` likewise sent requests from the user's address; the Docker entrypoint no longer counted the old allow-list name | release check of 3.1.0 | done, FX-35 (#196): the four still read until 3.2 (owner); a release check of section 8 |
+| Other 2.x names whose loss matters, reported and not changed: without `API_BASE_URL` the requests of a user who pointed it at a relay or mirror go straight to SofaScore from the user's address; without `SOFASCORE_THROTTLE_DIR`, `REQUEST_RATE_LIMIT` or `MAX_CONCURRENT` the request rate can rise (several processes no longer share one budget, or the default rate applies) | FX-35 #196 | not changed: the `legacy_name` warning and `ssc doctor` name each one still set; they are removed in 3.1 as announced |
+| The design documents' status texts (`03` section 19, the design README) describe the 3.1 release as to do | #195 | done, this revision |
+| `tests/test_research_explorer.py::test_sofascore_requests_leave_one_slot_apart` failed once on macOS (a gap of 0.0005 s against a minimum of 0.04 s): it measures send times, not slot times | CI, 2026-10-09 | open, small (section 19): read the slot times from the rate file, as FX-29b did for the image-flood test |
 
 ## 17. Deliberately not planned
 
@@ -4890,9 +4950,9 @@ Pinned, and kept on purpose (not defects of the target design):
   path (the access token is checked on the routed path), and `docs/deploy/README.md` says that the UI
   needs its own host name or the root of one.
 - A stored match list of a player follow, as a slice of the `player` owner (B1, B2). B2 keeps the ids of a
-  player's last match list as a runtime fact of `state.db`, enough for coverage and the Matches tab; the
-  export's player filter reads the stored line-ups, so a match downloaded without line-ups is not found by
-  it. A stored list would be a Store and layout change.
+  player's last match list as a runtime fact of `state.db`, enough for coverage and the Matches tab; since
+  FX-34 the export's player filter reads those ids and then the stored line-ups, so a match is missed only
+  when it is in neither (an older list, no line-ups). A stored list would be a Store and layout change.
 - The checks that the live validation did not make, before 3.0.0: a live football match with extra time or
   one that goes straight to penalties (FX-23's rule rests on the real payloads of its tests), `ssc sync` and
   a restore with `config/overrides.json` on a copy of real data (the end-to-end test restored a backup;
@@ -5041,7 +5101,7 @@ descriptions of #177 and #179 to #191.
 `ghcr.io/tunjayoff/sofascore_scraper:3.0.0`. There is no PyPI package; users install from source (a
 checkout and `pip install -e .`, the release archive, or the image). Every step ran from the
 orchestrator's session (owner, 2026-10-08). This section keeps the record of the path to the tag; what
-came after it is in section 19.
+came after it, the 3.1.0 release included, is in section 19.
 
 Done before the release pull request:
 
@@ -5133,15 +5193,14 @@ Not checked before the tag, and placed: a live football match with extra time or
 (section 17); the cancel of an aborted search behind a reverse proxy (checked offline by B2, section 19);
 the Compose recreate.
 
-## 19. 3.1: what is done and what is open
+## 19. 3.1: what was done, the release, and what is open
 
-3.1 is being built on main since 2026-10-08 (owner: start the work after 3.0.0 at once, P30 included). Its
-version is not set yet (`pyproject.toml` still says 3.0.0), and its changelog entries are in the
-descriptions of the pull requests below, for the 3.1 release pull request (rule 3). P30 is the last item of
-the plan (section 10 has its brief and "As built"); the other items were written from the orchestrator's
-instructions and have no brief here.
+3.1 was built on main from 2026-10-08 (owner: start the work after 3.0.0 at once, P30 included) and released
+as 3.1.0 on 2026-10-09 (below). P30 is the last item of the plan (section 10 has its brief and "As built");
+the other items were written from the orchestrator's instructions and have no brief here. The changelog
+entries of all of them are in `CHANGELOG.md` under `## [3.1.0] - 2026-10-09`.
 
-Done (all merged by 2026-10-09, `216c2f9`; B4 at `ff6fd7c`):
+Done (all merged by 2026-10-09 and in 3.1.0; FX-28 shipped in 3.0.0):
 
 | Item | PR | What it did |
 |---|---|---|
@@ -5157,9 +5216,47 @@ Done (all merged by 2026-10-09, `216c2f9`; B4 at `ff6fd7c`):
 | B1 | #190 | `GET /api/v1/teams/{team_id}` (a stored team, player or pair with gender, national flag, country, sport, `followed`); the team follow's header; `SportSpec.individual` in `/sports`; the export filter's `team_ids` and `player_ids` (a player by the stored line-ups), `ssc export --team/--player` and the dialog, every filter combined with AND; "No team" reported as `team: null` |
 | B2 | #191 | `summary.follows[]` in `/status` and `GET /events?follow=kind:id`; a player follow's match ids in `state.db` (`follow_events:player:<id>`) and its Matches tab; `requests` in the job progress and result; the league detail phase planned by need; season and league names in the sync log; `verify`, scan and breaker texts in English; `fetch.confirm_empty_after_seconds` (60); the connection state by the last recorded outcome and `last_check.superseded`; the access token checked on the routed path under a root path; the stream's `X-Accel-Buffering: no` |
 | B4 | #192 | the odds providers by name: the built-in table `sports.ODDS_PROVIDERS` (id, name, country), `GET /api/v1/odds/providers` (`id`, `name`, `country`, `configured`; no SofaScore request), the bookmaker's name in the Odds tab, the Data table and the Settings row of `client.odds_provider` (a select of the known ones next to the free id); no betting link of SofaScore's listing stored |
+| FX-34 | #194 | the web UI's help of `fetch.only_finished` without the 2.x match lists; the player export filter reads the player follow's stored match ids (`follow_events:player:<id>`) and then the stored line-ups; the docstrings of `ssc watch` and the live supervisor without `--watch` and `watcher:<sport>`; the sync's fallback to `leagues.txt` logged as an error; `services/stats.py` removed (`format_size` in `ssc status`); `ssc export` file names like a web export's (`premier-league_2026-10-09_142530.jsonl`, `events-wide_<date>_<time>.csv`); a schedule task option the task does not define shown as `***` |
+| FX-35 | #196 | `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` still read in 3.1 (`loader.DEPRECATED_NAMES`), with a deprecation warning, the new name winning, `replaced_by` on the setting rows of the Settings API and `ssc config show`, an invalid old value a configuration error; the Docker entrypoint honours the old allow-list name again (`02-services.md` 4.3) |
 
-Open, in no fixed order:
+How 3.1.0 was released, as section 18 describes for 3.0.0:
 
+1. **FX-34** (#194) merged first. **FX-35** (#196) came from the check of the release pull request: P30 had
+   stopped reading the two 2.x names that 3.0.0's documents recommended for protecting the server, so an
+   upgrade would have dropped the access token and the host allow-list without a word. The owner decided to
+   keep them for one more release (section 13), the orchestrator added the two proxy names, and the release
+   waited for FX-35. Section 8 now has the check that would have found it earlier.
+2. **The release pull request** (#195, rebased onto FX-35 and merged at `054d8a2`):
+   - **The version.** `pyproject.toml` says `version = "3.1.0"` (the one source; `--version`, `/health`,
+     `/api/v1/status` and the web UI's rail read it); the CLI golden of the `doctor` envelope was regenerated
+     (`UPDATE_GOLDENS=1`); `00-platform.md`'s Version row followed.
+   - **Two web fixes** of the orchestrator's pre-release check: the Matches tab of a player follow that is not
+     counted yet says that the player's next download stores the matches of the player's match list; the
+     Exports list leaves out an unknown schema, dataset or format of a CLI file named after a league, team or
+     player (since FX-34), instead of "unknown", and reads the `-raw` label.
+   - **The changelog close.** `## [3.1.0] - 2026-10-09` under an empty `## [Unreleased]`: the upgrade notes
+     from 3.0, then Added, Changed, Deprecated (the four names of FX-35, removed in 3.2), Fixed, Removed and
+     Security, from the descriptions of #180 to #196 (#193 is documents only and has no entry).
+   - **Both READMEs.** "3.1.0 is released from source", a section "Upgrading from 3.0" (the environment names,
+     with the four deprecated ones, the catalog rebuild, the removed flags, routes and scopes, a pre-3.0 web
+     build, the `ssc export` names) and "Removed in 3.1.0"; every relative link and anchor resolves.
+   - **The checks of release point D** (section 8): the full suite after the rebase with
+     `STORE_SHADOW_CHECK=1` (9,780 passed), ruff, the frontend checks and build, `scripts/release.py` without
+     a tag.
+3. **The tag.** The owner approved it in chat, and `v3.1.0` was set on `054d8a2`. `release.yml` checked the
+   tag against `pyproject.toml`, ran CI, built and smoke-tested the image, pushed
+   `ghcr.io/tunjayoff/sofascore_scraper:3.1.0` (also `3.1` and `latest`) and published the GitHub Release
+   with the source archives (2026-10-09). There is no PyPI package; 3.1.0 installs from source, like 3.0.0.
+
+Open after 3.1, in no fixed order:
+
+- **3.2: remove the four deprecated names.** `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY`
+  and `PROXY_URL` leave `loader.DEPRECATED_NAMES` and become plain `legacy_name` warnings like the other 2.x
+  names, the Docker entrypoint stops counting the old allow-list name, and the changelog of 3.2 says so
+  under Removed (owner, 2026-10-09; section 13). Reported and not changed by FX-35: without `API_BASE_URL` a
+  user who pointed it at a relay or mirror sends requests straight to SofaScore from the user's own address,
+  and without `SOFASCORE_THROTTLE_DIR`, `REQUEST_RATE_LIMIT` or `MAX_CONCURRENT` the request rate can rise
+  (a block risk, not a privacy one); the warnings and `ssc doctor` name each one still set.
 - **The slice rows of rugby, floorball, volleyball and minifootball.** FX-31's proposal waits in `PROPOSALS`;
   the owner decides after a daytime explorer run that visits top-league matches of the four sports,
   finished and live (section 13).
@@ -5187,10 +5284,10 @@ Open, in no fixed order:
 - Small leftovers of P30 (section 16): `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
   neutral `/search` for `/tournaments/search`; one `FetchPipeline` per `DetailPhase` call instead of one
   session per job.
+- **A CI flake of the explorer's slot test.** `tests/test_research_explorer.py::test_sofascore_requests_leave_one_slot_apart`
+  failed once on macOS (a gap of 0.0005 s against a minimum of 0.04 s): it measures when the requests were
+  sent, not their slots. It should read the slot times from the rate file, as FX-29b did for the image-flood
+  test.
 
-Decided not to do in 3.1: a localized date picker (owner, 2026-10-09; the native date input stays) and
+Not in 3.1, by decision: a localized date picker (owner, 2026-10-09; the native date input stays) and
 serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).
-
-The 3.1 release pull request, when the owner asks for it, follows section 18: the version, the changelog
-close from the descriptions of #180 to #192 (P30's and FX-33's bodies have the entries of the removals),
-the README, the checks of release point D and the Docker smoke test on its commit; the tag is the owner's.

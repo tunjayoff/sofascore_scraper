@@ -15,8 +15,10 @@ newcomer pass of the web UI (pull requests #134 to #161), marks its references `
 an eighth, on 2026-10-08 after the end-to-end test against the real site and its fixes FX-23 to FX-25
 (pull requests #170 to #172), marks its references `48e4c4c`, a ninth, later that day after the live
 validation against the real site, its fixes FX-26 and FX-27, and FX-16 (pull requests #174 to #176), marks
-its references `43ecdfc`, and a tenth, on 2026-10-09 after the 3.0.0 release, P30 and the first items of
-3.1 (pull requests #177 and #179 to #192), marks its references `216c2f9` (B4, #192, `ff6fd7c`).
+its references `43ecdfc`, a tenth, on 2026-10-09 after the 3.0.0 release, P30 and the first items of
+3.1 (pull requests #177 and #179 to #192), marks its references `216c2f9` (B4, #192, `ff6fd7c`), and an
+eleventh, later that day after FX-34, FX-35 and the 3.1.0 release (pull requests #194 to #196), marks its
+references `054d8a2`.
 Since REN-1 the import package is `sofascore_scraper` (it was `src`): the documents write its paths with
 the new name, and a `file:line` reference keeps the line it had at the commit its revision names (the rename
 moved no line). Paths of files removed before the rename keep the old `src/` form. Where a section
@@ -30,7 +32,7 @@ pull request.
 | [00-platform.md](00-platform.md) | The owner's platform design in English: decisions (with their state and the decisions taken after the draft), layers, schema v1, storage, API v1, CLI, sinks, live, security, waves. Its last section lists where the detailed designs differ from the draft | you want the goal and the fixed requirements |
 | [01-storage.md](01-storage.md) | The Store: what is on disk today and who touches it, the v3 layout, compression measurements, the catalog and state databases with their DDL, both layouts read side by side, `migrate`, leases and the write protocol, backup and restore | you work on anything under `DATA_DIR` |
 | [02-services.md](02-services.md) | The service layer and the faces: what `match_data_fetcher.py` does today, the client, the one pipeline, jobs across processes, the CLI contract, sinks and webhooks, API v1 resources, the live service, removal of the terminal UI | you work on fetching, jobs, the CLI, the API or live |
-| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 97 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; how 3.0.0 was released (section 18); what 3.1 has and what is open (section 19) | you are about to start or review a pull request, or you want to know how far 3.1 is |
+| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 97 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; how 3.0.0 was released (section 18); what 3.1 has, how 3.1.0 was released and what is open after it (section 19) | you are about to start or review a pull request, or you want to know what is open after 3.1 |
 | [04-schema-v1.md](04-schema-v1.md) | The normalized schema v1, the public data contract, field by field: every record the platform gives out (Sport, Category, Tournament, Season, Participant, Event with its score by score family, Slice, Change, LiveEvent) with type, unit, null rule, source in SofaScore's payload and meaning; the odds and standings records of P28 (`Odds`, `OddsLine`, `StandingsRow`, in the generated contract since FX-21); the versioning rule; what "raw" means; the 28 decisions taken while it was written. Approved on 2026-10-02 | you consume the platform's data, or you work on the API, the exports, the sinks or a new sport |
 | [05-web-ui.md](05-web-ui.md) | The screens of the web UI, designed from scratch on API v1 (plan item FE-1): users, information architecture, design system, every screen with its routes and fields and states, the routes still missing with their owners, and the decisions taken. Approved by the owner on 2026-10-02 with all 22 decisions; built by FE-2 (#107, #132, #133), then reworked after a first-time-user review (FX-14a #154, FX-14b #161; the classic views removed) and given the search as the user types (FX-20 #167); its last section says what changed while it was built, with the words as built | you work on the frontend |
 
@@ -73,8 +75,8 @@ pull request.
 
 ## Status
 
-As of 2026-10-09, after the tenth revision (details and pull request numbers in the "Status" section at the
-top of `03`; the release in its section 18, 3.1 in its section 19):
+As of 2026-10-09, after the eleventh revision (details and pull request numbers in the "Status" section at
+the top of `03`; the 3.0.0 release in its section 18, 3.1 and its release in its section 19):
 
 - **3.0.0 is released** (2026-10-08): the tag `v3.0.0` on `1c5bab2`, the GitHub Release with the source
   archives and checksums, and the image `ghcr.io/tunjayoff/sofascore_scraper:3.0.0`. There is no PyPI
@@ -85,19 +87,26 @@ top of `03`; the release in its section 18, 3.1 in its section 19):
   suggestions by word start, the match lists start with the played matches) and P30 (#186), the 3.1 clean-up:
   the 2.x flags, `/api` routes, environment names, backup scopes, shims and fetcher faces are gone, `.env`
   lines are the environment layer, and the catalog schema is 2.
-- **3.1 so far** (section 19 of `03`): the research explorer repaired and made private by design (FX-29, three
+- **3.1.0 is released** (2026-10-09): the tag `v3.1.0` on `054d8a2`, the GitHub Release and the image
+  `ghcr.io/tunjayoff/sofascore_scraper:3.1.0` (also `latest`), from source like 3.0.0. The release pull
+  request (#195) set the version, closed the changelog with a Deprecated section and added "Upgrading from
+  3.0" to both READMEs.
+- **What 3.1 has** (section 19 of `03`): the research explorer repaired and made private by design (FX-29, three
   pull requests), the slice evidence regenerated and the slice rows that follow it (FX-31), the research
   scripts and installers on the 3.1 names (FX-32, FX-33), a Windows timing flake (FX-30), and batch B: single
   set darts and e-sports game scores (B3, `DERIVE_VERSION` 8), a team record route, the sports' individual
   flag and a team and player filter for exports (B1), coverage per follow, a player's matches, request
-  counters of a job, the wait before a confirming request and a security fix under a root path (B2), and the
-  odds providers by name from a built-in table (B4).
-- **Open for 3.1**: the slice rows of rugby, floorball, volleyball and minifootball (the owner decides after
-  more evidence), a rule for team streaks that answer 200 with an empty body, baseball's umpires, weather,
-  comments and at-bats, a fetch of the odds providers' listing and a `provider_name` field, live pages of the repaired explorer, a replacement for
-  the events columns `stage_name` and `listed_in`, the Store's durability from its caller, the explorer's
-  unthrottled live-match-tracker document, and a few small leftovers of P30. Not in 3.1: a localized date
-  picker (owner) and the web UI under a path prefix.
+  counters of a job, the wait before a confirming request and a security fix under a root path (B2), the
+  odds providers by name from a built-in table (B4), small leftovers such as `ssc export` file names like a
+  web export's and the player export filter on the stored match list (FX-34), and four deprecated 2.x
+  names still read so that an upgrade keeps its access token, host allow-list and proxy (FX-35).
+- **Open after 3.1**: removing those four deprecated names in 3.2, the slice rows of rugby, floorball,
+  volleyball and minifootball (the owner decides after more evidence), a rule for team streaks that answer
+  200 with an empty body, baseball's umpires, weather, comments and at-bats, a fetch of the odds providers'
+  listing and a `provider_name` field, live pages of the repaired explorer, a replacement for the events
+  columns `stage_name` and `listed_in`, the Store's durability from its caller, the explorer's unthrottled
+  live-match-tracker document, a CI flake of the explorer's slot test, and a few small leftovers of P30.
+  Not in 3.1: a localized date picker (owner) and the web UI under a path prefix.
 - What a user can see: everything a download writes is in the new layout (`v3/`, 8.4 times smaller on the
   owner's data) and the old folders are read in place; `ssc` covers every task of the former terminal menu
   and of `main.py`, whose old flags are now usage errors that name their command; the web app runs on
@@ -120,9 +129,10 @@ top of `03`; the release in its section 18, 3.1 in its section 19):
   step runs from the orchestrator's session, 3.0.0 is not published to PyPI, the `direct` step approved in
   the validation's session, the three slice proposals of #121 applied (FX-16), the tag, and the work after
   3.0.0 started at once with P30; on 2026-10-09 the owner's: FX-31's slice rows kept, the four sports' rows
-  wait for more evidence, and no localized date picker now. The orchestrator's, reversible: one type-ahead
+  wait for more evidence, no localized date picker now, the 2.x token and allow-list names read until 3.2
+  (with the proxy names, the orchestrator's addition), and the tag `v3.1.0`. The orchestrator's, reversible: one type-ahead
   list in SofaScore's order (FX-26), a no-data answer of an unfinished match kept as an uncounted `empty`
   (FX-27), score changes of set sports kept as sets won, and the rules of batch B (a 60 s wait before a
-  confirming request, the connection state by the last outcome, a player's matches by the stored line-ups).
-  Waiting for the owner: the four sports' slice rows, the team-streaks rule, the baseball proposals, and
-  when 3.1 is released.
+  confirming request, the connection state by the last outcome, a player's matches by the stored match list
+  and line-ups).
+  Waiting for the owner: the four sports' slice rows, the team-streaks rule and the baseball proposals.
