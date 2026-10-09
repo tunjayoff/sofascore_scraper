@@ -646,6 +646,84 @@ def test_mask_helpers_reject_unparsed_payloads():
     assert ex_mod.mask_connect("CONNECT {broken") == "CONNECT <unparsed, redacted>"
 
 
+# --- FX-29c: istemci konumu ve adresler yazılmadan maskelenir ---------------------------------------------------------
+
+# Sahte değerler (belgeleme aralıkları, uydurma şehir); gerçek country/alpha2 gövdesiyle aynı anahtarlar
+FAKE_CITY = "Exampleville"
+FAKE_FINGERPRINT = "t00d0000h0_fakefingerprint"
+COUNTRY_BODY = {"alpha2": "XX", "continent_code": "EU", "country": "Exampleland", "city": FAKE_CITY,
+                "ip": "192.0.2.10", "f": FAKE_FINGERPRINT, "region_code": "EX-01"}
+PUSH_V4 = "198.51.100.7"
+PUSH_V6 = "2001:db8:0:1::"
+
+
+@pytest.mark.asyncio
+async def test_country_alpha2_body_is_redacted_everywhere(tmp_path, rate_file):
+    ex = make_explorer(tmp_path)
+    ex.sport = "football"
+    await ex.on_response(FakeResponse("https://www.fakescore.test/api/v1/country/alpha2",
+                                      body=json.dumps(COUNTRY_BODY).encode()))
+    row = read_rows(tmp_path / "out" / "requests.jsonl")[0]
+    assert row["response_keys"] == sorted(COUNTRY_BODY)
+    with open(os.path.join(ex_mod.ROOT, row["sample_file"]), encoding="utf-8") as f:
+        body = json.load(f)["body"]
+    assert body == {**COUNTRY_BODY, "city": "<redacted>", "ip": "<redacted>", "f": "<redacted>",
+                    "region_code": "<redacted>"}
+    text = all_output(tmp_path / "out")
+    for leaked in (FAKE_CITY, "192.0.2.10", FAKE_FINGERPRINT, "EX-01"):
+        assert leaked not in text
+
+
+def test_redact_masks_geo_keys_at_any_depth_but_keeps_venues():
+    body = {
+        "a": {"geo": {"lat": 1.5, "lon": 2.5}, "client_ip": "192.0.2.11", "postal": "00000"},
+        "list": [{"latitude": 1.0, "longitude": 2.0, "lat": None, "name": "x"}],
+        "event": {"venue": {"city": {"name": FAKE_CITY}, "venueCoordinates": {"latitude": 1.0, "longitude": 2.0}}},
+        "note": f"seen from 192.0.2.12 and [{PUSH_V6}]:9222 at 12:30:45, app 2.29.1",
+    }
+    out = ex_mod.redact(body)
+    assert out["a"] == {"geo": "<redacted>", "client_ip": "<redacted>", "postal": "<redacted>"}
+    assert out["list"] == [{"latitude": "<redacted>", "longitude": "<redacted>", "lat": None, "name": "x"}]
+    assert out["event"] == body["event"]  # stadyum bilgisi herkese açık: dokunulmaz
+    assert out["note"] == "seen from <redacted> and [<redacted>]:9222 at 12:30:45, app 2.29.1"
+    assert ex_mod.redact(out) == out  # iki kez geçmek bir şey değiştirmez
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("1.2.3", "1.2.3"), ("1.2.3.4.5", "1.2.3.4.5"), ("256.1.1.1", "256.1.1.1"), ("12:30:45", "12:30:45"),
+    ("std::string", "std::string"), ("ts 1790856215.508", "ts 1790856215.508"),
+    (f"{PUSH_V4}:9222", "<redacted>:9222"), (f"[{PUSH_V6}]:9222", "[<redacted>]:9222"),
+    ("::ffff:192.0.2.1", "<redacted>"), ("fe80::1%eth0", "<redacted>"), ("ip=192.0.2.13.", "ip=<redacted>."),
+])
+def test_mask_ips(text, expected):
+    assert ex_mod.mask_ips(text) == expected
+
+
+def test_nats_info_addresses_are_masked_in_every_field(tmp_path, rate_file):
+    ex = make_explorer(tmp_path)
+    ws = FakeWebSocket("wss://ws.fakescore.test:9222/")
+    ex.on_websocket(ws)
+    info = {"server_id": "S1", "server_name": "push-1", "host": PUSH_V4, "port": 9222, "ip": PUSH_V4,
+            "client_ip": CLIENT_IP, "cluster": "nats", "connect_urls": [f"{PUSH_V4}:9222", f"[{PUSH_V6}]:9222"]}
+    ws.handlers["framereceived"](f"INFO {json.dumps(info)}\r\n")
+    msg = json.dumps({"status.code": 100, "ip": CLIENT_IP, "note": f"via {PUSH_V4}"}).encode()
+    ws.handlers["framereceived"](b"MSG sport.football 1 %d\r\n%s\r\n" % (len(msg), msg))
+    raw = f"not json {PUSH_V4}".encode()
+    ws.handlers["framereceived"](b"MSG sport.tennis 2 %d\r\n%s\r\n" % (len(raw), raw))
+    ws.handlers["framesent"](f"SUB host.{PUSH_V4} 1\r\n")
+    rows = read_rows(tmp_path / "out" / "ws.jsonl")
+    body = json.loads(next(r for r in rows if r.get("op") == "INFO")["body"])
+    assert body == {**info, "host": "<redacted>", "ip": "<redacted>", "client_ip": "<redacted>",
+                    "connect_urls": ["<redacted>:9222", "[<redacted>]:9222"]}
+    msgs = {r["subject"]: r["body"] for r in rows if r.get("op") == "MSG"}
+    assert msgs["sport.football"] == {"status.code": 100, "ip": "<redacted>", "note": "via <redacted>"}
+    assert msgs["sport.tennis"] == "not json <redacted>"
+    assert [r["line"] for r in rows if r["kind"] == "sent"] == ["SUB host.<redacted> 1"]
+    text = all_output(tmp_path / "out")
+    for leaked in (PUSH_V4, PUSH_V6, CLIENT_IP):
+        assert leaked not in text
+
+
 # --- koşu başına bütçe --------------------------------------------------------------------------------------------
 
 LEGACY_STATE = {"started": 1790856030.37, "api_requests": 3788, "updated": "2026-10-01T14:01:57+00:00"}

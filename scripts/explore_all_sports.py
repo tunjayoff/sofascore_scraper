@@ -63,6 +63,11 @@ Kurallar (talimat):
   - Kullanıcı içeriği (yorum, oy, profil) sayfalarına gidilmez; WebSocket kareleri kısaltılarak saklanır.
   - Maskeleme: NATS INFO karesindeki client_ip ve CONNECT'in kimlik alanları yazılmadan maskelenir; üçüncü taraf
     adresleri (imzalı token taşıyabilir) yalnızca alan adı + ilk yol parçasıyla yazılır, gövdeleri saklanmaz.
+    FX-29c: diske yazılan her şey (örnekler, olaylar, istek/sayfa/ws satırları) `redact`'tan geçer: istemci konumu
+    anahtarlarının (GEO_KEYS: ip, city, region_code, f, ...) değeri her derinlikte `<redacted>` olur (stadyum
+    bilgisi `venue` altı hariç) ve her dizgideki IPv4/IPv6 adresi maskelenir. Sayfanın çağırdığı
+    `/api/v1/country/alpha2` istemcinin IP'sini, şehrini ve TLS parmak izini döndürür; NATS INFO'nun connect_urls
+    ve host alanları push sunucularının adresleridir. tests/test_research_privacy.py kayıtlı veriyi tarar.
 
 Çıktı: research/all_sports/ (requests.jsonl, samples/, events/, ws.jsonl, pages.jsonl, _state.json).
 """
@@ -73,6 +78,7 @@ import asyncio
 import base64
 import datetime as dt
 import glob
+import ipaddress
 import json
 import os
 import re
@@ -111,6 +117,19 @@ BLANK_GIF = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="  # 1x
 REDACTED = "<redacted>"
 CONNECT_SECRET_KEYS = ("auth_token", "jwt", "sig", "nkey", "pass", "user", "token")
 INFO_SECRET_KEYS = ("client_ip",)
+# FX-29c: istemcinin konumunu taşıyan anahtarlar. Sayfa `/api/v1/country/alpha2` çağırır; gövdesi istemcinin IP'si,
+# şehri, bölgesi ve TLS parmak izini (`f`) taşır. Bu anahtarların değeri her derinlikte maskelenir, anahtar kalır.
+GEO_KEYS = frozenset({"ip", "city", "region_code", "f", "client_ip", "postal", "latitude", "longitude", "lat", "lon",
+                      "geo"})
+# Maskelenmeyen alt ağaçlar: `venue` stadyumun herkese açık bilgisidir (city {name, country}, venueCoordinates),
+# izleyicinin konumu değildir; araştırma verisi ve fikstürler bunlara dayanır.
+GEO_KEEP_UNDER = frozenset({"venue"})
+_OCTET = r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)"
+IPV4_RE = re.compile(rf"(?<!\d)(?<!\d\.){_OCTET}(?:\.{_OCTET}){{3}}(?!\d|\.\d)")
+# IPv6 adayı: en az iki ':' içeren onaltılık dizi (sonda gömülü IPv4 olabilir); ipaddress ile doğrulanır, böylece
+# saat (12:30:45) gibi dizgiler maskelenmez
+IPV6_CANDIDATE_RE = re.compile(r"(?<![\w:.])(?:[0-9A-Fa-f]{0,4}:){2,7}(?:(?:\d{1,3}\.){3}\d{1,3}|[0-9A-Fa-f]{1,4})?"
+                               r"(?:%[\w.-]+)?(?![\w:])")
 
 # Kesicinin kararları: gönder (sayılmaz), gönder (API, sayıldı), boş görsel, iptal (engel), iptal (boşta),
 # yanıtlanmaz (istek beklerken öldü), öz denetim (yerelde yanıtlanır)
@@ -265,8 +284,53 @@ def nats_messages(raw: bytes):
             yield cmd, "", line
 
 
+def _mask_v6(m: "re.Match[str]") -> str:
+    text = m.group()
+    if not re.search(r"[0-9A-Fa-f]", text):
+        return text
+    try:
+        ipaddress.IPv6Address(text.split("%", 1)[0])
+    except ValueError:
+        return text
+    return REDACTED
+
+
+def mask_ips(text: str) -> str:
+    """Metindeki her IPv4/IPv6 adresi (port ve köşeli parantez kalır) `<redacted>` olur."""
+    if ":" in text:
+        text = IPV6_CANDIDATE_RE.sub(_mask_v6, text)
+    if "." in text:
+        text = IPV4_RE.sub(REDACTED, text)
+    return text
+
+
+def redact(o: Any, _keep_geo: bool = False) -> Any:
+    """
+    FX-29c: diske yazılacak her şey (örnek gövdesi, olay, istek/sayfa/ws satırı) buradan geçer. GEO_KEYS'teki
+    anahtarların değeri her derinlikte `<redacted>` olur (anahtar kalır; None dokunulmaz); `venue` altı hariç.
+    Her dizgideki (anahtarlar dahil) IP adresleri maskelenir.
+    """
+    if isinstance(o, dict):
+        out: Dict[Any, Any] = {}
+        for k, v in o.items():
+            key = mask_ips(k) if isinstance(k, str) else k
+            if k in GEO_KEYS and not _keep_geo and v is not None:
+                out[key] = REDACTED
+            else:
+                out[key] = redact(v, _keep_geo or k in GEO_KEEP_UNDER)
+        return out
+    if isinstance(o, list):
+        return [redact(v, _keep_geo) for v in o]
+    if isinstance(o, str):
+        return mask_ips(o)
+    return o
+
+
 def mask_info(body: str) -> str:
-    """NATS INFO gövdesi: istemcinin IP adresi (client_ip) maskelenir; çözülemeyen gövde hiç yazılmaz."""
+    """
+    NATS INFO gövdesi: istemcinin IP adresi (client_ip) ve her alandaki IPv4/IPv6 adresi (connect_urls, host, ip ...;
+    push sunucularının adresleri) maskelenir, kalanı korunur; çözülemeyen gövde hiç yazılmaz.
+    """
     try:
         info = json.loads(body)
     except ValueError:
@@ -276,7 +340,7 @@ def mask_info(body: str) -> str:
     for k in INFO_SECRET_KEYS:
         if k in info:
             info[k] = REDACTED
-    return json.dumps(info)
+    return json.dumps(redact(info))
 
 
 def mask_connect(line: str) -> str:
@@ -431,7 +495,7 @@ class Explorer:
 
     def _append(self, name: str, row: Dict[str, Any]) -> None:
         with open(os.path.join(self.out, name), "a", encoding="utf-8") as f:
-            f.write(json.dumps({**row, "run_id": self.run_id}, ensure_ascii=False) + "\n")
+            f.write(json.dumps(redact({**row, "run_id": self.run_id}), ensure_ascii=False) + "\n")
 
     def _safe(self, url: str) -> str:
         return safe_url(url, self.sofa_host)
@@ -766,6 +830,9 @@ class Explorer:
                 body = None
             except Exception as e:
                 body_error = f"{e.__class__.__name__}: {str(e)[:160]}"
+        if body is not None:
+            # FX-29c: örnekten, olaylardan ve satırdan önce (ör. country/alpha2 istemcinin IP'sini ve şehrini taşır)
+            body = redact(body)
         sample_file = None
         try:
             sample_file = self._sample(url, resp.status, headers, pattern, body)
@@ -802,7 +869,7 @@ class Explorer:
                         row["source_pattern"] = pattern
                         row["seen_at"] = round(time.time())
                         row["run_id"] = self.run_id
-                        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+                        f.write(json.dumps(redact(row), ensure_ascii=False) + "\n")
 
     def _sample(self, url: str, status: int, headers: Dict[str, str], pattern: str, body: Any) -> Optional[str]:
         """Pattern başına en fazla SAMPLES_PER_PATTERN örnek (yalnızca SofaScore gövdeleri okunur)."""
@@ -816,7 +883,7 @@ class Explorer:
         rel = os.path.join("samples", self.sport, f"{slug(pattern)}__{n}.json")
         rc.write_json(
             os.path.join(self.out, rel),
-            {
+            redact({
                 "url": url,
                 "status": status,
                 "fetched_at_utc": utc_now(),
@@ -825,15 +892,16 @@ class Explorer:
                 "trimmed": trimmed,
                 "run_id": self.run_id,
                 "body": trim(body) if trimmed else body,
-            },
+            }),
         )
         return os.path.relpath(os.path.join(self.out, rel), ROOT).replace(os.sep, "/")
 
     def on_websocket(self, ws: Any) -> None:
         """
-        Push kanalı (ws.sofascore.com:9222 NATS). Alınan: INFO (ilk, client_ip maskeli), her konudan ilk 3 MSG ve
-        `status.*` taşıyan tüm MSG'ler; konu başına sayaç + anahtar kümesi ws_subjects.json'da. Gönderilen: SUB/UNSUB
-        hepsi; CONNECT'in kimlik alanları maskelenir; PUB gövdeleri (analitik) saklanmaz.
+        Push kanalı (ws.sofascore.com:9222 NATS). Alınan: INFO (ilk; client_ip ve tüm IP adresleri maskeli), her
+        konudan ilk 3 MSG ve `status.*` taşıyan tüm MSG'ler; konu başına sayaç + anahtar kümesi ws_subjects.json'da.
+        Gönderilen: SUB/UNSUB hepsi; CONNECT'in kimlik alanları maskelenir; PUB gövdeleri (analitik) saklanmaz.
+        Saklanan her kare metninde IP adresleri maskelenir (FX-29c).
         """
         ws_url = self._safe(ws.url)
         opened = {"ts": round(time.time(), 3), "sport": self.sport, "page": self.page_url,
@@ -867,7 +935,7 @@ class Explorer:
                 has_status = isinstance(obj, dict) and any(k.startswith("status.") for k in obj)
                 if st["count"] <= 3 or has_status:
                     self._append("ws.jsonl", {"kind": "recv", "op": kind, "subject": subject, **base,
-                                              "body": obj if obj is not None else body[:1500]})
+                                              "body": redact(obj) if obj is not None else mask_ips(body)[:1500]})
 
         def sent(payload: Any) -> None:
             for line in raw_of(payload).decode("utf-8", errors="replace").split("\r\n"):
@@ -876,6 +944,7 @@ class Explorer:
                     continue
                 if line.startswith("CONNECT "):
                     line = mask_connect(line)
+                line = mask_ips(line)
                 self._append("ws.jsonl", {"kind": "sent", "ts": round(time.time(), 3), "sport": self.sport,
                                           "page_type": self.page_type, "page": self.page_url, "line": line[:500]})
 
