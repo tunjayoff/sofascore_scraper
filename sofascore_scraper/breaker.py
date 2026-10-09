@@ -205,15 +205,15 @@ class CircuitBreaker:
     def _trip_cause(self, kind: str) -> Optional[str]:
         """Kilit altında. Devreyi kesen kural ya da None."""
         if self.consecutive_failures >= self._value(self._consecutive_threshold, DEFAULT_CONSECUTIVE):
-            return f"art arda {self.consecutive_failures} başarısız istek"
+            return f"{self.consecutive_failures} failed requests in a row"
         if self.consecutive_server_errors >= self._value(self._server_error_threshold, DEFAULT_SERVER_ERRORS):
-            return f"art arda {self.consecutive_server_errors} sunucu hatası"
+            return f"{self.consecutive_server_errors} server errors in a row"
         if self.attempts > RATIO_MIN_ATTEMPTS and (self.failures / self.attempts) >= self._value(
             self._ratio_threshold, DEFAULT_RATIO
         ):
-            return f"başarısız istek oranı {self.failures}/{self.attempts}"
+            return f"failure ratio {self.failures}/{self.attempts}"
         if kind == FORBIDDEN and self._bridge_blocked(self.consecutive_failures, self.started_at):
-            return "tarayıcı köprüsü 'blocked' ve istekler 403 ile reddediliyor"
+            return "the browser bridge is 'blocked' and requests are refused with 403"
         return None
 
     def record_exception(self, exc: BaseException) -> None:

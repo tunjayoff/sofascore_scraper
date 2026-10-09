@@ -411,7 +411,7 @@ def _numbered_dirs(path: str, rel: str, problems: List[IndexProblem]) -> List[Tu
             found.append((int(entry.name), entry.name))
         else:
             problems.append(IndexProblem(LAYOUT_V3, f"{rel}/{entry.name}", PROBLEM_NAME,
-                                         "v3 maç ağacında tanınmayan girdi"))
+                                         "an entry the v3 event tree does not know"))
     return sorted(found)
 
 
@@ -432,7 +432,7 @@ def scan_v3_events(data_dir: PathLike, problems: Optional[List[IndexProblem]] = 
             for event_id, name in _numbered_dirs(os.path.join(root, million, thousand), bucket_rel, notes):
                 rel = f"{bucket_rel}/{name}"
                 if layout.event_id_from_dir(rel) != event_id:
-                    notes.append(IndexProblem(LAYOUT_V3, rel, PROBLEM_NAME, "maç dizini kurallı yerinde değil"))
+                    notes.append(IndexProblem(LAYOUT_V3, rel, PROBLEM_NAME, "event directory not in its canonical place"))
                     continue
                 found.append((event_id, rel))
     return sorted(found)
@@ -1017,7 +1017,7 @@ class CatalogAdmin:
         should_stop(): True dönerse kurulum bırakılır, eski katalog olduğu gibi kalır (`completed=False`).
         """
         if mode not in (MODE_AUTO, MODE_IN_PLACE, MODE_RECREATE):
-            raise ValueError(f"Geçersiz yeniden kurma kipi: {mode!r}")
+            raise ValueError(f"Invalid rebuild mode: {mode!r}")
         started = time.monotonic()
         state = self.catalog.inspect()
         in_place_possible = state.exists and state.schema_ok
@@ -1194,8 +1194,8 @@ class CatalogAdmin:
         if mark is not None:
             problems.append(IndexProblem(
                 record.layout, row["path"] or layout.event_dir(record.event_id), PROBLEM_SEASON_MISMATCH,
-                f"{mark.tournament_id}/{mark.season_id} sezonunda listeleniyor, olay yükü "
-                f"{row['tournament_id']}/{row['season_id']} diyor"))
+                f"listed in season {mark.tournament_id}/{mark.season_id}, the event payload says "
+                f"{row['tournament_id']}/{row['season_id']}"))
 
     # -- v3 varlık dizinleri (taramanın kendisi sofascore_scraper/store/entities.py'de) ---------------------------
 

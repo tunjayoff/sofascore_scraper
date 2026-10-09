@@ -429,7 +429,8 @@ class SyncService:
         Eşitlemeyi çağıranın thread'inde baştan sona çalıştırır.
 
         İşin istekleri (ve yeniden denemeler arasındaki beklemeler) blok boyunca tutamacın iptal sorusuna bakar,
-        uzun beklemeleri ilerlemeye bildirir ve tek bir devre kesiciyi besler; çıkışta üçü de geri alınır.
+        uzun beklemeleri ve gönderilen her isteği (bütçe beklemesiyle; işin istek sayaçları, B2) ilerlemeye
+        bildirir ve tek bir devre kesiciyi besler; çıkışta hepsi geri alınır.
         StorageError fırlatır; iptal bir sonuçtur ("cancelled"), hata değil.
         """
         job: JobHandle = handle if handle is not None else DetachedHandle(spec)
@@ -437,7 +438,8 @@ class SyncService:
         # sayaçları besler; açıldığında istek katmanı bu iş için yeni istek göndermez.
         breaker = request_breaker.CircuitBreaker.from_config(self._ctx.config)
         run = _SyncRun(self._ctx, spec, job, breaker)
-        with request_context(cancel=job.cancelled, on_wait=job.progress.wait, breaker=breaker):
+        with request_context(cancel=job.cancelled, on_wait=job.progress.wait, breaker=breaker,
+                             on_request=getattr(job.progress, "note_request", None)):
             try:
                 return run.execute()
             except FetchCancelled:
@@ -458,6 +460,8 @@ class _SyncRun:
         self.tracker = job.progress
         self.breaker = breaker
         self.league_names: Dict[int, str] = {}
+        # Sezonların adları, lig başına: kimlik → (ad, yıl); günlük satırlarının parametreleri için (F8)
+        self._season_labels: Dict[int, Dict[int, Tuple[Optional[str], Optional[str]]]] = {}
         self.targets: Dict[int, SyncTarget] = {}
         self.empty_schedule = 0
         self.failed_listings: List[FailedListing] = []
@@ -475,6 +479,73 @@ class _SyncRun:
 
     def lname(self, lid: Optional[int]) -> Optional[str]:
         return self.league_names.get(int(lid)) if lid is not None else None
+
+    def _store_or_none(self) -> Any:
+        from sofascore_scraper.store import StoreError
+
+        try:
+            return getattr(self.ctx, "store", None)
+        except (StoreError, StorageError):
+            return None
+
+    def league_label(self, lid: int) -> Optional[str]:
+        """Ligin adı: takibinki, yoksa katalogdaki turnuva adı (günlük parametresi; okunamazsa None)."""
+        name = self.lname(lid)
+        if name:
+            return name
+        store = self._store_or_none()
+        try:
+            found = store.entities.tournament(int(lid)) if store is not None else None
+        except Exception as e:  # ad yalnızca günlük içindir: okunamaması işi durdurmaz
+            logger.debug("Tournament name of %s could not be read: %s", lid, e)
+            return None
+        return found.name if found is not None and found.name else None
+
+    def season_label(self, lid: int, sid: int) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Sezonun (adı, yılı) saklanan sezon listesinden (katalogdaki `seasons`; ör. "Premier League 25/26",
+        "25/26"); bilinmiyorsa (None, None). Bilinmeyen sezonda liste yeniden okunur: iş sırasında indirilmiş
+        olabilir.
+        """
+        labels = self._season_labels.get(int(lid))
+        if labels is None or int(sid) not in labels:
+            labels = {}
+            store = self._store_or_none()
+            try:
+                rows = store.entities.seasons(int(lid)) if store is not None else []
+            except Exception as e:  # ad yalnızca günlük içindir
+                logger.debug("Seasons of league %s could not be read: %s", lid, e)
+                rows = []
+            for row in rows:
+                labels[int(row.id)] = (row.name or None, row.year or None)
+            self._season_labels[int(lid)] = labels
+        return labels.get(int(sid), (None, None))
+
+    def where(self, lid: Optional[int], sid: Optional[int] = None, *, resolved: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Bir günlük satırının yer parametreleri (05-web-ui.md G37, bulgu F8): kimliklerin yanında adları da
+        (`league_name`, `season_name`, `season_year`, `resolved_name`, `resolved_year`); bilinmeyen ad yazılmaz.
+        İstemci sezonu adıyla gösterir, sezon listesini okumak zorunda kalmaz ("#76138" yerine "25/26").
+        """
+        params: Dict[str, Any] = {"league_id": int(lid) if lid is not None else None}
+        if lid is None:
+            return params
+        name = self.league_label(int(lid))
+        if name:
+            params["league_name"] = name
+        for prefix, season in (("season", sid), ("resolved", resolved)):
+            if season is None:
+                continue
+            if prefix == "season":
+                params["season_id"] = int(season)
+            else:
+                params["resolved"] = int(season)
+            label, year = self.season_label(int(lid), int(season))
+            if label:
+                params[f"{prefix}_name"] = label
+            if year:
+                params[f"{prefix}_year"] = year
+        return params
 
     def log(self, message: str, code: str, **params: Any) -> None:
         """
@@ -552,10 +623,10 @@ class _SyncRun:
         self.failed_listings.append(FailedListing(kind, int(league_id), season_id, str(reason)))
         if kind == "seasons":
             self.log(f"The season list of league {league_id} could not be fetched ({reason}).",
-                     "sync_season_list_failed", league_id=int(league_id), reason=str(reason))
+                     "sync_season_list_failed", **self.where(league_id), reason=str(reason))
         else:
             self.log(f"The match list of {what} could not be fetched completely ({reason}).",
-                     "sync_schedule_failed", league_id=int(league_id), season_id=season_id, reason=str(reason))
+                     "sync_schedule_failed", **self.where(league_id, season_id), reason=str(reason))
         return None
 
     # --- akış ----------------------------------------------------------------------------------------
@@ -683,9 +754,9 @@ class _SyncRun:
             if max_age is not None and self._fresh(listing.season_list_is_fresh, lid, max_age=max_age):
                 # Liste tazeyse istek gitmez (listing.season_list_is_fresh); günlük "okunuyor" demesin (FX-23, F9)
                 self.log(f"The season list of league {lid} is up to date; it is not read again.",
-                         "sync_season_list_fresh", league_id=int(lid))
+                         "sync_season_list_fresh", **self.where(lid))
             else:
-                self.log(f"Refreshing season list for league {lid}...", "sync_season_list", league_id=int(lid))
+                self.log(f"Refreshing season list for league {lid}...", "sync_season_list", **self.where(lid))
             self._listing(lambda _l=lid: list_seasons(ctx, _l, max_age=max_age), "seasons", lid)
             tracker.advance(i + 1)
 
@@ -753,7 +824,7 @@ class _SyncRun:
                     resolved = resolve_season_id(ctx, s.league_id, sid)
                     if resolved != sid:
                         self.log(f"Season {sid} outdated → using {resolved} for league {s.league_id}",
-                                 "sync_season_outdated", season_id=sid, resolved=resolved, league_id=s.league_id)
+                                 "sync_season_outdated", **self.where(s.league_id, sid, resolved=resolved))
                     if (s.league_id, resolved) not in seen:
                         seen.add((s.league_id, resolved))
                         steps.append((s.league_id, resolved, names.get(resolved)))
@@ -781,10 +852,9 @@ class _SyncRun:
             tracker.set_context(league_id=lid, league_name=self.lname(lid), season_name=sname)
             if self._fresh(listing.schedule_is_fresh, lid, sid, max_age=listing.SCHEDULE_TTL_SECONDS):
                 self.log(f"The matches of league {lid}, season {sid} are up to date; they are not read again.",
-                         "sync_schedule_fresh", league_id=int(lid), season_id=int(sid))
+                         "sync_schedule_fresh", **self.where(lid, sid))
             else:
-                self.log(f"Fetching matches: league {lid}, season {sid}", "sync_schedule", league_id=int(lid),
-                         season_id=int(sid))
+                self.log(f"Fetching matches: league {lid}, season {sid}", "sync_schedule", **self.where(lid, sid))
             result = self._listing(lambda _l=lid, _s=sid: list_schedule(
                 ctx, _l, _s, max_age=listing.SCHEDULE_TTL_SECONDS), "schedule", lid, sid)
             # Boş program: listelendi ama maç yok. Başarısız ya da devre kesici yüzünden yarım kalan program
@@ -875,6 +945,10 @@ class _SyncRun:
                      name=follow.name)
             found = follow_sync.list_follow(follow, client.get_sync, cancelled=self.job.cancelled)
             listings.append(found)
+            # Oyuncunun maçları saklanan maçlardan bulunamaz: listesinin kimlikleri saklanır (B2, F23)
+            store = self._store_or_none()
+            if store is not None and hasattr(store, "runtime"):
+                follow_sync.remember_listing(store, found, complete=not self.job.cancelled())
             if found.failed is not None:
                 self.failed_listings.append(FailedListing(f"{follow.kind}_events", int(follow.entity_id), None,
                                                           found.failed))
@@ -1007,23 +1081,36 @@ class _SyncRun:
             if pending:
                 work.append((lid, pending))
         tracker.set_total(sum(len(p) for _, p in work))
+        # Tahmini süre maç başına istekten de (B2, F17; FX-26'nın takip kuralı): baştan indirilen maç (`full`)
+        # birkaç istek, eksik dilim tamamlaması (`refill`) ve yenileme (`refresh`) bir ya da iki istektir; ilk
+        # maçlar ucuzsa ortalama hız iyimser kalır
+        needs_of = getattr(details, "needs", None)
+        planned = Counter(str(need) for _, pending in work for need in needs_of(pending).values()) \
+            if callable(needs_of) else Counter()
+        if planned:
+            tracker.plan_costs(planned)
+            details.result_listener = lambda result: tracker.note_cost(_cost_class(result.item),
+                                                                       _requests_of(result))
 
         offset = 0
-        for lid, pending in work:
-            if cancelled():
-                break
-            tracker.set_context(league_id=lid, league_name=self.lname(lid))
-            self.log(
-                f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…",
-                "sync_details", league_id=lid, count=len(pending),
-            )
-            details.fetch(
-                pending,
-                progress=lambda done, _t, _m, _o=offset: tracker.advance(_o + done),
-                cancelled=cancelled,
-                failed=lambda mid, _l=lid: tracker.add_failed(mid, _l),
-            )
-            offset += len(pending)
-            if details.breaker_tripped:
-                self.report_breaker(self.details_breaker_reason(), "match details")
-                break
+        try:
+            for lid, pending in work:
+                if cancelled():
+                    break
+                tracker.set_context(league_id=lid, league_name=self.lname(lid))
+                self.log(
+                    f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…",
+                    "sync_details", **self.where(lid), count=len(pending),
+                )
+                details.fetch(
+                    pending,
+                    progress=lambda done, _t, _m, _o=offset: tracker.advance(_o + done),
+                    cancelled=cancelled,
+                    failed=lambda mid, _l=lid: tracker.add_failed(mid, _l),
+                )
+                offset += len(pending)
+                if details.breaker_tripped:
+                    self.report_breaker(self.details_breaker_reason(), "match details")
+                    break
+        finally:
+            details.result_listener = None

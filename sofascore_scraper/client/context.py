@@ -1,7 +1,12 @@
 """
-İstek bağlamı: bir işin isteklerine eşlik eden iptal kontrolü, bekleme bildirimi ve devre kesici.
+İstek bağlamı: bir işin isteklerine eşlik eden iptal kontrolü, bekleme bildirimi, istek bildirimi ve devre kesici.
 
-Üçü de ContextVar'dır: yalnızca o işin thread'ini ve onun asyncio.run / asyncio.to_thread çağrılarını
+İstek bildirimi (`on_request`, B2; bulgu F17, 05-web-ui.md G41): SofaScore'a giden her istek (her deneme, köprünün
+fetch'i ve oturum ısıtması dahil) gönderilmeden hemen önce bir kez bildirilir, ortak istek bütçesinde
+(sofascore_scraper/throttle.py) beklediği saniyeyle. İş ilerlemesi bununla işin istek sayısını ve bütçe beklemesini
+tutar: kullanıcı işin neden yavaş olduğunu görür. Bekleme sırasında kesilen (gönderilmeyen) istek bildirilmez.
+
+Hepsi ContextVar'dır: yalnızca o işin thread'ini ve onun asyncio.run / asyncio.to_thread çağrılarını
 etkiler; aynı anda gelen diğer istekler (lig arama, tek maç çekme) etkilenmez. İptal kontrolü ile bekleme
 bildirimi 2.x'in sofascore_scraper/utils.py'sinden buraya taşındı (utils 3.1'de kalktı); devre kesicinin ContextVar'ı
 sofascore_scraper/breaker.py'de kalır, buradan yalnızca kurulur.
@@ -24,6 +29,7 @@ logger = get_logger("Utils")
 
 CancelCheck = Callable[[], bool]
 WaitNotifier = Callable[[str, float], None]
+RequestNotifier = Callable[[float], None]
 
 
 # ---- İptal (web arka plan işi) ----
@@ -82,7 +88,27 @@ def _notify_wait(reason: str, seconds: float) -> None:
         logger.debug("wait notifier failed", exc_info=True)
 
 
-# ---- Üçü birden ----
+# İşin her isteği (gönderilmeden hemen önce, bütçede beklenen saniyeyle); iş başına ContextVar
+_request_notifier: "contextvars.ContextVar[Optional[RequestNotifier]]" = contextvars.ContextVar(
+    "fetch_request_notifier", default=None
+)
+
+
+def notify_request(waited: float = 0.0) -> None:
+    """
+    SofaScore'a bir istek gidiyor (istek katmanı ve köprü, bütçe sırasını aldıktan sonra çağırır). `waited`:
+    ortak bütçede beklenen saniye. Bağlamda bildirici yoksa hiçbir şey yapmaz; bildirim isteği bozmaz.
+    """
+    fn = _request_notifier.get()
+    if fn is None:
+        return
+    try:
+        fn(max(0.0, float(waited)))
+    except Exception:  # bildirim isteği asla bozmamalı
+        logger.debug("request notifier failed", exc_info=True)
+
+
+# ---- Hepsi birden ----
 
 @dataclass(frozen=True)
 class RequestContext:
@@ -91,6 +117,7 @@ class RequestContext:
     cancel: Optional[CancelCheck]
     on_wait: Optional[WaitNotifier]
     breaker: Optional[CircuitBreaker]
+    on_request: Optional[RequestNotifier] = None
 
 
 @contextlib.contextmanager
@@ -99,19 +126,23 @@ def request_context(
     cancel: Optional[CancelCheck] = None,
     on_wait: Optional[WaitNotifier] = None,
     breaker: Optional[CircuitBreaker] = None,
+    on_request: Optional[RequestNotifier] = None,
 ) -> Iterator[RequestContext]:
     """
-    Blok içindeki istekler tam olarak verilen iptal kontrolü, bekleme bildirimi ve devre kesiciyle çalışır.
+    Blok içindeki istekler tam olarak verilen iptal kontrolü, bekleme bildirimi, istek bildirimi ve devre
+    kesiciyle çalışır.
 
     None "yok" demektir, "dışarıdakini koru" değil: canlı izleme gibi bir işin içinden açılan ama o işin
-    kesicisine sayılmaması gereken istekler `breaker=None` ile ayrılır. Çıkışta üçü de önceki değerine döner.
+    kesicisine sayılmaması gereken istekler `breaker=None` ile ayrılır. Çıkışta hepsi önceki değerine döner.
     """
     cancel_token = _cancel_check.set(cancel)
     wait_token = _wait_notifier.set(on_wait)
+    request_token = _request_notifier.set(on_request)
     breaker_token = request_breaker.activate(breaker)
     try:
-        yield RequestContext(cancel=cancel, on_wait=on_wait, breaker=breaker)
+        yield RequestContext(cancel=cancel, on_wait=on_wait, breaker=breaker, on_request=on_request)
     finally:
         request_breaker.deactivate(breaker_token)
+        _request_notifier.reset(request_token)
         _wait_notifier.reset(wait_token)
         _cancel_check.reset(cancel_token)

@@ -37,7 +37,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from sofascore_scraper.errors import ERRORS, INTERNAL, PlatformError, error_spec, to_platform_error
 from sofascore_scraper.redact import redact_text
 from sofascore_scraper.store import JobStoreConflict, LeaseHeld
-from sofascore_scraper.web.api import is_v1
+from sofascore_scraper.web.api import is_v1, route_path
 
 logger = logging.getLogger("WebAPI")
 
@@ -220,7 +220,7 @@ def validation_details(errors: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
 
 async def _http_exception(request: Request, exc: Exception) -> Response:
     assert isinstance(exc, StarletteHTTPException)
-    if not is_v1(request.scope["path"]):
+    if not is_v1(route_path(request.scope)):
         return await http_exception_handler(request, exc)
     code = _STATUS_CODES.get(exc.status_code, INTERNAL if exc.status_code >= 500 else INVALID_REQUEST)
     message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
@@ -231,7 +231,7 @@ async def _http_exception(request: Request, exc: Exception) -> Response:
 
 async def _validation_error(request: Request, exc: Exception) -> Response:
     assert isinstance(exc, RequestValidationError)
-    if not is_v1(request.scope["path"]):
+    if not is_v1(route_path(request.scope)):
         return await request_validation_exception_handler(request, exc)
     error = PlatformError(INVALID_REQUEST, "The request is not valid.", validation_details(exc.errors()))
     return error_response(request, error, validation=True)

@@ -14,7 +14,7 @@ from sofascore_scraper.logger import attach_file_handler, get_logger
 from sofascore_scraper.paths import env_file_path
 from sofascore_scraper.version import __version__
 from sofascore_scraper.web import deps, errors, security
-from sofascore_scraper.web.api import is_v1
+from sofascore_scraper.web.api import is_v1, route_path
 from sofascore_scraper.web.missing_ui import MISSING_UI_HTML
 
 dotenv.load_dotenv(env_file_path())
@@ -146,8 +146,9 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
     """
     # Yönlendiricinin eşleştirdiği yolun kendisi. request.url, Host başlığıyla birleştirilerek kurulur:
     # "*" izin listesinde "x/y?" gibi bir Host, oradan okunan yolu değiştirip belirteç denetimini
-    # atlatabilirdi.
-    path = request.scope["path"]
+    # atlatabilirdi. Kök yolla çalışırken (`--root-path`) `path` kökü de içerir; yönlendirici onu atar,
+    # denetim de atmalı: yoksa "/<kök>/api/v1/..." belirteçsiz geçiyordu (B2, `route_path`).
+    path = route_path(request.scope)
     v1 = is_v1(path)
     if v1:
         errors.assign_request_id(request)
@@ -177,7 +178,7 @@ async def job_store_conflict(request: Request, exc: JobStoreConflict):
     (job_running / data_operation_running). Ön yüz mesajı bu koda göre çevirir. v1 yollarında aynı hata
     v1 hata modeliyle döner; kilit başka bir süreçteyse sahibi `details.holder`dadır.
     """
-    if is_v1(request.scope["path"]):
+    if is_v1(route_path(request.scope)):
         return errors.exception_response(request, exc)
     return JSONResponse({"detail": {"code": exc.code, "message": str(exc)}}, status_code=409)
 

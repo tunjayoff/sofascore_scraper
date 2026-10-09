@@ -132,5 +132,53 @@ def test_the_connection_check_reports_it(fake: FakeSofaScore, now: List[float]) 
     assert failed["ok"] is False
     assert (failed["connection"]["state"], failed["connection"]["last_failure_reason"]) == ("failed", "network")
     # Son denetim `/status`ta: arayüz onu sekme başına hatırlamak zorunda değil
-    assert connection()["last_check"] == {"at": "2026-10-08T22:53:21+00:00", "ok": False, "reason": "network"}
+    assert connection()["last_check"] == {"at": "2026-10-08T22:53:21+00:00", "ok": False, "reason": "network",
+                                          "superseded": False}
     assert failed["checked_at_utc"] == "2026-10-08T22:53:21Z"
+
+
+# --- eşitlik kuralı: aynı andaki yanıt ve başarısızlık (FX-30'un açık bıraktığı) -------------------------------
+
+
+def test_a_tie_on_a_coarse_clock_is_the_last_recorded_outcome() -> None:
+    """
+    Saat ilerlemezken (kaba saat, dondurulmuş saat) yanıt ve başarısızlığın zamanı eşittir. Durum zamanların
+    karşılaştırmasından değil kayıt sırasından gelir: son kaydedilen sonuç kazanır. Önceden `success >= failure`
+    eşitlikte hep "ok" diyordu, yanıttan sonra gelen başarısızlıkta da.
+    """
+    state = bridge_health.ConnectionState(clock=lambda: 1000.0)
+    state.record_answer()
+    state.record_unanswered("timeout")
+    snap = state.snapshot()
+    assert snap["last_success_at"] == snap["last_failure_at"]
+    assert snap["state"] == "failed"
+    state.record_answer()
+    assert state.snapshot()["state"] == "ok"
+    state.record_unanswered("403", 403)
+    assert state.snapshot()["state"] == "failed"
+
+
+def test_a_tie_through_the_api(fake: FakeSofaScore) -> None:
+    """Aynı saniyede bir yanıt, sonra bir ret: `/status` "failed" der (saat dondurulmuş, iki kayıt aynı anda)."""
+    assert Client().get_sync("/event/9100001").status == "ok"
+    fake.fail("/event/9100002", 403)
+    assert Client().get_sync("/event/9100002", retries=1).status == "failed"
+    tied = connection()
+    assert tied["last_success_at"] == tied["last_failure_at"] == "2026-10-08T22:53:20+00:00"
+    assert tied["state"] == "failed"
+    assert Client().get_sync("/event/9100001").status == "ok"
+    assert connection()["state"] == "ok"
+
+
+def test_a_failed_check_is_superseded_by_a_later_answer_in_the_same_second(fake: FakeSofaScore) -> None:
+    """
+    Başarısız denetimden sonra yanıt alan bir istek denetimi geçersiz kılar (`superseded`), zamanları eşit olsa
+    da: arayüz onu "denetim başarısız" diye göstermez.
+    """
+    fake.disconnect("/sport/football/events/live")
+    assert client.post("/api/v1/status/check", json={"target": "sofascore"}).json()["data"]["ok"] is False
+    assert connection()["last_check"]["superseded"] is False
+    assert Client().get_sync("/event/9100001").status == "ok"
+    after = connection()
+    assert after["last_check"]["at"] == after["last_success_at"] == "2026-10-08T22:53:20+00:00"
+    assert (after["state"], after["last_check"]["superseded"]) == ("ok", True)

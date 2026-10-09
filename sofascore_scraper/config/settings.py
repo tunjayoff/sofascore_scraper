@@ -165,6 +165,11 @@ class FetchSettings:
         "status counts finished events (or events with details) only. Team, player and event follows and the v1 "
         "event list are not affected.",
     )
+    confirm_empty_after_seconds: float = setting(
+        60.0, KIND_FLOAT, "A \"no data\" answer for a data type of a finished event is asked again, to confirm it, "
+        "no sooner than this many seconds after it came; a download before that skips it. 0 asks again in the "
+        "next download.", minimum=0,
+    )
 
 
 @dataclass(frozen=True)

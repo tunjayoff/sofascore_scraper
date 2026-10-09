@@ -113,9 +113,17 @@ class Job(BaseModel):
                     "started (`{\"team:42\": \"Arsenal\"}`).",
     )
     progress: Optional[Dict[str, Any]] = Field(
-        default=None, description="Phase, counters and failed items; the last progress event for a job of another process.",
+        default=None, description="Phase, counters and failed items; the last progress event for a job of another "
+                                  "process. A download has `requests`: `sent` (requests sent to SofaScore, every "
+                                  "retry, browser fetch and session warm-up included), `budget_wait_seconds` (the "
+                                  "time they waited for the shared request budget, `client.rate`) and "
+                                  "`backoff_seconds` (the time they waited because SofaScore asked to slow down or "
+                                  "refused); both times are summed over the requests, which can wait at the same "
+                                  "time. The progress events carry the same object.",
     )
-    result: Optional[Dict[str, Any]] = None
+    result: Optional[Dict[str, Any]] = Field(
+        default=None, description="The outcome of a finished job; a download keeps its `requests` counters here.",
+    )
     error: Optional[JobError] = None
     created_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
     started_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")

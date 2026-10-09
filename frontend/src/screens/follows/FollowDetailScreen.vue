@@ -27,7 +27,7 @@ import MoveFollow from './MoveFollow.vue'
 import SlicePicker from './SlicePicker.vue'
 import { dataText, hasOdds, hitPlace, hitTraits, lastSyncOf, lockReason, placeName, seasonsText, syncIncludes } from './followText'
 import { seenTeam } from '@/app/suggest'
-import { followCoverage, leagueCoverage, type FollowCoverage } from './followCoverage'
+import { followCoverage, leagueCoverage, serverCoverage, type FollowCoverage } from './followCoverage'
 
 /**
  * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its downloads.
@@ -62,7 +62,7 @@ const gettingSeasons = ref(false)
 
 type Tab = 'seasons' | 'events' | 'data' | 'jobs'
 const isTournament = computed(() => kind.value === 'tournament')
-const TABS: Record<string, Tab[]> = { tournament: ['seasons', 'events', 'data', 'jobs'], team: ['events', 'data', 'jobs'] }
+const TABS: Record<string, Tab[]> = { tournament: ['seasons', 'events', 'data', 'jobs'], team: ['events', 'data', 'jobs'], player: ['events', 'data', 'jobs'] }
 const allowed = computed<Tab[]>(() => TABS[kind.value] ?? ['data', 'jobs'])
 const tab = computed<Tab>(() => {
   const q = String(route.query.tab ?? '')
@@ -76,12 +76,17 @@ function setTab(k: Tab) {
 
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
 const leagueRow = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
-/** A team's or a match's finished matches with details, counted from its stored matches (FX-24 F23, FX-26). */
+/** The server's count of this follow (B2, G40: `summary.follows`, a player's too); an older server has none. */
+const followRow = computed(() => status.status?.summary?.follows?.find((x) => x.follow_id === followId.value) ?? null)
+/** A team's or a match's finished matches with details, counted from its stored matches on an older server (FX-24 F23, FX-26). */
 const counted = ref<FollowCoverage | null>(null)
-const coverage = computed(() => (isTournament.value ? (leagueRow.value ? leagueCoverage(leagueRow.value) : null) : counted.value))
+const coverage = computed(() => {
+  if (followRow.value) return serverCoverage(followRow.value)
+  return isTournament.value ? (leagueRow.value ? leagueCoverage(leagueRow.value) : null) : counted.value
+})
 function loadCount() {
   const f = follow.value
-  if (!f || (f.kind !== 'team' && f.kind !== 'event')) return
+  if (!f || (f.kind !== 'team' && f.kind !== 'event') || status.status?.summary?.follows) return
   followCoverage(f)
     .then((c) => (counted.value = c))
     .catch(() => {})
@@ -262,7 +267,7 @@ const facts = computed(() => {
     { key: 'live', label: t('ui.followDetail.fact.live'), value: f.live ? t('ui.follows.liveYes') : t('ui.common.no') },
     { key: 'enabled', label: t('ui.followDetail.fact.enabled'), value: f.enabled ? t('ui.common.yes') : t('ui.common.no') },
     { key: 'lastSync', label: t('ui.followDetail.fact.lastSync') },
-    ...(f.kind !== 'player' ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
+    ...(f.kind !== 'player' || followRow.value ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
     { key: 'origin', label: t('ui.followDetail.fact.origin') },
     { key: 'created', label: t('ui.followDetail.fact.created') },
     { key: 'number', label: t('ui.followDetail.fact.number'), value: String(f.entity_id), mono: true },
@@ -345,6 +350,7 @@ onMounted(() => {
 
             <template v-else-if="tab === 'events'">
               <EventsList v-if="isTournament" :fixed-tournament="entityId" :fixed-sport="follow.sport" table-id="follow-events" />
+              <EventsList v-else-if="kind === 'player'" :fixed-follow="followId" :fixed-sport="follow.sport" table-id="follow-player-events" />
               <EventsList v-else :fixed-participant="entityId" :fixed-sport="follow.sport" table-id="follow-team-events" />
             </template>
 
@@ -386,6 +392,7 @@ onMounted(() => {
                 <span class="u-minibar" aria-hidden="true"><span :style="{ width: `${coverage.coverage}%` }"></span></span>
                 {{ pct(coverage.coverage) }} · {{ t('ui.followDetail.coverageText', { details: num(coverage.details), matches: num(coverage.matches) }) }}
               </span>
+              <span v-else-if="followRow && followRow.counted === false" class="u-muted" data-testid="coverage-pending">{{ t('ui.follows.coveragePlayerPending') }}</span>
               <span v-else>—</span>
               <span v-if="isTournament && otherMatches" class="block mt-1 u-small u-muted" data-testid="follow-other-follows">{{ t('ui.followDetail.otherFollows', { n: num(otherMatches) }) }}</span>
             </template>

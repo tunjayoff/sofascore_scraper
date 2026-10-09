@@ -178,6 +178,8 @@ class Sandbox:
             "SOFASCORE_LOG__DIR": str(self.root / "logs"),
             # Ortak istek bütçesi kapalı ve yalıtılmış (tests/conftest.py ile aynı): fetch goldenları da böyle
             "SOFASCORE_CLIENT__RATE": "0",
+            # "Veri yok" yanıtının doğrulaması beklemeden (F29; tests/conftest.py ile aynı sebep)
+            "SOFASCORE_FETCH__CONFIRM_EMPTY_AFTER_SECONDS": "0",
             "SOFASCORE_CLIENT__THROTTLE_DIR": str(self.root / "throttle"),
             "SOFASCORE_CLIENT__BROWSER_PROFILE": str(self.root / "browser-profile"),
             "HTTP_PROXY": _DEAD_PROXY,

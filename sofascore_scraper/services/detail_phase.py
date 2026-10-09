@@ -71,6 +71,8 @@ class DetailPhase:
         self.status_counts: Dict[str, int] = {}
         # Her yenilemede (maç kimliği, değişti mi) ile çağrılır (iş kartının sayacı)
         self.refresh_listener: Optional[Callable[[str, bool], None]] = None
+        # Her iş biriminin sonucu (işin tahmini süresi maç başına isteği buradan ölçer; B2)
+        self.result_listener: Optional[Callable[[pipeline.ItemResult], None]] = None
         self._needs: Dict[str, str] = {}
 
     # --- plan -----------------------------------------------------------------------------------------
@@ -143,6 +145,8 @@ class DetailPhase:
             self._needs.pop(str(result.event_id), None)
         if result.item.need == "refresh" and result.ok and self.refresh_listener is not None:
             self.refresh_listener(str(result.event_id), bool(result.changed))
+        if self.result_listener is not None:
+            self.result_listener(result)
 
     def _items(self, match_ids: Sequence[Any]) -> List[WorkItem]:
         """Maçların iş birimleri (işin önbelleğindeki kararlarla); tamam olanlar düşer."""

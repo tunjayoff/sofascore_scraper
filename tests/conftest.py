@@ -74,6 +74,10 @@ os.environ["SOFASCORE_CONFIG"] = "none"
 # süreçlerin bütçe dosyasına dokunmaz, sahte uyku sayaçlarına fazladan bekleme girmez.
 os.environ["SOFASCORE_CLIENT__RATE"] = "0"
 os.environ["SOFASCORE_CLIENT__THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
+# "Veri yok" yanıtını doğrulayan istek beklemeden (bulgu F29; varsayılan 60 sn): testler indirmelerini arka arkaya
+# çalıştırır ve ikinci çalıştırmanın doğrulamasını sabitler. Beklemeyi kendi testleri sınar (ortamdan siler:
+# tests/test_planning.py, tests/test_fetch_cancel.py, tests/characterization/test_fetch_flows.py).
+os.environ["SOFASCORE_FETCH__CONFIRM_EMPTY_AFTER_SECONDS"] = "0"
 # Tarayıcı profili de geçici dizinde: uygulama başlangıçta profil dizininin izinlerini daraltır
 # (sofascore_scraper/private_files.harden_secret_paths); testler kullanıcının gerçek profiline dokunmaz.
 os.environ["SOFASCORE_CLIENT__BROWSER_PROFILE"] = os.path.join(_TMP, "browser-profile")

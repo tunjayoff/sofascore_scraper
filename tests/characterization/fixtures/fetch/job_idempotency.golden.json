@@ -23,6 +23,11 @@
     "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
+    "requests": {
+     "backoff_seconds": 0.0,
+     "budget_wait_seconds": 0.0,
+     "sent": 4
+    },
     "schedule_empty_seasons": 0
    },
    "schedule_empty_seasons": 0,
@@ -62,6 +67,11 @@
     "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
+    "requests": {
+     "backoff_seconds": 0.0,
+     "budget_wait_seconds": 0.0,
+     "sent": 0
+    },
     "schedule_empty_seasons": 0
    },
    "schedule_empty_seasons": 0,
@@ -92,6 +102,11 @@
     "failed_listings": [],
     "refresh_changed": 0,
     "refreshed": 0,
+    "requests": {
+     "backoff_seconds": 0.0,
+     "budget_wait_seconds": 0.0,
+     "sent": 0
+    },
     "schedule_empty_seasons": 0
    },
    "schedule_empty_seasons": 0,

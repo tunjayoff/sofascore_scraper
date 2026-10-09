@@ -740,6 +740,60 @@ describe('F23: teams and single matches have their matches with details too', ()
   })
 })
 
+describe('F23 (B2): the server counts every follow, a player’s matches too', () => {
+  const summary = (follows: unknown[]) => status({ summary: { ...status().summary!, follows: follows as never } })
+  const row = (follow_id: string, finished: number, finished_details: number, counted = true) => {
+    const [kind, id] = follow_id.split(':')
+    return { follow_id, kind, entity_id: Number(id), events: finished + 1, finished, finished_details, coverage: finished ? Math.round((finished_details / finished) * 1000) / 10 : 0, counted }
+  }
+
+  it('the list reads the counts from /status; a player not counted yet says when', async () => {
+    const counts = summary([row('team:3071', 3, 2), row('player:7', 4, 4), row('player:8', 0, 0, false)])
+    mockFetch({
+      'GET /api/v1/status': { data: counts },
+      ...SPORTS,
+      'GET /api/v1/follows': page([
+        follow({ id: 'team:3071', kind: 'team', entity_id: 3071, name: 'Göztepe' }),
+        follow({ id: 'player:7', kind: 'player', entity_id: 7, name: 'Bukayo Saka' }),
+        follow({ id: 'player:8', kind: 'player', entity_id: 8, name: 'Victor Osimhen' }),
+      ]),
+      'GET /api/v1/jobs': page([]),
+    })
+    const { w } = await mountScreen(FollowsScreen, '/follows')
+    wrappers.push(w)
+    useStatusStore().status = counts
+    await flush()
+    await flush()
+    const cell = (id: string) => w.find(`[data-row] a[href="/follows/${id.replace(':', '/')}"]`).element.closest('tr')!
+    expect(cell('team:3071').querySelector('[data-testid="follow-coverage"]')!.textContent?.trim()).toBe('67%')
+    const player = cell('player:7').querySelector('[data-testid="follow-coverage"]')!
+    expect(player.textContent?.trim()).toBe('100%')
+    expect(player.getAttribute('title')).toBe(t('ui.followDetail.coverageText', { details: '4', matches: '4' }))
+    expect(cell('player:8').querySelector('[data-testid="follow-coverage-player"]')!.getAttribute('title')).toBe(t('ui.follows.coveragePlayerPending'))
+    expect(await axeViolations(w.element)).toEqual([])
+  })
+
+  it('a player’s page shows the coverage and lists the matches of the player’s list', async () => {
+    const counts = summary([row('player:7', 2, 1)])
+    const f = mockFetch({
+      ...SPORTS,
+      'GET /api/v1/status': { data: counts },
+      'GET /api/v1/follows/player:7': { data: follow({ id: 'player:7', kind: 'player', entity_id: 7, name: 'Bukayo Saka', sport: 'football' }) },
+      'GET /api/v1/jobs': page([]),
+      'GET /api/v1/events': page([event({ id: 1 }), event({ id: 2 })]),
+    })
+    const { w } = await mountScreen(FollowDetailScreen, '/follows/player/7', '/follows/:kind/:id')
+    wrappers.push(w)
+    useStatusStore().status = counts
+    await flush()
+    await flush()
+    expect(w.find('[data-testid="follow-facts"]').text()).toContain(t('ui.followDetail.coverageText', { details: '1', matches: '2' }))
+    const asked = callsTo(f, 'GET /api/v1/events').map((c) => new URL(String(c[0]), 'http://x').searchParams)
+    expect(asked.length).toBeGreaterThan(0)
+    expect(asked.every((q) => q.get('follow') === 'player:7' && !q.get('participant'))).toBe(true)
+  })
+})
+
 describe('F28: a league’s numbers say when other follows brought matches', () => {
   const counts = (events: number) => ({ events, finished: events, details: events, complete: events, completion_rate: 100, missing: {}, schedule_fetched_at_utc: null })
   const seasons = list([

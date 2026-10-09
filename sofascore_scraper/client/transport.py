@@ -24,7 +24,7 @@ from curl_cffi import requests as cffi_requests
 from curl_cffi.requests import AsyncSession
 
 from sofascore_scraper import breaker, throttle
-from sofascore_scraper.client.context import FetchCancelled, _notify_wait, raise_if_cancelled
+from sofascore_scraper.client.context import FetchCancelled, _notify_wait, notify_request, raise_if_cancelled
 from sofascore_scraper.client.endpoints import DEFAULT_BASE_URL
 
 # .env bu import sırasında ortama yüklenir (sofascore_scraper/config_manager.py); ayarlar ondan sonra okunur
@@ -119,21 +119,27 @@ async def _asleep(seconds: float) -> None:
 # SofaScore'a giden her curl isteğinin hemen öncesinde çağrılır; tarayıcı köprüsü kendi
 # isteklerinde aynı bütçeyi kullanır (BrowserBridge._api_fetch). Bekleme iptal edilebilir; iptal
 # edilen istek gönderilmediği için sırası bütçeye geri verilir (sonraki istek onun arkasında beklemez).
+# Sırası gelen istek işin bağlamına bildirilir, beklediği süreyle (`notify_request`; işin istek sayacı, B2).
 
 def _throttle() -> None:
     delay = throttle.reserve()
+    waited = 0.0
     if delay > 0:
         with throttle.give_back_if_interrupted(delay):
             _sleep(delay)
-            throttle.settle(delay, _sleep)  # etkileşimli bir istek önüne geçtiyse (FX-23, F16)
+            # etkileşimli bir istek önüne geçtiyse (FX-23, F16)
+            waited = float(delay) + (throttle.settle(delay, _sleep) or 0.0)
+    notify_request(waited)
 
 
 async def _athrottle() -> None:
     delay = throttle.reserve()
+    waited = 0.0
     if delay > 0:
         with throttle.give_back_if_interrupted(delay):
             await _asleep(delay)
-            await throttle.settle_async(delay, _asleep)
+            waited = float(delay) + (await throttle.settle_async(delay, _asleep) or 0.0)
+    notify_request(waited)
 
 
 IMPERSONATE_PROFILES = [
@@ -688,7 +694,7 @@ async def _warmup_session(session: AsyncSession) -> None:
         use_proxy, proxy_url = _get_proxy_config()
         if use_proxy and proxy_url:
             kwargs["proxy"] = proxy_url  # warm-up da gerçek IP'yi göstermesin
-        await throttle.wait_async()  # warm-up da SofaScore'a giden bir istek: ortak bütçeden
+        notify_request(await throttle.wait_async())  # warm-up da SofaScore'a giden bir istek: ortak bütçeden
         resp = await session.get(warmup_url, **kwargs)
         logger.debug(
             f"Warm-up done: status={resp.status_code}, "

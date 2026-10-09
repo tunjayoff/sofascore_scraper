@@ -28,6 +28,16 @@ politikadadır). Depodan durumları okuyan sarmalayıcılar (`event_needs`, `ref
 `refill` iş biriminin dilimleri, maçın eksik olan bütün seçili dilimleridir: tamlık hesabına girmeyen (isteğe
 bağlı) dilimler de (ör. futbolun pregame_form'u, FX-16), maç zaten yeniden okunuyorsa birlikte istenir.
 
+Doğrulama beklemesi (bulgu F29, `fetch.confirm_empty_after_seconds`, `RefreshPolicy.confirm_after_s`). Bitmiş
+maçta bir dilimin "veri yok" yanıtı, ikinci bir kesin yanıt onu doğrulayana kadar eksik sayılır (eşik
+`DEFAULT_EMPTY_THRESHOLD`). Doğrulayan istek ilk yanıttan hemen sonra gitmez: tek sayılmış "veri yok" yanıtı
+(`checked_at`) bu süreden gençse dilim o plan için beklemededir (`confirmation_pending`): ne `refill` sebebidir ne
+de başka bir sebeple yeniden okunan maçın iş biriminde istenir. Böylece durdurulup hemen sürdürülen bir iş,
+saniyeler önce saklanan maçları yeniden istemez; aynı işte bir maç iki takipten gelirse ikincisi onu yeniden
+sormaz. Bekleme bir uyku değildir: istek gönderilmez, ortak istek bütçesinden sıra da alınmaz; süre geçtikten
+sonraki ilk indirme doğrular. Sayılmamış "veri yok" (maç oynanırken alınan, FX-27) beklemeye girmez: maç bitince
+ilk sayılan yanıtı alır. Süre 0 eski davranıştır (bir sonraki planda doğrulanır).
+
 Dilim seçimi (plan maddesi P27, 02-services.md 3.1). Seçilmeyen dilim hiç istenmez, eksik de sayılmaz;
 tamlık yalnızca seçilmiş ve maçın sporunda tamlık hesabına giren dilimlere bakar. Seçim maç maç çözülür
 (`SelectionPolicy`): maçı kapsayan takibin `slices`'ı → `[slices.<spor>]` → `[defaults] slices` → kayıt
@@ -363,12 +373,35 @@ def slice_missing(info: "SliceInfo", threshold: int = DEFAULT_EMPTY_THRESHOLD) -
     return info.state != _SLICE_OK and info.empty_count + info.unverified_empty_count < threshold
 
 
+def confirmation_pending(info: "SliceInfo", *, now: Optional[float], wait_s: float,
+                         threshold: int = DEFAULT_EMPTY_THRESHOLD) -> bool:
+    """
+    Dilimin "veri yok" yanıtı doğrulanmayı bekliyor mu (modül belgesi, F29): son yanıt sayılmış bir "veri yok",
+    eşiğe ulaşmamış ve `wait_s` saniyeden genç. now None ya da wait_s <= 0: hiç beklemez. Saftır.
+    """
+    if now is None or wait_s <= 0 or info.state != _SLICE_EMPTY:
+        return False
+    counted = info.empty_count + info.unverified_empty_count
+    if counted <= 0 or counted >= threshold:
+        return False
+    checked = _epoch(info.checked_at)
+    return checked is not None and now - checked < wait_s
+
+
 def missing_slice_keys(state: "EventState", selection: Selection = CONFIGURED, *,
-                       threshold: int = DEFAULT_EMPTY_THRESHOLD) -> Tuple[str, ...]:
-    """Olay yükü saklanan maçın eksik beklenen dilimleri, tablo sırasıyla. Alt anahtarı olmayan satıra bakılır."""
+                       threshold: int = DEFAULT_EMPTY_THRESHOLD, now: Optional[float] = None,
+                       confirm_after_s: float = 0.0) -> Tuple[str, ...]:
+    """
+    Olay yükü saklanan maçın eksik beklenen dilimleri, tablo sırasıyla. Alt anahtarı olmayan satıra bakılır.
+    now ve confirm_after_s verilirse doğrulanmayı bekleyen dilim (`confirmation_pending`) düşer: planlayıcının
+    sorusudur ("şimdi istenecek mi"); tamlık hesabı onları eksik sayar (verilmezler).
+    """
     row = state.event
     keys = expected_slice_keys(row.sport, selection, phase=phase_of(row.status_class), row=row)
-    return tuple(key for key in keys if slice_missing(state.slice(key), threshold))
+    return tuple(key for key in keys
+                 if slice_missing(state.slice(key), threshold)
+                 and not confirmation_pending(state.slice(key), now=now, wait_s=confirm_after_s,
+                                              threshold=threshold))
 
 
 def unresolved_slice_keys(state: "EventState", selection: Selection = CONFIGURED, *,
@@ -393,17 +426,21 @@ def _counted_empty(info: "SliceInfo") -> bool:
 
 
 def wanted_slice_keys(state: "EventState", selection: Selection = CONFIGURED, *,
-                      threshold: int = DEFAULT_EMPTY_THRESHOLD) -> Tuple[str, ...]:
+                      threshold: int = DEFAULT_EMPTY_THRESHOLD, now: Optional[float] = None,
+                      confirm_after_s: float = 0.0) -> Tuple[str, ...]:
     """
     Olay yükü saklanan maçta yeniden istenecek dilimler, tablo sırasıyla: seçilmiş, sporuna uyan ve evresinde
     var olabilen her dilim (tamlık hesabına girmeyenler dahil) `ok` değilse ve yeterince kesin "veri yok"
-    yanıtı almamışsa. `missing_slice_keys` bunların tamlık hesabına girenleridir.
+    yanıtı almamışsa. `missing_slice_keys` bunların tamlık hesabına girenleridir. Doğrulanmayı bekleyen dilim
+    (`confirmation_pending`; now ve confirm_after_s verilirse) istenmez.
     """
     row = state.event
     chosen = selection_for(selection, sport=row.sport or None, row=row)
     specs = select_slices("event", row.sport or None, chosen, phase=phase_of(row.status_class))
     return tuple(spec.key for spec in specs
-                 if not is_timed(spec) and slice_missing(state.slice(spec.key), threshold))
+                 if not is_timed(spec) and slice_missing(state.slice(spec.key), threshold)
+                 and not confirmation_pending(state.slice(spec.key), now=now, wait_s=confirm_after_s,
+                                              threshold=threshold))
 
 
 # -- zamanlı dilimler (plan maddesi P28): bahis oranları -------------------------------------------------
@@ -438,9 +475,14 @@ def _epoch(moment: Any) -> Optional[float]:
 
 
 def timed_slice_due(info: "SliceInfo", spec: Any, row: "EventRow", now: float, *,
-                    threshold: int = DEFAULT_EMPTY_THRESHOLD) -> bool:
-    """Zamanlı bir dilimin (alt anahtarıyla) okunma zamanı geldi mi (yukarıdaki kurallar). Saftır."""
+                    threshold: int = DEFAULT_EMPTY_THRESHOLD, confirm_after_s: float = 0.0) -> bool:
+    """
+    Zamanlı bir dilimin (alt anahtarıyla) okunma zamanı geldi mi (yukarıdaki kurallar). Doğrulanmayı bekleyen
+    "veri yok" yanıtı (`confirmation_pending`) da onu erteler. Saftır.
+    """
     if info.settled_empty(threshold):
+        return False
+    if confirmation_pending(info, now=now, wait_s=confirm_after_s, threshold=threshold):
         return False
     fetched = _epoch(info.fetched_at) if info.state == _SLICE_OK or info.has_payload else None
     if row.status_class == StatusClass.NOT_STARTED.value:
@@ -453,7 +495,8 @@ def timed_slice_due(info: "SliceInfo", spec: Any, row: "EventRow", now: float, *
 
 
 def timed_slices_due(state: "EventState", selection: Selection = CONFIGURED, *, now: float,
-                     threshold: int = DEFAULT_EMPTY_THRESHOLD) -> Tuple[Tuple[str, str], ...]:
+                     threshold: int = DEFAULT_EMPTY_THRESHOLD,
+                     confirm_after_s: float = 0.0) -> Tuple[Tuple[str, str], ...]:
     """Maçın okunma zamanı gelen zamanlı dilimleri, (anahtar, alt anahtar) çiftleri, tablo sırasıyla."""
     row = state.event
     if row.status_class != StatusClass.NOT_STARTED.value and row.status_class not in _FINISHED_CLASSES:
@@ -465,7 +508,8 @@ def timed_slices_due(state: "EventState", selection: Selection = CONFIGURED, *, 
         if not is_timed(spec):
             continue
         for sub in spec.sub_keys(provider):
-            if timed_slice_due(state.slice(spec.key, sub), spec, row, now, threshold=threshold):
+            if timed_slice_due(state.slice(spec.key, sub), spec, row, now, threshold=threshold,
+                               confirm_after_s=confirm_after_s):
                 due.append((spec.key, sub))
     return tuple(due)
 
@@ -489,6 +533,11 @@ def _is_record(row: "EventRow", layout: Optional[str]) -> bool:
     return row.has_event_payload and (layout is None or (row.layout == layout and bool(row.path)))
 
 
+def _confirm_wait(policy: Any) -> float:
+    """Politikanın doğrulama beklemesi (saniye); alanı olmayan eski politika nesnesi için 0."""
+    return float(getattr(policy, "confirm_after_s", 0.0) or 0.0)
+
+
 def compute_need(state: Optional["EventState"], selection: Selection, policy: RefreshPolicy, *,
                  threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> Need:
     """
@@ -502,22 +551,23 @@ def compute_need(state: Optional["EventState"], selection: Selection, policy: Re
     if state is None:
         return NEED_FULL
     row = state.event
+    wait = _confirm_wait(policy)
     if not row.has_event_payload:
         if row.status_class in _WAITING_CLASSES:
             # Başlamamış maçın oranları (P28): olay yükü henüz yoksa da yalnızca o dilimler istenir
-            return NEED_REFILL if timed_slices_due(state, selection, now=policy.now, threshold=threshold) \
-                else NEED_NONE
+            return NEED_REFILL if timed_slices_due(state, selection, now=policy.now, threshold=threshold,
+                                                   confirm_after_s=wait) else NEED_NONE
         return NEED_FULL
     if not _is_record(row, layout):
         return NEED_FULL
     if row.stale:
         return NEED_REFRESH
     if row.status_class not in SETTLED_CLASSES:
-        return NEED_REFILL if timed_slices_due(state, selection, now=policy.now, threshold=threshold) \
-            else NEED_NONE
+        return NEED_REFILL if timed_slices_due(state, selection, now=policy.now, threshold=threshold,
+                                               confirm_after_s=wait) else NEED_NONE
     if row.status_class in _FINISHED_CLASSES and (
-            missing_slice_keys(state, selection, threshold=threshold)
-            or timed_slices_due(state, selection, now=policy.now, threshold=threshold)):
+            missing_slice_keys(state, selection, threshold=threshold, now=policy.now, confirm_after_s=wait)
+            or timed_slices_due(state, selection, now=policy.now, threshold=threshold, confirm_after_s=wait)):
         return NEED_REFILL
     if refresh_due(row, policy):
         return NEED_REFRESH
@@ -525,11 +575,12 @@ def compute_need(state: Optional["EventState"], selection: Selection, policy: Re
 
 
 def work_item(event_id: int, state: Optional["EventState"], need: str, selection: Selection = CONFIGURED, *,
-              threshold: int = DEFAULT_EMPTY_THRESHOLD, now: Optional[float] = None) -> Optional[WorkItem]:
+              threshold: int = DEFAULT_EMPTY_THRESHOLD, now: Optional[float] = None,
+              confirm_after_s: float = 0.0) -> Optional[WorkItem]:
     """
     İhtiyacın iş birimi; `none` için None. `refill`'in dilimleri: bitmiş maçta eksik seçili dilimler, sonra
     zamanı gelen zamanlı dilimler (bahis oranları, alt anahtarlarıyla; `now` verildiyse); bitmemiş maçta yalnızca
-    zamanlı dilimler.
+    zamanlı dilimler. confirm_after_s: doğrulanmayı bekleyen dilimler istenmez (`confirmation_pending`).
     """
     sport = state.event.sport if state is not None else None
     if need == NEED_NONE:
@@ -540,8 +591,10 @@ def work_item(event_id: int, state: Optional["EventState"], need: str, selection
         return WorkItem(Ref.event(event_id), "full", (), sport, reason)
     if need == NEED_REFILL and state is not None:
         finished = state.event.status_class in _FINISHED_CLASSES and state.event.has_event_payload
-        missing = wanted_slice_keys(state, selection, threshold=threshold) if finished else ()
-        timed = timed_slices_due(state, selection, now=now, threshold=threshold) if now is not None else ()
+        missing = wanted_slice_keys(state, selection, threshold=threshold, now=now,
+                                    confirm_after_s=confirm_after_s) if finished else ()
+        timed = timed_slices_due(state, selection, now=now, threshold=threshold,
+                                 confirm_after_s=confirm_after_s) if now is not None else ()
         pairs = tuple((key, "") for key in missing) + timed
         reason = "missing slices: " + ", ".join(missing) if missing else ""
         if timed:
@@ -719,7 +772,8 @@ def prematch_items(store: "Store", policy: RefreshPolicy, *, tournament_ids: Seq
         for state in store.events.states(Scope(event_ids=tuple(chunk))):
             if state.event.stale:
                 continue
-            due = timed_slices_due(state, chosen, now=policy.now, threshold=threshold)
+            due = timed_slices_due(state, chosen, now=policy.now, threshold=threshold,
+                                   confirm_after_s=_confirm_wait(policy))
             if due:
                 items.append(WorkItem(Ref.event(state.event.id), "refill", due, state.event.sport or None,
                                       "pre-match: " + ", ".join(f"{key}/{sub}" if sub else key for key, sub in due)))
@@ -815,14 +869,15 @@ def plan_items(store: "Store", event_ids: Iterable[Any], policy: RefreshPolicy, 
         need = decided[str(event_id)]
         if need == NEED_REFILL and state is None:
             need = NEED_FULL  # önbellekteki karar eskimiş: kayıt artık yok
-        item = work_item(event_id, state, need, selection, threshold=threshold, now=policy.now)
+        item = work_item(event_id, state, need, selection, threshold=threshold, now=policy.now,
+                         confirm_after_s=_confirm_wait(policy))
         if item is not None:
             items.append(item)
     return items
 
 
 __all__ = ["CONFIGURED", "LISTING_SCHEDULE", "LISTING_SEASONS", "NEEDS", "NEED_LISTING", "Need", "SETTLED_CLASSES",
-           "Selection", "SelectionPolicy", "WorkItem", "configured_policy", "resolve_policy", "selection_for", "WorkNeed", "compute_need", "event_needs", "expected_slice_keys", "missing_slice_keys", "order_by_need", "unresolved_slice_keys",
+           "Selection", "SelectionPolicy", "WorkItem", "confirmation_pending", "configured_policy", "resolve_policy", "selection_for", "WorkNeed", "compute_need", "event_needs", "expected_slice_keys", "missing_slice_keys", "order_by_need", "unresolved_slice_keys",
            "phase_of", "plan_items", "refresh_due", "refresh_due_events", "schedule_item", "season_list_item",
            "slice_missing", "wanted_slice_keys", "work_item",
            "NEED_OWNER", "PREMATCH_WINDOW_S", "SEASON_ACTIVE_S", "extras_selected", "is_timed", "owner_item",

@@ -281,3 +281,88 @@ def test_wait_notifier_reaches_the_card(job_env, monkeypatch):
     assert seen and seen[0] == "rate_limit"
     # The notifier is per job: nothing is left behind for other requests
     assert request_ctx._wait_notifier.get() is None
+
+
+# --- istek sayaçları (B2; bulgu F17, 05-web-ui.md G41) ---------------------------------------------------
+
+
+def test_the_request_counters_are_in_the_progress_and_the_result() -> None:
+    """İşin istekleri, bütçe beklemesi ve geri çekilme beklemesi ilerlemede ve sonuçta (iş kaydı) durur."""
+    published: List[Dict[str, Any]] = []
+    progress = JobProgress(["details"], published.append)
+    progress.start_phase("details", 3)
+    assert progress.detail()["requests"] == {"sent": 0, "budget_wait_seconds": 0.0, "backoff_seconds": 0.0}
+    progress.note_request(0.0)
+    progress.note_request(1.26)
+    progress.note_request(-1)  # bozuk değer sayılır, bekleme eklenmez
+    progress.wait("rate_limit", 30)
+    expected = {"sent": 3, "budget_wait_seconds": 1.3, "backoff_seconds": 30.0}
+    assert published[-1]["detail"]["requests"] == expected  # bekleme yayımladı, sayaçlar onunla çıktı
+    assert progress.result()["requests"] == expected
+
+
+def test_a_request_alone_does_not_write_the_job_row() -> None:
+    """Bildirim köprünün thread'inden de gelir: sayaç bir sonraki yayınla çıkar, istek başına yazma yok."""
+    published: List[Dict[str, Any]] = []
+    progress = JobProgress(["details"], published.append)
+    progress.start_phase("details", 2)
+    before = len(published)
+    for _ in range(5):
+        progress.note_request(0.2)
+    assert len(published) == before
+    progress.advance(1)
+    assert published[-1]["detail"]["requests"]["sent"] == 5
+
+
+def test_the_request_context_counts_every_request_sent(monkeypatch) -> None:
+    """
+    İstek katmanı her isteği gönderilmeden önce bildirir, ortak bütçedeki beklemesiyle; bağlamın dışındaki
+    istekler sayılmaz, bekleme sırasında kesilen istek de (gönderilmedi).
+    """
+    from sofascore_scraper import throttle
+    from sofascore_scraper.client import context as request_ctx
+    from sofascore_scraper.client import transport
+
+    seen: List[float] = []
+    monkeypatch.setattr(throttle, "reserve", lambda: 0.4)
+    monkeypatch.setattr(throttle, "settle", lambda delay, sleep: 0.1)
+    monkeypatch.setattr(transport, "_sleep", lambda seconds: None)
+    with request_ctx.request_context(on_request=seen.append):
+        transport._throttle()
+        transport._throttle()
+    transport._throttle()  # bağlam dışında
+    assert seen == [0.5, 0.5]
+    assert request_ctx._request_notifier.get() is None
+
+    def interrupted(seconds: float) -> None:
+        raise request_ctx.FetchCancelled()
+
+    monkeypatch.setattr(transport, "_sleep", interrupted)
+    monkeypatch.setattr(throttle, "give_back", lambda delay: False)
+    with request_ctx.request_context(on_request=seen.append):
+        with pytest.raises(request_ctx.FetchCancelled):
+            transport._throttle()
+    assert seen == [0.5, 0.5]
+
+
+def test_a_sync_job_reports_its_requests(job_env, monkeypatch):
+    """Eşitleme işinin istek bağlamı her isteği işin ilerlemesine bildirir; iş bitince sonuçta da durur."""
+    fj, store, _ = job_env
+    from sofascore_scraper.client import context as request_ctx
+
+    class RequestingMD(FakeMatchData):
+        def fetch(self, ids, **kw):
+            for _ in ids:
+                request_ctx.notify_request(0.25)
+            return super().fetch(ids, **kw)
+
+    md = RequestingMD({17: ["a", "b"]}, failing=set())
+    final = run(fj, store, monkeypatch, fake_ui(md, {}), {"mode": "details", "league_id": 17})
+    from sofascore_scraper.jobs.manager import JobManager
+
+    job = JobManager(store).get(final["job_id"])
+    assert job is not None and job.result["requests"] == {"sent": 2, "budget_wait_seconds": 0.5,
+                                                          "backoff_seconds": 0.0}
+    events = store.read_events(final["job_id"])
+    assert [e["data"]["requests"]["sent"] for e in events if e["type"] == "progress"][-1] == 2
+    assert request_ctx._request_notifier.get() is None

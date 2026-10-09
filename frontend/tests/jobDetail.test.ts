@@ -54,6 +54,27 @@ describe('Job detail', () => {
     expect(await axeViolations(w.element)).toEqual([])
   })
 
+  it('says how many requests a download sent and how long they waited for the request budget (B2, F17)', async () => {
+    await open(() => json({ data: running({ progress: { phase: 'details', phase_index: 3, phase_count: 3, done: 33, total: 70, percent: 40, eta_seconds: 71, failed_count: 0, failed: [], requests: { sent: 150, budget_wait_seconds: 412.5, backoff_seconds: 0 } } }) }))
+    const line = w.find('[data-testid="job-requests"]')
+    expect(line.text()).toBe(`150 requests to SofaScore · ${t('ui.job.requestsWait', { time: '2.8 s' })}`)
+    expect(line.attributes('title')).toBe(t('ui.job.requestsHelp'))
+    // the stream carries the counters too
+    FakeES.last.emit('progress', 9, { percent: 41, done: 34, total: 70, phase: 'details', phase_index: 3, phase_count: 3, requests: { sent: 160, budget_wait_seconds: 440, backoff_seconds: 60 } })
+    await flush()
+    expect(w.find('[data-testid="job-requests"]').text()).toContain('160 requests to SofaScore')
+    expect(w.find('[data-testid="job-requests"]').text()).toContain(t('ui.job.requestsBackoff', { time: '1 min' }))
+    expect(await axeViolations(w.element)).toEqual([])
+  })
+
+  it('a finished download keeps its request counters in the result; an older job has none', async () => {
+    await open(() => json({ data: job({ result: { details_done: 70, details_total: 70, failed_count: 0, failed: [], requests: { sent: 322, budget_wait_seconds: 0, backoff_seconds: 0 } } }) }))
+    expect(w.find('[data-testid="job-result-requests"]').text()).toBe(`322 requests to SofaScore · ${t('ui.job.requestsWait', { time: '0 s' })}`)
+    w.unmount()
+    await open(() => json({ data: job() }))
+    expect(w.find('[data-testid="job-result-requests"]').exists()).toBe(false)
+  })
+
   it('follows the event log over SSE, translated by type and code, without duplicates', async () => {
     await open(() => json({ data: running() }))
     const es = FakeES.last

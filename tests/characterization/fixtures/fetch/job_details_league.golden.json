@@ -446,6 +446,11 @@
    "failed_listings": [],
    "refresh_changed": 1,
    "refreshed": 1,
+   "requests": {
+    "backoff_seconds": 0.0,
+    "budget_wait_seconds": 0.0,
+    "sent": 14
+   },
    "schedule_empty_seasons": 0
   },
   "schedule_empty_seasons": 0,

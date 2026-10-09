@@ -194,6 +194,8 @@ export interface ConnectionCheck {
   ok: boolean
   /** Why it failed (the check's `reason`); null when ok. */
   reason?: string | null
+  /** A request was answered after this check, so a failed check no longer describes the connection. Decided by the order of the records, not by their times, which can be equal on a coarse clock. */
+  superseded?: boolean
 }
 
 /**
@@ -202,7 +204,7 @@ export interface ConnectionCheck {
  * before any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here.
  */
 export interface ConnectionStatus {
-  /** never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not. */
+  /** never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not. The last one is the last recorded, also when an answer and a failure have the same time. */
   state: "never_tried" | "ok" | "failed"
   /** ISO-8601, UTC. */
   last_success_at?: string | null
@@ -256,6 +258,8 @@ export interface DataSummary {
   /** Set when the catalog does not describe the files; the counts are then partial. */
   catalog_rebuild_reason?: string | null
   tournaments: TournamentSummary[]
+  /** Every follow, in the order of the follows list, with its counts (F23). */
+  follows?: FollowSummary[]
   disk?: DiskSummary | null
   /** Null when `ssc migrate` never ran. */
   last_migration?: MigrationRun | null
@@ -580,6 +584,27 @@ export interface FollowResponse {
   data: FollowRecord
 }
 
+/**
+ * Counts of one follow (F23): its stored events, the finished ones and the finished ones with a stored event
+ * payload. One rule for every kind (FX-26): coverage is `finished_details / finished`; an event not played yet
+ * is not missing.
+ */
+export interface FollowSummary {
+  /** The follow's id, `kind:entity_id` (as `FollowRecord.id`). */
+  follow_id: string
+  kind: "tournament" | "team" | "player" | "event"
+  entity_id: number
+  /** Stored events of the follow: a tournament's, a team's (as a participant), the event itself, or the events of a player's last match list (the stored events do not say who played). */
+  events: number
+  finished: number
+  /** Finished events with a stored event payload. */
+  finished_details: number
+  /** finished_details / finished in percent, one decimal; 0 without finished events. */
+  coverage: number
+  /** False: the events cannot be counted yet (a player follow whose match list was not read since this version; its next download reads it). The counts are 0. */
+  counted?: boolean
+}
+
 /** Score family `football`: goals by stage of the match. */
 export interface FootballScore {
   /** Always `football`. */
@@ -649,8 +674,9 @@ export interface Job {
   origin: JobOrigin
   /** What the job was started with. A download (`sync`, `fetch`, `refresh`) has the fields of its request body (`only: "events"`: a `sync` of event details only, from `ssc sync --only events`); one by `event_ids` also has `selections`, the leagues of those events (league 0: an event not stored); `names` maps the follows and leagues it names to their names when it started (`{"team:42": "Arsenal"}`). */
   spec: Record<string, unknown>
-  /** Phase, counters and failed items; the last progress event for a job of another process. */
+  /** Phase, counters and failed items; the last progress event for a job of another process. A download has `requests`: `sent` (requests sent to SofaScore, every retry, browser fetch and session warm-up included), `budget_wait_seconds` (the time they waited for the shared request budget, `client.rate`) and `backoff_seconds` (the time they waited because SofaScore asked to slow down or refused); both times are summed over the requests, which can wait at the same time. The progress events carry the same object. */
   progress?: Record<string, unknown> | null
+  /** The outcome of a finished job; a download keeps its `requests` counters here. */
   result?: Record<string, unknown> | null
   error?: JobError | null
   /** ISO-8601, UTC. */
@@ -1862,7 +1888,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/events"
     params: {}
-    query: { sport?: string | null; tournament?: number[] | null; season?: number[] | null; participant?: number[] | null; status?: ("not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown")[] | null; from?: string | null; to?: string | null; has?: "details" | "missing" | null; q?: string | null; followed?: boolean; sort?: "start_utc" | "-start_utc"; include?: "slices_summary"[] | null; limit?: number; cursor?: string | null }
+    query: { sport?: string | null; tournament?: number[] | null; season?: number[] | null; participant?: number[] | null; follow?: string | null; status?: ("not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown")[] | null; from?: string | null; to?: string | null; has?: "details" | "missing" | null; q?: string | null; followed?: boolean; sort?: "start_utc" | "-start_utc"; include?: "slices_summary"[] | null; limit?: number; cursor?: string | null }
     body: never
     response: EventListResponse
   }

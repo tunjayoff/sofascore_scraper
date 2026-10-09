@@ -497,7 +497,7 @@ def read_v3_manifest(data_dir: str, directory: str, kind: str, entity_id: int,
     if found.kind != kind or found.id != entity_id:
         if problems is not None:
             problems.append(LegacyProblem(rel, legacy.PROBLEM_ID_MISMATCH,
-                                          f"manifest {found.kind} {found.id!r}, dizin {kind} {entity_id}"))
+                                          f"manifest {found.kind} {found.id!r}, directory {kind} {entity_id}"))
         return None
     return found
 
@@ -527,7 +527,7 @@ def v3_entities(data_dir: str, problems: Optional[List[LegacyProblem]] = None) -
                 if directory != f"{root}/{bucket}/{entity_id}":
                     if problems is not None:
                         problems.append(LegacyProblem(f"{root}/{bucket}/{entity_id}", legacy.PROBLEM_NAME,
-                                                      f"{kind} dizini kurallı yerinde değil ({directory})"))
+                                                      f"{kind} directory not in its canonical place ({directory})"))
                     continue
                 found = read_v3_manifest(data_dir, directory, kind, entity_id, problems)
                 if found is not None:
@@ -711,7 +711,7 @@ def _read_v3_page(data_dir: str, page: V3SchedulePage, out: SeasonListing) -> No
         _add(out, event_id, item, page.sub, fetched_at, page.path, True)
     if unusable:
         out.problems.append(LegacyProblem(page.path, legacy.PROBLEM_MALFORMED,
-                                          f"kimliği olmayan liste öğesi: {unusable}"))
+                                          f"list items without an id: {unusable}"))
 
 
 def _add(out: SeasonListing, event_id: int, payload: Mapping[str, Any], sub: Optional[str], fetched_at: int,
@@ -742,7 +742,7 @@ def _read_page(reader: LegacyReader, page: LegacySchedulePage, out: SeasonListin
             continue
         _add(out, event_id, item, page.sub, fetched_at, page.path, True)
     if unusable:
-        out.problems.append(LegacyProblem(page.path, legacy.PROBLEM_MALFORMED, f"kimliği olmayan liste öğesi: {unusable}"))
+        out.problems.append(LegacyProblem(page.path, legacy.PROBLEM_MALFORMED, f"list items without an id: {unusable}"))
 
 
 def _read_summary(reader: LegacyReader, summary: LegacySummaryFile, out: SeasonListing) -> None:
@@ -763,7 +763,7 @@ def _read_summary(reader: LegacyReader, summary: LegacySummaryFile, out: SeasonL
             continue
         _add(out, event["id"], event, round_sub(row.get("round")), fetched_at, summary.path, False)
     if unusable:
-        out.problems.append(LegacyProblem(summary.path, legacy.PROBLEM_MALFORMED, f"match_id'siz satır: {unusable}"))
+        out.problems.append(LegacyProblem(summary.path, legacy.PROBLEM_MALFORMED, f"rows without a match_id: {unusable}"))
 
 
 def find_listed(reader: LegacyReader, path: str, event_id: int) -> Optional[Mapping[str, Any]]:
@@ -1021,7 +1021,7 @@ def apply_season(cat: Catalog, reader: LegacyReader, listing: SeasonListing, *, 
             if (existing["tournament_id"], existing["season_id"]) != (tournament_id, season_id):
                 notes.append(LegacyProblem(
                     listed.path, PROBLEM_SEASON_MISMATCH,
-                    f"maç {event_id}: olay yükü {existing['tournament_id']}/{existing['season_id']} diyor"))
+                    f"event {event_id}: the event payload says {existing['tournament_id']}/{existing['season_id']}"))
                 continue
             stale = False
             compared_at = existing["compared_at"]
@@ -1034,7 +1034,7 @@ def apply_season(cat: Catalog, reader: LegacyReader, listing: SeasonListing, *, 
             try:  # liste öğesindeki varlıklar (yarışmacılar, turnuva) maçın yükü olsa da yazılır
                 entity_rows.append(_entity_rows(listed, sport))
             except _DERIVE_ERRORS as exc:
-                notes.append(LegacyProblem(listed.path, legacy.PROBLEM_MALFORMED, f"maç {event_id}: {exc}"))
+                notes.append(LegacyProblem(listed.path, legacy.PROBLEM_MALFORMED, f"event {event_id}: {exc}"))
             flags.append((listed.sub, int(stale), event_id))
             attached.add(event_id)
             continue
@@ -1045,11 +1045,11 @@ def apply_season(cat: Catalog, reader: LegacyReader, listing: SeasonListing, *, 
             row, mismatch = _listing_row(listed, tournament_id, season_id, sport)
             entities = _entity_rows(listed, sport)
         except _DERIVE_ERRORS as exc:
-            notes.append(LegacyProblem(listed.path, legacy.PROBLEM_MALFORMED, f"maç {event_id}: {exc}"))
+            notes.append(LegacyProblem(listed.path, legacy.PROBLEM_MALFORMED, f"event {event_id}: {exc}"))
             continue
         if mismatch:
             notes.append(LegacyProblem(listed.path, PROBLEM_SEASON_MISMATCH,
-                                       f"maç {event_id}: liste öğesi başka bir turnuva / sezon söylüyor"))
+                                       f"event {event_id}: the list item names another tournament / season"))
         rows.append(row)
         links.extend(derive.event_participant_rows(row))
         entity_rows.append(entities)

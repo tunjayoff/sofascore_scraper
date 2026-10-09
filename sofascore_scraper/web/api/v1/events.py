@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional, Set
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional, Set, Tuple
 
 from fastapi import APIRouter, Header, Path, Query, Response
 from pydantic import BaseModel, Field
@@ -242,6 +242,12 @@ def list_events(
     tournament: Annotated[Optional[List[int]], Query(description="Only events of these tournaments.")] = None,
     season: Annotated[Optional[List[int]], Query(description="Only events of these seasons.")] = None,
     participant: Annotated[Optional[List[int]], Query(description="Only events of these participants.")] = None,
+    follow: Optional[str] = Query(
+        None, pattern=r"^(tournament|team|player|event):[1-9][0-9]{0,11}$",
+        description="Only the stored events of this follow (`kind:entity_id`, as `FollowRecord.id`): a tournament's, "
+                    "a team's, the event itself, or the events of a player's last match list (none until the "
+                    "player's first download in this version). The follow need not exist.",
+    ),
     status: Annotated[Optional[List[StatusClassName]], Query(description="Only events in these status classes.")] = None,
     from_: Optional[str] = Query(None, alias="from", max_length=40, description="Start at or after; ISO 8601 date or date-time (UTC without an offset)."),
     to: Optional[str] = Query(None, max_length=40, description="Start at or before; a date includes the whole day."),
@@ -259,13 +265,25 @@ def list_events(
     Stored events, by start time (ties by id; events without a start time come last when newest first). The
     filters are combined with AND. Every status class the catalog holds is returned unless `status` narrows it.
     """
+    from sofascore_scraper.services import follow_sync
     from sofascore_scraper.services.query import EventFilter
 
+    tournament_ids, participant_ids, event_ids = tuple(tournament or ()), tuple(participant or ()), ()
+    if follow is not None:
+        kind, _, number = follow.partition(":")
+        scope = follow_sync.follow_scope(deps.store(), kind, int(number))
+        # Süzgeçler VE ile birleşir: takibin turnuvası ya da takımı verilenlerle kesişir
+        tournament_ids, none_left = _narrow(tournament_ids, tuple(scope.tournament_ids) if scope else ())
+        participant_ids, none_also = _narrow(participant_ids, tuple(scope.participant_ids) if scope else ())
+        if scope is None or none_left or none_also:  # oyuncunun listesi yok ya da boş: maçı da yok
+            return EventListResponse(data=[], page=PageInfo(limit=limit, next_cursor=None))
+        event_ids = tuple(scope.event_ids)
     flt = EventFilter(
         sport=sport,
-        tournament_ids=tuple(tournament or ()),
+        tournament_ids=tournament_ids,
         season_ids=tuple(season or ()),
-        participant_ids=tuple(participant or ()),
+        participant_ids=participant_ids,
+        event_ids=event_ids,
         status_classes=tuple(status or ()),
         start_from=_moment(from_, "from", end=False),
         start_to=_moment(to, "to", end=True),
@@ -287,6 +305,14 @@ def list_events(
         }
         items.append(item)
     return EventListResponse(data=items, page=PageInfo(limit=limit, next_cursor=page.next_cursor))  # type: ignore[arg-type]
+
+
+def _narrow(given: Tuple[int, ...], wanted: Tuple[int, ...]) -> Tuple[Tuple[int, ...], bool]:
+    """İki kimlik süzgecinin kesişimi (VE): (kimlikler, hiçbiri kalmadı mı). Biri boşsa öteki süzer."""
+    if not wanted or not given:
+        return given or wanted, False
+    both = tuple(number for number in given if number in wanted)
+    return both, not both
 
 
 def _event_not_found(event_id: int) -> NotFoundError:

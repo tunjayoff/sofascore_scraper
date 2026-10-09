@@ -246,7 +246,7 @@ def event_row(payload: Mapping[str, Any], source: str = "event", observed_at: Ti
     Kimliği olmayan ya da nesne olmayan yük PayloadCorrupt verir.
     """
     if source not in ROW_SOURCES:
-        raise ValueError(f"Geçersiz satır kaynağı: {source!r}")
+        raise ValueError(f"Invalid row source: {source!r}")
     if not isinstance(payload, Mapping):
         raise PayloadCorrupt(f"The event payload is not an object: {type(payload).__name__}")
     event_id = _int(payload.get("id"))

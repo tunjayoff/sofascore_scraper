@@ -155,7 +155,7 @@ def segments(data_dir: PathLike, problems: Optional[List[LegacyProblem]] = None)
             found.append(f"{layout.CHANGES_DIR}/{name}")
         elif problems is not None:
             problems.append(LegacyProblem(f"{layout.CHANGES_DIR}/{name}", legacy.PROBLEM_NAME,
-                                          "değişiklik günlüğü parçası olarak tanınmadı"))
+                                          "not recognised as a change log segment"))
     return found
 
 
@@ -245,7 +245,7 @@ def parse_lines(data: bytes, segment: str, *, first_line: int = 1,
     torn = parts.pop()  # son "\n"den sonrası: tam dosyada boş
     notes: List[LegacyProblem] = problems if problems is not None else []
     if torn.strip():
-        notes.append(LegacyProblem(segment, legacy.PROBLEM_TORN, f"satır {first_line + len(parts)}"))
+        notes.append(LegacyProblem(segment, legacy.PROBLEM_TORN, f"line {first_line + len(parts)}"))
     out: List[SegmentLine] = []
     for number, raw in enumerate(parts, start=first_line):
         if not raw.strip():
@@ -254,19 +254,19 @@ def parse_lines(data: bytes, segment: str, *, first_line: int = 1,
             line = raw.decode("utf-8").rstrip("\r")
             parsed = json.loads(line)
         except (ValueError, RecursionError) as exc:  # JSONDecodeError ve UnicodeDecodeError birer ValueError'dır
-            notes.append(LegacyProblem(segment, legacy.PROBLEM_CORRUPT, f"satır {number}: {exc}"))
+            notes.append(LegacyProblem(segment, legacy.PROBLEM_CORRUPT, f"line {number}: {exc}"))
             continue
         if not isinstance(parsed, dict):
-            notes.append(LegacyProblem(segment, legacy.PROBLEM_MALFORMED, f"satır {number}: JSON nesnesi değil"))
+            notes.append(LegacyProblem(segment, legacy.PROBLEM_MALFORMED, f"line {number}: not a JSON object"))
             continue
         seq = number if numbered else _plain_int(parsed.get("seq"))
         if seq is None or seq < 1:
-            notes.append(LegacyProblem(segment, legacy.PROBLEM_MALFORMED, f"satır {number}: seq yok"))
+            notes.append(LegacyProblem(segment, legacy.PROBLEM_MALFORMED, f"line {number}: no seq"))
             continue
         row = change_row(seq, parsed, line, segment)
         if row is None:
             notes.append(LegacyProblem(segment, legacy.PROBLEM_MALFORMED,
-                                       f"satır {number}: ts_utc ya da event_id yok"))
+                                       f"line {number}: no ts_utc or event_id"))
             continue
         out.append(SegmentLine(number, seq, line, row))
     return out, len(data) - len(torn), len(parts)
@@ -307,10 +307,10 @@ def _insert(cat: Catalog, segment: str, lines: List[SegmentLine],
         if holder is not None and _order(holder) <= _order(segment):
             if problems is not None:
                 problems.append(LegacyProblem(segment, PROBLEM_SEQ,
-                                              f"satır {line.number}: seq {line.seq} zaten {holder} içinde"))
+                                              f"line {line.number}: seq {line.seq} is already in {holder}"))
             continue
         if holder is not None and problems is not None:
-            problems.append(LegacyProblem(holder, PROBLEM_SEQ, f"seq {line.seq} zaten {segment} içinde"))
+            problems.append(LegacyProblem(holder, PROBLEM_SEQ, f"seq {line.seq} is already in {segment}"))
         holders[line.seq] = segment
         accepted[line.seq] = line.row
     cat.upsert("changes", accepted.values())

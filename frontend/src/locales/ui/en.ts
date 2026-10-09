@@ -569,6 +569,11 @@ const en = {
     countsPhase: '{phase}: {done} of {total}',
     eta: 'about {time} left',
     waiting: 'Waiting {n} s: {why}.',
+    requests: '{n} requests to SofaScore',
+    requestsLabel: 'Requests',
+    requestsWait: 'each waited {time} on average for the request budget',
+    requestsBackoff: '{time} in all waiting because SofaScore asked to slow down',
+    requestsHelp: 'Requests are paced by the request budget shared by every process of this machine (Settings › Requests). A long average wait means the budget, not SofaScore, sets the pace.',
     noHeartbeat: 'No sign of life for {time}; the process may have stopped.',
     result: 'Result',
     details: 'Match details',
@@ -695,6 +700,7 @@ const en = {
     description: 'What is downloaded: leagues, teams, players and single matches, with their seasons and data.',
     syncAll: 'Update all',
     coveragePlayer: 'Not counted for a player: the stored matches do not say who played in them.',
+    coveragePlayerPending: 'Counted after the player’s next download: it keeps the matches of the player’s match list.',
     sameName: 'Another follow has the same name: compare the numbers on sofascore.com',
     add: 'Add league',
     search: 'Search name',
@@ -811,7 +817,7 @@ const en = {
     completeHelp: 'Share of the finished matches with details that have every chosen data type stored, or confirmed by SofaScore as not available. Matches not played yet are not counted.',
     missing: 'still missing: {list}',
     missingItem: '{name} ({n})',
-    missingHelp: 'A data type SofaScore answered “no data” for counts as missing until a second answer confirms it; the next download asks again.',
+    missingHelp: 'A data type SofaScore answered “no data” for counts as missing until a second answer confirms it; the next download asks again, at least a minute after the first answer.',
     scheduleRead: 'Schedule read',
     scheduleNever: 'Schedule not read yet',
     coverageText: '{details} of {matches} finished matches have details',
@@ -1771,6 +1777,7 @@ const en = {
     },
     fetch: {
       only_finished: 'Finished matches only in a league download',
+      confirm_empty_after_seconds: 'Wait before confirming “no data” (seconds)',
     },
     defaults: {
       slices: 'Default data to download',
@@ -1829,6 +1836,7 @@ const en = {
     },
     fetch: {
       only_finished: 'When on, a league download fetches the details of finished matches only; future fixtures stay as listed rows. The match counts on Overview and the old /api match lists also count only finished matches (or matches with details). It does not change the Matches screen (its Played / Upcoming / All switch and the status filter choose what shows) nor team, player and single-match follows.',
+      confirm_empty_after_seconds: 'When SofaScore answers “no data” for a data type of a finished match, it is asked once more to confirm it, no sooner than this many seconds later; a download before that leaves it out. 0 asks again in the next download.',
     },
     defaults: {
       slices: 'Data types or groups, separated by commas. “core” is the core match data: the match, statistics, line-ups, incidents and the rest; odds are a group of their own (“odds”).',

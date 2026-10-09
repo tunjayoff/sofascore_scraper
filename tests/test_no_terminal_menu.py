@@ -113,6 +113,9 @@ DYNAMIC_PREFIXES = {
     "doctor_label_": "sofascore_scraper/doctor.py",  # ctx.t("doctor_label_" + check_id)
     "launcher_": "scripts/start_web.py",  # _messages.t("launcher_" + key)
     "ssc_error_": "sofascore_scraper/cli/output.py",  # "ssc_error_" + error.code
+    # doğrulamanın sorun türleri ve taramaların sorun kodları: _label(t, "ssc_catalog_kind_", kind) (B2)
+    "ssc_catalog_kind_": "sofascore_scraper/cli/commands/catalog.py",
+    "ssc_catalog_problem_": "sofascore_scraper/cli/commands/catalog.py",
 }
 # Kodun artık kullanmadığı ama başka testlerin varlığını denetlediği anahtarlar (o testlerle birlikte gidebilir):
 # tests/test_diagnostics.py::test_cli_messages_exist_in_both_languages, tests/test_language.py.

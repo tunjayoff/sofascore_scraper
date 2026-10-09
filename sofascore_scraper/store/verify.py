@@ -160,17 +160,17 @@ def payload_fault(data_dir: str, directory: str, name: str, entry: SliceEntry) -
         stored = files.read_bytes(path)
         raw = codec.decode(stored, path)
     except PayloadMissing:
-        return "dosya yok"
+        return "file missing"
     except PayloadCorrupt as exc:
-        return f"açılamıyor ({exc.detail or exc})"
+        return f"cannot be opened ({exc.detail or exc})"
     try:
         json.loads(raw)
     except (ValueError, RecursionError) as exc:
-        return f"JSON değil ({exc})"
+        return f"not JSON ({exc})"
     if codec.sha256_hex(raw) != entry.sha256:
-        return "sha256 manifesttekinden farklı"
+        return "sha256 differs from the manifest"
     if len(raw) != entry.raw_bytes or len(stored) != entry.stored_bytes:
-        return (f"boyut manifesttekinden farklı (dosya {len(stored)}/{len(raw)}, "
+        return (f"size differs from the manifest (file {len(stored)}/{len(raw)}, "
                 f"manifest {entry.stored_bytes}/{entry.raw_bytes})")
     return None
 
@@ -252,7 +252,7 @@ class _Run:
                              known.get(event_id))
         for row in conn.execute("SELECT kind, entity_id FROM pending_writes ORDER BY kind, entity_id"):
             kind, entity_id = str(row[0]), int(row[1])
-            self.issue("I6", KIND_PENDING, f"{kind} {entity_id}: yarım kalmış yazma işareti",
+            self.issue("I6", KIND_PENDING, f"{kind} {entity_id}: marker of an unfinished write",
                        event_id=entity_id if kind == "event" else None)
             self.pending.append((kind, entity_id, len(report.issues) - 1))
         for kind, detail, path in self.change_log_faults(conn):
@@ -275,11 +275,11 @@ class _Run:
             directory = history_mod.entity_directory(conn, kind, entity_id)
             label = f"{kind} {entity_id} {layout.slice_name(key, sub)}"
             if directory is None:
-                found.append((KIND_HISTORY_FILE, f"{label}: varlığın dizini bilinmiyor", kind, entity_id, None))
+                found.append((KIND_HISTORY_FILE, f"{label}: the directory of the entity is not known", kind, entity_id, None))
                 continue
             rel = layout.history_path(directory, key, sub)
             if [n for n, *_ in rows] != list(range(1, len(rows) + 1)):
-                found.append((KIND_HISTORY_FILE, f"{label}: numaralar 1'den ardışık değil", kind, entity_id, rel))
+                found.append((KIND_HISTORY_FILE, f"{label}: the numbers do not run from 1 without a gap", kind, entity_id, rel))
                 continue
             path = layout.resolve(self.data_dir, rel)
             end = max(offset + length for _n, _sha, offset, length in rows)
@@ -288,7 +288,7 @@ class _Run:
             except OSError:
                 size = None
             if size is None or size < end:
-                detail = "dosya yok" if size is None else f"dosya {size} bayt, satırlar {end} bayta kadar"
+                detail = "file missing" if size is None else f"file of {size} bytes, rows up to {end} bytes"
                 found.append((KIND_HISTORY_FILE, f"{label}: {detail}", kind, entity_id, rel))
                 continue
             if not self.deep:
@@ -296,7 +296,7 @@ class _Run:
             try:
                 data = files.read_bytes(path)
             except StoreError as exc:
-                found.append((KIND_HISTORY_FILE, f"{label}: okunamıyor ({exc.detail or exc})", kind, entity_id, rel))
+                found.append((KIND_HISTORY_FILE, f"{label}: cannot be read ({exc.detail or exc})", kind, entity_id, rel))
                 continue
             bad: List[int] = []
             for n, digest, offset, length in rows:
@@ -308,7 +308,7 @@ class _Run:
                 if member_digest != digest:
                     bad.append(n)
             if bad:
-                found.append((KIND_HISTORY_MEMBER, f"{label}: okunamayan ya da özeti farklı üyeler: "
+                found.append((KIND_HISTORY_MEMBER, f"{label}: members unreadable or with another digest: "
                               f"{', '.join(map(str, bad[:10]))}", kind, entity_id, rel))
         return found
 
@@ -321,15 +321,15 @@ class _Run:
             f"SELECT count(*), min(seq), max(seq) FROM changes WHERE segment NOT IN ({marks_of})",
             numbered).fetchone()
         if total and high - low + 1 != total:
-            found.append((KIND_SEQ_GAP, f"v3 satırlarının numaraları ardışık değil: {low}-{high} aralığında "
-                          f"{total} satır", None))
+            found.append((KIND_SEQ_GAP, f"the numbers of the v3 rows have gaps: {total} rows "
+                          f"in {low}-{high}", None))
         marks = changes_mod._load_marks(self.admin.catalog)
         on_disk = [segment for segment in changes_mod.segments(self.data_dir) if segment not in numbered]
         indexed = {str(row[0]) for row in conn.execute(
             f"SELECT DISTINCT segment FROM changes WHERE segment NOT IN ({marks_of})", numbered)}
         for segment in sorted(set(on_disk) | indexed | {name for name in marks if name not in numbered}):
             if segment not in on_disk:
-                found.append((KIND_SEQ_UNINDEXED, "dizinde satırı var ama dosyası yok", segment))
+                found.append((KIND_SEQ_UNINDEXED, "indexed rows but no file", segment))
                 continue
             mark = marks.get(segment)
             try:
@@ -337,8 +337,8 @@ class _Run:
             except OSError:
                 size = -1
             if mark is None or mark.size != size:
-                found.append((KIND_SEQ_UNINDEXED, "parçanın tamamı dizinlenmemiş" if mark is None else
-                              f"dosya {size} bayt, dizinlenen {mark.size} bayt", segment))
+                found.append((KIND_SEQ_UNINDEXED, "the segment is not fully indexed" if mark is None else
+                              f"file of {size} bytes, {mark.size} bytes indexed", segment))
                 continue
             if not self.deep:
                 continue
@@ -350,7 +350,7 @@ class _Run:
             differing = sorted(seq for seq in expected if seq in stored and stored[seq] != expected[seq])
             if missing or extra or differing:
                 notes = [f"{label}: {', '.join(map(str, numbers[:10]))}" for label, numbers in (
-                    ("dizinde yok", missing), ("dosyada yok", extra), ("satır farklı", differing)) if numbers]
+                    ("not indexed", missing), ("not in the file", extra), ("rows differ", differing)) if numbers]
                 found.append((KIND_SEQ_MISMATCH, "; ".join(notes), segment))
         return found
 
@@ -396,24 +396,24 @@ class _Run:
             self.check_v3_files(event_id)
         if record is None:
             if row is not None:
-                why = f"{problems[0].kind}: {problems[0].detail}" if problems else "dizin yok"
-                self.issue("I1", KIND_NO_DIRECTORY, f"katalogda satırı var ama geçerli maç dizini yok ({why})",
+                why = f"{problems[0].kind}: {problems[0].detail}" if problems else "no directory"
+                self.issue("I1", KIND_NO_DIRECTORY, f"a catalog row but no valid event directory ({why})",
                            event_id=event_id, path=row["path"] or layout.event_dir(event_id), fix=True)
             return  # satırı da yok: okunamayan dizin yalnızca sorun olarak bildirilir
         where = record.event["path"] or layout.event_dir(event_id)
         if row is None:
-            self.issue("I3", KIND_UNINDEXED, "maç dizini var, katalogda satırı yok", event_id=event_id,
+            self.issue("I3", KIND_UNINDEXED, "an event directory but no catalog row", event_id=event_id,
                        path=where, fix=True)
             return
         if row["layout"] != record.layout:
-            self.issue("I5", KIND_LAYOUT, f"katalog {row['layout']!r} diyor, diskte geçerli olan {record.layout!r}",
+            self.issue("I5", KIND_LAYOUT, f"the catalog says {row['layout']!r}, the valid one on disk is {record.layout!r}",
                        event_id=event_id, path=where, fix=True)
             return
         clean = True
         columns = _differing(record.event, row, skip=("sig",))
         if columns:
             clean = False
-            self.issue("I4", KIND_EVENT_ROW, "farklı sütunlar: " + ", ".join(columns), event_id=event_id,
+            self.issue("I4", KIND_EVENT_ROW, "columns differ: " + ", ".join(columns), event_id=event_id,
                        path=where, fix=True)
         clean = self.check_slices(conn, record, where) and clean
         links = [dict(r) for r in conn.execute(
@@ -421,14 +421,14 @@ class _Run:
             "ORDER BY side", (event_id,))]
         if links != sorted(record.links, key=lambda link: link["side"]):
             clean = False
-            self.issue("I4", KIND_PARTICIPANTS, "event_participants satırları olay yüküne uymuyor",
+            self.issue("I4", KIND_PARTICIPANTS, "event_participants rows do not match the event payload",
                        event_id=event_id, path=where, fix=True)
         history = [dict(r) for r in conn.execute(
             "SELECT * FROM slice_history WHERE kind = ? AND entity_id = ? ORDER BY key, sub, n",
             (indexer.KIND_EVENT, event_id))]
         if history != sorted(record.history, key=lambda h: (h["key"], h["sub"], h["n"])):
             clean = False
-            self.issue("I8", KIND_HISTORY_ROWS, "slice_history satırları geçmiş dosyalarına uymuyor",
+            self.issue("I8", KIND_HISTORY_ROWS, "slice_history rows do not match the history files",
                        event_id=event_id, path=where, fix=True)
         if clean and row["sig"] != record.event["sig"]:
             self.resign.append(event_id)  # içerik aynı, yalnızca imza eskimiş: tutarsızlık değil
@@ -442,10 +442,10 @@ class _Run:
         for name in sorted(set(stored) | set(expected)):
             label = "/".join(part for part in name if part)
             if name not in expected:
-                notes.append(f"{label}: dosyalarda yok")
+                notes.append(f"{label}: not in the files")
                 lost_payload = lost_payload or bool(stored[name]["has_payload"])
             elif name not in stored:
-                notes.append(f"{label}: katalogda yok")
+                notes.append(f"{label}: not in the catalog")
             else:
                 columns = _differing(expected[name], stored[name])
                 if columns:
@@ -488,7 +488,7 @@ class _Run:
             if is_leftover(name):
                 self.report.leftovers.append(f"{directory}/{name}")
             else:
-                self.issue("I9", KIND_UNKNOWN_FILE, "manifestin adını vermediği dosya", event_id=event_id,
+                self.issue("I9", KIND_UNKNOWN_FILE, "a file the manifest does not name", event_id=event_id,
                            path=f"{directory}/{name}")
 
     # -- onarım ------------------------------------------------------------------------------------
@@ -575,7 +575,7 @@ def verify(admin: CatalogAdmin, *, deep: bool = False, repair: bool = False) -> 
     if not state.usable:
         report.issues.append(VerifyIssue(
             INVARIANT_CATALOG, str(state.rebuild_reason),
-            "katalog kullanılamıyor; yeniden kurulmalı" + (f" ({state.detail})" if state.detail else ""),
+            "the catalog is unusable and must be rebuilt" + (f" ({state.detail})" if state.detail else ""),
             path=layout.CATALOG_DB))
     else:
         faults = cat.quick_check()

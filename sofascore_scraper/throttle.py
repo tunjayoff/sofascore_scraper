@@ -170,7 +170,7 @@ def file_lock(path: str, timeout: float = _LOCK_TIMEOUT_SECONDS) -> Iterator[Non
                 break
             except OSError:
                 if time.monotonic() >= deadline:
-                    raise TimeoutError(f"kilit {timeout:g} sn içinde alınamadı: {path}") from None
+                    raise TimeoutError(f"lock not acquired within {timeout:g} s: {path}") from None
                 time.sleep(_LOCK_POLL_SECONDS)
         try:
             yield
@@ -433,7 +433,7 @@ class RequestThrottle:
         lock_timeout: float = _LOCK_TIMEOUT_SECONDS,
     ) -> None:
         if not name.replace("_", "").replace("-", "").isalnum():
-            raise ValueError(f"geçersiz şerit adı: {name!r}")
+            raise ValueError(f"invalid lane name: {name!r}")
         self.name = name
         self._rate = rate
         self._burst = burst

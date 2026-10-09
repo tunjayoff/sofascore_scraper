@@ -1,5 +1,5 @@
 import { v1, V1Error } from '@/api/v1/client'
-import type { EventListItem, FollowRecord, TournamentSummary } from '@/api/v1/schema'
+import type { EventListItem, FollowRecord, FollowSummary, TournamentSummary } from '@/api/v1/schema'
 
 /**
  * "Matches with details" of a follow (6.2; FX-24 F23, FX-26 M12): one rule for every kind. Only finished matches
@@ -8,6 +8,9 @@ import type { EventListItem, FollowRecord, TournamentSummary } from '@/api/v1/sc
  * per tournament only, so a team's are counted here from its stored matches (`GET /events?participant=`, this
  * server only, at most `MAX_PAGES` pages of 200) and a single match's from its record. A player's matches cannot
  * be counted: the stored events do not say who played in them.
+ *
+ * Since B2 (G40) the server counts every follow in `/status` (`summary.follows`), a player's from the match ids
+ * of its last match list: `serverCoverage` reads that row, and the counting here is only for an older server.
  */
 export const MAX_PAGES = 5
 
@@ -37,6 +40,15 @@ function tally(events: Pick<EventListItem, 'status' | 'quality'>[]): { matches: 
 
 function result(matches: number, details: number, more = false): FollowCoverage {
   return { matches, details, coverage: matches ? Math.round((details / matches) * 1000) / 10 : 0, more }
+}
+
+/**
+ * A follow's coverage from its row of `/status` (B2): null while it cannot be counted (a player whose match
+ * list was not read yet).
+ */
+export function serverCoverage(row: Pick<FollowSummary, 'finished' | 'finished_details' | 'counted'>): FollowCoverage | null {
+  if (row.counted === false) return null
+  return result(row.finished, Math.min(row.finished_details, row.finished))
 }
 
 /** A league's coverage from its row of the data summary, by the same rule (an older server: its own numbers). */

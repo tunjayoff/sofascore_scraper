@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple
 
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field
@@ -80,6 +80,11 @@ class ConnectionCheck(BaseModel):
     at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
     ok: bool
     reason: Optional[str] = Field(default=None, description="Why it failed (the check's `reason`); null when ok.")
+    superseded: bool = Field(
+        default=False, description="A request was answered after this check, so a failed check no longer describes "
+                                   "the connection. Decided by the order of the records, not by their times, which "
+                                   "can be equal on a coarse clock.",
+    )
 
 
 class ConnectionStatus(BaseModel):
@@ -91,7 +96,8 @@ class ConnectionStatus(BaseModel):
 
     state: Literal["never_tried", "ok", "failed"] = Field(
         description="never_tried: no request has ended since the server started; ok: the last one was answered "
-                    "(200 or 404); failed: the last one was not.",
+                    "(200 or 404); failed: the last one was not. The last one is the last recorded, also when an "
+                    "answer and a failure have the same time.",
     )
     last_success_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
     last_failure_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
@@ -164,6 +170,29 @@ class TournamentSummary(BaseModel):
     )
 
 
+class FollowSummary(BaseModel):
+    """
+    Counts of one follow (F23): its stored events, the finished ones and the finished ones with a stored event
+    payload. One rule for every kind (FX-26): coverage is `finished_details / finished`; an event not played yet
+    is not missing.
+    """
+
+    follow_id: str = Field(description="The follow's id, `kind:entity_id` (as `FollowRecord.id`).")
+    kind: Literal["tournament", "team", "player", "event"]
+    entity_id: int
+    events: int = Field(
+        description="Stored events of the follow: a tournament's, a team's (as a participant), the event itself, "
+                    "or the events of a player's last match list (the stored events do not say who played).",
+    )
+    finished: int
+    finished_details: int = Field(description="Finished events with a stored event payload.")
+    coverage: float = Field(description="finished_details / finished in percent, one decimal; 0 without finished events.")
+    counted: bool = Field(
+        default=True, description="False: the events cannot be counted yet (a player follow whose match list was "
+                                  "not read since this version; its next download reads it). The counts are 0.",
+    )
+
+
 class DiskSummary(BaseModel):
     """Disk use of the data directory in bytes; a measurement may be up to a minute old."""
 
@@ -207,6 +236,9 @@ class DataSummary(BaseModel):
         default=None, description="Set when the catalog does not describe the files; the counts are then partial.",
     )
     tournaments: List[TournamentSummary]
+    follows: List[FollowSummary] = Field(
+        default_factory=list, description="Every follow, in the order of the follows list, with its counts (F23).",
+    )
     disk: Optional[DiskSummary] = None
     last_migration: Optional[MigrationRun] = Field(default=None, description="Null when `ssc migrate` never ran.")
 
@@ -523,19 +555,26 @@ def _tournament_names(store: "Store", ids: List[Optional[int]], followed: Mappin
     return names
 
 
-def followed_tournaments() -> Dict[int, str]:
+def followed_tournaments(follows: Optional[Sequence[Any]] = None) -> Dict[int, str]:
     """
     Takip edilen turnuvalar (kimlik → ad): takip tablosunun her kaynaktan turnuva takipleri, kapalılar da (FX-19;
     önceden yalnızca yapılandırmanın ligleri, bu yüzden API'den eklenen takip `followed` görünmüyordu).
+    follows: okunmuş takip listesi (verilmezse okunur).
     """
-    return {row.entity_id: row.name for row in deps.follows_service().list(kind="tournament")}
+    rows = deps.follows_service().list(kind="tournament") if follows is None else follows
+    return {row.entity_id: row.name for row in rows if row.kind == "tournament"}
 
 
-def data_summary(store: "Store", followed: Mapping[int, str]) -> DataSummary:
-    """Veri dizininin özeti (StatusService.summary) v1 modeliyle; takip edilen ligler maçları olmasa da dökümdedir."""
+def data_summary(store: "Store", followed: Mapping[int, str], follows: Sequence[Any] = ()) -> DataSummary:
+    """
+    Veri dizininin özeti (StatusService.summary) v1 modeliyle; takip edilen ligler maçları olmasa da dökümdedir.
+    follows: bütün takipler (takip başına sayılar, B2; StatusService.follow_counts).
+    """
     from sofascore_scraper.services.status import StatusService
 
-    data = StatusService(store).summary(tournament_ids=tuple(followed))
+    service = StatusService(store)
+    data = service.summary(tournament_ids=tuple(followed))
+    per_follow = service.follow_counts(follows, tournaments=data.tournaments) if follows else ()
     info = store.info(sizes=False)
     names = _tournament_names(store, [t.tournament_id for t in data.tournaments], followed)
     disk = data.disk
@@ -558,6 +597,12 @@ def data_summary(store: "Store", followed: Mapping[int, str]) -> DataSummary:
                 finished_details=t.finished_details,
             )
             for t in data.tournaments
+        ],
+        follows=[
+            FollowSummary(follow_id=f.follow, kind=f.kind, entity_id=f.entity_id, events=f.events,  # type: ignore[arg-type]
+                          finished=f.finished, finished_details=f.finished_details, coverage=f.coverage,
+                          counted=f.counted)
+            for f in per_follow
         ],
         disk=None if disk is None else DiskSummary(
             entries={str(k): int(v) for k, v in disk.entries.items()},
@@ -629,7 +674,8 @@ def status() -> StatusResponse:
         store = deps.store()
         live = _live(store)
         leases = lease_holders(store)
-        summary = data_summary(store, followed_tournaments())
+        follows = deps.follows_service().list()
+        summary = data_summary(store, followed_tournaments(follows), follows)
         sinks = sinks_summary(store)
     except Exception as e:  # depo açılamadı ya da okunamadı: durum yine yanıtlanır
         error = to_platform_error(e)

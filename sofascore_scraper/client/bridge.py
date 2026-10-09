@@ -35,7 +35,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sofascore_scraper import bridge_health, throttle
 from sofascore_scraper.client import profile_lock
-from sofascore_scraper.client.context import FetchCancelled, raise_if_cancelled
+from sofascore_scraper.client.context import FetchCancelled, notify_request, raise_if_cancelled
 from sofascore_scraper.private_files import make_private_dir
 from sofascore_scraper.logger import get_logger
 from sofascore_scraper.paths import browser_profile_dir
@@ -211,6 +211,7 @@ async def _wait_for_slot() -> None:
     if not shared:
         raise_if_cancelled()
     delay = throttle.reserve()
+    waited = 0.0
     if delay > 0:
         if wait is not None:
             wait.own += delay
@@ -218,8 +219,12 @@ async def _wait_for_slot() -> None:
             sleep = asyncio.sleep if shared else _cancellable_sleep
             await sleep(delay)
             # Etkileşimli bir istek önüne geçtiyse (FX-23, F16) kaydırılan sırayı bekler
-            if (extra := await throttle.settle_async(delay, sleep)) and wait is not None:
+            extra = await throttle.settle_async(delay, sleep)
+            if extra and wait is not None:
                 wait.own += extra
+            waited = float(delay) + (extra or 0.0)
+    # Sırası gelen istek çağıranın işine bildirilir (işin istek sayacı, B2): görev çağıranın bağlamını taşır
+    notify_request(waited)
 
 
 def _session_class() -> Any:

@@ -20,7 +20,7 @@ import { num, pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
 import { noteFollowNames } from '@/screens/jobs/jobText'
 import FollowActions from './FollowActions.vue'
-import { followCoverage, leagueCoverage, type FollowCoverage } from './followCoverage'
+import { followCoverage, leagueCoverage, serverCoverage, type FollowCoverage } from './followCoverage'
 import { FOLLOW_KINDS, dataText, followPath, hasOdds, lastSyncOf, seasonsText } from './followText'
 
 /**
@@ -94,12 +94,15 @@ const twins = computed(() => {
   return new Set(rows.value.filter((x) => (count.get(key(x)) ?? 0) > 1).map((x) => x.id))
 })
 const coverage = computed(() => new Map((status.status?.summary?.tournaments ?? []).filter((x) => x.tournament_id != null).map((x) => [x.tournament_id as number, x])))
-/** Teams and single matches, counted from their stored matches (FX-24 F23; `/status` counts leagues only). */
+/** Every follow counted by the server (B2, G40: `summary.follows`); an older server has none. */
+const perFollow = computed(() => (status.status?.summary?.follows ? new Map(status.status.summary.follows.map((x) => [x.follow_id, x])) : null))
+/** Teams and single matches, counted from their stored matches on an older server (FX-24 F23). */
 const counted = ref<Map<string, FollowCoverage>>(new Map())
 let countCtl: AbortController | null = null
 function loadCounts() {
   countCtl?.abort()
   const ctl = (countCtl = new AbortController())
+  if (perFollow.value) return
   for (const row of rows.value.filter((x) => x.kind === 'team' || x.kind === 'event'))
     followCoverage(row, ctl.signal)
       .then((c) => {
@@ -107,8 +110,13 @@ function loadCounts() {
       })
       .catch(() => {})
 }
-/** "Matches with details" of a row: a league's from the data summary, a team's or a match's counted here. */
+/**
+ * "Matches with details" of a row: from the server's count of the follow (B2), else a league's from the data
+ * summary and a team's or a match's counted here.
+ */
 function coverageOf(row: FollowRecord): { coverage: number; details: number; matches: number } | null {
+  const server = perFollow.value?.get(row.id)
+  if (server) return serverCoverage(server)
   if (row.kind === 'tournament') {
     const found = coverage.value.get(row.entity_id)
     return found ? leagueCoverage(found) : null
@@ -240,7 +248,7 @@ onMounted(() => {
           <span class="u-minibar" aria-hidden="true"><span :style="{ width: `${coverageOf(row)!.coverage}%` }"></span></span>
           {{ pct(coverageOf(row)!.coverage) }}
         </span>
-        <span v-else-if="row.kind === 'player'" class="u-muted" :title="t('ui.follows.coveragePlayer')" data-testid="follow-coverage-player">—</span>
+        <span v-else-if="row.kind === 'player'" class="u-muted" :title="t(perFollow ? 'ui.follows.coveragePlayerPending' : 'ui.follows.coveragePlayer')" data-testid="follow-coverage-player">—</span>
         <span v-else class="u-muted">—</span>
       </template>
       <template #cell-lastSync="{ row }">

@@ -563,7 +563,7 @@ class LegacyReader:
                 continue
             season_dirs = [child for child in children if _is_dir(child)]
             if _is_id(top.name) and children and not season_dirs:
-                problems.append(LegacyProblem(top_rel, PROBLEM_NO_EVENT, "düz maç dizininde olay yükü yok"))
+                problems.append(LegacyProblem(top_rel, PROBLEM_NO_EVENT, "no event payload in the flat event directory"))
                 continue
             form = _league_form(top.name)
             for season in season_dirs:
@@ -579,7 +579,7 @@ class LegacyReader:
                     if nested is not None:
                         found.append(nested)
                     elif len(problems) == unreadable:  # listelenemeyen dizin zaten bildirildi
-                        problems.append(LegacyProblem(match_rel, PROBLEM_NO_EVENT, "maç dizininde olay yükü yok"))
+                        problems.append(LegacyProblem(match_rel, PROBLEM_NO_EVENT, "no event payload in the event directory"))
         return found, problems
 
     def event_dirs(self, report: Optional[LegacyReport] = None) -> List[LegacyEventDir]:
@@ -616,7 +616,7 @@ class LegacyReader:
         try:
             return {str(key): int(value) for key, value in data.items()}
         except (ValueError, TypeError, OverflowError):
-            problems.append(LegacyProblem(f"{base}/{UNAVAILABLE_FILE}", PROBLEM_MALFORMED, "sayı olmayan değer"))
+            problems.append(LegacyProblem(f"{base}/{UNAVAILABLE_FILE}", PROBLEM_MALFORMED, "a value that is not a number"))
             return {}
 
     def read_event(self, event_dir: LegacyEventDir, *, payloads: bool = True) -> LegacyEvent:
@@ -672,7 +672,7 @@ class LegacyReader:
         if SLICE_STATUS_FILE in entries:
             status = self._load_dict(f"{base}/{SLICE_STATUS_FILE}", problems) or {}
         for key in sorted((set(unavailable) | set(map(str, status))) - set(self.known_slices)):
-            problems.append(LegacyProblem(base, PROBLEM_NAME, f"işaret dosyasında tanınmayan dilim: {key}"))
+            problems.append(LegacyProblem(base, PROBLEM_NAME, f"a slice the marker file does not know: {key}"))
 
         for key in self.known_slices:
             entry = self._read_slice(base, key, entries, combined, combined_rel, combined_stat,
@@ -758,7 +758,7 @@ class LegacyReader:
             loaded[key] = payload
             body = slice_body_state(key, payload)  # "bu yanıtta veri var mı": üç yanıt (sofascore_scraper/slices.py)
             if body == BODY_MALFORMED:
-                problems.append(LegacyProblem(path or base, PROBLEM_MALFORMED, f"{key}: beklenmeyen biçim"))
+                problems.append(LegacyProblem(path or base, PROBLEM_MALFORMED, f"{key}: unexpected shape"))
                 state, error = STATE_ERROR, corrupt
             elif body == BODY_DATA:
                 state = STATE_OK
@@ -840,7 +840,7 @@ class LegacyReader:
             league_rel = f"{MATCHES_DIR}/{league.name}"
             league_match = _PREFIX_RE.match(league.name)
             if not league_match:
-                problems.append(LegacyProblem(league_rel, PROBLEM_NAME, "lig dizini adı id ile başlamıyor"))
+                problems.append(LegacyProblem(league_rel, PROBLEM_NAME, "the league directory name does not start with an id"))
                 continue
             for season in self._entries(league_rel, problems):
                 if not _is_dir(season):
@@ -848,7 +848,7 @@ class LegacyReader:
                 season_rel = f"{league_rel}/{season.name}"
                 season_match = _PREFIX_RE.match(season.name)
                 if not season_match:
-                    problems.append(LegacyProblem(season_rel, PROBLEM_NAME, "sezon dizini adı id ile başlamıyor"))
+                    problems.append(LegacyProblem(season_rel, PROBLEM_NAME, "the season directory name does not start with an id"))
                     continue
                 yield int(league_match.group(1)), league_rel, int(season_match.group(1)), season_rel
 
@@ -868,7 +868,7 @@ class LegacyReader:
                 rel = f"{season_rel}/{entry.name}"
                 parsed = schedule_sub(entry.name)
                 if parsed is None:
-                    problems.append(LegacyProblem(rel, PROBLEM_NAME, "program dosyası olarak tanınmadı"))
+                    problems.append(LegacyProblem(rel, PROBLEM_NAME, "not recognised as a schedule file"))
                     continue
                 st = self._stat(rel)
                 if st is None:
@@ -1004,7 +1004,7 @@ class LegacyReader:
             else:
                 tournament_id, label = by_label.get(stem), stem
                 if tournament_id is None:
-                    problems.append(LegacyProblem(rel, PROBLEM_UNRESOLVED, f"dosya adında turnuva id'si yok: {stem}"))
+                    problems.append(LegacyProblem(rel, PROBLEM_UNRESOLVED, f"no tournament id in the file name: {stem}"))
             found.append(LegacySeasonList(tournament_id, label, "json", rel, st.st_mtime_ns, payload))
         found.extend(self._seasons_from_csv(problems))
 
@@ -1043,7 +1043,7 @@ class LegacyReader:
                 league_id, season_id = int(row["Lig ID"]), int(row["Sezon ID"])
                 season = {"id": season_id, "name": row["Sezon Adı"], "year": row["Sezon Yılı"]}
             except (KeyError, TypeError, ValueError):
-                problems.append(LegacyProblem(SEASONS_CSV, PROBLEM_MALFORMED, f"satır {number}"))
+                problems.append(LegacyProblem(SEASONS_CSV, PROBLEM_MALFORMED, f"line {number}"))
                 continue
             seasons.setdefault(league_id, []).append(season)
             labels.setdefault(league_id, safe_name(row.get("Liga Adı") or ""))
@@ -1068,7 +1068,7 @@ class LegacyReader:
         parts = data.split(b"\n")
         torn = parts.pop()  # son "\n"den sonrası: tam dosyada boş
         if torn.strip():
-            problems.append(LegacyProblem(rel, PROBLEM_TORN, f"satır {len(parts) + 1}"))
+            problems.append(LegacyProblem(rel, PROBLEM_TORN, f"line {len(parts) + 1}"))
         out: List[LegacyLine] = []
         for number, raw in enumerate(parts, start=1):
             if not raw.strip():
@@ -1077,10 +1077,10 @@ class LegacyReader:
                 line = raw.decode("utf-8").rstrip("\r")
                 row = json.loads(line)
             except (ValueError, RecursionError) as e:  # JSONDecodeError ve UnicodeDecodeError birer ValueError'dır
-                problems.append(LegacyProblem(rel, PROBLEM_CORRUPT, f"satır {number}: {e}"))
+                problems.append(LegacyProblem(rel, PROBLEM_CORRUPT, f"line {number}: {e}"))
                 continue
             if not isinstance(row, dict):
-                problems.append(LegacyProblem(rel, PROBLEM_MALFORMED, f"satır {number}: JSON nesnesi değil"))
+                problems.append(LegacyProblem(rel, PROBLEM_MALFORMED, f"line {number}: not a JSON object"))
                 continue
             out.append(LegacyLine(seq=number, row=row, line=line))
         if report is not None:

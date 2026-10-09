@@ -199,7 +199,15 @@ def test_cli_catalog_rebuild_verify_and_reconcile(old_forms: Tuple[sf.LegacyFixt
     files.remove_tree(data / "match_details" / "16867839")
     broken = cli("--data-dir", data, "catalog", "verify")
     assert broken.exit_code == 1
-    assert "I1 no_event_directory match 16867839" in broken.stdout and "1 inconsistencies are left" in broken.stdout
+    assert ("I1 no_event_directory (a catalog row without a valid event directory) match 16867839" in broken.stdout
+            and "1 inconsistencies are left" in broken.stdout)
+    # Kod ve ayrıntı İngilizce kalır (Store'un metni); açıklama uygulama dilindedir (B2)
+    assert "a catalog row but no valid event directory (" in broken.stdout
+    turkish = cli("--data-dir", data, "--lang", "tr", "catalog", "verify")
+    assert "I1 no_event_directory (katalogda satırı olan maçın geçerli bir dizini yok) maç 16867839" in turkish.stdout
+    assert "a catalog row but no valid event directory (" in turkish.stdout
+    issue = cli("--data-dir", data, "--json", "catalog", "verify").data["issues"][0]
+    assert issue["kind"] == "no_event_directory" and issue["detail"].startswith("a catalog row but no valid event")
     repaired = cli("--data-dir", data, "catalog", "verify", "--repair")
     assert repaired.exit_code == 0 and "[repaired]" in repaired.stdout
     assert cli("--data-dir", data, "catalog", "verify").exit_code == 0

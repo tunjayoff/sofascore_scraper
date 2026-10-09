@@ -49,6 +49,13 @@ Kapsam (coverage) kuralları:
 Rapor hiçbir yere yazılmaz: istendiğinde hesaplanır (eskiden `match_details/processed/` altına JSON ve CSV
 yazılıyordu).
 
+Takip başına kapsam (`follow_counts`, B2; bulgu F23, 05-web-ui.md G40): her takibin saklanan maçları
+(`follow_sync.follow_scope`: turnuvanın, takımın, maçın kendisi, oyuncunun son listesinin), bunlardan bitmiş olanlar
+ve bitmiş olup `/event/{id}` yükü saklananlar; kapsam ikincinin birinciye oranıdır (FX-26'nın ortak kuralı).
+Turnuva takibinin sayıları özetin satırındandır (aynı sayı iki yoldan sayılmasın). Oyuncunun listesi henüz
+okunmadıysa (`counted` yanlış) maçları sayılmaz. Önceden ön yüz takımın maçlarını `/events` ile kendisi sayıyor,
+oyuncunun maçlarını hiç sayamıyordu.
+
 Zamanlayıcı (`schedule_status`, plan maddesi P29): bu süreçte çalışan uygulama içi zamanlayıcının
 (sofascore_scraper/jobs/scheduler.py, `ssc serve --scheduler`) görevleri ve sonraki çalışmaları. Zamanlayıcı yalnızca onu
 barındıran süreçte görünür: başka bir süreçten (ör. `ssc status`) ya da `serve --dev`in alt sürecinden
@@ -110,6 +117,27 @@ class TournamentCounts:
     def coverage(self) -> float:
         """Detayı indirilmiş maçların yüzdesi (bir ondalık); maç yoksa 0."""
         return round(self.details / self.matches * 100, 1) if self.matches else 0.0
+
+
+@dataclass(frozen=True)
+class FollowCounts:
+    """
+    Bir takibin sayıları (modül belgesi, takip başına kapsam). follow: takibin kimliği ("team:42"). counted
+    yanlış: maçları sayılamıyor (oyuncunun listesi henüz okunmadı); sayılar o zaman 0'dır.
+    """
+
+    follow: str
+    kind: str
+    entity_id: int
+    events: int = 0
+    finished: int = 0
+    finished_details: int = 0
+    counted: bool = True
+
+    @property
+    def coverage(self) -> float:
+        """Bitmiş maçlardan detayı saklananların yüzdesi (bir ondalık); bitmiş maç yoksa 0."""
+        return round(self.finished_details / self.finished * 100, 1) if self.finished else 0.0
 
 
 @dataclass(frozen=True)
@@ -515,6 +543,41 @@ class StatusService:
         return tuple(out)
 
     # --- sayımlar ---------------------------------------------------------------------------------------
+
+    def follow_counts(self, follows: Iterable[Any], *,
+                      tournaments: Iterable[TournamentCounts] = ()) -> Tuple[FollowCounts, ...]:
+        """
+        Takiplerin sayıları, verildikleri sırayla (modül belgesi). follows: `kind` ve `entity_id` taşıyan takip
+        satırları (Follow). tournaments: özetin turnuva satırları; verilen turnuvanın takibi onlardan sayılır.
+        Depolama hatası (StoreError) çağırana çıkar.
+        """
+        from sofascore_scraper.services import follow_sync
+        from sofascore_scraper.services.follows import follow_id
+
+        known = {t.tournament_id: t for t in tournaments if t.tournament_id is not None}
+        found: List[FollowCounts] = []
+        for follow in follows:
+            kind, entity_id = str(follow.kind), int(follow.entity_id)
+            name = follow_id(kind, entity_id)
+            row = known.get(entity_id) if kind == "tournament" else None
+            if row is not None:
+                found.append(FollowCounts(name, kind, entity_id, events=row.events, finished=row.finished,
+                                          finished_details=min(row.finished, row.finished_details)))
+                continue
+            scope = follow_sync.follow_scope(self._store, kind, entity_id)
+            if scope is None:
+                listed = follow_sync.listed_events(self._store, kind, entity_id)
+                found.append(FollowCounts(name, kind, entity_id, counted=listed is not None))
+                continue
+            events = self._store.events
+            found.append(FollowCounts(
+                name, kind, entity_id,
+                events=events.count(EventQuery(scope=scope)),
+                finished=events.count(EventQuery(scope=scope, status_classes=tuple(_FINISHED))),
+                finished_details=events.count(EventQuery(scope=scope, status_classes=tuple(_FINISHED),
+                                                         has_details=True)),
+            ))
+        return tuple(found)
 
     @staticmethod
     def _counts(tournament_id: Optional[int], row: Optional[TournamentSummary], matches: int,

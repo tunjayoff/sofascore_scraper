@@ -973,8 +973,8 @@ def test_verify_checks_the_change_log_of_v3_segments(canon: Store) -> None:
     assert canon.catalog.verify().ok is False  # 5 eksik, 7 fazla: numaralar ardışık değil
     deep = canon.catalog.verify(deep=True)
     assert issues(deep) == [("I7", "seq_gap", None, False), ("I7", "seq_mismatch", segment, False)]
-    assert "dizinde yok: 5" in deep.issues[1].detail and "dosyada yok: 7" in deep.issues[1].detail
-    assert "satır farklı: 4" in deep.issues[1].detail
+    assert "not indexed: 5" in deep.issues[1].detail and "not in the file: 7" in deep.issues[1].detail
+    assert "rows differ: 4" in deep.issues[1].detail
     repaired = canon.catalog.verify(deep=True, repair=True)
     assert issues(repaired) == [("I7", "seq_gap", None, True), ("I7", "seq_mismatch", segment, True)]
     assert repaired.ok and canon.catalog.verify(deep=True).ok and canon.catalog.diff_from_rebuild() == []
@@ -985,7 +985,7 @@ def test_verify_checks_the_change_log_of_v3_segments(canon: Store) -> None:
     canon.catalog.reconcile()
     report = canon.catalog.verify(repair=True)
     assert issues(report) == [("I7", "seq_gap", None, False)] and not report.ok
-    assert report.issues[0].detail.endswith("3-6 aralığında 3 satır")
+    assert report.issues[0].detail.endswith("3 rows in 3-6")
 
     # 4) parçası silinmiş satırlar
     path.unlink()

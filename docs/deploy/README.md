@@ -123,7 +123,18 @@ the proxy be the only way in.
 - **Host header.** The proxy must pass the original `Host` on (nginx: `proxy_set_header Host $host`; Caddy does
   it by default), and that name must be on the allow-list. Otherwise every request gets `400 Invalid host header`.
 - **Server-sent events.** Job progress is a long-lived event stream (`/api/v1/jobs/{id}/events`): turn
-  response buffering off and allow long reads.
+  response buffering off and allow long reads. The stream answers with `X-Accel-Buffering: no` and
+  `Cache-Control: no-store`, which nginx honours even where buffering is on; other proxies need their own
+  setting (Caddy's `flush_interval -1` below). A comment line every 15 s keeps an idle stream open.
+- **The root of a host, not a path prefix.** Serve the app at the root of its own host name
+  (`scraper.example.org/`), not under a path such as `example.org/sofascore/`: the web UI loads `/assets/…`
+  and calls `/api/v1/…` from the root, so a prefixed page loads without its files. The API itself honours an
+  ASGI root path (uvicorn `--root-path`, for a proxy that strips the prefix), and the access token is checked
+  on the path the router matches either way.
+- **A stopped request.** When the browser drops a request (a search you typed over), the server stops
+  waiting for SofaScore once it sees the connection close. nginx closes its connection to the app when the
+  client goes (`proxy_ignore_client_abort off`, the default) and so does Caddy; do not turn that off.
+  Stopping a job is an ordinary `POST /api/v1/jobs/{id}/cancel` and needs nothing from the proxy.
 - **Client addresses and the attempt limit.** The limit on wrong tokens counts per client address and lives in
   memory. Which address the server sees depends on the proxy:
   - A proxy on the same machine that connects to `127.0.0.1` or `::1` and sends `X-Forwarded-For` (nginx with

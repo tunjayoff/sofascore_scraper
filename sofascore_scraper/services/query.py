@@ -90,13 +90,16 @@ def required_detail_keys(selection: Any = None, store: Optional["Store"] = None)
 class RefreshPolicy:
     """
     Yenileme politikası (sofascore_scraper/refresh.py) saniye cinsinden, bir an için. window_s <= 0: politika kapalı.
-    include_unobserved: gözlemi olmayan (eski) kayıtlar da yenilenir (--refresh-legacy).
+    include_unobserved: gözlemi olmayan (eski) kayıtlar da yenilenir (--refresh-legacy). confirm_after_s: bitmiş
+    maçta "veri yok" yanıtını doğrulayan istek ilk yanıttan en az bu kadar sonra gider (planning modül belgesi,
+    bulgu F29; `fetch.confirm_empty_after_seconds`); 0 beklemez.
     """
 
     now: float
     window_s: float
     min_interval_s: float
     include_unobserved: bool = False
+    confirm_after_s: float = 0.0
 
     @classmethod
     def current(cls, now: Optional[float] = None) -> "RefreshPolicy":
@@ -106,6 +109,7 @@ class RefreshPolicy:
             window_s=refresh.refresh_window_hours() * 3600,
             min_interval_s=refresh.refresh_min_interval_hours() * 3600,
             include_unobserved=refresh.refresh_legacy_enabled(),
+            confirm_after_s=refresh.confirm_empty_after_seconds(),
         )
 
 
@@ -155,13 +159,15 @@ class EventFilter:
 
     start_from / start_to: başlangıç zamanı aralığı (epoch saniye), iki uç dahil. has_details: True = olay yükü
     saklananlar, False = yalnızca bir listeden bilinenler. text: yarışmacı adında geçen metin. followed: yalnızca
-    etkin turnuva takiplerinin maçları (`Scope.followed`).
+    etkin turnuva takiplerinin maçları (`Scope.followed`). event_ids: yalnızca bu maçlar (bir oyuncu takibinin
+    maçları, B2).
     """
 
     sport: Optional[str] = None
     tournament_ids: Tuple[int, ...] = ()
     season_ids: Tuple[int, ...] = ()
     participant_ids: Tuple[int, ...] = ()
+    event_ids: Tuple[int, ...] = ()
     status_classes: Tuple[str, ...] = ()
     start_from: Optional[float] = None
     start_to: Optional[float] = None
@@ -369,7 +375,8 @@ class QueryService:
         flt = flt or EventFilter()
         query = EventQuery(
             scope=Scope(sport=flt.sport, tournament_ids=tuple(flt.tournament_ids), season_ids=tuple(flt.season_ids),
-                        participant_ids=tuple(flt.participant_ids), followed=flt.followed),
+                        participant_ids=tuple(flt.participant_ids), event_ids=tuple(flt.event_ids),
+                        followed=flt.followed),
             status_classes=tuple(flt.status_classes),
             start_from=flt.start_from,
             start_to=flt.start_to,

@@ -571,6 +571,11 @@ const tr: typeof en = {
     countsPhase: '{phase}: {done} / {total}',
     eta: 'yaklaşık {time} kaldı',
     waiting: '{n} sn bekleniyor: {why}.',
+    requests: 'SofaScore’a {n} istek',
+    requestsLabel: 'İstekler',
+    requestsWait: 'her biri istek bütçesinde ortalama {time} bekledi',
+    requestsBackoff: 'SofaScore yavaşlamamızı istediği için toplam {time} beklendi',
+    requestsHelp: 'İstekleri bu makinedeki bütün süreçlerin paylaştığı istek bütçesi hızlandırır ya da yavaşlatır (Ayarlar › İstekler). Ortalama bekleme uzunsa hızı SofaScore değil bütçe belirliyor.',
     noHeartbeat: '{time} boyunca yaşam belirtisi yok; süreç durmuş olabilir.',
     result: 'Sonuç',
     details: 'Maç ayrıntıları',
@@ -697,6 +702,7 @@ const tr: typeof en = {
     description: 'İndirilenler: ligler, takımlar, oyuncular ve tek maçlar; sezonları ve verileriyle.',
     syncAll: 'Tümünü güncelle',
     coveragePlayer: 'Oyuncu için sayılmaz: kayıtlı maçlar kimin oynadığını söylemez.',
+    coveragePlayerPending: 'Oyuncunun bir sonraki indirmesinden sonra sayılır: indirme oyuncunun maç listesindeki maçları saklar.',
     sameName: 'Başka bir takiple aynı ad: numaraları sofascore.com’da karşılaştırın',
     add: 'Lig ekle',
     search: 'Ad ara',
@@ -813,7 +819,7 @@ const tr: typeof en = {
     completeHelp: 'Ayrıntısı inen bitmiş maçlardan, seçilen her veri türü kayıtlı olan ya da SofaScore’un “veri yok” dediği kesinleşenlerin payı. Henüz oynanmamış maçlar sayılmaz.',
     missing: 'eksik: {list}',
     missingItem: '{name} ({n})',
-    missingHelp: 'SofaScore’un “veri yok” dediği bir veri türü, ikinci bir yanıt bunu doğrulayana kadar eksik sayılır; sonraki indirme yeniden sorar.',
+    missingHelp: 'SofaScore’un “veri yok” dediği bir veri türü, ikinci bir yanıt bunu doğrulayana kadar eksik sayılır; sonraki indirme, ilk yanıttan en az bir dakika sonra, yeniden sorar.',
     scheduleRead: 'Fikstür okundu:',
     scheduleNever: 'Fikstür henüz okunmadı',
     coverageText: 'bitmiş {matches} maçın {details} tanesinin ayrıntısı indi',
@@ -1773,6 +1779,7 @@ const tr: typeof en = {
     },
     fetch: {
       only_finished: 'Lig indirmesinde yalnızca bitmiş maçlar',
+      confirm_empty_after_seconds: '“Veri yok” yanıtını doğrulamadan önce bekleme (saniye)',
     },
     defaults: {
       slices: 'Varsayılan indirilecek veriler',
@@ -1831,6 +1838,7 @@ const tr: typeof en = {
     },
     fetch: {
       only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki maç sayıları ve eski /api maç listeleri de yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada ne görüneceğini Oynananlar / Gelecek / Tümü seçimi ve durum süzgeci belirler); takım, oyuncu ve tek maç takiplerini de.',
+      confirm_empty_after_seconds: 'SofaScore bitmiş bir maçın bir veri türü için “veri yok” dediğinde, bunu doğrulamak için en erken bu kadar saniye sonra bir kez daha sorulur; ondan önceki indirme onu atlar. 0 sonraki indirmede yeniden sorar.',
     },
     defaults: {
       slices: 'Veri türleri ya da grupları, virgülle ayrılmış. “core” temel maç verisidir: maç, istatistikler, kadrolar, olaylar ve diğerleri; oranlar ayrı bir gruptur (“odds”).',
