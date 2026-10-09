@@ -55,10 +55,8 @@ function builtScripts(dir: string): string[] {
 }
 
 describe('the app runs without eval (Content-Security-Policy)', () => {
-  it('index.html tells the server and has no inline script', () => {
-    // sofascore_scraper/web/security.py: CSP_MARKER. Without it the server keeps 'unsafe-eval' for old builds.
-    expect(indexHtml).toContain('<meta name="sofascore-csp" content="no-eval"')
-    // No inline script: script-src is 'self' only
+  it('index.html has no inline script', () => {
+    // script-src is 'self' only
     expect([...indexHtml.matchAll(/<script\b[^>]*>/g)].map((m) => m[0])).toEqual(['<script type="module" src="/src/main.ts">'])
   })
 

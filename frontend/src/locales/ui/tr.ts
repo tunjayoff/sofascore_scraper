@@ -1697,7 +1697,6 @@ const tr: typeof en = {
     },
     source: {
       default: 'varsayılan',
-      dotenv: '.env',
       overrides: 'burada ayarlandı',
       file: 'yapılandırma dosyası',
       env: 'ortam',
