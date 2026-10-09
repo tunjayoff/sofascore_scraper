@@ -160,7 +160,7 @@
    },
    {
     "concurrent": [
-     "LOG WARNING Breaker: Circuit breaker opened (art arda 2 başarısız istek): 2 of 2 requests failed (2x 403). This job sends no more requests to SofaScore.",
+     "LOG WARNING Breaker: Circuit breaker opened (2 failed requests in a row): 2 of 2 requests failed (2x 403). This job sends no more requests to SofaScore.",
      "LOG WARNING FetchPipeline: Event request for match 9100001 failed (403)",
      "LOG WARNING FetchPipeline: Event request for match 9100010 failed (403)",
      "LOG WARNING FetchPipeline: Refresh of match 9100001: /event could not be fetched",

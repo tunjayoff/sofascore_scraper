@@ -172,7 +172,7 @@
    },
    {
     "concurrent": [
-     "LOG WARNING Breaker: Circuit breaker opened (art arda 4 başarısız istek): 4 of 11 requests failed (4x 403, 1x 404). This job sends no more requests to SofaScore.",
+     "LOG WARNING Breaker: Circuit breaker opened (4 failed requests in a row): 4 of 11 requests failed (4x 403, 1x 404). This job sends no more requests to SofaScore.",
      "LOG WARNING FetchPipeline: Event request for match 9100001 failed (403)",
      "LOG WARNING FetchPipeline: Event request for match 9100002 failed (403)",
      "LOG WARNING FetchPipeline: Event request for match 9100003 failed (403)",
@@ -373,7 +373,7 @@
    },
    {
     "concurrent": [
-     "LOG WARNING Breaker: Circuit breaker opened (art arda 4 başarısız istek): 4 of 11 requests failed (4x 403, 1x 404). This job sends no more requests to SofaScore.",
+     "LOG WARNING Breaker: Circuit breaker opened (4 failed requests in a row): 4 of 11 requests failed (4x 403, 1x 404). This job sends no more requests to SofaScore.",
      "LOG WARNING FetchPipeline: Event request for match 9100001 failed (403)",
      "LOG WARNING FetchPipeline: Event request for match 9100002 failed (403)",
      "LOG WARNING FetchPipeline: Event request for match 9100003 failed (403)",
