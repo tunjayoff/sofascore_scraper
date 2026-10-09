@@ -784,6 +784,21 @@ def mask_sink_options(kind: Any, options: Mapping[str, Any]) -> Dict[str, Any]:
     return {key: value if key in known else MASK for key, value in options.items()}
 
 
+def mask_task_options(run: Any, options: Mapping[str, Any]) -> Dict[str, Any]:
+    """
+    Bir zamanlayıcı görevinin seçeneklerinin gösterilecek hali (`config show`, tanılama paketi; FX-34), sink'lerin
+    kuralıyla (mask_sink_options): görevin `run`ının tanımladığı seçeneklerin (sofascore_scraper/jobs/scheduler.py
+    `TASK_RUNS`: `league_id`, `scope`, `include_env`, `older_than`) değeri kalır, başka her anahtarın değeri `***`
+    olur. Öyle bir anahtar zamanlayıcı kurulurken reddedilir (`check_tasks`), ama `config show` ve paket onu daha
+    önce gösterir. Bilinmeyen `run`ın her seçeneği maskelenir; anahtarın adı kalır.
+    """
+    from sofascore_scraper.jobs.scheduler import TASK_RUNS  # geç içe aktarma: zamanlayıcı yapılandırmayı kullanır
+
+    found = TASK_RUNS.get(run) if isinstance(run, str) else None
+    known = found.options if found is not None else frozenset()
+    return {key: value if key in known else MASK for key, value in options.items()}
+
+
 def mask_sink_table(table: Mapping[str, Any]) -> Dict[str, Any]:
     """
     Aynı kural, ayrıştırılmamış bir [[sink]] tablosu için (SOFASCORE_SINKS'in bir öğesi): modelin anahtarları
@@ -941,7 +956,7 @@ class LoadedSettings:
             ("slices", {sport: _override_row(override) for sport, override in self.settings.slices.items()}),
             ("follows", [_follow_row(spec) for spec in self.settings.follows]),
             ("sinks", [_sink_row(spec, mask_secrets) for spec in self.settings.sinks]),
-            ("schedule.tasks", [_task_row(task) for task in self.settings.schedule.tasks]),
+            ("schedule.tasks", [_task_row(task, mask_secrets) for task in self.settings.schedule.tasks]),
         ):
             source = self.source(key)
             rows.append({"key": key, "value": value, "source": source.layer, "from": source.name, "locked": source.locked})
@@ -971,8 +986,10 @@ def _sink_row(spec: SinkSpec, mask_secrets: bool) -> Dict[str, Any]:
     }
 
 
-def _task_row(task: ScheduleTask) -> Dict[str, Any]:
-    return {"run": task.run, "every": task.every, "cron": task.cron, "options": dict(task.options)}
+def _task_row(task: ScheduleTask, mask_secrets: bool) -> Dict[str, Any]:
+    # Görevin tanımadığı bir seçeneğin değeri gösterilmez (bkz. mask_task_options)
+    options = mask_task_options(task.run, task.options) if mask_secrets else dict(task.options)
+    return {"run": task.run, "every": task.every, "cron": task.cron, "options": options}
 
 
 def _named_secret(environ: Mapping[str, str], variable: str, where: str) -> str:
@@ -1330,6 +1347,7 @@ __all__ = [
     "load_settings",
     "mask_sink_options",
     "mask_sink_table",
+    "mask_task_options",
     "parse_duration",
     "parse_follows",
     "parse_sinks",

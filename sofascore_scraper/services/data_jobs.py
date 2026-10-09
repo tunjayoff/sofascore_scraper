@@ -19,7 +19,9 @@ Dışa aktarma üç biçim üretir:
 Dışa aktarma dosyası `DATA_DIR/exports/`a okunur bir adla yazılır (plan maddesi FX-19; `export_name`):
 `<lig ya da veri kümesi>_<UTC tarih>_<iş kimliğinin son 8 harfi>.<uzantı>`, ör.
 `premier-league_2026-10-06_x7k2m9qa.csv`; adı işin sonucundaki `file` alanı taşır. FX-19'dan önceki işlerin
-dosyası `<iş kimliği>.<uzantı>`dır. Aynı işin dosyası yeniden yazılabilir (`overwrite`).
+dosyası `<iş kimliği>.<uzantı>`dır. Aynı işin dosyası yeniden yazılabilir (`overwrite`). `ssc export`'un
+`--out` verilmeyen dosyası da aynı etiketi ve UTC tarihi taşır, iş kimliği yerine UTC saatle (FX-34;
+`local_export_name`): `premier-league_2026-10-06_142530.jsonl`.
 """
 from __future__ import annotations
 
@@ -159,11 +161,11 @@ def export_label(req: ExportRequest, tournament_name: Optional[str] = None) -> s
     return f"{base}-raw" if req.schema == "raw" else base
 
 
-def export_name(store: "Store", job_id: str, req: ExportRequest, *, now: Optional[float] = None) -> str:
+def export_subject(store: "Store", req: ExportRequest) -> Optional[str]:
     """
-    Okunur dosya adı (FX-19): `<etiket>_<UTC tarih>_<iş kimliğinin son 8 harfi>.<uzantı>`. Turnuvanın adı takip
-    tablosundan, yoksa katalogdan. Turnuva süzülmemiş, tek bir takım ya da tek bir oyuncu süzülmüşse (B1) onun
-    takibinin adı, takımın takibi yoksa katalogdaki adı.
+    Dosya adının konusu (`export_label`'a verilen ad): tek bir turnuva süzülmüşse onun adı, takip tablosundan,
+    yoksa katalogdan. Turnuva süzülmemiş, tek bir takım ya da tek bir oyuncu süzülmüşse (B1) onun takibinin adı,
+    takımın takibi yoksa katalogdaki adı. Bilinmiyorsa None (etiket veri kümesidir).
     """
     name: Optional[str] = None
     if len(req.tournament_ids) == 1:
@@ -182,10 +184,31 @@ def export_name(store: "Store", job_id: str, req: ExportRequest, *, now: Optiona
         elif kind == "team":
             rows = store.entities.participants(ids=(entity_id,), limit=1)
             name = rows[0].name if rows else None
-    moment = dt.datetime.fromtimestamp(now if now is not None else dt.datetime.now(dt.timezone.utc).timestamp(),
-                                       dt.timezone.utc)
+    return name
+
+
+def _utc_moment(now: Optional[float]) -> dt.datetime:
+    return dt.datetime.fromtimestamp(now if now is not None else dt.datetime.now(dt.timezone.utc).timestamp(),
+                                     dt.timezone.utc)
+
+
+def export_name(store: "Store", job_id: str, req: ExportRequest, *, now: Optional[float] = None) -> str:
+    """
+    Okunur dosya adı (FX-19): `<etiket>_<UTC tarih>_<iş kimliğinin son 8 harfi>.<uzantı>`; etiketin adı
+    `export_subject`'tendir.
+    """
     short = "".join(ch for ch in job_id.lower() if ch.isalnum())[-8:] or "export"
-    return f"{export_label(req, name)}_{moment:%Y-%m-%d}_{short}.{export_extension(req)}"
+    label = export_label(req, export_subject(store, req))
+    return f"{label}_{_utc_moment(now):%Y-%m-%d}_{short}.{export_extension(req)}"
+
+
+def local_export_name(store: "Store", req: ExportRequest, *, now: Optional[float] = None) -> str:
+    """
+    `ssc export`'un `--out` verilmeyen dosyasının adı (FX-34): işinkiyle aynı etiket ve UTC tarih, iş kimliği
+    yerine UTC saat: `<etiket>_<UTC tarih>_<UTC saat, %H%M%S>.<uzantı>`, ör. `premier-league_2026-10-06_142530.jsonl`.
+    """
+    label = export_label(req, export_subject(store, req))
+    return f"{label}_{_utc_moment(now):%Y-%m-%d_%H%M%S}.{export_extension(req)}"
 
 
 def run_export(store: "Store", req: ExportRequest, dest: str) -> Dict[str, Any]:
@@ -226,5 +249,7 @@ __all__ = [
     "export_label",
     "export_name",
     "export_path",
+    "export_subject",
+    "local_export_name",
     "run_export",
 ]

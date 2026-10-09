@@ -6,13 +6,14 @@
     ssc export --dataset events --format csv --out m.csv     satır başına bir kayıt (JSONL) ya da düzleştirilmiş
     ssc export --dataset slices --format sqlite --out d.db   tablo (CSV, Parquet, SQLite); veri kümeleri events,
     ssc export --dataset changes --format parquet --out c.parquet   slices ve changes
-    ssc export --schema normalized                           events, JSONL, veri klasörüne: exports/events_<zaman>.jsonl
+    ssc export --schema normalized                           events, JSONL, veri klasörüne:
+                                                             exports/events_<tarih>_<saat>.jsonl (UTC)
 
     ssc export --schema raw --format jsonl --out ham.jsonl   saklanan ham yükler, yük başına bir satır
     ssc export --schema raw --format tree --out ham/         ham yükler, maç başına bir dizin
 
     ssc export                                               geniş CSV (`legacy-wide-csv`), veri klasörüne:
-                                                             match_details/processed/all_matches_<zaman>.csv
+                                                             match_details/processed/events-wide_<tarih>_<saat>.csv
     ssc export --out maclar.csv                              aynı CSV, verilen dosyaya
     ssc export --out - > maclar.csv                          aynı CSV, stdout'a
 
@@ -24,10 +25,14 @@
     zamanıdır.
   * `--team ID` ve `--player ID` (tekrarlanabilir; B1) katılımcı süzgecidir: bu takımlardan ya da oyunculardan
     birinin maçları (ikisi tek süzgeç). Takım, maçın iki tarafından biridir (takım takibinin kimliği; bireysel
-    sporlarda oyuncu); oyuncu, maçın saklanan kadrosunda adı geçendir (oyuncu takibinin kimliği).
+    sporlarda oyuncu); oyuncunun maçları, oyuncu takibinin saklanan maç listesindekiler ve saklanan kadrosunda
+    adı geçenlerdir (oyuncu takibinin kimliği; sofascore_scraper/services/export.py).
   * Yazılacak kayıt yoksa hiçbir dosya yazılmaz ve komut `not_found` ile biter (çıkış kodu 1). Ham dışa aktarma
     ve geniş CSV yalnızca detayı (olay yükü) saklanan maçları yazar.
   * Dışa aktarma kilit almaz: bir indirme sürerken de çalışır, o anki katalogdan okur.
+  * `--out` verilmezse dosyanın adı web'in dışa aktarma işininkiyle aynı biçimdedir (FX-34; data_jobs
+    `local_export_name`): tek bir turnuvanın (ya da turnuvasız tek bir takımın veya oyuncunun) adı, yoksa veri
+    kümesi (geniş CSV'de `-wide` ekiyle), sonra UTC tarih ve iş kimliği yerine UTC saat.
   * Veri kümesinin ya da ham dışa aktarmanın hedefi zaten varsa `--force` olmadan depolama hatasıdır (çıkış
     kodu 5). Parquet için `pyarrow` gerekir; yoksa `not_supported`.
 
@@ -45,6 +50,7 @@ from sofascore_scraper.cli.output import JSON, Translator
 from sofascore_scraper.errors import NotFoundError, UsageError
 
 if TYPE_CHECKING:
+    from sofascore_scraper.services.data_jobs import ExportRequest
     from sofascore_scraper.services.export import DatasetSpec
 
 PROFILES = ("legacy-wide-csv",)
@@ -118,6 +124,16 @@ def _dataset_spec(args: argparse.Namespace, dataset: str, fmt: str, schema: str)
                              player_ids=tuple(args.players or ())))
 
 
+def _name_request(args: argparse.Namespace, dataset: str, fmt: str, schema: str,
+                  profile: Optional[str] = None) -> "ExportRequest":
+    """Varsayılan dosya adının istek karşılığı (`local_export_name` yalnızca adın parçalarını okur)."""
+    from sofascore_scraper.services.data_jobs import ExportRequest
+
+    return ExportRequest(dataset=dataset, format=fmt, schema=schema, profile=profile,
+                         tournament_ids=tuple(args.tournaments or ()), team_ids=tuple(args.teams or ()),
+                         player_ids=tuple(args.players or ()))
+
+
 class _TextSink:
     """Satır yazıcısının baytlarını bir metin akışına (stdout) verir; yazıcı her çağrıda bütün satırlar yazar."""
 
@@ -152,8 +168,8 @@ def _raw(inv: Invocation, store: Any) -> CommandResult:
 
 def _normalized(inv: Invocation, data_dir: str) -> CommandResult:
     import os
-    import time
 
+    from sofascore_scraper.services.data_jobs import local_export_name
     from sofascore_scraper.services.export import TEXT_FORMATS, ExportService, check_dataset
     from sofascore_scraper.store import open_store
 
@@ -166,7 +182,8 @@ def _normalized(inv: Invocation, data_dir: str) -> CommandResult:
         raise UsageError(f"--format {fmt} is a binary file; write it with --out PATH")
     spec = _dataset_spec(args, dataset, fmt, "normalized")
     check_dataset(spec)  # geçersiz birleşim ya da pyarrow yok: veri klasörü açılmadan
-    service = ExportService(open_store(data_dir))
+    store = open_store(data_dir)
+    service = ExportService(store)
 
     if args.out == STDOUT:
         inv.out.begin_stream()  # stdout dışa aktarmanındır: sonuç zarfı yazılmaz
@@ -175,7 +192,8 @@ def _normalized(inv: Invocation, data_dir: str) -> CommandResult:
         stream.flush()
     else:
         target = (inv.resolve_path(args.out) if args.out
-                  else os.path.join(data_dir, DATASET_EXPORT_DIR, f"{dataset}_{int(time.time())}.{fmt}"))
+                  else os.path.join(data_dir, DATASET_EXPORT_DIR,
+                                    local_export_name(store, _name_request(args, dataset, fmt, "normalized"))))
         result = service.export_dataset(spec, target, overwrite=bool(args.force), allow_empty=False)
     data = {"dataset": dataset, "schema": "normalized", "schema_version": result.schema_version, "format": fmt,
             "path": result.path, "rows": result.rows, "columns": len(result.columns), "bytes": result.bytes}
@@ -190,6 +208,7 @@ def _normalized(inv: Invocation, data_dir: str) -> CommandResult:
 def export(inv: Invocation) -> CommandResult:
     import os
 
+    from sofascore_scraper.services.data_jobs import local_export_name
     from sofascore_scraper.services.export import LEGACY_WIDE_CSV, ExportService, ExportSpec
     from sofascore_scraper.store import open_store
 
@@ -242,7 +261,8 @@ def export(inv: Invocation) -> CommandResult:
                 from sofascore_scraper.exceptions import StorageError
 
                 raise StorageError.from_exception(e, directory) from e
-            written = service.write_legacy_csv(directory, spec)
+            name = local_export_name(store, _name_request(args, "events", "csv", "normalized", LEGACY_WIDE_CSV))
+            written = service.write_legacy_csv(directory, spec, name=name)
             if written is None:  # bu arada silindi
                 raise NotFoundError("there is no downloaded match to export", {"filters": _filters(args)})
             result = written

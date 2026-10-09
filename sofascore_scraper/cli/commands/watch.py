@@ -14,18 +14,18 @@ için tek süreçtir; Ctrl+C ya da SIGTERM ile durur.
     (SCOPE_RELOAD_SECONDS, 60 sn) bakar; `live = true` bir takip eklenince izlemeye başlar. Konteynerin ve
     systemd biriminin servisi bunu kullanır: takip yokken yeniden başlatma döngüsüne girmez.
 
-  * Aynı veri dizininde tek canlı servis çalışır: ikincisi ve eski `--watch` (`watcher:<spor>`) varken
-    `instance_running` ile çıkar (çıkış kodu 6).
+  * Aynı veri dizininde tek canlı servis çalışır: ikincisi, biri çalışırken `instance_running` ile çıkar (çıkış
+    kodu 6).
   * Kaynak `--source` ya da `[live] source`'tur. `page` (varsayılan): izlenen her spor için gerçek bir tarayıcı
     sayfası açık kalır (kendi profili, `<profil>-live`; sayfa başına yaklaşık 1,8–2,6 GB bellek) ve sayfanın
     push bağlantısının kareleri dinlenir; olaylar değişiklikten yaklaşık bir saniye sonra gelir. Yoklama her
     zaman yedektir: push sağlıklıyken yavaş aralıkla, kopuk ya da sessizken `poll_interval` ile. `poll`:
-    yalnızca yoklama, tarayıcı açılmaz (eski `--watch` takma adı bunu kullanır). `direct` (açık seçim, 8.3):
-    hafif bir istemci push sunucusuna kendisi bağlanır (yaklaşık 0,2 GB); kimlik bilgisi köprü sayfasının kendi
-    bağlantısından okunur ve yalnızca bellekte tutulur. Yalnızca `--source direct`, `[live] source = "direct"` ya
-    da `SOFASCORE_LIVE__SOURCE=direct` ile kullanılır, hiçbir zaman kendiliğinden seçilmez; dört uyarısı
-    (settings.LIVE_DIRECT_WARNING) `--help`'te, çıktıda ve her başlangıçta log'da yazılır. Her kaynağın yedeği
-    yoklamadır; `page` çalışmazsa servis yoklamaya düşer, `direct`'e asla.
+    yalnızca yoklama, tarayıcı açılmaz. `direct` (açık seçim, 8.3): hafif bir istemci push sunucusuna kendisi
+    bağlanır (yaklaşık 0,2 GB); kimlik bilgisi köprü sayfasının kendi bağlantısından okunur ve yalnızca bellekte
+    tutulur. Yalnızca `--source direct`, `[live] source = "direct"` ya da `SOFASCORE_LIVE__SOURCE=direct` ile
+    kullanılır, hiçbir zaman kendiliğinden seçilmez; dört uyarısı (settings.LIVE_DIRECT_WARNING) `--help`'te,
+    çıktıda ve her başlangıçta log'da yazılır. Her kaynağın yedeği yoklamadır; `page` çalışmazsa servis yoklamaya
+    düşer, `direct`'e asla.
   * Yapılandırılmış sink'ler (`[[sink]]`, `SOFASCORE_SINKS`) bu süreçte, ayrı bir thread'de dağıtılır
     (`sinks` kilidi başka bir süreçteyse, örneğin `serve`, o dağıtır). `--stdout` kendi thread'inde, kilitsiz ve
     "şimdi"den yazar. İkisi ayrı thread'lerdir: stdout'u okuyan durursa yapılandırılmış sink'ler beklemez.

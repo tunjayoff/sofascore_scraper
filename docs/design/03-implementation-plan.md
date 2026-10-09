@@ -5184,11 +5184,9 @@ Open, in no fixed order:
 - **The live-match-tracker document in the explorer.** The iframe document under `/api/v1/event/{id}/live-match-tracker/`
   is a Document request, outside the explorer's `Fetch` patterns, so it is sent without a slot and not
   counted (one per event page). Holding Document requests in the interceptor would fix it.
-- Small leftovers of P30 (section 16): `ssc export` still names its files with epoch seconds while the
-  export jobs use the UTC date; `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
+- Small leftovers of P30 (section 16): `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
   neutral `/search` for `/tournaments/search`; one `FetchPipeline` per `DetailPhase` call instead of one
-  session per job; `_task_row` prints a task's `options` as they are. The help text of `fetch.only_finished`
-  in the web UI still names the 2.x match lists (`frontend/src/locales/ui/en.ts`, `05-web-ui.md` 6.16).
+  session per job.
 
 Decided not to do in 3.1: a localized date picker (owner, 2026-10-09; the native date input stays) and
 serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).

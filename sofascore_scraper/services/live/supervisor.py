@@ -6,13 +6,12 @@ Canlı servis (docs/design/02-services.md bölüm 8.1): `ssc watch`'ın çalış
         ─→ bitiş: tek /event isteği ─→ store.events.observe ─→ change.recorded
 
   * **Tek kopya.** Servis `live` kilidini tutar (01-storage.md 6.1): aynı veri dizininde ikinci bir servis
-    ya da 2.x izleyicisi (`watcher:<spor>`) başlamaz (LeaseHeld; CLI'de çıkış kodu 6). `writer` almaz: indirme
-    işleri ile birlikte çalışır.
+    başlamaz (LeaseHeld; CLI'de çıkış kodu 6). `writer` almaz: indirme işleri ile birlikte çalışır.
   * **Kendi istek bağlamı.** İstekler bir işin devre kesicisine sayılmaz (`request_context(breaker=None)`) ve
     ortak bütçenin `watch` şeridinden sıra alır (istekler arası ≥ 1 sn).
   * **Durum** `store.watch`tadır, izleyici adı spor adıdır (2.x izleyicisiyle aynı): yeniden başlatma aynı
-    geçişi yeniden olay yapmaz ve `--watch` ile `ssc watch` birbirinin bıraktığı yerden sürer (kilitler
-    ikisinin aynı anda çalışmasını engeller). 2.x'in `watch_state_<spor>.json` dosyası bir kez içe alınır.
+    geçişi yeniden olay yapmaz. 2.x'in `watch_state_<spor>.json` dosyası bir kez içe alınır; servis 2.x
+    izleyicisinin bıraktığı yerden sürer.
   * **Olaylar** `live` akışına yinelenme anahtarıyla eklenir (reducer.stream_event): çöken servisin yeniden
     başlarken ürettiği aynı geçiş ikinci kez saklanmaz. Depo meşgulse (StoreBusy: başka bir yazar 5 sn'lik
     bekleme süresini aştı) ekleme artan aralıklarla yeniden denenir; servis bunun yüzünden bitmez.

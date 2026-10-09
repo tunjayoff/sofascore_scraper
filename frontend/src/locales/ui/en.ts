@@ -1430,7 +1430,7 @@ const en = {
       allTournaments: 'None chosen: every league.',
       follows: 'Added teams, players and matches',
       followsNote: 'The matches of any chosen team or player. A chosen match, a league and the other filters narrow them: a team and a league export the team’s matches in that league.',
-      playersNote: 'A player’s matches are those whose stored lineups name the player; a match downloaded without its lineups is not found.',
+      playersNote: 'A player’s matches are those of the player follow’s last match list and those whose stored lineups name the player; a match of an unfollowed player downloaded without its lineups is not found.',
       seasonIds: 'Season numbers (optional, separated by commas)',
       eventIds: 'Match numbers (optional, separated by commas)',
       badIds: 'Numbers are whole numbers above zero, separated by commas.',
@@ -1838,7 +1838,7 @@ const en = {
       odds_provider: 'SofaScore’s number of the bookmaker whose odds are downloaded. Pick a known bookmaker or type any number; which bookmakers answer depends on the country SofaScore sees.',
     },
     fetch: {
-      only_finished: 'When on, a league download fetches the details of finished matches only; future fixtures stay as listed rows. The match counts on Overview and the old /api match lists also count only finished matches (or matches with details). It does not change the Matches screen (its Played / Upcoming / All switch and the status filter choose what shows) nor team, player and single-match follows.',
+      only_finished: 'When on, a league download fetches the details of finished matches only; future fixtures stay as listed rows. The match counts on Overview and in ssc status also count only finished matches (or matches with details). It does not change the Matches screen (its Played / Upcoming / All switch and the status filter choose what shows) nor team, player and single-match follows.',
       confirm_empty_after_seconds: 'When SofaScore answers “no data” for a data type of a finished match, it is asked once more to confirm it, no sooner than this many seconds later; a download before that leaves it out. 0 asks again in the next download.',
     },
     defaults: {

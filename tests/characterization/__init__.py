@@ -33,8 +33,10 @@ _MANIFEST_NAME = "manifest.json"
 _MANIFEST_VOLATILE_KEYS = frozenset({"created_at", "updated_at", "fetched_at", "checked_at", "at", "bytes"})
 # Yerel saatle yazılan tarihler (özet CSV'deki match_date) makinenin saat dilimine göre değişir
 _LOCAL_DATETIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?")
-# Dosya adındaki çalıştırma zamanı (processed/all_matches_<epoch>.csv)
+# Dosya adındaki çalıştırma zamanı: 2.x'in epoch'u (processed/all_matches_<epoch>.csv) ve FX-34'ten beri `ssc
+# export`'un UTC tarih ve saati (processed/events-wide_<date-time>.csv)
 _EPOCH_IN_NAME = re.compile(r"_\d{9,}(?=\.)")
+_DATE_TIME_IN_NAME = re.compile(r"_\d{4}-\d{2}-\d{2}_\d{6}(?=\.)")
 # Değişiklik günlüğünün ay parçası (changes/<yyyy>-<mm>.jsonl, ST-21): adı satırın yazıldığı aydır
 _MONTH_SEGMENT = re.compile(r"^changes/\d{4}-\d{2}(?=\.jsonl$)")
 _TEXT_SUFFIXES = frozenset({".json", ".jsonl", ".csv", ".txt"})
@@ -97,8 +99,8 @@ def snapshot_tree(root: Any) -> Dict[str, Any]:
     """
     base = Path(root)
     return {
-        _MONTH_SEGMENT.sub("changes/<yyyy-mm>", _EPOCH_IN_NAME.sub("_<epoch>", p.relative_to(base).as_posix())):
-            _file_summary(p)
+        _MONTH_SEGMENT.sub("changes/<yyyy-mm>", _DATE_TIME_IN_NAME.sub(
+            "_<date-time>", _EPOCH_IN_NAME.sub("_<epoch>", p.relative_to(base).as_posix()))): _file_summary(p)
         for p in sorted(base.rglob("*"))
         if p.is_file() and STATE_DIR not in p.relative_to(base).parts
     }

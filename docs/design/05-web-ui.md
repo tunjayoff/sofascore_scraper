@@ -1509,8 +1509,8 @@ single match as its match number and a team as the numbers of its stored matches
 fields, and the dialog lists the added teams, **players** and single matches: teams go to `team_ids`,
 players to `player_ids`, matches to `event_ids` (`frontend/src/screens/exports/ExportDialog.vue:97-104` at
 `216c2f9`). The server resolves teams and players when it writes the file (a team: the matches with it on
-either side; a player: the matches whose stored line-ups name the player, so a match stored without
-line-ups is not found), and the dialog reads no match list; the FX-24 workaround is gone. Teams and players
+either side; a player: the matches whose stored line-ups name the player and, since FX-34, those of the
+player follow's stored match list, so only a match outside both is not found), and the dialog reads no match list; the FX-24 workaround is gone. Teams and players
 together are one filter (a match of any of them), and every filter narrows the others (AND): a chosen team
 and a chosen single match now intersect, where FX-24 added them together. The dialog's note says so. The
 list's Filter column names them ("2 teams · 1 player"). **An export starts while a download runs** (FX-23, the `export` lease; 5.4): the
@@ -1823,7 +1823,7 @@ test had found the SofaScore address first (F20). The wireframe's "Base address"
 said that it only filters the lists and does not change what is downloaded, which was wrong: with it on, a
 league download fetches the details of finished matches only (`QueryService.detail_candidates`), and the
 Overview counts count finished (or detailed) matches (and so did the 2.x `/api` lists until P30 removed
-them; the help text in `frontend/src/locales/ui/en.ts:1838` at `216c2f9` still names them). The help says so, and that
+them; FX-34 took them out of the help text, which names `ssc status` instead). The help says so, and that
 the Matches screen and team, player and match follows are not affected; the setting's description in
 `sofascore_scraper/config/settings.py` says the same. It stays in the UI, because it changes downloads. In
 the defaults for all sports, an optional data type says "not available in every sport" ("her sporda

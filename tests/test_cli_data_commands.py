@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -364,7 +365,9 @@ def test_export_writes_the_wide_csv_to_the_legacy_place_a_file_or_stdout(cli: Cl
     default = run_in(cli, seeded, "export", "--json")
     assert default.exit_code == 0, default.stderr
     path = Path(default.data["path"])
-    assert path.parent == seeded / "match_details" / "processed" and path.name.startswith("all_matches_")
+    # FX-34: web'in dışa aktarmasıyla aynı okunur ad (veri kümesi `-wide`, UTC tarih ve saat), epoch değil
+    assert path.parent == seeded / "match_details" / "processed"
+    assert re.fullmatch(r"events-wide_\d{4}-\d{2}-\d{2}_\d{6}\.csv", path.name), path.name
     assert default.data["rows"] == 1 and path.read_text(encoding="utf-8").startswith("match_id,")
 
     out = run_in(cli, seeded, "export", "--out", "x.csv", cwd=tmp_path)

@@ -29,11 +29,14 @@ tamsayı sütunları `1.0` biçiminde çıkmaz, satır sonu her yerde `\\r\\n`'d
 Katılımcı süzgeci (B1, e2e F13: dışa aktarma yalnızca lig takibiyle süzülebiliyordu): `team_ids` takımların
 (yarışmacı kimliği, `homeTeam.id`; bireysel sporlarda oyuncu ya da çift) maçlarını, `player_ids` oyuncuların (kişi
 kimliği, kadrodaki `player.id`) maçlarını seçer. İkisi tek bir süzgeçtir: maç listelenen takımlardan ya da
-oyunculardan birinindir; öteki süzgeçlerle birlikte (VE) uygulanır. Bir oyuncunun maçları saklanan kadrolardır
-(`lineups` dilimi: ilk on bir ve yedekler; eksik oyuncular sayılmaz): oyuncunun takibi maç listesini saklamaz
-(sofascore_scraper/services/follow_sync.py), kadrosu saklanmamış maçı bu süzgeç bulmaz. Süzgeç dışa aktarmadan önce
-maç kimliklerine çözülür (`ExportService.participant_events`); bunun için öteki süzgeçlerin kapsamındaki
-(spor, turnuva, sezon, maç) maçların kadroları okunur.
+oyunculardan birinindir; öteki süzgeçlerle birlikte (VE) uygulanır. Bir oyuncunun maçları iki kaynağın
+birleşimidir: önce oyuncu takibinin saklanan maç listesi (B2; state.db'nin çalışma zamanı bilgisi
+`follow_events:player:<kimlik>`, sofascore_scraper/services/follow_sync.py `listed_events`), sonra saklanan
+kadrolar (`lineups` dilimi: ilk on bir ve yedekler; eksik oyuncular sayılmaz). Böylece takip edilen oyuncunun
+kadrosu indirilmemiş maçı da bulunur; takip edilmeyen (ya da listesi henüz okunmamış) oyuncunun kadrosu
+saklanmamış maçını bu süzgeç bulmaz. Süzgeç dışa aktarmadan önce maç kimliklerine çözülür
+(`ExportService.participant_events`); bunun için öteki süzgeçlerin kapsamındaki (spor, turnuva, sezon, maç)
+maçların kadroları okunur (listeden bulunan maçınki okunmaz).
 
 Servis dosya yazmaz; yalnızca istenen akışa ya da yola yazar. Web'in GET'i çıktıyı istekte üretip akıtır
 (karar D16); `ssc export --profile legacy-wide-csv` (2.x'te `--headless --csv-export`) dosyayı
@@ -264,16 +267,17 @@ class ExportService:
     # -- dosyaya yazan girişler (`ssc export --profile legacy-wide-csv`; 2.x'te --headless --csv-export) ------
 
     def write_legacy_csv(self, directory: str, spec: Optional[ExportSpec] = None, *,
-                         now: Optional[float] = None) -> Optional[ExportResult]:
+                         now: Optional[float] = None, name: Optional[str] = None) -> Optional[ExportResult]:
         """
-        Birleşik dosya: `<directory>/all_matches_<epoch>.csv`. Dışa aktarılacak maç yoksa dosya yazılmaz ve None
-        döner (bugünkü gibi).
+        Birleşik dosya: `<directory>/<name>`; name verilmezse 2.x'in adı `all_matches_<epoch>.csv` (`ssc export`
+        okunur bir ad verir, FX-34: sofascore_scraper/services/data_jobs.py `local_export_name`). Dışa aktarılacak
+        maç yoksa dosya yazılmaz ve None döner (bugünkü gibi).
         """
         table = self.legacy_table(spec)
         if not table.rows:
             logger.warning("No downloaded match to export to CSV")
             return None
-        path = os.path.join(directory, f"all_matches_{_stamp(now)}.csv")
+        path = os.path.join(directory, name or f"all_matches_{_stamp(now)}.csv")
         result = self._write(PreparedExport(table.columns, len(table.rows), len(table.rows), table.chunks), path)
         logger.info("CSV export of %s matches written: %s", result.rows, path)
         return result
@@ -306,8 +310,8 @@ class ExportService:
                            scope: Optional[Scope] = None) -> Set[int]:
         """
         Kapsamdaki maçlardan takımlardan ya da oyunculardan birinin oynadığı maçların kimlikleri (modül belgesi):
-        takım katalogdaki iki tarafından biridir, oyuncu maçın saklanan kadrosundadır. Okunamayan bir kadro
-        atlanır (uyarı loglanır).
+        takım katalogdaki iki tarafından biridir; oyuncu takibinin saklanan maç listesindedir ya da maçın saklanan
+        kadrosundadır. Okunamayan bir kadro atlanır (uyarı loglanır).
         """
         teams, players = tuple(team_ids), frozenset(player_ids)
         base = scope or Scope()
@@ -316,6 +320,8 @@ class ExportService:
             query = EventQuery(scope=dataclasses.replace(base, participant_ids=teams), sort=_SORT)
             found.update(row.id for row in self._store.events.iter(query, batch=_PAGE))
         if players:
+            listed = self._listed_player_events(players, base)
+            found.update(listed)
             read = 0
             for state in self._store.events.states(base, batch=_PAGE):
                 if state.event.id in found or not state.slice(LINEUPS_KEY).has_payload:
@@ -329,7 +335,30 @@ class ExportService:
                     continue
                 if players & lineup_players(lineups):
                     found.add(state.event.id)
-            logger.info("Player filter: %d stored lineups read, %d matches of the players", read, len(found))
+            logger.info("Player filter: %d stored lineups read, %d matches from the stored match lists of player "
+                        "follows, %d matches of the players", read, len(listed), len(found))
+        return found
+
+    def _listed_player_events(self, players: Iterable[int], scope: Scope) -> Set[int]:
+        """
+        Oyuncu takiplerinin saklanan maç listelerindeki (B2, `follow_sync.listed_events`) maçlardan katalogda ve
+        kapsamda olanlar. Listesi olmayan (takip edilmeyen ya da listesi henüz okunmamış) oyuncu bir şey katmaz.
+        """
+        from sofascore_scraper.services.follow_sync import PLAYER, listed_events
+
+        wanted: Dict[int, None] = {}
+        for player in sorted(players):
+            for event_id in listed_events(self._store, PLAYER, player) or ():
+                wanted.setdefault(int(event_id))
+        ids = list(wanted)
+        if scope.event_ids:
+            allowed = {int(event_id) for event_id in scope.event_ids}
+            ids = [event_id for event_id in ids if event_id in allowed]
+        found: Set[int] = set()
+        for start in range(0, len(ids), _PAGE):
+            chunk = tuple(ids[start:start + _PAGE])
+            query = EventQuery(scope=dataclasses.replace(scope, event_ids=chunk), sort=_SORT)
+            found.update(row.id for row in self._store.events.iter(query, batch=_PAGE))
         return found
 
     def _narrowed_events(self, scope: Scope, team_ids: Iterable[int],

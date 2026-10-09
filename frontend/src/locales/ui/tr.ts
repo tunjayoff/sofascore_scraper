@@ -1432,7 +1432,7 @@ const tr: typeof en = {
       allTournaments: 'Seçim yoksa: tüm ligler.',
       follows: 'Eklenen takımlar, oyuncular ve maçlar',
       followsNote: 'Seçilen takımlardan ya da oyunculardan birinin maçları. Seçilen bir maç, bir lig ve öteki süzgeçler bunları daraltır: bir takımla bir lig, takımın o ligdeki maçlarını verir.',
-      playersNote: 'Bir oyuncunun maçları, kayıtlı kadrosunda adı geçen maçlardır; kadrosu indirilmemiş maç bulunmaz.',
+      playersNote: 'Bir oyuncunun maçları, oyuncu takibinin son maç listesindeki ve kayıtlı kadrosunda adı geçen maçlardır; takip edilmeyen oyuncunun kadrosu indirilmemiş maçı bulunmaz.',
       seasonIds: 'Sezon numaraları (isteğe bağlı, virgülle ayrılmış)',
       eventIds: 'Maç numaraları (isteğe bağlı, virgülle ayrılmış)',
       badIds: 'Numaralar sıfırdan büyük tam sayılardır, virgülle ayrılır.',
@@ -1840,7 +1840,7 @@ const tr: typeof en = {
       odds_provider: 'Oranları indirilen bahis şirketinin SofaScore’daki numarası. Bilinen bir şirketi seçin ya da herhangi bir numara yazın; hangi şirketlerin yanıt verdiği SofaScore’un gördüğü ülkeye bağlıdır.',
     },
     fetch: {
-      only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki maç sayıları ve eski /api maç listeleri de yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada ne görüneceğini Oynananlar / Gelecek / Tümü seçimi ve durum süzgeci belirler); takım, oyuncu ve tek maç takiplerini de.',
+      only_finished: 'Açıkken bir lig indirmesi yalnızca bitmiş maçların ayrıntısını alır; fikstürdeki gelecek maçlar listede kalır. Genel bakıştaki ve ssc status çıktısındaki maç sayıları da yalnızca bitmiş (ya da ayrıntısı inmiş) maçları sayar. Maçlar ekranını değiştirmez (orada ne görüneceğini Oynananlar / Gelecek / Tümü seçimi ve durum süzgeci belirler); takım, oyuncu ve tek maç takiplerini de.',
       confirm_empty_after_seconds: 'SofaScore bitmiş bir maçın bir veri türü için “veri yok” dediğinde, bunu doğrulamak için en erken bu kadar saniye sonra bir kez daha sorulur; ondan önceki indirme onu atlar. 0 sonraki indirmede yeniden sorar.',
     },
     defaults: {

@@ -5,28 +5,32 @@ Durum servisi ve istatistik aktarıcısı (plan maddesi RD-4): sayımlar katalog
 
   * `StatusService.summary()`'nin sayım kuralları, `tests/store_fixtures.py`'nin veri dizinlerinde elle
     denetlenmiş beklentilerle;
-  * eski sayımlardan (dosya ağacını gezen `sofascore_scraper/services/stats.py`) farklar: aşağıdaki `old_stats` o kodun
-    sayımlarını yeniden üretir ve `CORRECTIONS` tablosu her farkı nedeniyle birlikte tutar. Tabloda olmayan
-    hiçbir sayı değişmemiştir;
-  * disk kullanımının saklanması ve aktarıcının (`sofascore_scraper/services/stats.py`) bugünkü yanıt anahtarları.
+  * eski sayımlardan (dosya ağacını gezen eski `sofascore_scraper/services/stats.py`) farklar: aşağıdaki `old_stats`
+    o kodun sayımlarını yeniden üretir ve `CORRECTIONS` tablosu her farkı nedeniyle birlikte tutar. Tabloda
+    olmayan hiçbir sayı değişmemiştir;
+  * disk kullanımının saklanması ve 2.x yanıt anahtarları.
 
 2.x'in `GET /api/dashboard` ve `/api/stats/system` yolları 3.1'de kalktı (P30); aşağıdaki `dashboard` ve
-`system_stats` onların aktarıcıdan nasıl kurulduğunu yeniden üretir.
+`system_stats` onların özetten nasıl kurulduğunu yeniden üretir. Kurdukları aktarıcı (`league_counts`,
+`disk_usage`, `system_counts`) son çağıranı gidince FX-34'te `sofascore_scraper/services/stats.py`'den bu dosyaya
+taşındı ve modül silindi; ondan yalnızca `format_size` kullanılıyordu, o da `ssc status`'a geçti
+(sofascore_scraper/cli/commands/status.py).
 """
 from __future__ import annotations
 
 import datetime as dt
 import glob
+import importlib.util
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple
 
 import pytest
 
 import conftest
 import store_fixtures as sf
-from sofascore_scraper.services import stats as stats_service
+from sofascore_scraper.cli.commands.status import format_size
 from sofascore_scraper.services import status as status_module
 from sofascore_scraper.services.maintenance import MaintenanceService
 from sofascore_scraper.services.status import DataSummary, DiskUsage, StatusService, TournamentCounts
@@ -69,20 +73,69 @@ def old_forms(tmp_path: Path) -> sf.LegacyFixture:
     return build("legacy", tmp_path)
 
 
-# --- 2.x'in gösterge paneli yanıtları (aktarıcıdan; yolları 3.1'de kalktı) -----------------------------
+# --- 2.x'in gösterge paneli yanıtları (yolları 3.1'de kalktı; aktarıcı FX-34'te buraya taşındı) ----------
 
 
-def _data_summary(data_dir: str, leagues: Dict[int, str]) -> DataSummary:
+def _data_summary(data_dir: str, leagues: Iterable[int] = ()) -> DataSummary:
+    """Veri dizininin özeti; `leagues` maçı olmasa da dökümde yer alacak lig kimlikleridir."""
     return StatusService(open_store(data_dir)).summary(tournament_ids=tuple(leagues))
+
+
+def league_counts(summary: DataSummary, league_id: int, league_name: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Bir ligin sayıları, 2.x anahtarlarıyla: seasons (SofaScore'daki sezon listesi), seasons_fetched (maçı
+    bilinen sezon), matches, details, coverage (%) ve last_update (ligin dosyalarındaki en yeni değişiklik,
+    yerel saatle ISO; detayı yoksa None).
+    """
+    counts = summary.tournament(league_id)
+    last_update = None
+    if counts.last_update is not None:
+        last_update = dt.datetime.fromtimestamp(counts.last_update).isoformat()
+    return {
+        "id": league_id,
+        "name": league_name,
+        "seasons": counts.seasons,
+        "seasons_fetched": counts.seasons_with_events,
+        "matches": counts.matches,
+        "details": counts.details,
+        "coverage": counts.coverage if counts.matches else 0,
+        "last_update": last_update,
+    }
+
+
+def disk_usage(summary: DataSummary) -> Dict[str, Any]:
+    """Veri dizininin disk kullanımı, 2.x anahtarlarıyla. `total` dört alanın toplamıdır (`datasets` dahil)."""
+    disk = summary.disk
+    usage: Dict[str, Any] = {
+        "seasons": disk.seasons if disk else 0,
+        "matches": disk.matches if disk else 0,
+        "details": disk.details if disk else 0,
+        "datasets": disk.datasets if disk else 0,
+    }
+    usage["total"] = sum(usage.values())
+    usage["formatted_total"] = format_size(usage["total"])
+    return usage
+
+
+def system_counts(summary: DataSummary, leagues: Mapping[int, str]) -> Dict[str, Any]:
+    """Tüm veri dizini: toplamlar, yapılandırılmış ligler için döküm (`league_counts`) ve disk kullanımı."""
+    return {
+        "leagues": len(leagues),
+        "seasons": summary.seasons,
+        "matches": summary.matches,
+        "details": summary.details,
+        "league_breakdown": [league_counts(summary, lid, name) for lid, name in leagues.items()],
+        "disk_usage": disk_usage(summary),
+    }
 
 
 def dashboard(data_dir: str, leagues: Dict[int, str]) -> Dict[str, Any]:
     summary = _data_summary(data_dir, leagues)
     cards = []
     for lid, name in leagues.items():
-        st = stats_service.league_counts(summary, lid, name)
+        st = league_counts(summary, lid, name)
         cards.append({k: st[k] for k in ("id", "name", "seasons", "matches", "details", "coverage", "last_update")})
-    disk = stats_service.disk_usage(summary)
+    disk = disk_usage(summary)
     return {
         "leagues": cards,
         "disk_usage": {k: disk[k] for k in ("seasons", "matches", "details", "total", "formatted_total")},
@@ -92,7 +145,7 @@ def dashboard(data_dir: str, leagues: Dict[int, str]) -> Dict[str, Any]:
 
 
 def system_stats(data_dir: str, leagues: Dict[int, str]) -> Dict[str, Any]:
-    stats = stats_service.system_counts(_data_summary(data_dir, leagues), leagues)
+    stats = system_counts(_data_summary(data_dir, leagues), leagues)
     stats["league_breakdown"] = sorted(
         ({k: b[k] for k in ("id", "name", "matches", "details", "coverage")}
          for b in stats["league_breakdown"] if b["matches"] or b["details"]),
@@ -175,7 +228,7 @@ def old_stats(data_dir: Path, leagues: Dict[int, str]) -> Dict[str, Any]:
 
 
 def new_stats(data_dir: Path, leagues: Dict[int, str]) -> Dict[str, Any]:
-    system = stats_service.system_counts(stats_service.data_summary(str(data_dir), leagues), leagues)
+    system = system_counts(_data_summary(str(data_dir), leagues), leagues)
     out: Dict[str, Any] = {key: system[key] for key in ("seasons", "matches", "details")}
     for entry in system["league_breakdown"]:
         for key in ("seasons", "seasons_fetched", "matches", "details", "coverage"):
@@ -460,8 +513,8 @@ def test_disk_total_includes_datasets(old_forms: sf.LegacyFixture) -> None:
              "details": tree_bytes(data_dir / "match_details"), "datasets": tree_bytes(data_dir / "datasets")}
     assert all(size > 0 for size in areas.values())
     total = sum(areas.values())
-    usage = stats_service.disk_usage(summary)
-    assert usage == {**areas, "total": total, "formatted_total": stats_service.format_size(total)}
+    usage = disk_usage(summary)
+    assert usage == {**areas, "total": total, "formatted_total": format_size(total)}
     panel = dashboard(str(data_dir), old_forms.leagues)
     assert panel["disk_usage"] == {key: usage[key] for key in ("seasons", "matches", "details", "total",
                                                               "formatted_total")}
@@ -548,7 +601,7 @@ def test_forget_sizes(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPat
 def test_disk_usage_of_an_unmeasured_summary() -> None:
     assert DiskUsage().total == 0
     summary = DataSummary(data_dir="x", only_finished=True)
-    assert stats_service.disk_usage(summary) == {"seasons": 0, "matches": 0, "details": 0, "datasets": 0,
+    assert disk_usage(summary) == {"seasons": 0, "matches": 0, "details": 0, "datasets": 0,
                                                  "total": 0, "formatted_total": "0.0 B"}
 
 
@@ -556,12 +609,12 @@ def test_disk_usage_of_an_unmeasured_summary() -> None:
 
 
 def test_league_counts_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
-    summary = stats_service.data_summary(str(canonical.data_dir), (17, 35))
-    assert stats_service.league_counts(summary, 17, "Premier League") == {
+    summary = _data_summary(str(canonical.data_dir), (17, 35))
+    assert league_counts(summary, 17, "Premier League") == {
         "id": 17, "name": "Premier League", "seasons": 3, "seasons_fetched": 2, "matches": 12, "details": 10,
         "coverage": 83.3, "last_update": dt.datetime.fromtimestamp(sf.BASE_MTIME).isoformat(),
     }
-    empty = stats_service.league_counts(summary, 35, "Bundesliga")
+    empty = league_counts(summary, 35, "Bundesliga")
     assert empty == {"id": 35, "name": "Bundesliga", "seasons": 0, "seasons_fetched": 0, "matches": 0,
                      "details": 0, "coverage": 0, "last_update": None}
     assert type(empty["coverage"]) is int  # JSON'da `0`, `0.0` değil (altın dosyalar türü de karşılaştırır)
@@ -569,25 +622,27 @@ def test_league_counts_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
 
 def test_system_counts_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
     leagues = canonical.leagues
-    summary = stats_service.data_summary(str(canonical.data_dir), leagues)
-    system = stats_service.system_counts(summary, leagues)
+    summary = _data_summary(str(canonical.data_dir), leagues)
+    system = system_counts(summary, leagues)
     assert list(system) == ["leagues", "seasons", "matches", "details", "league_breakdown", "disk_usage"]
     assert (system["leagues"], system["seasons"], system["matches"], system["details"]) == (6, 11, 29, 23)
     assert [entry["id"] for entry in system["league_breakdown"]] == list(leagues)
     for entry in system["league_breakdown"]:
-        assert entry == stats_service.league_counts(summary, entry["id"], entry["name"])
+        assert entry == league_counts(summary, entry["id"], entry["name"])
     assert list(system["league_breakdown"][0]) == ["id", "name", "seasons", "seasons_fetched", "matches", "details",
                                                    "coverage", "last_update"]
-    assert system["disk_usage"] == stats_service.disk_usage(stats_service.data_summary(str(canonical.data_dir)))
+    assert system["disk_usage"] == disk_usage(_data_summary(str(canonical.data_dir)))
     assert list(system["disk_usage"]) == ["seasons", "matches", "details", "datasets", "total", "formatted_total"]
     assert system["disk_usage"]["total"] == sum(
         tree_bytes(canonical.data_dir / name) for name in ("seasons", "matches", "match_details", "datasets"))
 
 
 def test_the_routes_do_not_walk_the_tree(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Web yanıtları yalnızca özetten kurulur: lig dizinlerini gezen işlevler yok (ST-28 sildi)."""
-    for name in ("dir_size", "_league_dirs", "league_stats", "system_stats"):
-        assert not hasattr(stats_service, name)
+    """
+    Yanıtlar yalnızca özetten kurulur: lig dizinlerini gezen işlevler yok (ST-28 sildi), onları tutan aktarıcı
+    modülü de (FX-34).
+    """
+    assert importlib.util.find_spec("sofascore_scraper.services.stats") is None
     data_dir, leagues = str(canonical.data_dir), canonical.leagues
     panel = dashboard(data_dir, leagues)
     assert panel["totals"] == {"leagues": 6, "matches": 29, "details": 23}

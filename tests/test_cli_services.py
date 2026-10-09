@@ -250,7 +250,7 @@ def test_export_takes_no_lease(
     Recorder(data_dir, sync_result()).install(monkeypatch).error = AssertionError("no download was asked for")
     holders: List[Any] = []
 
-    def write(self: ExportService, directory: str, spec: Any = None) -> ExportResult:
+    def write(self: ExportService, directory: str, spec: Any = None, *, name: Any = None) -> ExportResult:
         holders.append(lease_holder(data_dir))
         return ExportResult(rows=1, columns=("match_id",), bytes=10, path="/x/all_matches_1.csv")
 

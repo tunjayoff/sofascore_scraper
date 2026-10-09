@@ -159,8 +159,8 @@ that names the command replacing it (`sofascore_scraper/cli/removed_flags.py`; 4
 detail phase through `services/detail_phase.py` (`DetailPhase`, 2.3, 3.3), the request layer is
 `sofascore_scraper/client/`, the live service `services/live/`, and the job store and progress are the Store's
 and `sofascore_scraper/jobs/progress.py`. `sofascore_scraper/challenge_solver.py`, the alias of the bridge,
-went with FX-32 (#187). `services/stats.py` (81 lines) stays; only its `format_size` has a caller (`ssc status`), and the
-legacy-shape functions next to it are dead code.
+went with FX-32 (#187). `services/stats.py` went with FX-34: its one used function, `format_size`, is in
+`sofascore_scraper/cli/commands/status.py` (`ssc status`), and the dead legacy-shape functions were deleted.
 
 ### 1.2 `sofascore_scraper/match_data_fetcher.py`: twelve responsibilities in one class
 
@@ -1446,8 +1446,8 @@ class ExportService:
     def export_dataset(self, spec: DatasetSpec, dest, *, overwrite=False, allow_empty=True) -> ExportResult: ...
     def records(self, dataset: str, flt: DatasetFilter | None = None) -> Iterator[Model]: ...
     def legacy_table(self, spec=None) -> LegacyTable ; def prepare(self, spec=None) -> PreparedExport
-    def write_legacy_csv(self, directory, spec=None, *, now=None) -> ExportResult | None: ...
-        # <directory>/all_matches_<epoch>.csv; None when there is nothing to export
+    def write_legacy_csv(self, directory, spec=None, *, now=None, name=None) -> ExportResult | None: ...
+        # <directory>/<name>, else all_matches_<epoch>.csv; None when there is nothing to export
     def write_legacy_csv_by_league(self, directory, spec=None, *, now=None) -> list[ExportResult]: ...
 
 # services/backup.py (ST-24)
@@ -1738,8 +1738,9 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   the catalog) when the filter names one tournament, else the dataset, as a lower-case ASCII slug of at most
   40 characters, with `-raw` for a raw export and `-wide` for the 2.x wide CSV; `id8` is the last 8 letters
   or digits of the job id. For example `premier-league_2026-10-06_x7k2m9qa.csv`. Jobs before FX-19 keep
-  `<job id>.<ext>`. `ssc export` still names a dataset `exports/<dataset>_<epoch>.<format>`
-  (`sofascore_scraper/cli/commands/export.py:166`); `GET /exports` lists those files too (6).
+  `<job id>.<ext>`. Since FX-34 `ssc export` without `--out` uses the same label and UTC date with the UTC
+  time in place of the job id (`local_export_name`), e.g. `exports/premier-league_2026-10-06_142530.jsonl`;
+  `GET /exports` lists those files too (6).
 - **Odds and season data (P28).** `OwnerDataService` (`sofascore_scraper/services/owner_data.py`, new) reads odds
   snapshot by snapshot from the slice history (`store.history.snapshots`), falling back to the stored
   payload of a slice without history, and maps them to the schema's `Odds` records; it reads the season
@@ -1820,14 +1821,15 @@ As built at `216c2f9` (P30 #186, B1 #190, B2 #191). Where the blocks above diffe
 - **The participant filter of an export (B1).** `ExportSpec` and `DatasetFilter` have `team_ids` and
   `player_ids` (`sofascore_scraper/services/export.py:105-106`, `:593`). A team selects the events with it on
   either side (the catalog's event participants); a player the events whose stored line-ups name him
-  (`lineups`, starters and substitutes; missing players do not count), because a player follow's match list
-  is not a stored record. The two are one filter (an event of any of them), combined with the other filters
+  (`lineups`, starters and substitutes; missing players do not count), and since FX-34 first the events of
+  the player follow's stored match list (B2, `follow_events:player:<id>`), so a followed player's events
+  are found without line-ups. The two are one filter (an event of any of them), combined with the other filters
   (AND). They are resolved to event ids before the export (`ExportService.participant_events`, `:305`),
   reading only the line-ups of the events inside the other filters' scope; no match exports nothing, never
   everything. Every dataset, the raw export and the `legacy-wide-csv` profile take it. The export job's
   `ExportFilter` takes both (ids above 0, else 422), and one team or player without a league names the file
-  after the follow (or the team's catalog name). An event downloaded without its line-ups is not found by a
-  player filter, and with no other filter a large data folder means one payload read per event with
+  after the follow (or the team's catalog name). An event downloaded without its line-ups and outside a
+  player follow's stored list is not found by a player filter, and with no other filter a large data folder means one payload read per event with
   line-ups (logged as "Player filter: N stored lineups read").
 - **Counts per follow and a player's matches (B2).** `StatusService.follow_counts(follows, tournaments=)`
   (`sofascore_scraper/services/status.py:547-580`) gives for every follow its stored events, finished events
@@ -2991,9 +2993,11 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   The mode follows the options: `--schema raw` is the raw export (`--dataset events|slices`; without it every
   payload), `--dataset` or `--schema normalized` a dataset (default `events` as JSONL), and anything else the
   2.x wide CSV, which knows only `--tournament` and `--event`. Without `--out` the wide CSV keeps its old
-  place, `match_details/processed/all_matches_<epoch>.csv`, so `--csv-export` setups find their file, and a
-  dataset goes to `DATA_DIR/exports/<dataset>_<epoch>.<format>` (not listed by `GET /api/v1/exports`, which
-  lists jobs; since FX-19 it lists these files too, with `source: "file"`). Since P28 `--dataset` also takes
+  place, `match_details/processed/`, and a dataset goes to `DATA_DIR/exports/`; since FX-34 both are named
+  like an export job's file with the UTC time in place of the job id (`events-wide_2026-10-06_142530.csv`,
+  `events_2026-10-06_142530.jsonl`; 2.7), no longer `all_matches_<epoch>.csv` and `<dataset>_<epoch>`. The
+  dataset files were not listed by `GET /api/v1/exports`, which lists jobs; since FX-19 it lists them too,
+  with `source: "file"`. Since P28 `--dataset` also takes
   `odds` and `standings` (normalized only). Since B1 (#190) `--team ID` and `--player ID` (repeatable, like
   `--tournament` and `--event`) filter by participant, for every mode including the wide CSV (2.7).
   `--out -` streams JSONL or CSV; Parquet and SQLite on stdout are refused. `--force` replaces

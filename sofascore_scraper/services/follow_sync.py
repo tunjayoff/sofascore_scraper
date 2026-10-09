@@ -12,14 +12,16 @@ Liste (`list_follow`):
 
 Uç noktalar docs/all-sports/endpoints.csv'dendir, yanıt biçimi research/all_sports örneklerinden
 (tests/fixtures/fx19): `{"events": [...], "hasNextPage": bool}`, maç nesnesi sezon programındakiyle aynı biçimde.
-Liste saklanmaz (Store'da takımın ya da oyuncunun program dilimi yok): her eşitlemede yeniden okunur ve yalnızca
-hangi maçların indirileceğini söyler; maçlar maç olarak saklanır.
+Listenin yanıtı saklanmaz (Store'da takımın ya da oyuncunun program dilimi yok): her eşitlemede yeniden okunur ve
+hangi maçların indirileceğini söyler; maçlar maç olarak saklanır. Oyuncu listesinin yalnızca maç kimlikleri
+saklanır (aşağıda).
 
 Oyuncu takibinin maçları (B2; bulgu F23, 05-web-ui.md G40). Saklanan bir maç kimin oynadığını söylemez (takımın
 maçı ise `event_participants`ten bulunur): bu yüzden oyuncu listesinin maç kimlikleri, yanıtın kendisi değil
 yalnızca kimlikler, state.db'nin çalışma zamanı bilgilerine yazılır (`store.runtime`, anahtar
 `follow_events:player:<kimlik>`; `remember_listing`). Durum ekranı oyuncunun kapsamını ve maç listesini bundan
-sayar (`follow_scope`): son okunan listenin penceresindeki maçlar. Tam okunan liste öncekinin yerine geçer;
+sayar (`follow_scope`): son okunan listenin penceresindeki maçlar. Dışa aktarmanın oyuncu süzgeci de önce bunu
+okur, sonra saklanan kadroları (sofascore_scraper/services/export.py `participant_events`). Tam okunan liste öncekinin yerine geçer;
 yarım kalan (başarısız sayfa, durdurulan iş) öncekiyle birleşir. Yeni sürüme geçişten sonra oyuncunun ilk
 eşitlemesine kadar liste yoktur ve maçları sayılmaz.
 
