@@ -204,12 +204,18 @@ function textOr(key: string, fallback: string): string {
 }
 
 /** "Wide CSV (2.x columns)", "Raw · Slices · JSONL". */
+/**
+ * An export in words: schema, dataset and format. A file `ssc export` wrote has no job record, so the server reads
+ * the dataset from the file name and says "unknown" when the name does not start with one (since FX-34 the name
+ * starts with the league, team or player); an unknown part is left out, so such a file reads as its format.
+ */
 export function exportText(spec: { dataset?: string; format?: string; schema?: string; profile?: string | null }): string {
   if (spec.profile === 'legacy-wide-csv') return t('ui.exports.kind.legacy')
+  const known = (v: string | undefined): v is string => !!v && v !== 'unknown'
   const parts = [
-    spec.schema ? textOr(`ui.exports.schema.${spec.schema}`, spec.schema) : null,
-    spec.dataset ? textOr(`ui.exports.dataset.${spec.dataset}`, spec.dataset) : null,
-    spec.format ? textOr(`ui.exports.format.${spec.format}`, spec.format.toUpperCase()) : null,
+    known(spec.schema) ? textOr(`ui.exports.schema.${spec.schema}`, spec.schema) : null,
+    known(spec.dataset) ? textOr(`ui.exports.dataset.${spec.dataset}`, spec.dataset) : null,
+    known(spec.format) ? textOr(`ui.exports.format.${spec.format}`, spec.format.toUpperCase()) : null,
   ]
   return parts.filter(Boolean).join(' · ') || '—'
 }

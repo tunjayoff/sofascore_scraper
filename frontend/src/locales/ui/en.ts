@@ -822,6 +822,7 @@ const en = {
     scheduleNever: 'Schedule not read yet',
     coverageText: '{details} of {matches} finished matches have details',
     noFinished: 'No finished match yet',
+    playerMatchesPending: 'The player’s next download stores the matches of the player’s match list.',
     otherFollows: 'Includes {n} matches of seasons not followed here, brought by other follows (a team, a player, a match) or by a download of one season.',
     notFound: 'This follow does not exist.',
     notFoundText: 'Nothing is followed with the id {id}.',

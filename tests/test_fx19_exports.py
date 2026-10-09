@@ -161,6 +161,27 @@ def test_files_written_by_ssc_export_are_listed_and_served(store: Store, jobs: J
     assert [r["id"] for r in rest] == ["file:mine.unknown"]
 
 
+def test_a_file_named_after_a_league_or_a_player_has_no_dataset(store: Store, jobs: JobStore, cli: Any) -> None:
+    """
+    Since FX-34 `ssc export` names its file after the league, team or player: the name does not say the dataset,
+    so the record says "unknown" (the web UI leaves it out). A raw export's label ends in `-raw` (`export_label`).
+    """
+    league = cli("--data-dir", str(store.data_dir), "export", "--dataset", "events", "--tournament",
+                 str(sf.NBA.id), "--json")
+    assert league.exit_code == 0, league.stderr
+    exports = store.data_dir / "exports"
+    for other in ("events-raw_2026-10-09_142530.jsonl", "nba-raw_2026-10-09_142531.jsonl",
+                  "odds_2026-10-09_142532.parquet"):
+        (exports / other).write_text("x", encoding="utf-8")
+    listed = {r["file"]: (r["dataset"], r["schema"], r["format"]) for r in data(client.get("/api/v1/exports"))}
+    assert listed == {
+        os.path.basename(league.data["path"]): ("unknown", "unknown", "jsonl"),
+        "events-raw_2026-10-09_142530.jsonl": ("events", "raw", "jsonl"),
+        "nba-raw_2026-10-09_142531.jsonl": ("unknown", "raw", "jsonl"),
+        "odds_2026-10-09_142532.parquet": ("odds", "normalized", "parquet"),
+    }
+
+
 def test_the_store_lists_the_export_folder(store: Store) -> None:
     assert store.export.files() == []
     exports = store.data_dir / "exports"

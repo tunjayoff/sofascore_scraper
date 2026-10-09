@@ -824,6 +824,7 @@ const tr: typeof en = {
     scheduleNever: 'Fikstür henüz okunmadı',
     coverageText: 'bitmiş {matches} maçın {details} tanesinin ayrıntısı indi',
     noFinished: 'Henüz bitmiş maç yok',
+    playerMatchesPending: 'Oyuncunun bir sonraki indirmesi, oyuncunun maç listesindeki maçları saklar.',
     otherFollows: 'Burada takip edilmeyen sezonlardan {n} maç da dahil; onları başka takipler (bir takım, oyuncu ya da maç) ya da tek sezonluk bir indirme getirdi.',
     notFound: 'Bu takip yok.',
     notFoundText: '{id} kimliğiyle takip edilen bir şey yok.',

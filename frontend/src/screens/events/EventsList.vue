@@ -47,7 +47,8 @@ import {
  * a status filter replaces the switch's choice and "All statuses" is the "All" of the switch. With `fixedSport`
  * the sport filter is not offered (a team plays one sport).
  */
-const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; fixedFollow?: string | null; fixedSport?: string | null; tableId?: string }>()
+/** `emptyText`: the empty state's text in place of "add a league" (a player follow not counted yet). */
+const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; fixedFollow?: string | null; fixedSport?: string | null; tableId?: string; emptyText?: string | null }>()
 const { t, locale } = useI18n()
 const route = useRoute()
 const status = useStatusStore()
@@ -339,7 +340,7 @@ defineExpose({ reload: list.load })
         <EmptyState v-if="emptyFiltered" icon="filter" :title="t('ui.events.emptyFiltered')">
           <button type="button" class="u-btn" @click="clearFilters">{{ t('ui.filter.clear') }}</button>
         </EmptyState>
-        <EmptyState v-else icon="events" :title="t('ui.events.empty')" :text="t('ui.events.emptyText')" />
+        <EmptyState v-else icon="events" :title="t('ui.events.empty')" :text="emptyText || t('ui.events.emptyText')" />
       </template>
     </DataTable>
 
