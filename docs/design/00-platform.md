@@ -79,13 +79,29 @@ its five-minute run connected in 6 s and wrote no credential anywhere. The owner
 proposals of #121 (applied by FX-16). The notes of sections 8, 10 and 11 and the rows "Live sources" of
 section 1 and "Every data type is selectable" of section 13 say so.
 
+Revised a tenth time, on 2026-10-09, after the 3.0.0 release and the first work for 3.1 (pull requests #177
+and #179 to #191; checked at `216c2f9`). No decision of the draft changed. 3.0.0 was released on
+2026-10-08: the tag `v3.0.0`, the GitHub Release with its archives and checksums, and the Docker image
+`ghcr.io/tunjayoff/sofascore_scraper:3.0.0`; no PyPI package (owner, 2026-10-08). The release pull request
+(#179) also added `ssc watch --idle`, so the Compose live service waits for a live follow instead of
+restarting in a loop. Since then main is 3.1 in preparation: P30 (#186) removed the 2.x flags of `main.py`,
+the 2.x `/api` routes, the 2.x environment names and the compatibility shims that 3.0.0 deprecated, with
+FX-32 (#187) and FX-33 (#188) for what it left; the research tool that records a page's requests was
+repaired (FX-29, #181, #182, #184), and the per-sport evidence was regenerated from its first run (FX-31,
+#185); B1 to B3 (#190, #191, #189) closed the API gaps of the end-to-end test and the score mapping of
+single-set darts and e-sports maps. The owner decided on 2026-10-09: the slice rows that FX-31 added stay;
+the proposal for rugby, floorball, volleyball and minifootball waits for more evidence (a daytime run with
+top-league matches of the four sports); a localized date picker is not added now. The state column of
+section 1, the notes of sections 5, 6, 8, 10 and 11 and the rows of section 13 on the environment, polling,
+data types and installation say what changed.
+
 ## 1. Decisions (Tuncay, 2026-10-01)
 
-| Topic | Decision | State on 2026-10-06 |
+| Topic | Decision | State on 2026-10-09 |
 |---|---|---|
 | Product position | A data foundation: products are built on it, it runs on servers as automation, applications and agents use it | |
-| Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | done: all 21 are in the sport registry with their score mapping (PRs #112, #115, #118). Which detail data each sport requests rests on one match page per sport (PR #121); the live validation checks it on the real site (section 11) |
-| Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched | done: the selection of data slices end to end, per follow, in the configuration and in the web UI (PRs #134, #161); odds (four slices, the provider id recorded, off by default) and the data of a season, team, player or sport (PR #140). The odds country is recorded only when the user sets `[client] odds_country` (delegated decision of 2026-10-06; PR #155). Which provider ids answer without login, and the shape of two odds slices that have only 404 samples, wait for the live validation (section 11) |
+| Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | done: all 21 are in the sport registry with their score mapping (PRs #112, #115, #118). Which detail data each sport requests rests on one match page per sport (PR #121), on the app's own downloads in the live validation for football, basketball and tennis (PR #176), and, since PR #185, on the evidence of the repaired research tool (39 match pages of 21 sports, 2026-10-09). A proposal for rugby, floorball, volleyball and minifootball waits for more evidence (owner, 2026-10-09) |
+| Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched | done: the selection of data slices end to end, per follow, in the configuration and in the web UI (PRs #134, #161); odds (four slices, the provider id recorded, off by default) and the data of a season, team, player or sport (PR #140). The odds country is recorded only when the user sets `[client] odds_country` (delegated decision of 2026-10-06; PR #155). The live validation found that providers 1 and 5 answer without login and settled the shapes of the odds slices that had only 404 samples; the providers' names are not known yet (open for 3.1) |
 | History / live | History: by requests. Live: the push channel, with polling as the fallback. How the push channel is used was decided after the draft: see the two rows at the end of this table | measured, PR #42; built, PRs #95 and #101 (the last two rows) |
 | Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table). Changed on 2026-10-02 (owner): the web UI is designed and built from scratch on the same technology stack (Vue 3, TypeScript, Pinia, the same build tooling), as a professional interface for the new platform, not as an incremental change of today's views; only what fits is carried over as code (the API client, the locale files, the eval-free build, the token handling). Added on 2026-10-06 (owner): team, player and single-match follows work in 3.0.0 (search by name, their matches downloaded), and search suggests as the user types, like the site | done for the CLI: the data commands, `serve` and the removal of the terminal menu (PRs #119, #125, #131). The new web UI is built (screen design PR #105, approved with all 22 of its decisions on 2026-10-02; implementation PRs #107, #132, #133). A first-time-user review on 2026-10-06 found it hard for a newcomer; a newcomer pass (PR #154), the backend gaps (PR #156: team, player and match follows that download, per-league delete, the connection state) and the last screens (PR #161) followed, and the old views under `/classic` were removed (PR #161). Search as the user types, one search across kinds and job names are built (PR #167, FX-20). The web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer (Tailwind CSS 4, PR #136) |
 | Request rate | Default 5 requests per second; the user may take the risk and remove the limit | done, PR #33 |
@@ -93,15 +109,15 @@ section 1 and "Every data type is selectable" of section 13 say so.
 | Data format | A fixed, versioned common schema + raw data for those who want it | done: `04-schema-v1.md`, approved on 2026-10-02 (PR #72), is served by API v1 (PRs #122 to #127) and by the normalized exports (PR #130); raw payloads by the raw routes and the raw export (PRs #108, #123) |
 | Match status | Every status is stored (fixture, live, finished, cancelled); filtering happens when reading | done, PR #129: the downloads store every status and `FETCH_ONLY_FINISHED` is a filter when the counts, the lists and the planning read (decision D21) |
 | Language | Default English; Turkish when the system language is Turkish | done, PR #39 |
-| Platform | Linux and Docker are official; Windows and macOS best-effort | the Docker image is built only when a release is tagged and was not yet built or smoke-tested: a step of the live validation before the release (section 11) |
+| Platform | Linux and Docker are official; Windows and macOS best-effort | the Docker image is built when a release is tagged; the image of 3.0.0 was smoke-tested and published as `ghcr.io/tunjayoff/sofascore_scraper:3.0.0` (2026-10-08) |
 | Network access | No account system. Local-only by default; exposing it is the responsibility of whoever installs it (see section 9) | done, PR #43 |
 | Raw payloads | Stored compressed; the application and the CLI export them at full size (plain JSON) on request | done: compressed in the new layout (PR #104); exported by `ssc export` and API v1 (PRs #108, #123, #130) |
 | Old data layout | No automatic migration. New writes use the new layout; old data is read in place; whoever wants to moves it with the `migrate` command (manager decision) | done: `ssc migrate` (PR #110) |
 | Scheduler | In-app automatic updating is optional, off by default | done, PR #128: `ssc serve --scheduler` or `[schedule] enabled = true`. Since PR #155 a task that runs `every` some time counts from its last run in the job history, not from the start of the server, and a `prune-history` task (off by default) removes old odds snapshots |
-| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | the version number is 3.0.0 (`pyproject.toml`; the web UI shows v3.0.0), set by the release pull request (`03-implementation-plan.md` section 18); the `v3.0.0` tag is Tuncay's. The import package is `sofascore_scraper` since REN-1 (#168; decision D1, owner, 2026-10-03), and the Docker image has the `ssc` command |
+| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | released on 2026-10-08: the `v3.0.0` tag (Tuncay's), the GitHub Release and the Docker image, from source only, without a PyPI package (PR #179; `03-implementation-plan.md` section 18). Main is 3.1 in preparation: P30 (PR #186) removed what 3.0.0 deprecated (the 2.x flags, `/api` routes, environment names and backup scopes). The import package is `sofascore_scraper` since REN-1 (#168; decision D1, owner, 2026-10-03), and the Docker image has the `ssc` command |
 | Merging | The manager session reviews and merges; the release tag is Tuncay's | since 2026-10-03 a pull request merges on a green Linux CI plus a local run of the full suite on its merge with main; the Windows and macOS jobs of CI are best-effort (Platform) |
 | Live is not a web feature (2026-10-01, after the draft) | Live data is not part of the web UI and is not exposed over an HTTP endpoint (no SSE stream). A person at a screen can watch live scores on SofaScore itself; the value of the live stream is for servers and programs. Live watching is a CLI service (`watch`) that delivers events to sinks: stdout (JSON lines), file, webhook. A program that wants live data over the network uses the webhook. The event stream is still stored with sequence numbers | done: `ssc watch` delivers to the configured sinks (PR #91); no route of API v1 and no screen of the new web UI carries live data |
-| Live sources (2026-10-01, after the draft) | Two selectable push sources in the CLI, plus polling as the fallback that is always present. `page` (default): the service keeps a real browser page open and listens to the page's own push connection; no credential is handled. `direct` (explicit opt-in): a lightweight client connects to the push server itself with the credential read at runtime from the bridge page's own connection, kept in memory only. `direct` is never the default, is never enabled implicitly, and carries clear warnings wherever it is configured or documented (section 8) | built: `page`, the default (PR #95), and `direct` (PR #101). Neither has been run against the real site yet; that happens in the live validation at the end of the project, whose `direct` step needs the owner's approval (section 11). Run on 2026-10-08 in the live validation: both worked (section 8) |
+| Live sources (2026-10-01, after the draft) | Two selectable push sources in the CLI, plus polling as the fallback that is always present. `page` (default): the service keeps a real browser page open and listens to the page's own push connection; no credential is handled. `direct` (explicit opt-in): a lightweight client connects to the push server itself with the credential read at runtime from the bridge page's own connection, kept in memory only. `direct` is never the default, is never enabled implicitly, and carries clear warnings wherever it is configured or documented (section 8) | built: `page`, the default (PR #95), and `direct` (PR #101). Run against the real site in the live validation of 2026-10-08, the `direct` step with the owner's approval: both worked (section 8). `direct` stays off in every default |
 
 Note. The sports, by class, as measured in `docs/all-sports/README.md`:
 
@@ -265,6 +281,13 @@ players, one league's data can be deleted, `status` says whether SofaScore was e
 files have readable names (PR #156). The web UI uses all of it except a few fields (`05-web-ui.md` section
 7).
 
+Note (2026-10-09). The 2.x routes under `/api` are gone in 3.1 (PR #186): a 2.x path answers 404, and only
+`/api/v1` remains. B1 and B2 (PRs #190, #191) added a stored team's record (`teams/{id}`), the
+`individual` flag of a sport, an export filter by team and player, the coverage of every follow in `status`
+with a player follow's matches (`events?follow=kind:id`), and request counters in a job's progress and
+result. Behind a proxy with an ASGI root path the access token is checked on the routed path (it was not,
+PR #191); the web UI itself is served at the root of its host only.
+
 ## 6. CLI (servers and automation)
 
 Principles: it asks no questions; output is JSON on request; logs go to a separate channel; running it again
@@ -301,8 +324,8 @@ Note (2026-10-03). The command line is complete for 3.0.0: `sync`, `fetch event|
 `status`, `follows`, `jobs`, `data clear|recheck-unavailable` and the signals and single-instance rules (PR
 #119), `serve` (PR #125, with the optional scheduler of PR #128), `migrate` and `catalog` (PR #110),
 `backup` (PR #109) and `export` (PR #130), with the exit codes above (and 130 for Ctrl+C). `python main.py`
-is a thin shim: its old flags map onto these commands for one more release, and without an action it prints
-a short help and exits with 2, because the terminal menu is gone (PR #131). The selection of data slices
+is a thin shim: its old flags map onto these commands for one more release (removed in 3.1, below), and
+without an action it prints a short help and exits with 2, because the terminal menu is gone (PR #131). The selection of data slices
 in the configuration file is wired end to end by P27 (in progress).
 
 Note (2026-10-06). The selection of data slices is wired (PR #134). `ssc sync` reads the follows of the
@@ -311,6 +334,16 @@ seasons` (PRs #152, #156); `ssc status --disk` and `ssc config validate` with th
 (PR #152); `ssc doctor` checks the configuration file (PR #155). New follows are always kept in the state
 database; `config/leagues.txt` is read as a legacy list, and a row of it is moved into the database through
 the API (PR #156).
+
+Note (2026-10-09). 3.1 removes what 3.0.0 deprecated (PR #186): `python main.py` only forwards to the CLI,
+and an old flag (`--headless`, `--watch`, `--web`, `--doctor`, …) is a usage error (exit 2) that names the
+command replacing it; the backup scopes are `all`, `state` and `data`; the 2.x environment names are no
+longer read. The environment overrides a setting as `SOFASCORE_<SECTION>__<KEY>`, and the lines of `.env`
+are part of the environment (section 13); a 2.x name that is still set gets a warning naming its
+replacement in `ssc config show`, `config validate`, `ssc doctor` and the diagnostics bundle, an invalid
+value is a configuration error, and `ssc config init --from-legacy` turns an old `.env` into a config file.
+`ssc export` takes `--team` and `--player` (PR #190), and `ssc watch --idle` (PR #179) keeps running without
+a live follow (section 8).
 
 ## 7. Output targets (pluggable)
 
@@ -385,6 +418,12 @@ score changes while polling filled in the rest, printed its warnings as designed
 any output or log. FX-27 (PR #175) fixed what the run showed: `ssc watch --sport` now limits the followed
 sports it watches, and a closing browser no longer leaves pending request handlers. For set sports a score
 change is a set won, not a game or a point (as designed; `ssc watch --help` says so).
+
+Note (2026-10-09). `ssc watch --idle` (PR #179) runs the live service with an empty scope when no follow is
+marked live, instead of exiting with 2, and starts watching once the follows, read again every 60 s, mark
+one; nothing is requested while idle. The Compose example's live service uses it, so it no longer restarts
+in a loop. 3.1 removed the old `--watch` flag (PR #186), and the 2.x file `watch_events.jsonl` is no longer
+written; the events are kept in the state database.
 
 ## 9. Network access and security
 
@@ -470,6 +509,13 @@ points) is in progress. Left before 3.0.0: the release pull request (the version
 README with screenshots of real data), the Docker smoke test on its commit and the tag
 (`03-implementation-plan.md` section 18). P30 comes in 3.1.
 
+Note (2026-10-09). 3.0.0 is released (2026-10-08: the tag, the GitHub Release, the image on GHCR; FX-28,
+PR #177, merged before it). The work for 3.1 has started and is on main: P30 (PR #186) with FX-32 and FX-33
+(PRs #187, #188), the repair of the research tool (FX-29, PRs #181, #182, #184), the regenerated slice
+evidence (FX-31, PR #185), a timing flake of the Windows tests (FX-30, PR #180) and the API gaps B1 to B3
+(PRs #190, #191, #189). `03-implementation-plan.md` has the release record (section 18) and what is done
+and open for 3.1.
+
 ## 11. Open questions
 
 - Is the push channel robust in production (this evening's test). Changed on 2026-10-01: answered for one
@@ -509,6 +555,15 @@ README with screenshots of real data), the Docker smoke test on its commit and t
   so the per-sport evidence of #121 was not regenerated (FX-16 decided from the app's own downloads); the
   slices before kick-off, the ice-hockey shoot-out and other rare codes, how long the push credential lives,
   and the cancel of a search behind a reverse proxy remain open, none needed for the release.
+- Changed on 2026-10-09: the research tool records every request of a match page again (PRs #181, #182) and
+  masks the client's location and every IP address before it writes (PR #184). Its first run (39 match
+  pages of 21 sports, finished and not started) regenerated the per-sport evidence (PR #185), which also
+  answered the slices before kick-off (statistics and point-by-point are requested only once a match is
+  live or finished).
+  The cancel of a search behind a reverse proxy was checked offline with a proxy-like client (PR #191). Still
+  open: live match pages for the evidence, top-league pages of rugby, floorball, volleyball and minifootball
+  before the owner decides their slice rows, the odds providers' names, and how long the push credential
+  lives.
 
 ## 12. Old data and migration (detail of the decision)
 
@@ -544,15 +599,15 @@ needed" in `03-implementation-plan.md`.
 | Raw data: "SofaScore's response as it is" (section 5) | The stored payload is the parsed response written again: same values and key order, not the same bytes. This is what is stored today | `01-storage.md` 4.1 |
 | Exit codes 0–6 (section 6) | The same, plus 130/143 for a one-shot command stopped by a signal | `02-services.md` 4.5 |
 | One sequence of live events (sections 3, 8) | One sequence for four streams (live, change, job, system) | `01-storage.md` 2.3, `02-services.md` 5.1 |
-| Push or polling (section 8) | `--source page\|direct\|poll`: polling can also be chosen alone, and the old `--watch` alias keeps polling so that it never starts a browser (decision D18, settled on 2026-10-02) | `02-services.md` 8.2, 8.4 |
+| Push or polling (section 8) | `--source page\|direct\|poll`: polling can also be chosen alone, and the old `--watch` alias kept polling so that it never started a browser (decision D18, settled on 2026-10-02; the alias was removed in 3.1, PR #186) | `02-services.md` 8.2, 8.4 |
 | Security: basic headers, optional key (section 9) | Implemented by PR #43 with more than the draft asks: a session cookie next to the bearer token, a full Content-Security-Policy, tightened file modes | `03-implementation-plan.md` X-03, P20, P25 |
 | Follow list in the configuration file (section 6) | Three origins of follows: the config file, the API/web UI, and the existing `leagues.txt` for installations without a config file | `02-services.md` 4.3 |
 | Follow list in the configuration file (section 6) | Since PR #156 a follow added through the API or the web UI is always kept in the state database, with or without a config file; `leagues.txt` is a read-only legacy list whose rows can be moved into the database one by one | `02-services.md` 2.7 |
-| Every setting can be overridden by an environment variable (section 6) | The same, with one distinction: the existing `.env` file, which the installers create and the web UI writes, is a layer of its own below the configuration file, so that its lines do not beat the file; variables of the process environment are above the file (decision D19, settled on 2026-10-02) | `02-services.md` 4.3 |
+| Every setting can be overridden by an environment variable (section 6) | The same. Decision D19 (2026-10-02) had made the `.env` file a layer of its own below the configuration file; since 3.1 (PR #186) its lines are loaded into the environment at start and are the environment layer: they win over the file and lock the setting in the web UI, which writes only `config/overrides.json`. The order is default < overrides < file < environment < flags, and only `SOFASCORE_<SECTION>__<KEY>` names are read | `02-services.md` 4.3 |
 | The common schema as an outline (section 3) | A field-level contract, approved on 2026-10-02 (decision P2): live event types with their stream prefix, a Slice identified by owner and key, slice payloads raw in version 1, the aggregate for football only | `04-schema-v1.md` |
 | The old layout is never changed outside `migrate` (sections 1 and 12) | Writes, promotion, rebuild and repair never delete old data; a delete or a clear that the user asks for removes every copy of what it names, the old layout's included, because a copy left behind would bring the data back, and says so in its help text (decision S18, settled on 2026-10-03) | `01-storage.md` 0 and 2.3 |
 | `FETCH_ONLY_FINISHED` becomes a read filter (section 4) | The same for the counts and the match lists, with one rule: with the setting on, a match counts when it is finished or its details were downloaded (decision D21, settled on 2026-10-02) | `02-services.md` 2.7 |
-| Every data type is selectable (section 1) | The registry also says which detail slices a sport offers at all: a slice SofaScore does not have for a sport is not requested, and one it has only sometimes does not count against completeness (PR #121, from one match page per sport). Three proposals for football, basketball and tennis wait for the live validation; the owner decided them on 2026-10-08, and FX-16 (PR #176) applied them: `pregame_form` does not count in the three, tennis requests no `lineups` or `incidents`, and tennis `point_by_point` counts | `docs/all-sports/README.md`, `02-services.md` 3.1 |
+| Every data type is selectable (section 1) | The registry also says which detail slices a sport offers at all: a slice SofaScore does not have for a sport is not requested, and one it has only sometimes does not count against completeness (PR #121, from one match page per sport). Three proposals for football, basketball and tennis wait for the live validation; the owner decided them on 2026-10-08, and FX-16 (PR #176) applied them: `pregame_form` does not count in the three, tennis requests no `lineups` or `incidents`, and tennis `point_by_point` counts. FX-31 (PR #185) changed more rows from the regenerated evidence (kept by the owner on 2026-10-09); the proposal for rugby, floorball, volleyball and minifootball waits for more evidence | `docs/all-sports/README.md`, `02-services.md` 3.1 |
 | Wave order (section 10) | Kept. Inside wave 3 the Store and the service layer are interleaved PR by PR because they share files; the plan gives the order | `03-implementation-plan.md` |
 | The package name (not in the draft) | The import package is renamed from `src` to `sofascore_scraper` (decision D1, the owner's, 2026-10-03), in one pull request when no other branch is open; done by REN-1 (#168), with no `src` alias | `03-implementation-plan.md` REN-1 |
-| Installation (not in the draft) | Only a source checkout with `pip install -e .` and the Docker image (which installs the same way) are supported: the wheel lacks the Store's `.sql` files, the locales and the web build, and the version is read from `pyproject.toml` next to the package. Decided by the owner on 2026-10-08: 3.0.0 is not published to PyPI; the release is the git tag, the GitHub Release and the Docker image, and the README tells users to install from source. Publishing to PyPI comes after 3.0.0 | `03-implementation-plan.md` sections 14, 18 |
+| Installation (not in the draft) | Only a source checkout with `pip install -e .` and the Docker image (which installs the same way) are supported: the wheel lacks the Store's `.sql` files, the locales and the web build, and the version is read from `pyproject.toml` next to the package. Decided by the owner on 2026-10-08: 3.0.0 is not published to PyPI; the release is the git tag, the GitHub Release and the Docker image, and the README tells users to install from source. 3.0.0 was released that way on 2026-10-08. Publishing to PyPI remains a later question | `03-implementation-plan.md` sections 14, 18 |
