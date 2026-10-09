@@ -1,5 +1,5 @@
 {
- "source": "research/all_sports: requests.jsonl, pages.jsonl, events/*.jsonl; answers from every run (2026-10-01, PR #17; lv-20261009, PR #183), pages from the repaired runs (lv-20261009)",
+ "source": "research/all_sports: requests.jsonl, pages.jsonl, events/*.jsonl; answers from every run (2026-10-01, PR #17; lv-20261009, PR #183; lv-20261009b, FX-36), pages from the repaired runs (lv-20261009, lv-20261009b)",
  "pages": {
   "american-football": [
    {
@@ -121,6 +121,24 @@
   ],
   "floorball": [
    {
+    "event_id": 16597412,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
+    "event_id": 16597419,
+    "state": "notstarted",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
+    "event_id": 16672335,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
     "event_id": 16672337,
     "state": "notstarted",
     "complete": true,
@@ -131,6 +149,12 @@
     "state": "finished",
     "complete": true,
     "run_id": "lv-20261009"
+   },
+   {
+    "event_id": 16956586,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
    }
   ],
   "football": [
@@ -197,16 +221,34 @@
   ],
   "minifootball": [
    {
+    "event_id": 17046055,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
     "event_id": 17219190,
     "state": "finished",
     "complete": true,
     "run_id": "lv-20261009"
    },
    {
+    "event_id": 17254475,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
     "event_id": 17268351,
     "state": "notstarted",
     "complete": true,
     "run_id": "lv-20261009"
+   },
+   {
+    "event_id": 17276181,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
    }
   ],
   "mma": [
@@ -233,16 +275,34 @@
   ],
   "rugby": [
    {
+    "event_id": 16534950,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
     "event_id": 16534955,
     "state": "notstarted",
     "complete": true,
     "run_id": "lv-20261009"
    },
    {
+    "event_id": 16662714,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
     "event_id": 16793649,
     "state": "finished",
     "complete": true,
     "run_id": "lv-20261009"
+   },
+   {
+    "event_id": 17199838,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
    }
   ],
   "snooker": [
@@ -283,10 +343,28 @@
   ],
   "volleyball": [
    {
+    "event_id": 16605451,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
+    "event_id": 16933596,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
+   },
+   {
     "event_id": 17063542,
     "state": "finished",
     "complete": true,
     "run_id": "lv-20261009"
+   },
+   {
+    "event_id": 17239586,
+    "state": "finished",
+    "complete": true,
+    "run_id": "lv-20261009b"
    },
    {
     "event_id": 17259128,
@@ -853,6 +931,7 @@
     "notstarted:404"
    ],
    "/incidents": [
+    "finished:200",
     "finished:404",
     "notstarted:404"
    ],
@@ -869,9 +948,13 @@
     "notstarted:404"
    ],
    "/pregame-form": [
+    "finished:200",
     "finished:404",
     "notstarted:200",
     "notstarted:404"
+   ],
+   "/sport-video-highlights/country/{cc}/extended": [
+    "finished:404"
    ],
    "/statistics": [
     "finished:404"
@@ -1186,6 +1269,12 @@
     "finished:404",
     "notstarted:404"
    ],
+   "/average-positions": [
+    "finished:404"
+   ],
+   "/best-players": [
+    "finished:200"
+   ],
    "/graph/win-probability": [
     "finished:404",
     "notstarted:404"
@@ -1199,10 +1288,12 @@
     "notstarted:404"
    ],
    "/incidents": [
+    "finished:200",
     "finished:404",
     "notstarted:404"
    ],
    "/lineups": [
+    "finished:200",
     "finished:404",
     "notstarted:404"
    ],
@@ -1232,6 +1323,7 @@
    ],
    "/votes": [
     "finished:200",
+    "finished:404",
     "notstarted:200"
    ]
   },
@@ -1311,6 +1403,9 @@
     "finished:404",
     "notstarted:404"
    ],
+   "/best-players": [
+    "finished:404"
+   ],
    "/graph/win-probability": [
     "finished:404",
     "notstarted:404"
@@ -1325,6 +1420,7 @@
     "notstarted:404"
    ],
    "/incidents": [
+    "finished:200",
     "finished:404",
     "notstarted:404"
    ],
@@ -1334,10 +1430,12 @@
     "notstarted:404"
    ],
    "/managers": [
+    "finished:200",
     "finished:404",
     "notstarted:200"
    ],
    "/media/summary/country/{cc}": [
+    "finished:200",
     "finished:404",
     "notstarted:404"
    ],
@@ -1347,9 +1445,14 @@
    ],
    "/pregame-form": [
     "finished:200",
+    "finished:404",
     "notstarted:200"
    ],
+   "/sport-video-highlights/country/{cc}/extended": [
+    "finished:404"
+   ],
    "/statistics": [
+    "finished:200",
     "finished:404"
    ],
    "/team-streaks": [
@@ -1560,7 +1663,8 @@
     "notstarted:404"
    ],
    "/graph/sequence": [
-    "finished:200"
+    "finished:200",
+    "finished:404"
    ],
    "/graph/win-probability": [
     "finished:404",
@@ -1571,11 +1675,13 @@
     "notstarted:200"
    ],
    "/highlights": [
+    "finished:200",
     "finished:404",
     "notstarted:404"
    ],
    "/incidents": [
     "finished:200",
+    "finished:404",
     "notstarted:404"
    ],
    "/lineups": [
@@ -1587,6 +1693,7 @@
     "notstarted:200"
    ],
    "/media/summary/country/{cc}": [
+    "finished:200",
     "finished:404",
     "notstarted:404"
    ],
@@ -1599,7 +1706,11 @@
     "notstarted:200",
     "notstarted:404"
    ],
+   "/sport-video-highlights/country/{cc}/extended": [
+    "finished:404"
+   ],
    "/statistics": [
+    "finished:200",
     "finished:404"
    ],
    "/team-streaks": [

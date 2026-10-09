@@ -20,9 +20,11 @@ kararıyla (2026-10-08) uygulandı (FX-16): DECIDED'da durur. Kararın ek kanıt
 doğrulamada her spordan bir bitmiş (2026-10-07, 20 spor) ve bir canlı maç (2026-10-08, 13 spor) bütün dilimleriyle
 tek maç takibi olarak indirildi; tablolar tests/fixtures/sport_slices/slice-matrix-{finished,live}.txt.
 
-evidence.json onarılmış araçla (FX-29, FX-29b) yeniden üretildi (FX-31). Ragbi, florbol, voleybol ve mini futbol
-için kanıtın önerdikleri uygulanmadı: PROPOSALS'ta durur, kayıt defteri onlarda bugünkü davranışı korur, sahip
-karar verir (docs/all-sports/README.md, "Öneri"). Ağ yok.
+evidence.json onarılmış araçla (FX-29, FX-29b) yeniden üretildi (FX-31): kanıtın önerdikleri uygulandı (APPLIED).
+Ragbi, florbol, voleybol ve mini futbol için kanıtın önerdikleri (FX-31) sahibin kararını bekledi; en çok takip
+edilen üç ligin bitmiş maçlarıyla (koşu lv-20261009b) yeniden bakıldıktan sonra sahibin kararıyla (2026-10-09)
+uygulandı (FX-36): DECIDED'da durur. Kararın bir hücresi kanıtın kuralından ayrılır (florbol olayları:
+DECIDED_AGAINST_THE_RULE). docs/all-sports/README.md, "Karar". Ağ yok.
 """
 from __future__ import annotations
 
@@ -47,34 +49,53 @@ FIXTURES = Path(__file__).parent / "fixtures" / "sport_slices"
 EVIDENCE = evidence_mod.load()
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
-# #121'in futbol, basketbol ve tenis için önerdikleri; sahibin kararıyla uygulandı (2026-10-08, FX-16): (spor,
-# dilim) → kanıtın yargısı. Kayıt defteri bunlarda da öteki hücreler gibi kanıta uyar.
+# Sahibin kararıyla uygulanan hücreler: (spor, dilim) → kararın yeri (kayıt defteri buna uyar). Kanıtın yargısı da
+# budur, DECIDED_AGAINST_THE_RULE'dakiler dışında.
 DECIDED: Dict[Tuple[str, str], str] = {
+    # #121'in futbol, basketbol ve tenis için önerdikleri (2026-10-08, FX-16)
     ("football", "pregame_form"): OPTIONAL,  # bitmiş iki maçta ve canlı maçta 404
     ("basketball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
     ("tennis", "pregame_form"): OPTIONAL,  # bitmiş ve canlı maçta 404
     ("tennis", "lineups"): ABSENT,  # iki eksiksiz sayfa (bitmiş, canlı) istemedi
     ("tennis", "incidents"): ABSENT,
     ("tennis", "point_by_point"): REQUIRED,  # bitmiş ve canlı maçta veriyle
+    # FX-31'in ragbi, voleybol, florbol ve mini futbol önerisi, lv-20261009b'nin üst lig maçlarıyla (2026-10-09,
+    # FX-36). Ragbi pregame_form ve voleybol olayları öneride yoktu (lv-20261009'un tek bitmiş maçında veriyle)
+    ("rugby", "statistics"): OPTIONAL,  # üst ligin üç maçında 200, lv-20261009'un bitmiş maçında 404
+    ("rugby", "lineups"): OPTIONAL,  # aynı
+    ("rugby", "incidents"): OPTIONAL,  # aynı
+    ("rugby", "pregame_form"): OPTIONAL,  # üst ligde 200, 404, 200
+    ("volleyball", "statistics"): OPTIONAL,  # üst ligde 404, 404, 200
+    ("volleyball", "lineups"): OPTIONAL,  # bütün bitmiş maçlarda 404
+    ("volleyball", "incidents"): OPTIONAL,  # üst ligde 200, 200, 404 (Asya Oyunları)
+    ("volleyball", "pregame_form"): OPTIONAL,  # bütün bitmiş maçlarda 404
+    ("floorball", "lineups"): ABSENT,  # eksiksiz bitmiş ve başlamamış sayfaların hiçbiri istemedi
+    ("floorball", "statistics"): OPTIONAL,  # bütün bitmiş maçlarda 404
+    ("floorball", "pregame_form"): OPTIONAL,  # üst ligde 200, 404, 200
+    ("floorball", "incidents"): REQUIRED,  # üst ligde 200 x 3; kural: isteğe bağlı (DECIDED_AGAINST_THE_RULE)
+    ("minifootball", "statistics"): OPTIONAL,  # üst ligde 404, 200, 200
+    ("minifootball", "incidents"): OPTIONAL,  # aynı
+    ("minifootball", "pregame_form"): OPTIONAL,  # bütün maçlarda 404
 }
 
-# FX-31: lv-20261009'un kanıtının ragbi, florbol, voleybol ve mini futbol için önerdikleri; uygulanmadı, sahip karar
-# verir (docs/all-sports/README.md, "Öneri"). (spor, dilim) → kanıtın yargısı. Kayıt defteri bunlarda bugünkü
-# davranışı korur: ortak dilim istenir ve tamlığa girer. Her biri uygulama tarafı bitmiş tabloda da veri vermedi.
-PROPOSALS: Dict[Tuple[str, str], str] = {
-    ("rugby", "statistics"): OPTIONAL,  # bitmiş maçta 404
-    ("rugby", "lineups"): OPTIONAL,  # bitmiş maçta 404 (#121'in yarım sayfasında 200)
-    ("rugby", "incidents"): OPTIONAL,  # bitmiş maçta 404
-    ("minifootball", "statistics"): OPTIONAL,  # bitmiş maçta 404 (#121'in yarım sayfasında 200)
-    ("minifootball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
-    ("minifootball", "incidents"): OPTIONAL,  # bitmiş maçta 404
-    ("floorball", "statistics"): OPTIONAL,  # bitmiş maçta 404
-    ("floorball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
-    ("floorball", "lineups"): ABSENT,  # eksiksiz bitmiş sayfa (ve başlamamış sayfa) istemedi
-    ("floorball", "incidents"): OPTIONAL,  # bitmiş maçta 404
-    ("volleyball", "statistics"): OPTIONAL,  # bitmiş maçta 404
-    ("volleyball", "pregame_form"): OPTIONAL,  # bitmiş maçta 404
-    ("volleyball", "lineups"): OPTIONAL,  # bitmiş maçta 404
+# Kararın kanıtın kuralından ayrıldığı hücreler: (spor, dilim) → kuralın yargısı. Florbol olayları: üst liglerin üç
+# bitmiş maçında (lv-20261009b) veriyle, lv-20261009'un bitmiş maçında 200, ötekinde 404; kural "bitmiş maçta bir
+# 404" yüzünden isteğe bağlı der, sahip tamlığa girmesine karar verdi (FX-36).
+DECIDED_AGAINST_THE_RULE: Dict[Tuple[str, str], str] = {
+    ("floorball", "incidents"): OPTIONAL,
+}
+
+# FX-36: lv-20261009b'nin bitmiş maç sayfalarında (her sporun en çok takip edilen üç ligi) dört dilimin HTTP
+# kodları, sayfa başına (sıra önemsiz); "-": sayfa istemedi
+TOP_LEAGUE_ANSWERS: Dict[str, Dict[str, List[str]]] = {
+    "rugby": {"statistics": ["200", "200", "200"], "lineups": ["200", "200", "200"],
+              "incidents": ["200", "200", "200"], "pregame_form": ["200", "200", "404"]},
+    "volleyball": {"statistics": ["200", "404", "404"], "lineups": ["404", "404", "404"],
+                   "incidents": ["200", "200", "404"], "pregame_form": ["404", "404", "404"]},
+    "floorball": {"statistics": ["404", "404", "404"], "lineups": ["-", "-", "-"],
+                  "incidents": ["200", "200", "200"], "pregame_form": ["200", "200", "404"]},
+    "minifootball": {"statistics": ["200", "200", "404"], "lineups": ["200", "200", "404"],
+                     "incidents": ["200", "200", "404"], "pregame_form": ["404", "404", "404"]},
 }
 
 # FX-31'in lv-20261009'un kanıtıyla kayıt defterine uyguladıkları: (spor, dilim) → kanıtın yargısı. İsteğe bağlı ya
@@ -176,10 +197,7 @@ def test_the_evidence_covers_the_recorded_pages():
 @pytest.mark.parametrize("sport,spec,found", _cells(), ids=lambda v: getattr(v, "key", v))
 def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, found: str):
     applies, counts = spec.applies_to(sport), spec.counts_in(sport)
-    if (sport, spec.key) in PROPOSALS:
-        assert found == PROPOSALS[(sport, spec.key)]
-        assert applies and counts  # bugünkü davranış: ortak dilim istenir ve tamlığa girer
-        return
+    found = DECIDED.get((sport, spec.key), found)  # sahibin kararı kuraldan ayrılabilir (DECIDED_AGAINST_THE_RULE)
     if found == REQUIRED:
         assert applies and counts
     elif found == OPTIONAL:
@@ -196,7 +214,7 @@ def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, f
 
 def test_no_sport_requests_a_slice_its_match_page_never_asks_for():
     for sport, spec, found in _cells():
-        if found == ABSENT and (sport, spec.key) not in PROPOSALS:
+        if DECIDED.get((sport, spec.key), found) == ABSENT:
             assert spec.key not in {s.key for s in sports.slices_for(sport)}, (sport, spec.key)
             assert spec.key not in planning.expected_slice_keys(sport, phase="post"), (sport, spec.key)
 
@@ -223,9 +241,12 @@ def test_statistics_and_point_by_point_exist_once_the_match_started():
     for key, codes in (("statistics", set()), ("point_by_point", {"notstarted:404"})):
         answers = _answers(sports.get_slice(key))
         assert {code for code in answers if code.split(":")[0] not in started} == codes, key
-    not_started = [row for rows in EVIDENCE["pages"].values() for row in rows
+    not_started = [(row["run_id"], row["event_id"]) for rows in EVIDENCE["pages"].values() for row in rows
                    if row["state"] == "notstarted" and row["complete"]]
-    assert len(not_started) == 15
+    # lv-20261009b yalnızca bitmiş maç sayfaları açtı; florbolun 16597412 sayfası başlamamış 16597419'un olaylarını,
+    # pregame-form'unu ve serilerini de istedi, kural onu da sayfa sayar (istatistik istemedi)
+    assert len([cell for cell in not_started if cell[0] == "lv-20261009"]) == 15
+    assert [cell for cell in not_started if cell[0] != "lv-20261009"] == [("lv-20261009b", 16597419)]
     assert "statistics" not in planning.expected_slice_keys("football", phase="pre")
     for key in ("statistics", "point_by_point"):
         assert key not in {s.key for s in sports.select_slices("event", "tennis", phase="pre")}
@@ -252,7 +273,10 @@ def _matrix(name: str) -> Dict[str, Dict[str, str]]:
 
 def test_the_decided_cells_are_what_the_evidence_says():
     for (sport, key), verdict in DECIDED.items():
-        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(sports.get_slice(key))) == verdict, (sport, key)
+        expected = DECIDED_AGAINST_THE_RULE.get((sport, key), verdict)
+        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(sports.get_slice(key))) == expected, (sport, key)
+    assert set(DECIDED_AGAINST_THE_RULE) <= set(DECIDED)
+    assert all(DECIDED[cell] != verdict for cell, verdict in DECIDED_AGAINST_THE_RULE.items())
 
 
 def test_the_app_side_evidence_backs_the_decision():
@@ -275,19 +299,89 @@ def test_the_app_side_evidence_backs_the_decision():
 # --- FX-31: lv-20261009'un kanıtı ------------------------------------------------------------------------------
 
 
-def test_the_applied_and_proposed_cells_are_what_the_evidence_says():
-    for (sport, key), verdict in {**APPLIED, **PROPOSALS}.items():
+def test_the_applied_cells_are_what_the_evidence_says():
+    for (sport, key), verdict in APPLIED.items():
         assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(sports.get_slice(key))) == verdict, (sport, key)
-    assert not set(APPLIED) & set(PROPOSALS) and not set(APPLIED) & set(DECIDED)
-    assert {sport for sport, _key in PROPOSALS} == {"rugby", "floorball", "volleyball", "minifootball"}
+    assert not set(APPLIED) & set(DECIDED)
 
 
 def test_the_app_side_evidence_saw_no_data_where_the_page_evidence_says_optional_or_absent():
-    """Uygulama tarafı bitmiş tablo (2026-10-07) uygulanan ve önerilen her isteğe bağlı ya da istenmez hücrede "-"."""
+    """Uygulama tarafı bitmiş tablo (2026-10-07) uygulanan her isteğe bağlı ya da istenmez hücrede "-"."""
     finished, _live = (_matrix(name) for name in APP_SIDE)
-    for (sport, key), verdict in {**APPLIED, **PROPOSALS}.items():
+    for (sport, key), verdict in APPLIED.items():
         if verdict != REQUIRED:
             assert finished[sport][key] == "-", (sport, key)
+
+
+# --- FX-36: sahibin ragbi, voleybol, florbol ve mini futbol kararı (lv-20261009b) ------------------------------
+
+
+def _top_league_answers() -> Dict[str, Dict[str, List[str]]]:
+    """lv-20261009b'nin bitmiş maç sayfalarında sayfanın kendi maçının dört dilimine aldığı kodlar."""
+    keys = {"/statistics": "statistics", "/lineups": "lineups", "/incidents": "incidents",
+            "/pregame-form": "pregame_form"}
+    pages: Dict[Tuple[str, str], Dict[str, set]] = {}
+    with open(evidence_mod.RESEARCH / "requests.jsonl", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("run_id") != "lv-20261009b" or row.get("page_type") != "event-finished":
+                continue
+            page_id = row["page"].rsplit("#id:", 1)[-1]
+            pages.setdefault((row["sport"], page_id), {})
+            path = row["url"].split("?", 1)[0].split("/api/v1/event/", 1)[-1]
+            event_id, _, suffix = path.partition("/")
+            if event_id == page_id and "/" + suffix in keys and row.get("status") is not None:
+                pages[(row["sport"], page_id)].setdefault(keys["/" + suffix], set()).add(str(row["status"]))
+    table: Dict[str, Dict[str, List[str]]] = {}
+    for (sport, _page_id), by_key in pages.items():
+        for key in keys.values():
+            codes = by_key.get(key, {"-"})
+            assert len(codes) == 1, (sport, key, codes)  # GET ve HEAD aynı kodu aldı
+            table.setdefault(sport, {}).setdefault(key, []).extend(codes)
+    return {sport: {key: sorted(codes) for key, codes in by_key.items()} for sport, by_key in table.items()}
+
+
+@pytest.mark.skipif(not (evidence_mod.RESEARCH / "requests.jsonl").exists(), reason="research data not present")
+def test_the_top_league_pages_are_the_decisions_evidence():
+    assert _top_league_answers() == TOP_LEAGUE_ANSWERS
+
+
+def test_the_decision_follows_the_top_league_answers():
+    """
+    Üst liglerin bitmiş maçlarında bir 404 ya da hiç veri yoksa isteğe bağlı; hiç istenmediyse istenmez; üçünde
+    de veriyle ve lv-20261009'un bitmiş maçında 404'se de isteğe bağlı (ragbi). Florbol olayları ayrık: üçünde
+    veriyle, tamlığa girer.
+    """
+    for sport, by_key in TOP_LEAGUE_ANSWERS.items():
+        for key, codes in by_key.items():
+            decided = DECIDED.get((sport, key))
+            if key == "lineups" and sport == "minifootball":  # FX-31'den beri isteğe bağlı
+                assert decided is None and APPLIED.get((sport, key)) is None
+                decided = OPTIONAL
+            if set(codes) == {"-"}:
+                assert decided == ABSENT, (sport, key)
+            elif "404" in codes:
+                assert decided == OPTIONAL, (sport, key)
+            else:
+                assert decided in (OPTIONAL, REQUIRED), (sport, key)
+            spec = sports.get_slice(key)
+            assert spec.applies_to(sport) is (decided != ABSENT)
+            assert spec.counts_in(sport) is (decided == REQUIRED)
+    assert [cell for cell, verdict in DECIDED.items() if cell[0] in TOP_LEAGUE_ANSWERS and verdict == REQUIRED] \
+        == [("floorball", "incidents")]
+
+
+def test_the_app_side_evidence_and_the_four_sport_decision():
+    """
+    Uygulama tarafı bitmiş tabloda (2026-10-07; spor başına bir, büyük olasılıkla alt lig maçı) kararın isteğe bağlı
+    ya da istenmez dediği hücrelerin çoğu "-". Ragbi pregame_form ve voleybol olayları orada veriyle geldi: üst
+    liglerde de bir maçta 404, isteğe bağlı. Florbol olayları orada veri getirmedi, ama tamlığa girer (sahibin kararı).
+    """
+    finished, _live = (_matrix(name) for name in APP_SIDE)
+    with_data = {(sport, key) for (sport, key), verdict in DECIDED.items()
+                 if sport in TOP_LEAGUE_ANSWERS and verdict != REQUIRED and finished[sport][key] != "-"}
+    assert with_data == {("rugby", "pregame_form"), ("volleyball", "incidents")}
+    assert finished["floorball"]["incidents"] == "-"
 
 
 @pytest.mark.parametrize("sport", ["football", "basketball", "tennis"])
@@ -306,7 +400,13 @@ def test_pregame_form_is_requested_but_not_awaited_in_the_main_sports(sport: str
      ("statistics", "team_streaks", "h2h", "point_by_point")),
     ("ice-hockey", COMMON_KEYS, ("statistics", "team_streaks", "h2h", "lineups", "incidents")),
     ("futsal", COMMON_KEYS, ("team_streaks", "h2h")),
-    ("minifootball", COMMON_KEYS, ("statistics", "team_streaks", "pregame_form", "h2h", "incidents")),
+    # FX-36: ragbi ve voleybolda dört dilim isteğe bağlı; florbolda kadro istenmez, olaylar tamlığa girer; mini
+    # futbolda yalnızca seriler ve h2h tamlığa girer
+    ("minifootball", COMMON_KEYS, ("team_streaks", "h2h")),
+    ("rugby", COMMON_KEYS, ("team_streaks", "h2h")),
+    ("volleyball", COMMON_KEYS, ("team_streaks", "h2h")),
+    ("floorball", ("statistics", "team_streaks", "pregame_form", "h2h", "incidents"),
+     ("team_streaks", "h2h", "incidents")),
     ("padel", ("statistics", "team_streaks", "pregame_form", "h2h"), ("team_streaks", "h2h")),
     ("snooker", ("statistics", "team_streaks", "pregame_form", "h2h"), ("team_streaks", "h2h")),
     ("cricket", COMMON_KEYS + ("innings",), ("team_streaks", "h2h", "lineups", "incidents", "innings")),
@@ -327,10 +427,6 @@ def test_pregame_form_is_requested_but_not_awaited_in_the_main_sports(sport: str
     # kanıt bugünkü altı dilime uyuyor (hentbol) ya da yetersiz (aussie-rules: yalnızca başlamamış maç)
     ("aussie-rules", COMMON_KEYS, COMMON_KEYS),
     ("handball", COMMON_KEYS, COMMON_KEYS),
-    # öneri (PROPOSALS), sahibin kararına kadar bugünkü altı dilim
-    ("rugby", COMMON_KEYS, COMMON_KEYS),
-    ("floorball", COMMON_KEYS, COMMON_KEYS),
-    ("volleyball", COMMON_KEYS, COMMON_KEYS),
     # kayıtlı olmayan ya da bilinmeyen spor: bugünkü altı dilim
     ("waterpolo", COMMON_KEYS, COMMON_KEYS),
     ("", COMMON_KEYS, COMMON_KEYS),
