@@ -913,6 +913,63 @@ def test_config_show_never_prints_the_value_of_an_unknown_sink_option(cli, tmp_p
         assert shown in as_text.stdout, shown
 
 
+TASKS_WITH_UNKNOWN_OPTIONS = """
+[[schedule.task]]
+run = "sync"
+every = "6h"
+league_id = 17
+webhook_token = "task-option-secret"
+
+[[schedule.task]]
+run = "backup"
+cron = "0 3 * * *"
+scope = "state"
+include_env = true
+
+[[schedule.task]]
+run = "invented"
+every = "1d"
+league_id = 8
+"""
+
+
+def test_describe_masks_the_value_of_a_task_option_the_scheduler_does_not_define(tmp_path):
+    """
+    FX-34: `_task_row` gösterdiği görev seçeneklerini sink'lerinkiyle aynı kuralla maskeler (mask_task_options):
+    görevin `run`ının tanımladığı seçenek görünür, başkasının yalnızca adı.
+    """
+    loaded = _load(tmp_path, toml=TASKS_WITH_UNKNOWN_OPTIONS)
+    rows = {row["key"]: row["value"] for row in loaded.describe()}
+    assert rows["schedule.tasks"] == [
+        {"run": "sync", "every": "6h", "cron": None, "options": {"league_id": 17, "webhook_token": "***"}},
+        {"run": "backup", "every": None, "cron": "0 3 * * *", "options": {"scope": "state", "include_env": True}},
+        {"run": "invented", "every": "1d", "cron": None, "options": {"league_id": "***"}},
+    ]
+    assert "task-option-secret" not in json.dumps(rows)
+    plain = {row["key"]: row["value"] for row in loaded.describe(mask_secrets=False)}
+    assert plain["schedule.tasks"][0]["options"] == {"league_id": 17, "webhook_token": "task-option-secret"}
+
+
+def test_config_show_never_prints_the_value_of_an_unknown_task_option(cli, tmp_path):
+    config = tmp_path / "sofascore.toml"
+    config.write_text("schema = 1\n" + TASKS_WITH_UNKNOWN_OPTIONS, encoding="utf-8")
+    for extra in ((), ("--json",)):
+        shown = cli("config", "show", *extra, "--config", config, "--data-dir", tmp_path / "data")
+        assert shown.exit_code == 0, shown.stderr
+        assert "task-option-secret" not in shown.stdout + shown.stderr
+        assert "webhook_token" in shown.stdout
+
+
+def test_the_shown_task_options_are_the_ones_the_scheduler_defines():
+    from sofascore_scraper.jobs.scheduler import TASK_RUNS
+
+    every = {key for run in TASK_RUNS.values() for key in run.options}
+    for name, run in TASK_RUNS.items():
+        shown = loader.mask_task_options(name, {key: 1 for key in every | {"invented"}})
+        assert {key for key, value in shown.items() if value == 1} == set(run.options), name
+    assert loader.mask_task_options(None, {"league_id": 17}) == {"league_id": "***"}
+
+
 def test_the_shown_sink_options_are_the_ones_the_sinks_define():
     from sofascore_scraper import sinks
 

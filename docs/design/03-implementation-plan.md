@@ -5186,7 +5186,7 @@ Open, in no fixed order:
   counted (one per event page). Holding Document requests in the interceptor would fix it.
 - Small leftovers of P30 (section 16): `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
   neutral `/search` for `/tournaments/search`; one `FetchPipeline` per `DetailPhase` call instead of one
-  session per job; `_task_row` prints a task's `options` as they are.
+  session per job.
 
 Decided not to do in 3.1: a localized date picker (owner, 2026-10-09; the native date input stays) and
 serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).
