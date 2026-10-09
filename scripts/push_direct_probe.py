@@ -38,8 +38,8 @@ from urllib.parse import urlparse
 
 import aiohttp
 
-os.environ.setdefault("LOG_LEVEL", "WARNING")
-os.environ.setdefault("SOFASCORE_BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_push_direct"))
+os.environ.setdefault("SOFASCORE_LOG__LEVEL", "WARNING")
+os.environ.setdefault("SOFASCORE_CLIENT__BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_push_direct"))
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _research_common as rc  # noqa: E402

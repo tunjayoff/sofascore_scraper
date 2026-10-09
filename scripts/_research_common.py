@@ -23,14 +23,20 @@ import tempfile
 import time
 from typing import Any, Dict, Optional
 
-# Uygulamanın INFO logları script çıktısını boğmasın (uyarılar görünür kalır)
-os.environ.setdefault("LOG_LEVEL", "WARNING")
+# Uygulamanın INFO logları script çıktısını boğmasın (uyarılar görünür kalır). Adlar 3.1'in okuduğu adlardır
+# (2.x'in LOG_LEVEL ve SOFASCORE_BROWSER_PROFILE adları 3.1'de okunmaz). Araştırma uygulamanın tarayıcı
+# profilini asla paylaşmaz: kendi profilini koyan betik (explore_all_sports.py, push_*.py) bunu içe aktarmadan
+# önce koyar; koymayanlar (discover_status_taxonomy.py, measure_finish_lag.py) ortak araştırma profilini kullanır.
+os.environ.setdefault("SOFASCORE_LOG__LEVEL", "WARNING")
+os.environ.setdefault(
+    "SOFASCORE_CLIENT__BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_research/chrome_research")
+)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-import sofascore_scraper.challenge_solver as cs  # noqa: E402
+from sofascore_scraper.client import bridge as cs  # noqa: E402
 
 API = "https://www.sofascore.com/api/v1"
 SPORTS = ("football", "basketball", "tennis")  # sofascore_scraper/web/league_sports.py:SPORTS

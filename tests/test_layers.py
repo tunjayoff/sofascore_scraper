@@ -319,7 +319,7 @@ def test_layer_check_reports_every_forbidden_import_with_its_line(tmp_path: Path
             "    import importlib\n"                              # 7
             "    return importlib.import_module('sofascore_scraper.match_data_fetcher')\n"  # 8
         ),
-        "sofascore_scraper/store/schema/__init__.py": "from ...challenge_solver import BrowserBridge\n",
+        "sofascore_scraper/store/schema/__init__.py": "from ...client.bridge import BrowserBridge\n",
     })
     assert store_layer_violations(store, tmp_path) == [
         "sofascore_scraper/store/api.py:1: sofascore_scraper.utils",
@@ -331,8 +331,8 @@ def test_layer_check_reports_every_forbidden_import_with_its_line(tmp_path: Path
         "sofascore_scraper/store/api.py:6: sofascore_scraper.jobs.model",
         "sofascore_scraper/store/api.py:6: sofascore_scraper.jobs.model.JobKind",
         "sofascore_scraper/store/api.py:8: sofascore_scraper.match_data_fetcher",
-        "sofascore_scraper/store/schema/__init__.py:1: sofascore_scraper.challenge_solver",
-        "sofascore_scraper/store/schema/__init__.py:1: sofascore_scraper.challenge_solver.BrowserBridge",
+        "sofascore_scraper/store/schema/__init__.py:1: sofascore_scraper.client.bridge",
+        "sofascore_scraper/store/schema/__init__.py:1: sofascore_scraper.client.bridge.BrowserBridge",
     ]
 
 
