@@ -237,7 +237,9 @@ class Suggestion:
     Katalogda adıyla bulunan bir turnuva ya da yarışmacı (plan maddesi FX-20, yazarken öneri). kind: takip türü
     ("tournament" ya da "team"; tek oyunculu sporların oyuncuları da yarışmacıdır, SofaScore'da takım kimliği
     taşırlar). country_code: turnuvada kategorinin, yarışmacıda kendi ülke kodu; category_*: turnuvanın
-    kategorisi. followed: aynı türden bir takip bu kimliği adlandırıyor.
+    kategorisi. followed: aynı türden bir takip bu kimliği adlandırıyor. gender / national: yarışmacının
+    katalogdaki cinsiyeti ("M", "F") ve milli takım olup olmadığı, bilinmiyorsa None (B1, e2e F26: aynı adlı
+    erkek ve kadın takımları ayrılsın); turnuvada hep None.
     """
 
     kind: str
@@ -249,6 +251,19 @@ class Suggestion:
     category_id: Optional[int] = None
     category_name: Optional[str] = None
     category_slug: Optional[str] = None
+    followed: bool = False
+    gender: Optional[str] = None
+    national: Optional[bool] = None
+
+
+@dataclass(frozen=True)
+class TeamEntry:
+    """
+    Bir yarışmacının (takım, bireysel sporda oyuncu ya da çift) katalog kaydı ve bir `team` takibinin onu
+    adlandırıp adlandırmadığı (B1, e2e F5 / F26: takip sayfasının başlığı cinsiyeti, milli takımı ve ülkeyi yazar).
+    """
+
+    participant: "schema.Participant"
     followed: bool = False
 
 
@@ -565,7 +580,8 @@ class QueryService:
                 if not row.name:
                     continue
                 found.append(Suggestion(kind="team", id=row.id, name=row.name, slug=row.slug, sport=row.sport,
-                                        country_code=row.country, followed=("team", row.id) in followed))
+                                        country_code=row.country, followed=("team", row.id) in followed,
+                                        gender=row.gender, national=row.national))
             return found
 
         def rank(item: Suggestion) -> Tuple[int, int, str, str, int]:
@@ -585,6 +601,22 @@ class QueryService:
             return None
         row = self._store.entities.tournament(tournament_id)
         return None if row is None else self._entry(row, self._followed_tournaments())
+
+    def team(self, team_id: int) -> Optional[TeamEntry]:
+        """
+        Yarışmacının katalog kaydı (maçlarından türetilen `participants` satırı); katalogda yoksa None. Kimlik
+        SofaScore'un takım kimliğidir (`homeTeam.id`): bireysel sporların oyuncuları ve çiftleri de buradadır.
+        """
+        from sofascore_scraper import schema
+
+        if not _valid_id(team_id):
+            return None
+        rows = self._store.entities.participants(ids=(team_id,), limit=1)
+        participant = schema.participant_from_row(rows[0]) if rows else None
+        if participant is None:
+            return None
+        followed = any(follow.entity_id == team_id for follow in self._store.follows.list(kind="team"))
+        return TeamEntry(participant, followed)
 
     def _followed_tournaments(self) -> Set[int]:
         return {follow.entity_id for follow in self._store.follows.list(kind="tournament")}
@@ -790,5 +822,5 @@ def _name(value: Any) -> Optional[str]:
 __all__ = ["CHANGE_ORDERS", "CatalogNotCurrent", "ChangePage", "DEFAULT_EMPTY_THRESHOLD", "EVENT_KEY", "EventFilter",
            "EventExtra", "EventPage", "NEED_FULL", "NEED_NONE",
            "NEED_REFILL", "NEED_REFRESH", "QueryService", "RawPayload", "RefreshPolicy", "SliceSummary",
-           "Suggestion", "TournamentEntry", "V1_SORTS", "event_extra_of", "refresh_window_seconds",
+           "Suggestion", "TeamEntry", "TournamentEntry", "V1_SORTS", "event_extra_of", "refresh_window_seconds",
            "required_detail_keys"]

@@ -13,7 +13,7 @@ import EmptyState from '@/ui/EmptyState.vue'
 import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1, V1Error } from '@/api/v1/client'
-import type { FollowRecord, Job, SeasonEntry, TournamentRecord } from '@/api/v1/schema'
+import type { FollowRecord, Job, SeasonEntry, TeamRecord, TournamentRecord } from '@/api/v1/schema'
 import { isIndividual, loadSports, sportName } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
 import { onJobEnded } from '@/app/jobWatch'
@@ -49,6 +49,8 @@ const followId = computed(() => `${kind.value}:${entityId.value}`)
 
 const follow = ref<FollowRecord | null>(null)
 const tournament = ref<TournamentRecord | null>(null)
+/** A team follow's competitor as the catalog knows it (B1): gender, national team, country; null before a download. */
+const team = ref<TeamRecord | null>(null)
 const seasons = ref<SeasonEntry[] | null>(null)
 const seasonsError = ref<unknown>(null)
 const jobs = ref<Job[] | null>(null)
@@ -104,6 +106,7 @@ async function load() {
       loadTournament()
       loadSeasons()
     }
+    if (kind.value === 'team') loadTeam()
     loadJobs()
   } catch (e) {
     follow.value = null
@@ -120,6 +123,13 @@ function loadTournament() {
     .catch(() => (tournament.value = null))
 }
 
+/** The team's record (B1): stored once a match of it is; 404 before, then the header reads a search hit. */
+function loadTeam() {
+  v1.team(entityId.value)
+    .then((x) => (team.value = x))
+    .catch(() => (team.value = null))
+}
+
 /**
  * The line under the title (FX-24 F5): the sport, the league's country or region in the reader's language
  * and what is followed in one word ("Football · Europe · League"); the number is in the facts.
@@ -127,13 +137,23 @@ function loadTournament() {
 const headerLine = computed(() => {
   const f = follow.value
   if (!f) return ''
-  // takımın ülkesi, cinsiyeti ve milli takım olduğu takip kaydında yok: bu sayfada görülen arama sonucundan
-  // okunur, bilinmiyorsa yazılmaz (FX-25 F26): "Voleybol · Türkiye · Takım · Kadın"
+  // takımın ülkesi, cinsiyeti ve milli takım olduğu takip kaydında yok: katalogdaki takım kaydından (B1), o yoksa
+  // bu sayfada görülen arama sonucundan okunur, bilinmiyorsa yazılmaz (FX-25 F26): "Voleybol · Türkiye · Takım · Kadın"
   const seen = f.kind === 'team' ? seenTeam(f.id) : null
+  const stored = f.kind === 'team' && team.value?.id === f.entity_id ? team.value : null
+  const traits = { gender: stored?.gender ?? seen?.gender ?? null, national: stored?.national ?? seen?.national ?? null }
+  const sport = f.sport ?? stored?.sport ?? null
   const category = tournament.value?.category
-  const place = category ? placeName(category.country_code, category.name) : seen ? hitPlace(seen) : ''
-  const kindWord = seen?.national === true ? '' : t(`ui.followDetail.kindShort.${f.kind === 'team' && isIndividual(f.sport) ? 'player' : f.kind}`)
-  return [sportName(f.sport), place, kindWord, ...hitTraits(seen)].filter(Boolean).join(' · ')
+  const place = category
+    ? placeName(category.country_code, category.name)
+    : stored?.country_code
+      ? placeName(stored.country_code, null)
+      : seen
+        ? hitPlace(seen)
+        : ''
+  const asPlayer = f.kind === 'team' && (isIndividual(sport) || stored?.type === 'player' || stored?.type === 'pair')
+  const kindWord = traits.national === true ? '' : t(`ui.followDetail.kindShort.${asPlayer ? 'player' : f.kind}`)
+  return [sportName(sport), place, kindWord, ...hitTraits(traits)].filter(Boolean).join(' · ')
 })
 
 function loadJobs() {
@@ -166,6 +186,7 @@ function afterJob() {
     loadTournament()
     loadSeasons()
   }
+  if (kind.value === 'team') loadTeam()
 }
 onUnmounted(stopListening)
 

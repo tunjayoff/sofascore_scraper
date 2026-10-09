@@ -212,6 +212,7 @@ READ_ONLY_GETS = {
     "/api/v1/tournaments",
     "/api/v1/tournaments/1",
     "/api/v1/tournaments/1/seasons",
+    "/api/v1/teams/1",  # B1: yarışmacının katalog kaydı
 }
 
 
@@ -244,6 +245,7 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
             "/api/v1/events/1/odds/statistics", "/api/v1/seasons/1/slices", "/api/v1/seasons/1/standings",  # P28
             "/api/v1/tournaments", "/api/v1/tournaments/1", "/api/v1/tournaments/1/seasons", "/api/v1/follows",
             "/api/v1/catalog/suggest",  # FX-20: kayıtlı adlardan öneri
+            "/api/v1/teams/1",  # B1
             "/api/v1/follows/tournament:1", "/api/v1/backups", "/api/v1/backups/backup_all_20260101_000000.zip",
         )
     },

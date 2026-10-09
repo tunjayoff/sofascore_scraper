@@ -1493,6 +1493,40 @@ export interface SyncJobSpec {
   event_ids?: number[]
 }
 
+/**
+ * A competitor as the catalog knows it from its stored events (schema v1 Participant): a team, or in a sport of one
+ * against one a player or a pair (SofaScore lists them as teams). `gender`, `national` and `country_code` tell
+ * same-named teams apart (a men's and a women's team, a club and a national team).
+ */
+export interface TeamRecord {
+  /** SofaScore's id of the competitor (the id space of `homeTeam` / `awayTeam`: teams, single players and pairs share it; it is not the person id of a squad player). */
+  id: number
+  /** Slug of the sport. */
+  sport: string | null
+  /** What the competitor is: `team`, `player` (one person, as in tennis singles), `pair` (two persons, as in tennis doubles) or `other` (a type code the platform does not know). Null when SofaScore gave no type. */
+  type: "team" | "player" | "pair" | "other" | null
+  /** Name, in English. */
+  name: string | null
+  /** Short name. */
+  short_name: string | null
+  /** SofaScore's slug. */
+  slug: string | null
+  /** Three-letter code, for example `ARS`. */
+  name_code: string | null
+  /** SofaScore's two-letter country code, as given. */
+  country_code: string | null
+  /** Gender as SofaScore gives it. */
+  gender: string | null
+  /** True for a national team. */
+  national: boolean | null
+  /** A team follow of any origin names this competitor. */
+  followed?: boolean
+}
+
+export interface TeamResponse {
+  data: TeamRecord
+}
+
 /** The request budget shared by all processes of this machine. */
 export interface ThrottleStatus {
   enabled: boolean
@@ -1516,13 +1550,13 @@ export interface TournamentHit {
   category: TournamentHitCategory
   /** Country of the tournament's category, of the team or of the player. */
   country?: SearchHitCountry | null
-  /** A player's team; null for the other kinds. */
+  /** A player's team; null for the other kinds and for a player without a club (SofaScore's placeholder team `No team` is left out). */
   team?: SearchHitTeam | null
   /** A follow of any origin names this tournament, team or player already. */
   followed: boolean
-  /** Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when SofaScore does not say (tournaments, players, stored names). Tells same-named men's and women's teams apart. */
+  /** Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when it is not known (tournaments, players, a stored team whose events did not say). Tells same-named men's and women's teams apart. */
   gender?: string | null
-  /** The team is a national team; null when SofaScore does not say. */
+  /** The team is a national team; null when it is not known. */
   national?: boolean | null
 }
 
@@ -1764,6 +1798,15 @@ export interface Operations {
     query: {}
     body: never
     response: TournamentResponse
+  }
+  /** Get a team */
+  "getTeam": {
+    method: "GET"
+    path: "/api/v1/teams/{team_id}"
+    params: { team_id: number }
+    query: {}
+    body: never
+    response: TeamResponse
   }
   /** List the seasons of a tournament */
   "listTournamentSeasons": {

@@ -1542,6 +1542,80 @@
         }
       }
     },
+    "/api/v1/teams/{team_id}": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Get a team",
+        "description": "A competitor the data directory knows from its stored events, by SofaScore's team id (the id of a team follow,\n`team:<id>`; in tennis, darts, MMA … a player or a pair). Read from the catalog; nothing is sent to SofaScore.\n404 `not_found` until an event of it is stored.",
+        "operationId": "getTeam",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Team Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tournaments/{tournament_id}/seasons": {
       "get": {
         "tags": [
@@ -11196,6 +11270,162 @@
         "title": "SyncJobSpec",
         "description": "What to download. Without `selections`, `league_id` and `follows`: every enabled follow, each tournament with\nits own season choice, each team, player and event follow with its matches. Only one of `league_id`,\n`selections` and `follows` may be given."
       },
+      "TeamRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's id of the competitor (the id space of `homeTeam` / `awayTeam`: teams, single players and pairs share it; it is not the person id of a squad player)."
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Slug of the sport."
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "team",
+                  "player",
+                  "pair",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "What the competitor is: `team`, `player` (one person, as in tennis singles), `pair` (two persons, as in tennis doubles) or `other` (a type code the platform does not know). Null when SofaScore gave no type."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name, in English."
+          },
+          "short_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Name",
+            "description": "Short name."
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "SofaScore's slug."
+          },
+          "name_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Code",
+            "description": "Three-letter code, for example `ARS`."
+          },
+          "country_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country Code",
+            "description": "SofaScore's two-letter country code, as given."
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender",
+            "description": "Gender as SofaScore gives it."
+          },
+          "national": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National",
+            "description": "True for a national team."
+          },
+          "followed": {
+            "type": "boolean",
+            "title": "Followed",
+            "description": "A team follow of any origin names this competitor.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sport",
+          "type",
+          "name",
+          "short_name",
+          "slug",
+          "name_code",
+          "country_code",
+          "gender",
+          "national"
+        ],
+        "title": "TeamRecord",
+        "description": "A competitor as the catalog knows it from its stored events (schema v1 Participant): a team, or in a sport of one\nagainst one a player or a pair (SofaScore lists them as teams). `gender`, `national` and `country_code` tell\nsame-named teams apart (a men's and a women's team, a club and a national team)."
+      },
+      "TeamResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TeamRecord"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "TeamResponse"
+      },
       "ThrottleStatus": {
         "properties": {
           "enabled": {
@@ -11298,7 +11528,7 @@
                 "type": "null"
               }
             ],
-            "description": "A player's team; null for the other kinds."
+            "description": "A player's team; null for the other kinds and for a player without a club (SofaScore's placeholder team `No team` is left out)."
           },
           "followed": {
             "type": "boolean",
@@ -11315,7 +11545,7 @@
               }
             ],
             "title": "Gender",
-            "description": "Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when SofaScore does not say (tournaments, players, stored names). Tells same-named men's and women's teams apart."
+            "description": "Gender of a team as SofaScore gives it: `M` (men) or `F` (women); null when it is not known (tournaments, players, a stored team whose events did not say). Tells same-named men's and women's teams apart."
           },
           "national": {
             "anyOf": [
@@ -11327,7 +11557,7 @@
               }
             ],
             "title": "National",
-            "description": "The team is a national team; null when SofaScore does not say."
+            "description": "The team is a national team; null when it is not known."
           }
         },
         "type": "object",
