@@ -5184,8 +5184,7 @@ Open, in no fixed order:
 - **The live-match-tracker document in the explorer.** The iframe document under `/api/v1/event/{id}/live-match-tracker/`
   is a Document request, outside the explorer's `Fetch` patterns, so it is sent without a slot and not
   counted (one per event page). Holding Document requests in the interceptor would fix it.
-- Small leftovers of P30 (section 16): `ssc export` still names its files with epoch seconds while the
-  export jobs use the UTC date; `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
+- Small leftovers of P30 (section 16): `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
   neutral `/search` for `/tournaments/search`; one `FetchPipeline` per `DetailPhase` call instead of one
   session per job; `_task_row` prints a task's `options` as they are.
 

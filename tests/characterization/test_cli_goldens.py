@@ -92,8 +92,10 @@ _DEAD_PROXY = "http://127.0.0.1:9"
 _LOG_LINE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} (?P<level>[A-Z]+)\s+\[\d+\] (?P<rest>.*)$")
 # tqdm: "etiket:  50%|█████     | 2/4 [00:00<00:00, 9.1it/s]" ya da, toplam bilinmiyorsa, "etiket: 0it [00:00, ?it/s]"
 _TQDM = re.compile(r"^(?P<label>.*?):\s+(?:\d+%\|.*\|\s*(?P<done>\d+/\d+)|(?P<count>\d+)it) \[.*\]$")
-# Dosya adındaki çalıştırma zamanı (processed/all_matches_<epoch>.csv)
+# Dosya adındaki çalıştırma zamanı: 2.x'in epoch'u (processed/all_matches_<epoch>.csv) ve FX-34'ten beri `ssc
+# export`'un UTC tarih ve saati (processed/events-wide_<date-time>.csv)
 _EPOCH_IN_NAME = re.compile(r"_\d{9,}(?=\.\w)")
+_DATE_TIME_IN_NAME = re.compile(r"_\d{4}-\d{2}-\d{2}_\d{6}(?=\.\w)")
 _CONCURRENT_MARK = re.compile(f"({re.escape(cli_env.CONCURRENT_BEGIN)}|{re.escape(cli_env.CONCURRENT_END)})")
 # Süreç ömrüne bağlı değerler: eski izleyicinin olay zamanı ve son maç sayfası anı; canlı servisin olay zarfının
 # yazılma anı (`ts`, sofascore.event/1)
@@ -208,7 +210,7 @@ class Sandbox:
                 text = text.replace(form, name)
         if os.sep == "\\":
             text = text.replace("\\", "/")
-        return _EPOCH_IN_NAME.sub("_<epoch>", text)
+        return _DATE_TIME_IN_NAME.sub("_<date-time>", _EPOCH_IN_NAME.sub("_<epoch>", text))
 
     def normalise_json(self, value: Any) -> Any:
         """Ayrıştırılmış JSON'daki her metne `normalise` uygular (JSON metninde "\\" kaçış karakteridir)."""
@@ -806,7 +808,7 @@ def test_headless_csv_export(new_box: NewBox) -> None:
 
     assert (with_data.exit_code, empty.exit_code) == (0, 1)
     assert [path for path in with_data.files["added"] if path.startswith("data/")] == [
-        "data/match_details/processed/all_matches_<epoch>.csv"]
+        "data/match_details/processed/events-wide_<date-time>.csv"]
     assert not any(path.startswith("data/") for kind in empty.files.values() for path in kind if path != "data/")
     assert (with_data.requests, empty.requests) == ([], [])
     assert terminal_ui_modules(with_data) == []
@@ -1029,7 +1031,7 @@ def test_a_second_writer_is_refused_with_exit_code_6(new_box: NewBox) -> None:
         assert not any(path.startswith("data/") for kind in run.files.values() for path in kind), name
         assert "Traceback" not in "\n".join(line for line in run.stderr if isinstance(line, str)), name
     assert (csv_export.exit_code, released.exit_code) == (0, 0)
-    assert list(csv_export.files["added"]) == ["data/match_details/processed/all_matches_<epoch>.csv"]
+    assert list(csv_export.files["added"]) == ["data/match_details/processed/events-wide_<date-time>.csv"]
     cases["csv_export_is_not_refused"] = csv_export.golden()
     cases["after_the_lease_is_released"] = released.golden()
     assert_cli_golden("lease_refused", cases)

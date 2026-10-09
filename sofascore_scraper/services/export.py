@@ -267,16 +267,17 @@ class ExportService:
     # -- dosyaya yazan girişler (`ssc export --profile legacy-wide-csv`; 2.x'te --headless --csv-export) ------
 
     def write_legacy_csv(self, directory: str, spec: Optional[ExportSpec] = None, *,
-                         now: Optional[float] = None) -> Optional[ExportResult]:
+                         now: Optional[float] = None, name: Optional[str] = None) -> Optional[ExportResult]:
         """
-        Birleşik dosya: `<directory>/all_matches_<epoch>.csv`. Dışa aktarılacak maç yoksa dosya yazılmaz ve None
-        döner (bugünkü gibi).
+        Birleşik dosya: `<directory>/<name>`; name verilmezse 2.x'in adı `all_matches_<epoch>.csv` (`ssc export`
+        okunur bir ad verir, FX-34: sofascore_scraper/services/data_jobs.py `local_export_name`). Dışa aktarılacak
+        maç yoksa dosya yazılmaz ve None döner (bugünkü gibi).
         """
         table = self.legacy_table(spec)
         if not table.rows:
             logger.warning("No downloaded match to export to CSV")
             return None
-        path = os.path.join(directory, f"all_matches_{_stamp(now)}.csv")
+        path = os.path.join(directory, name or f"all_matches_{_stamp(now)}.csv")
         result = self._write(PreparedExport(table.columns, len(table.rows), len(table.rows), table.chunks), path)
         logger.info("CSV export of %s matches written: %s", result.rows, path)
         return result

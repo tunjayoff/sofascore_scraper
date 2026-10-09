@@ -11,6 +11,7 @@ Ağ yok; veri dizini store_fixtures'ın "canonical" ağacıdır.
 from __future__ import annotations
 
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any, Dict, Iterator
@@ -21,7 +22,8 @@ from fastapi.testclient import TestClient
 import conftest
 import store_fixtures as sf
 import test_cli_skeleton as skeleton
-from sofascore_scraper.services.data_jobs import ExportRequest, export_label, export_name, slug
+from sofascore_scraper.services.data_jobs import (ExportRequest, export_label, export_name, local_export_name,
+                                                  slug)
 from sofascore_scraper.store import FollowSpec, JobStore, Store, default_db_path, open_store
 from sofascore_scraper.web import deps
 from sofascore_scraper.web.app import app
@@ -99,6 +101,29 @@ def test_an_export_job_writes_and_serves_the_readable_name(store: Store, jobs: J
     assert answer.status_code == 200 and f'filename="{name}"' in answer.headers["content-disposition"]
     listed = data(client.get("/api/v1/exports"))
     assert [(r["id"], r["source"], r["file"]) for r in listed] == [(job["id"], "job", name)]
+
+
+def test_the_name_of_an_ssc_export_file_is_the_jobs_with_the_time(store: Store) -> None:
+    """FX-34: `ssc export`'un `--out` verilmeyen dosyası işinkiyle aynı etiketi ve tarihi taşır, epoch'u değil."""
+    moment = 1791386130.0  # 2026-10-07T15:15:30Z
+    nba = ExportRequest(dataset="events", format="jsonl", tournament_ids=(sf.NBA.id,))
+    assert local_export_name(store, nba, now=moment) == "nba_2026-10-07_151530.jsonl"
+    two = ExportRequest(dataset="changes", format="jsonl", tournament_ids=(sf.NBA.id, sf.PL.id))
+    assert local_export_name(store, two, now=moment) == "changes_2026-10-07_151530.jsonl"
+    wide = ExportRequest(profile="legacy-wide-csv")
+    assert local_export_name(store, wide, now=moment) == "events-wide_2026-10-07_151530.csv"
+    store.follows.add(FollowSpec(kind="player", entity_id=424242, name="Kylian Mbappé"))
+    player = ExportRequest(dataset="slices", format="csv", player_ids=(424242,))
+    assert local_export_name(store, player, now=moment) == "kylian-mbappe_2026-10-07_151530.csv"
+
+
+def test_ssc_export_names_its_default_files_like_the_web(store: Store, cli: Any) -> None:
+    league = cli("--data-dir", str(store.data_dir), "export", "--dataset", "events", "--tournament",
+                 str(sf.NBA.id), "--json")
+    assert league.exit_code == 0, league.stderr
+    path = Path(league.data["path"])
+    assert path.parent == store.data_dir / "exports"
+    assert re.fullmatch(r"nba_\d{4}-\d{2}-\d{2}_\d{6}\.jsonl", path.name), path.name
 
 
 # --- `ssc export`'un dosyaları ---------------------------------------------------------------------------------

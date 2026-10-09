@@ -1446,8 +1446,8 @@ class ExportService:
     def export_dataset(self, spec: DatasetSpec, dest, *, overwrite=False, allow_empty=True) -> ExportResult: ...
     def records(self, dataset: str, flt: DatasetFilter | None = None) -> Iterator[Model]: ...
     def legacy_table(self, spec=None) -> LegacyTable ; def prepare(self, spec=None) -> PreparedExport
-    def write_legacy_csv(self, directory, spec=None, *, now=None) -> ExportResult | None: ...
-        # <directory>/all_matches_<epoch>.csv; None when there is nothing to export
+    def write_legacy_csv(self, directory, spec=None, *, now=None, name=None) -> ExportResult | None: ...
+        # <directory>/<name>, else all_matches_<epoch>.csv; None when there is nothing to export
     def write_legacy_csv_by_league(self, directory, spec=None, *, now=None) -> list[ExportResult]: ...
 
 # services/backup.py (ST-24)
@@ -1738,8 +1738,9 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   the catalog) when the filter names one tournament, else the dataset, as a lower-case ASCII slug of at most
   40 characters, with `-raw` for a raw export and `-wide` for the 2.x wide CSV; `id8` is the last 8 letters
   or digits of the job id. For example `premier-league_2026-10-06_x7k2m9qa.csv`. Jobs before FX-19 keep
-  `<job id>.<ext>`. `ssc export` still names a dataset `exports/<dataset>_<epoch>.<format>`
-  (`sofascore_scraper/cli/commands/export.py:166`); `GET /exports` lists those files too (6).
+  `<job id>.<ext>`. Since FX-34 `ssc export` without `--out` uses the same label and UTC date with the UTC
+  time in place of the job id (`local_export_name`), e.g. `exports/premier-league_2026-10-06_142530.jsonl`;
+  `GET /exports` lists those files too (6).
 - **Odds and season data (P28).** `OwnerDataService` (`sofascore_scraper/services/owner_data.py`, new) reads odds
   snapshot by snapshot from the slice history (`store.history.snapshots`), falling back to the stored
   payload of a slice without history, and maps them to the schema's `Odds` records; it reads the season
@@ -2992,9 +2993,11 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   The mode follows the options: `--schema raw` is the raw export (`--dataset events|slices`; without it every
   payload), `--dataset` or `--schema normalized` a dataset (default `events` as JSONL), and anything else the
   2.x wide CSV, which knows only `--tournament` and `--event`. Without `--out` the wide CSV keeps its old
-  place, `match_details/processed/all_matches_<epoch>.csv`, so `--csv-export` setups find their file, and a
-  dataset goes to `DATA_DIR/exports/<dataset>_<epoch>.<format>` (not listed by `GET /api/v1/exports`, which
-  lists jobs; since FX-19 it lists these files too, with `source: "file"`). Since P28 `--dataset` also takes
+  place, `match_details/processed/`, and a dataset goes to `DATA_DIR/exports/`; since FX-34 both are named
+  like an export job's file with the UTC time in place of the job id (`events-wide_2026-10-06_142530.csv`,
+  `events_2026-10-06_142530.jsonl`; 2.7), no longer `all_matches_<epoch>.csv` and `<dataset>_<epoch>`. The
+  dataset files were not listed by `GET /api/v1/exports`, which lists jobs; since FX-19 it lists them too,
+  with `source: "file"`. Since P28 `--dataset` also takes
   `odds` and `standings` (normalized only). Since B1 (#190) `--team ID` and `--player ID` (repeatable, like
   `--tournament` and `--event`) filter by participant, for every mode including the wide CSV (2.7).
   `--out -` streams JSONL or CSV; Parquet and SQLite on stdout are refused. `--force` replaces

@@ -357,7 +357,7 @@
     "ssc_help_export_profile": "CSV profile: legacy-wide-csv, 2.x's wide CSV with one row per match (the default when neither --dataset nor --schema is given)",
     "ssc_help_export_schema": "normalized: the records of data schema v1; raw: the stored SofaScore payloads as they are",
     "ssc_help_export_format": "normalized: jsonl (default; one record per line), csv, parquet (needs pyarrow) or sqlite; raw: jsonl (one line per payload) or tree (one folder per match); the profile: csv",
-    "ssc_help_export_out": "where to write; - is stdout (jsonl and csv only). Default for the wide CSV: match_details/processed/all_matches_<time>.csv in the data folder; for a dataset: exports/<dataset>_<time>.<format> in the data folder",
+    "ssc_help_export_out": "where to write; - is stdout (jsonl and csv only). Default in the data folder: match_details/processed/ for the wide CSV, exports/ for a dataset, named like a web export: the league (or the single team or player) or the dataset, then the UTC date and time, for example exports/premier-league_2026-10-09_142530.jsonl",
     "ssc_help_export_tournament": "only the matches of this tournament (repeatable)",
     "ssc_help_export_event": "only this match (repeatable)",
     "ssc_help_export_team": "only the matches of this team; a player in individual sports (repeatable; one filter with --player)",

@@ -26,7 +26,7 @@
   "exit_code": 0,
   "files": {
    "added": {
-    "data/match_details/processed/all_matches_<epoch>.csv": "sha256:cff343a91bb1",
+    "data/match_details/processed/events-wide_<date-time>.csv": "sha256:cff343a91bb1",
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
@@ -34,10 +34,10 @@
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
+   "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/events-wide_<date-time>.csv"
   ],
   "stdout": [
-   "Export written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv (4 matches)"
+   "Export written: <SANDBOX>/data/match_details/processed/events-wide_<date-time>.csv (4 matches)"
   ]
  }
 }
