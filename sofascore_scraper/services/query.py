@@ -159,13 +159,15 @@ class EventFilter:
 
     start_from / start_to: başlangıç zamanı aralığı (epoch saniye), iki uç dahil. has_details: True = olay yükü
     saklananlar, False = yalnızca bir listeden bilinenler. text: yarışmacı adında geçen metin. followed: yalnızca
-    etkin turnuva takiplerinin maçları (`Scope.followed`).
+    etkin turnuva takiplerinin maçları (`Scope.followed`). event_ids: yalnızca bu maçlar (bir oyuncu takibinin
+    maçları, B2).
     """
 
     sport: Optional[str] = None
     tournament_ids: Tuple[int, ...] = ()
     season_ids: Tuple[int, ...] = ()
     participant_ids: Tuple[int, ...] = ()
+    event_ids: Tuple[int, ...] = ()
     status_classes: Tuple[str, ...] = ()
     start_from: Optional[float] = None
     start_to: Optional[float] = None
@@ -373,7 +375,8 @@ class QueryService:
         flt = flt or EventFilter()
         query = EventQuery(
             scope=Scope(sport=flt.sport, tournament_ids=tuple(flt.tournament_ids), season_ids=tuple(flt.season_ids),
-                        participant_ids=tuple(flt.participant_ids), followed=flt.followed),
+                        participant_ids=tuple(flt.participant_ids), event_ids=tuple(flt.event_ids),
+                        followed=flt.followed),
             status_classes=tuple(flt.status_classes),
             start_from=flt.start_from,
             start_to=flt.start_to,

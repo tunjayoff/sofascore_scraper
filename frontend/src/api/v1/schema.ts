@@ -258,6 +258,8 @@ export interface DataSummary {
   /** Set when the catalog does not describe the files; the counts are then partial. */
   catalog_rebuild_reason?: string | null
   tournaments: TournamentSummary[]
+  /** Every follow, in the order of the follows list, with its counts (F23). */
+  follows?: FollowSummary[]
   disk?: DiskSummary | null
   /** Null when `ssc migrate` never ran. */
   last_migration?: MigrationRun | null
@@ -580,6 +582,27 @@ export interface FollowRemoveResponse {
 
 export interface FollowResponse {
   data: FollowRecord
+}
+
+/**
+ * Counts of one follow (F23): its stored events, the finished ones and the finished ones with a stored event
+ * payload. One rule for every kind (FX-26): coverage is `finished_details / finished`; an event not played yet
+ * is not missing.
+ */
+export interface FollowSummary {
+  /** The follow's id, `kind:entity_id` (as `FollowRecord.id`). */
+  follow_id: string
+  kind: "tournament" | "team" | "player" | "event"
+  entity_id: number
+  /** Stored events of the follow: a tournament's, a team's (as a participant), the event itself, or the events of a player's last match list (the stored events do not say who played). */
+  events: number
+  finished: number
+  /** Finished events with a stored event payload. */
+  finished_details: number
+  /** finished_details / finished in percent, one decimal; 0 without finished events. */
+  coverage: number
+  /** False: the events cannot be counted yet (a player follow whose match list was not read since this version; its next download reads it). The counts are 0. */
+  counted?: boolean
 }
 
 /** Score family `football`: goals by stage of the match. */
@@ -1865,7 +1888,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/events"
     params: {}
-    query: { sport?: string | null; tournament?: number[] | null; season?: number[] | null; participant?: number[] | null; status?: ("not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown")[] | null; from?: string | null; to?: string | null; has?: "details" | "missing" | null; q?: string | null; followed?: boolean; sort?: "start_utc" | "-start_utc"; include?: "slices_summary"[] | null; limit?: number; cursor?: string | null }
+    query: { sport?: string | null; tournament?: number[] | null; season?: number[] | null; participant?: number[] | null; follow?: string | null; status?: ("not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown")[] | null; from?: string | null; to?: string | null; has?: "details" | "missing" | null; q?: string | null; followed?: boolean; sort?: "start_utc" | "-start_utc"; include?: "slices_summary"[] | null; limit?: number; cursor?: string | null }
     body: never
     response: EventListResponse
   }

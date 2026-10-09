@@ -15,6 +15,14 @@ Uç noktalar docs/all-sports/endpoints.csv'dendir, yanıt biçimi research/all_s
 Liste saklanmaz (Store'da takımın ya da oyuncunun program dilimi yok): her eşitlemede yeniden okunur ve yalnızca
 hangi maçların indirileceğini söyler; maçlar maç olarak saklanır.
 
+Oyuncu takibinin maçları (B2; bulgu F23, 05-web-ui.md G40). Saklanan bir maç kimin oynadığını söylemez (takımın
+maçı ise `event_participants`ten bulunur): bu yüzden oyuncu listesinin maç kimlikleri, yanıtın kendisi değil
+yalnızca kimlikler, state.db'nin çalışma zamanı bilgilerine yazılır (`store.runtime`, anahtar
+`follow_events:player:<kimlik>`; `remember_listing`). Durum ekranı oyuncunun kapsamını ve maç listesini bundan
+sayar (`follow_scope`): son okunan listenin penceresindeki maçlar. Tam okunan liste öncekinin yerine geçer;
+yarım kalan (başarısız sayfa, durdurulan iş) öncekiyle birleşir. Yeni sürüme geçişten sonra oyuncunun ilk
+eşitlemesine kadar liste yoktur ve maçları sayılmaz.
+
 Pencere (`window_of`): takım ve oyuncu takibinin `seasons` seçimi bir zaman penceresidir (bir takımın birden çok
 turnuvası ve sezonu vardır, "güncel sezon" turnuvaya göre değişir):
 
@@ -83,6 +91,10 @@ EVENT_ONLY_REASON = "listed by a follow and not ended: the event only"
 
 Getter = Callable[[str], Outcome]
 Seasons = Union[str, Sequence[int]]
+
+# Oyuncu listesinin maç kimliklerinin çalışma zamanı anahtarı (modül belgesi) ve saklanan en çok kimlik
+LISTED_PREFIX = "follow_events:"
+MAX_REMEMBERED = 2000
 
 
 @dataclass(frozen=True)
@@ -281,6 +293,69 @@ def plan_items(store: "Store", listings: Iterable[FollowListing], event_follows:
     return first + later, policy
 
 
+def listed_key(kind: str, entity_id: int) -> str:
+    """Takibin liste kimliklerinin `store.runtime` anahtarı: "follow_events:player:<kimlik>"."""
+    return f"{LISTED_PREFIX}{kind}:{int(entity_id)}"
+
+
+def listed_events(store: "Store", kind: str, entity_id: int) -> Optional[Tuple[int, ...]]:
+    """Takibin son listesinin saklanan maç kimlikleri; liste hiç okunmadıysa (ya da okunamıyorsa) None."""
+    from sofascore_scraper.store import StoreError
+
+    try:
+        fact = store.runtime.get(listed_key(kind, entity_id))
+    except StoreError as e:  # durum bilgisidir: okunamaması yalnızca sayımı eksik bırakır
+        logger.debug("The stored match list of %s:%s could not be read: %s", kind, entity_id, e)
+        return None
+    events = fact.value.get("events") if fact is not None else None
+    if not isinstance(events, list):
+        return None
+    return tuple(dict.fromkeys(value for value in events if _int(value) is not None and value > 0))
+
+
+def remember_listing(store: "Store", listing: FollowListing, *, complete: bool = True) -> None:
+    """
+    Oyuncu takibinin listesindeki maç kimliklerini saklar (modül belgesi). complete False (liste yarım kaldı:
+    başarısız sayfa ya da durdurulan iş): öncekilerle birleşir. Takım ve maç takiplerinde bir şey yapmaz.
+    Yazılamazsa uyarır; eşitleme sürer.
+    """
+    from sofascore_scraper.store import StoreError
+
+    follow = listing.follow
+    if follow.kind != PLAYER:
+        return
+    ids = [event.id for event in listing.events]
+    if not complete or listing.failed is not None:
+        ids += list(listed_events(store, PLAYER, follow.entity_id) or ())
+    ids = list(dict.fromkeys(ids))[:MAX_REMEMBERED]
+    try:
+        store.runtime.set(listed_key(PLAYER, follow.entity_id), {
+            "events": ids, "listed_at": int(time.time()), "complete": bool(complete and listing.failed is None),
+        })
+    except StoreError as e:
+        logger.warning("The match list of follow %s:%s could not be stored (%s); its matches are not counted",
+                       follow.kind, follow.entity_id, e)
+
+
+def follow_scope(store: "Store", kind: str, entity_id: int) -> Optional[Scope]:
+    """
+    Bir takibin saklanan maçlarının kapsamı (durum ekranının kapsamı ve maç listesi, B2): turnuvanın maçları,
+    takımın maçları (`event_participants`), maçın kendisi, oyuncunun son listesinin maçları. Oyuncunun listesi
+    yoksa ya da boşsa None (sayılacak maç yok).
+    """
+    entity_id = int(entity_id)
+    if kind == "tournament":
+        return Scope(tournament_ids=(entity_id,))
+    if kind == TEAM:
+        return Scope(participant_ids=(entity_id,))
+    if kind == EVENT:
+        return Scope(event_ids=(entity_id,))
+    if kind == PLAYER:
+        ids = listed_events(store, PLAYER, entity_id)
+        return Scope(event_ids=ids) if ids else None
+    raise ValueError(f"unknown follow kind: {kind!r}")
+
+
 def run_items(store: "Store", items: Sequence[WorkItem], policy: SelectionPolicy, *, concurrency: int,
               cancelled: Optional[Callable[[], bool]] = None,
               on_result: Optional[Callable[["ItemResult"], None]] = None) -> "PipelineSummary":
@@ -296,7 +371,12 @@ __all__ = [
     "EVENT_ONLY_REASON",
     "FollowListing",
     "LISTED_KINDS",
+    "LISTED_PREFIX",
     "ListedEvent",
+    "follow_scope",
+    "listed_events",
+    "listed_key",
+    "remember_listing",
     "MAX_LAST_PAGES",
     "SYNCED_KINDS",
     "Window",

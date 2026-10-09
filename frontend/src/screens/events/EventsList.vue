@@ -35,7 +35,8 @@ import {
 
 /**
  * The list of stored events (6.5), also embedded in a follow's detail with its tournament (or, for a team
- * follow, the team: `participant`) fixed (6.4). It
+ * follow, the team: `participant`; for a player follow, the follow: `follow`, the matches of the player's last
+ * match list, B2) fixed (6.4). It
  * does not update by itself: an event "in progress" is the state of its last read, not a live score (R2).
  * Filters, sort and the page are in the query string; the server filters and sorts. The Data column comes
  * from `include=slices_summary`. Selected events can be fetched: "Fetch missing data" sends only the
@@ -46,7 +47,7 @@ import {
  * a status filter replaces the switch's choice and "All statuses" is the "All" of the switch. With `fixedSport`
  * the sport filter is not offered (a team plays one sport).
  */
-const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; fixedSport?: string | null; tableId?: string }>()
+const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; fixedFollow?: string | null; fixedSport?: string | null; tableId?: string }>()
 const { t, locale } = useI18n()
 const route = useRoute()
 const status = useStatusStore()
@@ -95,6 +96,7 @@ const list = usePagedList<EventListItem>(
       has: f.value.has || null,
       q: f.value.team || null,
       participant: props.fixedParticipant ? [props.fixedParticipant] : null,
+      follow: props.fixedFollow || null,
       sort: f.value.asc ? 'start_utc' : '-start_utc',
       include: ['slices_summary'],
       limit: size,

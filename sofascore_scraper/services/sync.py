@@ -945,6 +945,10 @@ class _SyncRun:
                      name=follow.name)
             found = follow_sync.list_follow(follow, client.get_sync, cancelled=self.job.cancelled)
             listings.append(found)
+            # Oyuncunun maçları saklanan maçlardan bulunamaz: listesinin kimlikleri saklanır (B2, F23)
+            store = self._store_or_none()
+            if store is not None and hasattr(store, "runtime"):
+                follow_sync.remember_listing(store, found, complete=not self.job.cancelled())
             if found.failed is not None:
                 self.failed_listings.append(FailedListing(f"{follow.kind}_events", int(follow.entity_id), None,
                                                           found.failed))
