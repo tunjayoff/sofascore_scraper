@@ -1046,7 +1046,8 @@ has a Matches tab with its stored matches (`/events?participant=`); a single-mat
 match. **As built (B2, #191; G40):** a **player follow** has a Matches tab too: the matches of the player's
 last match list (`GET /events?follow=player:<id>`, from the match ids a download keeps in `state.db`); a
 player not downloaded on this version yet has an empty list and its coverage says "Counted after the
-player's next download". When a download of the follow ends, the page reads its last download, its counts and its seasons
+player's next download"; its Matches tab says that the player's next download stores the matches of the
+player's match list (#195). When a download of the follow ends, the page reads its last download, its counts and its seasons
 again (FX-14a).
 
 **As built after the end-to-end test (FX-24 #170, FX-23 #171, FX-25 #172).**
@@ -1490,7 +1491,9 @@ readable file names of FX-19 (`<league or dataset>_<UTC date>_<last 8 characters
 `sofascore_scraper/services/data_jobs.py:157-174` at `b6caf2f`) and also the files that `ssc export` wrote: `source:
 "file"`, a badge "by ssc export", a download and no job link
 (`frontend/src/screens/exports/ExportsScreen.vue:107`). Before, a file was named by the job id
-(`sofascore-export-01M….csv`), and `/exports` listed export jobs only.
+(`sofascore-export-01M….csv`), and `/exports` listed export jobs only. Since FX-34 (#194) `ssc export` names
+its file after the league, team or player too, so a CLI file's name may not say its dataset: the row then
+leaves out what is unknown (schema, dataset or format) instead of showing "unknown" (#195).
 
 | Element | Shows / does | Route | Field |
 |---|---|---|---|
@@ -1785,7 +1788,7 @@ this browser, theme, density, time display; stored in the browser only; Sign out
 | Element | Shows / does | Route | Field |
 |---|---|---|---|
 | Every row | value, source chip, lock | `GET /api/v1/settings` | `key`, `value`, `source` (`default`, `overrides`, `file`, `env`, `flag`), `source_name`, `locked`, `writable`, `secret`. As built (P30, #186; FX-33, #188): there is no `dotenv` source any more; a line of `.env` is part of the environment layer, so it reports `env` with the variable as `source_name` and is locked like any environment value; the page writes `config/overrides.json` only |
-| Lock reason | `file`: "Set in <config_file>. Change it there."; `env`: "Set by environment variable <source_name>."; `flag`: "Set by a command-line flag when the server started." | same | `source`, `source_name`, document `config_file` |
+| Lock reason | `file`: "Set in <config_file>. Change it there."; `env`: "Set by environment variable <source_name>."; `flag`: "Set by a command-line flag when the server started." As built (FX-35, #196): a value read from a deprecated 2.x name says "Set by the old environment variable SOFASCORE_API_TOKEN. It is deprecated: still read in 3.1, removed in 3.2. Rename it to SOFASCORE_SERVER__TOKEN." | same | `source`, `source_name`, `replaced_by`, document `config_file` |
 | Read-only (not locked, not writable) | "Can be changed only in sofascore.toml." | same | `writable` false |
 | Secret | masked, with "Replace" (never shows the stored value) | same | `secret` |
 | Control type and limits | number with min/max, switch, choice, text | **proposed** setting metadata (7.3); until then a table in FE-2 | As built (#107): the table is `frontend/src/screens/settings/settingsMeta.ts`. P27 (#134) built the metadata as a parallel list `metadata[]` of `GET /settings` (`type`, `minimum`, `maximum`, `choices`, `section`, `restart_needed`), so the existing rows keep their shape (G4); the screen still reads its own table at `b6caf2f` (`settingsMeta.ts:2` still says the API has none) |
@@ -1919,7 +1922,7 @@ fixed by FX-24 (#170) and FX-25 (#172) and the API ones it needed by FX-23 (#171
 (G34 to G41). The UI findings of the live validation were fixed by FX-26 (#174), FX-27 (#175) and FX-28
 (#177: the Matches list's default order, an unknown score in "Recent score changes", local suggestions by
 word start; 6.1, 6.3, 6.5); FX-26 left G43 and the localized date picker (4.10). After 3.0.0, B1 (#190), B2
-(#191) and B3 (#189) closed G35 to G37 and G39 to G41 and G43; G38 (bookmaker names) is open for 3.1, and
+(#191) and B3 (#189) closed G35 to G37 and G39 to G41 and G43, B4 (#192) closed G38 (bookmaker names), and
 the owner decided on 2026-10-09 not to add a localized date picker now. P30 (#186) removed the legacy
 routes and retired the setting.
 
