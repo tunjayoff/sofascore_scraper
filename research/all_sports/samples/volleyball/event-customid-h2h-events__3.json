@@ -1,0 +1,707 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/oZjsJBW/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:34:10+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/savino-del-bene-scandicci-reale-mutua-fenera-chieri-76/oZjsJBW#id:16605451",
+  "cache_control": "max-age=3600, public",
+  "trimmed": true,
+  "run_id": "lv-20261009b",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Serie A1, Women",
+          "slug": "serie-a1-women",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 126,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A1, Women",
+            "slug": "serie-a1-women",
+            "primaryColorHex": "#023C83",
+            "secondaryColorHex": "#FF23B0",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 126,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1877,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 567,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الدرجة الأولى، سيدات",
+                "bn": "সেরি এ1, উইমেনস",
+                "hi": "सीरी A1, वूमेन",
+                "ru": "Серия A1 среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 8,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2741,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الدرجة الأولى A للسيدات",
+              "bn": "সিরি এ1, উইমেন",
+              "hi": "सीरी ए1, वूमेन",
+              "ru": "Серия A1, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A1 Women 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99050
+        },
+        "roundInfo": {
+          "round": 14
+        },
+        "customId": "oZjsJBW",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Reale Mutua Fenera Chieri '76",
+          "slug": "reale-mutua-fenera-chieri-76",
+          "shortName": "Chieri",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 704,
+          "nameCode": "CHI",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 24964,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ريالي موتوا فينيرا كيري '76",
+              "ru": "Реале Мутуа Фенера Чиери '76"
+            },
+            "shortNameTranslation": {
+              "ar": "كيري",
+              "ru": "Чиери"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Savino Del Bene Scandicci",
+          "slug": "savino-del-bene-scandicci",
+          "shortName": "Scandicci",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 2483,
+          "nameCode": "PAS",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 116334,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سافينو ديل بيني سكنديتشي",
+              "ru": "Савино Дель Бене Скандицци"
+            },
+            "shortNameTranslation": {
+              "ar": "سكنديتشي",
+              "ru": "Скандицци"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16605541,
+        "slug": "savino-del-bene-scandicci-reale-mutua-fenera-chieri-76",
+        "startTimestamp": 1797177600,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Serie A1, Women",
+          "slug": "serie-a1-women",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 126,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A1, Women",
+            "slug": "serie-a1-women",
+            "primaryColorHex": "#023C83",
+            "secondaryColorHex": "#FF23B0",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 126,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1877,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 567,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الدرجة الأولى، سيدات",
+                "bn": "সেরি এ1, উইমেনস",
+                "hi": "सीरी A1, वूमेन",
+                "ru": "Серия A1 среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 8,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2741,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الدرجة الأولى A للسيدات",
+              "bn": "সিরি এ1, উইমেন",
+              "hi": "सीरी ए1, वूमेन",
+              "ru": "Серия A1, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A1 Women 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 99050
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "oZjsJBW",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Savino Del Bene Scandicci",
+          "slug": "savino-del-bene-scandicci",
+          "shortName": "Scandicci",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 2483,
+          "nameCode": "PAS",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 116334,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سافينو ديل بيني سكنديتشي",
+              "ru": "Савино Дель Бене Скандицци"
+            },
+            "shortNameTranslation": {
+              "ar": "سكنديتشي",
+              "ru": "Скандицци"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Reale Mutua Fenera Chieri '76",
+          "slug": "reale-mutua-fenera-chieri-76",
+          "shortName": "Chieri",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 704,
+          "nameCode": "CHI",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 24964,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ريالي موتوا فينيرا كيري '76",
+              "ru": "Реале Мутуа Фенера Чиери '76"
+            },
+            "shortNameTranslation": {
+              "ar": "كيري",
+              "ru": "Чиери"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 25,
+          "period2": 23,
+          "period3": 25,
+          "period4": 21,
+          "period5": 11,
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 22,
+          "period2": 25,
+          "period3": 22,
+          "period4": 25,
+          "period5": 15,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791131230
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 5
+            }
+          ],
+          "changeTimestamp": 1791131232
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16605451,
+        "slug": "savino-del-bene-scandicci-reale-mutua-fenera-chieri-76",
+        "startTimestamp": 1791122400,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Serie A1, Women",
+          "slug": "serie-a1-women",
+          "category": {
+            "name": "Italy",
+            "slug": "italy",
+            "sport": {
+              "name": "Volleyball",
+              "slug": "volleyball",
+              "id": 23
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "IT",
+              "alpha3": "ITA",
+              "name": "Italy",
+              "slug": "italy"
+            },
+            "id": 126,
+            "flag": "italy",
+            "alpha2": "IT",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيطاليا",
+                "ru": "Италия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Serie A1, Women",
+            "slug": "serie-a1-women",
+            "primaryColorHex": "#023C83",
+            "secondaryColorHex": "#FF23B0",
+            "category": {
+              "name": "Italy",
+              "slug": "italy",
+              "sport": {
+                "name": "Volleyball",
+                "slug": "volleyball",
+                "id": 23
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 126,
+              "flag": "italy",
+              "alpha2": "IT",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "إيطاليا",
+                  "ru": "Италия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 1877,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 567,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري الدرجة الأولى، سيدات",
+                "bn": "সেরি এ1, উইমেনস",
+                "hi": "सीरी A1, वूमेन",
+                "ru": "Серия A1 среди женщин"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 8,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2741,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دوري الدرجة الأولى A للسيدات",
+              "bn": "সিরি এ1, উইমেন",
+              "hi": "सीरी ए1, वूमेन",
+              "ru": "Серия A1, среди женщин"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Serie A1 Women 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 79493
+        },
+        "roundInfo": {
+          "round": 22
+        },
+        "customId": "oZjsJBW",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Reale Mutua Fenera Chieri '76",
+          "slug": "reale-mutua-fenera-chieri-76",
+          "shortName": "Chieri",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 704,
+          "nameCode": "CHI",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 24964,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ريالي موتوا فينيرا كيري '76",
+              "ru": "Реале Мутуа Фенера Чиери '76"
+            },
+            "shortNameTranslation": {
+              "ar": "كيري",
+              "ru": "Чиери"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Savino Del Bene Scandicci",
+          "slug": "savino-del-bene-scandicci",
+          "shortName": "Scandicci",
+          "gender": "F",
+          "sport": {
+            "name": "Volleyball",
+            "slug": "volleyball",
+            "id": 23
+          },
+          "userCount": 2483,
+          "nameCode": "PAS",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 116334,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سافينو ديل بيني سكنديتشي",
+              "ru": "Савино Дель Бене Скандицци"
+            },
+            "shortNameTranslation": {
+              "ar": "سكنديتشي",
+              "ru": "Скандицци"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 2,
+          "display": 2,
+          "period1": 27,
+          "period2": 18,
+          "period3": 25,
+          "period4": 20,
+          "period5": 13,
+          "normaltime": 2
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 25,
+          "period2": 25,
+          "period3": 21,
+          "period4": 25,
+          "period5": 15,
+          "normaltime": 3
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1769969250
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            {
+              "__trimmed__": 6
+            }
+          ],
+          "changeTimestamp": 1769969256
+        },
+        "hasGlobalHighlights": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14792691,
+        "slug": "savino-del-bene-scandicci-reale-mutua-fenera-chieri-76",
+        "startTimestamp": 1769961600,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set",
+          "period6": "6th set",
+          "period7": "7th set",
+          "overtime": "Overtime"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 18
+      }
+    ]
+  }
+}

@@ -1,0 +1,679 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17046055/best-players",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:41:22+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/presidentsc-esquerdopatas-futebol-clube/xkvjsfmvj#id:17046055",
+  "cache_control": "max-age=60, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "bestHomeTeamPlayer": {
+      "value": "1",
+      "label": "gls",
+      "player": {
+        "name": "Matheus Pires",
+        "firstName": "Matheus",
+        "lastName": "Pires",
+        "slug": "matheus-pires",
+        "shortName": "M. Pires",
+        "position": "F",
+        "jerseyNumber": "55",
+        "userCount": 0,
+        "gender": "M",
+        "sofascoreId": "tfr-q6r",
+        "id": 2506682,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 916617600,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ماثيوس بيريس",
+            "ru": "Матэус Пирес"
+          },
+          "shortNameTranslation": {
+            "ar": "م. بيريس",
+            "ru": "М. Пирес"
+          }
+        }
+      },
+      "team": {
+        "name": "Esquerdopatas Futebol Clube",
+        "slug": "esquerdopatas-futebol-clube",
+        "shortName": "Esquerdopatas",
+        "gender": "M",
+        "sport": {
+          "name": "Minifootball",
+          "slug": "minifootball",
+          "id": 109
+        },
+        "userCount": 10,
+        "nameCode": "EFC",
+        "national": false,
+        "type": 0,
+        "id": 1175522,
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إسكييردوباتاس فوتبول كلوب",
+            "ru": "Эскердопатас Футебол Клуб"
+          },
+          "shortNameTranslation": {
+            "ar": "إسكييردوباتاس",
+            "ru": "Эскердопатас"
+          }
+        }
+      }
+    },
+    "bestAwayTeamPlayer": {
+      "value": "2",
+      "label": "gls",
+      "player": {
+        "name": "Flavio Vinicius Rosa Correa Sthurt",
+        "firstName": "Flavio Vinicius Rosa Correa",
+        "lastName": "Sthurt",
+        "slug": "flavio-vinicius-rosa-correa-sthurt",
+        "shortName": "F. V. R. C. Sthurt",
+        "position": "F",
+        "jerseyNumber": "9",
+        "userCount": 0,
+        "gender": "M",
+        "sofascoreId": "h8g-3be",
+        "id": 2781756,
+        "marketValueCurrency": "EUR",
+        "dateOfBirthTimestamp": 964483200
+      },
+      "team": {
+        "name": "President's E.C",
+        "slug": "presidents-ec",
+        "shortName": "President's",
+        "gender": "M",
+        "sport": {
+          "name": "Minifootball",
+          "slug": "minifootball",
+          "id": 109
+        },
+        "userCount": 8,
+        "nameCode": "PEC",
+        "national": false,
+        "type": 0,
+        "id": 1175605,
+        "teamColors": {
+          "primary": "#374df5",
+          "secondary": "#374df5",
+          "text": "#ffffff"
+        },
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "نادي الرئيس",
+            "ru": "Президентский Е.К"
+          },
+          "shortNameTranslation": {
+            "ar": "نادي الرئيس",
+            "ru": "Президентский"
+          }
+        }
+      }
+    },
+    "leaderboard": [
+      {
+        "value": "2",
+        "label": "gls",
+        "player": {
+          "name": "Flavio Vinicius Rosa Correa Sthurt",
+          "firstName": "Flavio Vinicius Rosa Correa",
+          "lastName": "Sthurt",
+          "slug": "flavio-vinicius-rosa-correa-sthurt",
+          "shortName": "F. V. R. C. Sthurt",
+          "position": "F",
+          "jerseyNumber": "9",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "h8g-3be",
+          "id": 2781756,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 964483200
+        },
+        "team": {
+          "name": "President's E.C",
+          "slug": "presidents-ec",
+          "shortName": "President's",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 8,
+          "nameCode": "PEC",
+          "national": false,
+          "type": 0,
+          "id": 1175605,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский Е.К"
+            },
+            "shortNameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский"
+            }
+          }
+        }
+      },
+      {
+        "value": "2",
+        "label": "gls",
+        "player": {
+          "name": "Denis  Castro Dos Santos",
+          "firstName": "Denis ",
+          "lastName": "Castro Dos Santos",
+          "slug": "denis-castro-dos-santos",
+          "shortName": "D. C. D. Santos",
+          "jerseyNumber": "99",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "6ib-5b6",
+          "id": 2489671,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 779500800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دينيس كاسترو دوس سانتوس",
+              "ru": "Денис Кастро Дос Сантос"
+            },
+            "shortNameTranslation": {
+              "ar": "د. دوس سانتوس",
+              "ru": "Д. Сантос"
+            }
+          }
+        },
+        "team": {
+          "name": "President's E.C",
+          "slug": "presidents-ec",
+          "shortName": "President's",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 8,
+          "nameCode": "PEC",
+          "national": false,
+          "type": 0,
+          "id": 1175605,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский Е.К"
+            },
+            "shortNameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский"
+            }
+          }
+        }
+      },
+      {
+        "value": "1",
+        "label": "gls",
+        "player": {
+          "name": "Matheus Pires",
+          "firstName": "Matheus",
+          "lastName": "Pires",
+          "slug": "matheus-pires",
+          "shortName": "M. Pires",
+          "position": "F",
+          "jerseyNumber": "55",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "tfr-q6r",
+          "id": 2506682,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 916617600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماثيوس بيريس",
+              "ru": "Матэус Пирес"
+            },
+            "shortNameTranslation": {
+              "ar": "م. بيريس",
+              "ru": "М. Пирес"
+            }
+          }
+        },
+        "team": {
+          "name": "Esquerdopatas Futebol Clube",
+          "slug": "esquerdopatas-futebol-clube",
+          "shortName": "Esquerdopatas",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 10,
+          "nameCode": "EFC",
+          "national": false,
+          "type": 0,
+          "id": 1175522,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسكييردوباتاس فوتبول كلوب",
+              "ru": "Эскердопатас Футебол Клуб"
+            },
+            "shortNameTranslation": {
+              "ar": "إسكييردوباتاس",
+              "ru": "Эскердопатас"
+            }
+          }
+        }
+      },
+      {
+        "value": "1",
+        "label": "gls",
+        "player": {
+          "name": "Arthur Choinski",
+          "firstName": "Arthur",
+          "lastName": "Choinski",
+          "slug": "arthur-choinski",
+          "shortName": "A. Choinski",
+          "position": "F",
+          "jerseyNumber": "9",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "c87-knd",
+          "id": 2506677,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 965174400,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آرثر تشوينسكي",
+              "ru": "Артур Хоински"
+            },
+            "shortNameTranslation": {
+              "ar": "آ. تشوينسكي",
+              "ru": "А. Хоински"
+            }
+          }
+        },
+        "team": {
+          "name": "Esquerdopatas Futebol Clube",
+          "slug": "esquerdopatas-futebol-clube",
+          "shortName": "Esquerdopatas",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 10,
+          "nameCode": "EFC",
+          "national": false,
+          "type": 0,
+          "id": 1175522,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسكييردوباتاس فوتبول كلوب",
+              "ru": "Эскердопатас Футебол Клуб"
+            },
+            "shortNameTranslation": {
+              "ar": "إسكييردوباتاس",
+              "ru": "Эскердопатас"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "gls",
+        "player": {
+          "name": "Arthur Marcelo Bastos De Lima",
+          "firstName": "Arthur",
+          "lastName": "Marcelo Bastos De Lima",
+          "slug": "arthur-marcelo-bastos-de-lima",
+          "shortName": "A. M. B. D. Lima",
+          "jerseyNumber": "17",
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "5br-gec",
+          "id": 2486616,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 1166572800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أرثر مارسيلو باستوس دي ليما",
+              "ru": "Артур Марсело Бастос де Лима"
+            },
+            "shortNameTranslation": {
+              "ar": "أ. دي ليما",
+              "ru": "А. Лима"
+            }
+          }
+        },
+        "team": {
+          "name": "President's E.C",
+          "slug": "presidents-ec",
+          "shortName": "President's",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 8,
+          "nameCode": "PEC",
+          "national": false,
+          "type": 0,
+          "id": 1175605,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский Е.К"
+            },
+            "shortNameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "gls",
+        "player": {
+          "name": "David Fellipe Plochacz",
+          "firstName": "David",
+          "lastName": "Fellipe Plochacz",
+          "slug": "david-fellipe-plochacz",
+          "shortName": "D. F. Plochacz",
+          "jerseyNumber": "7",
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "ej9-z7k",
+          "id": 2485736,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 993945600,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ديفيد فيليبي بلوتشاتس",
+              "ru": "Давид Фелипе Плохач"
+            },
+            "shortNameTranslation": {
+              "ar": "د. بلوتشاتس",
+              "ru": "Д. Плохач"
+            }
+          }
+        },
+        "team": {
+          "name": "President's E.C",
+          "slug": "presidents-ec",
+          "shortName": "President's",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 8,
+          "nameCode": "PEC",
+          "national": false,
+          "type": 0,
+          "id": 1175605,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский Е.К"
+            },
+            "shortNameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "gls",
+        "player": {
+          "name": "Willian Da Silva Pinto Golaz",
+          "firstName": "Willian",
+          "lastName": "Da Silva Pinto Golaz",
+          "slug": "willian-da-silva-pinto-golaz",
+          "shortName": "W. D. S. P. Golaz",
+          "jerseyNumber": "5",
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "gw7-tfa",
+          "id": 2485697,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 798940800,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ويليان دا سيلفا بينتو غولاز",
+              "ru": "Уиллиан да Силва Пинто Голаз"
+            },
+            "shortNameTranslation": {
+              "ar": "و. غولاز",
+              "ru": "У. Голаз"
+            }
+          }
+        },
+        "team": {
+          "name": "President's E.C",
+          "slug": "presidents-ec",
+          "shortName": "President's",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 8,
+          "nameCode": "PEC",
+          "national": false,
+          "type": 0,
+          "id": 1175605,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский Е.К"
+            },
+            "shortNameTranslation": {
+              "ar": "نادي الرئيس",
+              "ru": "Президентский"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "gls",
+        "player": {
+          "name": "Arthur Henrique da Silva Lima",
+          "firstName": "Arthur Henrique da Silva",
+          "lastName": "Lima",
+          "slug": "arthur-henrique-da-silva-lima",
+          "shortName": "A. H. d. S. Lima",
+          "position": "F",
+          "jerseyNumber": "58",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "wme-6r7",
+          "id": 2703341,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 866419200
+        },
+        "team": {
+          "name": "Esquerdopatas Futebol Clube",
+          "slug": "esquerdopatas-futebol-clube",
+          "shortName": "Esquerdopatas",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 10,
+          "nameCode": "EFC",
+          "national": false,
+          "type": 0,
+          "id": 1175522,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسكييردوباتاس فوتبول كلوب",
+              "ru": "Эскердопатас Футебол Клуб"
+            },
+            "shortNameTranslation": {
+              "ar": "إسكييردوباتاس",
+              "ru": "Эскердопатас"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "gls",
+        "player": {
+          "name": "Johann Vaz",
+          "firstName": "Johann",
+          "lastName": "Vaz",
+          "slug": "johann-vaz",
+          "shortName": "J. Vaz",
+          "position": "F",
+          "jerseyNumber": "15",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "xdu-r5s",
+          "id": 2703319,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 854582400
+        },
+        "team": {
+          "name": "Esquerdopatas Futebol Clube",
+          "slug": "esquerdopatas-futebol-clube",
+          "shortName": "Esquerdopatas",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 10,
+          "nameCode": "EFC",
+          "national": false,
+          "type": 0,
+          "id": 1175522,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسكييردوباتاس فوتبول كلوب",
+              "ru": "Эскердопатас Футебол Клуб"
+            },
+            "shortNameTranslation": {
+              "ar": "إسكييردوباتاس",
+              "ru": "Эскердопатас"
+            }
+          }
+        }
+      },
+      {
+        "value": "–",
+        "label": "gls",
+        "player": {
+          "name": "Thiago da Conceição Silva",
+          "firstName": "Thiago da Conceição",
+          "lastName": "Silva",
+          "slug": "thiago-da-conceicao-silva",
+          "shortName": "T. d. C. Silva",
+          "position": "F",
+          "jerseyNumber": "62",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "dp5-3bn",
+          "id": 2703318,
+          "marketValueCurrency": "EUR",
+          "dateOfBirthTimestamp": 961200000
+        },
+        "team": {
+          "name": "Esquerdopatas Futebol Clube",
+          "slug": "esquerdopatas-futebol-clube",
+          "shortName": "Esquerdopatas",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 10,
+          "nameCode": "EFC",
+          "national": false,
+          "type": 0,
+          "id": 1175522,
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسكييردوباتاس فوتبول كلوب",
+              "ru": "Эскердопатас Футебол Клуб"
+            },
+            "shortNameTranslation": {
+              "ar": "إسكييردوباتاس",
+              "ru": "Эскердопатас"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

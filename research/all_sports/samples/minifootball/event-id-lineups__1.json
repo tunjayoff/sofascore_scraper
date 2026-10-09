@@ -1,0 +1,831 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17254475/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:40:53+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/fc-galatasarajevo-nk-propalitet/kUTdshlgk#id:17254475",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "confirmed": false,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Luka Ralić",
+            "firstName": "Luka",
+            "lastName": "Ralić",
+            "slug": "luka-ralic",
+            "shortName": "L. Ralić",
+            "position": "F",
+            "jerseyNumber": "98",
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "xz8-sqw",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1514711,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1165104000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوكا راليتش",
+                "ru": "Лука Ралич"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. راليتش",
+                "ru": "Л. Ралич"
+              }
+            }
+          },
+          "teamId": 1265557,
+          "shirtNumber": 98,
+          "jerseyNumber": "98",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Leon Tretinjak",
+            "firstName": "Leon",
+            "lastName": "Tretinjak",
+            "slug": "leon-tretinjak",
+            "shortName": "L. Tretinjak",
+            "position": "F",
+            "jerseyNumber": "55",
+            "userCount": 2,
+            "gender": "M",
+            "sofascoreId": "u5t-gss",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1895027,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1088294400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "ليون تريتينيجاك",
+                "ru": "Леон Третиняк"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. تريتينيجاك",
+                "ru": "Л. Третиняк"
+              }
+            }
+          },
+          "teamId": 1265557,
+          "shirtNumber": 55,
+          "jerseyNumber": "55",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Borna Soldo",
+            "firstName": "Borna",
+            "lastName": "Soldo",
+            "slug": "borna-soldo",
+            "shortName": "B. Soldo",
+            "position": "F",
+            "jerseyNumber": "7",
+            "userCount": 1,
+            "gender": "M",
+            "sofascoreId": "uti-mfh",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1514707,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1126137600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بورن سولو",
+                "ru": "Борна Солдо"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. سولو",
+                "ru": "Б. Солдо"
+              }
+            }
+          },
+          "teamId": 1265557,
+          "shirtNumber": 7,
+          "jerseyNumber": "7",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Ivan Jeremijaš",
+            "firstName": "Ivan",
+            "lastName": "Jeremijaš",
+            "slug": "ivan-jeremijas",
+            "shortName": "I. Jeremijaš",
+            "position": "F",
+            "jerseyNumber": "77",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "q99-ya9",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1911524,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1151020800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيفان يريمياش",
+                "ru": "Иван Еремияш"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. يريمياش",
+                "ru": "И. Еремияш"
+              }
+            }
+          },
+          "teamId": 1265557,
+          "shirtNumber": 77,
+          "jerseyNumber": "77",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Lean Koški",
+            "firstName": "Lean",
+            "lastName": "Koški",
+            "slug": "lean-koski",
+            "shortName": "L. Koški",
+            "position": "F",
+            "jerseyNumber": "99",
+            "height": 185,
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "eji-4zw",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2730604,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1087084800
+          },
+          "teamId": 1265557,
+          "shirtNumber": 99,
+          "jerseyNumber": "99",
+          "position": "F",
+          "substitute": false,
+          "captain": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Dino Damjanović",
+            "firstName": "Dino",
+            "lastName": "Damjanović",
+            "slug": "dino-damjanovic",
+            "shortName": "D. Damjanović",
+            "position": "F",
+            "jerseyNumber": "6",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "ikp-h5q",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2439439,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1096329600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دينو داميانوفيتش",
+                "ru": "Дино Дамьянович"
+              },
+              "shortNameTranslation": {
+                "ar": "د. داميانوفيتش",
+                "ru": "Д. Дамьянович"
+              }
+            }
+          },
+          "teamId": 1265557,
+          "shirtNumber": 6,
+          "jerseyNumber": "6",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Fabijan Babić",
+            "firstName": "Fabijan",
+            "lastName": "Babić",
+            "slug": "fabijan-babic",
+            "shortName": "F. Babić",
+            "position": "F",
+            "jerseyNumber": "10",
+            "height": 189,
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "wm8-afm",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2730606,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1118016000
+          },
+          "teamId": 1265557,
+          "shirtNumber": 10,
+          "jerseyNumber": "10",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Luka Vidak",
+            "firstName": "Luka",
+            "lastName": "Vidak",
+            "slug": "luka-vidak",
+            "shortName": "L. Vidak",
+            "position": "F",
+            "jerseyNumber": "17",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "r3r-3ha",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2743362,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 850003200
+          },
+          "teamId": 1265557,
+          "shirtNumber": 17,
+          "jerseyNumber": "17",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Toni Marin",
+            "firstName": "Toni",
+            "lastName": "Marin",
+            "slug": "toni-marin",
+            "shortName": "T. Marin",
+            "position": "F",
+            "jerseyNumber": "14",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "q4q-q7a",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1846084,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1096934400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "توني مارين",
+                "ru": "Тони Марин"
+              },
+              "shortNameTranslation": {
+                "ar": "ت. مارين",
+                "ru": "Т. Марин"
+              }
+            }
+          },
+          "teamId": 1265557,
+          "shirtNumber": 14,
+          "jerseyNumber": "14",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Gabrijel Devetak",
+            "firstName": "Gabrijel",
+            "lastName": "Devetak",
+            "slug": "gabrijel-devetak",
+            "shortName": "G. Devetak",
+            "position": "F",
+            "jerseyNumber": "4",
+            "userCount": 2,
+            "gender": "M",
+            "sofascoreId": "nzq-5cb",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2027250,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1096156800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جابرييل ديفتاك",
+                "ru": "Габриэль Деветак"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. ديفتاك",
+                "ru": "Г. Деветак"
+              }
+            }
+          },
+          "teamId": 1265557,
+          "shirtNumber": 4,
+          "jerseyNumber": "4",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Filip Lech",
+            "firstName": "Filip",
+            "lastName": "Lech",
+            "slug": "filip-lech",
+            "shortName": "F. Lech",
+            "position": "G",
+            "jerseyNumber": "1",
+            "userCount": 1,
+            "sofascoreId": "8j4-8h2",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1519177,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1115337600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "فيليب ليش",
+                "ru": "Филип Лех"
+              },
+              "shortNameTranslation": {
+                "ar": "ف. ليش",
+                "ru": "Ф. Лех"
+              }
+            }
+          },
+          "teamId": 484715,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "position": "G",
+          "substitute": false,
+          "captain": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Luka Repinac",
+            "firstName": "Luka",
+            "lastName": "Repinac",
+            "slug": "luka-repinac",
+            "shortName": "L. Repinac",
+            "position": "F",
+            "jerseyNumber": "23",
+            "userCount": 0,
+            "sofascoreId": "jvj-kjv",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1846051,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1086825600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "لوكا ريبيناك",
+                "ru": "Лука Репинац"
+              },
+              "shortNameTranslation": {
+                "ar": "ل. ريبيناك",
+                "ru": "Л. Репинац"
+              }
+            }
+          },
+          "teamId": 484710,
+          "shirtNumber": 23,
+          "jerseyNumber": "23",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Patrik Sudarić",
+            "firstName": "Patrik",
+            "lastName": "Sudarić",
+            "slug": "patrik-sudaric",
+            "shortName": "P. Sudarić",
+            "position": "F",
+            "jerseyNumber": "97",
+            "userCount": 1,
+            "sofascoreId": "c8h-q27",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2731029,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1085011200
+          },
+          "teamId": 484710,
+          "shirtNumber": 97,
+          "jerseyNumber": "97",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Kristijan Nedeljković",
+            "firstName": "Kristijan",
+            "lastName": "Nedeljković",
+            "slug": "kristijan-nedeljkovic",
+            "shortName": "K. Nedeljković",
+            "position": "F",
+            "jerseyNumber": "10",
+            "userCount": 0,
+            "gender": "M",
+            "sofascoreId": "ejx-edw",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2174216,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1066176000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كريستيجان نيديلجكوفيتش",
+                "ru": "Кристиян Неделькович"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. نيديلجكوفيتش",
+                "ru": "К. Неделькович"
+              }
+            }
+          },
+          "teamId": 484710,
+          "shirtNumber": 10,
+          "jerseyNumber": "10",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Ivan Borovec",
+            "firstName": "Ivan",
+            "lastName": "Borovec",
+            "slug": "ivan-borovec",
+            "shortName": "I. Borovec",
+            "position": "F",
+            "jerseyNumber": "9",
+            "height": 184,
+            "userCount": 0,
+            "sofascoreId": "hif-h7r",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1519100,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1127260800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "إيفان بوروفيتش",
+                "ru": "Иван Боровец"
+              },
+              "shortNameTranslation": {
+                "ar": "إ. بوروفيتش",
+                "ru": "И. Боровец"
+              }
+            }
+          },
+          "teamId": 484710,
+          "shirtNumber": 9,
+          "jerseyNumber": "9",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Borna Mađarević",
+            "firstName": "Borna",
+            "lastName": "Mađarević",
+            "slug": "borna-madarevic",
+            "shortName": "B. Mađarević",
+            "position": "F",
+            "jerseyNumber": "11",
+            "userCount": 0,
+            "sofascoreId": "gwc-py7",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 2731028,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1098316800
+          },
+          "teamId": 484710,
+          "shirtNumber": 11,
+          "jerseyNumber": "11",
+          "position": "F",
+          "substitute": false,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Zvonimir Grk",
+            "firstName": "Zvonimir",
+            "lastName": "Grk",
+            "slug": "zvonimir-grk",
+            "shortName": "Z. Grk",
+            "position": "F",
+            "jerseyNumber": "6",
+            "userCount": 3,
+            "gender": "M",
+            "sofascoreId": "5bb-4k7",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1912984,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1107043200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "زفوني مير غرك",
+                "ru": "Звонимир Грк"
+              },
+              "shortNameTranslation": {
+                "ar": "ز. غرك",
+                "ru": "З. Грк"
+              }
+            }
+          },
+          "teamId": 484710,
+          "shirtNumber": 6,
+          "jerseyNumber": "6",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Petar Petar",
+            "firstName": "Petar",
+            "lastName": "Petar",
+            "slug": "petar-petar",
+            "shortName": "P. Petar",
+            "position": "F",
+            "jerseyNumber": "22",
+            "userCount": 1,
+            "sofascoreId": "ceb-2jm",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1514698,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1192406400,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بيتر بيتر",
+                "ru": "Петар Петар"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. بيتر",
+                "ru": "П. Петар"
+              }
+            }
+          },
+          "teamId": 484710,
+          "shirtNumber": 22,
+          "jerseyNumber": "22",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "name": "Karlo Malčić",
+            "firstName": "Karlo",
+            "lastName": "Malčić",
+            "slug": "karlo-malcic",
+            "shortName": "K. Malčić",
+            "position": "F",
+            "jerseyNumber": "76",
+            "userCount": 0,
+            "sofascoreId": "ek7-e66",
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1519180,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 1179705600,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كارلو مالشيتش",
+                "ru": "Карло Мальчич"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. مالشيتش",
+                "ru": "К. Мальчич"
+              }
+            }
+          },
+          "teamId": 484710,
+          "shirtNumber": 76,
+          "jerseyNumber": "76",
+          "position": "F",
+          "substitute": true,
+          "statistics": {
+            "statisticsType": {
+              "sportSlug": "minifootball",
+              "statisticsType": "player"
+            }
+          }
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "url": "https://www.sofascore.com/api/v1/tournament/202804/season/105094/standings/total",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:40:09+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/kakao-united-digitalci/nvqksxvqk#id:17276181",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "standings": [
+      {
+        "id": 321529,
+        "type": "total",
+        "tournament": {
+          "name": "Grupa B",
+          "slug": "grupa-b",
+          "category": {
+            "name": "Croatia Amateur",
+            "slug": "croatia-amateur",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "priority": 0,
+            "id": 1805,
+            "flag": "croatia",
+            "alpha2": "HR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كرواتيا هواة",
+                "ru": "Хорватия Любители"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "PRHG Liga",
+            "slug": "prhg-liga",
+            "category": {
+              "name": "Croatia Amateur",
+              "slug": "croatia-amateur",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "id": 1805,
+              "flag": "croatia",
+              "alpha2": "HR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كرواتيا هواة",
+                  "ru": "Хорватия Любители"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 87,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "id": 21378,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري PRHG",
+                "ru": "Лига PRHG"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Grupa B",
+          "id": 202804
+        },
+        "name": "Grupa B 26/27",
+        "descriptions": [],
+        "rows": [
+          {
+            "id": 2717708,
+            "team": {
+              "name": "Digitalci",
+              "slug": "digitalci",
+              "shortName": "Digitalci",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "userCount": 3,
+              "nameCode": "DIG",
+              "national": false,
+              "type": 0,
+              "id": 1291013,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 11,
+              "text": "Promotion"
+            },
+            "position": 1,
+            "matches": 2,
+            "wins": 2,
+            "losses": 0,
+            "draws": 0,
+            "scoresFor": 23,
+            "scoresAgainst": 4,
+            "points": 6,
+            "scoreDiffFormatted": "+19"
+          },
+          {
+            "id": 2717710,
+            "team": {
+              "name": "Kakao United",
+              "slug": "kakao-united",
+              "shortName": "Kakao United",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "userCount": 3,
+              "nameCode": "KUN",
+              "national": false,
+              "type": 0,
+              "id": 1291022,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              }
+            },
+            "descriptions": [],
+            "promotion": {
+              "id": 11,
+              "text": "Promotion"
+            },
+            "position": 2,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 3,
+            "scoresAgainst": 12,
+            "points": 0,
+            "scoreDiffFormatted": "-9"
+          },
+          {
+            "id": 2717709,
+            "team": {
+              "name": "Joga Finito",
+              "slug": "joga-finito",
+              "shortName": "Joga Finito",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "userCount": 1,
+              "nameCode": "JFI",
+              "national": false,
+              "type": 0,
+              "id": 1291020,
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              }
+            },
+            "descriptions": [],
+            "position": 3,
+            "matches": 1,
+            "wins": 0,
+            "losses": 1,
+            "draws": 0,
+            "scoresFor": 1,
+            "scoresAgainst": 11,
+            "points": 0,
+            "scoreDiffFormatted": "-10"
+          }
+        ],
+        "updatedAtTimestamp": 1791362708
+      }
+    ]
+  }
+}

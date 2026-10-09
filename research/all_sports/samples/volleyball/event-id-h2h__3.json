@@ -1,0 +1,17 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16605451/h2h",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:34:08+00:00",
+  "page": "https://www.sofascore.com/tr/volleyball/match/savino-del-bene-scandicci-reale-mutua-fenera-chieri-76/oZjsJBW#id:16605451",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "teamDuel": {
+      "homeWins": 9,
+      "awayWins": 1,
+      "draws": 0
+    },
+    "managerDuel": null
+  }
+}

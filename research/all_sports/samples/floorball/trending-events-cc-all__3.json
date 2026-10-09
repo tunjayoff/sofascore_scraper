@@ -1,0 +1,830 @@
+{
+  "url": "https://www.sofascore.com/api/v1/trending/events/TR/all",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:36:58+00:00",
+  "page": "https://www.sofascore.com/tr/floorball/match/ibk-lund-elit-storvreta-ibk/UHbsVAEd#id:16672335",
+  "cache_control": "max-age=60, public",
+  "trimmed": true,
+  "run_id": "lv-20261009b",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "MLB Postseason",
+          "slug": "mlb-playoffs",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Baseball",
+              "slug": "baseball",
+              "id": 64
+            },
+            "priority": 1,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 1374,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "bn": "যুক্তরাষ্ট্র",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "MLB",
+            "slug": "mlb",
+            "primaryColorHex": "#051E42",
+            "secondaryColorHex": "#BF0D3E",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Baseball",
+                "slug": "baseball",
+                "id": 64
+              },
+              "priority": 1,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 1374,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 19865,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 11205,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري البيسبول الرئيسي",
+                "hi": "एमएलबी",
+                "bn": "এমএলবি",
+                "ru": "MLB"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 16,
+          "isGroup": false,
+          "isLive": false,
+          "id": 108845,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ما بعد الموسم في دوري كرة القاعدة الرئيسي (MLB)",
+              "ru": "MLB, Постсезон"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "MLB 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 84695
+        },
+        "customId": "Nxbsgyb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Atlanta Braves",
+          "slug": "atlanta-braves",
+          "shortName": "Braves",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 38326,
+          "nameCode": "ATL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3656,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000066",
+            "secondary": "#000066",
+            "text": "#000066"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أتلانتا برافز",
+              "ru": "Атланта Брейвс"
+            },
+            "shortNameTranslation": {
+              "ar": "برافز",
+              "bn": "ব্রেভস",
+              "hi": "ब्रेव्स",
+              "ru": "Брейвс"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Los Angeles Dodgers",
+          "slug": "los-angeles-dodgers",
+          "shortName": "Dodgers",
+          "gender": "M",
+          "sport": {
+            "name": "Baseball",
+            "slug": "baseball",
+            "id": 64
+          },
+          "userCount": 69291,
+          "nameCode": "LAD",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3638,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#014785",
+            "secondary": "#014785",
+            "text": "#014785"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوس أنجلوس دودجرز",
+              "ru": "Лос-Анджелес Доджерс"
+            },
+            "shortNameTranslation": {
+              "ar": "دودجرز",
+              "bn": "ডজার্স",
+              "hi": "डॉजर्स",
+              "ru": "Доджерс"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 0,
+          "period5": 1,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 1,
+          "series": 1,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 0
+            },
+            "inning5": {
+              "run": 1
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 1,
+            "hits": 5,
+            "errors": 2
+          }
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3,
+          "period1": 0,
+          "period2": 0,
+          "period3": 0,
+          "period4": 3,
+          "period5": 0,
+          "period6": 0,
+          "period7": 0,
+          "period8": 0,
+          "period9": 0,
+          "normaltime": 3,
+          "series": 2,
+          "innings": {
+            "inning1": {
+              "run": 0
+            },
+            "inning2": {
+              "run": 0
+            },
+            "inning3": {
+              "run": 0
+            },
+            "inning4": {
+              "run": 3
+            },
+            "inning5": {
+              "run": 0
+            },
+            "inning6": {
+              "run": 0
+            },
+            "inning7": {
+              "run": 0
+            },
+            "inning8": {
+              "run": 0
+            },
+            "inning9": {
+              "run": 0
+            }
+          },
+          "inningsBaseball": {
+            "run": 3,
+            "hits": 8,
+            "errors": 0
+          }
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791335298
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1791335306
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17199139,
+        "slug": "atlanta-braves-los-angeles-dodgers",
+        "previousLegEventId": 17193371,
+        "startTimestamp": 1791324000,
+        "periods": {
+          "current": "Match",
+          "inning1": "1st Inning",
+          "inning2": "2nd Inning",
+          "inning3": "3rd Inning",
+          "inning4": "4th Inning",
+          "inning5": "5th Inning",
+          "inning6": "6th Inning",
+          "inning7": "7th Inning",
+          "inning8": "8th Inning",
+          "inning9": "9th Inning",
+          "extra1": "10th Inning"
+        },
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "cupMatchesInRound": 5,
+        "isEditor": false
+      },
+      {
+        "eventState": {},
+        "tournament": {
+          "name": "International Friendly Games",
+          "slug": "int-friendly-games",
+          "category": {
+            "name": "World",
+            "slug": "world",
+            "sport": {
+              "name": "Football",
+              "slug": "football",
+              "id": 1
+            },
+            "priority": 20,
+            "country": {},
+            "id": 1468,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "العالم",
+                "bn": "বিশ্ব",
+                "hi": "विश्व",
+                "ru": "Мир"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "International Friendly Games",
+            "slug": "int-friendly-games",
+            "primaryColorHex": "#25497d",
+            "secondaryColorHex": "#d38f1d",
+            "category": {
+              "name": "World",
+              "slug": "world",
+              "sport": {
+                "name": "Football",
+                "slug": "football",
+                "id": 1
+              },
+              "priority": 20,
+              "country": {},
+              "id": 1468,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "العالم",
+                  "bn": "বিশ্ব",
+                  "hi": "विश्व",
+                  "ru": "Мир"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 121612,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": true,
+            "country": {},
+            "id": 851,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "مباريات ودية دولية",
+                "hi": "इंटरनेशनल फ्रेंडली गेम्स",
+                "bn": "ইন্টারন্যাশনাল ফ্রেন্ডলি গেমস",
+                "ru": "Международные товарищеские игры"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 89,
+          "isGroup": false,
+          "isLive": false,
+          "id": 66,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "इंटरनेशनल फ्रेंडली गेम्स",
+              "ar": "مباريات ودية دولية",
+              "bn": "ইন্টারন্যাশনাল ফ্রেন্ডলি গেমস",
+              "ru": "Международные товарищеские матчи"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Int. Friendly Games 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 87155
+        },
+        "customId": "zUbscVb",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "USA",
+          "slug": "usa",
+          "shortName": "USA",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 255562,
+          "nameCode": "USA",
+          "ranking": 16,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 4724,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ffffff",
+            "secondary": "#ff0000",
+            "text": "#ff0000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الولايات المتحدة",
+              "bn": "ইউএসএ",
+              "hi": "यूएसए",
+              "ru": "США"
+            },
+            "shortNameTranslation": {
+              "ar": "الولايات المتحدة"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Canada",
+          "slug": "canada",
+          "shortName": "Canada",
+          "gender": "M",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "userCount": 191297,
+          "nameCode": "CAN",
+          "ranking": 27,
+          "disabled": false,
+          "national": true,
+          "type": 0,
+          "country": {
+            "alpha2": "CA",
+            "alpha3": "CAN",
+            "name": "Canada",
+            "slug": "canada"
+          },
+          "id": 4752,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كندا",
+              "bn": "কানাডা",
+              "hi": "कनाडा",
+              "ru": "Канада"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 1,
+          "period2": 0,
+          "normaltime": 1
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 0,
+          "period2": 0,
+          "normaltime": 0
+        },
+        "time": {
+          "injuryTime1": 3,
+          "injuryTime2": 4,
+          "currentPeriodStartTimestamp": 1791335584,
+          "lastPeriodEndTimestamp": 1791334616
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type"
+          ],
+          "changeTimestamp": 1791338535
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "hasEventPlayerHeatMap": true,
+        "detailId": 1,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16787736,
+        "slug": "canada-usa",
+        "startTimestamp": 1791331200,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "national"
+          ],
+          "level": [
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "tournament": {
+          "name": "NBA Preseason",
+          "slug": "nba-preseason",
+          "category": {
+            "name": "USA",
+            "slug": "usa",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 10,
+            "country": {
+              "alpha2": "US",
+              "alpha3": "USA",
+              "name": "USA",
+              "slug": "usa"
+            },
+            "id": 15,
+            "flag": "usa",
+            "alpha2": "US",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "الولايات المتحدة",
+                "bn": "যুক্তরাষ্ট্র",
+                "hi": "संयुक्त राज्य अमेरिका",
+                "ru": "Соединенные Штаты"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "NBA Preseason",
+            "slug": "nba-preseason",
+            "primaryColorHex": "#045daf",
+            "secondaryColorHex": "#cc2b31",
+            "category": {
+              "name": "USA",
+              "slug": "usa",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 10,
+              "country": {
+                "alpha2": "US",
+                "alpha3": "USA",
+                "name": "USA",
+                "slug": "usa"
+              },
+              "id": 15,
+              "flag": "usa",
+              "alpha2": "US",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "الولايات المتحدة",
+                  "bn": "যুক্তরাষ্ট্র",
+                  "hi": "संयुक्त राज्य अमेरिका",
+                  "ru": "Соединенные Штаты"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 28491,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 2329,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": true,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ro": "NBA Presezon",
+                "bn": "এনবিএ প্রিসিজন",
+                "ar": "موسم ما قبل الدوري الأميركي للمحترفين",
+                "hi": "एनबीए प्रीसीज़न",
+                "ru": "Предсезонная лига НБА"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 163,
+          "isGroup": false,
+          "isLive": false,
+          "id": 9154,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ro": "NBA Presezon",
+              "hi": "एनबीए प्रीसीज़न",
+              "ar": "دوري NBA التحضيري",
+              "bn": "এনবিএ প্রিসিজন",
+              "ru": "Предсезонные матчи НБА"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NBA Preseason 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 99742
+        },
+        "customId": "ttbsOkc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Oklahoma City Thunder",
+          "slug": "oklahoma-city-thunder",
+          "shortName": "Thunder",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 101426,
+          "nameCode": "OKC",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 3418,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#3479bc",
+            "secondary": "#dd4b33",
+            "text": "#dd4b33"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوكلاهوما سيتي ثاندر",
+              "ru": "Оклахома-Сити Тандер"
+            },
+            "shortNameTranslation": {
+              "ar": "ثاندر",
+              "bn": "থান্ডার",
+              "hi": "थंडर"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "New Orleans Pelicans",
+          "slug": "new-orleans-pelicans",
+          "shortName": "Pelicans",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 27688,
+          "nameCode": "NOP",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 5539,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#002b5c",
+            "secondary": "#b4975a",
+            "text": "#b4975a"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "نيو أورليانز پيليكانس",
+              "ru": "Нью-Орлеан Пеликанс"
+            },
+            "shortNameTranslation": {
+              "ar": "بيليكانز",
+              "bn": "পেলিকান",
+              "hi": "पेलिकन्स"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 110,
+          "display": 110,
+          "period1": 34,
+          "period2": 33,
+          "period3": 26,
+          "period4": 17,
+          "normaltime": 110
+        },
+        "awayScore": {
+          "current": 116,
+          "display": 116,
+          "period1": 28,
+          "period2": 24,
+          "period3": 38,
+          "period4": 26,
+          "normaltime": 116
+        },
+        "time": {
+          "played": 2880,
+          "periodLength": 720,
+          "overtimeLength": 300,
+          "totalPeriodCount": 4,
+          "clockRunning": false,
+          "clockRunningLastUpdated": "2026-10-07T02:33:51+00:00"
+        },
+        "changes": {
+          "changes": [
+            "homeScore.current",
+            "homeScore.display",
+            "awayScore.current",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1791406157
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16869087,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "new-orleans-pelicans-oklahoma-city-thunder",
+        "startTimestamp": 1791331200,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "club"
+          ],
+          "level": [
+            "top-competitions",
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "__trimmed__": 60
+      }
+    ]
+  }
+}

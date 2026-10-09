@@ -3964,6 +3964,10 @@ marked; recorded by the tenth revision):
   A daytime run of the explorer visits top-league matches of the four sports, finished and live, and the
   owner decides then. Until then the registry keeps their six common slices, all required, and FX-31's
   proposal waits in `PROPOSALS` of `tests/test_sport_slices.py` (`docs/all-sports/README.md`, "Öneri").
+- Decided after run `lv-20261009b` (owner, 2026-10-09; FX-36): rugby and volleyball `statistics`, `lineups`,
+  `incidents` and `pregame_form` optional; floorball `lineups` not requested, `statistics` and `pregame_form`
+  optional, `incidents` still counted (against the rule's verdict); minifootball `statistics`, `incidents` and
+  `pregame_form` optional. Pinned in `DECIDED` of `tests/test_sport_slices.py`; `PROPOSALS` is gone.
 - A localized date picker (owner, 2026-10-09): not now. The browser's native date input stays, and 3.1
   has no picker of its own.
 - Rules merged by the orchestrator without asking the owner, each reversible in one module: the confirming
@@ -4037,7 +4041,7 @@ Open:
   volleyball `statistics`, `lineups` and `pregame_form` optional; minifootball `statistics`, `incidents` and
   `pregame_form` optional (requests per finished match from 11 to 7, and from 12 to 6 for floorball). The
   evidence is one finished match per sport, possibly lower-league, so the owner asked for more on
-  2026-10-09 (above): still open, in `PROPOSALS`, with the daytime run (section 19).
+  2026-10-09 (above): decided the same day after run `lv-20261009b` (above, FX-36).
 - Team streaks that answer 200 with an empty body (new; a finding of FX-31, #185). The slice rules read status
   codes, so `team_streaks` stays required everywhere, while the explorer saw an empty 200 (`no_data`) in 11
   sports and the app-side finished matrix "-" in 9. Chosen: as built (status codes only). Alternative: a
@@ -5257,9 +5261,6 @@ Open after 3.1, in no fixed order:
   user who pointed it at a relay or mirror sends requests straight to SofaScore from the user's own address,
   and without `SOFASCORE_THROTTLE_DIR`, `REQUEST_RATE_LIMIT` or `MAX_CONCURRENT` the request rate can rise
   (a block risk, not a privacy one); the warnings and `ssc doctor` name each one still set.
-- **The slice rows of rugby, floorball, volleyball and minifootball.** FX-31's proposal waits in `PROPOSALS`;
-  the owner decides after a daytime explorer run that visits top-league matches of the four sports,
-  finished and live (section 13).
 - **Team streaks that answer 200 with an empty body.** A body-aware rule for `team_streaks` is a decision
   (section 13).
 - **Baseball `/umpires`, `/weather`, `/comments` and `/at-bats`.** They answer 200 on finished and live

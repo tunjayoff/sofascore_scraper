@@ -199,7 +199,8 @@ def test_slices_are_the_registry(described: Dict[str, Any]):
     assert by_key["point_by_point"]["sports"] == ["badminton", "darts", "table-tennis", "tennis"]  # FX-31
     assert by_key["point_by_point"]["counts_for_completeness"] is True
     assert by_key["point_by_point"]["optional_in"] == []  # FX-16: teniste de tamlığa girer
-    assert by_key["lineups"]["not_in"] == ["badminton", "darts", "mma", "padel", "snooker", "table-tennis", "tennis"]
+    assert by_key["lineups"]["not_in"] == ["badminton", "darts", "floorball", "mma", "padel", "snooker", "table-tennis",
+                                           "tennis"]  # FX-36: florbol
     assert {"football", "basketball", "tennis"} <= set(by_key["pregame_form"]["optional_in"])
     assert by_key["statistics"]["sports"] is None and by_key["statistics"]["path"] == "/event/{event_id}/statistics"
 

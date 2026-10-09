@@ -1,0 +1,285 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17199838/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:32:29+00:00",
+  "page": "https://www.sofascore.com/tr/rugby/match/sydney-roosters-newcastle-knights/kKbsoKb#id:17199838",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009b",
+  "body": {
+    "confirmed": false,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "James Tedesco",
+            "slug": "james-tedesco",
+            "shortName": "J. Tedesco",
+            "jerseyNumber": "1",
+            "userCount": 50,
+            "gender": "M",
+            "sofascoreId": "g6g-9si",
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 833908,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 726451200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جيمس تيديسكو",
+                "bn": "জেমস টেডেস্কো",
+                "hi": "जेम्स टेडेस्को",
+                "ru": "Джеймс Тедеско"
+              },
+              "shortNameTranslation": {
+                "ar": "ج. تيديسكو",
+                "bn": "জে. টেডেস্কো",
+                "hi": "जे. टेडेस्को",
+                "ru": "Д. Тедеско"
+              }
+            }
+          },
+          "teamId": 4264,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Daniel Tupou",
+            "slug": "daniel-tupou",
+            "shortName": "D. Tupou",
+            "jerseyNumber": "2",
+            "height": 196,
+            "userCount": 31,
+            "gender": "M",
+            "sofascoreId": "ecg-2j8",
+            "country": {
+              "alpha2": "TO",
+              "alpha3": "TON",
+              "name": "Tonga",
+              "slug": "tonga"
+            },
+            "id": 831980,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 677116800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "توبو، دانيال",
+                "bn": "টুপু, ড্যানিয়েল",
+                "hi": "टुपो, डैनियल",
+                "ru": "Тупоу, Даниэль"
+              },
+              "shortNameTranslation": {
+                "ar": "د. توبو",
+                "bn": "ডি. টুপু",
+                "hi": "डी. टुपो",
+                "ru": "Д. Тупоу"
+              }
+            }
+          },
+          "teamId": 4264,
+          "shirtNumber": 2,
+          "jerseyNumber": "2",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Billy Smith",
+            "slug": "smith-billy",
+            "shortName": "B. Smith",
+            "height": 191,
+            "userCount": 17,
+            "gender": "M",
+            "sofascoreId": "kmv-zfr",
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 993085,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 941932800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "سميث، بيلي",
+                "bn": "স্মিথ, বিলি",
+                "hi": "स्मिथ, बिली",
+                "ru": "Смит, Билли"
+              },
+              "shortNameTranslation": {
+                "ar": "ب. سميث",
+                "bn": "বি স্মিথ",
+                "hi": "बी. स्मिथ",
+                "ru": "Б. Смит"
+              }
+            }
+          },
+          "teamId": 4264,
+          "shirtNumber": 3,
+          "jerseyNumber": "3",
+          "substitute": false
+        },
+        {
+          "__trimmed__": 16
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Kalyn Ponga",
+            "slug": "ponga-kalyn",
+            "shortName": "K. Ponga",
+            "jerseyNumber": "1",
+            "height": 184,
+            "userCount": 34,
+            "gender": "M",
+            "sofascoreId": "h6n-rpc",
+            "country": {
+              "alpha2": "NZ",
+              "alpha3": "NZL",
+              "name": "New Zealand",
+              "slug": "new-zealand"
+            },
+            "id": 876671,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 891216000,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "بونجا، كالين",
+                "bn": "পোঙ্গা, কালিন",
+                "hi": "पोंगा, कलिन",
+                "ru": "Понга, Калин"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. بونجا",
+                "bn": "কে. পোঙ্গা",
+                "hi": "के. पोंगा",
+                "ru": "К. Понга"
+              }
+            }
+          },
+          "teamId": 4260,
+          "shirtNumber": 1,
+          "jerseyNumber": "1",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Dom Young",
+            "slug": "young-dom",
+            "shortName": "D. Young",
+            "jerseyNumber": "2",
+            "height": 200,
+            "userCount": 35,
+            "gender": "M",
+            "sofascoreId": "g8w-k2n",
+            "country": {
+              "alpha2": "EN",
+              "alpha3": "ENG",
+              "name": "England",
+              "slug": "england"
+            },
+            "id": 986772,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 997315200,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "يونغ، دوم",
+                "bn": "ইয়াং, ডোম",
+                "hi": "यंग, डोम",
+                "ru": "Дом Янг"
+              },
+              "shortNameTranslation": {
+                "ar": "د. يونغ",
+                "bn": "ডি. ইয়াং",
+                "hi": "डी. यंग",
+                "ru": "Д. Янг"
+              }
+            }
+          },
+          "teamId": 4260,
+          "shirtNumber": 2,
+          "jerseyNumber": "2",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Dane Gagai",
+            "slug": "dane-gagai",
+            "shortName": "D. Gagai",
+            "jerseyNumber": "3",
+            "height": 182,
+            "userCount": 6,
+            "gender": "M",
+            "sofascoreId": "c6i-7mg",
+            "country": {
+              "alpha2": "AU",
+              "alpha3": "AUS",
+              "name": "Australia",
+              "slug": "australia"
+            },
+            "id": 834837,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 662860800,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جاجاي، دانمركي",
+                "bn": "গগাই, ডেন",
+                "hi": "गागई, डेन",
+                "ru": "Гагай, Дейн"
+              },
+              "shortNameTranslation": {
+                "ar": "د. جاجاي",
+                "bn": "ডি. গগাই",
+                "hi": "डी. गागई",
+                "ru": "Д. Гагай"
+              }
+            }
+          },
+          "teamId": 4260,
+          "shirtNumber": 3,
+          "jerseyNumber": "3",
+          "substitute": false
+        },
+        {
+          "__trimmed__": 16
+        }
+      ],
+      "supportStaff": [],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

@@ -1,0 +1,192 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/nvqksxvqk/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T09:39:58+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/kakao-united-digitalci/nvqksxvqk#id:17276181",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009b",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Grupa B",
+          "slug": "grupa-b",
+          "category": {
+            "name": "Croatia Amateur",
+            "slug": "croatia-amateur",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1805,
+            "flag": "croatia",
+            "alpha2": "HR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كرواتيا هواة",
+                "ru": "Хорватия Любители"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "PRHG Liga",
+            "slug": "prhg-liga",
+            "category": {
+              "name": "Croatia Amateur",
+              "slug": "croatia-amateur",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "HR",
+                "alpha3": "HRV",
+                "name": "Croatia",
+                "slug": "croatia"
+              },
+              "id": 1805,
+              "flag": "croatia",
+              "alpha2": "HR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كرواتيا هواة",
+                  "ru": "Хорватия Любители"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 87,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 21378,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري PRHG",
+                "ru": "Лига PRHG"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": true,
+          "groupName": "Grupa B",
+          "id": 202804
+        },
+        "season": {
+          "name": "26/27",
+          "year": "26/27",
+          "editor": true,
+          "id": 105094
+        },
+        "roundInfo": {
+          "round": 2
+        },
+        "customId": "nvqksxvqk",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Digitalci",
+          "slug": "digitalci",
+          "shortName": "Digitalci",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 3,
+          "nameCode": "DIG",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 1291013,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "Kakao United",
+          "slug": "kakao-united",
+          "shortName": "Kakao United",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 3,
+          "nameCode": "KUN",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 1291022,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "homeScore": {
+          "current": 12,
+          "display": 12
+        },
+        "awayScore": {
+          "current": 3,
+          "display": 3
+        },
+        "time": {},
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.current",
+            "homeScore.display",
+            "awayScore.current",
+            "awayScore.display"
+          ],
+          "changeTimestamp": 1791362593
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17276181,
+        "slug": "kakao-united-digitalci",
+        "startTimestamp": 1791361500,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      }
+    ]
+  }
+}

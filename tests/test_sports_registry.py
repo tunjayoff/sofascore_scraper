@@ -293,7 +293,8 @@ TENNIS_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "point_by_po
     ("basketball", COMMON_KEYS, NO_FORM),
     ("tennis", TENNIS_KEYS, ("statistics", "team_streaks", "h2h", "point_by_point")),
     ("handball", COMMON_KEYS, COMMON_KEYS),
-    ("volleyball", COMMON_KEYS, COMMON_KEYS),
+    # FX-36: voleybolda istatistik, kadro, olaylar ve pregame_form isteğe bağlı
+    ("volleyball", COMMON_KEYS, ("team_streaks", "h2h")),
     # FX-31: masa tenisinde kadro istenmez, pregame_form isteğe bağlı, point_by_point tamlığa girer
     ("table-tennis", ("statistics", "team_streaks", "pregame_form", "h2h", "incidents", "point_by_point"),
      ("statistics", "team_streaks", "h2h", "incidents", "point_by_point")),
