@@ -7,6 +7,7 @@ import TimeText from '@/ui/TimeText.vue'
 import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1 } from '@/api/v1/client'
+import { loadOddsProviders, oddsProviderName } from '@/app/oddsProviders'
 import type { Odds, OddsChoice, OddsMarket, Slice } from '@/api/v1/schema'
 import { choiceName, decimalText, groupName, marketName, periodName } from './oddsText'
 import { sliceLabel } from './eventText'
@@ -17,7 +18,8 @@ import { sliceLabel } from './eventText'
  * SofaScore's fraction, the opening price and the direction of the last change. The featured markets and
  * all markets are SofaScore's two odds lists; the one that is stored is shown, the featured one first. A
  * market's group is a line under its name when it says whether a draw is an outcome; a period "Extra time" is
- * left out for a sport without extra time (FX-26, M20).
+ * left out for a sport without extra time (FX-26, M20). A provider is named (B4, M20: "Bookmaker 1" before),
+ * from the server's list of known bookmakers; an id without a known name stays numbered.
  */
 const props = defineProps<{ eventId: number; slices: Slice[]; sport?: string | null }>()
 const { t } = useI18n()
@@ -53,6 +55,7 @@ watch(
   { immediate: true },
 )
 watch([key, () => props.eventId], () => void load(), { immediate: true })
+void loadOddsProviders()
 
 /**
  * The markets of a read, each once: SofaScore's featured list names the same market under several labels
@@ -88,7 +91,7 @@ const changeText = (c: OddsChoice) => t(`ui.odds.change.${c.change === 1 ? 'up' 
 
     <section v-for="o in records ?? []" :key="`${o.key}:${o.provider_id}`" class="flex flex-col gap-3" :data-provider="o.provider_id">
       <div class="flex flex-wrap items-baseline gap-x-3">
-        <h2 class="u-h3">{{ o.provider_id != null ? t('ui.odds.provider', { id: o.provider_id }) : t('ui.odds.providerUnknown') }}</h2>
+        <h2 class="u-h3" data-testid="odds-provider">{{ oddsProviderName(o.provider_id) }}</h2>
         <span v-if="o.fetched_at_utc" class="u-small u-muted">{{ t('ui.odds.readAt') }} <TimeText :value="o.fetched_at_utc" /></span>
       </div>
       <div v-for="(m, mi) in marketsOf(o)" :key="mi" class="u-odds-market" data-testid="odds-market">

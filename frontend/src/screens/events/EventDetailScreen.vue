@@ -23,6 +23,7 @@ import { copyText } from '@/ui/focus'
 import { toast } from '@/ui/toast'
 import { useStatusStore } from '@/app/statusStore'
 import { sportName } from '@/app/sports'
+import { loadOddsProviders, oddsProviderName } from '@/app/oddsProviders'
 import { startJob, waitForJob } from '@/screens/jobs/startJob'
 import { MORE_FOLLOW_KINDS, followName } from '@/screens/follows/followText'
 import SliceTab from './SliceTab.vue'
@@ -77,6 +78,8 @@ function setTab(k: Tab) {
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
 const listingOnly = computed(() => event.value?.quality.source === 'listing')
 const sliceOf = (key: string) => slices.value.find((s) => s.key === key) ?? null
+/** A slice's sub-key in words: the sub-key of an odds slice is a bookmaker, shown by name (B4). */
+const subLabel = (s: Slice) => (odds.value.some((o) => o.key === s.key) ? oddsProviderName(s.sub) : s.sub)
 const tabs = computed(() => {
   const list: { key: Tab; label: string; badge?: string }[] = [{ key: 'overview', label: t('ui.eventDetail.tab.overview') }]
   for (const k of ['statistics', 'lineups', 'incidents'] as const) if (sliceOf(k)) list.push({ key: k, label: t(`ui.eventDetail.tab.${k}`) })
@@ -98,7 +101,10 @@ async function load() {
       .catch(() => (extra.value = null))
     if (e.tournament_id) void loadSeasons(e.tournament_id).catch(() => {})
     v1.eventOdds(id.value)
-      .then((o) => (odds.value = o))
+      .then((o) => {
+        odds.value = o
+        if (o.length) void loadOddsProviders()
+      })
       .catch(() => (odds.value = []))
     loadChanges()
   } catch (err) {
@@ -413,7 +419,7 @@ onMounted(() => {
 
             <div v-else-if="tab === 'data'" class="flex flex-col gap-3" data-testid="event-data">
               <DataTable table-id="event-slices" :caption="t('ui.eventDetail.tab.data')" :columns="sliceColumns" :rows="slices" :row-key="(s) => `${s.key}:${s.sub ?? ''}`" :paged="false">
-                <template #cell-key="{ row }">{{ sliceLabel(row.key) }}<span v-if="row.sub" class="u-small u-muted"> · {{ row.sub }}</span></template>
+                <template #cell-key="{ row }">{{ sliceLabel(row.key) }}<span v-if="row.sub" class="u-small u-muted"> · {{ subLabel(row) }}</span></template>
                 <template #cell-state="{ row }">
                   <span class="inline-flex flex-wrap items-center gap-2">
                     <StatusBadge kind="slice" :value="row.state" />
@@ -456,7 +462,7 @@ onMounted(() => {
                 <p class="m-0 u-small u-muted">{{ t('ui.odds.rawNote') }}</p>
                 <ul class="m-0 p-0 list-none">
                   <li v-for="o in odds" :key="`${o.key}:${o.sub}`" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)">
-                    <span class="flex-1">{{ sliceLabel(o.key) }}<span v-if="o.sub" class="u-muted"> · {{ o.sub }}</span></span>
+                    <span class="flex-1">{{ sliceLabel(o.key) }}<span v-if="o.sub" class="u-muted" data-testid="odds-raw-provider"> · {{ oddsProviderName(o.sub) }}</span></span>
                     <StatusBadge kind="slice" :value="o.state" />
                     <button v-if="o.has_payload" type="button" class="u-btn u-btn-sm" :aria-label="t('ui.eventDetail.viewRawOf', { key: sliceLabel(o.key) })" @click="raw = { key: o.key, sub: o.sub }">{{ t('ui.eventDetail.view') }}</button>
                   </li>

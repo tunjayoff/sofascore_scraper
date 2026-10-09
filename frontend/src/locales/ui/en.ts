@@ -1732,6 +1732,8 @@ const en = {
     replace: 'Replace',
     secretEmpty: 'not set',
     rateWarning: 'Above {n} per second, or without a limit, SofaScore may block this server. Your risk.',
+    knownProviders: 'Known bookmakers',
+    otherProvider: 'Another number',
     changes: '{n} unsaved changes',
     discard: 'Discard',
     save: 'Save changes',
@@ -1833,6 +1835,7 @@ const en = {
     client: {
       rate: 'Shared by every process of this machine. 0 removes the limit.',
       proxy: 'The password is never shown; Replace sets a new address.',
+      odds_provider: 'SofaScore’s number of the bookmaker whose odds are downloaded. Pick a known bookmaker or type any number; which bookmakers answer depends on the country SofaScore sees.',
     },
     fetch: {
       only_finished: 'When on, a league download fetches the details of finished matches only; future fixtures stay as listed rows. The match counts on Overview and the old /api match lists also count only finished matches (or matches with details). It does not change the Matches screen (its Played / Upcoming / All switch and the status filter choose what shows) nor team, player and single-match follows.',

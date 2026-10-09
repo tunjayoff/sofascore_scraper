@@ -5,12 +5,14 @@ import UiBadge from '@/ui/UiBadge.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import type { Setting } from '@/api/v1/schema'
 import { metaOf, SAFE_RATE } from './settingsMeta'
+import { loadOddsProviders, oddsProvider, oddsProviders } from '@/app/oddsProviders'
 
 /**
  * One setting (6.16): its control, the source chip (where the value comes from), and when it cannot be
  * changed here the lock with the reason (`LockedField`, decision 21: shown in place, greyed, with the
  * source). A secret is never shown: the row offers "Replace". `staged` is the unsaved value (`null` =
- * reset to the weaker layer); `undefined` means unchanged.
+ * reset to the weaker layer); `undefined` means unchanged. An id the server can name (`names`, B4: the odds
+ * provider) shows its name, and a list of the known ones sets it; any other id can still be typed.
  */
 const props = defineProps<{ setting: Setting; staged?: unknown; configFile?: string | null; problem?: string | null }>()
 const emit = defineEmits<{ change: [value: unknown]; reset: []; discard: [] }>()
@@ -24,6 +26,11 @@ const replacing = ref(false)
 /** Whether the row has a form control the label names (a locked value or a hidden secret has none). */
 const hasControl = computed(() => editable.value && !(props.setting.secret && !replacing.value && !changed.value))
 const value = computed(() => (changed.value && props.staged !== null ? props.staged : props.setting.value))
+
+const namesProviders = computed(() => meta.value.names === 'oddsProviders')
+if (namesProviders.value) void loadOddsProviders()
+const providers = computed(() => (namesProviders.value ? oddsProviders.value : []))
+const knownProvider = computed(() => (namesProviders.value ? oddsProvider(value.value as number | string | null) : null))
 
 const label = computed(() => (te(`ui.setting.${props.setting.key}`, 'en') ? t(`ui.setting.${props.setting.key}`) : props.setting.key))
 const help = computed(() => (te(`ui.settingHelp.${props.setting.key}`, 'en') ? t(`ui.settingHelp.${props.setting.key}`) : ''))
@@ -45,7 +52,7 @@ const shownValue = computed(() => {
   if (Array.isArray(v)) return v.length ? v.join(', ') : '—'
   if (typeof v === 'boolean') return v ? t('ui.common.yes') : t('ui.common.no')
   if (v === '' || v == null) return '—'
-  return String(v)
+  return knownProvider.value ? `${String(v)} · ${knownProvider.value.name}` : String(v)
 })
 
 const rateWarning = computed(() => props.setting.key === 'client.rate' && (Number(value.value) > SAFE_RATE || Number(value.value) === 0))
@@ -61,6 +68,15 @@ function onInput(e: Event) {
     if (!Number.isFinite(next as number)) return
   }
   if (next === props.setting.value && !props.setting.secret) emit('discard')
+  else emit('change', next)
+}
+
+/** A bookmaker picked from the known ones; the empty choice ("another number") leaves the typed id. */
+function onPick(e: Event) {
+  const picked = (e.target as HTMLSelectElement).value
+  if (picked === '') return
+  const next = Number(picked)
+  if (next === props.setting.value) emit('discard')
   else emit('change', next)
 }
 
@@ -130,6 +146,18 @@ function stopReplacing() {
         :aria-describedby="problem ? `${id}-problem` : undefined"
         @change="onInput"
       />
+      <!-- the known names beside the free entry: picking one sets the id (B4) -->
+      <select
+        v-if="hasControl && providers.length"
+        class="u-field max-w-[280px]"
+        :aria-label="t('ui.settings.knownProviders')"
+        :value="knownProvider ? String(knownProvider.id) : ''"
+        data-testid="known-providers"
+        @change="onPick"
+      >
+        <option value="">{{ t('ui.settings.otherProvider') }}</option>
+        <option v-for="p in providers" :key="p.id" :value="String(p.id)">{{ p.name }} · {{ p.id }}</option>
+      </select>
 
       <button v-if="editable && changed" type="button" class="u-btn u-btn-ghost u-btn-sm" @click="emit('discard')">{{ t('ui.settings.undo') }}</button>
       <button v-else-if="editable && setting.source === 'overrides'" type="button" class="u-btn u-btn-ghost u-btn-sm" :title="t('ui.settings.resetHint')" @click="emit('reset')">
