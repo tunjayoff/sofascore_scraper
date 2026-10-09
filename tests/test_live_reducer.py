@@ -396,3 +396,62 @@ def test_a_set_sport_emits_a_score_change_only_when_a_set_is_won(rel: str, sport
         won["homeScore"][key] = int(won["homeScore"].get(key) or 0) + 1
     state, emitted = reduce(state, Observation(event=won, via="live", at=at + 60), sport)
     assert [e["type"] for e in emitted] == ["score_changed"]
+
+
+DA_LIVE = "darts/A_inprogress-20-started__17225298"
+
+
+def test_a_single_set_darts_match_emits_a_score_change_for_each_leg() -> None:
+    """
+    B3: tek setlik dart maçında (`bestOfSets: 1`) ana skor kazanılan leg'dir (period1 `current`'ı tekrarlar):
+    her leg bir `live.score_changed`, olayın skoru `legs_won` ve set listesi boş.
+    """
+    from sofascore_scraper.services.live.reducer import Observation, reduce, stream_event
+
+    event = dict(fx(DA_LIVE, 78), bestOfSets=1, bestOfLegs=7)
+    at = fetched(DA_LIVE)
+    state, _ = reduce(None, Observation(event=event, via="live", at=at), "darts")
+    leg = copy.deepcopy(event)
+    for key in ("current", "display", "period1"):
+        leg["homeScore"][key] += 1
+    state, emitted = reduce(state, Observation(event=leg, via="live", at=at + 30), "darts")
+    assert [(e["type"], e["from"], e["to"]) for e in emitted] == [("score_changed", [1, 3], [2, 3])]
+    score = stream_event(emitted[0], leg, "darts").data["score"]
+    assert (score["format"], score["sets_won"], score["sets"]) == ("legs_won", {"home": 2, "away": 3}, [])
+
+
+def test_a_darts_match_in_sets_emits_a_score_change_only_when_a_set_is_won() -> None:
+    """Set usulü dart maçında (bestOfSets > 1) ana skor kazanılan setlerdir; set içindeki leg olay değildir."""
+    from sofascore_scraper.services.live.reducer import Observation, reduce
+
+    event = dict(fx(DA_LIVE, 80), bestOfSets=5, bestOfLegs=5)
+    for side in ("homeScore", "awayScore"):
+        event[side] = {"current": 0, "display": 0, "period1": event[side]["period1"]}
+    at = fetched(DA_LIVE)
+    state, _ = reduce(None, Observation(event=event, via="live", at=at), "darts")
+    leg = copy.deepcopy(event)
+    leg["homeScore"]["period1"] += 1
+    state, emitted = reduce(state, Observation(event=leg, via="live", at=at + 30), "darts")
+    assert emitted == []
+    won = copy.deepcopy(leg)
+    won["awayScore"].update(current=1, display=1)
+    state, emitted = reduce(state, Observation(event=won, via="live", at=at + 60), "darts")
+    assert [(e["type"], e["from"], e["to"]) for e in emitted] == [("score_changed", [0, 0], [0, 1])]
+
+
+def test_an_esports_score_change_carries_the_score_of_each_game() -> None:
+    """B3: e-sporda ana skor kazanılan oyundur; olayın skoru oyun (harita) başına skoru taşır."""
+    from sofascore_scraper.services.live.reducer import Observation, reduce, stream_event
+
+    rel = "esports/A_inprogress-1002-second-game__17223320"
+    event = fx(rel, 79)
+    at = fetched(rel)
+    state, _ = reduce(None, Observation(event=event, via="live", at=at), "esports")
+    won = copy.deepcopy(event)
+    for key in ("current", "display", "period2"):
+        won["awayScore"][key] += 1
+    state, emitted = reduce(state, Observation(event=won, via="live", at=at + 60), "esports")
+    assert [(e["type"], e["from"], e["to"]) for e in emitted] == [("score_changed", [1, 0], [1, 1])]
+    score = stream_event(emitted[0], won, "esports").data["score"]
+    assert score["format"] == "games_won"
+    assert [(g["number"], g["home"], g["away"]) for g in score["sets"]] == [(1, 1, 0), (2, 0, 1)]
