@@ -254,7 +254,7 @@ def test_season_lists_only(store: Store) -> None:
     assert ctx.seasons.listed == [(8, None), (17, None)]  # tazelik süresine bakılmaz
     assert ctx.schedule.calls == [] and ctx.details.collected == []
     assert [line["code"] for line in handle.lines] == ["sync_season_list", "sync_season_list"]
-    assert handle.lines[0]["params"] == {"league_id": 8}
+    assert handle.lines[0]["params"] == {"league_id": 8, "league_name": "LaLiga"}
 
 
 class FakeRefresh(FakeDetails):
@@ -296,7 +296,35 @@ def test_log_lines_carry_codes_and_an_old_handle_gets_the_text_only(store: Store
     assert all("code" not in line for line in old.lines)
     assert [line["code"] for line in coded.lines] == [
         "sync_season_list", "sync_schedule", "sync_details_checking"]
-    assert coded.lines[1]["params"] == {"league_id": 23, "season_id": 235}
+    assert coded.lines[1]["params"] == {"league_id": 23, "league_name": "Serie A", "season_id": 235}
+
+
+def test_log_lines_name_the_league_and_the_season(store: Store) -> None:
+    """
+    05-web-ui.md G37 (bulgu F8): sezonu kimliğiyle anan satır adını da taşır (saklanan sezon listesinden: ad ve
+    yıl); takip edilmeyen ligin adı katalogdaki turnuva adıdır. İstemci "#76138" yerine "25/26" yazar.
+    """
+    from sofascore_scraper.slices import SLICE_OK, Outcome
+    from sofascore_scraper.store import Ref
+
+    store.entities.put(Ref.tournament(23), {"seasons": Outcome(SLICE_OK, {"seasons": [
+        {"id": 235, "name": "Serie A 25/26", "year": "25/26"}, {"id": 234, "name": "Serie A 24/25", "year": "24/25"},
+    ]})})
+    follow(store, "tournament", 23, "Serie A", seasons="current")
+    spec = SyncSpec(mode="full")
+    coded = Handle(spec)
+    SyncService(context(store)).run(spec, handle=coded)  # type: ignore[arg-type]
+    schedule = next(line for line in coded.lines if line["code"] == "sync_schedule")
+    assert schedule["params"] == {"league_id": 23, "league_name": "Serie A", "season_id": 235,
+                                  "season_name": "Serie A 25/26", "season_year": "25/26"}
+    # İletinin kendisi değişmedi (sunucunun İngilizce metni; goldenler)
+    assert schedule["message"] == "Fetching matches: league 23, season 235"
+
+    spec = SyncSpec(mode="full", selections=(SyncSelection(23, season_ids=(84,)),))
+    outdated = Handle(spec)
+    SyncService(context(store)).run(spec, handle=outdated)  # type: ignore[arg-type]
+    line = next(line for line in outdated.lines if line["code"] == "sync_season_outdated")
+    assert line["params"] == {"league_id": 23, "league_name": "Serie A", "season_id": 84, "resolved": 840}
 
 
 # --- komut satırı ---------------------------------------------------------------------------------------

@@ -5,7 +5,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import App from '@/App.vue'
 import { routes } from '@/router'
 import JobOutput from '@/screens/jobs/JobOutput.vue'
-import { codeText, logLine } from '@/screens/jobs/eventText'
+import { codeText, logLine, seasonsWanted } from '@/screens/jobs/eventText'
 import { ageText, jobKindText, jobLabel, jobLeague, jobTarget, noteFollowNames, followNames, rerunBody } from '@/screens/jobs/jobText'
 import { resetNames, tournamentNames } from '@/screens/events/eventText'
 import { authNeeded } from '@/lib/auth'
@@ -102,6 +102,18 @@ describe('coded job log lines', () => {
     expect(codeText('sync_schedule_fresh', { league_id: 17, season_id: 61627 })).toBe('Premier League için #61627 sezonunun maçları güncel; yeniden okunmuyor.')
     setLocale('en')
     expect(codeText('sync_season_list_fresh', { league_id: 17 })).toBe('The season list of Premier League is up to date; it is not read again.')
+  })
+
+  it('a line names the league and the season from its params, without the season list (G37, F8)', () => {
+    tournamentNames.value = new Map()
+    setLocale('tr')
+    const params = { league_id: 465, league_name: 'UEFA Super Cup', season_id: 76138, season_name: 'UEFA Super Cup 25/26', season_year: '25/26' }
+    expect(codeText('sync_schedule', params)).toBe('UEFA Super Cup için 25/26 sezonunun maçları okunuyor…')
+    expect(codeText('sync_season_outdated', { league_id: 465, league_name: 'UEFA Super Cup', season_id: 1, season_year: '23/24', resolved: 76138, resolved_name: 'UEFA Super Cup 25/26' }))
+      .toBe('UEFA Super Cup için 23/24 sezonu eskimiş; yerine UEFA Super Cup 25/26 kullanılıyor.')
+    // a named line needs no season list; an unnamed one of an older server does
+    expect(seasonsWanted({ seq: 1, ts_ms: 0, type: 'log', data: { code: 'sync_schedule', params } } as never)).toBeNull()
+    expect(seasonsWanted({ seq: 2, ts_ms: 0, type: 'log', data: { code: 'sync_schedule', params: { league_id: 465, season_id: 76138 } } } as never)).toBe(465)
   })
 
   it('the kinds of non-match data are named by their data type, not by their keys (FX-23 F18)', () => {

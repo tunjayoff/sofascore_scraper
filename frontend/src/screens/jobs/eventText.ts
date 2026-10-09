@@ -32,19 +32,27 @@ function whatText(what: string): string {
   return known(key) ? t(key) : what
 }
 
+/** A name the server put next to an id in the params (`season_year`, `league_name` …; G37, F8), else null. */
+function named(p: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const k of keys) if (typeof p[k] === 'string' && p[k]) return p[k] as string
+  return null
+}
+
 /**
  * A coded log line (`code` and `params`, G24; the codes of the download path of FX-13 and FX-19) in the
  * reader's language, or null when the UI does not know the code (the server's text is shown then). Ids in
- * the params are shown by name: a league, a season, a follow.
+ * the params are shown by name: a league, a season, a follow. The server sends the names of the league and
+ * the seasons with their ids (G37, F8: "25/26" instead of "#76138"); a line of an older server is named from
+ * the season lists the page has read.
  */
 export function codeText(code: unknown, params: unknown): string | null {
   if (typeof code !== 'string' || !known(`ui.job.code.${code}`)) return null
   const p = params && typeof params === 'object' ? (params as Record<string, unknown>) : {}
   const args: Record<string, unknown> = { ...p }
   if (typeof p.reason === 'string') args.reason = BREAKER_CODES.includes(code) ? breakerText(p.reason) : failureText(p.reason)
-  if ('league_id' in p) args.league = typeof p.league_id === 'number' ? leagueName(p.league_id) : t('ui.job.target.all')
-  if (typeof p.season_id === 'number') args.season = seasonName(p.season_id)
-  if (typeof p.resolved === 'number') args.resolved = seasonName(p.resolved)
+  if ('league_id' in p) args.league = typeof p.league_id === 'number' ? (named(p, 'league_name') ?? leagueName(p.league_id)) : t('ui.job.target.all')
+  if (typeof p.season_id === 'number') args.season = named(p, 'season_year', 'season_name') ?? seasonName(p.season_id)
+  if (typeof p.resolved === 'number') args.resolved = named(p, 'resolved_year', 'resolved_name') ?? seasonName(p.resolved)
   if (typeof p.follow === 'string') args.follow = typeof p.name === 'string' && p.name ? p.name : followName(p.follow)
   if (typeof p.what === 'string') args.what = whatText(p.what)
   for (const k of ['count', 'stored', 'failed', 'skipped']) if (typeof p[k] === 'number') args[k] = num(p[k] as number)
@@ -70,14 +78,14 @@ function extrasKindsText(saved: unknown, unavailable: unknown): string {
 /**
  * The league whose season names a log line needs and the page does not know yet (FX-24 F8): a line names
  * a season by its id (`season_id`, `resolved`), and the season list of its league (`league_id`) has its
- * name ("2025", "25/26"); null when none is needed.
+ * name ("2025", "25/26"); null when none is needed. A line that carries the season's name (G37) needs none.
  */
 export function seasonsWanted(e: JobEventMessage): number | null {
   const d = e.data ?? {}
   const p = (d.params && typeof d.params === 'object' ? d.params : d) as Record<string, unknown>
   const league = typeof p.league_id === 'number' && p.league_id > 0 ? p.league_id : null
-  const ids = [p.season_id, p.resolved].filter((x): x is number => typeof x === 'number')
-  return league && ids.some((id) => !seasonNames.value.has(id)) ? league : null
+  const unnamed = (id: unknown, prefix: string) => typeof id === 'number' && !named(p, `${prefix}_year`, `${prefix}_name`) && !seasonNames.value.has(id)
+  return league && (unnamed(p.season_id, 'season') || unnamed(p.resolved, 'resolved')) ? league : null
 }
 
 export function logLine(e: JobEventMessage): LogLine {
