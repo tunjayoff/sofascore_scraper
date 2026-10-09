@@ -1,0 +1,194 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/bukksdukk/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:11:33+00:00",
+  "page": "https://www.sofascore.com/tr/minifootball/match/profimont-veterani-caffe-bar-lennox-veterani/bukksdukk#id:17063783",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Liga malog nogometa-veterani",
+          "slug": "liga-malog-nogometa-veterani",
+          "category": {
+            "name": "Croatia Amateur",
+            "slug": "croatia-amateur",
+            "sport": {
+              "name": "Minifootball",
+              "slug": "minifootball",
+              "id": 109
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 1805,
+            "flag": "croatia",
+            "alpha2": "HR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كرواتيا هواة",
+                "ru": "Хорватия Любители"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "LMN  SB-Veterani",
+            "slug": "lmn-sb-veterani",
+            "category": {
+              "name": "Croatia Amateur",
+              "slug": "croatia-amateur",
+              "sport": {
+                "name": "Minifootball",
+                "slug": "minifootball",
+                "id": 109
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "HR",
+                "alpha3": "HRV",
+                "name": "Croatia",
+                "slug": "croatia"
+              },
+              "id": 1805,
+              "flag": "croatia",
+              "alpha2": "HR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "كرواتيا هواة",
+                  "ru": "Хорватия Любители"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 5,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {
+              "alpha2": "HR",
+              "alpha3": "HRV",
+              "name": "Croatia",
+              "slug": "croatia"
+            },
+            "id": 37765,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 199501
+        },
+        "season": {
+          "name": "Liga malog nogometa-veterani 2026",
+          "year": "2026",
+          "editor": true,
+          "id": 103297
+        },
+        "roundInfo": {
+          "round": 5
+        },
+        "customId": "bukksdukk",
+        "status": {
+          "code": 6,
+          "description": "1st half",
+          "type": "inprogress"
+        },
+        "homeTeam": {
+          "name": "Caffe bar Lennox Veterani",
+          "slug": "caffe-bar-lennox-veterani",
+          "shortName": "Caffe bar Lennox",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 1,
+          "nameCode": "CBL",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 1275951,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "awayTeam": {
+          "name": "Profimont Veterani",
+          "slug": "profimont-veterani",
+          "shortName": "Profimont",
+          "gender": "M",
+          "sport": {
+            "name": "Minifootball",
+            "slug": "minifootball",
+            "id": 109
+          },
+          "userCount": 6,
+          "nameCode": "PVE",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 1275953,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 1
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 0
+        },
+        "time": {
+          "periodLength": 1200,
+          "overtimeLength": 300,
+          "totalPeriodCount": 2,
+          "currentPeriodStartTimestamp": 1791557760
+        },
+        "changes": {
+          "changes": [
+            "homeScore.current",
+            "homeScore.display",
+            "homeScore.period1"
+          ],
+          "changeTimestamp": 1791558214
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17063783,
+        "slug": "profimont-veterani-caffe-bar-lennox-veterani",
+        "startTimestamp": 1791558000,
+        "lastPeriod": "period1",
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": true
+      }
+    ]
+  }
+}

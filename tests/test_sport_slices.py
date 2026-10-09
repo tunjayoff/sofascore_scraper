@@ -24,10 +24,15 @@ evidence.json onarılmış araçla (FX-29, FX-29b) yeniden üretildi (FX-31): ka
 Ragbi, florbol, voleybol ve mini futbol için kanıtın önerdikleri (FX-31) sahibin kararını bekledi; en çok takip
 edilen üç ligin bitmiş maçlarıyla (koşu lv-20261009b) yeniden bakıldıktan sonra sahibin kararıyla (2026-10-09)
 uygulandı (FX-36): DECIDED'da durur. Kararın bir hücresi kanıtın kuralından ayrılır (florbol olayları:
-DECIDED_AGAINST_THE_RULE). docs/all-sports/README.md, "Karar". Ağ yok.
+DECIDED_AGAINST_THE_RULE). docs/all-sports/README.md, "Karar".
+
+FX-37: canlı maç sayfaları (lv-20261009c) ve aynı maçların bitmiş sayfaları (lv-20261009d) da onarılmış koşular.
+Aynı maçta hiçbir dilimin yanıtı canlıdan bitmişe değişmedi (SAME_MATCH). Yeni yanıtlarla kural üç hücrede kayıt
+defterinden ayrılır; kayıt defteri değişmedi, hücreler sahibin kararını bekler (PENDING). Ağ yok.
 """
 from __future__ import annotations
 
+import collections
 import json
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Tuple
@@ -85,6 +90,26 @@ DECIDED_AGAINST_THE_RULE: Dict[Tuple[str, str], str] = {
     ("floorball", "incidents"): OPTIONAL,
 }
 
+# FX-37: lv-20261009c ve lv-20261009d'nin yanıtlarıyla kuralın kayıt defterinden ayrıldığı hücreler, sahibin kararını
+# bekler: (spor, dilim) → (kuralın yargısı, kayıt defterinin bugünkü yeri). Kayıt defteri değişmedi.
+PENDING: Dict[Tuple[str, str], Tuple[str, str]] = {
+    ("basketball", "lineups"): (OPTIONAL, REQUIRED),
+    ("handball", "pregame_form"): (OPTIONAL, REQUIRED),
+    ("mma", "statistics"): (OPTIONAL, REQUIRED),
+}
+# Hücreyi değiştiren yanıtlar (200 dışı): (koşu, sayfa, maç, maçın durumu, HTTP kodu). Basketbol kadrosu iki canlı
+# sayfada ve 17220735'in bitmiş sayfasında, hentbol pregame-form'u aynı maçın canlı ve bitmiş sayfasında 404 aldı
+# (sayfanın kendi maçı). MMA istatistiği komşu maçtan: canlı 12606166'nın sayfası bitmiş 12607782'yi de istedi
+# (FX-36'nın bulgusu; kural onu da sayar). MMA'nın iki canlı sayfası kendi maçının istatistiğini 200 aldı.
+PENDING_ANSWERS: Dict[Tuple[str, str], List[Tuple[str, int, int, str, str]]] = {
+    ("basketball", "lineups"): [("lv-20261009c", 16624761, 16624761, "live", "404"),
+                                ("lv-20261009c", 17220735, 17220735, "live", "404"),
+                                ("lv-20261009d", 17220735, 17220735, "finished", "404")],
+    ("handball", "pregame_form"): [("lv-20261009c", 16642082, 16642082, "live", "404"),
+                                   ("lv-20261009d", 16642082, 16642082, "finished", "404")],
+    ("mma", "statistics"): [("lv-20261009c", 12606166, 12607782, "finished", "404")],
+}
+
 # FX-36: lv-20261009b'nin bitmiş maç sayfalarında (her sporun en çok takip edilen üç ligi) dört dilimin HTTP
 # kodları, sayfa başına (sıra önemsiz); "-": sayfa istemedi
 TOP_LEAGUE_ANSWERS: Dict[str, Dict[str, List[str]]] = {
@@ -128,14 +153,14 @@ OTHER_ENDPOINTS: Dict[str, str] = {
     "/weather": "baseball only (200 on finished and live matches, 404 on a not-started one): proposal",
     "/comments": "baseball only (200 on finished and live matches, 404 on a not-started one): proposal",
     "/managers": "team managers (200 in nine team sports, 404 in the rest): proposal, not sport-specific",
-    "/best-players": "player ratings (basketball, American football, handball): proposal, not sport-specific",
-    "/best-players/summary": "football player ratings: proposal, not sport-specific",
+    "/best-players": "player ratings (basketball, American football, handball): not downloaded (owner, FX-37)",
+    "/best-players/summary": "football player ratings: not downloaded (owner, FX-37)",
     "/player-of-the-match": "football fan poll: proposal",
     "/average-positions": "football player positions: proposal",
     "/heatmap/{id}": "football player heatmap (one request per player): proposal",
     "/shotmap": "football shot map: proposal",
     "/graph": "momentum graph (football, basketball, American football, handball): proposal",
-    "/graph/sequence": "volleyball point sequence (200 on one finished match): proposal",
+    "/graph/sequence": "volleyball point sequence (200 live, 404 once finished): not downloaded (owner, FX-37)",
     "/tennis-power": "tennis momentum (200 on one finished match): proposal",
     "/graph/win-probability": "404 in every sport",
     "/live-match-tracker": "live widget",
@@ -144,7 +169,7 @@ OTHER_ENDPOINTS: Dict[str, str] = {
     "/media/summary/country/{cc}": "media, per country",
     "/sport-video-highlights/country/{cc}/extended": "media, per country",
     "/ai-insights/{lang}": "generated text, per language",
-    "/ai-insights-postmatch/{lang}": "generated text, per language",
+    "/ai-insights-postmatch/{lang}": "generated text, per language, finished match only: not downloaded",
 }
 
 
@@ -198,6 +223,9 @@ def test_the_evidence_covers_the_recorded_pages():
 def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, found: str):
     applies, counts = spec.applies_to(sport), spec.counts_in(sport)
     found = DECIDED.get((sport, spec.key), found)  # sahibin kararı kuraldan ayrılabilir (DECIDED_AGAINST_THE_RULE)
+    if (sport, spec.key) in PENDING:  # kural ayrıldı, karar bekleniyor: kayıt defteri bugünkü yerinde kalır
+        rule, found = PENDING[(sport, spec.key)]
+        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(spec)) == rule
     if found == REQUIRED:
         assert applies and counts
     elif found == OPTIONAL:
@@ -382,6 +410,177 @@ def test_the_app_side_evidence_and_the_four_sport_decision():
                  if sport in TOP_LEAGUE_ANSWERS and verdict != REQUIRED and finished[sport][key] != "-"}
     assert with_data == {("rugby", "pregame_form"), ("volleyball", "incidents")}
     assert finished["floorball"]["incidents"] == "-"
+
+
+# --- FX-37: canlı ve bitmiş, aynı maç (lv-20261009c, lv-20261009d) ---------------------------------------------
+
+LIVE_RUN, FINISHED_RUN = "lv-20261009c", "lv-20261009d"
+
+# lv-20261009d'nin bitmiş sayfalarındaki 13 maç (spor başına bir), lv-20261009c'de canlı sayfa olarak da açıldı:
+# spor → (maç, dilim → sayfanın kendi maçı için iki ziyarette de aldığı HTTP kodu). Sayfanın hiç istemediği dilim
+# tabloda yok; iki ziyaret aynı dilimleri istedi.
+SAME_MATCH: Dict[str, Tuple[int, Dict[str, str]]] = {
+    "badminton": (17289295, {"statistics": "200", "team_streaks": "200", "pregame_form": "404", "h2h": "200",
+                             "incidents": "200", "point_by_point": "200"}),
+    "basketball": (17220735, {"statistics": "200", "team_streaks": "200", "pregame_form": "404", "h2h": "200",
+                              "lineups": "404", "incidents": "200"}),
+    "cricket": (15884178, {"statistics": "404", "pregame_form": "404", "lineups": "200", "incidents": "200",
+                           "innings": "200"}),
+    "darts": (17278965, {"statistics": "200", "team_streaks": "200", "pregame_form": "404", "h2h": "200",
+                         "point_by_point": "200"}),
+    "esports": (17280904, {"statistics": "404", "team_streaks": "200", "pregame_form": "404", "h2h": "200",
+                           "lineups": "200", "esports_games": "200"}),
+    "football": (16653102, {"statistics": "200", "pregame_form": "200", "lineups": "200", "incidents": "200"}),
+    "futsal": (16982330, {"statistics": "200", "team_streaks": "200", "pregame_form": "200", "h2h": "200",
+                          "lineups": "404", "incidents": "200"}),
+    "handball": (16642082, {"statistics": "200", "pregame_form": "404", "lineups": "200", "incidents": "200"}),
+    "ice-hockey": (16347609, {"statistics": "200", "pregame_form": "200", "lineups": "200", "incidents": "200"}),
+    "minifootball": (17063783, {"statistics": "200", "team_streaks": "200", "pregame_form": "404", "h2h": "200",
+                                "lineups": "404", "incidents": "200"}),
+    "table-tennis": (17289647, {"statistics": "200", "team_streaks": "200", "pregame_form": "404", "h2h": "200",
+                                "incidents": "200", "point_by_point": "200"}),
+    "tennis": (17218936, {"statistics": "200", "team_streaks": "200", "pregame_form": "404", "h2h": "200",
+                          "point_by_point": "200"}),
+    "volleyball": (17186419, {"statistics": "404", "team_streaks": "200", "pregame_form": "200", "h2h": "200",
+                              "lineups": "404", "incidents": "200"}),
+}
+# Kayıt defterinde dilimi olmayan ve aynı maçta canlıdan bitmişe değişen uç noktalar: (spor, uç nokta) →
+# (canlı, bitmiş); "-": o ziyaret istemedi. /live-match-tracker yalnızca canlı sayfada istenir (11 maçın hepsinde).
+SAME_MATCH_OTHER: Dict[Tuple[str, str], Tuple[str, str]] = {
+    ("football", "/ai-insights/{lang}"): ("200", "-"),
+    ("football", "/ai-insights-postmatch/{lang}"): ("-", "200"),
+    ("football", "/highlights"): ("404", "200"),
+    ("football", "/media/summary/country/{cc}"): ("404", "200 404"),
+    ("football", "/sport-video-highlights/country/{cc}/extended"): ("-", "404"),
+    ("ice-hockey", "/highlights"): ("404", "200"),
+    ("ice-hockey", "/media/summary/country/{cc}"): ("404", "200"),
+    ("ice-hockey", "/sport-video-highlights/country/{cc}/extended"): ("-", "404"),
+    ("volleyball", "/graph/sequence"): ("200", "404"),
+}
+# lv-20261009c'nin "canlı" diye açtığı dart ve masa tenisi sayfalarının maçı sayfa açıldığında bitmişti (maçın kendi
+# /event/{id} yanıtı): bu iki sporda iki ziyaret de bitmiş maçtır
+FINISHED_ON_THE_LIVE_VISIT = ("darts", "table-tennis")
+
+
+def _own_page_answers(run_ids: Tuple[str, ...]) -> Dict[Tuple[str, str, int], Dict[str, set]]:
+    """(koşu, spor, sayfa) → uç nokta → HTTP kodları: maç sayfasının kendi maçı için aldıkları (oranlar hariç)."""
+    pages: Dict[Tuple[str, str, int], Dict[str, set]] = {}
+    with open(evidence_mod.RESEARCH / "requests.jsonl", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("run_id") not in run_ids or not str(row.get("page_type") or "").startswith("event"):
+                continue
+            page_id = int(row["page"].rsplit("#id:", 1)[-1])
+            found = evidence_mod._endpoint(row["url"])
+            if found is None or found[0] != page_id or row.get("status") is None:
+                continue
+            if evidence_mod._ODDS.search(found[1]):
+                continue
+            pages.setdefault((row["run_id"], row["sport"], page_id), {}).setdefault(found[1], set()).add(
+                str(row["status"]))
+    return pages
+
+
+def _finished_page_ids() -> Dict[int, str]:
+    """lv-20261009d'nin bitmiş maç sayfaları: maç → spor (sayfa adresinin #id:'si)."""
+    ids: Dict[int, str] = {}
+    with open(evidence_mod.RESEARCH / "requests.jsonl", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("run_id") == FINISHED_RUN and row.get("page_type") == "event-finished":
+                ids[int(row["page"].rsplit("#id:", 1)[-1])] = row["sport"]
+    return ids
+
+
+@pytest.mark.skipif(not (evidence_mod.RESEARCH / "requests.jsonl").exists(), reason="research data not present")
+def test_no_slice_answers_live_but_not_once_the_same_match_finished():
+    ids = _finished_page_ids()
+    assert ids == {event_id: sport for sport, (event_id, _codes) in SAME_MATCH.items()}
+    answers = _own_page_answers((LIVE_RUN, FINISHED_RUN))
+    paths = {_endpoint(spec): spec.key for spec in sports.DETAIL_SLICES}
+    other: Dict[Tuple[str, str], Tuple[str, str]] = {}
+    for event_id, sport in ids.items():
+        live, finished = answers[(LIVE_RUN, sport, event_id)], answers[(FINISHED_RUN, sport, event_id)]
+        slices_seen = {}
+        for endpoint in sorted(set(live) | set(finished)):
+            pair = tuple(" ".join(sorted(codes.get(endpoint, {"-"}))) for codes in (live, finished))
+            if endpoint in paths:
+                # Kayıt defterinin hiçbir dilimi canlıda 200 alıp bitmişte başka bir şey almadı
+                assert not (pair[0] == "200" and pair[1] != "200"), (sport, endpoint, pair)
+                assert pair[0] == pair[1], (sport, endpoint, pair)
+                slices_seen[paths[endpoint]] = pair[1]
+            elif pair[0] != pair[1]:
+                other[(sport, endpoint)] = pair
+        assert slices_seen == SAME_MATCH[sport][1], sport
+    lmt = "/live-match-tracker"
+    assert {cell for cell, pair in other.items() if cell[1] == lmt and pair[1] == "-"} == {
+        (sport, lmt) for sport in SAME_MATCH if sport not in FINISHED_ON_THE_LIVE_VISIT}
+    assert {cell: pair for cell, pair in other.items() if cell[1] != lmt} == SAME_MATCH_OTHER
+
+
+def test_the_same_match_was_live_then_finished():
+    """Maçın isteğin anındaki durumu (evidence.json): 11 maç ilk ziyarette canlı, 13'ü ikincide bitmiş."""
+    states = {(row["run_id"], row["event_id"]): row["state"] for rows in EVIDENCE["pages"].values() for row in rows}
+    for sport, (event_id, _codes) in SAME_MATCH.items():
+        assert states[(FINISHED_RUN, event_id)] == "finished", sport
+        expected = "finished" if sport in FINISHED_ON_THE_LIVE_VISIT else "live"
+        assert states[(LIVE_RUN, event_id)] == expected, sport
+
+
+def test_the_live_pages_back_the_not_in_rows():
+    """
+    Tam canlı sayfaların hiçbiri kadro istemedi: tenis, badminton, MMA, florbol; olay istemedi: tenis, MMA, e-spor.
+    Dart ve masa tenisinin lv-20261009c sayfaları bitmiş maçtı (FINISHED_ON_THE_LIVE_VISIT); onlar da istemedi.
+    """
+    live_pages = [(row["run_id"], sport, row["event_id"]) for sport, rows in EVIDENCE["pages"].items() for row in rows
+                  if row["run_id"] in (LIVE_RUN, FINISHED_RUN) and row["state"] == "live" and row["complete"]]
+    answers = _own_page_answers((LIVE_RUN, FINISHED_RUN))
+    asked = collections.defaultdict(set)
+    for run_id, sport, event_id in live_pages:
+        asked[sport] |= set(answers.get((run_id, sport, event_id), {}))
+    assert {sport for sport in asked if "/lineups" not in asked[sport]} == {"tennis", "badminton", "mma", "floorball"}
+    assert {sport for sport in asked if "/incidents" not in asked[sport]} == {"tennis", "mma", "esports"}
+    for sport in ("tennis", "badminton", "mma", "floorball"):
+        assert not sports.get_slice("lineups").applies_to(sport), sport
+    for sport in ("tennis", "mma", "esports"):
+        assert not sports.get_slice("incidents").applies_to(sport), sport
+    for sport, never in (("darts", {"/lineups", "/incidents"}), ("table-tennis", {"/lineups"})):
+        visited = [codes for key, codes in answers.items() if key[0] == LIVE_RUN and key[1] == sport]
+        assert len(visited) == 2 and not any(never & set(codes) for codes in visited), sport
+
+
+# --- FX-37: kuralın kayıt defterinden ayrıldığı hücreler, sahibin kararını bekler ------------------------------
+
+
+def test_the_pending_cells_are_what_the_evidence_says():
+    for (sport, key), (rule, registry) in PENDING.items():
+        spec = sports.get_slice(key)
+        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(spec)) == rule != registry, (sport, key)
+        assert spec.applies_to(sport) and spec.counts_in(sport) is (registry == REQUIRED)
+    assert not set(PENDING) & (set(DECIDED) | set(APPLIED))
+
+
+@pytest.mark.skipif(not (evidence_mod.RESEARCH / "requests.jsonl").exists(), reason="research data not present")
+def test_the_pending_cells_answers():
+    """Bekleyen hücrelerin lv-20261009c/d'deki 200 dışı yanıtları; maçın durumu isteğin anındaki durum."""
+    events = evidence_mod._Events(evidence_mod.RESEARCH)
+    found: Dict[Tuple[str, str], set] = {cell: set() for cell in PENDING}
+    endpoints = {_endpoint(sports.get_slice(key)): key for _sport, key in PENDING}
+    with open(evidence_mod.RESEARCH / "requests.jsonl", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            if row.get("run_id") not in (LIVE_RUN, FINISHED_RUN) or row.get("status") in (None, 200):
+                continue
+            if not str(row.get("page_type") or "").startswith("event"):
+                continue
+            hit = evidence_mod._endpoint(row["url"])
+            if hit is None or hit[1] not in endpoints:
+                continue
+            sport, state = events.at(hit[0], row["run_id"], float(row["ts"]), row["sport"])
+            if (sport, endpoints[hit[1]]) in found:
+                found[(sport, endpoints[hit[1]])].add(
+                    (row["run_id"], int(row["page"].rsplit("#id:", 1)[-1]), hit[0], state, str(row["status"])))
+    assert found == {cell: set(rows) for cell, rows in PENDING_ANSWERS.items()}
 
 
 @pytest.mark.parametrize("sport", ["football", "basketball", "tennis"])

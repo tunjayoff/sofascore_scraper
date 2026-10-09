@@ -1,0 +1,173 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/16982330/statistics",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:10:56+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/iraero-irkutsk-surgut/HiXcsjBae#id:16982330",
+  "cache_control": "max-age=10, public, s-maxage=604800",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "statistics": [
+      {
+        "period": "ALL",
+        "groups": [
+          {
+            "groupName": "Attacking",
+            "statisticsItems": [
+              {
+                "name": "Ball possession",
+                "home": "42%",
+                "away": "58%",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 42,
+                "awayValue": 58,
+                "renderType": 1,
+                "key": "ballPossession"
+              },
+              {
+                "name": "Corner kicks",
+                "home": "3",
+                "away": "7",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 3,
+                "awayValue": 7,
+                "renderType": 1,
+                "key": "cornerKicks"
+              }
+            ]
+          },
+          {
+            "groupName": "Negative",
+            "statisticsItems": [
+              {
+                "name": "Fouls",
+                "home": "2",
+                "away": "2",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 2,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "directFouls"
+              },
+              {
+                "name": "Yellow cards",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "yellowCards"
+              },
+              {
+                "name": "Red cards",
+                "home": "0",
+                "away": "0",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 0,
+                "awayValue": 0,
+                "renderType": 1,
+                "key": "redCards"
+              }
+            ]
+          },
+          {
+            "groupName": "Other",
+            "statisticsItems": [
+              {
+                "name": "Timeouts",
+                "home": "1",
+                "away": "1",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "timeouts"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "period": "1ST",
+        "groups": [
+          {
+            "groupName": "Attacking",
+            "statisticsItems": [
+              {
+                "name": "Ball possession",
+                "home": "42%",
+                "away": "58%",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 42,
+                "awayValue": 58,
+                "renderType": 1,
+                "key": "ballPossession"
+              },
+              {
+                "name": "Corner kicks",
+                "home": "3",
+                "away": "7",
+                "compareCode": 2,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 3,
+                "awayValue": 7,
+                "renderType": 1,
+                "key": "cornerKicks"
+              }
+            ]
+          },
+          {
+            "groupName": "Negative",
+            "statisticsItems": [
+              {
+                "name": "Fouls",
+                "home": "2",
+                "away": "2",
+                "compareCode": 3,
+                "statisticsType": "negative",
+                "valueType": "event",
+                "homeValue": 2,
+                "awayValue": 2,
+                "renderType": 1,
+                "key": "directFouls"
+              }
+            ]
+          },
+          {
+            "groupName": "Other",
+            "statisticsItems": [
+              {
+                "name": "Timeouts",
+                "home": "1",
+                "away": "1",
+                "compareCode": 3,
+                "statisticsType": "positive",
+                "valueType": "event",
+                "homeValue": 1,
+                "awayValue": 1,
+                "renderType": 1,
+                "key": "timeouts"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

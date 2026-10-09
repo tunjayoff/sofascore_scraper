@@ -1,0 +1,251 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/GUNskWYc/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:05:36+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/hynek-barton-laslo-djere/GUNskWYc#id:17218936",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "firstToServe": 1,
+        "awayTeamSeed": "LL",
+        "tournament": {
+          "name": "Villena, Spain",
+          "slug": "villena-spain",
+          "category": {
+            "name": "Challenger",
+            "slug": "challenger",
+            "sport": {
+              "name": "Tennis",
+              "slug": "tennis",
+              "id": 5
+            },
+            "priority": 6,
+            "country": {},
+            "id": 72,
+            "flag": "challenger",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "চ্যালেঞ্জার",
+                "ar": "تحدي (تنس)",
+                "hi": "डेनमार्क",
+                "ru": "Challenger"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Alicante, Spain",
+            "slug": "alicante-spain",
+            "category": {
+              "name": "Challenger",
+              "slug": "challenger",
+              "sport": {
+                "name": "Tennis",
+                "slug": "tennis",
+                "id": 5
+              },
+              "priority": 6,
+              "country": {},
+              "id": 72,
+              "flag": "challenger",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "bn": "চ্যালেঞ্জার",
+                  "ar": "تحدي (تنس)",
+                  "hi": "डेनमार्क",
+                  "ru": "Challenger"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 232,
+            "groundType": "Hardcourt outdoor",
+            "tennisPoints": 100,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 11045,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أليكانتي، إسبانيا",
+                "ru": "Аликанте, Испания"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 202665,
+          "endTimestamp": 1791676800,
+          "startTimestamp": 1791158400
+        },
+        "season": {
+          "name": "ATP Challenger Villena, Spain Men Singles 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 96698
+        },
+        "roundInfo": {
+          "round": 27,
+          "name": "Quarterfinals",
+          "slug": "quarterfinals",
+          "cupRoundType": 4
+        },
+        "customId": "GUNskWYc",
+        "status": {
+          "code": 8,
+          "description": "1st set",
+          "type": "inprogress"
+        },
+        "homeTeam": {
+          "name": "Laslo Djere",
+          "slug": "djere-laslo",
+          "shortName": "L. Djere",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 6482,
+          "playerTeamInfo": {
+            "id": 37
+          },
+          "nameCode": "DJE",
+          "ranking": 179,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "RS",
+            "alpha3": "SRB",
+            "name": "Serbia",
+            "slug": "serbia"
+          },
+          "id": 97231,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لاسلو دجيري",
+              "ru": "Дйере, Ласло"
+            },
+            "shortNameTranslation": {
+              "ar": "ل. دجيري",
+              "bn": "এল. জেরে",
+              "hi": "एल. जेर"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Hynek Barton",
+          "slug": "barton-hynek",
+          "shortName": "H. Barton",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 1306,
+          "playerTeamInfo": {
+            "id": 5712
+          },
+          "nameCode": "BAR",
+          "ranking": 288,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 372310,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هينيك بارتون",
+              "ru": "Гинек Бартон"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. بارتون",
+              "ru": "Г. Бартон"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 4,
+          "point": "0"
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 3,
+          "point": "0"
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791557003
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period1",
+            "homeScore.point",
+            "awayScore.point",
+            "firstToServe"
+          ],
+          "changeTimestamp": 1791558315
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17218936,
+        "slug": "hynek-barton-laslo-djere",
+        "startTimestamp": 1791556500,
+        "periods": {
+          "point": "Game",
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "lastPeriod": "period1",
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "groundType": "Hardcourt outdoor",
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "singles"
+          ],
+          "level": [
+            "pro"
+          ],
+          "tournament": [
+            "lower"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      }
+    ]
+  }
+}

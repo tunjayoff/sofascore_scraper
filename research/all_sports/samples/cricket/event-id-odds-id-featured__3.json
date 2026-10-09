@@ -1,0 +1,107 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15884178/odds/1/featured",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:18:28+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884178",
+  "cache_control": "max-age=5, public, s-maxage=86400",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "featured": {
+      "default": {
+        "sourceId": 202591609,
+        "structureType": 2,
+        "marketId": 40,
+        "marketName": "Current innings runs",
+        "choiceGroup": "222.5",
+        "isLive": true,
+        "fid": 202591609,
+        "suspended": false,
+        "id": 440685674,
+        "marketGroup": "Current innings runs",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "869/1000",
+            "fractionalValue": "869/1000",
+            "sourceId": 179713796,
+            "name": "India (20 Overs) - Over",
+            "slipContent": "/?bs=202591609-179713796~869/1000~10",
+            "change": 0
+          },
+          {
+            "initialFractionalValue": "869/1000",
+            "fractionalValue": "869/1000",
+            "sourceId": 179713794,
+            "name": "India (20 Overs) - Under",
+            "slipContent": "/?bs=202591609-179713794~869/1000~10",
+            "change": 0
+          }
+        ]
+      },
+      "asian": {
+        "sourceId": 202591609,
+        "structureType": 2,
+        "marketId": 40,
+        "marketName": "Current innings runs",
+        "choiceGroup": "222.5",
+        "isLive": true,
+        "fid": 202591609,
+        "suspended": false,
+        "id": 440685674,
+        "marketGroup": "Current innings runs",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "869/1000",
+            "fractionalValue": "869/1000",
+            "sourceId": 179713796,
+            "name": "India (20 Overs) - Over",
+            "slipContent": "/?bs=202591609-179713796~869/1000~10",
+            "change": 0
+          },
+          {
+            "initialFractionalValue": "869/1000",
+            "fractionalValue": "869/1000",
+            "sourceId": 179713794,
+            "name": "India (20 Overs) - Under",
+            "slipContent": "/?bs=202591609-179713794~869/1000~10",
+            "change": 0
+          }
+        ]
+      },
+      "fullTime": {
+        "sourceId": 202591609,
+        "structureType": 1,
+        "marketId": 1,
+        "marketName": "Full time",
+        "isLive": true,
+        "fid": 202591609,
+        "suspended": false,
+        "id": 440678205,
+        "marketGroup": "1X2",
+        "marketPeriod": "Full-time",
+        "choices": [
+          {
+            "initialFractionalValue": "2/7",
+            "fractionalValue": "13/250",
+            "sourceId": 173898408,
+            "name": "1",
+            "slipContent": "/?bs=202591609-173898408~13/250~10",
+            "change": -1
+          },
+          {
+            "initialFractionalValue": "11/4",
+            "fractionalValue": "9/1",
+            "sourceId": 173898413,
+            "name": "2",
+            "slipContent": "/?bs=202591609-173898413~9/1~10",
+            "change": 1
+          }
+        ]
+      }
+    },
+    "hasMoreOdds": true,
+    "liveStreamUrl": null
+  }
+}

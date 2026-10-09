@@ -1,1 +1,42 @@
-{}
+{
+  "event.16175306": {
+    "count": 1,
+    "keys": {
+      "id": 1,
+      "changes.changeTimestamp": 1
+    },
+    "first_ts": 1791540046.637
+  },
+  "event.16183707": {
+    "count": 1,
+    "keys": {
+      "id": 1,
+      "changes.changeTimestamp": 1
+    },
+    "first_ts": 1791540046.683
+  },
+  "event.16183709": {
+    "count": 1,
+    "keys": {
+      "id": 1,
+      "changes.changeTimestamp": 1
+    },
+    "first_ts": 1791540046.726
+  },
+  "event.16183723": {
+    "count": 1,
+    "keys": {
+      "id": 1,
+      "changes.changeTimestamp": 1
+    },
+    "first_ts": 1791540047.552
+  },
+  "event.16183725": {
+    "count": 1,
+    "keys": {
+      "id": 1,
+      "changes.changeTimestamp": 1
+    },
+    "first_ts": 1791540048.151
+  }
+}

@@ -1,0 +1,170 @@
+{
+  "url": "https://www.sofascore.com/api/v1/esports-game/589311/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:20:48+00:00",
+  "page": "https://www.sofascore.com/tr/esports/match/mouz-furia/cKVcsYeWc#id:17280904",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "homeTeamPlayers": [
+      {
+        "alive": true,
+        "deaths": 18,
+        "kills": 21,
+        "player": {
+          "name": "YEKINDAR",
+          "firstName": "Mareks",
+          "lastName": "Gaļinskis",
+          "slug": "yekindar",
+          "shortName": "YEKINDAR",
+          "userCount": 19,
+          "sofascoreId": "b72-yb3",
+          "id": 1079193
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 17,
+        "kills": 18,
+        "player": {
+          "name": "yuurih",
+          "firstName": "Yuri",
+          "lastName": "Santos",
+          "slug": "yuurih",
+          "shortName": "yuurih",
+          "userCount": 27,
+          "gender": "M",
+          "sofascoreId": "wr3-upi",
+          "id": 1078765
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 15,
+        "kills": 14,
+        "player": {
+          "name": "KSCERATO",
+          "firstName": "Kaike",
+          "lastName": "Cerato",
+          "slug": "kscerato",
+          "shortName": "kscerato",
+          "userCount": 33,
+          "gender": "M",
+          "sofascoreId": "cej-rz9",
+          "id": 1078762
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 18,
+        "kills": 12,
+        "player": {
+          "name": "molodoy",
+          "firstName": "Danil",
+          "lastName": "Golubenko",
+          "slug": "molodoy",
+          "shortName": "molodoy",
+          "userCount": 48,
+          "sofascoreId": "gw8-6zv",
+          "id": 1903252
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 18,
+        "kills": 10,
+        "player": {
+          "name": "FalleN",
+          "firstName": "Gabriel",
+          "lastName": "Toledo",
+          "slug": "fallen",
+          "shortName": "FalleN",
+          "userCount": 128,
+          "gender": "M",
+          "sofascoreId": "p96-gjg",
+          "id": 1080606
+        }
+      }
+    ],
+    "awayTeamPlayers": [
+      {
+        "alive": true,
+        "deaths": 15,
+        "kills": 21,
+        "player": {
+          "name": "PR",
+          "firstName": "Oldřich",
+          "lastName": "Nový",
+          "slug": "pr",
+          "shortName": "PR",
+          "userCount": 0,
+          "sofascoreId": "wrt-2df",
+          "id": 1212206
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 15,
+        "kills": 18,
+        "player": {
+          "name": "Spinx",
+          "firstName": "Lotan ",
+          "lastName": "Giladi",
+          "slug": "spinx",
+          "shortName": "Spinx",
+          "userCount": 0,
+          "sofascoreId": "b7a-dbb",
+          "id": 1070553
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 17,
+        "kills": 16,
+        "player": {
+          "name": "xelex",
+          "firstName": "Adrian",
+          "lastName": "Vincze",
+          "slug": "xelex",
+          "shortName": "xelex",
+          "userCount": 0,
+          "sofascoreId": "ikk-hqq",
+          "id": 1933147
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 14,
+        "kills": 14,
+        "player": {
+          "name": "torzsi",
+          "firstName": "Ádám",
+          "lastName": "Torzsás",
+          "slug": "torzsi",
+          "shortName": "torzsi",
+          "userCount": 1,
+          "gender": "M",
+          "sofascoreId": "8js-jz6",
+          "id": 1073833
+        }
+      },
+      {
+        "alive": true,
+        "deaths": 18,
+        "kills": 12,
+        "player": {
+          "name": "xertioN",
+          "firstName": "Dorian",
+          "lastName": "Berman",
+          "slug": "xertion",
+          "shortName": "xertionic",
+          "userCount": 0,
+          "gender": "M",
+          "sofascoreId": "sn5-me9",
+          "id": 1070288
+        }
+      }
+    ]
+  }
+}

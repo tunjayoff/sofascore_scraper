@@ -1,0 +1,18 @@
+{
+  "url": "https://www.sofascore.com/api/v1/country/alpha2",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T18:18:54+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/hynek-barton-laslo-djere/GUNskWYc#id:17218936",
+  "cache_control": "no-store, no-cache, must-revalidate, max-age=0",
+  "trimmed": false,
+  "run_id": "lv-20261009d",
+  "body": {
+    "alpha2": "TR",
+    "continent_code": "EU",
+    "country": "turkey",
+    "city": "<redacted>",
+    "ip": "<redacted>",
+    "f": "<redacted>",
+    "region_code": "<redacted>"
+  }
+}

@@ -1,0 +1,316 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/15884178/lineups",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:18:32+00:00",
+  "page": "https://www.sofascore.com/tr/cricket/match/india-west-indies/kfAbspfAb#id:15884178",
+  "cache_control": "max-age=10, public, s-maxage=3600",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "name": "Abhishek Sharma",
+            "slug": "abhishek-sharma",
+            "shortName": "A Sharma",
+            "position": "BM",
+            "jerseyNumber": "4",
+            "height": 170,
+            "userCount": 1202,
+            "gender": "M",
+            "sofascoreId": "fpq-i6p",
+            "country": {
+              "alpha2": "IN",
+              "alpha3": "IND",
+              "name": "India",
+              "slug": "india"
+            },
+            "id": 935302,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 968025600,
+            "cricketPlayerInfo": {
+              "batting": "Left",
+              "bowling": "Slow left-arm orthodox"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أبيشيك شارما",
+                "bn": "অভিষেক শর্মা",
+                "hi": "अभिषेक शर्मा",
+                "ru": "Абхишек Шарма"
+              },
+              "shortNameTranslation": {
+                "ar": "أبيشيك شارما",
+                "bn": "অভিষেক শর্মা",
+                "hi": "अभिषेक शर्मा",
+                "ru": "А. Шарма"
+              }
+            }
+          },
+          "teamId": 187844,
+          "position": "BM",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Arshdeep Singh",
+            "slug": "arshdeep-singh",
+            "shortName": "A Singh",
+            "position": "B",
+            "jerseyNumber": "2",
+            "height": 190,
+            "userCount": 473,
+            "gender": "M",
+            "sofascoreId": "cei-4sr",
+            "country": {
+              "alpha2": "IN",
+              "alpha3": "IND",
+              "name": "India",
+              "slug": "india"
+            },
+            "id": 945909,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 918172800,
+            "cricketPlayerInfo": {
+              "batting": "Left",
+              "bowling": "Left-arm medium fast"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أرشديب سينغ",
+                "bn": "আরশদীপ সিং",
+                "hi": "अर्शदीप सिंह",
+                "ru": "Аршдип Сингх"
+              },
+              "shortNameTranslation": {
+                "ar": "أ. سينغ",
+                "bn": "এ সিং",
+                "hi": "ए सिंह",
+                "ru": "А. Сингх"
+              }
+            }
+          },
+          "teamId": 447794,
+          "position": "B",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Axar Patel",
+            "slug": "axar-patel",
+            "shortName": "A Patel",
+            "position": "AR",
+            "jerseyNumber": "20",
+            "height": 180,
+            "userCount": 469,
+            "gender": "M",
+            "sofascoreId": "g83-vx8",
+            "country": {
+              "alpha2": "IN",
+              "alpha3": "IND",
+              "name": "India",
+              "slug": "india"
+            },
+            "id": 1198740,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 759024000,
+            "cricketPlayerInfo": {
+              "batting": "Left",
+              "bowling": "Slow left-arm orthodox"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "أكسار باتيل",
+                "bn": "অক্ষর প্যাটেল",
+                "hi": "अक्षर पटेल",
+                "ru": "Аксар Пател"
+              },
+              "shortNameTranslation": {
+                "ar": "أكسار باتيل",
+                "bn": "অক্ষর প্যাটেল",
+                "hi": "अक्षर पटेल",
+                "ru": "А. Пател"
+              }
+            }
+          },
+          "teamId": 187841,
+          "position": "AR",
+          "substitute": false
+        },
+        {
+          "__trimmed__": 13
+        }
+      ],
+      "supportStaff": [
+        {
+          "name": "Gautam Gambhir",
+          "role": "coach",
+          "country": {
+            "alpha2": "IN",
+            "alpha3": "IND",
+            "name": "India",
+            "slug": "india"
+          },
+          "id": 157
+        }
+      ],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "name": "Akeal Hosein",
+            "slug": "akeal-hosein",
+            "shortName": "A Hosein",
+            "position": "B",
+            "jerseyNumber": "7",
+            "userCount": 139,
+            "gender": "M",
+            "sofascoreId": "wgd-64k",
+            "country": {
+              "alpha2": "TT",
+              "alpha3": "TTO",
+              "name": "Trinidad and Tobago",
+              "slug": "trinidad-and-tobago"
+            },
+            "id": 786829,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 735696000,
+            "cricketPlayerInfo": {
+              "batting": "Left",
+              "bowling": "Slow left-arm orthodox"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "عقيل حسين",
+                "bn": "আকিল হোসেন",
+                "hi": "अकील होसेन",
+                "ru": "Акеал Хосейн"
+              },
+              "shortNameTranslation": {
+                "ar": "ع حسين",
+                "bn": "এ হোসেইন",
+                "hi": "ए होसेन",
+                "ru": "А. Хосейн"
+              }
+            }
+          },
+          "teamId": 456849,
+          "position": "B",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Gudakesh Motie",
+            "slug": "gudakesh-motie",
+            "shortName": "G Motie",
+            "position": "B",
+            "jerseyNumber": "68",
+            "userCount": 43,
+            "gender": "M",
+            "sofascoreId": "8ju-smd",
+            "country": {
+              "alpha2": "GY",
+              "alpha3": "GUY",
+              "name": "Guyana",
+              "slug": "guyana"
+            },
+            "id": 1136969,
+            "marketValueCurrency": "EUR",
+            "dateOfBirthTimestamp": 796435200,
+            "cricketPlayerInfo": {
+              "batting": "Left",
+              "bowling": "Slow left-arm orthodox"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "جوداكش موتي",
+                "bn": "গুদাকেশ মতি",
+                "hi": "गुडाकेश मोती",
+                "ru": "Гудакеш Моти"
+              },
+              "shortNameTranslation": {
+                "ar": "جوداكش موتي",
+                "bn": "গুদাকেশ মতি",
+                "hi": "गुडाकेश मोती",
+                "ru": "Г. Моти"
+              }
+            }
+          },
+          "teamId": 456847,
+          "position": "B",
+          "substitute": false
+        },
+        {
+          "player": {
+            "name": "Kamil Pooran",
+            "slug": "kamil-pooran",
+            "shortName": "K Pooran",
+            "position": "BM",
+            "userCount": 4,
+            "gender": "M",
+            "sofascoreId": "q4v-trw",
+            "country": {},
+            "id": 1483332,
+            "marketValueCurrency": "EUR",
+            "cricketPlayerInfo": {
+              "batting": "Right",
+              "bowling": "Right-arm medium"
+            },
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "كامل بوران",
+                "ru": "Камиль Пурана"
+              },
+              "shortNameTranslation": {
+                "ar": "ك. بوران",
+                "ru": "К. Пурана"
+              }
+            }
+          },
+          "teamId": 187825,
+          "position": "BM",
+          "substitute": false
+        },
+        {
+          "__trimmed__": 9
+        }
+      ],
+      "supportStaff": [
+        {
+          "name": "Daren Sammy",
+          "role": "head-coach",
+          "country": {},
+          "id": 258
+        }
+      ],
+      "playerColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      },
+      "goalkeeperColor": {
+        "primary": "000000",
+        "number": "222226",
+        "outline": "808080",
+        "fancyNumber": "222226"
+      }
+    },
+    "statisticalVersion": null
+  }
+}

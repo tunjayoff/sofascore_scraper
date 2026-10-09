@@ -389,7 +389,9 @@ kararıyla FX-36 değiştirdi (aşağıda, "Karar (FX-36)").
   keşfi (#17) ve onarılmış keşif aracının (FX-29, FX-29b) iki koşusu, her satırda `run_id`: `lv-20261009`
   (#183: 21 sporun 39 maç sayfası, 20 sporun bitmiş ve 19 sporun başlamamış maçı) ve `lv-20261009b` (FX-36:
   ragbi, voleybol, florbol ve mini futbolun en çok takip edilen üç liginden 02.10.2026 haftasının 12 bitmiş
-  maçı, 565 istek). `tests/sport_evidence.py`
+  maçı, 565 istek). FX-37 iki onarılmış koşu daha ekledi, `lv-20261009c` ve `lv-20261009d` (canlı sayfalar
+  ve aynı maçların bitmiş sayfaları; aşağıda, "Canlı ve bitmiş (aynı maç)"); aşağıdaki büyük tablo
+  `lv-20261009b`'ye kadarki koşuları gösterir, iki yeni koşunun yanıtları `evidence.json`'da. `tests/sport_evidence.py`
   tabloyu `requests.jsonl`, `pages.jsonl` ve `events/*.jsonl`'dan türetir: yalnızca maç sayfalarının istekleri,
   bahis hariç, maçın isteğin anındaki durumu HTTP koduyla birlikte. Sonuç
   `tests/fixtures/sport_slices/evidence.json`; bir test dosyanın araştırma verisinden yeniden türetilebildiğini
@@ -415,7 +417,8 @@ team-streaks bir sekmenin arkasında: bir sayfanın bunları hiç
 istememesi dilimin olmadığına kanıt sayılmaz.
 
 **Kanıt hâlâ ince.** Çoğu sporda bir bitmiş ve bir başlamamış maç sayfası var; canlı maç yanıtı yalnızca yedi
-sporda (futbol, tenis, e-spor, snooker eski koşudan; basketbol, buz hokeyi, beyzbol `lv-20261009`'dan). Canlı maçta
+sporda (futbol, tenis, e-spor, snooker eski koşudan; basketbol, buz hokeyi, beyzbol `lv-20261009`'dan); FX-37'nin
+koşuları 15 sporun canlı maç sayfasını ekledi (aşağıda, "Canlı ve bitmiş (aynı maç)"). Canlı maçta
 yokluk hiçbir şeyi daraltmaz; canlı kanıtın ekini uygulama tarafı tablolar verir
 (`tests/fixtures/sport_slices/slice-matrix-{finished,live}.txt`, aşağıda "Karar"). Kural HTTP koduna bakar,
 gövdeye bakmaz: 200 her zaman veri değildir (aşağıda, "Bulgular").
@@ -584,9 +587,66 @@ kararı). Bu dört sporun canlı maç sayfası hâlâ yok.
 - Kayıt defterinde dilimi olmayan yeni uç noktalar: voleybol `/graph/sequence` ve tenis `/tennis-power` (bitmiş
   maçta 200); beyzbol `/umpires`, `/weather`, `/comments` artık bitmiş ve canlı maçta 200, `/at-bats` başlamamış
   maçta da (`OTHER_ENDPOINTS`, öneri).
-- Hiç kanıtı olmayan ya da yetmeyen: aussie-rules (yalnızca başlamamış maç); Amerikan futbolunun canlı maçı;
-  ragbi, voleybol, florbol ve mini futbolun canlı maçı.
-  Kayıtlı olmayan bandy ve su topu yalnızca #121'in başlamamış sayfalarında.
+- Hiç kanıtı olmayan ya da yetmeyen: aussie-rules (yalnızca başlamamış maç). Amerikan futbolu, ragbi, voleybol,
+  florbol ve mini futbolun canlı maç sayfası FX-37'yle geldi (aşağıda); dart ve masa tenisinin canlı maç
+  sayfası hâlâ yok. Kayıtlı olmayan bandy ve su topu yalnızca #121'in başlamamış sayfalarında.
+
+### Canlı ve bitmiş (aynı maç)
+
+FX-37 onarılmış araçla iki koşu ekledi (`REPAIRED_RUNS`; yanıtlar da yokluk da sayılır). `lv-20261009c`: 14 sporun
+25 canlı maç sayfası (futbol, basketbol, tenis, buz hokeyi, voleybol, badminton, masa tenisi, kriket, e-spor, dart
+ve MMA'da iki; hentbol, futsal ve mini futbolda bir). `lv-20261009d`: bunlardan 13 maçın (spor başına bir) bitiş
+düdüğünden sonraki bitmiş sayfası ve dört canlı sayfa daha (ragbi: Premiership ve URC; florbol: İsveç Superligan;
+Amerikan futbolu). Dart ve masa tenisinin "canlı" diye açılan dört sayfasının maçı sayfa açıldığında bitmişti
+(maçın kendi `/event/{id}` yanıtı): bu iki sporda iki ziyaret de bitmiş maçtır.
+
+Sayfanın kendi maçı için iki ziyarette aldığı kod; kayıt defterinin dilimlerinde ikisi her hücrede aynı, bu
+yüzden tek kod yazılı (`—`: iki ziyaret de istemedi). Son iki sütun dilimi olmayan ve iki ziyarette farklı
+gelen uç noktalar:
+
+| Spor | Maç | statistics | team-streaks | pregame-form | h2h | lineups | incidents | spora özgü | yalnızca canlı | bitince |
+|---|---|---|---|---|---|---|---|---|---|---|
+| football | 16653102 | 200 | — | 200 | — | 200 | 200 | — | live-match-tracker 200, ai-insights 200 | highlights 404 → 200, media/summary 404 → 200, ai-insights-postmatch 200 |
+| basketball | 17220735 | 200 | 200 | 404 | 200 | 404 | 200 | — | live-match-tracker 200 | — |
+| tennis | 17218936 | 200 | 200 | 404 | 200 | — | — | point-by-point 200 | live-match-tracker 200 | — |
+| ice-hockey | 16347609 | 200 | — | 200 | — | 200 | 200 | — | live-match-tracker 200 | highlights 404 → 200, media/summary 404 → 200 |
+| handball | 16642082 | 200 | — | 404 | — | 200 | 200 | — | live-match-tracker 404 | — |
+| futsal | 16982330 | 200 | 200 | 200 | 200 | 404 | 200 | — | live-match-tracker 404 | — |
+| minifootball | 17063783 | 200 | 200 | 404 | 200 | 404 | 200 | — | live-match-tracker 404 | — |
+| volleyball | 17186419 | 404 | 200 | 200 | 200 | 404 | 200 | — | live-match-tracker 404, graph/sequence 200 (bitince 404) | — |
+| badminton | 17289295 | 200 | 200 | 404 | 200 | — | 200 | point-by-point 200 | live-match-tracker 404 | — |
+| cricket | 15884178 | 404 | — | 404 | — | 200 | 200 | innings 200 | live-match-tracker 404 | — |
+| esports | 17280904 | 404 | 200 | 404 | 200 | 200 | — | esports-games 200 | live-match-tracker 404 | — |
+| darts (iki ziyarette bitmiş) | 17278965 | 200 | 200 | 404 | 200 | — | — | point-by-point 200 | — | — |
+| table-tennis (iki ziyarette bitmiş) | 17289647 | 200 | 200 | 404 | 200 | — | 200 | point-by-point 200 | — | — |
+
+- **Dilimler canlıdan bitmişe değişmedi.** Kayıt defterinin hiçbir dilimi aynı maçta canlıda 200 alıp bitince
+  başka bir kod almadı; team-streaks de iki koşunun bütün sayfalarında 200 (futbol, buz hokeyi, hentbol ve kriket
+  sayfaları iki ziyarette de istemedi). Canlı maçta indirilen dilim bitince de gelir.
+- **Yalnızca bitince:** `/highlights` ve `/media/summary/country/{cc}` (futbol, buz hokeyi: canlıda 404, bitince
+  200; futbolda bir ülke kodu 404), `/ai-insights-postmatch/{lang}` (futbol), `/sport-video-highlights/...`
+  (yalnızca bitince istenir, 404). **Yalnızca canlıyken:** `/live-match-tracker` (11 canlı maçın hepsinde istendi,
+  aynı maçların bitmiş sayfasında hiç), `/ai-insights/{lang}` (futbol) ve voleybol `/graph/sequence` (canlıda 200, bitince 404:
+  sayı sırası yalnızca maç sürerken gelir). Bunların hiçbiri dilim değil; sahibin kararıyla (09.10.2026)
+  indirilmezler (tasarım planı, bölüm 13). Tablo bilgi içindir.
+- **`not_in` satırları canlıda da tutar.** Tam canlı sayfaların hiçbiri kadro istemedi: tenis, badminton, MMA,
+  florbol; olay istemedi: tenis, MMA, e-spor. Dart ve masa tenisinin (bitmiş) sayfaları da istemedi.
+- **Kuralın kayıt defterinden ayrıldığı üç hücre, sahibin kararını bekliyor.** Yeni yanıtlarla `verdict()` üç
+  hücrede *o* der; kayıt defteri değişmedi (zorunlu, tamlığa girer):
+
+  | Spor, dilim | Kural ← yanıt (koşu, sayfa) | Önceki kanıt |
+  |---|---|---|
+  | basketball, lineups | *o* ← 404: canlı 16624761 ve 17220735 (`c`), bitmiş 17220735 (`d`); sayfanın kendi maçı | F200 L200 |
+  | handball, pregame_form | *o* ← 404: canlı ve bitmiş 16642082 (`c`, `d`); sayfanın kendi maçı | F200 N200 N404 |
+  | mma, statistics | *o* ← 404: bitmiş 12607782, canlı 12606166'nın sayfasında (`c`) **komşu maç** | F200 |
+
+  MMA'nın iki canlı sayfası kendi maçının istatistiğini 200 aldı; 404 sayfanın da istediği komşu maçtan (FX-36'nın
+  bulgusu: kural sayfadaki her maçın yanıtını sayar). Kural değişmedi; bu hücre kuralın komşu maçı saymasından
+  çıkar.
+
+`tests/test_sport_slices.py`: `SAME_MATCH` ve `SAME_MATCH_OTHER` tabloyu `requests.jsonl`'dan yeniden okur
+(`test_no_slice_answers_live_but_not_once_the_same_match_finished`); `PENDING` ve `PENDING_ANSWERS` bekleyen üç
+hücreyi ve yanıtlarını sabitler.
 
 ---
 

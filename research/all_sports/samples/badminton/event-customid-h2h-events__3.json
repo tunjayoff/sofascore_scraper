@@ -1,0 +1,332 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/jUDdsFTvj/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:14:38+00:00",
+  "page": "https://www.sofascore.com/tr/badminton/match/nebel-soby-laiy-tsaic/jUDdsFTvj#id:17289295",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Arctic Open, MD",
+          "slug": "arctic-open-md",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Badminton",
+              "slug": "badminton",
+              "id": 31
+            },
+            "priority": 11,
+            "country": {},
+            "id": 259,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Arctic Open, MD",
+            "slug": "arctic-open-md",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "priority": 11,
+              "country": {},
+              "id": 259,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 37,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 21266,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البطولة المفتوحة في القطب الشمالي، زوجي",
+                "ru": "Арктический Открытый, парный разряд"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "id": 203642
+        },
+        "season": {
+          "name": "Arctic Open, MD 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 104788
+        },
+        "roundInfo": {
+          "round": 27,
+          "name": "Quarterfinals",
+          "slug": "quarterfinals",
+          "cupRoundType": 4
+        },
+        "customId": "jUDdsFTvj",
+        "status": {
+          "code": 9,
+          "description": "2nd set",
+          "type": "inprogress"
+        },
+        "homeTeam": {
+          "name": "Lai P Y / Tsai F C",
+          "slug": "lai-p-y-tsai-f-c",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 21,
+          "nameCode": "LPY",
+          "disabled": false,
+          "national": false,
+          "type": 2,
+          "country": {
+            "alpha2": "TW",
+            "alpha3": "TWN",
+            "name": "Chinese Taipei",
+            "slug": "chinese-taipei"
+          },
+          "id": 447209,
+          "subTeams": [
+            {
+              "name": "Lai P.",
+              "slug": "lai-po-yu",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "userCount": 1,
+              "nameCode": "LAI",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "TW",
+                "alpha3": "TWN",
+                "name": "Chinese Taipei",
+                "slug": "chinese-taipei"
+              },
+              "id": 830405,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "لاي، بو يو",
+                  "ru": "Лай, По Ю"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Tsai F.",
+              "slug": "tsai-fu-cheng",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "userCount": 1,
+              "nameCode": "TSA",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "TW",
+                "alpha3": "TWN",
+                "name": "Chinese Taipei",
+                "slug": "chinese-taipei"
+              },
+              "id": 830406,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "تساي، فو تشينغ",
+                  "ru": "Цай, Фу Ченг"
+                },
+                "shortNameTranslation": {}
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لاي ب ي / تساي ف سي",
+              "ru": "ЛАЙ П И / Цай Ф Ц"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Nebel R / Søby J",
+          "slug": "nebel-r-soby-j",
+          "gender": "M",
+          "sport": {
+            "name": "Badminton",
+            "slug": "badminton",
+            "id": 31
+          },
+          "userCount": 21,
+          "nameCode": "N/S",
+          "national": false,
+          "type": 2,
+          "country": {},
+          "id": 1177180,
+          "subTeams": [
+            {
+              "name": "Nebel R.",
+              "slug": "nebel-robert",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "userCount": 4,
+              "nameCode": "NEB",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "DK",
+                "alpha3": "DNK",
+                "name": "Denmark",
+                "slug": "denmark"
+              },
+              "id": 1090166,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "نيبل، روبرت",
+                  "ru": "Небель, Роберт"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            {
+              "name": "Soeby J.",
+              "slug": "soeby-jeppe",
+              "sport": {
+                "name": "Badminton",
+                "slug": "badminton",
+                "id": 31
+              },
+              "userCount": 0,
+              "nameCode": "SOE",
+              "national": false,
+              "type": 1,
+              "country": {
+                "alpha2": "DK",
+                "alpha3": "DNK",
+                "name": "Denmark",
+                "slug": "denmark"
+              },
+              "id": 1090197,
+              "subTeams": [],
+              "teamColors": {
+                "primary": "#374df5",
+                "secondary": "#374df5",
+                "text": "#ffffff"
+              },
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "سويبي، ييبي",
+                  "ru": "Сёби, Йеппе"
+                },
+                "shortNameTranslation": {}
+              }
+            }
+          ],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Небель Р / Сёби Джей"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 1,
+          "display": 1,
+          "period1": 21,
+          "period2": 20
+        },
+        "awayScore": {
+          "current": 0,
+          "display": 0,
+          "period1": 19,
+          "period2": 17
+        },
+        "time": {
+          "currentPeriodStartTimestamp": 1791557699
+        },
+        "changes": {
+          "changes": [
+            "homeScore.period2"
+          ],
+          "changeTimestamp": 1791558867
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17289295,
+        "slug": "nebel-soby-laiy-tsaic",
+        "startTimestamp": 1791556200,
+        "periods": {
+          "current": "Match",
+          "period1": "1st set",
+          "period2": "2nd set",
+          "period3": "3rd set",
+          "period4": "4th set",
+          "period5": "5th set"
+        },
+        "lastPeriod": "period2",
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      }
+    ]
+  }
+}

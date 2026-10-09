@@ -1,0 +1,23 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17218936/provider/1/winning-odds",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:05:43+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/hynek-barton-laslo-djere/GUNskWYc#id:17218936",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "home": {
+      "fractionalValue": "11/25",
+      "expected": 69,
+      "actual": 62,
+      "id": 26025157
+    },
+    "away": {
+      "fractionalValue": "163/100",
+      "expected": 38,
+      "actual": 46,
+      "id": 26025158
+    }
+  }
+}

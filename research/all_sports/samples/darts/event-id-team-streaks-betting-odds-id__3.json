@@ -1,0 +1,15 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17278965/team-streaks/betting-odds/1",
+  "status": 404,
+  "fetched_at_utc": "2026-10-09T15:22:35+00:00",
+  "page": "https://www.sofascore.com/tr/darts/match/mitchell-alex-spellman/KGMdsXZNj#id:17278965",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "Not Found"
+    }
+  }
+}

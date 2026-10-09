@@ -1,0 +1,777 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/269215/events/last/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:03:37+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/clube-de-campo-de-tatui-aabt-tatui-botafogo/pJhcstAed#id:17220735",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Brazil NBB",
+          "slug": "nbb",
+          "category": {
+            "name": "Brazil",
+            "slug": "brazil",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 263,
+            "flag": "brazil",
+            "alpha2": "BR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البرازيل",
+                "ru": "Бразилия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Brazil NBB",
+            "slug": "nbb",
+            "primaryColorHex": "#41b93d",
+            "secondaryColorHex": "#fbc707",
+            "category": {
+              "name": "Brazil",
+              "slug": "brazil",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "BR",
+                "alpha3": "BRA",
+                "name": "Brazil",
+                "slug": "brazil"
+              },
+              "id": 263,
+              "flag": "brazil",
+              "alpha2": "BR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البرازيل",
+                  "ru": "Бразилия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 6649,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 1562,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري كرة السلة الوطني البرازيلي",
+                "bn": "ব্রাজিল এনবিবি",
+                "hi": "ब्राज़ील एनबीबी",
+                "ru": "Бразилия NBB"
+              },
+              "shortNameTranslation": {}
+            },
+            "hasRating": true,
+            "hasLiveRating": true
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2896,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري البرازيلي لكرة السلة",
+              "bn": "ব্রাজিল এনবিবি",
+              "hi": "ब्राज़ील एनबीबी",
+              "ru": "Бразильская НББ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NBB 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 82921
+        },
+        "roundInfo": {
+          "round": 10
+        },
+        "customId": "NWbbspJhc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Minas Tênis Clube",
+          "slug": "minas-tenis-clube",
+          "shortName": "Minas",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 3047,
+          "nameCode": "MIT",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 129838,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000080",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميناس تينيس كلوب",
+              "ru": "Минас Тенис Клуб"
+            },
+            "shortNameTranslation": {
+              "ar": "ميناس",
+              "bn": "মিনাস টেনিস",
+              "hi": "मिनस",
+              "ru": "Минас"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Botafogo",
+          "slug": "botafogo",
+          "shortName": "Botafogo",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 2304,
+          "nameCode": "BOT",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 269215,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوتافوغو",
+              "ru": "Ботафого"
+            },
+            "shortNameTranslation": {
+              "ar": "بوتافوغو"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 95,
+          "display": 95,
+          "period1": 28,
+          "period2": 24,
+          "period3": 14,
+          "period4": 29,
+          "normaltime": 95
+        },
+        "awayScore": {
+          "current": 88,
+          "display": 88,
+          "period1": 23,
+          "period2": 17,
+          "period3": 22,
+          "period4": 26,
+          "normaltime": 88
+        },
+        "time": {
+          "periodLength": 600,
+          "overtimeLength": 300,
+          "totalPeriodCount": 4,
+          "currentPeriodStartTimestamp": 1766097035
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 3
+            }
+          ],
+          "changeTimestamp": 1766104110
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14704036,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "botafogo-minas-tenis-clube",
+        "startTimestamp": 1766097000,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "club"
+          ],
+          "level": [
+            "top-competitions",
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "tournament": {
+          "name": "Brazil NBB",
+          "slug": "nbb",
+          "category": {
+            "name": "Brazil",
+            "slug": "brazil",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 263,
+            "flag": "brazil",
+            "alpha2": "BR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البرازيل",
+                "ru": "Бразилия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Brazil NBB",
+            "slug": "nbb",
+            "primaryColorHex": "#41b93d",
+            "secondaryColorHex": "#fbc707",
+            "category": {
+              "name": "Brazil",
+              "slug": "brazil",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "BR",
+                "alpha3": "BRA",
+                "name": "Brazil",
+                "slug": "brazil"
+              },
+              "id": 263,
+              "flag": "brazil",
+              "alpha2": "BR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البرازيل",
+                  "ru": "Бразилия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 6649,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 1562,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري كرة السلة الوطني البرازيلي",
+                "bn": "ব্রাজিল এনবিবি",
+                "hi": "ब्राज़ील एनबीबी",
+                "ru": "Бразилия NBB"
+              },
+              "shortNameTranslation": {}
+            },
+            "hasRating": true,
+            "hasLiveRating": true
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2896,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري البرازيلي لكرة السلة",
+              "bn": "ব্রাজিল এনবিবি",
+              "hi": "ब्राज़ील एनबीबी",
+              "ru": "Бразильская НББ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NBB 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 82921
+        },
+        "roundInfo": {
+          "round": 11
+        },
+        "customId": "qYKspJhc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "EC Pinheiros",
+          "slug": "ec-pinheiros",
+          "shortName": "Pinheiros",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 1712,
+          "nameCode": "PIN",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 89916,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#0242ab",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إي سي بينهيروس",
+              "ru": "ЭК Пинейруш"
+            },
+            "shortNameTranslation": {
+              "ar": "بينهيروس",
+              "bn": "পিনহেইরোস",
+              "hi": "पिनहेरोस",
+              "ru": "Пинейруш"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Botafogo",
+          "slug": "botafogo",
+          "shortName": "Botafogo",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 2304,
+          "nameCode": "BOT",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 269215,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوتافوغو",
+              "ru": "Ботафого"
+            },
+            "shortNameTranslation": {
+              "ar": "بوتافوغو"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 77,
+          "display": 77,
+          "period1": 21,
+          "period2": 25,
+          "period3": 20,
+          "period4": 11,
+          "normaltime": 77
+        },
+        "awayScore": {
+          "current": 64,
+          "display": 64,
+          "period1": 25,
+          "period2": 16,
+          "period3": 13,
+          "period4": 10,
+          "normaltime": 64
+        },
+        "time": {
+          "played": 2400,
+          "periodLength": 600,
+          "overtimeLength": 300,
+          "totalPeriodCount": 4,
+          "currentPeriodStartTimestamp": 1766869311
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 2
+            }
+          ],
+          "changeTimestamp": 1766875432
+        },
+        "hasGlobalHighlights": false,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14704056,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "botafogo-ec-pinheiros",
+        "startTimestamp": 1766869200,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "club"
+          ],
+          "level": [
+            "top-competitions",
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "tournament": {
+          "name": "Brazil NBB",
+          "slug": "nbb",
+          "category": {
+            "name": "Brazil",
+            "slug": "brazil",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "BR",
+              "alpha3": "BRA",
+              "name": "Brazil",
+              "slug": "brazil"
+            },
+            "id": 263,
+            "flag": "brazil",
+            "alpha2": "BR",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "البرازيل",
+                "ru": "Бразилия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Brazil NBB",
+            "slug": "nbb",
+            "primaryColorHex": "#41b93d",
+            "secondaryColorHex": "#fbc707",
+            "category": {
+              "name": "Brazil",
+              "slug": "brazil",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "BR",
+                "alpha3": "BRA",
+                "name": "Brazil",
+                "slug": "brazil"
+              },
+              "id": 263,
+              "flag": "brazil",
+              "alpha2": "BR",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "البرازيل",
+                  "ru": "Бразилия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 6649,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 1562,
+            "hasEventPlayerStatistics": false,
+            "hasBoxScore": true,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دوري كرة السلة الوطني البرازيلي",
+                "bn": "ব্রাজিল এনবিবি",
+                "hi": "ब्राज़ील एनबीबी",
+                "ru": "Бразилия NBB"
+              },
+              "shortNameTranslation": {}
+            },
+            "hasRating": true,
+            "hasLiveRating": true
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 2896,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الدوري البرازيلي لكرة السلة",
+              "bn": "ব্রাজিল এনবিবি",
+              "hi": "ब्राज़ील एनबीबी",
+              "ru": "Бразильская НББ"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "NBB 25/26",
+          "year": "25/26",
+          "editor": false,
+          "id": 82921
+        },
+        "roundInfo": {
+          "round": 12
+        },
+        "customId": "tYKspJhc",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 1,
+        "homeTeam": {
+          "name": "Flamengo",
+          "slug": "flamengo",
+          "shortName": "Flamengo",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 20325,
+          "nameCode": "FLA",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 89918,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#ff0000",
+            "secondary": "#000000",
+            "text": "#000000"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فلامنجو",
+              "bn": "ফ্লেমিংগো",
+              "hi": "फ्लेमेंगो",
+              "ru": "Фламенго"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Botafogo",
+          "slug": "botafogo",
+          "shortName": "Botafogo",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 2304,
+          "nameCode": "BOT",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 269215,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوتافوغو",
+              "ru": "Ботафого"
+            },
+            "shortNameTranslation": {
+              "ar": "بوتافوغو"
+            }
+          }
+        },
+        "homeScore": {
+          "current": 104,
+          "display": 104,
+          "period1": 16,
+          "period2": 32,
+          "period3": 27,
+          "period4": 29,
+          "normaltime": 104
+        },
+        "awayScore": {
+          "current": 71,
+          "display": 71,
+          "period1": 21,
+          "period2": 13,
+          "period3": 20,
+          "period4": 17,
+          "normaltime": 71
+        },
+        "time": {
+          "periodLength": 600,
+          "overtimeLength": 300,
+          "totalPeriodCount": 4,
+          "currentPeriodStartTimestamp": 1767049382
+        },
+        "changes": {
+          "changes": [
+            "status.code",
+            "status.description",
+            "status.type",
+            {
+              "__trimmed__": 2
+            }
+          ],
+          "changeTimestamp": 1767056822
+        },
+        "hasGlobalHighlights": true,
+        "hasEventPlayerStatistics": true,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 14704058,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "botafogo-flamengo",
+        "startTimestamp": 1767049200,
+        "finalResultOnly": false,
+        "feedLocked": true,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "club"
+          ],
+          "level": [
+            "top-competitions",
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      },
+      {
+        "__trimmed__": 27
+      }
+    ],
+    "hasNextPage": true
+  }
+}

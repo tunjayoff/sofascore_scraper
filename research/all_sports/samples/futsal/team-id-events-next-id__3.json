@@ -1,0 +1,589 @@
+{
+  "url": "https://www.sofascore.com/api/v1/team/367932/events/next/0",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:10:33+00:00",
+  "page": "https://www.sofascore.com/tr/futsal/match/iraero-irkutsk-surgut/HiXcsjBae#id:16982330",
+  "cache_control": "max-age=60, public, s-maxage=7200",
+  "trimmed": true,
+  "run_id": "lv-20261009c",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Superliga",
+          "slug": "superliga",
+          "category": {
+            "name": "Russia",
+            "slug": "russia",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 269,
+            "flag": "russia",
+            "alpha2": "RU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "روسيا",
+                "ru": "Россия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Superliga",
+            "slug": "superliga",
+            "primaryColorHex": "#0095da",
+            "secondaryColorHex": "#ed1c24",
+            "category": {
+              "name": "Russia",
+              "slug": "russia",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "RU",
+                "alpha3": "RUS",
+                "name": "Russia",
+                "slug": "russia"
+              },
+              "id": 269,
+              "flag": "russia",
+              "alpha2": "RU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روسيا",
+                  "ru": "Россия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 239,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 733,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السوبر ليغا",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 3001,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "السوبر ليغا",
+              "ru": "Суперлига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Superliga 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 101113
+        },
+        "roundInfo": {
+          "round": 7
+        },
+        "customId": "HiXcsjBae",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Surgut",
+          "slug": "fakel-surgut",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 41,
+          "nameCode": "FSU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 367932,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فاكل سورغوت",
+              "ru": "Факел Сургут"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "IrAero Irkutsk",
+          "slug": "iraero-irkutsk",
+          "shortName": "Iraero",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 70,
+          "nameCode": "IIR",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 501309,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إير أيرو إيركوتسك",
+              "ru": "ИрАэро Иркутск"
+            },
+            "shortNameTranslation": {
+              "ar": "إير أيرو",
+              "ru": "ИрАэро"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16982333,
+        "slug": "iraero-irkutsk-surgut",
+        "startTimestamp": 1791626400,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Superliga",
+          "slug": "superliga",
+          "category": {
+            "name": "Russia",
+            "slug": "russia",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 269,
+            "flag": "russia",
+            "alpha2": "RU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "روسيا",
+                "ru": "Россия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Superliga",
+            "slug": "superliga",
+            "primaryColorHex": "#0095da",
+            "secondaryColorHex": "#ed1c24",
+            "category": {
+              "name": "Russia",
+              "slug": "russia",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "RU",
+                "alpha3": "RUS",
+                "name": "Russia",
+                "slug": "russia"
+              },
+              "id": 269,
+              "flag": "russia",
+              "alpha2": "RU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روسيا",
+                  "ru": "Россия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 239,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 733,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السوبر ليغا",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 3001,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "السوبر ليغا",
+              "ru": "Суперлига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Superliga 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 101113
+        },
+        "roundInfo": {
+          "round": 8
+        },
+        "customId": "HiXcsJiEd",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Surgut",
+          "slug": "fakel-surgut",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 41,
+          "nameCode": "FSU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 367932,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فاكل سورغوت",
+              "ru": "Факел Сургут"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Kristall St. Petersburg",
+          "slug": "kristall-st-petersburg",
+          "shortName": "Kristall",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 72,
+          "nameCode": "KRI",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 447934,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كريستال سانت بطرسبرغ",
+              "ru": "Кристалл Санкт-Петербург"
+            },
+            "shortNameTranslation": {
+              "ar": "كريستال",
+              "ru": "Кристалл"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16982324,
+        "slug": "kristall-st-petersburg-surgut",
+        "startTimestamp": 1792940400,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "tournament": {
+          "name": "Superliga",
+          "slug": "superliga",
+          "category": {
+            "name": "Russia",
+            "slug": "russia",
+            "sport": {
+              "name": "Futsal",
+              "slug": "futsal",
+              "id": 29
+            },
+            "priority": 0,
+            "country": {
+              "alpha2": "RU",
+              "alpha3": "RUS",
+              "name": "Russia",
+              "slug": "russia"
+            },
+            "id": 269,
+            "flag": "russia",
+            "alpha2": "RU",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "روسيا",
+                "ru": "Россия"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Superliga",
+            "slug": "superliga",
+            "primaryColorHex": "#0095da",
+            "secondaryColorHex": "#ed1c24",
+            "category": {
+              "name": "Russia",
+              "slug": "russia",
+              "sport": {
+                "name": "Futsal",
+                "slug": "futsal",
+                "id": 29
+              },
+              "priority": 0,
+              "country": {
+                "alpha2": "RU",
+                "alpha3": "RUS",
+                "name": "Russia",
+                "slug": "russia"
+              },
+              "id": 269,
+              "flag": "russia",
+              "alpha2": "RU",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "روسيا",
+                  "ru": "Россия"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 239,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 733,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "السوبر ليغا",
+                "ru": "Суперлига"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 3001,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "السوبر ليغا",
+              "ru": "Суперлига"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Superliga 26/27",
+          "year": "26/27",
+          "editor": false,
+          "id": 101113
+        },
+        "roundInfo": {
+          "round": 8
+        },
+        "customId": "HiXcsJiEd",
+        "status": {
+          "code": 0,
+          "description": "Not started",
+          "type": "notstarted"
+        },
+        "homeTeam": {
+          "name": "Surgut",
+          "slug": "fakel-surgut",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 41,
+          "nameCode": "FSU",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 367932,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فاكل سورغوت",
+              "ru": "Факел Сургут"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "awayTeam": {
+          "name": "Kristall St. Petersburg",
+          "slug": "kristall-st-petersburg",
+          "shortName": "Kristall",
+          "gender": "M",
+          "sport": {
+            "name": "Futsal",
+            "slug": "futsal",
+            "id": 29
+          },
+          "userCount": 72,
+          "nameCode": "KRI",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 447934,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كريستال سانت بطرسبرغ",
+              "ru": "Кристалл Санкт-Петербург"
+            },
+            "shortNameTranslation": {
+              "ar": "كريستال",
+              "ru": "Кристалл"
+            }
+          }
+        },
+        "homeScore": {},
+        "awayScore": {},
+        "time": {},
+        "changes": {
+          "changeTimestamp": 0
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 16982308,
+        "slug": "kristall-st-petersburg-surgut",
+        "startTimestamp": 1793026800,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false
+      },
+      {
+        "__trimmed__": 6
+      }
+    ],
+    "hasNextPage": false
+  }
+}

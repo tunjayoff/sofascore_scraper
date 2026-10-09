@@ -1,0 +1,55 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/17218936/tennis-power",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T15:05:44+00:00",
+  "page": "https://www.sofascore.com/tr/tennis/match/hynek-barton-laslo-djere/GUNskWYc#id:17218936",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009c",
+  "body": {
+    "tennisPowerRankings": [
+      {
+        "set": 1,
+        "game": 1,
+        "value": -18.836052532312,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 2,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 3,
+        "value": -59,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 4,
+        "value": 16.887495373797,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 5,
+        "value": -21.17432112253,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 6,
+        "value": 10,
+        "breakOccurred": false
+      },
+      {
+        "set": 1,
+        "game": 7,
+        "value": 32.475952641916,
+        "breakOccurred": true
+      }
+    ]
+  }
+}

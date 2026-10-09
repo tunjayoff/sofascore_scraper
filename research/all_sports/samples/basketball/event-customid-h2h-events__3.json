@@ -1,0 +1,249 @@
+{
+  "url": "https://www.sofascore.com/api/v1/event/pJhcstAed/h2h/events",
+  "status": 200,
+  "fetched_at_utc": "2026-10-09T18:18:16+00:00",
+  "page": "https://www.sofascore.com/tr/basketball/match/clube-de-campo-de-tatui-aabt-tatui-botafogo/pJhcstAed#id:17220735",
+  "cache_control": "max-age=3600, public",
+  "trimmed": false,
+  "run_id": "lv-20261009d",
+  "body": {
+    "events": [
+      {
+        "tournament": {
+          "name": "Club Friendlies",
+          "slug": "club-friendlies",
+          "category": {
+            "name": "International",
+            "slug": "international",
+            "sport": {
+              "name": "Basketball",
+              "slug": "basketball",
+              "id": 2
+            },
+            "priority": 11,
+            "country": {},
+            "id": 103,
+            "flag": "international",
+            "fieldTranslations": {
+              "nameTranslation": {
+                "ar": "دولي",
+                "hi": "अंतर्राष्ट्रीय",
+                "bn": "আন্তর্জাতিক",
+                "ru": "Международные"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "uniqueTournament": {
+            "name": "Club Friendly Games",
+            "slug": "club-friendly-games",
+            "primaryColorHex": "#151922",
+            "secondaryColorHex": "#ea181f",
+            "category": {
+              "name": "International",
+              "slug": "international",
+              "sport": {
+                "name": "Basketball",
+                "slug": "basketball",
+                "id": 2
+              },
+              "priority": 11,
+              "country": {},
+              "id": 103,
+              "flag": "international",
+              "fieldTranslations": {
+                "nameTranslation": {
+                  "ar": "دولي",
+                  "hi": "अंतर्राष्ट्रीय",
+                  "bn": "আন্তর্জাতিক",
+                  "ru": "Международные"
+                },
+                "shortNameTranslation": {}
+              }
+            },
+            "userCount": 692,
+            "hasPerformanceGraphFeature": false,
+            "liveActivityEnabled": false,
+            "country": {},
+            "id": 1195,
+            "hasEventPlayerStatistics": false,
+            "displayInverseHomeAwayTeams": false,
+            "fieldTranslations": {
+              "nameTranslation": {
+                "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+                "ar": "مباريات ودية للأندية",
+                "hi": "क्लब फ्रेंडली गेम्स",
+                "ru": "Товарищеские матчи клубов"
+              },
+              "shortNameTranslation": {}
+            }
+          },
+          "priority": 0,
+          "isGroup": false,
+          "isLive": false,
+          "id": 4788,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "क्लब फ्रेंडलीज",
+              "ar": "مباريات ودية للأندية",
+              "bn": "ক্লাব ফ্রেন্ডলিনেস",
+              "ru": "Дружеские матчи"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "season": {
+          "name": "Club Friendly Games 2026",
+          "year": "2026",
+          "editor": false,
+          "id": 87164
+        },
+        "roundInfo": {
+          "round": 1
+        },
+        "customId": "pJhcstAed",
+        "status": {
+          "code": 100,
+          "description": "Ended",
+          "type": "finished"
+        },
+        "winnerCode": 2,
+        "homeTeam": {
+          "name": "Botafogo",
+          "slug": "botafogo",
+          "shortName": "Botafogo",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 2304,
+          "nameCode": "BOT",
+          "disabled": false,
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 269215,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#000000",
+            "secondary": "#ffffff",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بوتافوغو",
+              "ru": "Ботафого"
+            },
+            "shortNameTranslation": {
+              "ar": "بوتافوغو"
+            }
+          }
+        },
+        "awayTeam": {
+          "name": "Clube De Campo De Tatui / Aabt / Tatui",
+          "slug": "clube-de-campo-de-tatui-aabt-tatui",
+          "gender": "M",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "userCount": 6,
+          "nameCode": "CDC",
+          "national": false,
+          "type": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 386268,
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "كلوب دي كامبو دي تاتوي / آبت / تاتوي",
+              "ru": "Клубе де Кампо де Татуй / ААБТ / Татуй"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "homeScore": {
+          "current": 56,
+          "display": 56,
+          "period1": 17,
+          "period2": 17,
+          "period3": 16,
+          "period4": 6,
+          "normaltime": 56
+        },
+        "awayScore": {
+          "current": 83,
+          "display": 83,
+          "period1": 20,
+          "period2": 21,
+          "period3": 24,
+          "period4": 18,
+          "normaltime": 83
+        },
+        "time": {
+          "played": 2366,
+          "periodLength": 600,
+          "overtimeLength": 300,
+          "totalPeriodCount": 4,
+          "currentPeriodStartTimestamp": 1791562160
+        },
+        "changes": {
+          "changes": [
+            "time.currentPeriodStart",
+            "status.code",
+            "status.description",
+            "status.type",
+            "homeScore.normaltime",
+            "awayScore.normaltime"
+          ],
+          "changeTimestamp": 1791562166
+        },
+        "hasGlobalHighlights": false,
+        "crowdsourcingDataDisplayEnabled": false,
+        "id": 17220735,
+        "periods": {
+          "current": "Score",
+          "period1": "1st quarter",
+          "period2": "2nd quarter",
+          "period3": "3rd quarter",
+          "period4": "4th quarter",
+          "overtime": "Overtime"
+        },
+        "slug": "clube-de-campo-de-tatui-aabt-tatui-botafogo",
+        "startTimestamp": 1791556200,
+        "finalResultOnly": false,
+        "feedLocked": false,
+        "isEditor": false,
+        "eventFilters": {
+          "category": [
+            "club"
+          ],
+          "level": [
+            "pro"
+          ],
+          "gender": [
+            "M"
+          ]
+        }
+      }
+    ]
+  }
+}
