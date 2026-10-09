@@ -28,7 +28,8 @@ DECIDED_AGAINST_THE_RULE). docs/all-sports/README.md, "Karar".
 
 FX-37: canlı maç sayfaları (lv-20261009c) ve aynı maçların bitmiş sayfaları (lv-20261009d) da onarılmış koşular.
 Aynı maçta hiçbir dilimin yanıtı canlıdan bitmişe değişmedi (SAME_MATCH). Yeni yanıtlarla kural üç hücrede kayıt
-defterinden ayrılır; kayıt defteri değişmedi, hücreler sahibin kararını bekler (PENDING). Ağ yok.
+defterinden ayrılır; sahibin kararıyla (2026-10-09) üçü de zorunlu kalır (FX-38): DECIDED'da ve
+DECIDED_AGAINST_THE_RULE'da durur, yanıtları DECIDED_AGAINST_THE_RULE_ANSWERS'ta. Ağ yok.
 """
 from __future__ import annotations
 
@@ -81,27 +82,30 @@ DECIDED: Dict[Tuple[str, str], str] = {
     ("minifootball", "statistics"): OPTIONAL,  # üst ligde 404, 200, 200
     ("minifootball", "incidents"): OPTIONAL,  # aynı
     ("minifootball", "pregame_form"): OPTIONAL,  # bütün maçlarda 404
+    # FX-37'nin lv-20261009c ve lv-20261009d yanıtlarıyla kuralın ayrıldığı üç hücre; kayıt defteri değişmedi
+    # (2026-10-09, FX-38). Kural üçünde de isteğe bağlı der (DECIDED_AGAINST_THE_RULE)
+    ("basketball", "lineups"): REQUIRED,  # iki canlı ve bir bitmiş sayfada kendi maçı 404
+    ("handball", "pregame_form"): REQUIRED,  # aynı maçın canlı ve bitmiş sayfasında 404
+    ("mma", "statistics"): REQUIRED,  # yalnızca komşu maçta 404; sayfaların kendi maçları 200
 }
 
 # Kararın kanıtın kuralından ayrıldığı hücreler: (spor, dilim) → kuralın yargısı. Florbol olayları: üst liglerin üç
 # bitmiş maçında (lv-20261009b) veriyle, lv-20261009'un bitmiş maçında 200, ötekinde 404; kural "bitmiş maçta bir
-# 404" yüzünden isteğe bağlı der, sahip tamlığa girmesine karar verdi (FX-36).
+# 404" yüzünden isteğe bağlı der, sahip tamlığa girmesine karar verdi (FX-36). Basketbol kadrosu, hentbol
+# pregame_form'u ve MMA istatistiği: lv-20261009c ve lv-20261009d'nin yanıtlarıyla (FX-37) kural isteğe bağlı der,
+# sahip üçünün de zorunlu kalmasına karar verdi (2026-10-09, FX-38).
 DECIDED_AGAINST_THE_RULE: Dict[Tuple[str, str], str] = {
     ("floorball", "incidents"): OPTIONAL,
+    ("basketball", "lineups"): OPTIONAL,
+    ("handball", "pregame_form"): OPTIONAL,
+    ("mma", "statistics"): OPTIONAL,
 }
-
-# FX-37: lv-20261009c ve lv-20261009d'nin yanıtlarıyla kuralın kayıt defterinden ayrıldığı hücreler, sahibin kararını
-# bekler: (spor, dilim) → (kuralın yargısı, kayıt defterinin bugünkü yeri). Kayıt defteri değişmedi.
-PENDING: Dict[Tuple[str, str], Tuple[str, str]] = {
-    ("basketball", "lineups"): (OPTIONAL, REQUIRED),
-    ("handball", "pregame_form"): (OPTIONAL, REQUIRED),
-    ("mma", "statistics"): (OPTIONAL, REQUIRED),
-}
-# Hücreyi değiştiren yanıtlar (200 dışı): (koşu, sayfa, maç, maçın durumu, HTTP kodu). Basketbol kadrosu iki canlı
-# sayfada ve 17220735'in bitmiş sayfasında, hentbol pregame-form'u aynı maçın canlı ve bitmiş sayfasında 404 aldı
-# (sayfanın kendi maçı). MMA istatistiği komşu maçtan: canlı 12606166'nın sayfası bitmiş 12607782'yi de istedi
-# (FX-36'nın bulgusu; kural onu da sayar). MMA'nın iki canlı sayfası kendi maçının istatistiğini 200 aldı.
-PENDING_ANSWERS: Dict[Tuple[str, str], List[Tuple[str, int, int, str, str]]] = {
+# FX-38'in üç hücresinde kuralı ayıran yanıtlar (lv-20261009c ve lv-20261009d'de 200 dışı): (koşu, sayfa, maç,
+# maçın durumu, HTTP kodu). Basketbol kadrosu iki canlı sayfada ve 17220735'in bitmiş sayfasında, hentbol
+# pregame-form'u aynı maçın canlı ve bitmiş sayfasında 404 aldı (sayfanın kendi maçı). MMA istatistiği komşu maçtan:
+# canlı 12606166'nın sayfası bitmiş 12607782'yi de istedi (FX-36'nın bulgusu; kural onu da sayar). MMA'nın iki canlı
+# sayfası kendi maçının istatistiğini 200 aldı.
+DECIDED_AGAINST_THE_RULE_ANSWERS: Dict[Tuple[str, str], List[Tuple[str, int, int, str, str]]] = {
     ("basketball", "lineups"): [("lv-20261009c", 16624761, 16624761, "live", "404"),
                                 ("lv-20261009c", 17220735, 17220735, "live", "404"),
                                 ("lv-20261009d", 17220735, 17220735, "finished", "404")],
@@ -223,9 +227,6 @@ def test_the_evidence_covers_the_recorded_pages():
 def test_the_registry_follows_the_evidence(sport: str, spec: sports.SliceSpec, found: str):
     applies, counts = spec.applies_to(sport), spec.counts_in(sport)
     found = DECIDED.get((sport, spec.key), found)  # sahibin kararı kuraldan ayrılabilir (DECIDED_AGAINST_THE_RULE)
-    if (sport, spec.key) in PENDING:  # kural ayrıldı, karar bekleniyor: kayıt defteri bugünkü yerinde kalır
-        rule, found = PENDING[(sport, spec.key)]
-        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(spec)) == rule
     if found == REQUIRED:
         assert applies and counts
     elif found == OPTIONAL:
@@ -549,23 +550,22 @@ def test_the_live_pages_back_the_not_in_rows():
         assert len(visited) == 2 and not any(never & set(codes) for codes in visited), sport
 
 
-# --- FX-37: kuralın kayıt defterinden ayrıldığı hücreler, sahibin kararını bekler ------------------------------
+# --- FX-38: kuralın kayıt defterinden ayrıldığı üç hücre, sahibin kararıyla zorunlu ---------------------------
 
 
-def test_the_pending_cells_are_what_the_evidence_says():
-    for (sport, key), (rule, registry) in PENDING.items():
+def test_the_cells_decided_against_the_live_runs_rule_stay_required():
+    assert set(DECIDED_AGAINST_THE_RULE_ANSWERS) < set(DECIDED_AGAINST_THE_RULE)
+    for sport, key in DECIDED_AGAINST_THE_RULE_ANSWERS:
         spec = sports.get_slice(key)
-        assert evidence_mod.verdict(EVIDENCE, sport, _endpoint(spec)) == rule != registry, (sport, key)
-        assert spec.applies_to(sport) and spec.counts_in(sport) is (registry == REQUIRED)
-    assert not set(PENDING) & (set(DECIDED) | set(APPLIED))
+        assert DECIDED[(sport, key)] == REQUIRED and spec.applies_to(sport) and spec.counts_in(sport), (sport, key)
 
 
 @pytest.mark.skipif(not (evidence_mod.RESEARCH / "requests.jsonl").exists(), reason="research data not present")
-def test_the_pending_cells_answers():
-    """Bekleyen hücrelerin lv-20261009c/d'deki 200 dışı yanıtları; maçın durumu isteğin anındaki durum."""
+def test_the_answers_behind_the_cells_decided_against_the_rule():
+    """FX-38'in üç hücresinin lv-20261009c/d'deki 200 dışı yanıtları; maçın durumu isteğin anındaki durum."""
     events = evidence_mod._Events(evidence_mod.RESEARCH)
-    found: Dict[Tuple[str, str], set] = {cell: set() for cell in PENDING}
-    endpoints = {_endpoint(sports.get_slice(key)): key for _sport, key in PENDING}
+    found: Dict[Tuple[str, str], set] = {cell: set() for cell in DECIDED_AGAINST_THE_RULE_ANSWERS}
+    endpoints = {_endpoint(sports.get_slice(key)): key for _sport, key in DECIDED_AGAINST_THE_RULE_ANSWERS}
     with open(evidence_mod.RESEARCH / "requests.jsonl", encoding="utf-8") as f:
         for line in f:
             row = json.loads(line)
@@ -580,7 +580,7 @@ def test_the_pending_cells_answers():
             if (sport, endpoints[hit[1]]) in found:
                 found[(sport, endpoints[hit[1]])].add(
                     (row["run_id"], int(row["page"].rsplit("#id:", 1)[-1]), hit[0], state, str(row["status"])))
-    assert found == {cell: set(rows) for cell, rows in PENDING_ANSWERS.items()}
+    assert found == {cell: set(rows) for cell, rows in DECIDED_AGAINST_THE_RULE_ANSWERS.items()}
 
 
 @pytest.mark.parametrize("sport", ["football", "basketball", "tennis"])
