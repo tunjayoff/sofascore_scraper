@@ -646,11 +646,18 @@ def test_the_default_token_variable_works_without_a_config_file(monkeypatch: pyt
     assert security.token_variable() == "SOFASCORE_SERVER__TOKEN"
 
 
-def test_the_2x_token_variable_is_not_read(monkeypatch: pytest.MonkeyPatch) -> None:
-    """3.1: SOFASCORE_API_TOKEN okunmaz (koruma onunla açılmaz); `token_env` onu adıyla verebilir."""
+def test_the_deprecated_2x_token_variable_is_still_read(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    3.1: kullanımdan kalkan SOFASCORE_API_TOKEN hâlâ okunur (FX-35; 3.2'de kalkar): koruma sessizce kapanmaz.
+    İletiler belirtecin okunduğu adı söyler. `token_env` onu adıyla da verebilir; yeni ad verilmişse o kazanır.
+    """
     monkeypatch.delenv(security.TOKEN_ENV, raising=False)
     monkeypatch.setenv("SOFASCORE_API_TOKEN", TOKEN)
-    assert security.api_token() == ""
+    assert security.api_token() == TOKEN == deps.server_token()
+    assert security.token_variable() == "SOFASCORE_API_TOKEN"
+    monkeypatch.setenv(security.TOKEN_ENV, "x" * 40)
+    assert security.api_token() == "x" * 40 and security.token_variable() == "SOFASCORE_SERVER__TOKEN"
+    monkeypatch.delenv(security.TOKEN_ENV)
     monkeypatch.setenv("SOFASCORE_SERVER__TOKEN_ENV", "SOFASCORE_API_TOKEN")
     assert security.api_token() == TOKEN and security.token_variable() == "SOFASCORE_API_TOKEN"
 

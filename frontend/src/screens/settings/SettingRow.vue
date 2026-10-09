@@ -39,6 +39,8 @@ const lockReason = computed(() => {
   const s = props.setting
   if (s.locked) {
     if (s.source === 'file') return t('ui.settings.lock.file', { file: s.source_name || props.configFile || 'sofascore.toml' })
+    // A deprecated 2.x name (still read in 3.1, removed in 3.2) says so and names the variable to use instead
+    if (s.source === 'env' && s.replaced_by) return t('ui.settings.lock.envDeprecated', { name: s.source_name, replacement: s.replaced_by })
     if (s.source === 'env') return t('ui.settings.lock.env', { name: s.source_name })
     if (s.source === 'flag') return t('ui.settings.lock.flag')
     return t('ui.settings.lock.other')

@@ -341,8 +341,8 @@ group("config", help="ssc_help_cmd_config")
 
 def _load_warnings(loaded: Any, *, logged: bool) -> List[CliWarning]:
     """
-    Yükleyicinin uyarıları: okunmayan 2.x adları (`legacy_name`, yeni adla), kalkmış ayarlar (`retired_setting`),
-    `live.source = "direct"` (`live_direct_source`).
+    Yükleyicinin uyarıları: okunmayan 2.x adları ve kullanımdan kalkıp 3.1'de hâlâ okunan dördü (`legacy_name`, yeni
+    adla), kalkmış ayarlar (`retired_setting`), `live.source = "direct"` (`live_direct_source`).
     """
     return [CliWarning(warning.code, warning.message, logged=logged) for warning in loaded.warnings]
 
@@ -368,6 +368,9 @@ def config_show(inv: Invocation) -> CommandResult:
     width = max(len(row["key"]) for row in rows)
     for row in rows:
         origin = row["source"] + (f": {row['from']}" if row["from"] and row["from"] != row["key"] else "")
+        if row["replaced_by"]:
+            # Kullanımdan kalkan 2.x adı (3.1'de okunur, 3.2'de kalkar; plan maddesi FX-35)
+            origin += f", deprecated, use {row['replaced_by']}"
         lines.append(f"{row['key']:<{width}} = {_value_text(row['value'])}  [{origin}]")
     # Yükleyicinin uyarıları (okunmayan eski adlar, kalkmış ayarlar, canlı kaynak) etkinleştirmede log satırı olarak
     # yazıldı; JSON çıktısının `warnings` dizisine de girer (plan maddesi P31'in notu)
@@ -569,7 +572,8 @@ def legacy_config_text(legacy: Mapping[str, str], leagues: Mapping[int, str], le
                        leagues_file: str) -> str:
     """
     2.x kaynaklarının (2.x adlarıyla `.env` ve ortam: `legacy`, ad -> ham değer; leagues.txt, league_sports.json)
-    TOML karşılığı. 3.1 bu adları okumaz (plan maddesi P30): dosya onların yerini alır.
+    TOML karşılığı. 3.1 bu adları okumaz (plan maddesi P30; kullanımdan kalkan dördü 3.2'ye kadar okunur, FX-35):
+    dosya onların yerini alır.
 
     Her değer yapılandırma dosyasının kuralıyla denetlenir. Gizli değerler dosyaya yazılmaz: proxy adresi için onu
     taşıyan değişkenin adı (`proxy_env`) yazılır; erişim belirteci ve captcha belirteci yalnızca ortamdan okunur.

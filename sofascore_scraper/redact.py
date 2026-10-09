@@ -10,8 +10,8 @@ ya da proxy parolası bulunmamalı. Üç katman birlikte çalışır:
      adresi) içindeki kullanıcı adı/parola; adres şemasız yazılmış olsa da ("kullanıcı:parola@host:8080").
      Etkin ayarların gizli değerleri de (overrides.json'daki ya da `proxy_env` / `token_env`in adını
      verdiği değişkendeki proxy adresi ve belirteç) bunlara katılır: ayar yükleyicisi süreçte kurulmuşsa
-     içe aktarılmadan okunur. 2.x'in adları (PROXY_URL, SOFASCORE_API_TOKEN...) 3.1'de okunmasa da
-     ortamda durabilir: onların değerleri de maskelenir. Metinde geçtikleri her yerde, hangi biçimde
+     içe aktarılmadan okunur. 2.x'in adları ortamda durabilir: PROXY_URL ve SOFASCORE_API_TOKEN 3.1'de
+     kullanımdan kalkmış olarak hâlâ okunur (3.2'de kalkar), diğerleri okunmaz; hepsinin değerleri maskelenir. Metinde geçtikleri her yerde, hangi biçimde
      yazılmış olurlarsa olsunlar `***` olur.
   2. Çalışma anında öğrenilen, hiçbir ayarın adı olmayan değerler (add_runtime_secret): `direct` canlı
      kaynağının sitenin sayfasından okuduğu push kimlik bilgisi gibi. Yalnızca süreç belleğindedir.
