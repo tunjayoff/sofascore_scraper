@@ -338,6 +338,21 @@ def update_solver(fields: Mapping[str, Any]) -> None:
         _solver.update(fields)
 
 
+_requests: Dict[str, Any] = {}
+
+
+def update_requests(fields: Mapping[str, Any]) -> None:
+    """İstek katmanının kapı sayaçlarını (sofascore_scraper/client/transport.py, S1-B4) yazar."""
+    with _solver_lock:
+        _requests.update(fields)
+
+
+def requests() -> Dict[str, Any]:
+    """İstek katmanının kapı sayaçlarının kopyası (tanılama paketi)."""
+    with _solver_lock:
+        return dict(_requests)
+
+
 def solver() -> Dict[str, Any]:
     """
     Çözüm sayaçlarının kopyası; köprü henüz çözüm yapmadıysa sıfırlar. `solve_cooldown_left`: başarısız bir çözümden
@@ -426,6 +441,7 @@ def reset(clock: Callable[[], float] = time.time) -> None:
     _connection = ConnectionState(clock=clock)
     with _solver_lock:
         _solver.clear()
+        _requests.clear()
 
 
 # --- CLI ------------------------------------------------------------------------------------

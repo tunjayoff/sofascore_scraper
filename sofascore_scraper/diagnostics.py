@@ -588,6 +588,8 @@ def _bridge() -> Dict[str, Any]:
     snap = bridge_health.snapshot()
     # Turnstile çözümlerinin sayaçları (S1): "SofaScore reddediyor" ile "çözüm başarısız oluyor" ayrılır
     snap["solver"] = bridge_health.solver()
+    # İstek katmanının kapısı (S1-B4): gönderilmeden yanıtlanan ve challenge'da biten istekler
+    snap["requests"] = bridge_health.requests()
     return snap
 
 

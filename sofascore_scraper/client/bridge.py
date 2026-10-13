@@ -28,6 +28,7 @@ import atexit
 import base64
 import collections
 import concurrent.futures
+import contextlib
 import contextvars
 import hashlib
 import json
@@ -36,7 +37,8 @@ import re
 import threading
 import time
 import weakref
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from sofascore_scraper import bridge_health, throttle
 from sofascore_scraper.client import profile_lock
@@ -274,6 +276,44 @@ class _SlotWait:
 
 
 _slot_wait: "contextvars.ContextVar[Optional[_SlotWait]]" = contextvars.ContextVar("bridge_slot_wait", default=None)
+
+
+@dataclass
+class BrowserOutcome:
+    """
+    Köprünün bir sayfa isteğini nasıl bitirdiği (istek katmanı okur; `observe`). Köprünün sonucu veri ya da None'dır;
+    None'ın nedenini (çözülemeyen 403, gönderilmemiş istek, hiç yanıt yok) istek katmanı buradan öğrenir.
+
+    status  son durum kodu; None: bilinen bir yanıt yok (köprü hata verdi ya da hiç çağrılmadı)
+    text    son yanıtın gövdesi (başarısızlıkta; 200'de boş)
+    sent    False: istek gönderilmeden yanıtlandı (çözüm beklemesi, istek katmanının kapısı, cookie yok)
+    hold    istek katmanının kapısı: bu sayfa isteğinin neden gönderilmeyeceği ya da None (sıra geldiğinde sorulur)
+    """
+
+    status: Optional[int] = None
+    text: str = ""
+    sent: bool = True
+    hold: Optional[Callable[[], Optional[str]]] = None
+
+
+_outcome: "contextvars.ContextVar[Optional[BrowserOutcome]]" = contextvars.ContextVar("bridge_outcome", default=None)
+# Bir sayfa isteğinin kendisi gönderiliyor (çözümün yoklaması değil): sıra geldiğinde kapıya bakılır (_held_back)
+_page_fetching: "contextvars.ContextVar[bool]" = contextvars.ContextVar("bridge_page_fetching", default=False)
+
+
+@contextlib.contextmanager
+def observe(hold: Optional[Callable[[], Optional[str]]] = None) -> Iterator[BrowserOutcome]:
+    """
+    Blok içindeki köprü çağrısının (fetch_api_via_browser ve _sync) sonucu: dönen BrowserOutcome'a yazılır. Çağrı arka
+    plan döngüsüne çağıranın bağlamıyla gider (_submit), sonuç aynı nesneye yazılır. `hold`: istek katmanının kapısı
+    (S1-B4), sıra geldiğinde sorulur.
+    """
+    out = BrowserOutcome(hold=hold)
+    token = _outcome.set(out)
+    try:
+        yield out
+    finally:
+        _outcome.reset(token)
 
 
 # Sıra beklerken çağıranın iptal kontrolüne bu aralıkla bakılır (istek katmanındaki _sleep/_asleep ile aynı)
@@ -811,8 +851,33 @@ class BrowserBridge:
         Sıra bekleme, çağrının zaman aşımından sayılmaz (_SlotWait).
         """
         await _wait_for_slot()
+        if self._held_back():
+            # Sıra beklenirken bir çözüm başarısız oldu (ya da istek katmanının kapısı kapandı): istek gönderilmez
+            # (c'nin B4'ü; eskiden böyle istekler sayfadan gönderilirdi, bazıları reddedilen token'la iki kez)
+            return {"status": 403, "ok": False, "data": None, "text": _UNSENT_CHALLENGE, "sent": False}
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
         return await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode])
+
+    def _held_back(self) -> bool:
+        """Sırası gelen sayfa isteği gönderilmesin mi: çözüm beklemesi ya da istek katmanının kapısı (S1-B4)."""
+        if not _page_fetching.get():
+            return False  # çözümün yoklaması: çözüm sürerken bekleme yoktur
+        if self.solve_cooldown_left() > 0:
+            return True
+        out = _outcome.get()
+        hold = getattr(out, "hold", None)
+        try:
+            return bool(hold is not None and hold())
+        except Exception:  # kapı isteği bozmamalı
+            return False
+
+    async def _page_fetch(self, url: str) -> Dict[str, Any]:
+        """Sayfa isteğinin kendisi (_api_fetch); sırası geldiğinde kapıya bakılır (_held_back)."""
+        token = _page_fetching.set(True)
+        try:
+            return await self._api_fetch(url, cache_mode_for(url))
+        finally:
+            _page_fetching.reset(token)
 
     async def _api_unlocked(self) -> Optional[bool]:
         """
@@ -986,6 +1051,11 @@ class BrowserBridge:
 
         url = path_or_url if path_or_url.startswith("http") else _api_url(path_or_url)
         res = await self._fetch_now(url)
+        out = _outcome.get()
+        if out is not None:
+            out.status = int(res.get("status") or 0)
+            out.text = "" if res.get("ok") else str(res.get("text") or "")
+            out.sent = bool(res.get("sent", True))
         return self._answer(res, url)
 
     async def _fetch_now(self, url: str) -> Dict[str, Any]:
@@ -995,6 +1065,10 @@ class BrowserBridge:
         gönderilmez (c'nin B8'i): önce cookie (varsa ana sayfa), yoksa bir çözüm (beklemesine uyarak), o da yoksa
         challenge'ın yanıtı, gönderilmeden (`sent` False).
         """
+        if self.solve_cooldown_left() > 0:
+            # Başarısız bir çözüm soğuyor: her istek challenge'a takılır ve onu yanıtlayacak bir çözüm başlayamaz;
+            # istek gönderilmeden challenge'ın yanıtı (c'nin B4'ü)
+            return {"status": 403, "ok": False, "data": None, "text": _UNSENT_CHALLENGE, "sent": False}
         page_url = _page_url(self.page)
         if page_url is not None and not _on_origin(page_url):
             solved = False
@@ -1013,7 +1087,9 @@ class BrowserBridge:
                         "text": f"the bridge page could not open the site ({_page_url(self.page)})"}
 
         sent = self.token
-        res = await self._api_fetch(url, cache_mode_for(url))
+        res = await self._page_fetch(url)
+        if not res.get("sent", True):
+            return res
 
         # Bir çözümün yanıtlayacağı 403 (challenge ya da token'ın reddi, needs_solve): çöz ve bir kez yinele
         text = res.get("text") or ""
@@ -1029,7 +1105,7 @@ class BrowserBridge:
                 )
                 new_token = await (self.solve_challenge(drop_token=True) if refused else self.solve_challenge())
             if new_token:
-                res = await self._api_fetch(url, cache_mode_for(url))
+                res = await self._page_fetch(url)
         return res
 
     def _answer(self, res: Dict[str, Any], url: str) -> Optional[Any]:

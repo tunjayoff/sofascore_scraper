@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import math
 import random
+import threading
 import time
 import weakref
 from dataclasses import dataclass
@@ -23,7 +25,7 @@ from typing import Any, Dict, Final, Optional, Tuple, Union, cast
 from curl_cffi import requests as cffi_requests
 from curl_cffi.requests import AsyncSession
 
-from sofascore_scraper import breaker, throttle
+from sofascore_scraper import breaker, bridge_health, throttle
 from sofascore_scraper.client.context import FetchCancelled, _notify_wait, notify_request, raise_if_cancelled
 from sofascore_scraper.client.endpoints import DEFAULT_BASE_URL
 
@@ -316,11 +318,211 @@ def _active_bridge() -> Any:
     return BrowserBridge._instance
 
 
+# ---- Kapı: yanıtlanamayacak hiçbir şey gönderilmez (S1-B4; c'nin rest.Client._gate'i) ----
+#
+# Köprünün başarısız çözümü soğurken (BrowserBridge.solve_cooldown_left; 180, 180, 360, sonra 600 sn) her istek
+# challenge'a takılır ve onu yanıtlayacak bir çözüm başlayamaz. c'nin üretim benzeri 3. koşusu iki beklemede
+# reddedileceği belli yaklaşık 262 istek gönderdi (okuma başına 7'ye kadar: curl, tarayıcı, yine curl). Artık beklemede
+# istek gönderilmez: hemen 403 olarak biter (APIError, gönderilmedi; işin devre kesicisine ve köprü sağlığına sayılır),
+# süren bir istek bir sonraki denemesini yapmaz. Art arda CHALLENGE_FAILURES_ALERT istek challenge'da yanıtsız bittiyse
+# kapı tutulur: bir yanıt (200 ya da 404) gelene kadar aynı anda tek istek gider (yoklama: tek deneme, tarayıcının),
+# ötekiler gönderilmeden 403'le biter. Hiçbir çözümün yanıtlamadığı bir 403'e takılan yoklamanın ardından bir sonraki
+# UNSOLVABLE_PROBE_PAUSE_S sonra gider, art arda her birinde iki katı, en çok UNSOLVABLE_PROBE_PAUSE_MAX_S.
+
+CHALLENGE_FAILURES_ALERT = 3
+UNSOLVABLE_PROBE_PAUSE_S = 30.0
+UNSOLVABLE_PROBE_PAUSE_MAX_S = 300.0
+
+
+@dataclass
+class _Request:
+    """Bir isteğin karşılaştıkları (bittiğinde sayaçlar ve kapı için)."""
+
+    challenge_failed: bool = False  # tarayıcının yanıtlamadığı bir challenge'a takıldı ya da kapı tuttu
+    browser_failed: bool = False  # tarayıcı bu isteğe hiç yanıt vermedi
+    probe: bool = False  # kapının bıraktığı tek istek
+    single: bool = False  # kapının yoklaması: tek deneme, tarayıcının
+    unsolvable: bool = False  # hiçbir çözümün yanıtlamadığı bir 403'e takıldı
+
+
+class _GateState:
+    """Kapının süreç genelindeki durumu ve sayaçları (her iş ve thread aynı kapıdan geçer)."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.reset()
+
+    def reset(self) -> None:
+        self.held = False
+        self.probe_out = False
+        self.unsolvable_probes = 0
+        self.probe_not_before = -math.inf
+        self.skip_logged = False
+        self.skipped_in_hold = 0
+        self.challenges = 0  # curl'ün karşılaştığı 403 challenge'lar
+        self.challenge_failures = 0  # onlardan tarayıcının yanıtlamadıkları
+        # Challenge'da yanıtsız biten (ya da kapının tuttuğu) istekler; art arda olanlar son 200/404'ten beri
+        self.challenge_failed_requests = 0
+        self.consecutive_challenge_failed_requests = 0
+        self.challenge_skipped = 0  # gönderilmeden 403'le biten istekler
+
+
+_gate = _GateState()
+
+
+def gate_status() -> Dict[str, int]:
+    """Kapının sayaçları (bridge_health.requests(), tanılama paketi)."""
+    g = _gate
+    return {
+        "challenges": g.challenges,
+        "challenge_failures": g.challenge_failures,
+        "challenge_failed_requests": g.challenge_failed_requests,
+        "consecutive_challenge_failed_requests": g.consecutive_challenge_failed_requests,
+        "challenge_skipped": g.challenge_skipped,
+    }
+
+
+def _publish_gate() -> None:
+    try:
+        bridge_health.update_requests(gate_status())
+    except Exception:  # durum yazımı isteği bozmamalı
+        logger.debug("publishing the gate counters failed", exc_info=True)
+
+
+def reset_gate() -> None:
+    """Kapıyı ve sayaçlarını sıfırlar (testler; süreç başına bir kez başlar)."""
+    _gate.reset()
+
+
+def _solve_cooldown_left() -> float:
+    """Köprünün başarısız çözümünün kalan beklemesi; köprü yoksa 0."""
+    left = getattr(_active_bridge(), "solve_cooldown_left", None)
+    if left is None:
+        return 0.0
+    try:
+        return float(left())
+    except Exception:
+        return 0.0
+
+
+def _probe_paused_s() -> float:
+    """Çözümün yanıtlamadığı 403'lere takılan yoklamalardan sonra bir sonraki yoklamaya kalan saniye."""
+    return max(0.0, _gate.probe_not_before - time.monotonic())
+
+
+def _admit(req: _Request) -> Optional[str]:
+    """
+    Bu istek gönderilmeden mi biter ("challenge"), yoksa gider mi (None)? Kapı tutuluyorsa ve yoklama dışarıda değilse
+    bu istek yoklamadır (tek deneme, tarayıcının).
+    """
+    cooling = _solve_cooldown_left() > 0
+    with _gate.lock:
+        if cooling or _gate.consecutive_challenge_failed_requests >= CHALLENGE_FAILURES_ALERT:
+            _gate.held = True
+        if cooling or (_gate.held and (_gate.probe_out or _probe_paused_s() > 0)):
+            return "challenge"
+        if _gate.held:
+            req.probe = req.single = _gate.probe_out = True
+            first = _gate.skip_logged
+            _gate.skip_logged = False  # sonucu haberdir: yeni bir bekleme loglanır
+        else:
+            first = False
+    if first:
+        logger.info("One request goes first while the Turnstile challenge is not solved")
+    return None
+
+
+def _kept(req: _Request) -> Optional[str]:
+    """
+    Süren bir istek bir deneme daha yapmasın mı: çözüm soğuyor, ya da kapı tutuluyor ve bu onun yoklaması değil.
+    c'de 2026-10-02'ye kadar (4. koşu) yalnızca bekleme durduruyordu: token reddedilmiş ve çözüm yokken uyarıdan sonraki
+    istekler curl ve tarayıcı denemelerini sürdürdü, istek başına 7.
+    """
+    if _solve_cooldown_left() > 0 or (_gate.held and not req.probe):
+        return "challenge"
+    return None
+
+
+def _skip(url: str, why: str, req: _Request, *, record: bool = True) -> SofaScoreScraperError:
+    """
+    Kapının tuttuğu (ya da bir sonraki denemesinden önce bitirdiği) isteğin hatası: gönderilmemiş bir 403. İstek o
+    yüzden yanıtsızdır, gönderilmiş gibi sayılır (işin devre kesicisi; `record`: köprü sağlığı, köprü kendisi yazmadıysa).
+    """
+    req.challenge_failed = True
+    with _gate.lock:
+        _gate.challenge_skipped += 1
+        _gate.skipped_in_hold += 1
+        first = not _gate.skip_logged
+        _gate.skip_logged = True
+    if first:
+        cooling = max(_solve_cooldown_left(), _probe_paused_s())
+        logger.warning(
+            "The Turnstile challenge is not solved; requests are answered 403 without being sent "
+            + (f"for {cooling:.0f} s, then one goes first" if cooling > 0 else "while one goes first")
+        )
+    logger.debug(f"Not sent (the challenge's gate): {url}")
+    if record:
+        bridge_health.record_failure(bridge_health.KIND_CHALLENGE,
+                                     "HTTP 403: not sent (the Turnstile challenge is not solved)")
+    _publish_gate()
+    return APIError(f"HTTP 403 Forbidden (not sent: the Turnstile challenge is not solved): {url}", status_code=403)
+
+
+def _challenge_request_failed(url: str) -> None:
+    """İstek challenge'da yanıtsız bitti (tarayıcının yanıtlamadığı bir challenge ya da kapı tuttu)."""
+    with _gate.lock:
+        _gate.challenge_failed_requests += 1
+        _gate.consecutive_challenge_failed_requests += 1
+        count = _gate.consecutive_challenge_failed_requests
+        if count >= CHALLENGE_FAILURES_ALERT:
+            _gate.held = True  # kapı buradan tutulur, süren istekler bir deneme daha yapmaz (_kept)
+    if count == CHALLENGE_FAILURES_ALERT:
+        bridge = _active_bridge()
+        logger.error(
+            f"The Turnstile challenge keeps failing ({count} request(s) in a row unanswered, the last on {url}; "
+            f"{_gate.challenge_failures} challenge(s) and {getattr(bridge, 'solve_failures', 0)} solve(s) failed in "
+            "all); nothing is being read"
+        )
+
+
+def _probe_ended(req: _Request) -> None:
+    """
+    Kapının yoklaması yanıtsız bitti: hiçbir çözümün yanıtlamadığı bir 403'e takıldıysa ya da tarayıcı yanıt
+    vermediyse sonraki UNSOLVABLE_PROBE_PAUSE_S sonra gider, art arda iki katı (onları bir çözümün beklemesi aralamaz).
+    """
+    if not (req.unsolvable or req.browser_failed):
+        return
+    with _gate.lock:
+        _gate.unsolvable_probes += 1
+        pause = min(UNSOLVABLE_PROBE_PAUSE_MAX_S, UNSOLVABLE_PROBE_PAUSE_S * 2 ** (_gate.unsolvable_probes - 1))
+        _gate.probe_not_before = time.monotonic() + pause
+        probes = _gate.unsolvable_probes
+    logger.warning(
+        f"{'A 403 no solve answers' if req.unsolvable else 'The browser gave no answer'} ({probes} probe(s) in a row); "
+        f"the next request goes in {int(pause)} s"
+    )
+
+
 def _answered() -> None:
     """
-    SofaScore isteğe yanıt verdi (200 ya da 404; curl'ün ya da köprünün): köprünün başarısız çözümleri artık art arda
-    değildir (BrowserBridge.reset_solve_streak, c'nin B2'si).
+    SofaScore isteğe yanıt verdi (200 ya da 404; curl'ün ya da köprünün): kapı açılır ve köprünün başarısız
+    çözümleri artık art arda değildir (BrowserBridge.reset_solve_streak, c'nin B2'si).
     """
+    with _gate.lock:
+        count, skipped = _gate.consecutive_challenge_failed_requests, _gate.skipped_in_hold
+        _gate.consecutive_challenge_failed_requests = 0
+        _gate.held = False
+        _gate.unsolvable_probes = 0
+        _gate.probe_not_before = -math.inf
+        _gate.skip_logged = False
+        _gate.skipped_in_hold = 0
+    if count >= CHALLENGE_FAILURES_ALERT:
+        logger.info(
+            f"SofaScore answers again after {count} request(s) failed on the challenge"
+            + (f" ({skipped} of them not sent, or not retried)" if skipped else "")
+        )
+    if count:
+        _publish_gate()
     bridge = _active_bridge()
     reset = getattr(bridge, "reset_solve_streak", None)
     if reset is not None:
@@ -330,10 +532,68 @@ def _answered() -> None:
             logger.debug("resetting the solve streak failed", exc_info=True)
 
 
-def _ended_with(exc: BaseException) -> None:
-    """İsteği bitiren hata: 404 bir yanıttır (_answered)."""
-    if isinstance(exc, ResourceNotFoundError):
+def _request_done(url: str, req: _Request, exc: Optional[BaseException]) -> None:
+    """İsteğin son hali kapıya ve sayaçlara: yanıt (200, 404) ya da yanıtsız bitiş."""
+    if req.probe:
+        _gate.probe_out = False
+    if exc is None or isinstance(exc, ResourceNotFoundError):
         _answered()
+        return
+    if isinstance(exc, CircuitOpenError):
+        return  # devre kesildi: istek gönderilmedi, kapı hakkında bir şey söylemez
+    if req.challenge_failed:
+        _challenge_request_failed(url)
+        _publish_gate()
+    if req.single and isinstance(exc, SofaScoreScraperError):
+        _probe_ended(req)
+
+
+def _count(field: str) -> None:
+    with _gate.lock:
+        setattr(_gate, field, getattr(_gate, field) + 1)
+
+
+def _browser_sync(full_url: str, req: _Request) -> "Tuple[Any, Any]":
+    """Köprüden tek deneme (sync); sonucu ve nasıl bittiği (bridge.BrowserOutcome)."""
+    from sofascore_scraper.client import bridge as cs
+
+    with cs.observe(hold=lambda: _kept(req)) as seen:
+        data = cs.fetch_api_via_browser_sync(full_url)
+    return data, seen
+
+
+async def _browser_async(full_url: str, req: _Request) -> "Tuple[Any, Any]":
+    """Köprüden tek deneme (async); sonucu ve nasıl bittiği. Köprünün hatası yükselir."""
+    from sofascore_scraper.client import bridge as cs
+
+    with cs.observe(hold=lambda: _kept(req)) as seen:
+        data = await cs.fetch_api_via_browser(full_url)
+    return data, seen
+
+
+def _browser_unanswered(req: _Request, seen: Any) -> None:
+    """Tarayıcı bu isteğe 200/404 vermedi: 403'le yanıtladıysa challenge'da yanıtsızdır, hiç yanıt yoksa başarısızdır."""
+    status = getattr(seen, "status", None)
+    if status == 403:
+        _count("challenge_failures")
+        req.challenge_failed = True
+        if not _needs_solve(403, getattr(seen, "text", "") or ""):
+            req.unsolvable = True
+    else:
+        req.browser_failed = True
+
+
+def _challenge_unanswered(req: _Request, seen: Any) -> None:
+    """
+    curl'ün challenge'ını tarayıcı yanıtlamadı (hiç yanıt vermedi ya da 403'le döndü): istek challenge'da yanıtsızdır.
+    """
+    _count("challenge_failures")
+    req.challenge_failed = True
+    status = getattr(seen, "status", None)
+    if status is None or status == 0:
+        req.browser_failed = True
+    elif status == 403 and not _needs_solve(403, getattr(seen, "text", "") or ""):
+        req.unsolvable = True
 
 
 def base_url() -> str:
@@ -381,12 +641,10 @@ def make_api_request(
     try:
         data = _request_sync(url, max_retries, timeout, trace)
     except SofaScoreScraperError as e:
-        _ended_with(e)
         breaker.report_exception(e)
         if raise_on_failure or raise_errors:
             raise
         return None
-    _answered()
     breaker.report_ok()
     return data
 
@@ -396,6 +654,26 @@ def _request_sync(
 ) -> Optional[JsonResponse]:
     """make_api_request'in gövdesi: veri döndürür ya da isteği bitiren tipli hatayı fırlatır."""
     trace = trace if trace is not None else RequestTrace()
+    breaker.check(url)
+    req = _Request()
+    why = _admit(req)
+    if why is not None:
+        skipped = _skip(url, why, req)
+        _request_done(url, req, skipped)
+        raise skipped
+    try:
+        data = _request_sync_body(url, max_retries, timeout, trace, req)
+    except BaseException as e:
+        _request_done(url, req, e)
+        raise
+    _request_done(url, req, None)
+    return data
+
+
+def _request_sync_body(
+    url: str, max_retries: Optional[int], timeout: Optional[float], trace: RequestTrace, req: _Request
+) -> Optional[JsonResponse]:
+    """Kapıdan geçen isteğin denemeleri (_request_sync)."""
     runtime_config = _get_runtime_request_config()
     max_retries = max(1, max_retries if max_retries is not None else int(runtime_config["max_retries"]))
     timeout = timeout if timeout is not None else int(runtime_config["request_timeout"])
@@ -404,29 +682,37 @@ def _request_sync(
     use_proxy, proxy_url = _get_proxy_config()
     full_url = _full_url(url)
 
-    breaker.check(url)
-    if _browser_first():
+    if _browser_first() or req.single:
+        # Kapının yoklaması sayfası çözen tarayıcıdan gider: tek istek (c'de 2026-10-02'ye kadar 7'ye kadar)
         raise_if_cancelled()
-        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
-        data = fetch_api_via_browser_sync(full_url)
+        data, seen = _browser_sync(full_url, req)
+        if seen.status is not None and not seen.sent:
+            raise _skip(url, "challenge", req, record=False)  # köprü sağlığa kendisi yazdı
         if data is not None:
             trace.bridge()
+            req.challenge_failed = False
             try:
                 _sleep(wait_time_min + random.uniform(0, wait_time_max))
             except FetchCancelled:
                 # Yanıt elimizde: curl yolundaki gibi döndür, iptal bir sonraki istekte işlensin (FX-18)
                 pass
             return _browser_result(data, url)
-        # Köprü başarısız: aşağıda curl ile normal yoldan dene
+        _browser_unanswered(req, seen)
+        # Köprü başarısız: aşağıda curl ile normal yoldan dene (yoklama: tek deneme)
 
+    attempts = 1 if req.single else max_retries
     # İsteği bitiren hata: döngüden `break` ile çıkılır ve sonda fırlatılır (try içinde fırlatılsa
     # aşağıdaki geniş except onu bağlantı hatası sanıp yeniden denerdi)
     failure: Exception = NetworkError(f"Request failed: {url}")
-    for attempt in range(max_retries):
+    for attempt in range(attempts):
         raise_if_cancelled()
+        if attempt and (why := _kept(req)) is not None:
+            # Bu arada bir çözüm başarısız oldu (bu isteğin ya da başkasının): kalan her deneme challenge'a takılırdı
+            failure = _skip(url, why, req)
+            break
         breaker.check(url)  # devre açıksa istek gönderilmez, ortak bütçeden sıra ayrılmaz
         trace.attempt()
-        last_attempt = attempt == max_retries - 1
+        last_attempt = attempt == attempts - 1
         try:
             logger.debug(f"API request ({attempt+1}/{max_retries}): {url}")
 
@@ -440,6 +726,10 @@ def _request_sync(
                 kwargs["proxies"] = {"http": proxy_url, "https": proxy_url}
 
             _throttle()
+            if (why := _kept(req)) is not None:
+                # Sıra beklenirken geldi (bir işin istekleri birbirinin arkasında bekler)
+                failure = _skip(url, why, req)
+                break
             response = cffi_requests.get(full_url, **kwargs)
             trace.curl(response.status_code)
 
@@ -459,11 +749,12 @@ def _request_sync(
                 logger.warning(f"403 Forbidden (attempt {attempt+1}/{max_retries}): {url}")
                 logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'none')}, cf-mitigated: {response.headers.get('cf-mitigated', 'none')}")
                 raise_if_cancelled()
-                if _needs_solve(403, response.text):
+                if _needs_solve(403, response.text) and not (req.single and req.browser_failed):
+                    _count("challenges")
                     logger.info("Turnstile challenge detected; fetching through the browser bridge")
+                    seen: Any = None
                     try:
-                        from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
-                        browser_data = fetch_api_via_browser_sync(full_url)
+                        browser_data, seen = _browser_sync(full_url, req)
                         if browser_data is not None:
                             trace.bridge()
                             _mark_browser_first()
@@ -471,14 +762,27 @@ def _request_sync(
                     except Exception as te:
                         logger.debug(f"Browser bridge error: {te}")
                         browser_data = None
+                    if seen is not None and seen.status is not None and not seen.sent:
+                        # Başka bir isteğin çözümü bu istek sırasını beklerken başarısız oldu: gönderilmedi
+                        _count("challenge_failures")
+                        failure = _skip(url, "challenge", req, record=False)
+                        break
                     if isinstance(browser_data, dict) and browser_data.get("__404__"):
                         failure = ResourceNotFoundError(f"Not found: {url}")
                         break
                     if browser_data is not None:
+                        req.challenge_failed = False
                         return cast(JsonResponse, browser_data)
+                    _challenge_unanswered(req, seen)
+                elif not _needs_solve(403, response.text):
+                    req.unsolvable = True
                 if last_attempt:
                     logger.error(f"403 Forbidden, no attempts left: {url}")
                     failure = APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
+                    break
+                if _solve_cooldown_left() > 0:
+                    # Çözüm başarısız oldu: hiçbir yeniden deneme geçmez
+                    failure = _skip(url, "challenge", req)
                     break
                 _notify_wait("forbidden", min(120, 10 * (2 ** attempt)))
                 _sleep(min(120, 10 * (2 ** attempt)))
@@ -574,10 +878,8 @@ async def make_api_request_async(
     try:
         data = await _request_async(session, url, max_retries, timeout, trace)
     except SofaScoreScraperError as e:
-        _ended_with(e)
         breaker.report_exception(e)
         raise
-    _answered()
     breaker.report_ok()
     return data
 
@@ -591,6 +893,31 @@ async def _request_async(
 ) -> Optional[JsonResponse]:
     """make_api_request_async'in gövdesi."""
     trace = trace if trace is not None else RequestTrace()
+    breaker.check(url)
+    req = _Request()
+    why = _admit(req)
+    if why is not None:
+        skipped = _skip(url, why, req)
+        _request_done(url, req, skipped)
+        raise skipped
+    try:
+        data = await _request_async_body(session, url, max_retries, timeout, trace, req)
+    except BaseException as e:
+        _request_done(url, req, e)
+        raise
+    _request_done(url, req, None)
+    return data
+
+
+async def _request_async_body(
+    session: AsyncSession,
+    url: str,
+    max_retries: Optional[int],
+    timeout: Optional[float],
+    trace: RequestTrace,
+    req: _Request,
+) -> Optional[JsonResponse]:
+    """Kapıdan geçen isteğin denemeleri (_request_async)."""
     runtime_config = _get_runtime_request_config()
     max_retries = max(1, max_retries if max_retries is not None else int(runtime_config["max_retries"]))
     request_timeout = timeout if timeout is not None else int(runtime_config["request_timeout"])
@@ -600,20 +927,23 @@ async def _request_async(
     full_url = _full_url(url)
     semaphore = _request_semaphore()
 
-    breaker.check(url)
-    if _browser_first():
+    if _browser_first() or req.single:
+        # Kapının yoklaması sayfası çözen tarayıcıdan gider: tek istek
         raise_if_cancelled()
         browser_data = None
+        seen: Any = None
         try:
-            from sofascore_scraper.client.bridge import fetch_api_via_browser
             async with semaphore:
                 # Semafor beklenirken iş durdurulmuş olabilir (aşağıdaki curl yoluyla aynı kural)
                 raise_if_cancelled()
-                browser_data = await fetch_api_via_browser(full_url)
+                browser_data, seen = await _browser_async(full_url, req)
         except Exception as e:
             logger.debug(f"Browser bridge error: {e!r}")
+        if seen is not None and seen.status is not None and not seen.sent:
+            raise _skip(url, "challenge", req, record=False)  # köprü sağlığa kendisi yazdı
         if browser_data is not None:
             trace.bridge()
+            req.challenge_failed = False
         if isinstance(browser_data, dict) and browser_data.get("__404__"):
             raise ResourceNotFoundError(f"Not found: {url}")
         if browser_data is not None:
@@ -624,12 +954,17 @@ async def _request_async(
                 # (FX-18, plan bölüm 15 satır 91)
                 pass
             return cast(JsonResponse, browser_data)
-        # Köprü başarısız: aşağıda curl ile normal yoldan dene
+        _browser_unanswered(req, seen)
+        # Köprü başarısız: aşağıda curl ile normal yoldan dene (yoklama: tek deneme)
 
-    for attempt in range(max_retries):
+    attempts = 1 if req.single else max_retries
+    for attempt in range(attempts):
         raise_if_cancelled()
+        if attempt and (why := _kept(req)) is not None:
+            # Bu arada bir çözüm başarısız oldu: kalan her deneme challenge'a takılırdı
+            raise _skip(url, why, req)
         trace.attempt()
-        last_attempt = attempt == max_retries - 1
+        last_attempt = attempt == attempts - 1
         try:
             logger.debug(f"Async API request ({attempt+1}/{max_retries}): {url}")
 
@@ -646,7 +981,9 @@ async def _request_async(
                 # Sıra beklerken devre kesilmiş olabilir: istek gönderilmez, ortak bütçeden sıra ayrılmaz
                 breaker.check(url)
                 await _athrottle()
-                response = await session.get(full_url, **kwargs)
+                kept = _kept(req)
+                if kept is None:
+                    response = await session.get(full_url, **kwargs)
         except CircuitOpenError:
             raise
         except Exception as e:
@@ -659,6 +996,9 @@ async def _request_async(
             await _asleep(_retry_wait(attempt))
             continue
 
+        if kept is not None:
+            # Sıra beklenirken geldi (bir işin istekleri birbirinin arkasında bekler): gönderilmedi
+            raise _skip(url, kept, req)
         status = response.status_code
         trace.curl(status)
 
@@ -676,24 +1016,36 @@ async def _request_async(
             logger.warning(f"403 Forbidden (attempt {attempt+1}/{max_retries}): {url}")
             logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'none')}, cf-mitigated: {response.headers.get('cf-mitigated', 'none')}")
             raise_if_cancelled()
-            if _needs_solve(403, response.text):
+            if _needs_solve(403, response.text) and not (req.single and req.browser_failed):
+                _count("challenges")
                 logger.info("Turnstile challenge detected; fetching through the browser bridge")
                 browser_data = None
+                seen = None
                 try:
-                    from sofascore_scraper.client.bridge import fetch_api_via_browser
-                    browser_data = await fetch_api_via_browser(full_url)
+                    browser_data, seen = await _browser_async(full_url, req)
                 except Exception as te:
                     logger.debug(f"Browser bridge error: {te!r}")
+                if seen is not None and seen.status is not None and not seen.sent:
+                    # Başka bir isteğin çözümü bu istek sırasını beklerken başarısız oldu: gönderilmedi
+                    _count("challenge_failures")
+                    raise _skip(url, "challenge", req, record=False)
                 if browser_data is not None:
                     trace.bridge()
+                    req.challenge_failed = False
                 if isinstance(browser_data, dict) and browser_data.get("__404__"):
                     raise ResourceNotFoundError(f"Not found: {url}")
                 if browser_data is not None:
                     _mark_browser_first()
                     logger.debug("Fetched through the browser bridge")
                     return cast(JsonResponse, browser_data)
+                _challenge_unanswered(req, seen)
+            elif not _needs_solve(403, response.text):
+                req.unsolvable = True
             if last_attempt:
                 raise APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
+            if _solve_cooldown_left() > 0:
+                # Çözüm başarısız oldu: hiçbir yeniden deneme geçmez
+                raise _skip(url, "challenge", req)
             _notify_wait("forbidden", min(120, 10 * (2 ** attempt)))
             await _asleep(min(120, 10 * (2 ** attempt)))
             continue

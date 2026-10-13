@@ -579,6 +579,7 @@ def _isolate_request_layer(request, monkeypatch):
     from sofascore_scraper import bridge_health
 
     monkeypatch.setattr(transport, "_browser_first_until", 0.0)
+    transport.reset_gate()  # istek katmanının kapısı da (S1-B4): bir testin yanıtsız istekleri sonrakini tutmasın
     bridge_health.reset()  # köprü sağlık durumu da testten teste taşınmaz
     follows = sys.modules.get("sofascore_scraper.services.follows")
     if follows is not None:

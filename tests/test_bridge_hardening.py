@@ -1020,3 +1020,71 @@ def test_a_live_bridge_goes_back_to_its_own_quiet_page(tmp_path):
     b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": "x"}])
     assert _run(b.evaluate("js")) == {"ok": 1}
     b.page.goto.assert_awaited_once_with(quiet, wait_until="domcontentloaded", timeout=30000)
+
+
+# --- B4: köprü, çözüm soğurken ya da kapı tutarken sayfa isteğini göndermez (c: 8b0e05d, 68cfba4) ------------
+
+
+def test_in_a_cooldown_the_page_fetch_is_answered_unsent(tmp_path):
+    from sofascore_scraper import bridge_health
+
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b.page = _page({"status": 200, "ok": True, "data": {"a": 1}, "text": None})
+    b._solve_failed_at, b._solve_cooldown_s = clock.t, 180.0
+    with cs.observe() as seen:
+        assert _run(b.fetch_json("/event/1")) is None
+    assert (seen.status, seen.sent) == (403, False)
+    b.page.evaluate.assert_not_awaited()
+    assert bridge_health.snapshot()["last_error"]["kind"] == bridge_health.KIND_CHALLENGE  # sayılır
+    clock.t += 180
+    with cs.observe() as seen:
+        assert _run(b.fetch_json("/event/1")) == {"a": 1}
+    assert (seen.status, seen.sent) == (200, True)
+
+
+def test_a_fetch_whose_turn_comes_in_a_cooldown_is_not_sent(tmp_path, monkeypatch):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b.page = _page({"status": 200, "ok": True, "data": {"a": 1}, "text": None})
+
+    async def slot():  # sıra beklenirken başka bir isteğin çözümü başarısız oldu
+        b._solve_failed_at, b._solve_cooldown_s = clock.t, 180.0
+
+    monkeypatch.setattr(cs, "_wait_for_slot", slot)
+    with cs.observe() as seen:
+        assert _run(b.fetch_json("/event/1")) is None
+    assert seen.sent is False
+    b.page.evaluate.assert_not_awaited()
+
+
+def test_the_request_layers_gate_is_asked_when_the_turn_comes(tmp_path):
+    b = _clocked(tmp_path, Clock())
+    b.page = _page({"status": 200, "ok": True, "data": {"a": 1}, "text": None})
+    with cs.observe(hold=lambda: "challenge") as seen:
+        assert _run(b.fetch_json("/event/1")) is None
+    assert seen.sent is False
+    b.page.evaluate.assert_not_awaited()
+    with cs.observe(hold=lambda: None) as seen:
+        assert _run(b.fetch_json("/event/1")) == {"a": 1}
+
+
+def test_the_solves_own_probe_is_never_held_back(tmp_path):
+    b = _clocked(tmp_path, Clock())
+    b.page = _page({"status": 200, "ok": True, "data": {}, "text": None})
+
+    async def go():
+        with cs.observe(hold=lambda: "challenge"):
+            return await b._api_unlocked()
+
+    assert _run(go()) is True
+    b.page.evaluate.assert_awaited_once()
+
+
+def test_the_outcome_reaches_the_caller_through_the_background_loop(tmp_path, monkeypatch):
+    b = _clocked(tmp_path, Clock())
+    b.page = _page({"status": 403, "ok": False, "data": None, "text": "<html>blocked</html>"})
+    monkeypatch.setattr(cs.BrowserBridge, "get_instance", classmethod(lambda cls, *a, **k: b))
+    with cs.observe() as seen:
+        assert cs.fetch_api_via_browser_sync("/event/1") is None
+    assert (seen.status, seen.text, seen.sent) == (403, "<html>blocked</html>", True)
