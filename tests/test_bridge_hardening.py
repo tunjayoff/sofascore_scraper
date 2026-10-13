@@ -1088,3 +1088,232 @@ def test_the_outcome_reaches_the_caller_through_the_background_loop(tmp_path, mo
     with cs.observe() as seen:
         assert cs.fetch_api_via_browser_sync("/event/1") is None
     assert (seen.status, seen.text, seen.sent) == (403, "<html>blocked</html>", True)
+
+
+# --- A4: siteye ulaşıldı mı (c: 1f27d68, 45e4acd, b03f298, 4825feb) --------------------------------------
+
+
+def _net(url: str = cs.CAPTCHA_URL, frame: Optional[str] = "main", cached: bool = False, sw: bool = False):
+    """Dinleyicinin gördüğü bir yanıt: `cached` disk önbelleğinden (Chromium'un kodlanmış veri uzunluğu 0)."""
+    sizes = {"responseBodySize": -192 if cached else 33, "responseHeadersSize": 192}
+    request = MagicMock(frame=frame)
+    request.sizes = AsyncMock(return_value=sizes)
+    return MagicMock(url=url, from_service_worker=sw, request=request)
+
+
+def _failed(url: str = cs.CAPTCHA_URL, why: str = "net::ERR_CONNECTION_TIMED_OUT"):
+    """Tarayıcının kendi ağ hatasının düşürdüğü bir istek (`requestfailed`)."""
+    return MagicMock(url=url, failure=why)
+
+
+def _listening(fire=None, raises=None, failed=None):
+    """Dinleyicilerimizi kuran, `fire` yanıtlarını ve `failed` istek hatalarını tetikleyen bir Scrapling fetch'i."""
+
+    async def fetch(url, **kw):
+        page = MagicMock()
+        page.main_frame = "main"
+        handlers: dict = {}
+        page.on = lambda event, fn: handlers.__setitem__(event, fn)
+        await kw["page_setup"](page)
+        for r in fire or []:
+            handlers["response"](r)
+        for r in failed or []:
+            handlers["requestfailed"](r)
+        if raises is not None:
+            raise raises
+
+    return fetch
+
+
+def _no_cookie_fetch(tmp_path, monkeypatch, fetch):
+    b, sp = _solving_bridge(tmp_path, monkeypatch, [], [])
+    b.session.fetch = AsyncMock(side_effect=fetch)
+    b.page = _page(url="about:blank")
+    b.ensure_ready = AsyncMock()
+    return b, sp
+
+
+def _fetch_outcome(b):
+    async def go():
+        with cs.observe() as seen:
+            data = await b.fetch_json("/event/1")
+        return data, seen
+
+    return _run(go())
+
+
+def test_a_name_that_does_not_resolve_is_a_transport_failure(tmp_path, monkeypatch):
+    async def no_name(url, **kw):
+        raise RuntimeError("Page.goto: net::ERR_NAME_NOT_RESOLVED at " + url)
+
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, no_name)
+    data, seen = _fetch_outcome(b)
+    assert data is None and (seen.status, seen.sent) == (0, False) and "could not reach" in seen.text
+    b.page.evaluate.assert_not_awaited()
+    assert b.solve_unreached and b.solve_cooldown_left() == cs.UNREACHED_COOLDOWN_S
+    assert (b.solve_failures, b.consecutive_solve_failures) == (1, 0)  # seride değil
+    assert not cs._navigation_error(RuntimeError("net::ERR_ABORTED"))
+
+
+def test_a_solver_that_raises_on_captcha_html_is_the_challenge_not_the_network(tmp_path, monkeypatch):
+    # Çözücü captcha.html yüklendikten sonra çalışır; hata verirse (iframe'in kutusu, zaman aşımı) site ulaşılmıştır
+    timeout = TimeoutError("Timeout 60000ms exceeded (iframe.bounding_box)")
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, _listening([_net(frame=None)], timeout))
+    data, seen = _fetch_outcome(b)
+    assert (seen.status, seen.text) == (403, cs._UNSENT_CHALLENGE) and not b.solve_unreached
+
+
+def test_a_goto_timeout_with_no_answer_is_a_transport_failure(tmp_path, monkeypatch):
+    timeout = TimeoutError("Page.goto: Timeout 60000ms exceeded.")
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, _listening(raises=timeout, failed=[_failed()]))
+    assert _fetch_outcome(b)[1].status == 0
+    # Ne bayt ne ağ hatası: kesintinin kanıtı yok, challenge'ın 403'ü
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, _listening(raises=timeout))
+    assert _fetch_outcome(b)[1].status == 403
+    # Bir reklamın düşen isteği de kanıt değil
+    ad = _failed("https://ads.example/x")
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, _listening(raises=timeout, failed=[ad]))
+    assert _fetch_outcome(b)[1].status == 403
+
+
+def test_a_service_worker_a_frame_or_the_disk_cache_is_no_reach(tmp_path, monkeypatch):
+    cached = MagicMock(url=cs.CAPTCHA_URL, from_service_worker=True)
+    framed = _net(frame="ad")
+    timeout = TimeoutError("Page.goto: Timeout 60000ms exceeded.")
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, _listening([cached, framed], timeout, [_failed()]))
+    assert _fetch_outcome(b)[1].status == 0
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, _listening([_net(cached=True)], timeout, [_failed()]))
+    assert _fetch_outcome(b)[1].status == 0
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, _listening([_net()], timeout))
+    assert _fetch_outcome(b)[1].status == 403
+
+
+def test_a_network_error_with_an_answer_seen_reached_the_site(tmp_path, monkeypatch):
+    fetch = _listening([_net("https://challenges.cloudflare.com/x", frame=None)],
+                       RuntimeError("net::ERR_CONNECTION_RESET"))
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, fetch)
+    assert _fetch_outcome(b)[1].status == 403
+
+
+def test_an_unreached_solve_is_not_in_the_run_and_cools_down_30_s(tmp_path):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+
+    async def unreached(*_a, **_k):
+        b.solve_unreached = True
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=unreached)
+    for _ in range(4):
+        assert _run(b.solve_challenge()) is None
+        assert b.solve_cooldown_left() == 30
+        clock.t += 30
+        b._load_not_before = -float("inf")
+    assert (b.solve_failures, b.consecutive_solve_failures) == (4, 0)
+
+
+def test_a_load_cancelled_with_no_answer_is_unreached(tmp_path, monkeypatch):
+    async def silent(url, **kw):
+        page = MagicMock()
+        handlers: dict = {}
+        page.on = lambda event, fn: handlers.__setitem__(event, fn)
+        await kw["page_setup"](page)
+        handlers["requestfailed"](_failed())
+        await asyncio.sleep(10)
+
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, silent)
+
+    async def go():
+        task = asyncio.ensure_future(b._solve_on_captcha_page(1, time.monotonic() + 60))
+        await asyncio.sleep(0.05)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    _run(go())
+    assert b.solve_unreached is True and len(b._load_starts) == 0  # Cloudflare'e bir şey göstermedi
+
+
+def test_a_launch_cut_with_a_network_check_pending_waits_for_it(tmp_path, monkeypatch):
+    async def answered_then_hang(url, **kw):
+        page = MagicMock()
+        page.main_frame = "main"
+        handlers: dict = {}
+        page.on = lambda event, fn: handlers.__setitem__(event, fn)
+        await kw["page_setup"](page)
+        slow = _net()
+
+        async def sizes():
+            await asyncio.sleep(0.2)
+            return {"responseBodySize": 33, "responseHeadersSize": 192}
+
+        slow.request.sizes = sizes
+        handlers["response"](slow)
+        handlers["requestfailed"](_failed())  # sonraki bir istek düştü: yanıt değil
+        await asyncio.sleep(10)
+
+    b, _ = _no_cookie_fetch(tmp_path, monkeypatch, answered_then_hang)
+
+    async def go():
+        task = asyncio.ensure_future(b._solve_on_captcha_page(1, time.monotonic() + 60))
+        await asyncio.sleep(0.05)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    _run(go())
+    assert b.solve_unreached is False
+
+
+def test_a_solve_with_no_time_left_to_load_is_not_unreached(tmp_path, monkeypatch):
+    b, _ = _solving_bridge(tmp_path, monkeypatch, [], [])
+    b.solve_unreached = True  # önceki bir çözümden
+    assert _run(b._solve_on_captcha_page(2, time.monotonic())) is None
+    assert b.solve_unreached is False and b.session.fetch.await_count == 0
+
+
+def test_a_page_answer_ends_the_unreached_state(tmp_path):
+    b = _clocked(tmp_path, Clock())
+    b.solve_unreached = True
+    b.page = _page({"status": 200, "ok": True, "data": {"a": 1}, "text": None})
+    assert _run(b.fetch_json("/event/1")) == {"a": 1} and b.solve_unreached is False
+
+
+def test_in_an_unreached_cooldown_the_unsent_answer_is_the_networks(tmp_path):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b.page = _page()
+    b.solve_unreached = True
+    b._solve_failed_at, b._solve_cooldown_s = clock.t, cs.UNREACHED_COOLDOWN_S
+    data, seen = _fetch_outcome(b)
+    assert data is None and (seen.status, seen.sent) == (0, False)
+
+
+def test_the_listener_never_raises_into_playwright(caplog, monkeypatch):
+    class NoFrame:
+        url = cs.CAPTCHA_URL
+        from_service_worker = False
+
+        @property
+        def request(self):
+            raise RuntimeError("Request has no frame yet")
+
+    assert cs._reached(NoFrame(), MagicMock()) is False
+    monkeypatch.setattr(cs, "_cache_logged", False)
+    answer = MagicMock(url=cs.CAPTCHA_URL, from_service_worker=False, request=MagicMock(frame="main"),
+                       headers={"cache-control": "no-store"})
+    page = MagicMock(main_frame="main")
+    with caplog.at_level("INFO"):
+        assert cs._reached(answer, page) and cs._reached(answer, page)
+    logged = [r.getMessage() for r in caplog.records if "Cache-Control" in r.getMessage()]
+    assert logged == ["captcha.html answered with Cache-Control: no-store"]
+    assert cs._network_failure(MagicMock(url=cs.CAPTCHA_URL, failure="net::ERR_ABORTED")) is None
+    assert cs._network_failure(_failed()) == "net::ERR_CONNECTION_TIMED_OUT"
+
+
+def test_the_unreached_state_is_published(tmp_path):
+    from sofascore_scraper import bridge_health
+
+    b = _clocked(tmp_path, Clock())
+    b.solve_unreached = True
+    b._count_solve(False)
+    assert bridge_health.solver()["solve_unreached"] is True

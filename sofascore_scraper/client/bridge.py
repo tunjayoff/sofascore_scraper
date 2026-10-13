@@ -134,6 +134,100 @@ _UNSENT_CHALLENGE = '{"error": {"code": 403, "reason": "challenge"}}'
 """
 
 
+# Ağın yanıtladığını gösteren adresler ve tarayıcının kendi ağ hatası (S1-A4)
+_CHALLENGES_ORIGIN = "https://challenges.cloudflare.com/"
+_NAVIGATION_ERROR_RE = re.compile(r"net::ERR_(?!ABORTED)|NS_ERROR_")
+_NETWORK_CHECK_S = 5.0
+# Yüklemesi siteye ulaşmayan bir çözümden sonraki bekleme (`solve_unreached`: ağ yok): o yükleme ne SofaScore'a ne
+# Cloudflare'e ulaştı; kısa bir bekleme okumaları ağ dönünce hemen geri getirir (başarısız çözüm serisinde değildir)
+UNREACHED_COOLDOWN_S = 30.0
+
+
+def _reached(response: Any, page: Any) -> bool:
+    """
+    Sitenin yanıtladığını gösteren bir yanıt: ana çerçevenin captcha.html gezinmesine ya da Cloudflare'in
+    challenge'larından; bir service worker'ın verdiği asla (önbellekteki bir sayfa hiçbir şeye ulaşmaz).
+    """
+    if getattr(response, "from_service_worker", False) is True:
+        return False
+    url = str(getattr(response, "url", "") or "")
+    if url.startswith(_CHALLENGES_ORIGIN):
+        return True
+    if not url.startswith(SITE_ORIGIN + "/captcha.html"):
+        return False
+    try:
+        # patchright'ın Request.frame'i isteğin henüz çerçevesi ya da sayfası yokken hata verir; bir dinleyicinin
+        # hatası Playwright'ın sonraki protokol çağrısını bozardı
+        frame = getattr(getattr(response, "request", None), "frame", None)
+        main = getattr(page, "main_frame", None)
+    except Exception:  # dinleyici Playwright'a asla hata fırlatmaz
+        return False
+    main_frame = frame is None or main is None or frame == main
+    if main_frame:
+        _log_captcha_cache(response)
+    return main_frame
+
+
+_cache_logged = False
+
+
+def _log_captcha_cache(response: Any) -> None:
+    """
+    Süreçte bir kez, INFO: captcha.html'nin ana çerçeve yanıtının taşıdığı `Cache-Control` (kendi isteği yok); canlı
+    bir koşu önbellekteki bir sayfanın ulaşılmış bir site sayılıp sayılamayacağını söyler.
+    """
+    global _cache_logged
+    if _cache_logged:
+        return
+    _cache_logged = True
+    try:
+        headers = getattr(response, "headers", None) or {}
+        value = headers.get("cache-control") if isinstance(headers, dict) else None
+    except Exception:  # dinleyici Playwright'a asla hata fırlatmaz
+        value = None
+    logger.info("captcha.html answered with Cache-Control: %s", value or "(none)")
+
+
+async def _from_network(response: Any) -> bool:
+    """
+    Bu yanıt ağdan mı geldi, disk önbelleğinden değil? captcha.html önbelleğe alınabilir (`Cache-Control: public,
+    max-age=3600`, c'nin soak'ı): kesintide önbellek onu verebilir. Ağdan geçen, isteğin yanıt başlıkları ve gövdesidir
+    (`Request.sizes()`, Chromium'un kodlanmış veri uzunluğu): önbelleğin verdiği sayfa için 0 (patchright 1.63'ün
+    Chromium'uyla yerel sunucuya karşı ölçüldü), sunucunun gönderdiği için (304 dahil) fazlası.
+    """
+    try:
+        sizes = await asyncio.wait_for(response.request.sizes(), _NETWORK_CHECK_S)
+        body = sizes.get("responseBodySize") or 0
+        headers = sizes.get("responseHeadersSize") or 0
+    except Exception:  # bilinmiyor: ağın taşıdığının kanıtı değil
+        return False
+    return body + headers > 0
+
+
+def _network_failure(request: Any) -> Optional[str]:
+    """
+    Sitenin ya da Cloudflare challenge'larının, tarayıcının kendi ağ hatasıyla (`requestfailed`, `net::ERR_*` ama
+    `ERR_ABORTED` değil) düşen bir isteği; değilse None. Asla hata fırlatmaz (dinleyici).
+    """
+    try:
+        url = str(getattr(request, "url", "") or "")
+        failure = getattr(request, "failure", None)
+        if callable(failure):
+            failure = None  # eski bir API'nin metodu: dinleyicide beklenmez
+        text = str(failure or "")
+    except Exception:  # dinleyici Playwright'a asla hata fırlatmaz
+        return None
+    if not (_on_origin(url) or url.startswith(_CHALLENGES_ORIGIN)):
+        return None
+    return text if _NAVIGATION_ERROR_RE.search(text) else None
+
+
+def _navigation_error(e: BaseException) -> bool:
+    """Tarayıcının kendi ağ hatası (Chromium'un `net::ERR_*`'ı: ad yok, bağlantı yok, proxy düştü), yüklenen bir
+    sayfanınki değil (`ERR_ABORTED`: yarıda kesilen gezinme)."""
+    return _NAVIGATION_ERROR_RE.search(str(e)) is not None
+
+
 def _page_url(page: Any) -> Optional[str]:
     """Sayfanın adresi; sayfa yoksa ya da adresi okunamıyorsa (testlerin sahte sayfaları) None."""
     url = getattr(page, "url", None) if page is not None else None
@@ -424,6 +518,8 @@ class BrowserBridge:
     _launching = False
     # API'nin kabul ettiği son token (_api_unlocked; ya da yoklanacak sayfa yoktu)
     _checked_token: Optional[str] = None
+    # Son çözümün yüklemeleri siteye hiç ulaşmadı (ağ yok; S1-A4)
+    solve_unreached = False
     token: Optional[str] = None
     _token_at = 0.0
     _solve_task: Optional["asyncio.Future[Optional[str]]"] = None
@@ -604,8 +700,10 @@ class BrowserBridge:
             self._count_solve(solved_now is not None)  # açılışın çözümü de bir çözümdür
             if solved_now is None:
                 # c'ye taşınan kod gibi: kendi beklemesi yok; ilk sayfa isteği (cookie yoksa isteğin kendisi) yeniden
-                # çözer
+                # çözer. Siteye ulaşmayan bir yükleme UNREACHED_COOLDOWN_S bekler.
                 logger.warning("The Turnstile challenge at launch left no sofa_captcha cookie")
+                if self.solve_unreached:
+                    self._start_cooldown("at launch")
         # Yoksa cookie yok ve şimdi çözüm yok: sayfa about:blank'te kalır, ilk istek çözer (fetch_json)
         token = await self._token_from_context()
         if token:
@@ -646,12 +744,43 @@ class BrowserBridge:
         """
         before = await self._token_from_context()
         deadline = deadline or time.monotonic() + SOLVE_BUDGET_S
+        self.solve_unreached = False
+        # Hiçbir yükleme siteye ulaşmadıysa bunu ağ söyler (S1-A4): sayfa captcha.html gezinmesine ya da Cloudflare'in
+        # challenge'larından bir yanıt gördüyse (_reached; gezinmeden önce kurulan bir dinleyici) ya da siteye
+        # geçtiyse ulaştı; dinleyici yerindeyken böyle bir yanıt görmeyen ve tarayıcının kendi ağ hatasını gören
+        # ulaşmadı (ad yok, proxy düştü, paketler düştü). Dinleyici kurulamadıysa hata metni karar verir
+        # (_navigation_error). Hiçbir şey yüklemeyen bir çözüm (zaman kalmadı) iki yönde de bir şey söylemez.
+        attempted = reached = False
         for attempt in range(1, loads + 1):
             left = deadline - time.monotonic()
             if left < MIN_LOAD_S:
                 break
+            attempted = True
             started = self._mono()
             landed: List[str] = []
+            answered: List[str] = []
+            setup_ran: List[bool] = []
+            checks: List["asyncio.Future[None]"] = []
+            net_errors: List[str] = []
+
+            async def check(response: Any, answered: List[str] = answered) -> None:
+                if await _from_network(response):
+                    answered.append(str(response.url))
+
+            async def setup(page: Any, setup_ran: List[bool] = setup_ran, checks: List[Any] = checks,
+                            net_errors: List[str] = net_errors) -> None:
+                def on_response(response: Any) -> None:
+                    if _reached(response, page):
+                        checks.append(asyncio.ensure_future(check(response)))
+
+                def on_failed(request: Any) -> None:
+                    why = _network_failure(request)
+                    if why is not None:
+                        net_errors.append(why)
+
+                page.on("response", on_response)
+                page.on("requestfailed", on_failed)
+                setup_ran.append(True)
 
             async def watch(page: Any, landed: List[str] = landed) -> None:
                 landed.append(await self._await_redirect(page))
@@ -660,17 +789,41 @@ class BrowserBridge:
                 await asyncio.wait_for(
                     # network_idle kapalı: captcha sayfası ana sayfaya yönlenirse reklam/websocket trafiği
                     # ağı hiç boşaltmaz ve çözüm Scrapling'in tüm zaman aşımını bekler (ölçüm: 65 sn).
-                    # Çözücü kendi içinde kısa bir networkidle beklemesi yapıyor. `page_action` yönlendirmeyi bekler.
+                    # Çözücü kendi içinde kısa bir networkidle beklemesi yapıyor. `page_action` yönlendirmeyi bekler,
+                    # `page_setup` dinleyicileri gezinmeden önce kurar.
                     self.session.fetch(CAPTCHA_URL, solve_cloudflare=True, network_idle=False, google_search=False,
-                                       page_action=watch),
+                                       page_setup=setup, page_action=watch),
                     min(SOLVE_TIMEOUT, left),
                 )
-            except Exception as e:
+                navigation_failed = False
+            except asyncio.CancelledError:
+                # Yarıda kesildi: bu yüklemenin yanıtları her yüklemeninki gibi sayılır (bekleyen ağ denetimlerine bir
+                # saniye); dinleyici yoksa bayrak önceki yüklemelerin bıraktığı gibi kalır
+                if checks:
+                    with contextlib.suppress(BaseException):
+                        await asyncio.shield(asyncio.wait(checks, timeout=1.0))
+                if answered or (landed and _on_site(landed[0])) or not net_errors:
+                    reached = True
+                    self._load_starts.append(started)
+                if setup_ran:
+                    self.solve_unreached = not reached
+                raise
+            except Exception as e:  # yönlendirme ve cookie karar verir
+                navigation_failed = _navigation_error(e)
                 logger.warning(f"Solving on captcha.html failed: {e.__class__.__name__}: {e}")
             finally:
                 await self._park_solver_pages()
-            # PORT_LOADS_PER_HOUR'a sayılır
-            self._load_starts.append(started)
+            if checks:
+                # Bu yanıtlar ağdan mı geldi (_from_network)
+                await asyncio.wait(checks, timeout=_NETWORK_CHECK_S)
+            # captcha.html'de durmak kanıt değildir (bir service worker ya da önbellek vermiş olabilir); siteye geçmek
+            # kanıttır. Ulaşılmamak kanıt ister: tarayıcının kendi ağ hatası ve onlardan tek bayt yok; ne bayt ne
+            # böyle bir hata gören yükleme ulaşmış sayılır (c'ye taşınan kodun beklemeleri)
+            if answered or (landed and _on_site(landed[0])) or not (navigation_failed or net_errors):
+                reached = True
+                # PORT_LOADS_PER_HOUR'a sayılır: hiçbir şeye ulaşmayan bir yükleme Cloudflare'e de bir şey göstermedi
+                self._load_starts.append(started)
+            self.solve_unreached = attempted and not reached
             redirected = bool(landed) and _on_site(landed[0])
             token = await self._token_from_context()
             if redirected and not token:
@@ -854,9 +1007,19 @@ class BrowserBridge:
         if self._held_back():
             # Sıra beklenirken bir çözüm başarısız oldu (ya da istek katmanının kapısı kapandı): istek gönderilmez
             # (c'nin B4'ü; eskiden böyle istekler sayfadan gönderilirdi, bazıları reddedilen token'la iki kez)
-            return {"status": 403, "ok": False, "data": None, "text": _UNSENT_CHALLENGE, "sent": False}
+            return self._unsent()
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
         return await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode])
+
+    def _unsent(self) -> Dict[str, Any]:
+        """
+        Gönderilmeden verilen yanıt: challenge'ın 403'ü, ya da son çözümün yüklemeleri siteye ulaşmadıysa durum 0 (S1-A4:
+        tarayıcı SofaScore'a ulaşamadı; istek katmanı onu ağın başarısızlığı sayar, challenge'ın değil).
+        """
+        if self.solve_unreached:
+            return {"status": 0, "ok": False, "data": None, "sent": False,
+                    "text": "the browser could not reach SofaScore (no load of captcha.html did)"}
+        return {"status": 403, "ok": False, "data": None, "text": _UNSENT_CHALLENGE, "sent": False}
 
     def _held_back(self) -> bool:
         """Sırası gelen sayfa isteği gönderilmesin mi: çözüm beklemesi ya da istek katmanının kapısı (S1-B4)."""
@@ -982,8 +1145,16 @@ class BrowserBridge:
         return max(0.0, wait)
 
     def _start_cooldown(self, where: str = "") -> None:
-        """Başarısız çözümün beklemesi: solve_retry_after(art arda başarısız çözüm sayısı); yük saati de ona uyar."""
-        self._solve_cooldown_s = solve_retry_after(self.consecutive_solve_failures)
+        """
+        Başarısız çözümün beklemesi: solve_retry_after(art arda başarısız çözüm sayısı), ya da yüklemesi siteye
+        ulaşmadıysa UNREACHED_COOLDOWN_S (S1-A4: istek katmanı bunun tuttuklarını challenge'ın değil ağın sayar);
+        yük saati de ona uyar.
+        """
+        if self.solve_unreached:
+            self._solve_cooldown_s = UNREACHED_COOLDOWN_S
+            where = (where + " " if where else "") + "(the browser could not reach SofaScore)"
+        else:
+            self._solve_cooldown_s = solve_retry_after(self.consecutive_solve_failures)
         self._solve_failed_at = self._clock()
         self._load_not_before = max(self._load_not_before, self._mono() + self._solve_cooldown_s)
         self._publish_solver()
@@ -1016,14 +1187,17 @@ class BrowserBridge:
     def _count_solve(self, solved: bool) -> None:
         """
         Bir çözümü sayar, açılışınkini de (c'nin A1'i; yalnızca gözlem: çözümün kendisi değişmez). Üretim benzeri
-        koşuda (c, 2026-10-01) her çözüm dakikalarca başarısız oldu ve bunu gösteren bir sayı yoktu.
+        koşuda (c, 2026-10-01) her çözüm dakikalarca başarısız oldu ve bunu gösteren bir sayı yoktu. Hiçbir yüklemesi
+        siteye ulaşmayan çözüm (S1-A4) ağın başarısızlığıdır, challenge'ın değil: başarısız çözüm serisine girmez
+        (beklemeleri 600 sn'ye büyür ve okumaları ağ döndükten sonra da o kadar tutardı).
         """
         self.solves += 1
         if solved:
             self.consecutive_solve_failures = 0
         else:
             self.solve_failures += 1
-            self.consecutive_solve_failures += 1
+            if not self.solve_unreached:
+                self.consecutive_solve_failures += 1
         self._publish_solver()
 
     def solver_status(self) -> Dict[str, Any]:
@@ -1033,6 +1207,7 @@ class BrowserBridge:
             "solves": self.solves,
             "solve_failures": self.solve_failures,
             "consecutive_solve_failures": self.consecutive_solve_failures,
+            "solve_unreached": self.solve_unreached,
             # Beklemenin bittiği an (epoch sn); bridge_health.solver() kalan süreyi okuma anında hesaplar
             "solve_cooldown_until": time.time() + left if left > 0 else None,
         }
@@ -1067,15 +1242,15 @@ class BrowserBridge:
         """
         if self.solve_cooldown_left() > 0:
             # Başarısız bir çözüm soğuyor: her istek challenge'a takılır ve onu yanıtlayacak bir çözüm başlayamaz;
-            # istek gönderilmeden challenge'ın yanıtı (c'nin B4'ü)
-            return {"status": 403, "ok": False, "data": None, "text": _UNSENT_CHALLENGE, "sent": False}
+            # istek gönderilmeden challenge'ın yanıtı (c'nin B4'ü), çözüm siteye ulaşamadıysa ağın (A4)
+            return self._unsent()
         page_url = _page_url(self.page)
         if page_url is not None and not _on_origin(page_url):
             solved = False
             if await self._token_from_context():
                 await self._open_home()
             elif not await self.solve_challenge():
-                return {"status": 403, "ok": False, "data": None, "text": _UNSENT_CHALLENGE, "sent": False}
+                return self._unsent()
             else:
                 solved = True
             if solved and not _on_origin(_page_url(self.page) or ""):
@@ -1090,6 +1265,9 @@ class BrowserBridge:
         res = await self._page_fetch(url)
         if not res.get("sent", True):
             return res
+        if int(res.get("status") or 0):
+            # Sayfa SofaScore'a ulaştı: ağ geri geldi (istek katmanı beklemeyi artık ağınki saymaz)
+            self.solve_unreached = False
 
         # Bir çözümün yanıtlayacağı 403 (challenge ya da token'ın reddi, needs_solve): çöz ve bir kez yinele
         text = res.get("text") or ""

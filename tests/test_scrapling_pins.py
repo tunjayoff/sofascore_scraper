@@ -83,3 +83,12 @@ def test_the_session_takes_retries_and_additional_args():
     assert "retries" in fields and "additional_args" in fields
     source = inspect.getsource(AsyncStealthySession.fetch)
     assert "for attempt in range(self._config.retries)" in source
+
+
+def test_the_async_stealth_fetch_runs_page_setup_before_the_navigation():
+    """A4: dinleyiciler (`response`, `requestfailed`) `page_setup` ile captcha.html'nin gezinmesinden önce kurulur."""
+    from scrapling.fetchers import AsyncStealthySession
+
+    source = inspect.getsource(AsyncStealthySession.fetch)
+    assert "params.page_setup(page)" in source
+    assert source.index("params.page_setup(page)") < source.index("page.goto(url")

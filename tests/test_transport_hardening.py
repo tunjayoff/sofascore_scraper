@@ -337,3 +337,68 @@ def test_the_bridge_reports_an_unsent_fetch_and_the_request_layer_does_not_count
             transport.make_api_request("/event/1", raise_errors=True)
     assert bridge_health.snapshot()["consecutive_failures"] == 1
     assert transport.gate_status()["challenge_skipped"] == 1
+
+
+# --- A4: ulaşılamayan site ağın başarısızlığıdır, challenge'ın değil ------------------------------------
+
+
+def test_a_cooldown_after_an_unreached_solve_holds_requests_as_the_networks(monkeypatch, fake_bridge):
+    from unittest.mock import MagicMock, patch
+
+    from sofascore_scraper import bridge_health
+    from sofascore_scraper.exceptions import NetworkError
+
+    fake_bridge.cooldown = 30.0
+    fake_bridge.solve_unreached = True
+    get = _patched_curl(monkeypatch)
+    browser = MagicMock(return_value={"a": 1})
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", browser):
+        with pytest.raises(NetworkError, match="could not reach"):
+            transport.make_api_request("/event/1", raise_errors=True)
+    assert get.call_count == 0 and browser.call_count == 0
+    status = transport.gate_status()
+    assert (status["transport_skipped"], status["challenge_skipped"]) == (1, 0)
+    assert status["transport_failed_requests"] == 1 and status["challenge_failed_requests"] == 0
+    assert bridge_health.snapshot()["consecutive_failures"] == 0  # challenge sayılmadı
+
+
+def test_three_requests_without_any_answer_are_one_error_and_an_answer_ends_it(monkeypatch, fake_bridge, caplog):
+    from unittest.mock import MagicMock, patch
+
+    _patched_curl(monkeypatch, *[RuntimeError("curl: (6) Could not resolve host")] * 3, _Resp(500))
+    browser = MagicMock(return_value=None)
+    with caplog.at_level("INFO"), patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", browser):
+        for i in range(3):
+            assert transport.make_api_request(f"/event/{i}") is None
+        errors = [r for r in caplog.records if "cannot be reached" in r.getMessage()]
+        assert len(errors) == 1 and errors[0].levelname == "ERROR"
+        assert transport.gate_status()["consecutive_transport_failed_requests"] == 3
+        assert transport.make_api_request("/event/3") is None  # 500: bir yanıttır
+    assert "SofaScore answers again after 3 request(s) got no answer" in caplog.text
+    assert transport.gate_status()["consecutive_transport_failed_requests"] == 0
+    from sofascore_scraper import bridge_health
+
+    assert bridge_health.requests()["transport_failed_requests"] == 3
+
+
+def test_a_browser_that_reached_nothing_after_curls_challenge_is_a_transport_skip_in_the_cooldown(
+    monkeypatch, fake_bridge
+):
+    from unittest.mock import patch
+
+    from sofascore_scraper.client import bridge as cs
+    from sofascore_scraper.exceptions import NetworkError
+
+    _patched_curl(monkeypatch, _Resp(403, text=CHALLENGE))
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: {**_CFG, "max_retries": 3})
+
+    def browser(url):  # sayfa da ulaşamadı, çözümü siteye ulaşmadı: 30 sn
+        out = cs._outcome.get()
+        out.status, out.sent = 0, False
+        fake_bridge.cooldown, fake_bridge.solve_unreached = 30.0, True
+        return None
+
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", side_effect=browser):
+        with pytest.raises(NetworkError, match="could not reach"):
+            transport.make_api_request("/event/1", raise_errors=True)
+    assert transport.gate_status()["transport_skipped"] == 1
