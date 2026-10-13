@@ -156,7 +156,7 @@ def soaks() -> Iterator[Any]:
         conn = dict(blocked=lambda: None, recv_poll=0.02, reconnect_first=0.5, reconnect_max=1.0,
                     read_retry_first=0.05, read_retry_max=0.1, stable_after=0.0)
         conn.update(options.pop("connection_options", {}))
-        if options.get("source") != "page":
+        if options.get("source") not in ("page", "off"):
             options["reader"] = reader or FakeReader(fake_credential(srv.url, "soak"))
             options["connection_options"] = conn
         options.setdefault("fallback_window", 60.0)
@@ -667,7 +667,10 @@ def test_a_used_run_id_is_refused_before_anything_starts(tmp_path: Path, capsys:
     assert soak_live.main(["--out", str(out), "--run-id", "r3", "--data-dir", str(out / "r3" / "data")]) == 2
     assert soak_live.main(["--out", str(out), "--run-id", "r4", "--source", "page",
                            "--compare-credential-sports"]) == 2
-    assert not (out / "r3").exists() and not (out / "r4").exists()
+    assert soak_live.main(["--out", str(out), "--run-id", "r5", "--source", "off", "--kill-at", "5"]) == 2
+    assert soak_live.main(["--out", str(out), "--run-id", "r6", "--source", "off",
+                           "--compare-credential-sports"]) == 2
+    assert not any((out / r).exists() for r in ("r3", "r4", "r5", "r6"))
 
 
 def test_the_options_parse() -> None:
@@ -678,6 +681,7 @@ def test_the_options_parse() -> None:
     assert args.compare_credential_sports and args.max_requests is None and args.hours == soak_live.DEFAULT_HOURS
     assert args.joined_ids == [] and args.joined_random_soccer == 5 and args.rate == 0.8 and args.list_share == 0.25
     assert args.source == "direct" and soak_live._parser().parse_args([]).joined_random_soccer == 20
+    assert soak_live._parser().parse_args(["--source", "off"]).source == "off"
     schedule = soak_live._parser().parse_args(["--rate-schedule", "60:1, 120:5"]).rate_schedule
     assert schedule.phases == [(60.0, 1.0), (120.0, 5.0)]
     for bad in (["--sports", "foot ball"], ["--list-share", "1"], ["--source", "auto"],
@@ -773,6 +777,117 @@ def test_requests_are_recorded_per_minute_and_per_rate_phase(
     assert [p["rate"] for p in phases] == [2.0, 50.0] and phases[0]["end_min"] == pytest.approx(0.015)
     assert sum(p["total"] for p in phases) == soak.client.used and phases[0]["client"]["turnstile"]["solved"] == 1
     assert phases[1]["achieved_per_second"] > 0 and "peak_1s" in phases[1]
+
+
+# --- push kapalı (--source off): hakemin önderi hep yoklama ------------------------------------------------------
+
+
+def test_with_push_off_the_list_leads_the_whole_run_and_minute_reads_happen(
+        tmp_path: Path, data_dir: Path, fast_service: None, soaks: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_browser(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("push off: no credential reader and no page opener")
+
+    monkeypatch.setattr(soak_live.ds, "BrowserCredentialReader", no_browser)
+    monkeypatch.setattr(ps, "BrowserPageOpener", no_browser)
+    matches = {eid: first_half(eid) for eid in (601, 602, 603)}
+    api = FakeApi({"football": list(matches.values())}, dict(matches))
+    soak, run = soaks(tmp_path, data_dir, None, api, source="off", fallback_window=1.0, rate=4.0, list_share=0.5,
+                      joined_ids=[603], poll_interval=1.0, minute_seconds=0.5)
+    assert soak.reader is None and soak.connection is None and soak.opener is None
+    soak.start()
+    wait_for(lambda: len([r for r in minute_rows(run) if r["live"] and not r["partial"]]) >= 2, seconds=15)
+    assert soak.kill("test") is False  # kapatılacak push yok
+    soak.stop()
+
+    leader = rows(run, "leader")
+    assert [(r["event"], r["leader"], r["reason"]) for r in leader] == [("start", "poll", "push_off")]
+    assert soak.switches == [] and soak.service.report.leaders == {"football": "poll"}
+    conn = [r["event"] for r in rows(run, "connection")]
+    assert conn[0] == "run_start" and rows(run, "connection")[0]["source"] == "off"
+    assert set(conn) <= {"run_start", "kill", "run_end"}  # oturum, kimlik bilgisi, sayfa yok
+    minutes = [r for r in minute_rows(run) if r["live"] and not r["partial"]]
+    assert all(r["reads"]["joined"] == 1 and r["reads"]["listed"] == 1 for r in minutes)
+    assert len(reads_by(run, "fallback")) >= 2 * len(minutes)
+    assert rows(run, "requests") and sum(m["total"] for m in rows(run, "requests")) == soak.client.used
+
+    s = summary(run)
+    assert s["source"] == "off" and s["notes"][0] == soak_live.OFF_NOTE
+    football = s["sports_detail"]["football"]
+    assert football["fallback_time_share"] == 1.0 and football["time_to_first_push_s"] is None
+    assert football["fallback"]["skipped"]["joined"] == 0
+    assert s["connection"]["sessions"] == 0 and s["connection"]["credential_reads"] == []
+    assert s["leader_switches"] == [] and s["requests"]["used"] == soak.client.used > 0
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.t = 1000.0
+
+    def mono(self) -> float:
+        return self.t
+
+    def wall(self) -> float:
+        return 1_790_000_000.0 + self.t
+
+    def sleep(self, seconds: float) -> None:
+        self.t += max(0.0, seconds)
+
+
+class FakeStop:
+    """threading.Event yerine: beklemek sahte saati ilerletir (en çok `until`'e kadar); `until`'de kurulur."""
+
+    def __init__(self, clock: FakeClock, until: float = float("inf")) -> None:
+        self.clock = clock
+        self.until = until
+        self.flag = False
+
+    def is_set(self) -> bool:
+        return self.flag or self.clock.t >= self.until
+
+    def set(self) -> None:
+        self.flag = True
+
+    def wait(self, timeout: Any = None) -> bool:
+        if not self.is_set() and timeout:
+            self.clock.sleep(min(timeout, self.until - self.clock.t))
+        return self.is_set()
+
+
+def test_with_push_off_a_rate_phase_from_1_to_5_raises_the_requests_per_minute(
+        tmp_path: Path, data_dir: Path) -> None:
+    """Sahte saatle, thread'siz: liste okuması + kaydedicinin dakikası, üç dakika; 1 dk 1/sn, sonra 5/sn."""
+    clock = FakeClock()
+    matches = {eid: first_half(eid) for eid in range(700, 900)}  # 200 canlı maç: dakikanın payı hep dolar
+    api = FakeApi({"football": list(matches.values())}, dict(matches))
+    sched = soak_live.RateSchedule.parse("1:1,60:5")
+    pacer: List[Any] = []
+    run = tmp_path / "research" / "soak" / "t-off"
+    soak = soak_live.Soak(str(run), ["football"], run_id="t-off", data_dir=str(data_dir), budget=1000,
+                          source="off", base_fetch=api, gate=lambda: pacer[0].wait(), rate_schedule=sched,
+                          list_share=0.5, joined_random=0, wall=clock.wall, mono=clock.mono)
+    pacer.append(soak_live.Pacer(soak.current_rate, mono=clock.mono, sleep=clock.sleep))
+    stop = FakeStop(clock)
+    soak._stop = stop
+    soak.begin()
+    for _ in range(3):
+        soak._service_fetch("/sport/football/events/live")  # servisin liste okuması gibi
+        soak.fallback._minute(["football"], stop)
+    # dakikalık istek satırları: koşunun kendi dakika döngüsü, sahte saat koşunun başından sonuna yeniden yürür
+    end, clock.t = clock.t, soak.started_mono
+    soak._stop = FakeStop(clock, until=end)
+    soak._minute_loop()
+    assert clock.t == end
+    soak.stop()
+
+    fallback = [(r["cap"], r["reads"]["listed"], r["skipped"]["listed"], r["cut"]) for r in minute_rows(run)]
+    assert fallback == [(30, 30, 170, "share"), (150, 150, 50, "share"), (150, 150, 50, "share")]
+    minutes = [m for m in rows(run, "requests") if not m["partial"]]
+    assert [(m["phase"], m["rate"], m["total"]) for m in minutes] == [(0, 1.0, 31), (1, 5.0, 151), (1, 5.0, 151)]
+    assert all(m["by_kind"] == {"event": m["total"] - 1, "list": 1} for m in minutes)
+    assert minutes[0]["peak_1s"] == 1 and minutes[1]["peak_1s"] == 5
+    s = summary(run)
+    assert [(p["rate"], p["total"]) for p in s["rate_phases"]] == [(1.0, 31), (5.0, 302)]
+    assert s["sports_detail"]["football"]["fallback_time_share"] == 1.0 and s["requests"]["used"] == 333
 
 
 assert conftest  # sınır denetimi ve kancalar conftest'te kurulur
