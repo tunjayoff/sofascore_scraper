@@ -1480,7 +1480,7 @@ class BrowserBridge:
         if token:
             left = token_left(token, self._clock())
             logger.info(
-                "The Turnstile challenge is solved (the token has %s left)",
+                "Turnstile challenge solved (the token has %s left)",
                 "an unknown time" if left is None else f"{left:.0f} s",
             )
         return token

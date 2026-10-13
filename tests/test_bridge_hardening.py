@@ -760,7 +760,7 @@ def test_a_passed_solve_logs_the_time_its_token_has_left(tmp_path, caplog):
     b._solve_on_captcha_page = AsyncMock(return_value=tok)
     with caplog.at_level("INFO"):
         assert _run(b.solve_challenge()) == tok
-    assert "The Turnstile challenge is solved (the token has 3630 s left)" in caplog.text
+    assert "Turnstile challenge solved (the token has 3630 s left)" in caplog.text
     assert tok not in caplog.text and payload.decode()[:20] not in caplog.text
 
 
