@@ -242,19 +242,27 @@ def _get_proxy_config() -> Tuple[bool, str]:
     return use_proxy, proxy_url
 
 
+# Retry-After'ın iki biçiminin de üst sınırı (saniye)
+RETRY_AFTER_CAP_SECONDS = 120
+
+
 def _parse_retry_after_seconds(retry_after: Optional[str], default_wait: int) -> int:
-    """Retry-After header değerini saniye cinsinden parse eder."""
+    """
+    Retry-After başlığı saniye olarak: tamsayı ya da HTTP tarihi, 1..RETRY_AFTER_CAP_SECONDS aralığında; yoksa ya da
+    okunamıyorsa `default_wait`. Eskiden yalnızca tarih biçimi sınırlıydı: "Retry-After: 3600" diyen bir yanıt işi
+    (ve iptal edilene kadar çağıranı) bir saat bekletirdi (c projesinin üretim düzeltmesi, B11).
+    """
     if not retry_after:
         return default_wait
     try:
-        return max(1, int(retry_after))
+        return max(1, min(RETRY_AFTER_CAP_SECONDS, int(retry_after)))
     except ValueError:
         try:
             dt = parsedate_to_datetime(retry_after)
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             delta = int((dt - datetime.now(timezone.utc)).total_seconds())
-            return max(1, min(120, delta))
+            return max(1, min(RETRY_AFTER_CAP_SECONDS, delta))
         except (TypeError, ValueError):
             return default_wait
 
