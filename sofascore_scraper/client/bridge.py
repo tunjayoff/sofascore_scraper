@@ -24,6 +24,7 @@ istek, bütçeden sıra ayırmadan önce de iptale bakar (_wait_for_slot): durdu
 from __future__ import annotations
 
 import asyncio
+import atexit
 import concurrent.futures
 import contextvars
 import hashlib
@@ -31,6 +32,7 @@ import json
 import re
 import threading
 import time
+import weakref
 from typing import Any, Dict, List, Optional, Tuple
 
 from sofascore_scraper import bridge_health, throttle
@@ -61,6 +63,8 @@ _PROBE_URL: Optional[str] = None
 STARTUP_TIMEOUT = 150.0
 REQUEST_TIMEOUT = 120.0
 SOLVE_TIMEOUT = 90.0
+# Çıkışta bir köprünün kapanmasına tanınan süre (_cleanup)
+CLOSE_TIMEOUT = 10.0
 _JS_FETCH_TIMEOUT_MS = 20000
 # Başlatma başarısız olduysa her 403'te yeniden denenmez
 _LAUNCH_RETRY_AFTER = 300.0
@@ -246,6 +250,11 @@ def _session_class() -> Any:
     return AsyncStealthySession
 
 
+# Kurulan her köprü (zayıf başvuru): çıkış kancası hepsinin tarayıcısını kapatır (_cleanup); öksüz bir Chrome
+# profili kilitli tutar
+_bridges: "weakref.WeakSet[BrowserBridge]" = weakref.WeakSet()
+
+
 class BrowserBridge:
     """
     Scrapling StealthySession üzerinden Sofascore API köprüsü.
@@ -285,6 +294,8 @@ class BrowserBridge:
         self._launch_dir: Optional[str] = None
         # Profil SofaScore cookie'lerini (çözülmüş challenge) taşır: yalnızca sahibine açık (0700)
         make_private_dir(self.profile_dir)
+        # Çıkışta kapatılacaklar (_cleanup): süreçteki her köprü, canlı kaynaklarınki de
+        _bridges.add(self)
 
     @classmethod
     def get_instance(cls, profile_dir: str = DEFAULT_PROFILE_DIR) -> "BrowserBridge":
@@ -782,23 +793,28 @@ def solve_turnstile_challenge_sync(timeout_ms: int = 30000) -> Optional[str]:
         return None
 
 
-import atexit
-
-
-def _cleanup():
-    global _loop
-    if _loop and _loop.is_running():
+def _cleanup() -> None:
+    """
+    Çıkışta süreçteki HER köprünün tarayıcısını kapatır (c projesinin düzeltmesi, A5). Eskiden yalnızca indirmelerin
+    köprüsü (`get_instance`) kapanırdı, o da yoksa çıkış onu kurardı; canlı kaynakların köprüleri
+    (sofascore_scraper/services/live/push_source.py, direct_source.py) ve araştırma betiklerinin köprüleri açık kalır,
+    öksüz Chrome profili kilitli tutardı. Kapanış en iyi çabadır: köprü başına CLOSE_TIMEOUT.
+    """
+    loop = _loop
+    if loop is None or not loop.is_running():
+        return
+    for bridge in list(_bridges):
+        if getattr(bridge, "session", None) is None and getattr(bridge, "page", None) is None:
+            continue
         try:
-            bridge = BrowserBridge.get_instance()
-            fut = asyncio.run_coroutine_threadsafe(bridge.close(), _loop)
             # Chrome'un kapanmasına zaman tanı; yoksa süreç öksüz kalır
-            fut.result(timeout=10.0)
+            asyncio.run_coroutine_threadsafe(bridge.close(), loop).result(timeout=CLOSE_TIMEOUT)
         except Exception:
             pass
-        try:
-            _loop.call_soon_threadsafe(_loop.stop)
-        except Exception:
-            pass
+    try:
+        loop.call_soon_threadsafe(loop.stop)
+    except Exception:
+        pass
 
 
 atexit.register(_cleanup)

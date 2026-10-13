@@ -146,3 +146,41 @@ def test_the_sandbox_setting_is_read_at_launch_and_off_by_default(tmp_path, monk
     made, _ = _fake_session(monkeypatch, [_profile_cookie()] * 4)
     _run(_bridge(tmp_path, sandbox=False).ensure_ready())
     assert "additional_args" not in made[0]
+
+
+# --- A5: çıkış her köprüyü kapatır -------------------------------------------------------------------
+
+
+def test_exit_closes_every_bridge_with_a_browser_and_creates_none(tmp_path, monkeypatch):
+    import threading
+
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=loop.run_forever, daemon=True)
+    thread.start()
+    monkeypatch.setattr(cs, "_loop", loop)
+    try:
+        downloads = _bridge(tmp_path)
+        live = cs.BrowserBridge(profile_dir=str(tmp_path / "live"), home_url="https://x/robots.txt",
+                                report_health=False)
+        idle = cs.BrowserBridge(profile_dir=str(tmp_path / "idle"))  # tarayıcısı hiç açılmadı
+        sessions = []
+        for b in (downloads, live):
+            b.session, b.page = MagicMock(), _page()
+            b.session.close = AsyncMock()
+            sessions.append(b.session)
+        cs._cleanup()
+        thread.join(5)
+        assert not thread.is_alive()  # döngü durdu
+        assert all(s.close.await_count == 1 for s in sessions)
+        assert downloads.session is None and live.session is None and idle.session is None
+        assert cs.BrowserBridge._instance is None  # çıkış köprü kurmaz
+    finally:
+        if not loop.is_closed():
+            loop.call_soon_threadsafe(loop.stop)
+            thread.join(5)
+            loop.close()
+
+
+def test_exit_without_a_running_loop_does_nothing(monkeypatch):
+    monkeypatch.setattr(cs, "_loop", None)
+    cs._cleanup()
