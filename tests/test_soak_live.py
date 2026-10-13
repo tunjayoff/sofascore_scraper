@@ -19,6 +19,7 @@ FakeApi). Kimlik bilgisi her testte açıkça sahte parçalardan kurulur. Kayded
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 import time
@@ -539,8 +540,8 @@ def secret_keys(o: Any) -> List[str]:
 
 def assert_private(run: Path, needles: Any = ()) -> None:
     texts = {p.name: p.read_text(encoding="utf-8") for p in sorted(run.iterdir()) if p.is_file()}
-    assert set(texts) == {"frames.jsonl", "connection.jsonl", "leader.jsonl", "reads.jsonl", "fallback.jsonl",
-                          "resources.jsonl", "summary.json"}
+    assert set(texts) == {"frames.jsonl", "connection.jsonl", "leader.jsonl", "reads.jsonl", "requests.jsonl",
+                          "fallback.jsonl", "resources.jsonl", "summary.json"}
     for name, text in texts.items():
         # IPv4/IPv6 yok: yerel ve belgeleme aralıkları da (izin verilen aralık olmadan)
         assert privacy.ip_literals(text, allowed=()) == [], name
@@ -677,8 +678,10 @@ def test_the_options_parse() -> None:
     assert args.compare_credential_sports and args.max_requests is None and args.hours == soak_live.DEFAULT_HOURS
     assert args.joined_ids == [] and args.joined_random_soccer == 5 and args.rate == 0.8 and args.list_share == 0.25
     assert args.source == "direct" and soak_live._parser().parse_args([]).joined_random_soccer == 20
+    schedule = soak_live._parser().parse_args(["--rate-schedule", "60:1, 120:5"]).rate_schedule
+    assert schedule.phases == [(60.0, 1.0), (120.0, 5.0)]
     for bad in (["--sports", "foot ball"], ["--list-share", "1"], ["--source", "auto"],
-                ["--joined-ids", "/nonexistent/ids.txt"]):
+                ["--rate-schedule", "60"], ["--rate-schedule", "60:0"], ["--rate-schedule", "x:1"]):
         with pytest.raises(SystemExit):
             soak_live._parser().parse_args(bad)
 
@@ -686,10 +689,90 @@ def test_the_options_parse() -> None:
 assert conftest  # sınır denetimi ve kancalar conftest'te kurulur
 
 
-def test_the_joined_ids_file(tmp_path: Path) -> None:
-    path = tmp_path / "ids.txt"
-    path.write_text("# c fixtures\n17124861, 16947598\n17124861 15453137  # again\n", encoding="utf-8")
-    assert soak_live._parser().parse_args(["--joined-ids", str(path)]).joined_ids == [17124861, 16947598, 15453137]
-    path.write_text("12 abc\n", encoding="utf-8")
-    with pytest.raises(SystemExit):
-        soak_live._parser().parse_args(["--joined-ids", str(path)])
+def test_the_joined_ids_file_uses_the_c_message_shape(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    path = tmp_path / "joined.json"
+    path.write_text(json.dumps({"ids": [17124861, 16947598, 17124861]}), encoding="utf-8")
+    assert soak_live._parser().parse_args(["--joined-ids", str(path)]).joined_ids == [17124861, 16947598]
+    # bozuk dosya ya da 50.000'den çok id: c gibi yok sayılır (hata değil, uyarı)
+    for bad in ("17124861 16947598", json.dumps([1, 2]), json.dumps({"ids": "1"}), json.dumps({"ids": [1, "2"]}),
+                json.dumps({"ids": [True]}), json.dumps({"ids": list(range(1, 50_002))})):
+        path.write_text(bad, encoding="utf-8")
+        assert soak_live._parser().parse_args(["--joined-ids", str(path)]).joined_ids == []
+    assert soak_live._parser().parse_args(["--joined-ids", str(tmp_path / "missing.json")]).joined_ids == []
+    assert soak_live.parse_joined(json.dumps({"ids": list(range(1, 50_001))})) is not None
+    assert "ignoring it" in capsys.readouterr().err
+
+
+# --- hız evreleri ve dakikalık istek satırları ---------------------------------------------------------------------
+
+
+def test_the_rate_schedule() -> None:
+    sched = soak_live.RateSchedule.parse("60:1,120:5")
+    assert sched.bounds() == [(0.0, 3600.0, 1.0), (3600.0, float("inf"), 5.0)]
+    assert [sched.rate_at(t) for t in (0, 3599, 3600, 10 ** 6)] == [1.0, 1.0, 5.0, 5.0]
+    assert sched.phase_at(3600) == 1 and sched.max_rate == 5.0
+    assert sched.requests_in(3 * 3600) == 3600 * 1 + 7200 * 5  # son evre koşu bitene kadar sürer
+    assert soak_live.default_budget(3, schedule=sched) == 39600
+    assert soak_live.RateSchedule((), 0.5).rate_at(10 ** 6) == 0.5
+
+
+def test_peak_and_percentiles() -> None:
+    assert soak_live.peak_in_window([0.0, 0.2, 0.9, 1.0, 1.5, 3.0]) == 3
+    assert soak_live.peak_in_window([]) == 0
+    assert soak_live.percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.5) == 5
+    assert soak_live.percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.95) == 10 and soak_live.percentile([], 0.5) is None
+
+
+def test_the_challenge_counter_reads_the_client_s_own_log_lines() -> None:
+    counter = soak_live.ChallengeCounter(mono=lambda: 5.0)
+    counter.install()
+    try:
+        utils, solver = logging.getLogger("Utils"), logging.getLogger("ChallengeSolver")
+        utils.warning("Rate limited or server busy (429); waiting 5 s")
+        utils.warning("403 Forbidden (attempt 1/3): https://api.example.invalid/x")
+        utils.info("Turnstile challenge detected; fetching through the browser bridge")
+        solver.info("The API answered 403 with a challenge; solving Turnstile")
+        solver.info("Solving the Cloudflare Turnstile challenge (captcha.html)")
+        solver.info("Turnstile challenge solved.")
+        solver.warning("Browser fetch failed (status 403): nope")
+        utils.info("an unrelated line")
+    finally:
+        counter.uninstall()
+    summary_ = soak_live.challenge_summary(counter.between(0.0, 10.0))
+    assert summary_["429"] == 1 and summary_["403"] == {"curl": 1, "curl_challenge": 1, "browser_challenge": 1,
+                                                       "browser": 1}
+    assert summary_["turnstile"] == {"attempts": 1, "solved": 1, "failed": 0}
+    assert logging.getLogger("Utils").propagate and logging.getLogger("Utils").level == logging.NOTSET
+
+
+def test_requests_are_recorded_per_minute_and_per_rate_phase(
+        tmp_path: Path, data_dir: Path, fast_service: None, soaks: Any) -> None:
+    matches = {eid: first_half(eid) for eid in (601, 602)}
+    api = FakeApi({"football": list(matches.values())}, dict(matches))
+    # "dakika" 0,5 sn; ilk evre 0,9 sn 2/sn, sonra 50/sn
+    sched = soak_live.RateSchedule([(0.015, 2.0), (1.0, 50.0)])
+    soak, run = soaks(tmp_path, data_dir, None, api, reader=FakeReader(), rate_schedule=sched, minute_seconds=0.5,
+                      fallback_window=0.5, list_share=0.5, poll_interval=1.0)
+    soak.start()
+    logging.getLogger("Utils").info("Turnstile challenge detected; fetching through the browser bridge")
+    logging.getLogger("ChallengeSolver").info("Turnstile challenge solved.")
+    wait_for(lambda: len([r for r in rows(run, "requests") if r["phase"] == 1]) >= 2, seconds=10)
+    soak.stop()
+
+    minutes = rows(run, "requests")
+    assert [m["minute"] for m in minutes] == list(range(len(minutes)))
+    assert minutes[0]["phase"] == 0 and minutes[0]["rate"] == 2.0 and minutes[-1]["rate"] == 50.0
+    assert minutes[0]["client"]["403"]["curl_challenge"] == 1 and minutes[0]["client"]["turnstile"]["solved"] == 1
+    for m in minutes:
+        assert m["total"] == sum(m["by_kind"].values()) == sum(m["by_who"].values())
+        assert m["peak_1s"] <= m["total"] and set(m["latency_s"]) == {"p50", "p95"}
+    assert sum(m["total"] for m in minutes) == soak.client.used
+    assert any(m["by_who"].get("fallback") for m in minutes)
+    s = summary(run)
+    phases = s["rate_phases"]
+    assert [p["rate"] for p in phases] == [2.0, 50.0] and phases[0]["end_min"] == pytest.approx(0.015)
+    assert sum(p["total"] for p in phases) == soak.client.used and phases[0]["client"]["turnstile"]["solved"] == 1
+    assert phases[1]["achieved_per_second"] > 0 and "peak_1s" in phases[1]
+
+
+assert conftest  # sınır denetimi ve kancalar conftest'te kurulur

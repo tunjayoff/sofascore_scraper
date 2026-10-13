@@ -8,7 +8,7 @@ script yalnızca onların kenarlarına kayıt kancaları takar.
 
     python scripts/soak_live.py --sports football,basketball,tennis --hours 6 [--source direct|page] [--run-id ID]
                                 [--max-requests N] [--rate 1.0] [--list-share 0.5] [--joined-ids DOSYA]
-                                [--joined-random-soccer 20]
+                                [--joined-random-soccer 20] [--rate-schedule "60:1,120:5"]
                                 [--kill-every DAKİKA] [--kill-at DAKİKA] [--compare-credential-sports] [--out KLASÖR]
 
 **`direct` açık seçimdir** (docs/deploy/watch.md, "The `direct` source"): sitenin kendi istemci kimlik bilgisini
@@ -35,6 +35,12 @@ Nasıl kurulur:
     pay keşfe ayrılır. Sığmayan okuma atlanır ve spor başına sayılır; hiçbir şey sınırsız beklemez. fallback.jsonl:
     dakika ve spor başına canlı maç, joined canlı maç, okumalar (joined/listed/diğer), atlananlar; joined küme
     değişiklikleri. Özet: joined ve diğer maçların okuma aralıkları (medyan/p90/maks), keşif hızı, atlama oranları.
+  * Hız evreleri (`--rate-schedule "60:1,120:5"`: 60 dk 1 istek/sn, sonra 5 istek/sn; son evre sürer): requests.jsonl
+    dakika başına istekleri (türe ve yola göre, toplam), herhangi 1 sn'deki zirveyi, 429 ve 403 sayılarını (curl
+    challenge, tarayıcı challenge, tarayıcı), Turnstile çözümlerini ve yanıt süresinin p50/p95'ini yazar; özet aynısını
+    evre başına verir. 403/429/Turnstile sayıları istemcinin kendi log satırlarından sayılır (ChallengeCounter);
+    satırların metni yazılmaz. 1 istek/sn'den hızlı evrede araştırma kilidi alınmaz.
+  * `--joined-ids DOSYA`: c'nin mesaj biçimi `{"ids": [...]}`; bozuk dosya ya da 50.000'den çok id yok sayılır.
   * Kancalar: DirectConnection'ın alt sınıfı (oturum başı/sonu, yeniden deneme), bağlantı işlevinin sarmalayıcısı
     (el sıkışma, hat üstü işlemler; öldürme), sayfa açıcının sarmalayıcısı (`page`; öldürme = sayfayı kapatma), her
     sporun PushFeed'ini saran musluk (MSG kareleri; `page`'de PING/PONG/INFO/-ERR de), kimlik bilgisi okuyucusunun
@@ -74,6 +80,7 @@ import datetime as dt
 import hashlib
 import hmac
 import json
+import logging
 import math
 import os
 import random
@@ -124,7 +131,8 @@ SUMMARY_SECONDS = 600.0
 MAX_PENDING_READS = 1000
 TOP_GAPS = 5
 
-FILES = ("frames", "connection", "leader", "reads", "fallback", "resources")
+FILES = ("frames", "connection", "leader", "reads", "requests", "fallback", "resources")
+MAX_JOINED_IDS = 50_000  # c gibi: daha büyük joined dosyası yok sayılır
 LIVE = StatusClass.LIVE.value
 # Karede değeri yazılan alanlar (geri kalanların yalnızca yolu yazılır)
 STATUS_VALUE_KEYS = ("status.code", "status.type")
@@ -167,6 +175,25 @@ def describe(values: Sequence[float]) -> Dict[str, Any]:
     p90 = vals[min(len(vals) - 1, int(round(0.9 * (len(vals) - 1))))]
     return {"n": len(vals), "median": round(statistics.median(vals), 3), "p90": round(p90, 3),
             "max": round(vals[-1], 3), "min": round(vals[0], 3)}
+
+
+def percentile(values: Sequence[float], q: float) -> Optional[float]:
+    """En yakın sıra yüzdeliği (q 0..1); boşsa None."""
+    vals = sorted(float(v) for v in values)
+    if not vals:
+        return None
+    return round(vals[min(len(vals) - 1, max(0, int(math.ceil(q * len(vals))) - 1))], 3)
+
+
+def peak_in_window(times: Sequence[float], window: float = 1.0) -> int:
+    """Herhangi bir `window` sn'lik aralıktaki en çok olay (sıralı anlardan, iki işaretçiyle)."""
+    ts = sorted(times)
+    best, lo = 0, 0
+    for hi, t in enumerate(ts):
+        while t - ts[lo] >= window:
+            lo += 1
+        best = max(best, hi - lo + 1)
+    return best
 
 
 class Recorder:
@@ -380,6 +407,7 @@ class Outcome:
     waited: float = 0.0
     blocked: Optional[BaseException] = None
     refused: bool = False  # bütçe bitti: ağa çıkılmadı
+    sent: float = 0.0  # isteğin sıradan çıkıp gönderildiği an (mono)
 
 
 def status_of(exc: Optional[BaseException]) -> Optional[Any]:
@@ -403,9 +431,9 @@ def status_of(exc: Optional[BaseException]) -> Optional[Any]:
 class Pacer:
     """Süreç içi hız: ardışık REST okumaları arasında en az 1/rate sn (thread'ler arası sıra)."""
 
-    def __init__(self, rate: float, *, mono: Callable[[], float] = time.monotonic,
+    def __init__(self, rate: Any, *, mono: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep) -> None:
-        self.interval = 1.0 / rate if rate > 0 else 0.0
+        self._rate: Callable[[], float] = rate if callable(rate) else (lambda: float(rate))
         self._mono = mono
         self._sleep = sleep
         self._lock = threading.Lock()
@@ -415,19 +443,77 @@ class Pacer:
         with self._lock:
             now = self._mono()
             at = max(now, self._next)
-            self._next = at + self.interval
+            rate = self._rate()
+            self._next = at + (1.0 / rate if rate > 0 else 0.0)
         if at > now:
             self._sleep(at - now)
 
 
-def default_gate(rate: float) -> Callable[[], None]:
+def default_gate(rate: Callable[[], float]) -> Callable[[], None]:
+    """
+    O anki hızda sıra (`--rate` ya da `--rate-schedule`'un evresi). Hız ≤ 1 istek/sn iken araştırma script'lerinin
+    ortak kilidinden de sıra alınır; daha hızlı bir evrede o kilit (≥ 1 sn aralık) evreyi boğacağı için alınmaz.
+    """
     pacer = Pacer(rate)
 
     def gate() -> None:
         pacer.wait()
-        rc._wait_rate_slot()  # araştırma süreçlerinin ortak kilidi (≤ 1 istek/sn)
+        if rate() <= 1.0:
+            rc._wait_rate_slot()  # araştırma süreçlerinin ortak kilidi (≤ 1 istek/sn)
 
     return gate
+
+
+class RateSchedule:
+    """
+    `--rate-schedule "60:1,120:5"`: evreler (dakika, istek/sn) sırayla; son evrenin hızı koşu bitene kadar sürer.
+    Evre yoksa tek evre: `--rate`.
+    """
+
+    def __init__(self, phases: Sequence[Tuple[float, float]] = (), default: float = DEFAULT_RATE) -> None:
+        self.phases: List[Tuple[float, float]] = [(float(m), float(r)) for m, r in phases] or [(math.inf, default)]
+
+    @classmethod
+    def parse(cls, text: str) -> "RateSchedule":
+        phases: List[Tuple[float, float]] = []
+        for part in text.split(","):
+            minutes, sep, rate = part.strip().partition(":")
+            if not sep:
+                raise ValueError(f"not MINUTES:RATE: {part.strip()[:20]!r}")
+            m, r = float(minutes), float(rate)
+            if not (m > 0 and r > 0 and math.isfinite(m) and math.isfinite(r)):
+                raise ValueError("minutes and rate must be positive")
+            phases.append((m, r))
+        if not phases:
+            raise ValueError("empty schedule")
+        return cls(phases)
+
+    def bounds(self) -> List[Tuple[float, float, float]]:
+        """(başlangıç sn, bitiş sn, hız); son evrenin bitişi sonsuz."""
+        out: List[Tuple[float, float, float]] = []
+        t = 0.0
+        for i, (minutes, rate) in enumerate(self.phases):
+            end = math.inf if i == len(self.phases) - 1 else t + minutes * 60.0
+            out.append((t, end, rate))
+            t = end
+        return out
+
+    def phase_at(self, elapsed: float) -> int:
+        for i, (a, b, _) in enumerate(self.bounds()):
+            if a <= elapsed < b:
+                return i
+        return len(self.phases) - 1
+
+    def rate_at(self, elapsed: float) -> float:
+        return self.bounds()[self.phase_at(elapsed)][2]
+
+    @property
+    def max_rate(self) -> float:
+        return max(r for _, r in self.phases)
+
+    def requests_in(self, seconds: float) -> float:
+        """Bu sürede evrelerin hızıyla yapılabilecek istek sayısı (bütçe)."""
+        return sum(max(0.0, min(b, seconds) - a) * r for a, b, r in self.bounds())
 
 
 class ReadClient:
@@ -462,10 +548,102 @@ class ReadClient:
         try:
             data = self._base(path)
         except sv.Blocked as e:
-            return Outcome(status_of(e.__cause__) or "blocked", self._mono() - t1, None, t1 - t0, blocked=e)
+            return Outcome(status_of(e.__cause__) or "blocked", self._mono() - t1, None, t1 - t0, blocked=e, sent=t1)
         except Exception as e:  # tek isteğin hatası: kayda geçer, kaydedici sürer
-            return Outcome(status_of(e) or type(e).__name__, self._mono() - t1, None, t1 - t0)
-        return Outcome(200 if data is not None else 404, self._mono() - t1, data, t1 - t0)
+            return Outcome(status_of(e) or type(e).__name__, self._mono() - t1, None, t1 - t0, sent=t1)
+        return Outcome(200 if data is not None else 404, self._mono() - t1, data, t1 - t0, sent=t1)
+
+
+class ChallengeCounter(logging.Handler):
+    """
+    İstemcinin kendi log satırlarından (sofascore_scraper/client/transport.py "Utils", bridge.py "ChallengeSolver")
+    curl ve tarayıcı yanıtlarının 403/429'larını ve Turnstile çözümlerini sayar; satırın metni hiçbir yere yazılmaz.
+    Ürün kodu değişmez: bu sayılar başka bir yoldan dışarı verilmiyor.
+    """
+
+    LOGGERS = ("Utils", "ChallengeSolver")
+    PATTERNS = (
+        (re.compile(r"^Rate limited or server busy \((\d{3})\)"), "curl_{0}"),
+        (re.compile(r"^Rate limited or server busy, no attempts left"), "curl_429_or_503_last"),
+        (re.compile(r"^403 Forbidden \(attempt"), "curl_403"),
+        (re.compile(r"^Turnstile challenge detected; fetching through the browser bridge"), "curl_403_challenge"),
+        (re.compile(r"^The API answered 403 with a challenge"), "browser_403_challenge"),
+        (re.compile(r"^Browser fetch failed \(status (\d+)\)"), "browser_{0}"),
+        (re.compile(r"^Solving the Cloudflare Turnstile challenge"), "turnstile_attempts"),
+        (re.compile(r"^Turnstile challenge solved"), "turnstile_solved"),
+        (re.compile(r"^The Turnstile challenge could not be solved"), "turnstile_failed"),
+    )
+
+    def __init__(self, mono: Callable[[], float] = time.monotonic) -> None:
+        super().__init__(level=logging.INFO)
+        self._mono = mono
+        self.events: List[Tuple[float, str]] = []
+        self._lock_events = threading.Lock()
+        self._saved: List[Tuple[logging.Logger, int, bool]] = []
+        self._forward = _Forward()
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            text = record.getMessage()
+        except Exception:
+            return
+        for pattern, key in self.PATTERNS:
+            m = pattern.match(text)
+            if m:
+                with self._lock_events:
+                    self.events.append((self._mono(), key.format(*m.groups())))
+                return
+
+    def between(self, a: float, b: float) -> Dict[str, int]:
+        with self._lock_events:
+            counts: Dict[str, int] = collections.defaultdict(int)
+            for t, key in self.events:
+                if a <= t < b:
+                    counts[key] += 1
+        return dict(sorted(counts.items()))
+
+    def install(self) -> None:
+        """INFO satırları da gelsin diye iki logger INFO'ya iner; yalnız WARNING ve üstü kök logger'a iletilir."""
+        for name in self.LOGGERS:
+            lg = logging.getLogger(name)
+            self._saved.append((lg, lg.level, lg.propagate))
+            lg.setLevel(logging.INFO)
+            lg.propagate = False
+            lg.addHandler(self)
+            lg.addHandler(self._forward)
+
+    def uninstall(self) -> None:
+        for lg, level, propagate in self._saved:
+            lg.removeHandler(self)
+            lg.removeHandler(self._forward)
+            lg.setLevel(level)
+            lg.propagate = propagate
+        self._saved.clear()
+
+
+class _Forward(logging.Handler):
+    """Yalnız WARNING ve üstünü kök logger'ın handler'larına iletir (konsol INFO ile dolmasın)."""
+
+    def __init__(self) -> None:
+        super().__init__(level=logging.WARNING)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.levelno >= logging.getLogger().getEffectiveLevel():
+            logging.getLogger().handle(record)
+
+
+def challenge_summary(counts: Mapping[str, int]) -> Dict[str, Any]:
+    """Sayaçlardan 429 ve 403 toplamları ile Turnstile çözümleri."""
+    c = dict(counts)
+    return {
+        "429": c.get("curl_429", 0) + c.get("browser_429", 0),
+        "503": c.get("curl_503", 0) + c.get("browser_503", 0),
+        "rate_limited_last_attempt": c.get("curl_429_or_503_last", 0),
+        "403": {"curl": c.get("curl_403", 0), "curl_challenge": c.get("curl_403_challenge", 0),
+                "browser_challenge": c.get("browser_403_challenge", 0), "browser": c.get("browser_403", 0)},
+        "turnstile": {"attempts": c.get("turnstile_attempts", 0), "solved": c.get("turnstile_solved", 0),
+                      "failed": c.get("turnstile_failed", 0)},
+    }
 
 
 @dataclass
@@ -631,10 +809,16 @@ class FallbackReads:
     dakika listeden yeniden kurulur).
     """
 
-    def __init__(self, soak: "Soak", *, rate: float, share: float, window: float = FALLBACK_WINDOW_SECONDS) -> None:
+    def __init__(self, soak: "Soak", *, rate: Any, share: float, window: float = FALLBACK_WINDOW_SECONDS) -> None:
         self._soak = soak
         self.window = float(window)
-        self.cap = max(0, int(math.floor(self.window * rate * (1.0 - share) + 1e-9)))
+        self.share = float(share)
+        self._rate: Callable[[], float] = rate if callable(rate) else (lambda: float(rate))
+
+    @property
+    def cap(self) -> int:
+        """Bu dakikanın payı: o anki hızla (evre değişebilir)."""
+        return max(0, int(math.floor(self.window * self._rate() * (1.0 - self.share) + 1e-9)))
 
     def run(self, stop: threading.Event) -> None:
         from sofascore_scraper.client import request_context
@@ -667,6 +851,7 @@ class FallbackReads:
         joined = soak.joined.ids()
         live = {sport: soak.latest_list(sport) for sport in sports}
         made: Dict[str, Dict[str, int]] = {s: {"joined": 0, "listed": 0} for s in sports}
+        cap = self.cap
         attempted = 0
         cut = None
         for reason, sport, eid in self.queue(sports, live, joined):
@@ -677,7 +862,7 @@ class FallbackReads:
                 continue  # push yeniden önde: bu sporun dakikalık okumaları durur
             if soak.read_since(sport, eid, start):
                 continue  # bu dakika başka bir yoldan okundu
-            if attempted >= self.cap:
+            if attempted >= cap:
                 cut = "share"
                 break
             if soak.mono() >= end:
@@ -703,7 +888,7 @@ class FallbackReads:
                 other=soak.reads_between(sport, start, soak.mono(), exclude="fallback"),
                 skipped_joined=sum(1 for e in j if not soak.read_since(sport, e, start)),
                 skipped_listed=sum(1 for e in o if not soak.read_since(sport, e, start)),
-                cap=self.cap, cut=cut, partial=early or sport not in led)  # yarım dakika oranlara sayılmaz
+                cap=cap, cut=cut, partial=early or sport not in led)  # yarım dakika oranlara sayılmaz
 
 
 # --- push: musluk, soket, okuyucu, bağlantı, sayfa açıcı -------------------------------------------------------
@@ -1202,8 +1387,13 @@ class KillSchedule:
         return None
 
 
-def default_budget(hours: float, rate: float = DEFAULT_RATE) -> int:
-    """Koşunun REST bütçesi: süre × hız (ortalama ≤ 1 istek/sn)."""
+def default_budget(hours: float, rate: float = DEFAULT_RATE, schedule: Optional[RateSchedule] = None) -> int:
+    """
+    Koşunun REST bütçesi: süre × hız (ortalama ≤ 1 istek/sn). `--rate-schedule` verildiyse evrelerin hızlarıyla
+    (hızlı bir evre bilerek seçilir; bütçe onu boğmasın).
+    """
+    if schedule is not None:
+        return max(1, int(schedule.requests_in(hours * 3600)))
     return max(1, int(hours * 3600 * min(1.0, rate)))
 
 
@@ -1248,6 +1438,7 @@ class Soak:
                  budget: int, source: str = "direct", hours: Optional[float] = None,
                  kill_every: Optional[float] = None, kill_at: Optional[float] = None, poll_interval: float = 30.0,
                  rate: float = DEFAULT_RATE, list_share: float = DEFAULT_LIST_SHARE,
+                 rate_schedule: Optional[RateSchedule] = None, minute_seconds: float = 60.0,
                  joined_ids: Iterable[int] = (), joined_random: int = DEFAULT_JOINED_RANDOM,
                  joined_rng: Optional[random.Random] = None, fallback_window: float = FALLBACK_WINDOW_SECONDS,
                  base_fetch: Optional[Callable[[str], Optional[Dict[str, Any]]]] = None,
@@ -1274,14 +1465,18 @@ class Soak:
         self._lock = threading.RLock()
         self._stop = threading.Event()
         self.stopping = False
+        self.schedule = rate_schedule or RateSchedule((), rate)
         self.client = ReadClient(base_fetch or sv._default_fetch, budget=budget,
-                                 gate=gate if gate is not None else default_gate(rate), mono=self.mono)
+                                 gate=gate if gate is not None else default_gate(self.current_rate), mono=self.mono)
+        self.challenges = ChallengeCounter(self.mono)
+        self.req_log: List[Tuple[float, str, str, Any, float]] = []  # (gönderildi mono, kim, tür, durum, süre)
+        self._minute_seconds = float(minute_seconds)
         self.tracker = ChangeTracker()
         self.reads = EventReads(self, retry=event_retry_seconds)
         self.rate = rate
         self.list_share = list_share
         self.joined = JoinedSet(joined_ids, joined_random, rng=joined_rng)
-        self.fallback = FallbackReads(self, rate=rate, share=list_share, window=fallback_window)
+        self.fallback = FallbackReads(self, rate=self.current_rate, share=list_share, window=fallback_window)
         self.stats: Dict[str, SportStats] = {s: SportStats() for s in self.sports}
         self.last_read: Dict[Tuple[str, int], float] = {}  # son başarılı maç sayfası okuması (mono), her yoldan
         self.read_log: Dict[Tuple[str, int], List[float]] = collections.defaultdict(list)  # okuma anları (epoch)
@@ -1355,6 +1550,8 @@ class Soak:
         self._spawn("soak-event-reads", lambda: self.reads.run(self._stop))
         self._spawn("soak-fallback", lambda: self.fallback.run(self._stop))
         self._spawn("soak-resources", self._sample_loop)
+        self.challenges.install()
+        self._spawn("soak-minutes", self._minute_loop)
 
     def _spawn(self, name: str, target: Callable[[], None]) -> None:
         t = threading.Thread(target=target, name=name, daemon=True)
@@ -1384,6 +1581,7 @@ class Soak:
         if thread is not None:
             thread.join(timeout)
         self.ended_ts = self.wall()
+        self.challenges.uninstall()
         for sport in self.sports:
             self._close_sport(sport, self.ended_ts, "run end")
         self.recorder.write("connection", {"event": "run_end"})
@@ -1411,6 +1609,13 @@ class Soak:
 
     def request_stop(self) -> None:
         self._stop.set()
+
+    def elapsed(self) -> float:
+        return 0.0 if self.started_mono is None else self.mono() - self.started_mono
+
+    def current_rate(self) -> float:
+        """O anki hız (`--rate-schedule`'un evresi ya da `--rate`)."""
+        return self.schedule.rate_at(self.elapsed())
 
     def kill(self, cause: str) -> bool:
         """`direct`: bağlantının soketini kapatır; `page`: sporların sayfalarını kapatır."""
@@ -1688,6 +1893,44 @@ class Soak:
         with self._lock:
             self.requests[f"{by}:{kind}:{out.status}"] += 1
             self.request_latency[kind].append(out.seconds)
+            self.req_log.append((out.sent, by, kind, out.status, out.seconds))
+
+    def request_stats(self, a: float, b: float) -> Dict[str, Any]:
+        """[a, b) (mono) aralığında gönderilen REST okumaları: türe ve yola göre, 1 sn'lik zirve, durumlar, süre."""
+        with self._lock:
+            rows = [r for r in self.req_log if a <= r[0] < b]
+        by_kind: Dict[str, int] = collections.defaultdict(int)
+        by_who: Dict[str, int] = collections.defaultdict(int)
+        status: Dict[str, int] = collections.defaultdict(int)
+        for _, who, kind, st, _ in rows:
+            by_kind[kind] += 1
+            by_who[who] += 1
+            status[str(st)] += 1
+        latency = [r[4] for r in rows]
+        return {"total": len(rows), "by_kind": dict(sorted(by_kind.items())), "by_who": dict(sorted(by_who.items())),
+                "status": dict(sorted(status.items())), "peak_1s": peak_in_window([r[0] for r in rows]),
+                "latency_s": {"p50": percentile(latency, 0.5), "p95": percentile(latency, 0.95)},
+                "client": challenge_summary(self.challenges.between(a, b))}
+
+    def _minute_loop(self) -> None:
+        """Her dakika (koşu başından hizalı) istek satırı: requests.jsonl."""
+        assert self.started_mono is not None
+        index = 0
+        while not self._stop.is_set():
+            a = self.started_mono + index * self._minute_seconds
+            b = a + self._minute_seconds
+            self._stop.wait(max(0.0, b - self.mono()))
+            if self._stop.is_set() and self.mono() < b:
+                b = self.mono()  # son, yarım dakika
+                partial = True
+            else:
+                partial = False
+            elapsed = a - self.started_mono
+            row = {"event": "minute", "minute": index, "start": round((self.started_ts or 0) + elapsed, 3),
+                   "phase": self.schedule.phase_at(elapsed), "rate": self.schedule.rate_at(elapsed),
+                   "partial": partial, **self.request_stats(a, b)}
+            self.recorder.write("requests", row)
+            index += 1
 
     def _event_seen(self, sport: Optional[str], eid: int, event: Optional[Mapping[str, Any]], who: str) -> None:
         if not event:
@@ -1990,7 +2233,7 @@ class Soak:
                      "showed more than 0 matches. leader_push_share 1.0 means the arbiter judged push healthy for the "
                      f"whole gap (a PING or PONG within {SILENCE_SECONDS:.0f} s keeps it healthy without frames).",
                      "fallback: while the list leads, joined matches are read every 60 s, other live matches as "
-                     f"the rate allows (longest unread first), within {self.fallback.cap} reads a minute (rate x (1 - "
+                     f"the rate allows (longest unread first), within {self.fallback.cap} reads a minute now (rate x (1 - "
                      "list share)); a read that does not fit its minute is skipped and counted, never carried over. "
                      "Joined = --joined-ids plus --joined-random-soccer random live football matches (refreshed when "
                      "they finish). Read gaps count two consecutive reads of a match (any path) inside one interval "
@@ -2036,6 +2279,7 @@ class Soak:
                 "leader_switches": [{"at": utc(s["ts"]), "sport": s.get("sport"), "from": s.get("from"),
                                      "to": s.get("to"), "reason": s.get("reason")} for s in self.switches],
                 "blocked": [{"at": utc(b["ts"]), "type": b["type"]} for b in self.blocked],
+                "rate_phases": self._phase_summary(end),
                 "requests": {"used": self.client.used, "budget": self.client.budget, "refused": self.client.refused,
                              "rate": self.rate, "list_share": self.list_share,
                              "achieved_per_second": round(self.client.used / duration, 4),
@@ -2047,6 +2291,21 @@ class Soak:
                                                             if k in ("rounds", "requests", "push_frames",
                                                                      "source_switches", "leaders")}},
             }
+
+    def _phase_summary(self, end_ts: float) -> List[Dict[str, Any]]:
+        """`--rate-schedule`'un her evresi için (koşunun gördüğü kısmı) istek istatistikleri."""
+        if self.started_mono is None:
+            return []
+        run_s = max(0.0, end_ts - (self.started_ts or end_ts))
+        out = []
+        for i, (a, b, rate) in enumerate(self.schedule.bounds()):
+            if a >= run_s:
+                break
+            hi = min(b, run_s)
+            stats = self.request_stats(self.started_mono + a, self.started_mono + hi)
+            out.append({"phase": i, "rate": rate, "start_min": round(a / 60, 4), "end_min": round(hi / 60, 4),
+                        "achieved_per_second": round(stats["total"] / (hi - a), 4) if hi > a else None, **stats})
+        return out
 
     def write_summary(self, *, final: bool) -> None:
         self._last_summary = self.mono()
@@ -2063,24 +2322,42 @@ def _sports(value: str) -> List[str]:
     return list(dict.fromkeys(sports))
 
 
-def parse_ids(text: str) -> List[int]:
-    """Bir id dosyasının metni: boşluk, virgül ya da satırla ayrılmış sayılar; `#`'tan sonrası yorum."""
-    ids: List[int] = []
-    for line in text.splitlines():
-        for token in re.split(r"[\s,;]+", line.split("#", 1)[0]):
-            if token:
-                if not token.isdigit():
-                    raise ValueError(f"not an event id: {token[:20]!r}")
-                ids.append(int(token))
+def parse_joined(text: str) -> Optional[List[int]]:
+    """
+    c'nin mesaj biçimi: `{"ids": [olay id'leri]}`. Bozuk dosya (JSON değil, nesne değil, `ids` liste değil, tam sayı
+    olmayan id) ya da MAX_JOINED_IDS'ten çok id: None (c gibi yok sayılır).
+    """
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return None
+    ids = doc.get("ids") if isinstance(doc, dict) else None
+    if not isinstance(ids, list) or len(ids) > MAX_JOINED_IDS:
+        return None
+    if not all(isinstance(x, int) and not isinstance(x, bool) and x > 0 for x in ids):
+        return None
     return list(dict.fromkeys(ids))
 
 
 def _joined_file(path: str) -> List[int]:
     try:
         with open(path, encoding="utf-8") as f:
-            return parse_ids(f.read())
-    except (OSError, ValueError) as e:
-        raise argparse.ArgumentTypeError(f"--joined-ids: {e}")
+            ids = parse_joined(f.read())
+    except (OSError, UnicodeDecodeError) as e:
+        print(f"warning: --joined-ids: the file could not be read ({type(e).__name__}); ignoring it", file=sys.stderr)
+        return []
+    if ids is None:
+        print(f"warning: --joined-ids: not a {{\"ids\": [...]}} object with at most {MAX_JOINED_IDS} ids; "
+              "ignoring it", file=sys.stderr)
+        return []
+    return ids
+
+
+def _schedule(value: str) -> RateSchedule:
+    try:
+        return RateSchedule.parse(value)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"--rate-schedule: {e}")
 
 
 def _share(value: str) -> float:
@@ -2101,6 +2378,9 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--max-requests", type=int, default=None,
                    help="budget of REST reads (lists and event pages) for this run (default --hours x 3600 x --rate)")
     p.add_argument("--rate", type=float, default=DEFAULT_RATE, help="REST reads per second (default 1)")
+    p.add_argument("--rate-schedule", type=_schedule, default=None, metavar="MIN:RATE,...",
+                   help="rate phases, e.g. \"60:1,120:5\" (60 min at 1/s, then 5/s; the last phase lasts); "
+                        "overrides --rate")
     p.add_argument("--list-share", type=_share, default=DEFAULT_LIST_SHARE,
                    help="share of the rate kept for discovery and list reads while polling leads (default 0.5)")
     p.add_argument("--joined-ids", type=_joined_file, default=[], metavar="FILE",
@@ -2141,18 +2421,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.compare_credential_sports and args.source != "direct":
         print("error: --compare-credential-sports needs --source direct", file=sys.stderr)
         return 2
-    budget = args.max_requests if args.max_requests is not None else default_budget(args.hours, args.rate)
+    schedule = args.rate_schedule
+    budget = args.max_requests if args.max_requests is not None else default_budget(args.hours, args.rate, schedule)
+    if schedule is not None and schedule.max_rate > 5.0 and "SOFASCORE_CLIENT__RATE" not in os.environ:
+        # uygulamanın ortak bütçesi (client.rate, varsayılan 5/sn) daha hızlı bir evreyi boğmasın
+        os.environ["SOFASCORE_CLIENT__RATE"] = f"{schedule.max_rate:g}"
     os.environ.setdefault("SOFASCORE_CLIENT__THROTTLE_DIR", THROTTLE_DIR)
     os.environ["SOFASCORE_STORAGE__DATA_DIR"] = data_dir
     os.makedirs(data_dir, exist_ok=True)
     note = {"source": args.source, "hours": args.hours, "max_requests": budget, "rate": args.rate,
             "list_share": args.list_share, "joined_ids": len(args.joined_ids),
+            "rate_schedule": None if schedule is None else [list(p) for p in schedule.phases],
             "joined_random_soccer": args.joined_random_soccer,
             "kill_every_min": args.kill_every, "kill_at_min": args.kill_at,
             "compare_credential_sports": args.compare_credential_sports, "poll_interval_s": args.poll_interval}
     soak = Soak(out_dir, args.sports, run_id=run_id, data_dir=data_dir, budget=budget, source=args.source,
                 hours=args.hours, kill_every=args.kill_every, kill_at=args.kill_at, poll_interval=args.poll_interval,
-                rate=args.rate, list_share=args.list_share, joined_ids=args.joined_ids,
+                rate=args.rate, list_share=args.list_share, rate_schedule=schedule, joined_ids=args.joined_ids,
                 joined_random=args.joined_random_soccer,
                 compare_sports=args.compare_credential_sports, args_note=note)
 
