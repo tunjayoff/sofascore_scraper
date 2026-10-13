@@ -323,3 +323,36 @@ def test_the_cooldown_left_is_published_for_the_diagnostics(tmp_path):
     left = bridge_health.solver()["solve_cooldown_left"]
     assert 175 <= left <= 180
     assert bridge_health.solver()["consecutive_solve_failures"] == 1
+
+
+# --- B3: taze token kısayolundan önce bekleme (c: 68cfba4) ----------------------------------------------
+
+
+def test_a_token_the_api_refused_is_not_reused_in_the_cooldown(tmp_path):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b.context = MagicMock()
+    b.context.clear_cookies = AsyncMock()
+    b._solve_on_captcha_page = AsyncMock(return_value="refused")
+    b._api_unlocked = AsyncMock(return_value=False)
+
+    async def go():
+        assert await b.solve_challenge() is None
+        assert b.token == "refused" and b.solve_cooldown_left() == 180
+        clock.t += 5
+        assert await b.solve_challenge() is None  # "refused" değil
+        assert b._solve_on_captcha_page.await_count == 2  # başarısız çözümün iki denemesi
+
+    _run(go())
+
+
+def test_a_fresh_token_is_still_reused_outside_a_cooldown(tmp_path):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b.token, b._token_at = "jwt", clock.t
+    b._solve_challenge = AsyncMock(return_value="new")
+    clock.t += 29
+    assert _run(b.solve_challenge()) == "jwt"
+    clock.t += 2
+    assert _run(b.solve_challenge()) == "new"
+    assert b._solve_challenge.await_count == 1

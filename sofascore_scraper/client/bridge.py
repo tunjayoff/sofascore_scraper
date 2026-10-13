@@ -496,13 +496,15 @@ class BrowserBridge:
         Turnstile challenge'ını çözer ve geçerli token'ı döndürür.
 
         Aynı anda gelen 403'lerin hepsi aynı çözümü bekler. Az önce çözülmüş bir token
-        doğrudan döndürülür; başarısız bir çözümden sonra bir süre yeniden denenmez.
+        doğrudan döndürülür; başarısız bir çözümden sonra bir süre yeniden denenmez ve API'nin reddettiği
+        token'ı da döndürülmez: önce bekleme gelir (c'nin B3'ü; eskiden beklemenin ilk _FRESH_TOKEN_SECONDS'ında
+        gelen bir sayfa isteği o token'la yeniden gönderilirdi: reddedileceği belli iki istek).
         """
         await self.ensure_ready()
-        if self.token and self._clock() - self._token_at < _FRESH_TOKEN_SECONDS:
-            return self.token
         if self.solve_cooldown_left() > 0:
             return None
+        if self.token and self._clock() - self._token_at < _FRESH_TOKEN_SECONDS:
+            return self.token
         if self._solve_task is None or self._solve_task.done():
             # Çözümün (doğrulama isteğinin) sıra beklemesi kendi sayacına yazılır: görev, bağlamı
             # oluşturulduğu anda kopyalar
