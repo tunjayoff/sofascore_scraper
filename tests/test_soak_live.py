@@ -697,7 +697,7 @@ def test_the_joined_ids_file_uses_the_c_message_shape(tmp_path: Path, capsys: py
     path = tmp_path / "joined.json"
     path.write_text(json.dumps({"ids": [17124861, 16947598, 17124861]}), encoding="utf-8")
     assert soak_live._parser().parse_args(["--joined-ids", str(path)]).joined_ids == [17124861, 16947598]
-    # bozuk dosya ya da 50.000'den çok id: c gibi yok sayılır (hata değil, uyarı)
+    # bozuk dosya ya da 50.000'den çok id: yok sayılır (hata değil, uyarı)
     for bad in ("17124861 16947598", json.dumps([1, 2]), json.dumps({"ids": "1"}), json.dumps({"ids": [1, "2"]}),
                 json.dumps({"ids": [True]}), json.dumps({"ids": list(range(1, 50_002))})):
         path.write_text(bad, encoding="utf-8")
