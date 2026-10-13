@@ -119,6 +119,7 @@ def test_the_launch_arguments_are_unchanged_without_the_sandbox(tmp_path, monkey
     assert kw == {
         "headless": True, "solve_cloudflare": True, "user_data_dir": b.profile_dir, "proxy": None,
         "block_webrtc": True, "timeout": 60000, "max_pages": 2,
+        "retries": 1,  # B9: yükleme başına tek gezinme
     }
 
 
@@ -131,6 +132,7 @@ def test_the_sandbox_is_one_launch_option_more_and_nothing_else(tmp_path, monkey
     assert kw == {
         "headless": True, "solve_cloudflare": True, "user_data_dir": b.profile_dir, "proxy": None,
         "block_webrtc": True, "timeout": 60000, "max_pages": 2,
+        "retries": 1,  # B9: yükleme başına tek gezinme
     }
 
 
@@ -651,3 +653,112 @@ def test_a_load_that_raises_still_parks_the_page(tmp_path, monkeypatch):
     monkeypatch.setattr(cs, "REDIRECT_WAIT_S", 0.0)
     assert _run(b._solve_on_captcha_page()) is None
     assert sp.removed == 1
+
+
+# --- B9: çözüm başına tek captcha.html yüklemesi, tek yük saati (saatte 8), Scrapling retries=1 -------------
+# (c: 43f8edd, b5005bf, cfed796)
+
+
+def test_a_failed_solve_loads_captcha_html_once(tmp_path):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    assert _run(b.solve_challenge()) is None
+    assert [c.args[0] if c.args else 1 for c in b._solve_on_captcha_page.await_args_list] == [1]
+
+
+def test_a_load_that_never_leaves_captcha_html_is_counted_once_per_load(tmp_path, monkeypatch, caplog):
+    monkeypatch.setattr(cs, "REDIRECT_WAIT_S", 0.0)
+    b, sp = _solving_bridge(tmp_path, monkeypatch, [cs.CAPTCHA_URL] * 3, [None] * 3)
+    with caplog.at_level("INFO"):
+        assert _run(b._solve_on_captcha_page(3)) is None
+    assert b.session.fetch.await_count == 3 and len(b._load_starts) == 3
+    fails = [r.getMessage() for r in caplog.records if "captcha.html did not pass" in r.getMessage()]
+    assert [m.split("(")[1].split(")")[0] for m in fails] == ["load 1 of 3", "load 2 of 3", "load 3 of 3"]
+
+
+def test_no_path_loads_more_in_an_hour_than_the_cooldowns_allow(tmp_path):
+    # PORT_LOADS_PER_HOUR (8): saatte o kadar yükleme varken bir 403'ün çözümü en eskisinin çıkmasını bekler,
+    # okumalar bir beklemedeki gibi tutulur
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    b._load_starts.extend(clock.t - 3000 + 100 * i for i in range(8))
+    assert b._load_wait() == 600
+    assert _run(b.solve_challenge()) is None
+    assert b._solve_on_captcha_page.await_count == 0 and b.solve_cooldown_left() == 600
+    clock.t += 600
+    assert b._load_wait() == 0
+
+
+def test_the_hourly_cap_holds_before_a_solves_second_load(tmp_path):
+    # Reddedilen token'ın sil-ve-yeniden-yükle'si ikinci bir yüklemedir: saat dolmuşken (dokuzuncu) yapılmaz
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b.context = MagicMock()
+    b.context.clear_cookies = AsyncMock()
+    tok = _jwt(time.time() + 3600)
+
+    async def load(*_a, **_k):
+        b._load_starts.append(clock.t)
+        return tok
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=load)
+    b._api_unlocked = AsyncMock(return_value=False)
+    b._load_starts.extend(clock.t - 3000 + 100 * i for i in range(7))
+    assert _run(b._solve_checked()) is None
+    assert b._solve_on_captcha_page.await_count == 1 and len(b._load_starts) == 8
+    b.context.clear_cookies.assert_not_awaited()
+
+
+def test_a_failed_solves_cooldown_also_holds_the_next_load(tmp_path):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    assert _run(b.solve_challenge()) is None
+    assert b._load_wait() == 180
+    clock.t += 180
+    assert b._load_wait() == 0
+    b._solve_on_captcha_page = AsyncMock(return_value=_jwt(time.time() + 3600))
+    assert _run(b.solve_challenge()) is not None
+    assert b._load_not_before == -float("inf")  # geçen çözüm saati açar
+
+
+def test_the_solve_budgets_fit_the_timeouts_that_wait_for_them(tmp_path, monkeypatch):
+    # Bir istek: ilk denemesi, yoklamalarıyla çözüm, yinelemesi REQUEST_TIMEOUT içinde; açılış: Chromium'un açılışı ve
+    # çözüm STARTUP_TIMEOUT içinde
+    probe = cs._JS_FETCH_TIMEOUT_MS / 1000
+    assert 2 * probe + cs.SOLVE_BUDGET_S <= cs.REQUEST_TIMEOUT
+    assert cs.LAUNCH_SOLVE_BUDGET_S + 30 <= cs.STARTUP_TIMEOUT
+    assert cs.SOLVE_BUDGET_S - cs._HOME_S - cs._PROBE_S >= cs.MIN_LOAD_S  # yüklemesi sığar
+    monkeypatch.setattr(cs, "MIN_LOAD_S", 0.05)
+    monkeypatch.setattr(cs, "_PROBE_S", 0.0)
+    monkeypatch.setattr(cs, "_HOME_S", 0.0)
+    b, _sp = _solving_bridge(tmp_path, monkeypatch, [cs.CAPTCHA_URL] * 9, [None] * 9)
+
+    async def hang(url, **kw):
+        await asyncio.sleep(10)
+
+    b.session.fetch = AsyncMock(side_effect=hang)
+
+    async def go():
+        start = time.monotonic()
+        token = await b._solve_checked(time.monotonic() + 0.3, 3)
+        return token, time.monotonic() - start
+
+    token, took = _run(go())
+    assert token is None and took < 0.5
+    assert b.session.fetch.await_count <= 3
+
+
+def test_a_passed_solve_logs_the_time_its_token_has_left(tmp_path, caplog):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    payload = base64.urlsafe_b64encode(json.dumps({"exp": int(clock.t) + 3630}).encode())
+    tok = "e30." + payload.decode().rstrip("=") + ".sig"
+    assert cs.token_left(tok, clock.t) == 3630 and cs.token_left("opaque", clock.t) is None
+    b._solve_on_captcha_page = AsyncMock(return_value=tok)
+    with caplog.at_level("INFO"):
+        assert _run(b.solve_challenge()) == tok
+    assert "The Turnstile challenge is solved (the token has 3630 s left)" in caplog.text
+    assert tok not in caplog.text and payload.decode()[:20] not in caplog.text

@@ -270,6 +270,9 @@ def _fresh_state(bridge, site):
     site.reset()
     bridge._token_at = 0.0
     bridge._solve_failed_at = 0.0
+    # Yük saati de (S1-B9): bir senaryonun başarısız çözümü sonrakinin captcha.html yüklemesini bekletmesin
+    bridge._load_not_before = float("-inf")
+    bridge._load_starts.clear()
     yield
     site.slow_release.set()
     site.hang_release.set()

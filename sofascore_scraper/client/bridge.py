@@ -26,10 +26,12 @@ from __future__ import annotations
 import asyncio
 import atexit
 import base64
+import collections
 import concurrent.futures
 import contextvars
 import hashlib
 import json
+import math
 import re
 import threading
 import time
@@ -76,6 +78,20 @@ _FRESH_TOKEN_SECONDS = 30.0
 # 5. koşusunda geçen çözümler yüklemeden 3,4-4,5 sn sonra yönlendi.
 REDIRECT_WAIT_S = 15.0
 _POLL_S = 0.5
+# captcha.html'nin bir saatte en çok yüklenme sayısı: c'ye taşınan kodun 403'teki çözümlerinin bir saatte yaptığı
+# (beklemeleri 180, 180, 360, sonra 600 sn: 0, 180, 360, 720, 1320, 1920, 2520 ve 3120. sn'lerde yüklemeler). Hiçbir
+# yol (403'ün çözümü, açılış) kayan bir saatte bundan fazla yüklemez (BrowserBridge._load_wait).
+PORT_LOADS_PER_HOUR = 8
+# Bir sayfa isteğinin beklediği çözümün bütçesi (75 sn): captcha.html yüklemeleri ve yoklamaları birlikte; isteğin ilk
+# denemesi, çözüm ve yinelemesi REQUEST_TIMEOUT (120 sn) içinde kalır.
+_PROBE_S = _JS_FETCH_TIMEOUT_MS / 1000
+_HOME_S = 10.0  # geçen bir çözümden sonra ana sayfanın yüklemesine kalan (sayfa belgesi gelince kullanılabilir)
+SOLVE_BUDGET_S = REQUEST_TIMEOUT - 2 * _PROBE_S - 5.0
+# Açılışın çözümü (120 sn): STARTUP_TIMEOUT (150 sn) eksi Chromium'un açılışı
+LAUNCH_SOLVE_BUDGET_S = STARTUP_TIMEOUT - 30.0
+# Bir captcha.html yüklemesi ancak çözümün bütçesinden bu kadarı kaldıysa başlar (çözücü ve yönlendirme beklemesi);
+# her yükleme kalanı alır, en çok SOLVE_TIMEOUT
+MIN_LOAD_S = 20.0
 # Başarısız bir çözümden sonra bu süre yeniden denenmez (her istek 10-90 sn yakmasın); üçüncü art arda başarısız
 # çözümden sonra iki katına çıkar, en çok _SOLVE_RETRY_AFTER_MAX (solve_retry_after)
 _SOLVE_RETRY_AFTER = 180.0
@@ -101,6 +117,12 @@ def solve_retry_after(failures: int) -> float:
 # (sezon listelerinde 60 sn) önbellekten dönerse biten maç o süre "devam ediyor" görünür (issue #6).
 # Yalnızca maçın durumundan bağımsız statik veri önbelleği kullanır.
 _STATIC_PATH_RE = re.compile(r"/(seasons|rounds)/?$")
+
+
+def token_left(token: Optional[str], now: float) -> Optional[float]:
+    """JWT'nin kalan saniyesi (`exp` - `now`), `exp` yoksa None: her çözümde loglanır, token'ın kendisi asla."""
+    exp = token_exp(token)
+    return None if exp is None else exp - now
 
 
 def _on_origin(url: str) -> bool:
@@ -341,6 +363,10 @@ class BrowserBridge:
     _solve_failed_at = 0.0
     # Son başarısız çözümün beklemesi (solve_retry_after)
     _solve_cooldown_s = _SOLVE_RETRY_AFTER
+    # captcha.html'nin her yüklemesinin uyduğu tek saat (_load_wait): başarısız bir yüklemeden sonra bundan önce yok
+    # (onun beklemesi); saat monotonic'tir, testler kendi saatini verir
+    _mono: Callable[[], float] = staticmethod(lambda: time.monotonic())
+    _load_not_before = -math.inf
 
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None, *,
                  report_health: bool = True, sandbox: Optional[bool] = None,
@@ -357,6 +383,7 @@ class BrowserBridge:
         clock          beklemelerin saati (epoch sn); testler sahtesini verir.
         """
         self._clock = clock
+        self._mono = time.monotonic if clock is time.time else clock
         self.profile_dir = profile_dir
         self.home_url = home_url
         self.report_health = report_health
@@ -467,6 +494,9 @@ class BrowserBridge:
             block_webrtc=True,
             timeout=60000,
             max_pages=2,
+            # Yükleme başına tek gezinme: Scrapling başarısız bir fetch'i varsayılan olarak 3 kez dener (`retries`,
+            # 1 sn arayla); her biri yük saatinin dışında bir captcha.html yüklemesiydi (c'nin B9'u)
+            retries=1,
             **extra,
         )
         await self.session.start()
@@ -478,7 +508,7 @@ class BrowserBridge:
         # Profilde çözüm yoksa challenge'ı API isteklerinden önce çöz
         solved_now = None
         if not await self._token_from_context():
-            solved_now = await self._solve_on_captcha_page()
+            solved_now = await self._solve_on_captcha_page(1, time.monotonic() + LAUNCH_SOLVE_BUDGET_S)
             self._count_solve(solved_now is not None)  # açılışın çözümü de bir çözümdür
 
         self.page = await self.context.new_page()
@@ -502,9 +532,19 @@ class BrowserBridge:
             return None
         return next((c["value"] for c in cookies if c.get("name") == "sofa_captcha" and c.get("value")), None)
 
-    async def _solve_on_captcha_page(self) -> Optional[str]:
+    @property
+    def _load_starts(self) -> "collections.deque[float]":
+        """Son saatin captcha.html yüklemelerinin başladığı anlar (_mono); `__new__` ile kurulan köprüde de vardır."""
+        starts = self.__dict__.get("_load_starts_q")
+        if starts is None:
+            starts = self.__dict__["_load_starts_q"] = collections.deque()
+        return starts
+
+    async def _solve_on_captcha_page(self, loads: int = 1, deadline: float = 0.0) -> Optional[str]:
         """
         captcha.html'deki gömülü Turnstile'ı Scrapling'e çözdürür; sayfa geçtiyse token'ı, geçmediyse None döndürür.
+        En çok `loads` yükleme, hiçbiri `deadline`'a (time.monotonic(); 0: şimdiden SOLVE_BUDGET_S) MIN_LOAD_S'den az
+        kalmışken başlamaz; her yükleme yük saatine yazılır (_load_wait).
 
         Geçti: captcha.html, Scrapling'in çözücüsünden sonra REDIRECT_WAIT_S içinde siteye geçti (yönlendirmesi: /tr)
         ve `sofa_captcha` cookie'si orada, ya da yeni bir cookie geldi (c'nin B7'si). Scrapling 0.4.15 bunu ayırt
@@ -514,40 +554,50 @@ class BrowserBridge:
         sayfa, eski bir cookie dururken yine "çözüldü" sayılırdı.
         """
         before = await self._token_from_context()
-        landed: List[str] = []
+        deadline = deadline or time.monotonic() + SOLVE_BUDGET_S
+        for attempt in range(1, loads + 1):
+            left = deadline - time.monotonic()
+            if left < MIN_LOAD_S:
+                break
+            started = self._mono()
+            landed: List[str] = []
 
-        async def watch(page: Any) -> None:
-            landed.append(await self._await_redirect(page))
+            async def watch(page: Any, landed: List[str] = landed) -> None:
+                landed.append(await self._await_redirect(page))
 
-        try:
-            await asyncio.wait_for(
-                # network_idle kapalı: captcha sayfası ana sayfaya yönlenirse reklam/websocket trafiği
-                # ağı hiç boşaltmaz ve çözüm Scrapling'in tüm zaman aşımını bekler (ölçüm: 65 sn).
-                # Çözücü kendi içinde kısa bir networkidle beklemesi yapıyor. `page_action` yönlendirmeyi bekler.
-                self.session.fetch(CAPTCHA_URL, solve_cloudflare=True, network_idle=False, google_search=False,
-                                   page_action=watch),
-                SOLVE_TIMEOUT,
+            try:
+                await asyncio.wait_for(
+                    # network_idle kapalı: captcha sayfası ana sayfaya yönlenirse reklam/websocket trafiği
+                    # ağı hiç boşaltmaz ve çözüm Scrapling'in tüm zaman aşımını bekler (ölçüm: 65 sn).
+                    # Çözücü kendi içinde kısa bir networkidle beklemesi yapıyor. `page_action` yönlendirmeyi bekler.
+                    self.session.fetch(CAPTCHA_URL, solve_cloudflare=True, network_idle=False, google_search=False,
+                                       page_action=watch),
+                    min(SOLVE_TIMEOUT, left),
+                )
+            except Exception as e:
+                logger.warning(f"Solving on captcha.html failed: {e.__class__.__name__}: {e}")
+            finally:
+                await self._park_solver_pages()
+            # PORT_LOADS_PER_HOUR'a sayılır
+            self._load_starts.append(started)
+            redirected = bool(landed) and _on_site(landed[0])
+            token = await self._token_from_context()
+            if redirected and not token:
+                # Cookie sayfa ayrılırken yazılır: onun için biraz daha
+                for _ in range(10):
+                    if time.monotonic() >= deadline:
+                        break
+                    await asyncio.sleep(_POLL_S)
+                    token = await self._token_from_context()
+                    if token:
+                        break
+            if token and (redirected or token != before):
+                return token
+            logger.info(
+                "captcha.html did not pass (load %d of %d): %s", attempt, loads,
+                "redirected, but no sofa_captcha cookie" if redirected
+                else f"no redirect to the site within {REDIRECT_WAIT_S:g} s",
             )
-        except Exception as e:
-            logger.warning(f"Solving on captcha.html failed: {e.__class__.__name__}: {e}")
-        finally:
-            await self._park_solver_pages()
-        redirected = bool(landed) and _on_site(landed[0])
-        token = await self._token_from_context()
-        if redirected and not token:
-            # Cookie sayfa ayrılırken yazılır: onun için biraz daha
-            for _ in range(10):
-                await asyncio.sleep(_POLL_S)
-                token = await self._token_from_context()
-                if token:
-                    break
-        if token and (redirected or token != before):
-            return token
-        logger.info(
-            "captcha.html did not pass: %s",
-            "redirected, but no sofa_captcha cookie" if redirected
-            else f"no redirect to the site within {REDIRECT_WAIT_S:g} s",
-        )
         return None
 
     async def _park_solver_pages(self) -> None:
@@ -611,6 +661,16 @@ class BrowserBridge:
             return None
         if self.token and self._clock() - self._token_at < _FRESH_TOKEN_SECONDS:
             return self.token
+        running = self._solve_task is not None and not self._solve_task.done()
+        wait = self._load_wait()
+        if not running and wait > 0:
+            # En çok bir bekleme önce başarısız bir yükleme ya da saatin yüklemeleri dolu: zamanı gelmeden yükleme
+            # yok; okumalar kalan süre boyunca her başarısızlıktan sonraki gibi bekler
+            self._solve_cooldown_s = wait
+            self._solve_failed_at = self._clock()
+            self._publish_solver()
+            logger.info(f"A captcha.html load failed lately; no new attempt for {int(wait)} s")
+            return None
         if self._solve_task is None or self._solve_task.done():
             # Çözümün (doğrulama isteğinin) sıra beklemesi kendi sayacına yazılır: görev, bağlamı
             # oluşturulduğu anda kopyalar
@@ -682,32 +742,73 @@ class BrowserBridge:
             except Exception as e:  # aşağıdaki çözüm yine dener
                 logger.debug(f"Deleting the sofa_captcha cookie: {e}")
         logger.info("Solving the Cloudflare Turnstile challenge (captcha.html)")
-        token = await self._solve_on_captcha_page()
-        if token:
-            self._set_token(token)
-        if token and not await self._api_unlocked():
-            # Profildeki süresi geçmiş cookie: captcha.html challenge göstermeden yönlenir ve yeni
-            # cookie üretilmez. Cookie silinip challenge baştan çözülür.
-            logger.info("The sofa_captcha cookie is still refused; deleting it and solving the challenge again")
-            await self.context.clear_cookies(name="sofa_captcha")
-            token = await self._solve_on_captcha_page()
-            if token:
-                self._set_token(token)
-            if token and not await self._api_unlocked():
-                token = None
+        token = await self._solve_checked()
         self._count_solve(bool(token))
         if token:
+            self._load_not_before = -math.inf
             self._set_token(token)
             self._solve_failed_at = 0.0
-            logger.info("Turnstile challenge solved.")
             return token
         self._start_cooldown()
         return None
 
+    async def _solve_checked(self, deadline: float = 0.0, loads: int = 0, *, again: bool = True) -> Optional[str]:
+        """
+        captcha.html'de bir çözüm, token'ı köprü sayfasından API'ye karşı yoklanır; API'nin hâlâ reddettiği token
+        (profilde süresi geçmiş cookie: captcha.html challenge göstermeden yönlenir ve yeni cookie üretilmez)
+        silinir ve bir kez daha, tek yüklemeyle çözülür (c'nin B9'u: çözüm başına tek yükleme; eskiden aynı çözüm
+        Scrapling'in yeniden denemeleriyle üç yüklemeye kadar çıkabiliyordu). Hepsi `deadline`'dan (0: şimdiden
+        SOLVE_BUDGET_S) önce, her yoklamaya _PROBE_S kalarak. `again=False`: ikinci yükleme yok (açılışın çözümü).
+        Saatin yüklemeleri dolduysa (PORT_LOADS_PER_HOUR) ikinci yükleme yapılmaz: başarısız bir çözüm.
+        """
+        deadline = deadline or time.monotonic() + SOLVE_BUDGET_S
+        rest_s = _HOME_S + _PROBE_S
+        token = await self._solve_on_captcha_page(loads or 1, deadline - rest_s)
+        if token:
+            self._set_token(token)
+        unlocked = await self._api_unlocked() if token else None
+        if token and unlocked:
+            pass
+        elif token and not again:
+            token = None
+        elif token and self._load_wait() > 0:
+            token = None
+        elif token:
+            # Profildeki süresi geçmiş cookie: cookie silinip challenge baştan çözülür
+            logger.info("The sofa_captcha cookie is still refused; deleting it and solving the challenge again")
+            await self.context.clear_cookies(name="sofa_captcha")
+            token = await self._solve_on_captcha_page(1, deadline - rest_s)
+            if token:
+                self._set_token(token)
+            if token and not await self._api_unlocked():
+                token = None
+        if token:
+            left = token_left(token, self._clock())
+            logger.info(
+                "The Turnstile challenge is solved (the token has %s left)",
+                "an unknown time" if left is None else f"{left:.0f} s",
+            )
+        return token
+
+    def _load_wait(self) -> float:
+        """
+        Bir captcha.html yüklemesinin (403'ün çözümü, açılışınki) başlamasına kalan saniye: son başarısız yüklemenin
+        beklemesi ve kayan bir saatte en çok PORT_LOADS_PER_HOUR yükleme (c'nin B9'u: tek yük saati).
+        """
+        now = self._mono()
+        starts = self._load_starts
+        while starts and starts[0] <= now - 3600.0:
+            starts.popleft()
+        wait = self._load_not_before - now
+        if len(starts) >= PORT_LOADS_PER_HOUR:
+            wait = max(wait, starts[0] + 3600.0 - now)
+        return max(0.0, wait)
+
     def _start_cooldown(self) -> None:
-        """Başarısız çözümün beklemesi: solve_retry_after(art arda başarısız çözüm sayısı)."""
+        """Başarısız çözümün beklemesi: solve_retry_after(art arda başarısız çözüm sayısı); yük saati de ona uyar."""
         self._solve_cooldown_s = solve_retry_after(self.consecutive_solve_failures)
         self._solve_failed_at = self._clock()
+        self._load_not_before = max(self._load_not_before, self._mono() + self._solve_cooldown_s)
         self._publish_solver()
         logger.warning(
             f"The Turnstile challenge could not be solved ({self.consecutive_solve_failures} in a row); "
