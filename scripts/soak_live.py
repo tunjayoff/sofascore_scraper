@@ -6,7 +6,7 @@ okumaları için köprü (normal istemci, ortak istek bütçesi). Yeniden yazım
 (LiveService, DirectConnection/DirectSource ya da PageSource/BrowserPageOpener, SportArbiter, PollSource) çalışır;
 script yalnızca onların kenarlarına kayıt kancaları takar.
 
-    python scripts/soak_live.py --sports football,basketball,tennis --hours 6 [--source direct|page] [--run-id ID]
+    python scripts/soak_live.py --sports football,basketball,tennis --hours 6 [--source direct|page|off] [--run-id ID]
                                 [--max-requests N] [--rate 1.0] [--list-share 0.5] [--joined-ids DOSYA]
                                 [--joined-random-soccer 20] [--rate-schedule "60:1,120:5"]
                                 [--kill-every DAKİKA] [--kill-at DAKİKA] [--compare-credential-sports] [--out KLASÖR]
@@ -35,6 +35,11 @@ Nasıl kurulur:
     pay keşfe ayrılır. Sığmayan okuma atlanır ve spor başına sayılır; hiçbir şey sınırsız beklemez. fallback.jsonl:
     dakika ve spor başına canlı maç, joined canlı maç, okumalar (joined/listed/diğer), atlananlar; joined küme
     değişiklikleri. Özet: joined ve diğer maçların okuma aralıkları (medyan/p90/maks), keşif hızı, atlama oranları.
+  * `--source off`: push kaynağı hiç yok (servisin `push=False` yolu, `ssc watch --source poll` gibi). Hakemin
+    önderi koşu boyunca `poll`dur (leader.jsonl'ın başlangıç satırı: neden `push_off`); yukarıdaki yedek kuralı
+    (joined 60 sn'de bir, diğerleri birikmiş iş, atlananlar sayılır, `--rate-schedule` evreleri) bütün koşuyu sürer.
+    Kimlik bilgisi okunmaz, push için tarayıcı açılmaz (REST okumaları için ana köprü kalır); `--kill-*` ve
+    `--compare-credential-sports` reddedilir.
   * Hız evreleri (`--rate-schedule "60:1,120:5"`: 60 dk 1 istek/sn, sonra 5 istek/sn; son evre sürer): requests.jsonl
     dakika başına istekleri (türe ve yola göre, toplam), herhangi 1 sn'deki zirveyi, 429 ve 403 sayılarını (curl
     challenge, tarayıcı challenge, tarayıcı), Turnstile çözümlerini ve yanıt süresinin p50/p95'ini yazar; özet aynısını
@@ -119,7 +124,9 @@ OUT = os.path.join(ROOT, "research", "soak")
 STORE_ROOT = os.path.expanduser("~/.cache/sofascore_research/soak_store")
 THROTTLE_DIR = os.path.expanduser("~/.cache/sofascore_research/throttle")
 DEFAULT_SPORTS = ("football", "basketball", "tennis")
-SOURCES = ("direct", "page")
+SOURCE_OFF = "off"  # push kaynağı yok: servis yalnızca yoklar (push=False)
+SOURCES = ("direct", "page", SOURCE_OFF)
+LEADER_REASON_PUSH_OFF = "push_off"
 DEFAULT_HOURS = 6.0
 DEFAULT_RATE = 1.0  # istek/sn (bütçenin hızı)
 DEFAULT_LIST_SHARE = 0.5  # hızın keşfe (liste ve yoklama kaynağının okumaları) ayrılan payı
@@ -149,6 +156,9 @@ SCOPE_NOTE = ("The live service ran with the chosen push source and a scope of e
               "fetch, and while polling leads it reads every live match's page at least once a minute (fallback).")
 PAGE_NOTE = ("Source 'page': the live browser listens to the push connection of SofaScore's own sport pages "
              "(push_source.py); a kill closes the pages.")
+OFF_NOTE = ("Source 'off': no push source (the service's push=False path, like `ssc watch --source poll`); the "
+            "arbiter's leader is poll for the whole run and the fallback rule drives the REST reads at the configured "
+            "rate. No credential is read and no browser is opened for push.")
 LIST_PATH = re.compile(r"^/sport/([a-z0-9-]+)/events/live$")
 EVENT_PATH = re.compile(r"^/event/(\d+)$")
 
@@ -1447,16 +1457,18 @@ class Soak:
                  connection_options: Optional[Dict[str, Any]] = None,
                  resource_seconds: float = RESOURCE_SECONDS, reading_resource_seconds: float = READING_RESOURCE_SECONDS,
                  event_retry_seconds: float = sv.CONFIRM_RETRY_SECONDS, store: Any = None,
-                 args_note: Optional[Dict[str, Any]] = None) -> None:
+                 args_note: Optional[Dict[str, Any]] = None, wall: Callable[[], float] = time.time,
+                 mono: Callable[[], float] = time.monotonic) -> None:
         from sofascore_scraper.store import open_store
 
         if source not in SOURCES:
             raise ValueError(f"source must be one of {SOURCES}")
-        self.wall = time.time
-        self.mono = time.monotonic
+        self.wall = wall
+        self.mono = mono
         self.run_id = run_id
         self.source = source
-        self.push_name = source  # hakemin push önderken yazdığı ad
+        self.push_name = source  # hakemin push önderken yazdığı ad (`off`: hakem push'a hiç geçmez)
+        self.push = source != SOURCE_OFF
         self.sports = tuple(dict.fromkeys(sports))
         self.hours = hours
         self.recorder = Recorder(out_dir, wall=self.wall, mono=self.mono)
@@ -1521,7 +1533,7 @@ class Soak:
             self.reader = RecordingReader(inner_reader, self, compare_factory=factory,
                                           compare_sports=self.sports if compare_sports else ())
             self.connection = RecordingConnection(self.reader, self, **dict(connection_options or {}))
-        else:
+        elif source == "page":
             from sofascore_scraper.services.live.push_source import BrowserPageOpener
 
             self.opener = RecordingOpener(page_opener if page_opener is not None else BrowserPageOpener(), self)
@@ -1529,7 +1541,7 @@ class Soak:
         scope = sv.LiveScope(sports=tuple(AllScope(s) for s in self.sports))
         self.service = RecordingLiveService(
             self.store, scope, fetch=self._service_fetch, poll_interval=poll_interval, confirm=False,
-            requested_source=source, direct_connection=self.connection, page_opener=self.opener, soak=self)
+            requested_source=source if self.push else sv.SOURCE_POLL, direct_connection=self.connection, page_opener=self.opener, soak=self)
         self.started_ts: Optional[float] = None
         self.started_mono: Optional[float] = None
         self.ended_ts: Optional[float] = None
@@ -1539,19 +1551,26 @@ class Soak:
     # --- yaşam döngüsü ------------------------------------------------------------------------------------
 
     def start(self) -> None:
-        self.started_ts, self.started_mono = self.wall(), self.mono()
-        self._last_summary = self.started_mono
-        for sport in self.sports:
-            self.stats[sport].leader.append((self.started_ts, LEADER_POLL))
-            self.recorder.write("leader", {"event": "start", "sport": sport, "leader": LEADER_POLL})
-        self.recorder.write("connection", {"event": "run_start", "source": self.source, "sports": list(self.sports),
-                                           "run_id": self.run_id})
+        self.begin()
         self._spawn("soak-service", self._run_service)
         self._spawn("soak-event-reads", lambda: self.reads.run(self._stop))
         self._spawn("soak-fallback", lambda: self.fallback.run(self._stop))
         self._spawn("soak-resources", self._sample_loop)
         self.challenges.install()
         self._spawn("soak-minutes", self._minute_loop)
+
+    def begin(self) -> None:
+        """Koşunun başlangıç kayıtları (hakem yoklamayla başlar); thread açmaz (testler sahte saatle sürer)."""
+        self.started_ts, self.started_mono = self.wall(), self.mono()
+        self._last_summary = self.started_mono
+        for sport in self.sports:
+            self.stats[sport].leader.append((self.started_ts, LEADER_POLL))
+            row = {"event": "start", "sport": sport, "leader": LEADER_POLL}
+            if not self.push:
+                row["reason"] = LEADER_REASON_PUSH_OFF
+            self.recorder.write("leader", row)
+        self.recorder.write("connection", {"event": "run_start", "source": self.source, "sports": list(self.sports),
+                                           "run_id": self.run_id})
 
     def _spawn(self, name: str, target: Callable[[], None]) -> None:
         t = threading.Thread(target=target, name=name, daemon=True)
@@ -1618,8 +1637,10 @@ class Soak:
         return self.schedule.rate_at(self.elapsed())
 
     def kill(self, cause: str) -> bool:
-        """`direct`: bağlantının soketini kapatır; `page`: sporların sayfalarını kapatır."""
+        """`direct`: bağlantının soketini kapatır; `page`: sporların sayfalarını kapatır; `off`: kapatılacak yok."""
         sports: List[str] = []
+        if not self.push:
+            return False
         if self.connection is not None:
             done = self.connection.kill(cause)
         else:
@@ -2240,7 +2261,7 @@ class Soak:
                      "in which the list leads.",
                      "RSS: bridge = the main bridge's browser (REST reads), live = the live profile's browser (page "
                      "source pages or the direct credential reader), other = other children (Playwright driver)."]
-            notes.insert(0, CLIENT_NOTE if self.source == "direct" else PAGE_NOTE)
+            notes.insert(0, {"direct": CLIENT_NOTE, "page": PAGE_NOTE}.get(self.source, OFF_NOTE))
             return {
                 "run_id": self.run_id, "source": self.source, "final": final, "written_at": utc(self.wall()),
                 "started": utc(start), "ended": utc(end) if final else None, "duration_s": round(end - start, 3),
@@ -2372,7 +2393,8 @@ def _parser() -> argparse.ArgumentParser:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--sports", type=_sports, default=list(DEFAULT_SPORTS),
                    help="comma-separated sports (default football,basketball,tennis)")
-    p.add_argument("--source", choices=SOURCES, default="direct", help="push source to measure (default direct)")
+    p.add_argument("--source", choices=SOURCES, default="direct",
+                   help="push source to measure (default direct); off = no push, polling leads the whole run")
     p.add_argument("--hours", type=float, default=DEFAULT_HOURS, help=f"run length (default {DEFAULT_HOURS:g})")
     p.add_argument("--run-id", default=None, help="id of the run (default: UTC timestamp); a used id is refused")
     p.add_argument("--max-requests", type=int, default=None,
@@ -2420,6 +2442,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 2
     if args.compare_credential_sports and args.source != "direct":
         print("error: --compare-credential-sports needs --source direct", file=sys.stderr)
+        return 2
+    if args.source == SOURCE_OFF and (args.kill_every is not None or args.kill_at is not None):
+        print("error: --kill-every and --kill-at need a push source (not --source off)", file=sys.stderr)
         return 2
     schedule = args.rate_schedule
     budget = args.max_requests if args.max_requests is not None else default_budget(args.hours, args.rate, schedule)
