@@ -42,6 +42,7 @@ export const META: Record<string, Meta> = {
   'client.captcha_token': { section: 'requests', control: text(), advanced: true },
   'client.browser_profile': { section: 'requests', control: text(), advanced: true },
   'client.browser_headed': { section: 'requests', control: bool },
+  'client.browser_sandbox': { section: 'requests', control: bool, advanced: true },
   'client.throttle_dir': { section: 'requests', control: text(), advanced: true },
   'breaker.rate_limit_consecutive': { section: 'requests', control: int(1, 1000) },
   'breaker.rate_limit_ratio': { section: 'requests', control: float(0, 1, 0.05) },

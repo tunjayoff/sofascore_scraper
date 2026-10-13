@@ -144,6 +144,11 @@ def _headless() -> bool:
     return not _client_settings().browser_headed
 
 
+def _sandbox_setting() -> bool:
+    """`client.browser_sandbox` (c projesinin K18'i): Chromium kendi sandbox'ıyla başlar; varsayılan kapalı."""
+    return bool(getattr(_client_settings(), "browser_sandbox", False))
+
+
 class _SlotWait:
     """
     Bir köprü çağrısının ortak istek bütçesinde (sofascore_scraper/throttle.py) sıra beklediği toplam süre.
@@ -251,17 +256,21 @@ class BrowserBridge:
     _instance: Optional["BrowserBridge"] = None
 
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None, *,
-                 report_health: bool = True):
+                 report_health: bool = True, sandbox: Optional[bool] = None):
         """
         home_url       köprü sekmesinin açıldığı ve sayfa SofaScore dışına çıkınca döndüğü adres; None: HOME_URL.
                        Canlı sayfaların ayrı köprüsü (sofascore_scraper/services/live/push_source.py) API çağırmayan bir sayfa verir.
         report_health  başlatma hataları ve isteklerin sonucu süreç genelindeki köprü sağlığına (sofascore_scraper/bridge_health.py)
                        yazılır. Canlı kaynakların köprüleri False verir: onların tarayıcısı başlamazsa izleme sürecinin
                        köprü sağlığı "bozuk" görünmesin, indirmelerin köprüsünün durumu o değildir (FX-15).
+        sandbox        Chromium kendi sandbox'ıyla başlar (patchright'ın `chromium_sandbox`'ı, Scrapling'in
+                       `additional_args`'ıyla); None: `client.browser_sandbox` ayarı, açılışta okunur. Varsayılan
+                       kapalıdır (patchright'ın `--no-sandbox`'ı, bugünkü gibi); sunucunun buna izin vermesi gerekir.
         """
         self.profile_dir = profile_dir
         self.home_url = home_url
         self.report_health = report_health
+        self.sandbox = sandbox
         self.session: Any = None
         self.context: Any = None
         self.page: Any = None
@@ -344,10 +353,20 @@ class BrowserBridge:
             self._use_secondary_profile(profile_lock.profile_owner(self.profile_dir) or profile_lock.ProfileOwner())
             await self._launch()
 
+    def _sandboxed(self) -> bool:
+        sandbox = getattr(self, "sandbox", None)
+        return _sandbox_setting() if sandbox is None else bool(sandbox)
+
     async def _launch(self) -> None:
         AsyncStealthySession = _session_class()
         headless = _headless()
-        logger.info(f"Starting the browser session (Scrapling StealthySession, headless={headless})")
+        sandbox = self._sandboxed()
+        logger.info(
+            f"Starting the browser session (Scrapling StealthySession, headless={headless}, sandbox={sandbox})"
+        )
+        # Bugünkü argümanlar aynen; `sandbox` ile bir açılış seçeneği daha (c'nin K18'i: bir dağıtım gereği,
+        # challenge yöntemi değil)
+        extra: Dict[str, Any] = {"additional_args": {"chromium_sandbox": True}} if sandbox else {}
         self.session = AsyncStealthySession(
             headless=headless,
             solve_cloudflare=True,
@@ -356,6 +375,7 @@ class BrowserBridge:
             block_webrtc=True,
             timeout=60000,
             max_pages=2,
+            **extra,
         )
         await self.session.start()
         # Scrapling'in oturum bağlamı: kendi sayfamızı bunun içinde açıp tekrar tekrar kullanırız

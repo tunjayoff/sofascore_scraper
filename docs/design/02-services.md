@@ -3137,6 +3137,7 @@ odds_provider = 1
 odds_country = ""         # recorded with every odds read when set (e.g. "TR"); never derived from the machine (FX-15)
 browser_profile = ""      # empty = the default profile directory of the bridge
 browser_headed = false
+browser_sandbox = false   # Chromium's own sandbox (the host must allow it); false = patchright's --no-sandbox
 throttle_dir = ""         # empty = the default directory of the shared budget files
 
 [breaker]

@@ -130,6 +130,10 @@ class ClientSettings:
     )
     browser_profile: str = setting("", KIND_PATH, "Browser profile directory of the bridge; empty = the default.")
     browser_headed: bool = setting(False, KIND_BOOL, "Show the bridge browser window (debugging).")
+    browser_sandbox: bool = setting(
+        False, KIND_BOOL, "Start the bridge's Chromium with its own sandbox instead of patchright's --no-sandbox; "
+        "the host must allow it (e.g. an AppArmor profile for user namespaces).",
+    )
     throttle_dir: str = setting("", KIND_PATH, "Directory of the shared request-budget files; empty = the default.")
 
     @property

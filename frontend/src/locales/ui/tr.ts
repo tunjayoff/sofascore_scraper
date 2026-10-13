@@ -1772,6 +1772,7 @@ const tr: typeof en = {
       captcha_token: 'Doğrulama anahtarı',
       browser_profile: 'Tarayıcı profil klasörü',
       browser_headed: 'Yerleşik tarayıcıyı göster',
+      browser_sandbox: 'Yerleşik tarayıcıyı kendi korumalı alanında çalıştır',
       throttle_dir: 'Paylaşılan istek bütçesi klasörü',
       odds_provider: 'Oran sağlayıcısı',
     },
