@@ -101,3 +101,33 @@ def test_without_a_bridge_an_answer_needs_none(monkeypatch):
     _patched_curl(monkeypatch, _Resp(200, {"a": 1}))
     assert transport.make_api_request("/event/1") == {"a": 1}
     assert cs.BrowserBridge._instance is None  # köprü kurulmadı
+
+
+# --- B1: curl'ün taşıdığı token'ın reddi de köprüye gider -------------------------------------------------
+
+JWT_REFUSED = '{"error": {"code": 403, "reason": "jwt:time-out-of-bounds" }}'
+
+
+def test_a_curl_403_rejecting_the_token_goes_to_the_browser(monkeypatch):
+    from unittest.mock import MagicMock, patch
+
+    _patched_curl(monkeypatch, _Resp(403, text=JWT_REFUSED))
+    browser = MagicMock(return_value={"a": 1})
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", browser):
+        assert transport.make_api_request("/event/1") == {"a": 1}
+    assert browser.call_count == 1
+
+
+def test_an_async_curl_403_rejecting_the_token_goes_to_the_browser(monkeypatch):
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: dict(_CFG))
+    monkeypatch.setattr(transport, "_get_proxy_config", lambda: (False, ""))
+    monkeypatch.setattr(transport.throttle, "reserve", lambda: 0.0)
+    session = MagicMock()
+    session.get = AsyncMock(return_value=_Resp(403, text=JWT_REFUSED))
+    browser = AsyncMock(return_value={"a": 1})
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser", browser):
+        assert asyncio.run(transport.make_api_request_async(session, "/event/1")) == {"a": 1}
+    assert browser.await_count == 1

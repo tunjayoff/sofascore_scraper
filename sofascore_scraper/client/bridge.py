@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import atexit
+import base64
 import concurrent.futures
 import contextvars
 import hashlib
@@ -124,20 +125,46 @@ _FETCH_JS = """async ([targetUrl, xReq, xCap, timeoutMs, cacheMode]) => {
 }"""
 
 
+def token_exp(token: Optional[str]) -> Optional[float]:
+    """JWT'nin `exp`'i (UNIX sn); okunabilir, `exp`'li bir JWT değilse None."""
+    if not token:
+        return None
+    try:
+        payload = token.split(".")[1]
+        payload += "=" * (4 - len(payload) % 4)
+        exp = json.loads(base64.urlsafe_b64decode(payload)).get("exp")
+    except Exception:  # okunamayanın okunacak bir süresi de yoktur
+        return None
+    return float(exp) if isinstance(exp, (int, float)) and not isinstance(exp, bool) else None
+
+
 def _is_token_valid() -> bool:
-    """Önbellekteki token hâlâ geçerli mi?"""
+    """Önbellekteki token hâlâ geçerli mi (TTL'imiz ve JWT'nin kendi `exp`'i, bir dakika önceden)?"""
     if not _cached_token:
         return False
     if time.time() - _cached_at > _TOKEN_TTL_SECONDS:
         return False
-    try:
-        import base64
-        payload = _cached_token.split(".")[1]
-        payload += "=" * (4 - len(payload) % 4)
-        data = json.loads(base64.urlsafe_b64decode(payload))
-        return data.get("exp", 0) > time.time() + 60
-    except Exception:
-        return False
+    return (token_exp(_cached_token) or 0) > time.time() + 60
+
+
+# SofaScore'un captcha token'ını reddettiği 403: token'ın saati dolunca `{"error": {"code": 403, "reason":
+# "jwt:time-out-of-bounds"}}` (c'nin üretim benzeri 4. koşusu, 2026-10-02) ve başka her `jwt:` nedeni (bozuk imza,
+# bozuk token)
+_JWT_REFUSED_RE = re.compile(r'"reason"\s*:\s*"jwt:')
+
+
+def token_refused(text: str) -> bool:
+    """Bu 403 gövdesi SofaScore'un captcha token'ını reddetmesi mi (`jwt:*`)?"""
+    return _JWT_REFUSED_RE.search(text or "") is not None
+
+
+def needs_solve(status: Any, text: str) -> bool:
+    """
+    Bir Turnstile çözümünün yanıtlayacağı 403: challenge ya da token'ın reddi (`token_refused`). Başka bir 403 captcha'nın
+    değildir: hiçbir çözüm onu açmaz. c'nin 4. koşusu: token'ın saati dolunca API her sayfa isteğine `jwt:` 403'ü verdi;
+    bu "challenge" demediği için köprü bir daha çözmedi ve koşu durana kadar hiçbir şey okunmadı.
+    """
+    return status == 403 and ("challenge" in (text or "") or token_refused(text))
 
 
 def get_cached_token() -> Optional[str]:
@@ -491,9 +518,12 @@ class BrowserBridge:
         _cached_token = token
         _cached_at = self._token_at
 
-    async def solve_challenge(self) -> Optional[str]:
+    async def solve_challenge(self, *, drop_token: bool = False) -> Optional[str]:
         """
         Turnstile challenge'ını çözer ve geçerli token'ı döndürür.
+
+        `drop_token`: API token'ın kendisini reddetti (`token_refused`); captcha sayfası açılmadan önce
+        `sofa_captcha` cookie'si silinir (cookie dururken sayfa challenge göstermeden yönlenir, yeni cookie üretmez).
 
         Aynı anda gelen 403'lerin hepsi aynı çözümü bekler. Az önce çözülmüş bir token
         doğrudan döndürülür; başarısız bir çözümden sonra bir süre yeniden denenmez ve API'nin reddettiği
@@ -511,7 +541,8 @@ class BrowserBridge:
             solve_wait = _SlotWait(shared=True)
             token = _slot_wait.set(solve_wait)
             try:
-                self._solve_task = asyncio.ensure_future(self._solve_challenge())
+                solve = self._solve_challenge(drop_token=True) if drop_token else self._solve_challenge()
+                self._solve_task = asyncio.ensure_future(solve)
             finally:
                 _slot_wait.reset(token)
             self._solve_wait = solve_wait
@@ -565,7 +596,15 @@ class BrowserBridge:
         res = await self._api_fetch(_PROBE_URL or _api_url(_PROBE_PATH), "no-store")
         return res.get("status") != 403
 
-    async def _solve_challenge(self) -> Optional[str]:
+    async def _solve_challenge(self, *, drop_token: bool = False) -> Optional[str]:
+        """Çözümün kendisi. `drop_token`: önce `sofa_captcha` cookie'si silinir (API token'ı reddetti)."""
+        if drop_token:
+            # Cookie dururken captcha.html challenge göstermeden yönlenir ve yeni cookie üretmez (aşağıdaki
+            # sil-ve-yeniden-çöz yolunun bir captcha sayfası önce yapılanı)
+            try:
+                await self.context.clear_cookies(name="sofa_captcha")
+            except Exception as e:  # aşağıdaki çözüm yine dener
+                logger.debug(f"Deleting the sofa_captcha cookie: {e}")
         logger.info("Solving the Cloudflare Turnstile challenge (captcha.html)")
         token = await self._solve_on_captcha_page()
         if token:
@@ -658,12 +697,22 @@ class BrowserBridge:
 
         url = path_or_url if path_or_url.startswith("http") else _api_url(path_or_url)
 
+        sent = self.token
         res = await self._api_fetch(url, cache_mode_for(url))
 
-        # 403 Challenge alındıysa otomatik çöz ve tekrar dene
-        if res.get("status") == 403 and "challenge" in (res.get("text") or ""):
-            logger.info("The API answered 403 with a challenge; solving Turnstile")
-            new_token = await self.solve_challenge()
+        # Bir çözümün yanıtlayacağı 403 (challenge ya da token'ın reddi, needs_solve): çöz ve bir kez yinele
+        text = res.get("text") or ""
+        if needs_solve(res.get("status"), text):
+            refused = token_refused(text)
+            if refused and self.token and self.token != sent:
+                # Bu istek yoldayken bir çözüm token'ı değiştirdi: yenisiyle yinelenir, çözüm gerekmez
+                new_token: Optional[str] = self.token
+            else:
+                logger.info(
+                    "The API answered 403 %s; solving Turnstile",
+                    "rejecting the captcha token" if refused else "with a challenge",
+                )
+                new_token = await (self.solve_challenge(drop_token=True) if refused else self.solve_challenge())
             if new_token:
                 res = await self._api_fetch(url, cache_mode_for(url))
 
@@ -681,7 +730,7 @@ class BrowserBridge:
 
         if res.get("status") == 403:
             text = res.get("text") or ""
-            kind = bridge_health.KIND_CHALLENGE if "challenge" in text else bridge_health.KIND_FORBIDDEN
+            kind = bridge_health.KIND_CHALLENGE if needs_solve(403, text) else bridge_health.KIND_FORBIDDEN
             bridge_health.record_failure(kind, f"HTTP 403: {text[:100]}")
 
         logger.warning(f"Browser fetch failed (status {res.get('status')}): {(res.get('text') or '')[:100]}")

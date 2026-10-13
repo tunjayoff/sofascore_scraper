@@ -293,6 +293,17 @@ def _browser_result(data: Any, url: str) -> Optional[JsonResponse]:
     return cast(JsonResponse, data)
 
 
+def _needs_solve(status_code: int, text: str) -> bool:
+    """
+    Bir Turnstile çözümünün yanıtlayacağı 403: challenge ya da captcha token'ının reddi (`jwt:*`; köprünün
+    needs_solve'u). c'nin 4. koşusu: curl'ün taşıdığı süresi dolmuş token `jwt:time-out-of-bounds` ile reddedildi ve
+    istek köprüye hiç gitmedi.
+    """
+    from sofascore_scraper.client.bridge import needs_solve
+
+    return needs_solve(status_code, text)
+
+
 # 403/404/429 dışındaki 4xx yanıtlar kalıcıdır: yeniden denemek yalnızca zaman kaybettirir
 def _is_transient_status(status_code: int) -> bool:
     return status_code >= 500 or status_code in (403, 408, 429)
@@ -448,7 +459,7 @@ def _request_sync(
                 logger.warning(f"403 Forbidden (attempt {attempt+1}/{max_retries}): {url}")
                 logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'none')}, cf-mitigated: {response.headers.get('cf-mitigated', 'none')}")
                 raise_if_cancelled()
-                if "challenge" in response.text:
+                if _needs_solve(403, response.text):
                     logger.info("Turnstile challenge detected; fetching through the browser bridge")
                     try:
                         from sofascore_scraper.client.bridge import fetch_api_via_browser_sync
@@ -665,7 +676,7 @@ async def _request_async(
             logger.warning(f"403 Forbidden (attempt {attempt+1}/{max_retries}): {url}")
             logger.debug(f"cf-ray: {response.headers.get('cf-ray', 'none')}, cf-mitigated: {response.headers.get('cf-mitigated', 'none')}")
             raise_if_cancelled()
-            if "challenge" in response.text:
+            if _needs_solve(403, response.text):
                 logger.info("Turnstile challenge detected; fetching through the browser bridge")
                 browser_data = None
                 try:

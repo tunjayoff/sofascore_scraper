@@ -356,3 +356,114 @@ def test_a_fresh_token_is_still_reused_outside_a_cooldown(tmp_path):
     clock.t += 2
     assert _run(b.solve_challenge()) == "new"
     assert b._solve_challenge.await_count == 1
+
+
+# --- B1: token'ın reddi (`jwt:` 403) cookie silinerek çözülür (c: c9030fe, 51c23a1) ----------------------
+
+JWT_REFUSED = '{"error": {"code": 403, "reason": "jwt:time-out-of-bounds" }}'
+"""c'nin üretim benzeri 4. koşusunda çözümden 3599,4 sn sonra her sayfa isteğinin aldığı gövde, bayt bayt."""
+
+
+def test_a_rejected_token_needs_a_solve_and_another_403_does_not():
+    assert cs.token_refused(JWT_REFUSED)
+    assert cs.token_refused('{"error":{"code":403,"reason":"jwt:bad-signature"}}')
+    assert not cs.token_refused(CHALLENGE)
+    assert not cs.token_refused("forbidden: jwt: none")  # SofaScore'un nedeni değil
+    assert cs.needs_solve(403, JWT_REFUSED) and cs.needs_solve(403, CHALLENGE)
+    assert not cs.needs_solve(403, "forbidden")
+    assert not cs.needs_solve(200, JWT_REFUSED)
+    assert cs.token_exp(_jwt(1234)) == 1234.0
+    assert cs.token_exp("not-a-jwt") is None and cs.token_exp(None) is None
+
+
+class TokenPage:
+    """Sayfa: süresi dolmamış token'la (köprünün saatine göre) 200, dolmuşla SofaScore'un `jwt:` 403'ü, token'sız challenge."""
+
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+        self.sent: List[Any] = []  # (url, token)
+        self.page = _page()
+        self.page.evaluate = AsyncMock(side_effect=self.evaluate)
+
+    async def evaluate(self, script, arg):
+        url, token = arg[0], arg[2]
+        self.sent.append((url, token))
+        await asyncio.sleep(0)
+        if token is None:
+            return {"status": 403, "ok": False, "data": None, "text": CHALLENGE}
+        if (cs.token_exp(token) or 0) <= self.clock.t:
+            return {"status": 403, "ok": False, "data": None, "text": JWT_REFUSED}
+        return {"status": 200, "ok": True, "data": {"event": {}}, "text": None}
+
+
+def _token_bridge(tmp_path, clock: Clock, *, solved=None):
+    """TokenPage üzerinde bir köprü; captcha sayfası bir saat geçerli yeni bir token çözer (ya da `solved`'dakileri)."""
+    b = _clocked(tmp_path, clock)
+    page = TokenPage(clock)
+    b.page = page.page
+    b.context = MagicMock()
+    b.context.clear_cookies = AsyncMock()
+    b.context.add_cookies = AsyncMock()
+    b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": "x"}])
+    tokens = iter(solved) if solved is not None else None
+
+    async def solve_on_captcha_page(*_a, **_k):
+        await asyncio.sleep(0)
+        if tokens is not None:
+            return next(tokens)
+        return _jwt(clock.t + 3600)
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=solve_on_captcha_page)
+    b._api_unlocked = AsyncMock(return_value=True)
+    return b, page
+
+
+def test_an_expired_token_is_solved_once_and_the_reads_answer_again(tmp_path, caplog):
+    clock = Clock()
+    b, _ = _token_bridge(tmp_path, clock)
+    b.token = _jwt(clock.t - 1)  # süresi dolmuş
+
+    async def go():
+        return await asyncio.gather(*(b.fetch_json(f"/event/{i}") for i in range(5)))
+
+    with caplog.at_level("INFO"):
+        answers = _run(go())
+    assert answers == [{"event": {}}] * 5
+    assert b._solve_on_captcha_page.await_count == 1 and (b.solves, b.solve_failures) == (1, 0)
+    b.context.clear_cookies.assert_any_await(name="sofa_captcha")
+    assert b.solve_cooldown_left() == 0 and cs._cached_token == b.token
+    assert "rejecting the captcha token" in caplog.text
+
+
+def test_a_rejected_token_whose_solve_fails_enters_the_cooldown(tmp_path):
+    from sofascore_scraper import bridge_health
+
+    clock = Clock()
+    b, _ = _token_bridge(tmp_path, clock, solved=[None, None, None])
+    b.token = _jwt(clock.t - 1)
+    assert _run(b.fetch_json("/event/1")) is None
+    assert b.solve_cooldown_left() == 180 and b.consecutive_solve_failures == 1
+    assert _run(b.fetch_json("/event/2")) is None  # beklemede yeni çözüm yok
+    assert b._solve_on_captcha_page.await_count == 1
+    # Token'ın reddi de challenge'ın türüdür: bir çözüm yanıtlardı
+    assert bridge_health.snapshot()["last_error"]["kind"] == bridge_health.KIND_CHALLENGE
+
+
+def test_a_fetch_whose_token_a_solve_replaced_meanwhile_is_sent_again_without_a_solve(tmp_path):
+    clock = Clock()
+    b, page = _token_bridge(tmp_path, clock)
+    old, new = _jwt(clock.t - 1), _jwt(clock.t + 3600)
+    b.token = old
+    real = page.evaluate
+
+    async def evaluate(script, arg):
+        res = await real(script, arg)
+        if arg[2] == old:
+            b._set_token(new)  # eski token'ın isteği yoldayken bir çözüm bitti
+            b._token_at = clock.t - 60  # taze değil: kısayol token'ın değişmesidir
+        return res
+
+    page.page.evaluate = AsyncMock(side_effect=evaluate)
+    assert _run(b.fetch_json("/event/1")) == {"event": {}}
+    assert [t for _, t in page.sent] == [old, new]
+    b._solve_on_captcha_page.assert_not_awaited()
