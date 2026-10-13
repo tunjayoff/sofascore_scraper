@@ -84,6 +84,12 @@ def _cookie(headers: dict[str, str], name: str) -> str | None:
     return None
 
 
+_CAPTCHA_PAGE = (
+    b"<!doctype html><html><head><title>fake captcha</title></head><body><p>fake captcha</p>"
+    b"<script>setTimeout(function () { location.replace('/tr'); }, 50);</script></body></html>"
+)
+
+
 class _Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     site: FakeSite
@@ -143,7 +149,9 @@ class _Handler(BaseHTTPRequestHandler):
                 token = f"token-{site.issued}"
                 if site.captcha_effective:
                     site.accepted.add(token)
-            self._html("fake captcha", {"Set-Cookie": f"sofa_captcha={token}; Path=/; Max-Age=3600"})
+            # Gerçek captcha.html gibi geçen sayfa siteye (redirectUrl: /tr) yönlenir: köprü bir çözümü bununla tanır
+            self._send(200, _CAPTCHA_PAGE, "text/html; charset=utf-8",
+                       {"Set-Cookie": f"sofa_captcha={token}; Path=/; Max-Age=3600"})
         elif path == "/favicon.ico":
             self._send(204, b"", "image/x-icon")
         elif path == "/api/v1/echo":
@@ -229,6 +237,7 @@ def site():
 @pytest.fixture(scope="module")
 def bridge(site, tmp_path_factory):
     mp = pytest.MonkeyPatch()
+    mp.setattr(cs, "SITE_ORIGIN", site.origin)
     mp.setattr(cs, "HOME_URL", site.url("/tr"))
     mp.setattr(cs, "CAPTCHA_URL", site.url("/captcha.html"))
     mp.setattr(cs, "_PROBE_URL", site.url("/api/v1/probe"))

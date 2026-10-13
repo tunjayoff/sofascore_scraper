@@ -467,3 +467,133 @@ def test_a_fetch_whose_token_a_solve_replaced_meanwhile_is_sent_again_without_a_
     assert _run(b.fetch_json("/event/1")) == {"event": {}}
     assert [t for _, t in page.sent] == [old, new]
     b._solve_on_captcha_page.assert_not_awaited()
+
+
+# --- B7: geçen bir çözüm, siteye yönlenme ve cookie'dir (c: ec3d614) ----------------------------------
+
+
+class SolvePage:
+    """Scrapling'in havuz sayfası: captcha.html'nin her yüklemesinin vardığı adres (`lands`) ve bıraktığı cookie."""
+
+    def __init__(self, lands, cookies) -> None:
+        self.lands, self.cookies = list(lands), list(cookies)
+        self.page = MagicMock()
+        self.page.close = AsyncMock()
+        self.page.goto = AsyncMock()
+        self.page.url = "about:blank"
+        self.info = MagicMock(page=self.page, state="ready", url="")
+        self.removed = 0
+        self.cookie: Optional[str] = None
+
+
+def _solving_bridge(tmp_path, monkeypatch, lands, cookies, *, cookie=None):
+    """
+    Scrapling oturumu captcha.html'yi sayfa açısından Scrapling'in kendi akışıyla yükler: `page_action` sayfayı vardığı
+    yerde görür, havuz sayfayı sonra da tutar, bağlamın cookie'si son yüklemenin bıraktığıdır.
+    """
+    monkeypatch.setattr(cs, "_POLL_S", 0.0)
+    sp = SolvePage(lands, cookies)
+    sp.cookie = cookie
+    b = cs.BrowserBridge(profile_dir=str(tmp_path / "profile"), clock=Clock())
+    pool = MagicMock()
+    pool.pages = []
+
+    def remove_page(info):
+        pool.pages.remove(info)
+        sp.removed += 1
+
+    pool.remove_page = remove_page
+
+    async def fetch(url, **kw):
+        assert url == cs.CAPTCHA_URL
+        if sp.info not in pool.pages:
+            pool.pages.append(sp.info)
+        sp.page.url = sp.lands.pop(0)
+        new = sp.cookies.pop(0)
+        if new is not None:
+            sp.cookie = new
+        if "page_action" in kw:
+            await kw["page_action"](sp.page)
+        return MagicMock()
+
+    b.session = MagicMock()
+    b.session.fetch = AsyncMock(side_effect=fetch)
+    b.session.page_pool = pool
+    b.context = MagicMock()
+
+    async def cookies_of(_origin):
+        return [{"name": "sofa_captcha", "value": sp.cookie}] if sp.cookie else []
+
+    b.context.cookies = AsyncMock(side_effect=cookies_of)
+    b.context.clear_cookies = AsyncMock()
+    return b, sp
+
+
+def test_a_load_that_never_leaves_captcha_html_fails(tmp_path, monkeypatch, caplog):
+    monkeypatch.setattr(cs, "REDIRECT_WAIT_S", 0.0)
+    b, sp = _solving_bridge(tmp_path, monkeypatch, [cs.CAPTCHA_URL], [None])
+    with caplog.at_level("INFO"):
+        assert _run(b._solve_on_captcha_page()) is None
+    assert "captcha.html did not pass" in caplog.text and "no redirect to the site" in caplog.text
+
+
+def test_a_load_that_redirects_with_a_cookie_passes(tmp_path, monkeypatch):
+    tok = _jwt(time.time() + 3600)
+    b, _ = _solving_bridge(tmp_path, monkeypatch, [cs.HOME_URL], [tok])
+    assert _run(b._solve_on_captcha_page()) == tok
+
+
+def test_an_old_cookie_without_a_redirect_is_not_a_pass(tmp_path, monkeypatch):
+    # Eskiden 10 sn sonra bulunan cookie, sayfa hiç yönlenmese de çözümün token'ıydı
+    old = _jwt(time.time() + 3600)
+    monkeypatch.setattr(cs, "REDIRECT_WAIT_S", 0.0)
+    b, _ = _solving_bridge(tmp_path, monkeypatch, [cs.CAPTCHA_URL], [None], cookie=old)
+    assert _run(b._solve_on_captcha_page()) is None
+    # Aynı cookie yönlenmeyle: site onu kabul etti, bir geçiş (yoklama karar verir)
+    b, _ = _solving_bridge(tmp_path, monkeypatch, [cs.HOME_URL], [None], cookie=old)
+    assert _run(b._solve_on_captcha_page()) == old
+
+
+def test_a_new_cookie_without_a_redirect_is_a_pass(tmp_path, monkeypatch):
+    monkeypatch.setattr(cs, "REDIRECT_WAIT_S", 0.0)
+    tok = _jwt(time.time() + 3600)
+    b, _ = _solving_bridge(tmp_path, monkeypatch, [cs.CAPTCHA_URL], [tok])
+    assert _run(b._solve_on_captcha_page()) == tok
+
+
+def test_a_redirect_without_a_cookie_waits_a_moment_for_it(tmp_path, monkeypatch):
+    b, sp = _solving_bridge(tmp_path, monkeypatch, [cs.HOME_URL], [None])
+    tok = _jwt(time.time() + 3600)
+    calls = []
+
+    async def cookies_of(_origin):
+        calls.append(1)
+        if len(calls) >= 4:  # sayfa ayrılırken yazılır
+            return [{"name": "sofa_captcha", "value": tok}]
+        return []
+
+    b.context.cookies = AsyncMock(side_effect=cookies_of)
+    assert _run(b._solve_on_captcha_page()) == tok
+
+
+def test_the_redirect_is_waited_for_after_scraplings_solver(tmp_path, monkeypatch):
+    monkeypatch.setattr(cs, "_POLL_S", 0.0)
+    page = MagicMock(url=cs.CAPTCHA_URL)
+    seen = []
+
+    async def go():
+        b = _bridge(tmp_path)
+
+        async def later():
+            for _ in range(5):
+                await asyncio.sleep(0)
+            page.url = cs.HOME_URL
+
+        task = asyncio.ensure_future(later())
+        seen.append(await b._await_redirect(page))
+        await task
+
+    _run(go())
+    assert seen == [cs.HOME_URL]
+    assert cs._on_site(cs.HOME_URL) and not cs._on_site(cs.CAPTCHA_URL)
+    assert not cs._on_site("about:blank") and cs._on_origin(cs.CAPTCHA_URL)

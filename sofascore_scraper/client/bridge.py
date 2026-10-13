@@ -51,6 +51,7 @@ _cached_at: float = 0
 _TOKEN_TTL_SECONDS = 3500
 
 DEFAULT_PROFILE_DIR = browser_profile_dir()
+SITE_ORIGIN = "https://www.sofascore.com"
 HOME_URL = "https://www.sofascore.com/tr"
 CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Ftr"
 # Çözümün API'yi gerçekten açtığını doğrulamak için küçük bir uç nokta (API köküne göre yol). _PROBE_URL
@@ -71,6 +72,10 @@ _JS_FETCH_TIMEOUT_MS = 20000
 _LAUNCH_RETRY_AFTER = 300.0
 # Yeni çözülmüş bir token, hemen ardından gelen 403 dalgası için yeniden kullanılır
 _FRESH_TOKEN_SECONDS = 30.0
+# captcha.html'nin Scrapling'in çözücüsünden sonra siteye (yönlendirmesi: /tr) geçmesi için tanınan süre. c'nin
+# 5. koşusunda geçen çözümler yüklemeden 3,4-4,5 sn sonra yönlendi.
+REDIRECT_WAIT_S = 15.0
+_POLL_S = 0.5
 # Başarısız bir çözümden sonra bu süre yeniden denenmez (her istek 10-90 sn yakmasın); üçüncü art arda başarısız
 # çözümden sonra iki katına çıkar, en çok _SOLVE_RETRY_AFTER_MAX (solve_retry_after)
 _SOLVE_RETRY_AFTER = 180.0
@@ -96,6 +101,16 @@ def solve_retry_after(failures: int) -> float:
 # (sezon listelerinde 60 sn) önbellekten dönerse biten maç o süre "devam ediyor" görünür (issue #6).
 # Yalnızca maçın durumundan bağımsız statik veri önbelleği kullanır.
 _STATIC_PATH_RE = re.compile(r"/(seasons|rounds)/?$")
+
+
+def _on_origin(url: str) -> bool:
+    """Sitenin bir sayfası, captcha.html dahil: `fetch()`'i sitenin olan bir sayfa."""
+    return url.startswith(SITE_ORIGIN + "/")
+
+
+def _on_site(url: str) -> bool:
+    """captcha.html dışında sitenin bir sayfası: geçen bir captcha.html'nin gittiği yer."""
+    return url.startswith(SITE_ORIGIN + "/") and not url.startswith(SITE_ORIGIN + "/captcha.html")
 
 
 def cache_mode_for(url: str) -> str:
@@ -482,33 +497,66 @@ class BrowserBridge:
     async def _token_from_context(self) -> Optional[str]:
         """Çözümün sonucu: sofa_captcha cookie'si (sayfa içi fetch'ler onu kendiliğinden gönderir)."""
         try:
-            cookies = await self.context.cookies("https://www.sofascore.com")
+            cookies = await self.context.cookies(SITE_ORIGIN)
         except Exception:
             return None
         return next((c["value"] for c in cookies if c.get("name") == "sofa_captcha" and c.get("value")), None)
 
     async def _solve_on_captcha_page(self) -> Optional[str]:
-        """captcha.html'deki gömülü Turnstile'ı Scrapling'e çözdürür; token'ı (varsa) döndürür."""
+        """
+        captcha.html'deki gömülü Turnstile'ı Scrapling'e çözdürür; sayfa geçtiyse token'ı, geçmediyse None döndürür.
+
+        Geçti: captcha.html, Scrapling'in çözücüsünden sonra REDIRECT_WAIT_S içinde siteye geçti (yönlendirmesi: /tr)
+        ve `sofa_captcha` cookie'si orada, ya da yeni bir cookie geldi (c'nin B7'si). Scrapling 0.4.15 bunu ayırt
+        edemez: `embedded` bir Turnstile için `_challenge_cleared` hep True'dur, tıklasa da tıklamasa da "Cloudflare
+        captcha is solved" yazar ve bir daha tıklamaz (c'nin 5. koşusunda iki başarısız yüklemede de, biri sayfa
+        yüklendikten 0,2 sn sonra). Eskiden çözüm, cookie'yi 10 sn sonra bulduğu gibi alırdı: hiç yönlenmeyen bir
+        sayfa, eski bir cookie dururken yine "çözüldü" sayılırdı.
+        """
         before = await self._token_from_context()
+        landed: List[str] = []
+
+        async def watch(page: Any) -> None:
+            landed.append(await self._await_redirect(page))
+
         try:
             await asyncio.wait_for(
                 # network_idle kapalı: captcha sayfası ana sayfaya yönlenirse reklam/websocket trafiği
                 # ağı hiç boşaltmaz ve çözüm Scrapling'in tüm zaman aşımını bekler (ölçüm: 65 sn).
-                # Çözücü kendi içinde kısa bir networkidle beklemesi yapıyor.
-                self.session.fetch(CAPTCHA_URL, solve_cloudflare=True, network_idle=False, google_search=False),
+                # Çözücü kendi içinde kısa bir networkidle beklemesi yapıyor. `page_action` yönlendirmeyi bekler.
+                self.session.fetch(CAPTCHA_URL, solve_cloudflare=True, network_idle=False, google_search=False,
+                                   page_action=watch),
                 SOLVE_TIMEOUT,
             )
         except Exception as e:
             logger.warning(f"Solving on captcha.html failed: {e.__class__.__name__}: {e}")
-        # Cookie, widget geçtikten kısa süre sonra yazılır
-        for _ in range(20):
-            token = await self._token_from_context()
-            if token and token != before:
-                return token
-            await asyncio.sleep(0.5)
-        # Değer değişmemiş olabilir (sunucu aynı cookie'yi geçerli saydı): başarısız sayma — asıl karar
-        # isteğin yeniden denenmesinde. Aksi halde _SOLVE_RETRY_AFTER boyunca hiç çözüm yapılmazdı.
-        return await self._token_from_context()
+        redirected = bool(landed) and _on_site(landed[0])
+        token = await self._token_from_context()
+        if redirected and not token:
+            # Cookie sayfa ayrılırken yazılır: onun için biraz daha
+            for _ in range(10):
+                await asyncio.sleep(_POLL_S)
+                token = await self._token_from_context()
+                if token:
+                    break
+        if token and (redirected or token != before):
+            return token
+        logger.info(
+            "captcha.html did not pass: %s",
+            "redirected, but no sofa_captcha cookie" if redirected
+            else f"no redirect to the site within {REDIRECT_WAIT_S:g} s",
+        )
+        return None
+
+    async def _await_redirect(self, page: Any) -> str:
+        """Scrapling'in `page_action`'ı: sayfa captcha.html'den siteye geçince adresi, ya da REDIRECT_WAIT_S sonraki hali."""
+        waited = 0.0
+        while True:
+            url = str(getattr(page, "url", "") or "")
+            if _on_site(url) or waited >= REDIRECT_WAIT_S:
+                return url
+            await asyncio.sleep(_POLL_S)
+            waited += _POLL_S
 
     def _set_token(self, token: str) -> None:
         global _cached_token, _cached_at
