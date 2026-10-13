@@ -54,6 +54,7 @@ SCRIPT_PROFILES = {
     "push_channel_run": "chrome_push_run",
     "push_light_probe": "chrome_push_light",
     "push_direct_probe": "chrome_push_direct",
+    "soak_live": "chrome_soak",
 }
 
 
