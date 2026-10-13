@@ -134,6 +134,13 @@ class ClientSettings:
         False, KIND_BOOL, "Start the bridge's Chromium with its own sandbox instead of patchright's --no-sandbox; "
         "the host must allow it (e.g. an AppArmor profile for user namespaces).",
     )
+    browser_recycle_mib: float = setting(
+        2048.0, KIND_FLOAT, "Restart the bridge's browser (same profile, no new challenge) once this process and its "
+        "browser use this many MiB, after 30 minutes of the browser; 0 = never for memory.", minimum=0,
+    )
+    browser_recycle_hours: float = setting(
+        6.0, KIND_FLOAT, "Restart the bridge's browser after it has run this many hours; 0 = never for age.", minimum=0,
+    )
     throttle_dir: str = setting("", KIND_PATH, "Directory of the shared request-budget files; empty = the default.")
 
     @property

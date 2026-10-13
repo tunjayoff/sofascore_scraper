@@ -1773,6 +1773,8 @@ const tr: typeof en = {
       browser_profile: 'Tarayıcı profil klasörü',
       browser_headed: 'Yerleşik tarayıcıyı göster',
       browser_sandbox: 'Yerleşik tarayıcıyı kendi korumalı alanında çalıştır',
+      browser_recycle_mib: 'Yerleşik tarayıcıyı şu bellekte yeniden başlat (MiB)',
+      browser_recycle_hours: 'Yerleşik tarayıcıyı şu aralıkla yeniden başlat (saat)',
       throttle_dir: 'Paylaşılan istek bütçesi klasörü',
       odds_provider: 'Oran sağlayıcısı',
     },

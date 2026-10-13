@@ -1771,6 +1771,8 @@ const en = {
       browser_profile: 'Browser profile folder',
       browser_headed: 'Show the built-in browser',
       browser_sandbox: 'Run the built-in browser in its own sandbox',
+      browser_recycle_mib: 'Restart the built-in browser at (MiB)',
+      browser_recycle_hours: 'Restart the built-in browser every (hours)',
       throttle_dir: 'Shared request budget folder',
       odds_provider: 'Odds provider',
     },

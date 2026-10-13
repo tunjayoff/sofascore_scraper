@@ -3138,6 +3138,8 @@ odds_country = ""         # recorded with every odds read when set (e.g. "TR"); 
 browser_profile = ""      # empty = the default profile directory of the bridge
 browser_headed = false
 browser_sandbox = false   # Chromium's own sandbox (the host must allow it); false = patchright's --no-sandbox
+browser_recycle_mib = 2048     # restart the bridge's browser (same profile) at this memory, after 30 min; 0 = never
+browser_recycle_hours = 6      # ... or after this many hours; 0 = never
 throttle_dir = ""         # empty = the default directory of the shared budget files
 
 [breaker]

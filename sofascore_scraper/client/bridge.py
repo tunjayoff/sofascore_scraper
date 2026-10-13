@@ -42,6 +42,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from sofascore_scraper import bridge_health, throttle
 from sofascore_scraper.client import profile_lock
+from sofascore_scraper.client.procinfo import browser_processes, memory_mib
 from sofascore_scraper.client.context import FetchCancelled, notify_request, raise_if_cancelled
 from sofascore_scraper.private_files import make_private_dir
 from sofascore_scraper.logger import get_logger
@@ -107,6 +108,17 @@ REFRESH_MIN_LEFT_S = 180.0
 # Bir token'ın ömründe en çok yenileme yüklemesi: başarısız çözümler gibi aralanınca (180, 180, 360 sn) üçü
 # REFRESH_BEFORE_EXP_S ile REFRESH_MIN_LEFT_S arasındaki 720 sn'ye sığar
 REFRESH_MAX_LOADS = 3
+# Tarayıcının geri dönüşümü (S1-A3, BrowserBridge._recycle): yalnızca token'ın bu kadarı kalmışken (yeniden açılış
+# hiç çözmez, ondan sonraki okumalar çözüme ihtiyaç duymamalı)
+RECYCLE_TOKEN_LEFT_S = 600.0
+# Bir sayfa isteği süren bir geri dönüşümü en çok bu kadar bekler; sonra başarısız olur (curl okumayı alır ya da bir
+# sonraki denemesi yeni tarayıcıyı)
+RECYCLE_HOLD_S = 30.0
+# Bellek için ancak tarayıcı bu kadar çalıştıktan sonra: hemen sınırın üstünde açılan bir tarayıcı (sürecin kendi
+# belleği ya da çok düşük bir sınır) her denetimde yeniden açılmasın
+RECYCLE_MIN_AGE_S = 1800.0
+# Bellek ve yaş bu aralıkla denetlenir (/proc dakikada bir okunur, her istekte değil)
+RECYCLE_CHECK_S = 60.0
 # Bundan genç bir token yenilenmez (_refresh_due): çözülür çözülmez REFRESH_BEFORE_EXP_S ya da daha azı kalan bir token
 # (SofaScore kısa kesti ya da sunucunun saati bir saate kadar ileri) yeniden ve yeniden yenilenirdi: c'nin bir
 # incelemesinin benzetiminde 13-22 sn'de bir çözüm
@@ -243,6 +255,30 @@ def _navigation_error(e: BaseException) -> bool:
     """Tarayıcının kendi ağ hatası (Chromium'un `net::ERR_*`'ı: ad yok, bağlantı yok, proxy düştü), yüklenen bir
     sayfanınki değil (`ERR_ABORTED`: yarıda kesilen gezinme)."""
     return _NAVIGATION_ERROR_RE.search(str(e)) is not None
+
+
+def recycle_reason(mem_mib: Optional[float], age_s: float, *, limit_mib: float, every_s: float) -> Optional[str]:
+    """
+    Tarayıcı şimdi neden geri dönüştürülmeli, ya da None: belleği `limit_mib` ya da üstünde (0: bellek için asla) ve
+    RECYCLE_MIN_AGE_S çalıştı, ya da `every_s` çalıştı (0: yaş için asla).
+    """
+    over = limit_mib > 0 and mem_mib is not None and mem_mib >= limit_mib
+    if over and age_s >= RECYCLE_MIN_AGE_S:
+        return f"memory {mem_mib:.0f} MiB, the limit {limit_mib:.0f} MiB"
+    if every_s > 0 and age_s >= every_s:
+        return f"running {age_s / 3600:.1f} h, recycled every {every_s / 3600:g} h"
+    return None
+
+
+def _recycle_settings() -> Tuple[float, float]:
+    """(`client.browser_recycle_mib`, `client.browser_recycle_hours`); ayarlar kurulamıyorsa varsayılanlar."""
+    from sofascore_scraper.config import loader
+
+    try:
+        client = loader.active_settings().client
+        return float(client.browser_recycle_mib), float(client.browser_recycle_hours)
+    except Exception:
+        return 2048.0, 6.0
 
 
 def _page_url(page: Any) -> Optional[str]:
@@ -544,6 +580,14 @@ class BrowserBridge:
     _refresh_failures = 0
     _refresh_not_before = -math.inf
     _launched_at: Optional[float] = None
+    # Geri dönüşüm (S1-A3): süren sayfa istekleri, süren bir geri dönüşümün kapısı (yeni istekler onu bekler), sayısı
+    _inflight = 0
+    _recycling: Optional[asyncio.Event] = None
+    recycles = 0
+    _recycle_task: Optional["asyncio.Future[Any]"] = None
+    _recycle_checked_at = -math.inf
+    _relaunch_solves = True  # açılış çerez yoksa çözer; geri dönüşümün yeniden açılışı asla
+    _launch_dir: Optional[str] = None
     token: Optional[str] = None
     _token_at = 0.0
     _solve_task: Optional["asyncio.Future[Optional[str]]"] = None
@@ -603,6 +647,9 @@ class BrowserBridge:
         """
         if self.page and not self.page.is_closed() and not self._launching:
             return
+        # Bir geri dönüşüm sürerken onu en çok RECYCLE_HOLD_S bekler, yeniden açılışın tuttuğu kilidi değil (c'nin
+        # ef782b4 incelemesi: bir istek bütün yeniden açılışı bekliyordu, STARTUP_TIMEOUT'a kadar)
+        await self._hold_for_recycle()
 
         async with self._init_lock:
             if self.page and not self.page.is_closed() and not self._launching:
@@ -618,11 +665,15 @@ class BrowserBridge:
                 )
             await self._relaunch()
 
-    async def _relaunch(self) -> None:
-        """Kalan oturumu kapatıp yenisini açar; `_init_lock` tutulur."""
+    async def _relaunch(self, *, solve: bool = True) -> None:
+        """
+        Kalan oturumu kapatıp yenisini açar; `_init_lock` tutulur. `solve`: çerezi olmayan bir açılış (bekleme dışında)
+        çözer; geri dönüşümün yeniden açılışı çözmez.
+        """
         # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
         await self.close()
         self._launching = True
+        self._relaunch_solves = solve
         try:
             await self._launch_in_free_profile()
         except BaseException as e:
@@ -637,7 +688,152 @@ class BrowserBridge:
             raise
         finally:
             self._launching = False
+            self._relaunch_solves = True
         self._launch_failed_at = 0.0
+
+    def _idle_event(self) -> asyncio.Event:
+        """Süren sayfa isteği yokken kurulu olay (geri dönüşüm bekler); `__new__` ile kurulan köprüde de vardır."""
+        idle = self.__dict__.get("_idle_ev")
+        if idle is None:
+            idle = self.__dict__["_idle_ev"] = asyncio.Event()
+            if not self._inflight:
+                idle.set()
+        return idle
+
+    async def _hold_for_recycle(self) -> None:
+        """
+        Bir geri dönüşüm sürerken toplam RECYCLE_HOLD_S bekler, sonra hata verir: istek her köprü hatası gibi başarısız
+        olur ve istek katmanı sürer (curl, sonraki deneme).
+        """
+        end = time.monotonic() + RECYCLE_HOLD_S
+        while self._recycling is not None:
+            left = end - time.monotonic()
+            try:
+                if left <= 0:
+                    raise asyncio.TimeoutError
+                await asyncio.wait_for(self._recycling.wait(), left)
+            except asyncio.TimeoutError:
+                raise RuntimeError("The browser is being recycled") from None
+
+    def running(self) -> bool:
+        """Bir tarayıcı oturumu açık."""
+        return self.session is not None
+
+    def age_s(self) -> float:
+        """Tarayıcının açılışından beri saniye; tarayıcı yoksa 0."""
+        at = self._launched_at
+        return 0.0 if at is None or self.session is None else max(0.0, self._clock() - at)
+
+    def status(self) -> Dict[str, Any]:
+        """Bellek (memory_mib, MiB), tarayıcının süreçleri ve şimdiye kadarki geri dönüşümler; /proc'u okur."""
+        mem, source = memory_mib()
+        return {
+            "memory_mib": None if mem is None else round(mem),
+            "memory_from": source,
+            "browser_processes": browser_processes(),
+            "browser_recycles": self.recycles,
+        }
+
+    def _maybe_recycle(self) -> None:
+        """
+        Sayfa isteklerinin arasında (RECYCLE_CHECK_S'de bir): tarayıcının belleği ya da yaşı öyle diyorsa (recycle_reason,
+        `client.browser_recycle_mib` ve `browser_recycle_hours`) geri dönüşümü arka planda başlatır. Hiçbir isteği
+        tutmaz: süren istekler biter, yeniler en çok RECYCLE_HOLD_S bekler; challenge başarısızken ya da token yakında
+        bitiyorsa beklenir (_recycle). Bellek ve süreç sayısı köprü sağlığına yazılır (tanılama paketi).
+        """
+        if self.session is None or self._recycling is not None:
+            return
+        task = self._recycle_task
+        if task is not None and not task.done():
+            return
+        now = time.monotonic()
+        if now - self._recycle_checked_at < RECYCLE_CHECK_S:
+            return
+        self._recycle_checked_at = now
+        limit_mib, every_h = _recycle_settings()
+        mem, source = memory_mib()
+        if self.report_health:
+            bridge_health.update_solver({
+                "memory_mib": None if mem is None else round(mem), "memory_from": source,
+                "browser_processes": browser_processes(), "browser_recycles": self.recycles,
+            })
+        reason = recycle_reason(mem, self.age_s(), limit_mib=limit_mib, every_s=every_h * 3600.0)
+        if reason is None:
+            return
+        self._recycle_task = asyncio.ensure_future(self._recycle_quietly(reason, mem))
+
+    async def _recycle_quietly(self, reason: str, mem: Optional[float]) -> None:
+        try:
+            await self._recycle(reason, mem)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # eski tarayıcı sürer ya da sonraki istek bir tane açar
+            logger.exception("Browser recycle failed")
+
+    async def _recycle(self, reason: str, before_mib: Optional[float]) -> bool:
+        """
+        Tarayıcı kapanır ve aynı profille yeniden açılır (S1-A3, c'nin 999e19d/ba73c6c/36319ac'si): renderer'larının
+        belleği gider, profil ve onunla `sofa_captcha` cookie'si kalır; geçerli bir token yeni bir Turnstile istemez ve
+        yeniden açılış çözmez. Sonraya kalır (bir sonraki denetim): bir çözüm sürerken, başarısızken ya da soğurken,
+        token'ın RECYCLE_TOKEN_LEFT_S'den azı kaldıysa ya da token yoksa, ya da köprü geçici bir profilde açıksa
+        (kapanınca silinir, cookie'si de). Yeni istekler onu en çok RECYCLE_HOLD_S bekler; süren istekler önce biter, en
+        çok REQUEST_TIMEOUT, yoksa sonraya kalır. c'nin 5. koşusu: birimin anonim belleği 2 saatte 637'den 1254 MiB'a
+        çıktı (tepesi 2,44 GB).
+        """
+        if self.session is None or self._recycling is not None:
+            return False
+        why = self._recycle_blocked()
+        if why:
+            logger.info(f"Browser recycle ({reason}) postponed: {why}")
+            return False
+        gate = self._recycling = asyncio.Event()
+        try:
+            # Süren istekler önce biter; bu arada birinin başlattığı bir çözüm (bir yenileme, ör.: cookie'si o bitene
+            # kadar yok) beklemeyi hemen bitirir
+            idle = self._idle_event()
+            end = time.monotonic() + REQUEST_TIMEOUT
+            while not idle.is_set():
+                if self._recycle_blocked() or time.monotonic() >= end:
+                    break
+                with contextlib.suppress(asyncio.TimeoutError):
+                    await asyncio.wait_for(idle.wait(), min(1.0, max(0.0, end - time.monotonic())))
+            if not idle.is_set():
+                logger.warning(
+                    f"Browser recycle ({reason}) postponed: {self._recycle_blocked() or 'fetches still under way'}"
+                )
+                return False
+            why = self._recycle_blocked()
+            if why:
+                logger.info(f"Browser recycle ({reason}) postponed: {why}")
+                return False
+            logger.info(f"Recycling the browser ({reason})")
+            async with self._init_lock:
+                await self._relaunch(solve=False)
+        finally:
+            self._recycling = None
+            gate.set()
+        self.recycles += 1
+        after, _ = memory_mib()
+        logger.info(
+            "Browser recycled (%s): memory %s MiB before, %s MiB after, %d browser process(es)",
+            reason, "?" if before_mib is None else f"{before_mib:.0f}", "?" if after is None else f"{after:.0f}",
+            browser_processes(),
+        )
+        self._publish_solver()
+        return True
+
+    def _recycle_blocked(self) -> str:
+        """Geri dönüşüm neden şimdi beklemeli, ya da "" (_recycle)."""
+        if self._solve_task is not None and not self._solve_task.done():
+            return "a solve is under way"
+        if self.solve_cooldown_left() > 0 or self.consecutive_solve_failures > 0:
+            return "the challenge is failing"
+        if self._launch_dir is not None:
+            return "the browser runs on a temporary profile (its cookie would be lost)"
+        exp = token_exp(self.token)
+        if exp is None or exp - self._clock() < RECYCLE_TOKEN_LEFT_S:
+            return "the token ends soon or is not there"
+        return ""
 
     def _use_secondary_profile(self, owner: profile_lock.ProfileOwner) -> None:
         """Profil başka bir süreçte: bu süreç kardeş geçici profille açar (sofascore_scraper/client/profile_lock.py)."""
@@ -711,7 +907,7 @@ class BrowserBridge:
         solved_now = None
         if await self._token_from_context():
             await self._open_home()
-        elif self.solve_cooldown_left() <= 0 and self._load_wait() <= 0:
+        elif self._relaunch_solves and self.solve_cooldown_left() <= 0 and self._load_wait() <= 0:
             # Profilde çözüm yok: API isteklerinden önce çöz, token'ı her çözüm gibi API'ye karşı yokla (eskiden
             # açılışınki yoklanmazdı). Bekleme ve yük saati sürerken açılış çözmez.
             had = self._checked_token
@@ -1011,6 +1207,9 @@ class BrowserBridge:
                         # Açılış, ensure_ready'nin bekleyeceği kilidi STARTUP_TIMEOUT'una kadar tutar: onun
                         # yoklaması şimdi başarısız olur
                         raise RuntimeError("The bridge page closed during the launch") from None
+                    if self._recycling is not None:
+                        # Bir geri dönüşüm tam da bu isteği bekliyor: burada onu beklemek yok
+                        raise RuntimeError("The browser is being recycled") from None
                     await self.ensure_ready()
                     continue
                 try:
@@ -1344,6 +1543,7 @@ class BrowserBridge:
             "solve_failures": self.solve_failures,
             "consecutive_solve_failures": self.consecutive_solve_failures,
             "solve_unreached": self.solve_unreached,
+            "browser_recycles": self.recycles,
             # Beklemenin bittiği an (epoch sn); bridge_health.solver() kalan süreyi okuma anında hesaplar
             "solve_cooldown_until": time.time() + left if left > 0 else None,
         }
@@ -1358,16 +1558,28 @@ class BrowserBridge:
         Sofascore API isteğini tarayıcı oturumu içinden fetch() ile yapar.
         403 challenge durumunda Turnstile'ı otomatik çözüp isteği yineler.
         """
-        await self.ensure_ready()
+        # Tarayıcı geri dönüştürülürken yenisini en çok RECYCLE_HOLD_S bekler; süren bir istek geri dönüşümü
+        # bitene kadar tutar (S1-A3)
+        await self._hold_for_recycle()
+        self._inflight += 1
+        self._idle_event().clear()
+        try:
+            await self.ensure_ready()
 
-        url = path_or_url if path_or_url.startswith("http") else _api_url(path_or_url)
-        res = await self._fetch_now(url)
+            url = path_or_url if path_or_url.startswith("http") else _api_url(path_or_url)
+            res = await self._fetch_now(url)
+        finally:
+            self._inflight -= 1
+            if self._inflight == 0:
+                self._idle_event().set()
         out = _outcome.get()
         if out is not None:
             out.status = int(res.get("status") or 0)
             out.text = "" if res.get("ok") else str(res.get("text") or "")
             out.sent = bool(res.get("sent", True))
-        return self._answer(res, url)
+        answer = self._answer(res, url)
+        self._maybe_recycle()
+        return answer
 
     async def _fetch_now(self, url: str) -> Dict[str, Any]:
         """

@@ -1559,3 +1559,244 @@ def test_the_refresh_escalates_its_own_tries_and_the_solve_after_the_exp_its_own
     clock.t += 600
     assert _run(b.solve_challenge(drop_token=True)) is None
     assert b.consecutive_solve_failures == 1 and b.solve_cooldown_left() == 180
+
+
+# --- A3: bellek durumu ve tarayıcının geri dönüşümü (c: 999e19d, ba73c6c, 36319ac) ------------------------------
+
+
+def _proc(tmp_path, tree, cgroup: str = "0::/user.slice/x"):
+    """Bir /proc: pid -> (ppid, comm, Pss kB); 100 bu süreçtir."""
+    proc = tmp_path / "proc"
+    for pid, (ppid, comm, pss) in tree.items():
+        d = proc / str(pid)
+        d.mkdir(parents=True)
+        (d / "stat").write_text(f"{pid} ({comm}) S {ppid} 1 1 0")
+        (d / "smaps_rollup").write_text(f"Rss: {pss * 2} kB\nPss: {pss} kB\n")
+        (d / "cgroup").write_text(cgroup + "\n")
+    (proc / "self").mkdir()
+    return str(proc)
+
+
+TREE = {
+    1: (0, "systemd", 10_000),
+    100: (1, "python", 200 * 1024),
+    101: (100, "node", 50 * 1024),
+    102: (101, "chrome", 300 * 1024),
+    103: (102, "chrome", 400 * 1024),
+    104: (102, "chrome (renderer)", 100 * 1024),
+    200: (1, "chrome", 999 * 1024),  # makinedeki başka bir tarayıcı: bizim değil
+}
+
+
+def test_memory_is_the_process_trees_pss_outside_a_service(tmp_path):
+    proc = _proc(tmp_path, TREE)
+    assert cs.memory_mib(100, proc, str(tmp_path / "cg")) == (1050.0, "pss")
+    assert cs.browser_processes(100, proc) == 3
+
+
+def test_memory_is_the_units_anon_and_swap_in_a_service(tmp_path):
+    proc = _proc(tmp_path, TREE, cgroup="0::/system.slice/ssc-serve.service")
+    cg = tmp_path / "cg" / "system.slice" / "ssc-serve.service"
+    cg.mkdir(parents=True)
+    (cg / "memory.stat").write_text(f"anon {900 * 1024 * 1024}\nfile {600 * 1024 * 1024}\n")
+    (cg / "memory.swap.current").write_text(f"{100 * 1024 * 1024}\n")
+    assert cs.memory_mib(100, proc, str(tmp_path / "cg")) == (1000.0, "cgroup")
+    (cg / "memory.stat").unlink()  # okunamıyor: ağacınki
+    assert cs.memory_mib(100, proc, str(tmp_path / "cg"))[1] == "pss"
+    assert cs.memory_mib(100, str(tmp_path / "none"), "x") == (None, "")  # Linux dışı
+
+
+@pytest.mark.parametrize(
+    "mem, age, limit, every, recycled",
+    [
+        (2100.0, 3600.0, 2048, 6 * 3600, True),  # sınırın üstünde
+        (2000.0, 3600.0, 2048, 6 * 3600, False),
+        (2100.0, 1000.0, 2048, 6 * 3600, False),  # az önce açıldı: bellek için değil
+        (None, 3600.0, 2048, 6 * 3600, False),  # bellek bilinmiyor
+        (500.0, 6 * 3600.0, 2048, 6 * 3600, True),  # yaşı
+        (500.0, 6 * 3600.0, 2048, 0, False),  # yaş sınırı yok
+        (9000.0, 3600.0, 0, 0, False),  # kapalı
+    ],
+)
+def test_the_recycle_decision(mem, age, limit, every, recycled):
+    assert (cs.recycle_reason(mem, age, limit_mib=limit, every_s=every) is not None) == recycled
+
+
+def test_the_recycle_settings_and_their_defaults(monkeypatch):
+    from sofascore_scraper.config import loader
+
+    client = loader.active_settings().client
+    assert (client.browser_recycle_mib, client.browser_recycle_hours) == (2048.0, 6.0)
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_RECYCLE_MIB", "0")
+    monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_RECYCLE_HOURS", "12")
+    assert cs._recycle_settings() == (0.0, 12.0)
+
+
+def _recycling_bridge(tmp_path, monkeypatch, clock):
+    """Sahteler üzerinde açılmış bir köprü: sayfası her isteği birkaç döngü turu sonra yanıtlar; her açılış yeni bir
+    sayfa açar ve profilin cookie'sini bulur."""
+    tok = _jwt(time.time() + 3600)
+    cookie = [{"name": "sofa_captcha", "value": tok}]
+    made, _ = _fake_session(monkeypatch, [cookie] * 40)
+    b = cs.BrowserBridge(profile_dir=str(tmp_path / "profile"), clock=clock)
+    pages: List[Any] = []
+
+    async def new_page():
+        page = _page(url="about:blank")
+
+        async def evaluate(script, arg):
+            for _ in range(5):
+                await asyncio.sleep(0)
+            return {"status": 200, "ok": True, "data": {"page": len(pages)}, "text": None}
+
+        page.evaluate = AsyncMock(side_effect=evaluate)
+        pages.append(page)
+        return page
+
+    return b, made, pages, new_page, tok
+
+
+def test_a_recycle_loses_no_read_and_keeps_the_profiles_token(tmp_path, monkeypatch, real_launch, caplog):
+    clock = Clock()
+    b, _made, pages, new_page, tok = _recycling_bridge(tmp_path, monkeypatch, clock)
+
+    async def go():
+        await b.ensure_ready()
+        b.context.new_page = AsyncMock(side_effect=new_page)
+        async with b._init_lock:
+            await b._relaunch()  # sayan sayfayla
+        under_way = [asyncio.ensure_future(b.fetch_json(f"/event/{i}")) for i in range(3)]
+        await asyncio.sleep(0)
+        recycle = asyncio.ensure_future(b._recycle("test", 2100.0))
+        await asyncio.sleep(0)
+        later = [asyncio.ensure_future(b.fetch_json(f"/event/l{i}")) for i in range(3)]
+        assert await recycle is True
+        return await asyncio.gather(*under_way), await asyncio.gather(*later)
+
+    with caplog.at_level("INFO"):
+        before, after = _run(go())
+    # Süren istekler eski sayfada, sonrakiler yenisinde bitti
+    assert {d["page"] for d in before} == {1} and {d["page"] for d in after} == {2}
+    assert pages[0].close.await_count == 1 and b.page is pages[1]
+    assert b.token == tok and b.session.fetch.await_count == 0  # yeniden açılışta captcha.html yok
+    assert b.recycles == 1 and b.solves == 0
+    assert "Browser recycled (test): memory 2100 MiB before" in caplog.text
+
+
+def test_a_recycle_waits_while_the_challenge_fails_the_token_ends_or_the_profile_is_temporary(
+    tmp_path, monkeypatch, real_launch
+):
+    clock = Clock()
+    b, *_ = _recycling_bridge(tmp_path, monkeypatch, clock)
+    _run(b.ensure_ready())
+    tok = b.token
+    for setup, why in [
+        (lambda: setattr(b, "token", None), "not there"),
+        (lambda: setattr(b, "token", _jwt(clock.t + 500)), "ends soon"),
+        (lambda: setattr(b, "consecutive_solve_failures", 1), "failing"),
+        (lambda: setattr(b, "_solve_failed_at", clock.t), "failing"),
+        (lambda: setattr(b, "_launch_dir", str(tmp_path / "tmp-profile")), "temporary profile"),
+    ]:
+        b.token, b.consecutive_solve_failures, b._solve_failed_at, b._launch_dir = tok, 0, 0.0, None
+        setup()
+        assert why in b._recycle_blocked()
+        assert _run(b._recycle("test", None)) is False
+    b.token, b.consecutive_solve_failures, b._solve_failed_at, b._launch_dir = tok, 0, 0.0, None
+    assert b._recycle_blocked() == ""
+
+
+def test_a_recycle_waits_for_a_solve_and_never_runs_twice(tmp_path, monkeypatch, real_launch):
+    clock = Clock()
+    b, *_ = _recycling_bridge(tmp_path, monkeypatch, clock)
+
+    async def go():
+        await b.ensure_ready()
+        b._solve_task = asyncio.get_running_loop().create_future()  # bir çözüm sürüyor
+        assert await b._recycle("test", None) is False
+        b._solve_task = None
+        b._recycling = asyncio.Event()  # biri zaten sürüyor
+        assert await b._recycle("test", None) is False
+        b._recycling = None
+        assert await b._recycle("test", None) is True
+
+    _run(go())
+    assert b.recycles == 1
+
+
+def test_a_recycles_relaunch_never_solves_and_holds_a_fetch_only_so_long(tmp_path, monkeypatch, real_launch):
+    clock = Clock()
+    b, *_ = _recycling_bridge(tmp_path, monkeypatch, clock)
+    _run(b.ensure_ready())
+    b.context.cookies = AsyncMock(return_value=[])  # profil cookie'sini kaybetti
+    b.context.new_page = AsyncMock(return_value=_page(url="about:blank"))
+    assert _run(b._recycle("test", None)) is True
+    b.session.fetch.assert_not_awaited()  # yeniden açılışta captcha.html yok
+    assert b.page.url == "about:blank"
+    monkeypatch.setattr(cs, "RECYCLE_HOLD_S", 0.05)
+
+    async def held():
+        b._recycling = asyncio.Event()
+        try:
+            with pytest.raises(RuntimeError, match="recycled"):
+                await b.fetch_json("/event/1")
+        finally:
+            b._recycling = None
+
+    _run(held())
+
+
+def test_an_inflight_fetch_whose_page_closes_in_a_recycle_does_not_wait_for_it(tmp_path, monkeypatch, real_launch):
+    monkeypatch.setattr(cs, "RECYCLE_HOLD_S", 5.0)
+    clock = Clock()
+    b, *_ = _recycling_bridge(tmp_path, monkeypatch, clock)
+
+    async def go():
+        await b.ensure_ready()
+        page = b.page
+
+        async def evaluate(script, arg):
+            await asyncio.sleep(0.1)
+            page.is_closed = MagicMock(return_value=True)
+            raise RuntimeError("Execution context was destroyed")
+
+        page.evaluate = AsyncMock(side_effect=evaluate)
+        fetch = asyncio.ensure_future(b.fetch_json("/event/1"))
+        await asyncio.sleep(0.01)
+        t = time.monotonic()
+        recycle = asyncio.ensure_future(b._recycle("test", None))
+        with pytest.raises(RuntimeError, match="recycled"):
+            await fetch
+        took = time.monotonic() - t
+        assert await recycle is True
+        return took
+
+    assert _run(go()) < 1.0  # RECYCLE_HOLD_S değil
+
+
+def test_the_fetches_check_memory_and_age_once_a_minute_and_recycle_in_the_background(
+    tmp_path, monkeypatch, real_launch
+):
+    from sofascore_scraper import bridge_health
+
+    clock = Clock()
+    b, *_ = _recycling_bridge(tmp_path, monkeypatch, clock)
+    reads = []
+    monkeypatch.setattr(cs, "memory_mib", lambda *a, **k: reads.append(1) or (3000.0, "pss"))
+    monkeypatch.setattr(cs, "browser_processes", lambda *a, **k: 7)
+
+    async def go():
+        await b.ensure_ready()
+        await b.fetch_json("/event/1")  # yeni açıldı: bellek için değil
+        assert b._recycle_task is None
+        b._recycle_checked_at = -float("inf")
+        clock.t += cs.RECYCLE_MIN_AGE_S
+        await b.fetch_json("/event/2")
+        assert b._recycle_task is not None
+        await b._recycle_task
+        await b.fetch_json("/event/3")  # dakika dolmadı: /proc okunmaz
+        return b.recycles
+
+    assert _run(go()) == 1
+    solver = bridge_health.solver()
+    assert (solver["memory_mib"], solver["browser_processes"]) == (3000, 7)
+    assert len(reads) == 3  # iki denetim ve geri dönüşümün "sonra"sı
