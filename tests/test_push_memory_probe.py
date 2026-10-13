@@ -215,7 +215,7 @@ def test_plan_resolution_and_rejected_combinations():
 def _product_session(tmp_path) -> Any:
     """Ürünün köprüsünün kurduğu oturum (başlatılmaz): bridge.py `_launch` ile aynı argümanlar."""
     return cs._session_class()(headless=True, solve_cloudflare=True, user_data_dir=str(tmp_path / "p"), proxy=None,
-                               block_webrtc=True, timeout=60000, max_pages=2)
+                               block_webrtc=True, timeout=60000, max_pages=2, retries=1)
 
 
 def test_flags_reach_the_session_without_dropping_scraplings_stealth_switches(tmp_path):
@@ -299,7 +299,7 @@ async def test_the_probe_bridge_launches_through_the_product_launch(tmp_path, mo
     made = _RecordingSession.made[-1]
     assert made == {"headless": True, "solve_cloudflare": True, "user_data_dir": str(tmp_path / "bridge"),
                     "proxy": {"server": "http://127.0.0.1:3128"}, "block_webrtc": True, "timeout": 60000,
-                    "max_pages": 2}
+                    "max_pages": 2, "retries": 1}  # S1-B9: yükleme başına tek gezinme
     assert b.applied["args"] == ["--a", "--disable-gpu"]
     assert cs._session_class is not b._session_factory  # geri alındı
 
