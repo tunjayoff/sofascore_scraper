@@ -653,6 +653,23 @@ def _browser_unanswered(req: _Request, seen: Any) -> None:
         req.browser_failed = True
 
 
+def _unsolvable_browser_403(seen: Any) -> bool:
+    """Sayfa hiçbir çözümün yanıtlamadığı bir 403 aldı (ne challenge ne token'ın reddi: engel sayfası, API'nin 403'ü)."""
+    return getattr(seen, "status", None) == 403 and not _needs_solve(403, getattr(seen, "text", "") or "")
+
+
+def _browser_forbidden(url: str, seen: Any) -> SofaScoreScraperError:
+    """
+    Tarayıcının çözümle yanıtlanmayan 403'ü isteği bitirir (S1-B5; c'nin 51c23a1'i): curl'e düşmek yalnızca yeniden
+    challenge'a, tarayıcı da yine bu 403'e takılırdı. c'nin 4. koşusunda token'ın `jwt:` 403'ü curl'e ve tarayıcıya
+    geri düştü: okuma başına 7 istek, hiçbiri yanıtsız.
+    """
+    text = getattr(seen, "text", "") or ""
+    if not _needs_solve(403, text):
+        logger.warning(f"The browser's page got a 403 no solve answers: {text[:100]}")
+    return APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
+
+
 def _challenge_unanswered(req: _Request, seen: Any) -> None:
     """
     curl'ün challenge'ını tarayıcı yanıtlamadı (hiç yanıt vermedi ya da 403'le döndü): istek challenge'da yanıtsızdır.
@@ -773,6 +790,9 @@ def _request_sync_body(
                 pass
             return _browser_result(data, url)
         _browser_unanswered(req, seen)
+        if seen.status == 403:
+            # Sayfanın 403'ünü çözüm yanıtlamadı: curl de challenge'a takılırdı, istek biter (S1-B5)
+            raise _browser_forbidden(url, seen)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene (yoklama: tek deneme)
 
     attempts = 1 if req.single else max_retries
@@ -852,6 +872,11 @@ def _request_sync_body(
                         req.challenge_failed = False
                         return cast(JsonResponse, browser_data)
                     _challenge_unanswered(req, seen)
+                    if _unsolvable_browser_403(seen):
+                        # Sayfanın hiçbir çözümün yanıtlamadığı 403'ü: curl yine challenge'a, tarayıcı bu 403'e
+                        # takılırdı; istek biter (S1-B5)
+                        failure = _browser_forbidden(url, seen)
+                        break
                 elif not _needs_solve(403, response.text):
                     req.unsolvable = True
                 if last_attempt:
@@ -1038,6 +1063,9 @@ async def _request_async_body(
                 pass
             return cast(JsonResponse, browser_data)
         _browser_unanswered(req, seen)
+        if seen.status == 403:
+            # Sayfanın 403'ünü çözüm yanıtlamadı: curl de challenge'a takılırdı, istek biter (S1-B5)
+            raise _browser_forbidden(url, seen)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene (yoklama: tek deneme)
 
     attempts = 1 if req.single else max_retries
@@ -1126,6 +1154,9 @@ async def _request_async_body(
                     logger.debug("Fetched through the browser bridge")
                     return cast(JsonResponse, browser_data)
                 _challenge_unanswered(req, seen)
+                if _unsolvable_browser_403(seen):
+                    # Sayfanın hiçbir çözümün yanıtlamadığı 403'ü: istek biter (S1-B5)
+                    raise _browser_forbidden(url, seen)
             elif not _needs_solve(403, response.text):
                 req.unsolvable = True
             if last_attempt:

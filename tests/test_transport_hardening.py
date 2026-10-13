@@ -402,3 +402,87 @@ def test_a_browser_that_reached_nothing_after_curls_challenge_is_a_transport_ski
         with pytest.raises(NetworkError, match="could not reach"):
             transport.make_api_request("/event/1", raise_errors=True)
     assert transport.gate_status()["transport_skipped"] == 1
+
+
+# --- B5: tarayıcının çözümle yanıtlanmayan 403'ü isteği bitirir (c: 51c23a1) ------------------------------
+
+
+def _page_403(text: str):
+    from sofascore_scraper.client import bridge as cs
+
+    def browser(url):
+        out = cs._outcome.get()
+        out.status, out.text = 403, text
+        return None
+
+    return browser
+
+
+def test_in_browser_first_a_page_403_ends_the_request_without_curl(monkeypatch, fake_bridge):
+    from unittest.mock import patch
+
+    from sofascore_scraper.exceptions import APIError
+
+    get = _patched_curl(monkeypatch)
+    monkeypatch.setattr(transport, "_browser_first_until", float("inf"))
+    for text in (JWT_REFUSED, "<html>blocked</html>"):
+        with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", side_effect=_page_403(text)):
+            with pytest.raises(APIError) as caught:
+                transport.make_api_request("/event/1", raise_errors=True)
+        assert caught.value.status_code == 403 and "not sent" not in str(caught.value)
+    assert get.call_count == 0  # eskiden curl'e düşerdi: okuma başına 7 istek
+    assert transport.gate_status()["challenge_failed_requests"] == 2
+
+
+def test_after_curls_challenge_a_page_403_no_solve_answers_ends_the_request(monkeypatch, fake_bridge, caplog):
+    from unittest.mock import patch
+
+    from sofascore_scraper.exceptions import APIError
+
+    get = _patched_curl(monkeypatch, *[_Resp(403, text=CHALLENGE)] * 3)
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: {**_CFG, "max_retries": 3})
+    sleeps = []
+    monkeypatch.setattr(transport, "_sleep", sleeps.append)
+    with caplog.at_level("WARNING"), \
+            patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync",
+                  side_effect=_page_403("<html>blocked</html>")):
+        with pytest.raises(APIError):
+            transport.make_api_request("/event/1", raise_errors=True)
+    assert get.call_count == 1 and sleeps == []
+    assert "403 no solve answers" in caplog.text
+
+
+def test_after_curls_challenge_a_page_challenge_is_retried_as_before(monkeypatch, fake_bridge):
+    from unittest.mock import patch
+
+    get = _patched_curl(monkeypatch, _Resp(403, text=CHALLENGE), _Resp(200, {"a": 1}))
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: {**_CFG, "max_retries": 3})
+    monkeypatch.setattr(transport, "_sleep", lambda s: None)
+    # Çözümün yanıtlayacağı türden bir 403 (çözüm bu kez olmadı, bekleme yok): geri çekilip yeniden denenir
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", side_effect=_page_403(CHALLENGE)):
+        assert transport.make_api_request("/event/1") == {"a": 1}
+    assert get.call_count == 2
+
+
+def test_an_async_page_403_in_browser_first_ends_the_request(monkeypatch, fake_bridge):
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from sofascore_scraper.client import bridge as cs
+    from sofascore_scraper.exceptions import APIError
+
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: dict(_CFG))
+    monkeypatch.setattr(transport, "_get_proxy_config", lambda: (False, ""))
+    monkeypatch.setattr(transport, "_browser_first_until", float("inf"))
+    session = MagicMock()
+    session.get = AsyncMock(return_value=_Resp(200, {"a": 1}))
+
+    async def browser(url):
+        out = cs._outcome.get()
+        out.status, out.text = 403, JWT_REFUSED
+        return None
+
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser", side_effect=browser):
+        with pytest.raises(APIError):
+            asyncio.run(transport.make_api_request_async(session, "/event/1"))
+    assert session.get.await_count == 0
