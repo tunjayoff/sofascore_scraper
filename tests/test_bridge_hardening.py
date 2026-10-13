@@ -1317,3 +1317,245 @@ def test_the_unreached_state_is_published(tmp_path):
     b.solve_unreached = True
     b._count_solve(False)
     assert bridge_health.solver()["solve_unreached"] is True
+
+
+# --- A6: token exp'inden önce arka planda yenilenir (c: b5005bf, cfed796, e3da7b9) -------------------------
+
+
+def _status(data: Any) -> int:
+    return 200 if data is not None and not (isinstance(data, dict) and data.get("__404__")) else 403
+
+
+def test_the_token_is_solved_again_before_its_exp_and_no_read_is_lost(tmp_path, caplog):
+    clock = Clock()
+    b, page = _token_bridge(tmp_path, clock)
+    first = _jwt(clock.t + 3600)
+    b._set_token(first)
+
+    async def go():
+        out = []
+        clock.t += 3600 - 901  # 901 sn kaldı: henüz değil
+        out.append(await b.fetch_json("/event/1"))
+        assert b._solve_task is None
+        clock.t += 2  # 899 sn: yenileme başlar, istek onu beklemez
+        out.append(await b.fetch_json("/event/2"))
+        await b._solve_task
+        out.append(await b.fetch_json("/event/3"))
+        clock.t += 1000  # ilk token'ın exp'i geçti: yenisi yanıt alır
+        out.append(await b.fetch_json("/event/4"))
+        return out
+
+    with caplog.at_level("INFO"):
+        out = _run(go())
+    assert [_status(d) for d in out] == [200] * 4
+    assert b._solve_on_captcha_page.await_count == 1 and b.solves == 1
+    assert b.token != first and cs.token_exp(b.token) == clock.t - 1000 + 3600
+    assert [t == first for u, t in page.sent if "event" in u] == [True, True, False, False]
+    b.context.clear_cookies.assert_awaited_once_with(name="sofa_captcha")
+    assert "expires in 899 s" in caplog.text
+
+
+def test_a_refresh_is_due_only_in_its_window_never_in_a_cooldown_or_beside_a_solve(tmp_path):
+    clock = Clock()
+    b, _ = _token_bridge(tmp_path, clock)
+    b._set_token(_jwt(clock.t + 800))
+    b._token_at = clock.t - 2800  # 47 dakika önce çözüldü
+    b._solve_failed_at, b._solve_cooldown_s = clock.t, 180.0  # başarısız bir çözüm soğuyor
+    assert b._refresh_due() is None
+    b._solve_failed_at = 0.0
+    loop = asyncio.new_event_loop()
+    try:
+        b._solve_task = loop.create_future()  # bir çözüm sürüyor
+        assert b._refresh_due() is None
+    finally:
+        loop.close()
+    b._solve_task = None
+    assert b._refresh_due() == 800
+    b._refresh_token, b._refresh_loads, b._load_not_before = b.token, 1, clock.t + 180
+    assert b._refresh_due() is None  # denendi: sonraki 180 sn sonra
+    clock.t += 180
+    assert b._refresh_due() == 620
+    b._refresh_loads = cs.REFRESH_MAX_LOADS
+    assert b._refresh_due() is None  # token başına en çok bu kadar
+    b._set_token(_jwt(clock.t + 179))
+    b._token_at = clock.t - 3000
+    assert b._refresh_due() is None  # REFRESH_MIN_LEFT_S altında: API'nin jwt 403'ü çözer
+    b._set_token("opaque")
+    b._token_at = clock.t - 3000
+    assert b._refresh_due() is None  # okunacak exp yok
+    b._set_token(_jwt(clock.t + 800))
+    assert b._refresh_due() is None  # az önce çözüldü (REFRESH_MIN_AGE_S)
+
+
+def test_a_failed_refresh_keeps_the_token_and_its_cookie_and_starts_no_cooldown(tmp_path):
+    clock = Clock()
+    b, page = _token_bridge(tmp_path, clock, solved=[None, _jwt(clock.t + 3700)])
+    current = _jwt(clock.t + 300)
+    b._set_token(current)
+    b._token_at = clock.t - 3300  # 55 dakika önce çözüldü
+
+    async def go():
+        out = [await b.fetch_json("/event/1")]
+        await b._solve_task
+        assert b.solve_cooldown_left() == 0 and b.token == current
+        assert cs._cached_token == current
+        out.append(await b.fetch_json("/event/2"))  # eski token hâlâ yanıt alır
+        clock.t += 301
+        out.append(await b.fetch_json("/event/3"))  # exp geçti: reddedilir, çözülür, yinelenir
+        return out
+
+    out = _run(go())
+    assert [_status(d) for d in out] == [200, 200, 200]
+    b.context.add_cookies.assert_awaited_once_with([{"name": "sofa_captcha", "value": "x"}])
+    assert (b.solves, b.solve_failures) == (2, 1)
+    assert [t == current for u, t in page.sent if "event" in u] == [True, True, True, False]
+
+
+def test_a_failing_refresh_retries_spaced_one_load_at_most_three_a_token(tmp_path):
+    import itertools
+
+    clock = Clock()
+    b, _ = _token_bridge(tmp_path, clock, solved=[None] * 10)
+    current = _jwt(clock.t + 900)
+    b._set_token(current)
+    b._token_at = clock.t - 2700
+    loads: List[float] = []
+    real = b._solve_on_captcha_page
+
+    async def counted(*a, **kw):
+        loads.append(clock.t)
+        assert b._solve_task is not None  # tek seferde bir: yenilemenin kendi görevi
+        return await real(*a, **kw)
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=counted)
+
+    async def go():
+        datas = []
+        end = clock.t + 900 - 1
+        while clock.t < end:
+            datas.append(await b.fetch_json("/event/1"))
+            if b._solve_task is not None:
+                await b._solve_task
+                assert b.solve_cooldown_left() == 0 and b.token == current
+            clock.t += 10
+        return datas
+
+    datas = _run(go())
+    assert {_status(d) for d in datas} == {200}
+    gaps = [y - x for x, y in itertools.pairwise(loads)] if hasattr(itertools, "pairwise") else [
+        loads[i + 1] - loads[i] for i in range(len(loads) - 1)]
+    assert gaps == [180, 180], loads  # üçüncü başarısızlığın sonraki denemesi 360 sn: çok geç
+    assert b._load_not_before == loads[-1] + 360
+    assert b.consecutive_solve_failures == 0 and b.solve_failures == 3
+    assert b.context.add_cookies.await_count == 3
+
+
+def test_a_passed_retry_resets_the_tries_for_the_new_token(tmp_path):
+    clock = Clock()
+    b, _ = _token_bridge(tmp_path, clock, solved=[None, None, _jwt(clock.t + 4000)])
+    first = _jwt(clock.t + 900)
+    b._set_token(first)
+    b._token_at = clock.t - 2700
+
+    async def go():
+        for _ in range(60):
+            await b.fetch_json("/event/1")
+            if b._solve_task is not None:
+                await b._solve_task
+            if b.token != first:
+                return
+            clock.t += 10
+
+    _run(go())
+    assert b.token != first and b._solve_on_captcha_page.await_count == 3
+    assert b._refresh_token == first and b._refresh_loads == 3
+    assert b._refresh_due() is None  # yeni token genç
+    clock.t = cs.token_exp(b.token) - 800
+    b._token_at = clock.t - 3000
+    assert b._refresh_due() == 800  # yeni token'ın denemeleri baştan
+
+
+@pytest.mark.parametrize(
+    "jwt_life, skew, hours, most",
+    [
+        (100.0, 0.0, 1.0, 37),  # SofaScore token'ı 100 sn'ye kısaltır: ömür başına bir çözüm
+        (3600.0, 3500.0, 3.0, 4),  # sunucunun saati 3500 sn ileri: saatte bir çözüm
+    ],
+)
+def test_a_token_short_by_the_host_clock_is_not_refreshed_again_and_again(tmp_path, jwt_life, skew, hours, most):
+    clock = Clock()
+    b, _ = _token_bridge(tmp_path, clock)
+    issued: dict = {}
+
+    async def solve_on_captcha_page(*_a, **_k):
+        await asyncio.sleep(0)
+        token = _jwt(clock.t - skew + jwt_life) + str(len(issued))
+        issued[token] = clock.t - skew
+        return token
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=solve_on_captcha_page)
+
+    async def evaluate(script, arg):
+        await asyncio.sleep(0)
+        token = arg[2]
+        if token is None:
+            return {"status": 403, "ok": False, "data": None, "text": CHALLENGE}
+        if clock.t - skew >= issued[token] + jwt_life:
+            return {"status": 403, "ok": False, "data": None, "text": JWT_REFUSED}
+        return {"status": 200, "ok": True, "data": {}, "text": None}
+
+    b.page.evaluate = AsyncMock(side_effect=evaluate)
+
+    async def go() -> List[Any]:
+        datas = []
+        end = clock.t + hours * 3600
+        while clock.t < end:
+            datas.append(await b.fetch_json("/event/1"))
+            if b._solve_task is not None:
+                await b._solve_task
+            clock.t += 5
+        return datas
+
+    datas = _run(go())
+    assert b.solves <= most and b.solve_failures == 0, b.solves
+    assert all(d == {} for d in datas)
+
+
+def test_a_relaunch_with_the_profiles_token_does_not_refresh_at_once(tmp_path, monkeypatch, real_launch):
+    clock = Clock()
+    tok = _jwt(clock.t + 800)
+    b, _, _ = _launching_bridge(tmp_path, monkeypatch, [[{"name": "sofa_captcha", "value": tok}]] * 10, clock)
+    _run(b.ensure_ready())
+    assert b._token_at == 0.0 and b._refresh_due() is None
+    clock.t += 180
+    assert b._refresh_due() is not None
+
+
+def test_the_refresh_escalates_its_own_tries_and_the_solve_after_the_exp_its_own(tmp_path):
+    clock = Clock()
+    b, _ = _token_bridge(tmp_path, clock, solved=[None] * 10)
+    b._set_token(_jwt(clock.t + 900))
+    b._token_at = clock.t - 2700
+
+    async def unreached(*_a, **_k):
+        b.solve_unreached = True
+
+    async def one_try():
+        b._start_refresh()
+        await b._solve_task
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=unreached)
+    _run(one_try())
+    assert b._refresh_failures == 0 and b._load_not_before == clock.t + 30
+    b.solve_unreached = False
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    clock.t += 30
+    _run(one_try())
+    assert b._refresh_failures == 1 and b._load_not_before == clock.t + 180
+    clock.t += 180
+    _run(one_try())
+    assert b._refresh_failures == 2 and b._load_not_before == clock.t + 180
+    # Exp'ten sonra: 403'ün çözümü c'ye taşınan kodun ilki gibi (180 sn) başarısız olur, üçüncüsü gibi değil
+    clock.t += 600
+    assert _run(b.solve_challenge(drop_token=True)) is None
+    assert b.consecutive_solve_failures == 1 and b.solve_cooldown_left() == 180

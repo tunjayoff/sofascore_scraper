@@ -94,6 +94,23 @@ LAUNCH_SOLVE_BUDGET_S = STARTUP_TIMEOUT - 30.0
 # Bir captcha.html yüklemesi ancak çözümün bütçesinden bu kadarı kaldıysa başlar (çözücü ve yönlendirme beklemesi);
 # her yükleme kalanı alır, en çok SOLVE_TIMEOUT
 MIN_LOAD_S = 20.0
+# Token, JWT `exp`'inden bu kadar önce yeniden çözülmeye başlanır (BrowserBridge._refresh_due; S1-A6): arka planda,
+# deneme başına tek captcha.html yüklemesi, başarısız bir denemenin ardından sonraki başarısız çözümlerin beklemeleri
+# kadar arayla (180, 180, 360 sn: _load_wait), token başına en çok REFRESH_MAX_LOADS, token'ın REFRESH_MIN_LEFT_S'den
+# fazlası kalmışken. Token bir saat yaşar ve süresi dolunca API `jwt:time-out-of-bounds` 403'ü verir (c'nin 4. koşusu:
+# çözümden 3599,4 sn sonra). c'nin soak'ında (2026-10-02) yenileme, o zaman exp'ten 120 sn önce tek yükleme, 3 kez
+# başarısız oldu; bir kez exp'ten sonra art arda beş yükleme başarısız oldu ve 24 dakika hiçbir şey okunmadı.
+REFRESH_BEFORE_EXP_S = 900.0
+# Token'ın bu kadarı kaldıysa yenileme yok: API'nin jwt 403'ü her çözüm gibi çözer. En az _SOLVE_RETRY_AFTER: exp'ten
+# sonraki 403'ün çözümü son denemeden bir bekleme sonrasından önce gelmez (_load_not_before)
+REFRESH_MIN_LEFT_S = 180.0
+# Bir token'ın ömründe en çok yenileme yüklemesi: başarısız çözümler gibi aralanınca (180, 180, 360 sn) üçü
+# REFRESH_BEFORE_EXP_S ile REFRESH_MIN_LEFT_S arasındaki 720 sn'ye sığar
+REFRESH_MAX_LOADS = 3
+# Bundan genç bir token yenilenmez (_refresh_due): çözülür çözülmez REFRESH_BEFORE_EXP_S ya da daha azı kalan bir token
+# (SofaScore kısa kesti ya da sunucunun saati bir saate kadar ileri) yeniden ve yeniden yenilenirdi: c'nin bir
+# incelemesinin benzetiminde 13-22 sn'de bir çözüm
+REFRESH_MIN_AGE_S = 600.0
 # Başarısız bir çözümden sonra bu süre yeniden denenmez (her istek 10-90 sn yakmasın); üçüncü art arda başarısız
 # çözümden sonra iki katına çıkar, en çok _SOLVE_RETRY_AFTER_MAX (solve_retry_after)
 _SOLVE_RETRY_AFTER = 180.0
@@ -520,6 +537,13 @@ class BrowserBridge:
     _checked_token: Optional[str] = None
     # Son çözümün yüklemeleri siteye hiç ulaşmadı (ağ yok; S1-A4)
     solve_unreached = False
+    # Yenilemenin denemeleri (S1-A6, _refresh_due): hangi token için, kaç yükleme, kaçı başarısız; bir açılışın ilk
+    # _SOLVE_RETRY_AFTER'ında yenileme yok (bir çökme döngüsü her açılışta captcha.html yüklemesin)
+    _refresh_token: Optional[str] = None
+    _refresh_loads = 0
+    _refresh_failures = 0
+    _refresh_not_before = -math.inf
+    _launched_at: Optional[float] = None
     token: Optional[str] = None
     _token_at = 0.0
     _solve_task: Optional["asyncio.Future[Optional[str]]"] = None
@@ -675,6 +699,10 @@ class BrowserBridge:
         self.context = getattr(self.session, "context", None)
         if self.context is None:
             raise RuntimeError("The Scrapling session opened no browser context (version mismatch?)")
+        self._launched_at = self._clock()
+        # Profilden gelen token uzun önce çözülmüş sayılır (`_token_at` 0): açılışın ilk _SOLVE_RETRY_AFTER'ında
+        # yenileme yok, bir çökme döngüsü hemen yenileyemez
+        self._refresh_not_before = self._launched_at + _SOLVE_RETRY_AFTER
 
         # Köprü sayfası site cookie'si olana kadar about:blank'te bekler (c'nin B8'i): cookie yokken /tr
         # captcha.html'ye yönlenir ve onun Turnstile widget'ı köprü sayfasında, çözümünkünün yanında, koşunun geri
@@ -1056,9 +1084,15 @@ class BrowserBridge:
         res = await self._api_fetch(_PROBE_URL or _api_url(_PROBE_PATH), "no-store")
         return res.get("status") != 403
 
-    async def _solve_challenge(self, *, drop_token: bool = False) -> Optional[str]:
-        """Çözümün kendisi. `drop_token`: önce `sofa_captcha` cookie'si silinir (API token'ı reddetti)."""
-        if drop_token:
+    async def _solve_challenge(self, *, drop_token: bool = False, refresh: bool = False) -> Optional[str]:
+        """
+        Çözümün kendisi. `drop_token`: önce `sofa_captcha` cookie'si silinir (API token'ı reddetti). `refresh`: aynısı,
+        token'ın `exp`'inden önce (_start_refresh); başarısız olan cookie'yi geri koyar ve bekleme başlatmaz, çünkü
+        token `exp`'ine kadar yanıt alır.
+        """
+        saved = await self._captcha_cookie() if refresh else None
+        kept = self.token, self._token_at
+        if drop_token or refresh:
             # Cookie dururken captcha.html challenge göstermeden yönlenir ve yeni cookie üretmez (aşağıdaki
             # sil-ve-yeniden-çöz yolunun bir captcha sayfası önce yapılanı)
             try:
@@ -1066,20 +1100,122 @@ class BrowserBridge:
             except Exception as e:  # aşağıdaki çözüm yine dener
                 logger.debug(f"Deleting the sofa_captcha cookie: {e}")
         logger.info("Solving the Cloudflare Turnstile challenge (captcha.html)")
-        if drop_token:
+        if drop_token and not refresh:
             # /tr'deki web uygulaması cookie'si gidince kendini (yaklaşık 31 dakikada bir) captcha.html'ye yeniden
             # yükler ve duvar boyunca orada canlı bir widget tutar (c'nin soak'ı): sayfa about:blank'te bekler, cookie
             # olunca ana sayfaya döner (_open_home)
             await self._blank_bridge_page()
-        token = await self._solve_checked()
-        self._count_solve(bool(token))
+        # Yenileme: tek yükleme (reddedilen token'ı başarısız bir yenilemedir, yeniden yüklenmez)
+        token = await self._solve_checked(again=not refresh)
+        if refresh and not token:
+            # Sayılır ama başarısız çözüm serisinde değildir: kullanılan token hâlâ yanıt alır. Başarısızlıkları
+            # sonraki denemeyi c'ye taşınan kodun başarısız çözüm serisi gibi aralar (180, 180, 360 sn); exp'ten sonraki
+            # çözümler kendi serisini tutar. Siteye ulaşmayan bir deneme UNREACHED_COOLDOWN_S bekler, sayılmaz.
+            self.solves += 1
+            self.solve_failures += 1
+            if self.solve_unreached:
+                wait = UNREACHED_COOLDOWN_S
+            else:
+                self._refresh_failures += 1
+                wait = solve_retry_after(self._refresh_failures)
+            self._load_not_before = self._mono() + wait
+            self._publish_solver()
+        else:
+            self._count_solve(bool(token))
         if token:
             self._load_not_before = -math.inf
             self._set_token(token)
             self._solve_failed_at = 0.0
             return token
+        if refresh:
+            # Önceki token sayfanın kalır (API'nin reddettiği o değil)
+            global _cached_token, _cached_at
+            self.token, self._token_at = kept
+            if kept[0] is not None:
+                _cached_token, _cached_at = kept[0], time.time()
+            if saved is not None:
+                try:
+                    await self.context.add_cookies([saved])
+                except Exception as e:  # exp yine de çözer
+                    logger.debug(f"Putting the sofa_captcha cookie back: {e}")
+            logger.warning(
+                "Refreshing the captcha token failed; the current one is kept until it expires, then a refused "
+                "request solves again"
+            )
+            return None
         self._start_cooldown()
         return None
+
+    def _refresh_due(self) -> Optional[float]:
+        """
+        Token'ın `exp`'inden önce yeniden çözme zamanı geldiyse kalan saniyesi, yoksa None (S1-A6): `exp`'ten
+        REFRESH_BEFORE_EXP_S önceden itibaren, REFRESH_MIN_LEFT_S'den fazlası kalmışken; son başarısız yüklemenin
+        beklemesi bittiğinde bir deneme (_load_wait: 180, 180, 360 sn ve saatte en çok 8 yükleme), token başına en çok
+        REFRESH_MAX_LOADS, çözüm sürerken ya da soğurken hiç. Deneme başına tek captcha.html yüklemesi; başarısız bir
+        yenileme hiçbir okumayı tutmaz. c'nin 4. koşusu açılışta bir kez çözdü ve exp'ten sonra kördü ("challenge"
+        demeyen bir 403); soak'ta yenileme exp'ten 120 sn önce bir kez denendi ve 3'te 3 başarısız oldu.
+        """
+        token = self.token
+        if not token:
+            return None
+        if self._clock() - self._token_at < REFRESH_MIN_AGE_S:
+            # Çözülür çözülmez bu kadar az kalan bir token jwt 403'üne bırakılır: gerçekten bittiğinde çözülür
+            return None
+        exp = token_exp(token)
+        if exp is None:
+            return None
+        left = exp - self._clock()
+        if not REFRESH_MIN_LEFT_S < left <= REFRESH_BEFORE_EXP_S:
+            return None
+        if token == self._refresh_token and self._refresh_loads >= REFRESH_MAX_LOADS:
+            return None
+        if self._load_wait() > 0 or self._clock() < self._refresh_not_before:
+            return None
+        if self.solve_cooldown_left() > 0:
+            return None
+        if self._solve_task is not None and not self._solve_task.done():
+            return None
+        return left
+
+    def _start_refresh(self) -> None:
+        """
+        Zamanı geldiyse (_refresh_due) bir yenileme denemesini arka planda başlatır: sayfanın istekleri bu arada hâlâ
+        geçerli olan token'la sürer; cookie yokken reddedilen bir istek her çözümü beklediği gibi bunu bekler ve
+        yinelenir. Yeni bir token (geçen bir yenileme, her çözüm) kendi denemelerini başlatır.
+        """
+        left = self._refresh_due()
+        if left is None:
+            return
+        if self.token != self._refresh_token:
+            self._refresh_token, self._refresh_loads, self._refresh_failures = self.token, 0, 0
+        self._refresh_loads += 1
+        logger.info(
+            f"The captcha token expires in {int(left)} s; solving the Turnstile again "
+            f"(try {self._refresh_loads} of {REFRESH_MAX_LOADS})"
+        )
+        # Çözümün (yoklamasının) sıra beklemesi kendi sayacına yazılır, isteklerin iptali onu kesmez
+        solve_wait = _SlotWait(shared=True)
+        token = _slot_wait.set(solve_wait)
+        try:
+            self._solve_task = asyncio.ensure_future(self._refresh())
+        finally:
+            _slot_wait.reset(token)
+        self._solve_wait = solve_wait
+
+    async def _refresh(self) -> Optional[str]:
+        try:
+            return await self._solve_challenge(refresh=True)
+        except Exception as e:  # en iyi çaba; exp yine de çözer
+            logger.warning(f"Refreshing the captcha token: {e.__class__.__name__}: {e}")
+            return None
+
+    async def _captcha_cookie(self) -> Optional[Dict[str, Any]]:
+        """`sofa_captcha` cookie'si bağlamın tuttuğu haliyle (geri koymak için), varsa."""
+        try:
+            cookies = await self.context.cookies(SITE_ORIGIN)
+        except Exception:  # bağlam yok ya da tarayıcı kapanıyor
+            return None
+        return next((c for c in cookies if c.get("name") == "sofa_captcha"), None)
 
     async def _solve_checked(self, deadline: float = 0.0, loads: int = 0, *, again: bool = True) -> Optional[str]:
         """
@@ -1261,6 +1397,8 @@ class BrowserBridge:
                 return {"status": 0, "ok": False, "data": None, "sent": False,
                         "text": f"the bridge page could not open the site ({_page_url(self.page)})"}
 
+        # Token exp'ine yaklaştıysa arka planda yeniden çözülür (S1-A6); bu istek şimdiki token'la sürer
+        self._start_refresh()
         sent = self.token
         res = await self._page_fetch(url)
         if not res.get("sent", True):
