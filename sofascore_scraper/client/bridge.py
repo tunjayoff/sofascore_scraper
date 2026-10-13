@@ -19,6 +19,26 @@ iptal kontrolüne de bakar, sync yolda (_run_sync, P24) ve her indirmenin geçti
 (_run_on_background_loop, FX-18). Ortak challenge çözümünü ya da sayfanın fetch()'ini bekleyen bir çağıran iş
 durdurulunca beklemeyi bırakır; ortak çözüm (asyncio.shield) diğer bekleyenler için sürer. Köprüden çıkan bir
 istek, bütçeden sıra ayırmadan önce de iptale bakar (_wait_for_slot): durdurmadan sonra hiçbir istek gönderilmez.
+
+S1 (c projesinin üretim düzeltmeleri geri taşındı; c bu modülü buradan taşımıştı ve üretim benzeri koşularda 1-5
+düzeltti; iki proje artık aynı yöntemi çalıştırır). Her biri ayrı bir commit'tir, ayrıntısı ilgili işlevdedir:
+  A1 çözüm sayaçları (solves, solve_failures, consecutive_solve_failures) bridge_health.solver() ile tanılama paketinde.
+  A2 Scrapling'in çözüm sayfası her captcha.html yüklemesinden sonra kapanır (_park_solver_pages).
+  A3 bellek durumu ve tarayıcının geri dönüşümü: `client.browser_recycle_mib` (2048) ya da `browser_recycle_hours` (6);
+     yeni istekler en çok RECYCLE_HOLD_S bekler, süren istekler önce biter (_recycle; bellek client/procinfo.py).
+  A4 yüklemesi siteye ulaşmayan çözüm (solve_unreached) ağın başarısızlığıdır: 30 sn bekler, seride değildir, istek
+     katmanı onu taşıma hatası sayar.
+  A5 çıkış süreçteki her köprüyü kapatır (_cleanup).
+  A6 token exp'inden 15 dakika önce arka planda yenilenir (_refresh_due), token başına en çok 3 yükleme.
+  A7 `client.browser_sandbox`: Chromium kendi sandbox'ıyla (isteğe bağlı, varsayılan kapalı).
+  B1 `jwt:` 403'ü cookie silinerek çözülür (needs_solve).  B2 bekleme 180, 180, 360, 600 sn; her 200/404 seriyi bitirir.
+  B3 bekleme taze token kısayolundan önce.  B4 beklemede sayfa isteği gönderilmez (BrowserOutcome, observe).
+  B7 geçen çözüm: 15 sn içinde siteye yönlenme ve cookie.  B8 köprü sayfası cookie gelene kadar about:blank'te; açılışın
+     çözümü yoklanır, beklemeye ve yük saatine uyar, yanında ikinci çözüm yok.  B9 çözüm başına tek yükleme, saatte en
+     çok 8 yükleme, Scrapling retries=1.  B10 evaluate() site dışından yalnızca cookie varken ve çözüm sürmüyorken döner.
+Korunanlar (c'de olmayanlar): köprünün içindeki bütçe sıraları (yoklama ve yineleme dahil), iptal ve sıranın iadesi,
+süreçler arası ortak bütçe ve etkileşimli şerit, profil kilidi ve geçici profil, 0700 profil dizini, köprü sağlığı,
+maskeleme, canlı kaynakların köprüleri (home_url, report_health).
 """
 
 from __future__ import annotations

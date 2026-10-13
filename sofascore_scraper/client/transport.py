@@ -6,6 +6,18 @@ Buradaki her şey 2.x'in sofascore_scraper/utils.py'sinden taşındı (plan madd
 yeniden dışa aktaran utils 3.1'de kalktı (plan maddesi P30).
 
 İptal kontrolü ve bekleme bildirimi sofascore_scraper/client/context.py'dedir. Bu modül DATA_DIR altına hiçbir şey yazmaz.
+
+S1 (c projesinin sofascore_site/rest.py'sindeki üretim düzeltmeleri geri taşındı; her biri ayrı bir commit):
+  B1 curl'ün `jwt:` 403'ü de köprüye gider (_needs_solve).  B2 her 200/404 köprünün başarısız çözüm serisini bitirir.
+  B4 kapı: çözüm soğurken hiçbir şey gönderilmez (gönderilmemiş 403, sayılır), süren istek bir deneme daha yapmaz;
+     art arda CHALLENGE_FAILURES_ALERT challenge'da yanıtsız istekten sonra aynı anda tek yoklama.
+  B5 tarayıcının çözümle yanıtlanmayan 403'ü isteği bitirir.  B6 önce-tarayıcı bitince tek istek curl'ü dener; taşıma
+     hatası (tarayıcı son 600 sn'de yanıtladıysa) ve tarayıcının 404'ü pencereyi açar.  B11 tamsayı Retry-After en çok
+     120 sn.  A4 hiç yanıt almayan istekler sayılır (TRANSPORT_FAILURES_ALERT: ERROR, sonra INFO "answers again").
+Taşınmadı: c'nin "SofaScore'a ulaşılamıyor" kapısı (aynı anda tek istek, ötekiler gönderilmeden durum 0): toplu
+indirmede (10 paralel, 5 istek/sn) kısa bir ağ kesintisi her isteği anında bitirip işin devre kesicisini (art arda 20)
+milisaniyeler içinde açardı; bugünkü yeniden denemeler o kesintiyi atlatıyor. c'nin sınırlayıcısı, zaman aşımı ve hız
+sabitleri de taşınmadı (bu modül throttle.py'yi ve `client.timeout_seconds` / `rate` / `max_concurrent`'i kullanır).
 """
 from __future__ import annotations
 
