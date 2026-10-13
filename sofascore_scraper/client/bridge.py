@@ -125,6 +125,19 @@ def token_left(token: Optional[str], now: float) -> Optional[float]:
     return None if exp is None else exp - now
 
 
+_UNSENT_CHALLENGE = '{"error": {"code": 403, "reason": "challenge"}}'
+"""
+Çerez yokken ve hiçbir çözüm geçmezken köprünün isteği göndermeden verdiği yanıt: sayfanın karşılaşacağı challenge
+(istek katmanı onu bir challenge olarak alır).
+"""
+
+
+def _page_url(page: Any) -> Optional[str]:
+    """Sayfanın adresi; sayfa yoksa ya da adresi okunamıyorsa (testlerin sahte sayfaları) None."""
+    url = getattr(page, "url", None) if page is not None else None
+    return url if isinstance(url, str) else None
+
+
 def _on_origin(url: str) -> bool:
     """Sitenin bir sayfası, captcha.html dahil: `fetch()`'i sitenin olan bir sayfa."""
     return url.startswith(SITE_ORIGIN + "/")
@@ -367,6 +380,10 @@ class BrowserBridge:
     # (onun beklemesi); saat monotonic'tir, testler kendi saatini verir
     _mono: Callable[[], float] = staticmethod(lambda: time.monotonic())
     _load_not_before = -math.inf
+    # Bir açılış (onun çözümü) sürüyor: istekler onu bekler, yanında ikinci bir çözüm başlamaz (c'nin B8'i)
+    _launching = False
+    # API'nin kabul ettiği son token (_api_unlocked; ya da yoklanacak sayfa yoktu)
+    _checked_token: Optional[str] = None
 
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None, *,
                  report_health: bool = True, sandbox: Optional[bool] = None,
@@ -415,12 +432,16 @@ class BrowserBridge:
         return getattr(self, "home_url", None) or HOME_URL
 
     async def ensure_ready(self) -> None:
-        """Tarayıcı oturumunun hazır ve açık olduğundan emin olur."""
-        if self.page and not self.page.is_closed():
+        """
+        Tarayıcı oturumunun hazır ve açık olduğundan emin olur. Bir açılış (ve çözümü) sürerken onu bekler: açılışın
+        çözümünün yanında bir isteğin çözümü başlamaz (c'nin soak'ında, 2026-10-02: aynı anda iki captcha.html
+        yüklemesi, iki token, sayfanın token'ı ve cookie'si ayrı, 35 sn sonra üçüncü bir çözüm).
+        """
+        if self.page and not self.page.is_closed() and not self._launching:
             return
 
         async with self._init_lock:
-            if self.page and not self.page.is_closed():
+            if self.page and not self.page.is_closed() and not self._launching:
                 return
             if self._launch_failed_at and self._clock() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
                 if self.report_health:
@@ -431,18 +452,28 @@ class BrowserBridge:
                     "Run `ssc doctor` to see why "
                     "(browser install: `python -m patchright install chromium --no-shell`)"
                 )
-            # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
-            await self.close()
-            try:
-                await self._launch_in_free_profile()
-            except BaseException as e:
-                # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
+            await self._relaunch()
+
+    async def _relaunch(self) -> None:
+        """Kalan oturumu kapatıp yenisini açar; `_init_lock` tutulur."""
+        # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
+        await self.close()
+        self._launching = True
+        try:
+            await self._launch_in_free_profile()
+        except BaseException as e:
+            # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın. Yalnızca hata
+            # sonraki açılışı geciktirir (_LAUNCH_RETRY_AFTER): iptal (çağıranın zaman aşımı, durdurma) tarayıcı
+            # hakkında bir şey söylemez (c'nin B8'i)
+            if not isinstance(e, asyncio.CancelledError):
                 self._launch_failed_at = self._clock()
-                await self.close()
-                if isinstance(e, Exception) and self.report_health:  # iptal bir sağlık sinyali değil
-                    bridge_health.record_failure(bridge_health.KIND_BROWSER, f"{e.__class__.__name__}: {e}")
-                raise
-            self._launch_failed_at = 0.0
+            await self.close()
+            if isinstance(e, Exception) and self.report_health:  # iptal bir sağlık sinyali değil
+                bridge_health.record_failure(bridge_health.KIND_BROWSER, f"{e.__class__.__name__}: {e}")
+            raise
+        finally:
+            self._launching = False
+        self._launch_failed_at = 0.0
 
     def _use_secondary_profile(self, owner: profile_lock.ProfileOwner) -> None:
         """Profil başka bir süreçte: bu süreç kardeş geçici profille açar (sofascore_scraper/client/profile_lock.py)."""
@@ -505,17 +536,33 @@ class BrowserBridge:
         if self.context is None:
             raise RuntimeError("The Scrapling session opened no browser context (version mismatch?)")
 
-        # Profilde çözüm yoksa challenge'ı API isteklerinden önce çöz
-        solved_now = None
-        if not await self._token_from_context():
-            solved_now = await self._solve_on_captcha_page(1, time.monotonic() + LAUNCH_SOLVE_BUDGET_S)
-            self._count_solve(solved_now is not None)  # açılışın çözümü de bir çözümdür
-
+        # Köprü sayfası site cookie'si olana kadar about:blank'te bekler (c'nin B8'i): cookie yokken /tr
+        # captcha.html'ye yönlenir ve onun Turnstile widget'ı köprü sayfasında, çözümünkünün yanında, koşunun geri
+        # kalanında çalışırdı (c'nin 5. koşusu)
         self.page = await self.context.new_page()
-        try:
-            await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
-        except Exception as e:
-            logger.warning(f"Opening the SofaScore home page: {e}")
+        solved_now = None
+        if await self._token_from_context():
+            await self._open_home()
+        elif self.solve_cooldown_left() <= 0 and self._load_wait() <= 0:
+            # Profilde çözüm yok: API isteklerinden önce çöz, token'ı her çözüm gibi API'ye karşı yokla (eskiden
+            # açılışınki yoklanmazdı). Bekleme ve yük saati sürerken açılış çözmez.
+            had = self._checked_token
+            try:
+                solved_now = await self._solve_checked(time.monotonic() + LAUNCH_SOLVE_BUDGET_S, again=False)
+            except asyncio.CancelledError:
+                # Yarıda kesildi (çağıranın STARTUP_TIMEOUT'u): API token'ını kabul etmediyse yine başarısız bir
+                # çözümdür, beklemesiyle; yoksa sonraki istek captcha.html'yi hemen yeniden yüklerdi
+                passed = self._checked_token is not None and self._checked_token != had
+                self._count_solve(passed)
+                if not passed:
+                    self._start_cooldown("at launch (cut short)")
+                raise
+            self._count_solve(solved_now is not None)  # açılışın çözümü de bir çözümdür
+            if solved_now is None:
+                # c'ye taşınan kod gibi: kendi beklemesi yok; ilk sayfa isteği (cookie yoksa isteğin kendisi) yeniden
+                # çözer
+                logger.warning("The Turnstile challenge at launch left no sofa_captcha cookie")
+        # Yoksa cookie yok ve şimdi çözüm yok: sayfa about:blank'te kalır, ilk istek çözer (fetch_json)
         token = await self._token_from_context()
         if token:
             self._set_token(token)
@@ -626,6 +673,34 @@ class BrowserBridge:
             except Exception as e:  # sonraki çözüm bir sayfa açar ya da bunu kullanır
                 logger.debug(f"Closing Scrapling's solve page: {e}")
 
+    async def _blank_bridge_page(self) -> None:
+        """Köprü sayfası about:blank'e (istek yok); sayfa sitede değilse dokunulmaz."""
+        page = self.page
+        url = _page_url(page)
+        if page is None or page.is_closed() or url is None or not _on_origin(url):
+            return
+        try:
+            await page.goto("about:blank")
+        except Exception as e:  # çözüm sürer; sayfa web uygulamasınındır
+            logger.debug(f"The bridge page to about:blank: {e}")
+
+    async def _open_home(self, deadline: float = 0.0) -> None:
+        """
+        Köprü sayfası ana sayfaya, cookie olduğunda (c'nin B8'i). Sayfa captcha.html dışında sitenin bir sayfasındaysa
+        yeniden açılmaz (web uygulaması kendi başına gezinir). En çok 30 sn, `deadline` (time.monotonic()) varsa ondan
+        önce (bir çözümün: _HOME_S onun için ayrılır).
+        """
+        page = self.page
+        if page is None or page.is_closed() or _on_site(_page_url(page) or ""):
+            return
+        timeout_s = 30.0
+        if deadline:
+            timeout_s = max(1.0, min(timeout_s, deadline - time.monotonic()))
+        try:
+            await page.goto(self._home(), wait_until="domcontentloaded", timeout=timeout_s * 1000)
+        except Exception as e:  # yükleme zaman aşımına uğrasa da sayfa kullanılabilir
+            logger.warning(f"Opening the SofaScore home page: {e}")
+
     async def _await_redirect(self, page: Any) -> str:
         """Scrapling'in `page_action`'ı: sayfa captcha.html'den siteye geçince adresi, ya da REDIRECT_WAIT_S sonraki hali."""
         waited = 0.0
@@ -642,7 +717,7 @@ class BrowserBridge:
         self._token_at = self._clock()
         # curl_cffi istekleri de bu tokeni kullansın (get_request_headers → get_cached_token)
         _cached_token = token
-        _cached_at = self._token_at
+        _cached_at = time.time()
 
     async def solve_challenge(self, *, drop_token: bool = False) -> Optional[str]:
         """
@@ -706,6 +781,10 @@ class BrowserBridge:
                 logger.info(f"The bridge page navigated away; retrying ({attempt + 1}/2)")
                 if self.page.is_closed():
                     self.page = None
+                    if self._launching:
+                        # Açılış, ensure_ready'nin bekleyeceği kilidi STARTUP_TIMEOUT'una kadar tutar: onun
+                        # yoklaması şimdi başarısız olur
+                        raise RuntimeError("The bridge page closed during the launch") from None
                     await self.ensure_ready()
                     continue
                 try:
@@ -725,10 +804,17 @@ class BrowserBridge:
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
         return await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode])
 
-    async def _api_unlocked(self) -> bool:
-        """Çözümden sonra API gerçekten açıldı mı? (Sayfa henüz yoksa doğrulanamaz: evet say.)"""
-        if self.page is None or self.page.is_closed():
-            return True
+    async def _api_unlocked(self) -> Optional[bool]:
+        """
+        Çözüm API'yi gerçekten açtı mı? Yoklanamıyorsa None (sitenin sayfası yok: ana sayfa yüklenmedi): token
+        yoklanmadan tutulur.
+        """
+        page = self.page
+        if page is None or page.is_closed():
+            return None
+        url = _page_url(page)
+        if url is not None and not _on_origin(url):
+            return None
         res = await self._api_fetch(_PROBE_URL or _api_url(_PROBE_PATH), "no-store")
         return res.get("status") != 403
 
@@ -742,6 +828,11 @@ class BrowserBridge:
             except Exception as e:  # aşağıdaki çözüm yine dener
                 logger.debug(f"Deleting the sofa_captcha cookie: {e}")
         logger.info("Solving the Cloudflare Turnstile challenge (captcha.html)")
+        if drop_token:
+            # /tr'deki web uygulaması cookie'si gidince kendini (yaklaşık 31 dakikada bir) captcha.html'ye yeniden
+            # yükler ve duvar boyunca orada canlı bir widget tutar (c'nin soak'ı): sayfa about:blank'te bekler, cookie
+            # olunca ana sayfaya döner (_open_home)
+            await self._blank_bridge_page()
         token = await self._solve_checked()
         self._count_solve(bool(token))
         if token:
@@ -762,14 +853,21 @@ class BrowserBridge:
         Saatin yüklemeleri dolduysa (PORT_LOADS_PER_HOUR) ikinci yükleme yapılmaz: başarısız bir çözüm.
         """
         deadline = deadline or time.monotonic() + SOLVE_BUDGET_S
+        # Her captcha.html çözümü ana sayfanın yüklemesine ve bir yoklamaya zaman bırakır; ikincisi (reddedilen
+        # yoklama) ancak yüklemesi hâlâ sığıyorsa (MIN_LOAD_S)
         rest_s = _HOME_S + _PROBE_S
         token = await self._solve_on_captcha_page(loads or 1, deadline - rest_s)
         if token:
             self._set_token(token)
+            await self._open_home(deadline - _PROBE_S)
         unlocked = await self._api_unlocked() if token else None
         if token and unlocked:
-            pass
+            self._checked_token = token
+        elif token and unlocked is None:
+            pass  # yoklanmadı (ana sayfa yüklenmedi): tutulur, _checked_token değil
         elif token and not again:
+            # Açılışınki: c'ye taşınan kodun açılışı gibi tek yükleme; reddedilen token başarısız bir açılış çözümüdür,
+            # ilk isteğin çözümü onu siler ve yeniden yükler
             token = None
         elif token and self._load_wait() > 0:
             token = None
@@ -780,8 +878,12 @@ class BrowserBridge:
             token = await self._solve_on_captcha_page(1, deadline - rest_s)
             if token:
                 self._set_token(token)
-            if token and not await self._api_unlocked():
+                await self._open_home(deadline - _PROBE_S)
+            unlocked = await self._api_unlocked() if token else None
+            if token and unlocked is False:
                 token = None
+            elif token and unlocked:
+                self._checked_token = token
         if token:
             left = token_left(token, self._clock())
             logger.info(
@@ -804,15 +906,15 @@ class BrowserBridge:
             wait = max(wait, starts[0] + 3600.0 - now)
         return max(0.0, wait)
 
-    def _start_cooldown(self) -> None:
+    def _start_cooldown(self, where: str = "") -> None:
         """Başarısız çözümün beklemesi: solve_retry_after(art arda başarısız çözüm sayısı); yük saati de ona uyar."""
         self._solve_cooldown_s = solve_retry_after(self.consecutive_solve_failures)
         self._solve_failed_at = self._clock()
         self._load_not_before = max(self._load_not_before, self._mono() + self._solve_cooldown_s)
         self._publish_solver()
         logger.warning(
-            f"The Turnstile challenge could not be solved ({self.consecutive_solve_failures} in a row); "
-            f"not trying again for {int(self._solve_cooldown_s)} s."
+            f"The Turnstile challenge could not be solved{' ' + where if where else ''} "
+            f"({self.consecutive_solve_failures} in a row); not trying again for {int(self._solve_cooldown_s)} s."
         )
 
     def solve_cooldown_left(self) -> float:
@@ -873,6 +975,32 @@ class BrowserBridge:
         await self.ensure_ready()
 
         url = path_or_url if path_or_url.startswith("http") else _api_url(path_or_url)
+        res = await self._fetch_now(url)
+        return self._answer(res, url)
+
+    async def _fetch_now(self, url: str) -> Dict[str, Any]:
+        """
+        Sayfadan istek; bir çözümün yanıtlayacağı 403'te (needs_solve: challenge ya da token'ın reddi) çöz ve bir kez
+        yinele. Sayfa sitede değilse (about:blank: açılışta cookie yoktu ya da çözüm yapılmadı) istek oradan
+        gönderilmez (c'nin B8'i): önce cookie (varsa ana sayfa), yoksa bir çözüm (beklemesine uyarak), o da yoksa
+        challenge'ın yanıtı, gönderilmeden (`sent` False).
+        """
+        page_url = _page_url(self.page)
+        if page_url is not None and not _on_origin(page_url):
+            solved = False
+            if await self._token_from_context():
+                await self._open_home()
+            elif not await self.solve_challenge():
+                return {"status": 403, "ok": False, "data": None, "text": _UNSENT_CHALLENGE, "sent": False}
+            else:
+                solved = True
+            if solved and not _on_origin(_page_url(self.page) or ""):
+                # Bir kez daha, isteğin ilk denemesinin (burada yok) bıraktığı sürede: geçen bir çözümden sonra /tr
+                # çözümün _HOME_S'inden uzun sürebilir
+                await self._open_home(time.monotonic() + _PROBE_S)
+            if not _on_origin(_page_url(self.page) or ""):
+                return {"status": 0, "ok": False, "data": None, "sent": False,
+                        "text": f"the bridge page could not open the site ({_page_url(self.page)})"}
 
         sent = self.token
         res = await self._api_fetch(url, cache_mode_for(url))
@@ -892,7 +1020,10 @@ class BrowserBridge:
                 new_token = await (self.solve_challenge(drop_token=True) if refused else self.solve_challenge())
             if new_token:
                 res = await self._api_fetch(url, cache_mode_for(url))
+        return res
 
+    def _answer(self, res: Dict[str, Any], url: str) -> Optional[Any]:
+        """Sayfanın yanıtı → veri, {"__404__": True} ya da None; sağlık sinyaliyle."""
         # Sağlık sinyali (sofascore_scraper/bridge_health.py): isteğin SON hali sayılır — çözülüp yinelenen 403 başarıdır
         if res.get("ok"):
             bridge_health.record_success()

@@ -762,3 +762,213 @@ def test_a_passed_solve_logs_the_time_its_token_has_left(tmp_path, caplog):
         assert _run(b.solve_challenge()) == tok
     assert "The Turnstile challenge is solved (the token has 3630 s left)" in caplog.text
     assert tok not in caplog.text and payload.decode()[:20] not in caplog.text
+
+
+# --- B8: açılış (c: ec3d614, 1f27d68, 43f8edd, ce94eb3) -----------------------------------------------
+
+
+def _launching_bridge(tmp_path, monkeypatch, cookies_seq, clock: Optional[Clock] = None):
+    made, page = _fake_session(monkeypatch, cookies_seq)
+    b = cs.BrowserBridge(profile_dir=str(tmp_path / "profile"), clock=clock or Clock())
+    return b, made, page
+
+
+def test_launch_without_a_token_solves_checks_and_then_opens_the_home_page(tmp_path, monkeypatch, real_launch):
+    tok = _jwt(time.time() + 3600)
+    cookie = [{"name": "sofa_captcha", "value": tok}]
+    clock = Clock()
+    b, _, page = _launching_bridge(tmp_path, monkeypatch, [[], cookie, cookie, cookie], clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=tok)
+    _run(b.ensure_ready())
+    assert b.token == tok and b._token_at == clock.t  # şimdi çözüldü: 30 sn yeniden kullanılır
+    # Açılışın çözümü de köprü sayfasından API'ye karşı yoklanır, cookie gelince ana sayfada
+    probe = page.evaluate.await_args.args[1]
+    assert probe[0] == cs._api_url(cs._PROBE_PATH) and page.url == cs.HOME_URL
+    assert b._checked_token == tok
+
+
+def test_a_launch_solve_that_leaves_no_cookie_keeps_the_page_on_blank(tmp_path, monkeypatch, real_launch, caplog):
+    b, _, page = _launching_bridge(tmp_path, monkeypatch, [[]] * 4)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    with caplog.at_level("WARNING"):
+        _run(b.ensure_ready())
+    assert b.page is not None and b.token is None  # açılış sürer, eskisi gibi
+    assert (b.solves, b.solve_failures, b.consecutive_solve_failures) == (1, 1, 1)
+    assert b.solve_cooldown_left() == 0  # kendi beklemesi yok: ilk istek yeniden çözer
+    # Cookie yokken /tr'ye değil (c'nin 5. koşusu: captcha.html'ye yönlendi, koşu boyunca bir Turnstile widget'ı)
+    assert page.url == "about:blank" and page.goto.await_count == 0
+    assert "at launch left no sofa_captcha cookie" in caplog.text
+
+
+def test_a_fetch_without_the_cookie_solves_first_and_never_fetches_from_blank(tmp_path, monkeypatch, real_launch):
+    from sofascore_scraper import bridge_health
+
+    clock = Clock()
+    b, _, page = _launching_bridge(tmp_path, monkeypatch, [[]] * 6, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    _run(b.ensure_ready())
+    assert b.solve_cooldown_left() == 0 and page.url == "about:blank"
+    assert _run(b.fetch_json("/event/1")) is None
+    assert b._solve_on_captcha_page.await_count == 2 and b.solve_cooldown_left() == 180
+    assert bridge_health.snapshot()["last_error"]["kind"] == bridge_health.KIND_CHALLENGE
+    assert _run(b.fetch_json("/event/2")) is None
+    assert b._solve_on_captcha_page.await_count == 2  # bekleme: yükleme yok
+    page.evaluate.assert_not_awaited()  # about:blank'ten hiçbir istek gitmedi
+    clock.t += 180
+    b._load_not_before = -float("inf")
+    tok = _jwt(time.time() + 3600)
+
+    async def passes(*_a, **_k):
+        b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": tok}])
+        return tok
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=passes)
+    assert _run(b.fetch_json("/event/1")) == {}
+    assert page.url == cs.HOME_URL  # cookie gelince açıldı
+    assert page.evaluate.await_args.args[1][0] == cs._api_url("/event/1")
+
+
+def test_a_launch_solves_only_outside_a_cooldown_one_load_each(tmp_path, monkeypatch, real_launch):
+    clock = Clock()
+    b, _, page = _launching_bridge(tmp_path, monkeypatch, [[]] * 20, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    _run(b.ensure_ready())
+    assert (b.consecutive_solve_failures, b.solve_cooldown_left()) == (1, 0)
+    b._solve_failed_at, b._solve_cooldown_s = clock.t, 180.0  # bir isteğin çözümü başarısız oldu
+    page.is_closed.return_value = True  # beklemede yeniden açılış: çözüm yok
+    _run(b.ensure_ready())
+    assert b._solve_on_captcha_page.await_count == 1
+    clock.t += 180
+    page.is_closed.return_value = True
+    _run(b.ensure_ready())
+    assert b._solve_on_captcha_page.await_count == 2 and b.consecutive_solve_failures == 2
+    assert all(c.args[0] == 1 for c in b._solve_on_captcha_page.await_args_list if c.args)
+
+
+def test_the_launch_loads_once_even_when_the_api_refuses_its_token(tmp_path, monkeypatch, real_launch):
+    tok = _jwt(time.time() + 3600)
+    b, _, page = _launching_bridge(tmp_path, monkeypatch, [[]] + [[{"name": "sofa_captcha", "value": tok}]] * 9)
+    page.evaluate = AsyncMock(return_value={"status": 403, "ok": False, "data": None, "text": CHALLENGE})
+    b._solve_on_captcha_page = AsyncMock(return_value=tok)
+    _run(b.ensure_ready())
+    assert b._solve_on_captcha_page.await_count == 1
+    assert (b.solves, b.solve_failures) == (1, 1)
+    assert not b.context.clear_cookies.called  # açılışta sil-ve-yeniden-yükle yok
+
+
+def test_a_fetch_during_the_launchs_solve_waits_for_it(tmp_path, monkeypatch, real_launch):
+    tok = _jwt(time.time() + 3600)
+    cookie = [{"name": "sofa_captcha", "value": tok}]
+    b, _, _ = _launching_bridge(tmp_path, monkeypatch, [[], []] + [cookie] * 10)
+
+    async def slow_pass(*_a, **_k):
+        await asyncio.sleep(0.1)
+        return tok
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=slow_pass)
+
+    async def go():
+        launch = asyncio.ensure_future(b.ensure_ready())
+        await asyncio.sleep(0.02)  # açılışın çözümü sürüyor
+        answer = await b.fetch_json("/event/1")
+        await launch
+        return answer
+
+    assert _run(go()) == {}
+    assert b._solve_on_captcha_page.await_count == 1 and b.solves == 1
+
+
+def test_a_launch_cut_short_in_its_solve_counts_it_and_cools_down(tmp_path, monkeypatch, real_launch):
+    b, _, _ = _launching_bridge(tmp_path, monkeypatch, [[]] * 10)
+    b._solve_checked = AsyncMock(side_effect=asyncio.CancelledError)
+    with pytest.raises(asyncio.CancelledError):
+        _run(b.ensure_ready())
+    assert (b.solves, b.solve_failures) == (1, 1) and b.solve_cooldown_left() == 180
+    assert b._launch_failed_at == 0.0  # iptal bozuk bir tarayıcı değildir
+
+
+def test_a_launch_cut_after_its_load_passed_is_no_failed_solve(tmp_path, monkeypatch, real_launch):
+    b, _, _ = _launching_bridge(tmp_path, monkeypatch, [[]] * 10)
+    tok = _jwt(time.time() + 3600)
+
+    async def passes_then_cut(*_a, **_k):
+        b._set_token(tok)  # yükleme geçti ve API kabul etti; sonra kesildi
+        b._checked_token = tok
+        raise asyncio.CancelledError
+
+    b._solve_checked = AsyncMock(side_effect=passes_then_cut)
+    with pytest.raises(asyncio.CancelledError):
+        _run(b.ensure_ready())
+    assert (b.solves, b.solve_failures) == (1, 0) and b.solve_cooldown_left() == 0
+
+
+def test_a_cancelled_launch_does_not_hold_the_next_back(tmp_path):
+    b = _bridge(tmp_path)
+    b._launch = AsyncMock(side_effect=asyncio.CancelledError)
+    with pytest.raises(asyncio.CancelledError):
+        _run(b.ensure_ready())
+    assert b._launch_failed_at == 0.0
+    b._launch = AsyncMock(side_effect=RuntimeError("no chrome"))
+    with pytest.raises(RuntimeError):
+        _run(b.ensure_ready())
+    assert b._launch_failed_at > 0
+
+
+def test_a_page_that_closes_in_the_launchs_probe_fails_it_at_once(tmp_path):
+    b = _bridge(tmp_path)
+    b.page = _page(Exception("Target page, context or browser has been closed"))
+    b.page.is_closed.return_value = True
+    b._launching = True
+    b.ensure_ready = AsyncMock()
+    t = time.monotonic()
+    with pytest.raises(RuntimeError, match="during the launch"):
+        _run(b.evaluate("js"))
+    assert time.monotonic() - t < 1 and b.ensure_ready.await_count == 0
+
+
+def test_a_drop_token_solve_keeps_the_bridge_page_on_about_blank(tmp_path):
+    # c'nin soak'ı: cookie'si gidince web uygulamasının kendi /tr yenilemesi captcha.html'ye gitti ve duvar boyunca
+    # canlı bir widget tuttu. Token'ın reddindeki çözüm sayfayı önce about:blank'e götürür.
+    clock = Clock()
+    b, page = _token_bridge(tmp_path, clock, solved=[None])
+    page.page.url = cs.HOME_URL
+    b.token = _jwt(clock.t - 1)
+    assert _run(b.fetch_json("/event/1")) is None
+    page.page.goto.assert_any_await("about:blank")
+    assert page.page.url == "about:blank" and b.solve_cooldown_left() == 180
+
+
+def test_a_home_page_slow_after_a_passed_solve_is_tried_once_more(tmp_path):
+    tok = _jwt(time.time() + 3600)
+    b = _clocked(tmp_path, Clock())
+    b.page = _page(url="about:blank")
+    b.context = MagicMock()
+    b.context.cookies = AsyncMock(return_value=[])
+    loads = []
+
+    async def goto(url, **kw):
+        loads.append(kw["timeout"])
+        if len(loads) > 1:
+            b.page.url = url
+
+    b.page.goto = AsyncMock(side_effect=goto)
+    b.page.evaluate = AsyncMock(return_value={"status": 200, "ok": True, "data": {"a": 1}, "text": None})
+
+    async def passes(*_a, **_k):
+        b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": tok}])
+        return tok
+
+    b._solve_on_captcha_page = AsyncMock(side_effect=passes)
+    assert _run(b.fetch_json("/event/1")) == {"a": 1}
+    assert len(loads) == 2
+
+
+def test_with_the_cookie_a_page_on_blank_opens_the_home_page_and_fetches(tmp_path):
+    b = _clocked(tmp_path, Clock())
+    b.page = _page({"status": 200, "ok": True, "data": {"a": 1}, "text": None}, url="about:blank")
+    b.context = MagicMock()
+    b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": "x"}])
+    b.solve_challenge = AsyncMock()
+    assert _run(b.fetch_json("/event/1")) == {"a": 1}
+    assert b.page.url == cs.HOME_URL
+    b.solve_challenge.assert_not_awaited()
