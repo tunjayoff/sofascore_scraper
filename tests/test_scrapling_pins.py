@@ -43,3 +43,27 @@ def test_the_async_stealth_fetch_takes_a_page_action():
     source = inspect.getsource(AsyncStealthySession.fetch)
     assert "params.page_action" in source
     assert source.index("_cloudflare_solver(page)") < source.index("params.page_action(page)")
+
+
+def test_the_session_keeps_its_pages_in_a_pool_the_bridge_can_prune():
+    """
+    A2: köprü çözüm sayfasını `session.page_pool.pages`'ten bulur, `remove_page` ile havuzdan çıkarır ve kapatır;
+    meşgul sayfaya (`state == "busy"`) dokunmaz.
+    """
+    from scrapling.engines._browsers._page import PageInfo, PagePool
+    from scrapling.fetchers import AsyncStealthySession
+
+    inits = "".join(
+        inspect.getsource(k.__init__)
+        for k in AsyncStealthySession.__mro__
+        if "__init__" in vars(k) and inspect.isfunction(vars(k)["__init__"])
+    )
+    assert "self.page_pool = PagePool(" in inits
+    pool = PagePool(max_pages=2)
+    assert isinstance(pool.pages, list)
+    info = PageInfo(object(), "ready", "")
+    pool.pages.append(info)
+    assert {"page", "state"} <= set(PageInfo.__slots__)
+    pool.remove_page(info)
+    assert pool.pages == []
+    pool.remove_page(info)  # havuzda olmayan sayfa: hata yok

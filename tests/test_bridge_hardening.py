@@ -597,3 +597,57 @@ def test_the_redirect_is_waited_for_after_scraplings_solver(tmp_path, monkeypatc
     assert seen == [cs.HOME_URL]
     assert cs._on_site(cs.HOME_URL) and not cs._on_site(cs.CAPTCHA_URL)
     assert not cs._on_site("about:blank") and cs._on_origin(cs.CAPTCHA_URL)
+
+
+# --- A2: Scrapling'in çözüm sayfası her yüklemeden sonra kapanır (c: ec3d614) -------------------------
+
+
+def test_scraplings_solve_page_is_closed_and_the_bridge_page_kept(tmp_path):
+    b = _bridge(tmp_path)
+    b.page = _page()
+    solve_page, busy_page = _page(url=cs.HOME_URL), _page(url=cs.CAPTCHA_URL)
+    infos = [
+        MagicMock(page=solve_page, state="ready"),
+        MagicMock(page=busy_page, state="busy"),
+        MagicMock(page=b.page, state="ready"),
+    ]
+    pool = MagicMock()
+    pool.pages = list(infos)
+    pool.remove_page = lambda info: pool.pages.remove(info)
+    b.session = MagicMock(page_pool=pool)
+    _run(b._park_solver_pages())
+    solve_page.close.assert_awaited_once()
+    busy_page.close.assert_not_awaited()
+    b.page.close.assert_not_awaited()
+    assert pool.pages == infos[1:]
+    # Havuzun API'si yoksa sayfa about:blank'e gider
+    bare = MagicMock(spec=["pages"])
+    bare.pages = [infos[0]]
+    b.session = MagicMock(page_pool=bare)
+    _run(b._park_solver_pages())
+    solve_page.goto.assert_awaited_once_with("about:blank")
+
+
+def test_every_load_parks_the_solve_page_passed_or_not(tmp_path, monkeypatch):
+    monkeypatch.setattr(cs, "REDIRECT_WAIT_S", 0.0)
+    b, sp = _solving_bridge(tmp_path, monkeypatch, [cs.CAPTCHA_URL], [None])
+    assert _run(b._solve_on_captcha_page()) is None
+    assert sp.removed == 1 and sp.page.close.await_count == 1
+    tok = _jwt(time.time() + 3600)
+    b, sp = _solving_bridge(tmp_path, monkeypatch, [cs.HOME_URL], [tok])
+    assert _run(b._solve_on_captcha_page()) == tok
+    assert sp.removed == 1 and sp.page.close.await_count == 1
+
+
+def test_a_load_that_raises_still_parks_the_page(tmp_path, monkeypatch):
+    b, sp = _solving_bridge(tmp_path, monkeypatch, [cs.CAPTCHA_URL], [None])
+    pool = b.session.page_pool
+
+    async def raises(url, **kw):
+        pool.pages.append(sp.info)
+        raise RuntimeError("iframe.bounding_box")
+
+    b.session.fetch = AsyncMock(side_effect=raises)
+    monkeypatch.setattr(cs, "REDIRECT_WAIT_S", 0.0)
+    assert _run(b._solve_on_captcha_page()) is None
+    assert sp.removed == 1

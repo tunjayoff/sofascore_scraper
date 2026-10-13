@@ -530,6 +530,8 @@ class BrowserBridge:
             )
         except Exception as e:
             logger.warning(f"Solving on captcha.html failed: {e.__class__.__name__}: {e}")
+        finally:
+            await self._park_solver_pages()
         redirected = bool(landed) and _on_site(landed[0])
         token = await self._token_from_context()
         if redirected and not token:
@@ -547,6 +549,32 @@ class BrowserBridge:
             else f"no redirect to the site within {REDIRECT_WAIT_S:g} s",
         )
         return None
+
+    async def _park_solver_pages(self) -> None:
+        """
+        Scrapling'in çözüm sayfasını yüklemesi bitince kapatır (c'nin A2'si). Havuzu sayfayı bir fetch'ten sonra da
+        tutar, ne yüklediyse onda: geçen bir çözümden sonra /tr'deki web uygulaması (websocket üzerinden canlı skorlar,
+        reklamlar), c'nin 5. koşusunun tamamı boyunca çalıştı ve kendini 31 dakikada bir yeniden yükledi; bu yalnızca
+        daha az gönderir. Havuz önce sayfayı unutur, bir sonraki çözüm yeni sayfa açar; havuzun bu API'si yoksa sayfa
+        about:blank'e gider. Köprünün kendi sayfasına ve meşgul (yükleme süren) sayfalara dokunulmaz.
+        """
+        pool = getattr(self.session, "page_pool", None)
+        pages = getattr(pool, "pages", None)
+        if not isinstance(pages, list):
+            return
+        for info in list(pages):
+            page = getattr(info, "page", None)
+            if page is None or page is self.page or getattr(info, "state", "") == "busy":
+                continue
+            try:
+                remove = getattr(pool, "remove_page", None)
+                if callable(remove):
+                    remove(info)
+                    await page.close()
+                else:
+                    await page.goto("about:blank")
+            except Exception as e:  # sonraki çözüm bir sayfa açar ya da bunu kullanır
+                logger.debug(f"Closing Scrapling's solve page: {e}")
 
     async def _await_redirect(self, page: Any) -> str:
         """Scrapling'in `page_action`'ı: sayfa captcha.html'den siteye geçince adresi, ya da REDIRECT_WAIT_S sonraki hali."""
