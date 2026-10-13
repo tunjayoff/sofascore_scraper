@@ -1,6 +1,6 @@
 """
-S2: canlı push kaynağının saatler süren ölçüm kaydı (soak). c projesi (bu kodu taşıyacak oran motoru) için uygulamanın
-canlı yolunu olduğu gibi ölçer: push kaynağı (varsayılan `direct`: sofascore_scraper/services/live/direct_source.py;
+S2: canlı push kaynağının saatler süren ölçüm kaydı (soak). Uygulamanın canlı yolunu
+saatlerce olduğu gibi ölçer: push kaynağı (varsayılan `direct`: sofascore_scraper/services/live/direct_source.py;
 `--source page` ile sayfa dinleme: push_source.py), hakem (arbiter.py), yoklama yedeği (poll_source.py) ve maç sayfası
 okumaları için köprü (normal istemci, ortak istek bütçesi). Yeniden yazım yok: servisin kendi parçaları
 (LiveService, DirectConnection/DirectSource ya da PageSource/BrowserPageOpener, SportArbiter, PollSource) çalışır;
@@ -23,13 +23,14 @@ Nasıl kurulur:
     liste; düşen, bitişe yakın, takılı, gecikmiş maçların sayfaları) bugünkü gibidir. Servisin bitiş onayı kapalıdır
     (`confirm=False`): bitişin `/event/{id}` okumasını kaydedici yapar (aşağıda), iki kez okunmasın.
   * Push önde: hakemin güvenlik yoklaması (liste 120 sn'de bir ve her (yeniden) bağlanmada bir tur) ve ilgili her
-    değişiklikte (durum sınıfı, skor, yeni canlı maç, bitiş, listeden düşme) bir `/event/{id}` okuması, c'nin yapacağı
-    gibi. Okuma değişikliği henüz göstermiyorsa (CDN) servisin bitiş onayı gibi CONFIRM_RETRY_SECONDS sonra, en çok
-    CONFIRM_ATTEMPTS kez yinelenir. Gecikme = tetikleyen kare ya da liste değişikliği → değişikliği gösteren ilk okuma.
-  * Liste önde (push kopuk, sessiz ya da öldürüldü; sahibin c için kuralı): canlı liste 30 sn'de bir (hakemin
+    değişiklikte (durum sınıfı, skor, yeni canlı maç, bitiş, listeden düşme) bir `/event/{id}` okuması (maçın tam
+    yanıtı okunur). Okuma değişikliği henüz göstermiyorsa (CDN) servisin bitiş onayı gibi CONFIRM_RETRY_SECONDS
+    sonra, en çok CONFIRM_ATTEMPTS kez yinelenir. Gecikme = tetikleyen kare ya da liste değişikliği →
+    değişikliği gösteren ilk okuma.
+  * Liste önde (push kopuk, sessiz ya da öldürüldü; yedek okuma kuralı): canlı liste 30 sn'de bir (hakemin
     `poll_interval`'ı) ve yoklama kaynağının kendi okumaları (bitişe yakın, düşen, takılı, gecikmiş) bugünkü gibi;
     ARTI (FallbackReads) "joined" kümedeki canlı maçlar 60 sn'de bir (acil, neden "joined") ve diğer canlı maçlar hız
-    elverdikçe, en uzun süredir okunmayan önce (birikmiş iş, sıra "listed"). "c fikstürüne bağlı" sinyali burada yok:
+    elverdikçe, en uzun süredir okunmayan önce (birikmiş iş, sıra "listed"). "izlenen maç" sinyali burada yok:
     küme `--joined-ids DOSYA` ile `--joined-random-soccer N`'in (varsayılan 20) rastgele seçtiği canlı futbol
     maçlarıdır; biten seçimin yerine yenisi seçilir. Dakikanın payı `60 × --rate × (1 − --list-share)` okumadır; kalan
     pay keşfe ayrılır. Sığmayan okuma atlanır ve spor başına sayılır; hiçbir şey sınırsız beklemez. fallback.jsonl:
@@ -45,7 +46,7 @@ Nasıl kurulur:
     challenge, tarayıcı challenge, tarayıcı), Turnstile çözümlerini ve yanıt süresinin p50/p95'ini yazar; özet aynısını
     evre başına verir. 403/429/Turnstile sayıları istemcinin kendi log satırlarından sayılır (ChallengeCounter);
     satırların metni yazılmaz. 1 istek/sn'den hızlı evrede araştırma kilidi alınmaz.
-  * `--joined-ids DOSYA`: c'nin mesaj biçimi `{"ids": [...]}`; bozuk dosya ya da 50.000'den çok id yok sayılır.
+  * `--joined-ids DOSYA`: mesaj biçimi `{"ids": [...]}`; bozuk dosya ya da 50.000'den çok id yok sayılır.
   * Kancalar: DirectConnection'ın alt sınıfı (oturum başı/sonu, yeniden deneme), bağlantı işlevinin sarmalayıcısı
     (el sıkışma, hat üstü işlemler; öldürme), sayfa açıcının sarmalayıcısı (`page`; öldürme = sayfayı kapatma), her
     sporun PushFeed'ini saran musluk (MSG kareleri; `page`'de PING/PONG/INFO/-ERR de), kimlik bilgisi okuyucusunun
@@ -139,7 +140,7 @@ MAX_PENDING_READS = 1000
 TOP_GAPS = 5
 
 FILES = ("frames", "connection", "leader", "reads", "requests", "fallback", "resources")
-MAX_JOINED_IDS = 50_000  # c gibi: daha büyük joined dosyası yok sayılır
+MAX_JOINED_IDS = 50_000  # daha büyük joined dosyası yok sayılır
 LIVE = StatusClass.LIVE.value
 # Karede değeri yazılan alanlar (geri kalanların yalnızca yolu yazılır)
 STATUS_VALUE_KEYS = ("status.code", "status.type")
@@ -765,7 +766,7 @@ class EventReads:
 
 class JoinedSet:
     """
-    "c fikstürüne bağlı" maçların kümesi (sahibin kuralı: bu maçlar liste öndeyken 60 sn'de bir okunur). Burada o
+    "İzlenen" maçların kümesi (kural: bu maçlar liste öndeyken 60 sn'de bir okunur). Burada o
     sinyal yok: küme `--joined-ids` dosyasındaki sabit id'ler ile `--joined-random-soccer N`'in seçtiği N rastgele
     canlı futbol maçıdır. Seçilen maç canlı listeden düşünce (bitti) yerine yenisi seçilir; maç canlı oldukça küme
     N'de kalır.
@@ -807,7 +808,7 @@ class JoinedSet:
 
 class FallbackReads:
     """
-    Liste öndeyken (push kopuk, sessiz ya da öldürüldü) sahibin c için kuralı, servisin yoklama kaynağının üstüne:
+    Liste öndeyken (push kopuk, sessiz ya da öldürüldü) yedek okuma kuralı, servisin yoklama kaynağının üstüne:
 
       * "joined" kümedeki canlı maçlar acildir: her biri 60 sn'de bir okunur (neden "joined");
       * diğer canlı maçlar birikmiş iştir: hız elverdikçe, en uzun süredir okunmayan önce (sıra "listed");
@@ -2345,8 +2346,8 @@ def _sports(value: str) -> List[str]:
 
 def parse_joined(text: str) -> Optional[List[int]]:
     """
-    c'nin mesaj biçimi: `{"ids": [olay id'leri]}`. Bozuk dosya (JSON değil, nesne değil, `ids` liste değil, tam sayı
-    olmayan id) ya da MAX_JOINED_IDS'ten çok id: None (c gibi yok sayılır).
+    Mesaj biçimi: `{"ids": [olay id'leri]}`. Bozuk dosya (JSON değil, nesne değil, `ids` liste değil, tam sayı
+    olmayan id) ya da MAX_JOINED_IDS'ten çok id: None (yok sayılır).
     """
     try:
         doc = json.loads(text)
