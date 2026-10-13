@@ -237,3 +237,89 @@ def test_a_bridge_made_without_init_has_the_counters():
     b = cs.BrowserBridge.__new__(cs.BrowserBridge)
     status = b.solver_status()
     assert (status["solves"], status["solve_failures"], status["consecutive_solve_failures"]) == (0, 0, 0)
+
+
+# --- B2: artan çözüm beklemesi, her yanıt seriyi bitirir (c: 8b0e05d, 5702da6) ------------------------
+
+
+def _clocked(tmp_path, clock: Clock, **kw: Any) -> cs.BrowserBridge:
+    b = cs.BrowserBridge(profile_dir=str(tmp_path / "profile"), clock=clock, **kw)
+    b.ensure_ready = AsyncMock()
+    return b
+
+
+def test_the_cooldown_doubles_from_the_third_failed_solve_up_to_600_s(tmp_path, caplog):
+    assert [cs.solve_retry_after(n) for n in range(1, 7)] == [180, 180, 360, 600, 600, 600]
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    assert b.solve_cooldown_left() == 0.0
+
+    async def go() -> List[float]:
+        waited = []
+        for _ in range(4):
+            assert await b.solve_challenge() is None
+            waited.append(b.solve_cooldown_left())
+            clock.t += waited[-1] - 1
+            assert await b.solve_challenge() is None  # hâlâ bekleniyor: çözüm yok
+            clock.t += 1
+            assert b.solve_cooldown_left() == 0.0
+        return waited
+
+    with caplog.at_level("WARNING"):
+        assert _run(go()) == [180, 180, 360, 600]
+    assert b._solve_on_captcha_page.await_count == 4
+    assert "(3 in a row); not trying again for 360 s" in caplog.text
+    tok = _jwt(time.time() + 3600)
+    b._solve_on_captcha_page = AsyncMock(return_value=tok)
+    assert _run(b.solve_challenge()) == tok
+    assert b.solve_cooldown_left() == 0.0 and b.consecutive_solve_failures == 0
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    clock.t += 31  # taze token'ın 30 sn'si geçti
+    assert _run(b.solve_challenge()) is None
+    assert b.solve_cooldown_left() == 180  # yeni bir seri 180 sn'den başlar
+
+
+def test_an_answer_ends_the_run_of_failed_solves_but_not_the_cooldown(tmp_path):
+    clock = Clock()
+    b = _clocked(tmp_path, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+
+    async def fail() -> float:
+        assert await b.solve_challenge() is None
+        left = b.solve_cooldown_left()
+        clock.t += left
+        return left
+
+    assert [_run(fail()) for _ in range(3)] == [180, 180, 360]
+    assert _run(b.solve_challenge()) is None and b.consecutive_solve_failures == 4
+    b.reset_solve_streak()  # SofaScore yanıt verdi
+    assert b.consecutive_solve_failures == 0
+    assert b.solve_cooldown_left() == 600  # süren bekleme uzunluğunu korur
+    clock.t += 600
+    assert _run(fail()) == 180  # sonraki başarısızlık yeni bir seri başlatır
+    assert (b.solves, b.solve_failures) == (5, 5)  # toplamlar kalır
+
+
+def test_a_page_answer_ends_the_streak(tmp_path):
+    b = _clocked(tmp_path, Clock())
+    b.consecutive_solve_failures = 2
+    b.page = _page({"status": 200, "ok": True, "data": {"a": 1}, "text": None},
+                   {"status": 404, "ok": False, "data": None, "text": ""})
+    assert _run(b.fetch_json("/event/1")) == {"a": 1}
+    assert b.consecutive_solve_failures == 0
+    b.consecutive_solve_failures = 2
+    assert _run(b.fetch_json("/event/2")) == {"__404__": True}
+    assert b.consecutive_solve_failures == 0
+
+
+def test_the_cooldown_left_is_published_for_the_diagnostics(tmp_path):
+    from sofascore_scraper import bridge_health
+
+    clock = Clock(time.time())
+    b = _clocked(tmp_path, clock)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    assert _run(b.solve_challenge()) is None
+    left = bridge_health.solver()["solve_cooldown_left"]
+    assert 175 <= left <= 180
+    assert bridge_health.solver()["consecutive_solve_failures"] == 1

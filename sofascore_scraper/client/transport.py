@@ -298,6 +298,33 @@ def _is_transient_status(status_code: int) -> bool:
     return status_code >= 500 or status_code in (403, 408, 429)
 
 
+def _active_bridge() -> Any:
+    """Süreçte açılmış indirme köprüsü (BrowserBridge.get_instance); yoksa None. Köprü burada kurulmaz."""
+    from sofascore_scraper.client.bridge import BrowserBridge
+
+    return BrowserBridge._instance
+
+
+def _answered() -> None:
+    """
+    SofaScore isteğe yanıt verdi (200 ya da 404; curl'ün ya da köprünün): köprünün başarısız çözümleri artık art arda
+    değildir (BrowserBridge.reset_solve_streak, c'nin B2'si).
+    """
+    bridge = _active_bridge()
+    reset = getattr(bridge, "reset_solve_streak", None)
+    if reset is not None:
+        try:
+            reset()
+        except Exception:  # durum yazımı isteği bozmamalı
+            logger.debug("resetting the solve streak failed", exc_info=True)
+
+
+def _ended_with(exc: BaseException) -> None:
+    """İsteği bitiren hata: 404 bir yanıttır (_answered)."""
+    if isinstance(exc, ResourceNotFoundError):
+        _answered()
+
+
 def base_url() -> str:
     """API kökü: her isteğin adresinin başı (süreç başlarken okunan API_BASE_URL). Kök yalnızca buradan alınır."""
     return API_BASE_URL
@@ -343,10 +370,12 @@ def make_api_request(
     try:
         data = _request_sync(url, max_retries, timeout, trace)
     except SofaScoreScraperError as e:
+        _ended_with(e)
         breaker.report_exception(e)
         if raise_on_failure or raise_errors:
             raise
         return None
+    _answered()
     breaker.report_ok()
     return data
 
@@ -534,8 +563,10 @@ async def make_api_request_async(
     try:
         data = await _request_async(session, url, max_retries, timeout, trace)
     except SofaScoreScraperError as e:
+        _ended_with(e)
         breaker.report_exception(e)
         raise
+    _answered()
     breaker.report_ok()
     return data
 

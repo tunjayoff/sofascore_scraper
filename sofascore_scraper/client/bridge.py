@@ -33,7 +33,7 @@ import re
 import threading
 import time
 import weakref
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from sofascore_scraper import bridge_health, throttle
 from sofascore_scraper.client import profile_lock
@@ -70,8 +70,26 @@ _JS_FETCH_TIMEOUT_MS = 20000
 _LAUNCH_RETRY_AFTER = 300.0
 # Yeni çözülmüş bir token, hemen ardından gelen 403 dalgası için yeniden kullanılır
 _FRESH_TOKEN_SECONDS = 30.0
-# Başarısız bir çözümden sonra bu süre yeniden denenmez (her istek 10-90 sn yakmasın)
+# Başarısız bir çözümden sonra bu süre yeniden denenmez (her istek 10-90 sn yakmasın); üçüncü art arda başarısız
+# çözümden sonra iki katına çıkar, en çok _SOLVE_RETRY_AFTER_MAX (solve_retry_after)
 _SOLVE_RETRY_AFTER = 180.0
+_SOLVE_RETRY_AFTER_MAX = 600.0
+
+
+def solve_retry_after(failures: int) -> float:
+    """
+    Art arda `failures`'ıncı başarısız çözümden sonraki bekleme: birinci ve ikinciden sonra 180 sn, sonra iki katı, en
+    çok 600 sn (180, 180, 360, 600, 600, ...). "Art arda": aralarında yanıt yok; her 200 ya da 404 (curl'ün ya da
+    sayfanın) seriyi bitirir (BrowserBridge.reset_solve_streak), geçen bir çözüm gibi.
+
+    c projesinin üretim benzeri 3. koşusu (2026-10-02) üç çözüm istedi, üçüncüsü fırtınanın 7,2. dakikasında, iki
+    180 sn'lik beklemeden sonra; ilk başarısızlıktan itibaren ikiye katlamak 3 dakika daha hiçbir şey okutmazdı. İki
+    çözümü aşan bir duvar geçici değil, adresin engellenmesine benzer: orada her çözüm captcha sayfasını iki kez ve
+    iki yoklamayı harcar ve Cloudflare her 3 dakikada challenge'ını geçemeyen bir istemci görür; üst sınır kalkan bir
+    engeli 10 dakika içinde bulur (önce tarayıcı penceresi, transport.BROWSER_FIRST_SECONDS): bir engelin ilk
+    saatinde 17-20 yerine 8 çözüm.
+    """
+    return min(_SOLVE_RETRY_AFTER_MAX, _SOLVE_RETRY_AFTER * 2 ** max(0, failures - 2))
 
 # Tarayıcının HTTP önbelleği: durum taşıyan yanıtlar (maç, canlı liste, sezon listeleri) max-age boyunca
 # (sezon listelerinde 60 sn) önbellekten dönerse biten maç o süre "devam ediyor" görünür (issue #6).
@@ -275,9 +293,16 @@ class BrowserBridge:
     solves = 0
     solve_failures = 0
     consecutive_solve_failures = 0
+    # Zaman (epoch sn): testler kendi saatini verir (`clock`)
+    _clock: Callable[[], float] = staticmethod(lambda: time.time())
+    _launch_failed_at = 0.0
+    _solve_failed_at = 0.0
+    # Son başarısız çözümün beklemesi (solve_retry_after)
+    _solve_cooldown_s = _SOLVE_RETRY_AFTER
 
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None, *,
-                 report_health: bool = True, sandbox: Optional[bool] = None):
+                 report_health: bool = True, sandbox: Optional[bool] = None,
+                 clock: Callable[[], float] = time.time):
         """
         home_url       köprü sekmesinin açıldığı ve sayfa SofaScore dışına çıkınca döndüğü adres; None: HOME_URL.
                        Canlı sayfaların ayrı köprüsü (sofascore_scraper/services/live/push_source.py) API çağırmayan bir sayfa verir.
@@ -287,7 +312,9 @@ class BrowserBridge:
         sandbox        Chromium kendi sandbox'ıyla başlar (patchright'ın `chromium_sandbox`'ı, Scrapling'in
                        `additional_args`'ıyla); None: `client.browser_sandbox` ayarı, açılışta okunur. Varsayılan
                        kapalıdır (patchright'ın `--no-sandbox`'ı, bugünkü gibi); sunucunun buna izin vermesi gerekir.
+        clock          beklemelerin saati (epoch sn); testler sahtesini verir.
         """
+        self._clock = clock
         self.profile_dir = profile_dir
         self.home_url = home_url
         self.report_health = report_health
@@ -326,7 +353,7 @@ class BrowserBridge:
         async with self._init_lock:
             if self.page and not self.page.is_closed():
                 return
-            if self._launch_failed_at and time.time() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
+            if self._launch_failed_at and self._clock() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
                 if self.report_health:
                     bridge_health.record_failure(bridge_health.KIND_BROWSER,
                                                  "the browser could not start (waiting before the next try)")
@@ -341,7 +368,7 @@ class BrowserBridge:
                 await self._launch_in_free_profile()
             except BaseException as e:
                 # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
-                self._launch_failed_at = time.time()
+                self._launch_failed_at = self._clock()
                 await self.close()
                 if isinstance(e, Exception) and self.report_health:  # iptal bir sağlık sinyali değil
                     bridge_health.record_failure(bridge_health.KIND_BROWSER, f"{e.__class__.__name__}: {e}")
@@ -459,7 +486,7 @@ class BrowserBridge:
     def _set_token(self, token: str) -> None:
         global _cached_token, _cached_at
         self.token = token
-        self._token_at = time.time()
+        self._token_at = self._clock()
         # curl_cffi istekleri de bu tokeni kullansın (get_request_headers → get_cached_token)
         _cached_token = token
         _cached_at = self._token_at
@@ -472,9 +499,9 @@ class BrowserBridge:
         doğrudan döndürülür; başarısız bir çözümden sonra bir süre yeniden denenmez.
         """
         await self.ensure_ready()
-        if self.token and time.time() - self._token_at < _FRESH_TOKEN_SECONDS:
+        if self.token and self._clock() - self._token_at < _FRESH_TOKEN_SECONDS:
             return self.token
-        if self._solve_failed_at and time.time() - self._solve_failed_at < _SOLVE_RETRY_AFTER:
+        if self.solve_cooldown_left() > 0:
             return None
         if self._solve_task is None or self._solve_task.done():
             # Çözümün (doğrulama isteğinin) sıra beklemesi kendi sayacına yazılır: görev, bağlamı
@@ -557,12 +584,39 @@ class BrowserBridge:
             self._solve_failed_at = 0.0
             logger.info("Turnstile challenge solved.")
             return token
-        self._solve_failed_at = time.time()
+        self._start_cooldown()
+        return None
+
+    def _start_cooldown(self) -> None:
+        """Başarısız çözümün beklemesi: solve_retry_after(art arda başarısız çözüm sayısı)."""
+        self._solve_cooldown_s = solve_retry_after(self.consecutive_solve_failures)
+        self._solve_failed_at = self._clock()
+        self._publish_solver()
         logger.warning(
             f"The Turnstile challenge could not be solved ({self.consecutive_solve_failures} in a row); "
-            f"not trying again for {int(_SOLVE_RETRY_AFTER)} s."
+            f"not trying again for {int(self._solve_cooldown_s)} s."
         )
-        return None
+
+    def solve_cooldown_left(self) -> float:
+        """
+        Başarısız bir çözümden sonra yeni çözüme kalan saniye (solve_retry_after); başarısız çözüm yoksa ya da bekleme
+        bittiyse 0. İstek katmanı bunu başka thread'den okur.
+        """
+        if not self._solve_failed_at:
+            return 0.0
+        return max(0.0, self._solve_failed_at + self._solve_cooldown_s - self._clock())
+
+    def reset_solve_streak(self) -> None:
+        """
+        SofaScore yanıt verdi (200 ya da 404; curl'ün ya da sayfanın): başarısız çözümler artık art arda değildir, bir
+        sonraki başarısızlık yeniden 180 sn bekler. c'de 2026-10-02'ye kadar seriyi yalnızca geçen bir çözüm
+        bitiriyordu: Cloudflare'in kendiliğinden bitirdiği bir fırtına seriyi 2-5'te bırakır, saatler sonraki fırtına
+        360 ya da 600 sn'lik beklemeyle başlardı. Süren bir bekleme kısalmaz: çözüm başarısız olmadan önce gönderilmiş
+        bir isteğin yanıtı duvar hakkında bir şey söylemez.
+        """
+        if self.consecutive_solve_failures:
+            self.consecutive_solve_failures = 0
+            self._publish_solver()
 
     def _count_solve(self, solved: bool) -> None:
         """
@@ -578,11 +632,14 @@ class BrowserBridge:
         self._publish_solver()
 
     def solver_status(self) -> Dict[str, Any]:
-        """Çözüm sayaçları (bridge_health.solver(), tanılama paketi)."""
+        """Çözüm sayaçları ve süren bekleme (bridge_health.solver(), tanılama paketi)."""
+        left = self.solve_cooldown_left()
         return {
             "solves": self.solves,
             "solve_failures": self.solve_failures,
             "consecutive_solve_failures": self.consecutive_solve_failures,
+            # Beklemenin bittiği an (epoch sn); bridge_health.solver() kalan süreyi okuma anında hesaplar
+            "solve_cooldown_until": time.time() + left if left > 0 else None,
         }
 
     def _publish_solver(self) -> None:
@@ -611,10 +668,12 @@ class BrowserBridge:
         # Sağlık sinyali (sofascore_scraper/bridge_health.py): isteğin SON hali sayılır — çözülüp yinelenen 403 başarıdır
         if res.get("ok"):
             bridge_health.record_success()
+            self.reset_solve_streak()
             return res.get("data")
 
         if res.get("status") == 404:
             bridge_health.record_success()  # API yanıt verdi; kaynak yok
+            self.reset_solve_streak()
             logger.debug(f"Not found (404): {url}")
             return {"__404__": True}
 

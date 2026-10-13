@@ -339,11 +339,16 @@ def update_solver(fields: Mapping[str, Any]) -> None:
 
 
 def solver() -> Dict[str, Any]:
-    """Çözüm sayaçlarının kopyası; köprü henüz çözüm yapmadıysa sıfırlar."""
+    """
+    Çözüm sayaçlarının kopyası; köprü henüz çözüm yapmadıysa sıfırlar. `solve_cooldown_left`: başarısız bir çözümden
+    sonra yeni çözüme kalan saniye (okuma anında; 0: bekleme yok).
+    """
     with _solver_lock:
         out: Dict[str, Any] = {"solves": 0, "solve_failures": 0, "consecutive_solve_failures": 0}
         out.update(_solver)
-        return out
+    until = out.pop("solve_cooldown_until", None)
+    out["solve_cooldown_left"] = round(max(0.0, until - time.time()), 1) if until else 0.0
+    return out
 
 
 def record_answer() -> None:
