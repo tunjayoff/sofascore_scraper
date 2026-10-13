@@ -384,6 +384,10 @@ class BrowserBridge:
     _launching = False
     # API'nin kabul ettiği son token (_api_unlocked; ya da yoklanacak sayfa yoktu)
     _checked_token: Optional[str] = None
+    token: Optional[str] = None
+    _token_at = 0.0
+    _solve_task: Optional["asyncio.Future[Optional[str]]"] = None
+    _solve_wait: Optional[_SlotWait] = None
 
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None, *,
                  report_health: bool = True, sandbox: Optional[bool] = None,
@@ -769,7 +773,8 @@ class BrowserBridge:
         Köprü sayfasında JS çalıştırır. Sayfa kendi kendine yönlenirse (SofaScore ana sayfası
         zaman zaman yeniden yüklenir) süren çağrı "Execution context was destroyed" ile düşer:
         sayfanın yüklenmesi beklenip bir kez daha denenir; sayfa sofascore.com dışına çıktıysa
-        ana sayfaya geri dönülür.
+        ana sayfaya yalnızca cookie varken ve süren bir çözüm yokken dönülür (c'nin B10'u): yoksa /tr captcha.html'ye
+        yönlenirdi (kendi yüklemesi ve canlı bir widget); istek, her köprü hatası gibi başarısız olur.
         """
         for attempt in range(3):
             try:
@@ -789,10 +794,15 @@ class BrowserBridge:
                     continue
                 try:
                     await self.page.wait_for_load_state("domcontentloaded", timeout=15000)
-                    if not self.page.url.startswith("https://www.sofascore.com"):
-                        await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
-                except Exception as le:
+                except Exception as le:  # yeniden deneme söyler
                     logger.warning(f"The bridge page could not recover: {le}")
+                if not str(self.page.url).startswith(SITE_ORIGIN):
+                    # Site dışında (bir çözüm onu about:blank'e götürdü, ör.): ana sayfaya yalnızca cookie varken ve
+                    # çözüm sürmüyorken, _open_home ile
+                    solving = self._solve_task is not None and not self._solve_task.done()
+                    if solving or not await self._token_from_context():
+                        raise RuntimeError("The bridge page is off the site") from None
+                    await self._open_home()
 
     async def _api_fetch(self, url: str, cache_mode: str) -> Dict[str, Any]:
         """

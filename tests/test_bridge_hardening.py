@@ -972,3 +972,51 @@ def test_with_the_cookie_a_page_on_blank_opens_the_home_page_and_fetches(tmp_pat
     assert _run(b.fetch_json("/event/1")) == {"a": 1}
     assert b.page.url == cs.HOME_URL
     b.solve_challenge.assert_not_awaited()
+
+
+# --- B10: evaluate() site dışından yalnızca cookie varken ve çözüm sürmüyorken döner (c: b5005bf) ------------
+
+
+def test_evaluate_goes_back_home_off_the_site_only_with_a_cookie_and_no_solve(tmp_path):
+    b = _bridge(tmp_path)
+    b.page = _page(
+        Exception("Page.evaluate: Execution context was destroyed, most likely a navigation"),
+        {"ok": 1},
+        url="https://accounts.google.com/",
+    )
+    b.context = MagicMock()
+    b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": "x"}])
+    assert _run(b.evaluate("js", [1])) == {"ok": 1}
+    assert b.page.evaluate.await_count == 2
+    b.page.wait_for_load_state.assert_awaited_once()
+    b.page.goto.assert_awaited_once_with(cs.HOME_URL, wait_until="domcontentloaded", timeout=30000)
+    # Cookie yokken (token'ın reddindeki çözüm sildi): /tr captcha.html'ye yönlenirdi, istek başarısız olur
+    b.page = _page(Exception("Execution context was destroyed"), url="about:blank")
+    b.context.cookies = AsyncMock(return_value=[])
+    with pytest.raises(RuntimeError, match="off the site"):
+        _run(b.evaluate("js", [1]))
+    b.page.goto.assert_not_awaited()
+    # Cookie var ama çözüm sürüyor (sayfası bilerek about:blank'te): gitme yok
+    b.page = _page(Exception("Execution context was destroyed"), url="about:blank")
+    b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": "x"}])
+
+    async def solving():
+        b._solve_task = asyncio.get_running_loop().create_future()
+        try:
+            await b.evaluate("js", [1])
+        finally:
+            b._solve_task = None
+
+    with pytest.raises(RuntimeError, match="off the site"):
+        _run(solving())
+    b.page.goto.assert_not_awaited()
+
+
+def test_a_live_bridge_goes_back_to_its_own_quiet_page(tmp_path):
+    quiet = "https://www.sofascore.com/robots.txt"
+    b = cs.BrowserBridge(profile_dir=str(tmp_path / "live"), home_url=quiet, report_health=False)
+    b.page = _page(Exception("Execution context was destroyed"), {"ok": 1}, url="https://accounts.google.com/")
+    b.context = MagicMock()
+    b.context.cookies = AsyncMock(return_value=[{"name": "sofa_captcha", "value": "x"}])
+    assert _run(b.evaluate("js")) == {"ok": 1}
+    b.page.goto.assert_awaited_once_with(quiet, wait_until="domcontentloaded", timeout=30000)
