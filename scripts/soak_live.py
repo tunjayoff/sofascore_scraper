@@ -7,7 +7,8 @@ okumaları için köprü (normal istemci, ortak istek bütçesi). Yeniden yazım
 script yalnızca onların kenarlarına kayıt kancaları takar.
 
     python scripts/soak_live.py --sports football,basketball,tennis --hours 6 [--source direct|page] [--run-id ID]
-                                [--max-requests N] [--rate 1.0] [--list-share 0.5] [--priority-ids 1,2]
+                                [--max-requests N] [--rate 1.0] [--list-share 0.5] [--joined-ids DOSYA]
+                                [--joined-random-soccer 20]
                                 [--kill-every DAKİKA] [--kill-at DAKİKA] [--compare-credential-sports] [--out KLASÖR]
 
 **`direct` açık seçimdir** (docs/deploy/watch.md, "The `direct` source"): sitenin kendi istemci kimlik bilgisini
@@ -25,12 +26,15 @@ Nasıl kurulur:
     değişiklikte (durum sınıfı, skor, yeni canlı maç, bitiş, listeden düşme) bir `/event/{id}` okuması, c'nin yapacağı
     gibi. Okuma değişikliği henüz göstermiyorsa (CDN) servisin bitiş onayı gibi CONFIRM_RETRY_SECONDS sonra, en çok
     CONFIRM_ATTEMPTS kez yinelenir. Gecikme = tetikleyen kare ya da liste değişikliği → değişikliği gösteren ilk okuma.
-  * Yoklama önde (push kopuk, sessiz ya da öldürüldü; sahibin c için kuralı): canlı liste 30 sn'de bir (hakemin
-    `poll_interval`'ı) ve yoklama kaynağının kendi okumaları, ARTI her canlı maçın sayfası dakikada en az bir kez
-    (FallbackReads): önce öncelikli id'ler (`--priority-ids`, varsayılan boş: "c fikstürüne bağlı" sinyali burada
-    yok), sonra bitişe yakınlar, sonra en uzun süredir okunmayanlar. Dakikanın payı `60 × --rate × (1 −
-    --list-share)` okumadır; sığmayan okuma atlanır ve sayılır (fallback_skipped), bir sonraki dakikaya taşınmaz.
-    Dakika başına fallback.jsonl: spor başına canlı maç, yapılan okuma, atlanan, kapsama (dakika içinde okunan payı).
+  * Liste önde (push kopuk, sessiz ya da öldürüldü; sahibin c için kuralı): canlı liste 30 sn'de bir (hakemin
+    `poll_interval`'ı) ve yoklama kaynağının kendi okumaları (bitişe yakın, düşen, takılı, gecikmiş) bugünkü gibi;
+    ARTI (FallbackReads) "joined" kümedeki canlı maçlar 60 sn'de bir (acil, neden "joined") ve diğer canlı maçlar hız
+    elverdikçe, en uzun süredir okunmayan önce (birikmiş iş, sıra "listed"). "c fikstürüne bağlı" sinyali burada yok:
+    küme `--joined-ids DOSYA` ile `--joined-random-soccer N`'in (varsayılan 20) rastgele seçtiği canlı futbol
+    maçlarıdır; biten seçimin yerine yenisi seçilir. Dakikanın payı `60 × --rate × (1 − --list-share)` okumadır; kalan
+    pay keşfe ayrılır. Sığmayan okuma atlanır ve spor başına sayılır; hiçbir şey sınırsız beklemez. fallback.jsonl:
+    dakika ve spor başına canlı maç, joined canlı maç, okumalar (joined/listed/diğer), atlananlar; joined küme
+    değişiklikleri. Özet: joined ve diğer maçların okuma aralıkları (medyan/p90/maks), keşif hızı, atlama oranları.
   * Kancalar: DirectConnection'ın alt sınıfı (oturum başı/sonu, yeniden deneme), bağlantı işlevinin sarmalayıcısı
     (el sıkışma, hat üstü işlemler; öldürme), sayfa açıcının sarmalayıcısı (`page`; öldürme = sayfayı kapatma), her
     sporun PushFeed'ini saran musluk (MSG kareleri; `page`'de PING/PONG/INFO/-ERR de), kimlik bilgisi okuyucusunun
@@ -72,6 +76,7 @@ import hmac
 import json
 import math
 import os
+import random
 import re
 import secrets
 import signal
@@ -111,7 +116,8 @@ SOURCES = ("direct", "page")
 DEFAULT_HOURS = 6.0
 DEFAULT_RATE = 1.0  # istek/sn (bütçenin hızı)
 DEFAULT_LIST_SHARE = 0.5  # hızın keşfe (liste ve yoklama kaynağının okumaları) ayrılan payı
-FALLBACK_WINDOW_SECONDS = 60.0  # yoklama öndeyken her canlı maçın sayfası bu sürede en az bir kez
+FALLBACK_WINDOW_SECONDS = 60.0  # liste öndeyken dakikalık okumaların penceresi (joined maçlar 60 sn'de bir)
+DEFAULT_JOINED_RANDOM = 20  # --joined-random-soccer: rastgele seçilen canlı futbol maçı sayısı
 RESOURCE_SECONDS = 30.0
 READING_RESOURCE_SECONDS = 5.0  # kimlik bilgisi okunurken (ikinci Chromium açık) örnekleme aralığı
 SUMMARY_SECONDS = 600.0
@@ -569,20 +575,66 @@ class EventReads:
             self.want(p)
 
 
-class FallbackReads:
+class JoinedSet:
     """
-    Yoklama öndeyken (sahibin c için kuralı) her canlı maçın sayfası dakikada en az bir kez: dakikanın başında o
-    sporların son canlı listesindeki maçlar sıralanır (öncelikli id'ler, bitişe yakınlar, en uzun süredir okunmayanlar)
-    ve dakikanın payı (`cap`) kadar okunur. Dakika içinde başka bir yoldan (değişiklik okuması, yoklama kaynağı)
-    okunmuş maç yeniden okunmaz, kapsanmış sayılır. Sığmayan okuma atlanır ve sayılır; bir sonraki dakikaya taşınmaz.
+    "c fikstürüne bağlı" maçların kümesi (sahibin kuralı: bu maçlar liste öndeyken 60 sn'de bir okunur). Burada o
+    sinyal yok: küme `--joined-ids` dosyasındaki sabit id'ler ile `--joined-random-soccer N`'in seçtiği N rastgele
+    canlı futbol maçıdır. Seçilen maç canlı listeden düşünce (bitti) yerine yenisi seçilir; maç canlı oldukça küme
+    N'de kalır.
     """
 
-    def __init__(self, soak: "Soak", *, rate: float, share: float, window: float = FALLBACK_WINDOW_SECONDS,
-                 priority: Iterable[int] = ()) -> None:
+    SPORT = "football"
+
+    def __init__(self, fixed: Iterable[int] = (), random_n: int = 0, *, rng: Optional[random.Random] = None) -> None:
+        self.fixed: FrozenSet[int] = frozenset(int(x) for x in fixed)
+        self.random_n = max(0, int(random_n))
+        self.picks: Set[int] = set()
+        self.ever: Set[int] = set(self.fixed)  # bir an kümede olan her maç (okuma aralıkları buna göre ayrılır)
+        self._rng = rng or random.Random()
+        self._lock = threading.Lock()
+
+    def ids(self) -> FrozenSet[int]:
+        with self._lock:
+            return self.fixed | frozenset(self.picks)
+
+    def refresh(self, sport: str, live_ids: Iterable[int]) -> List[Tuple[str, int]]:
+        """Sporun canlı listesi geldi: biten seçim düşer, eksik kadar rastgele canlı futbol maçı seçilir."""
+        if sport != self.SPORT or not self.random_n:
+            return []
+        live = set(live_ids)
+        changes: List[Tuple[str, int]] = []
+        with self._lock:
+            for eid in sorted(self.picks - live):
+                self.picks.discard(eid)
+                changes.append(("leave", eid))
+            need = self.random_n - len(self.picks)
+            pool = sorted(live - self.picks - self.fixed)
+            if need > 0 and pool:
+                for eid in sorted(self._rng.sample(pool, min(need, len(pool)))):
+                    self.picks.add(eid)
+                    self.ever.add(eid)
+                    changes.append(("join", eid))
+        return changes
+
+
+class FallbackReads:
+    """
+    Liste öndeyken (push kopuk, sessiz ya da öldürüldü) sahibin c için kuralı, servisin yoklama kaynağının üstüne:
+
+      * "joined" kümedeki canlı maçlar acildir: her biri 60 sn'de bir okunur (neden "joined");
+      * diğer canlı maçlar birikmiş iştir: hız elverdikçe, en uzun süredir okunmayan önce (sıra "listed");
+      * bitişe yakın, düşen, takılı ve gecikmiş maçların okumaları yoklama kaynağında bugünkü gibi kalır.
+
+    Hız: dakikada `60 × rate × (1 − share)` okuma; kalan pay keşfe (canlı liste ve yoklama kaynağının okumaları)
+    ayrılır. Dakikanın başında o sporların son canlı listesindeki maçlar sıralanır; dakika içinde başka bir yoldan
+    okunmuş maç yeniden okunmaz. Sığmayan okuma atlanır ve spor başına sayılır; hiçbir şey sınırsız beklemez (sıra her
+    dakika listeden yeniden kurulur).
+    """
+
+    def __init__(self, soak: "Soak", *, rate: float, share: float, window: float = FALLBACK_WINDOW_SECONDS) -> None:
         self._soak = soak
         self.window = float(window)
         self.cap = max(0, int(math.floor(self.window * rate * (1.0 - share) + 1e-9)))
-        self.priority: FrozenSet[int] = frozenset(int(p) for p in priority)
 
     def run(self, stop: threading.Event) -> None:
         from sofascore_scraper.client import request_context
@@ -595,21 +647,29 @@ class FallbackReads:
                     continue
                 self._minute(sports, stop)
 
-    def _rank(self, sport: str, eid: int) -> Tuple[int, int, float]:
-        last = self._soak.last_read.get((sport, eid))
-        return (0 if eid in self.priority else 1, 0 if self._soak.near_end(sport, eid) else 1,
-                -1.0 if last is None else last)
+    def queue(self, sports: Sequence[str], live: Mapping[str, Sequence[int]],
+              joined: FrozenSet[int]) -> List[Tuple[str, str, int]]:
+        """(neden, spor, maç): önce joined, sonra listed; ikisinde de en uzun süredir okunmayan (hiç okunmamış) önce."""
+        last = self._soak.last_read
+
+        def key(c: Tuple[str, int]) -> float:
+            value = last.get(c)
+            return -1.0 if value is None else value
+
+        joined_c = sorted(((s, e) for s in sports for e in live[s] if e in joined), key=key)
+        listed_c = sorted(((s, e) for s in sports for e in live[s] if e not in joined), key=key)
+        return [("joined", s, e) for s, e in joined_c] + [("listed", s, e) for s, e in listed_c]
 
     def _minute(self, sports: Sequence[str], stop: threading.Event) -> None:
         soak = self._soak
         start_ts, start = soak.wall(), soak.mono()
         end = start + self.window
+        joined = soak.joined.ids()
         live = {sport: soak.latest_list(sport) for sport in sports}
-        ranked = sorted(((s, e) for s in sports for e in live[s]), key=lambda c: self._rank(*c))
-        made: Dict[str, int] = collections.defaultdict(int)
+        made: Dict[str, Dict[str, int]] = {s: {"joined": 0, "listed": 0} for s in sports}
         attempted = 0
         cut = None
-        for sport, eid in ranked:
+        for reason, sport, eid in self.queue(sports, live, joined):
             if stop.is_set():
                 cut = "stopped"
                 break
@@ -623,9 +683,9 @@ class FallbackReads:
             if soak.mono() >= end:
                 cut = "minute"
                 break
-            out = soak.fallback_read(sport, eid, window_start_ts=start_ts)
+            out = soak.fallback_read(sport, eid, reason=reason, window_start_ts=start_ts)
             attempted += 1
-            made[sport] += 1
+            made[sport][reason] += 1
             if out.refused or out.blocked is not None:
                 cut = "budget" if out.refused else "blocked"
                 break
@@ -636,11 +696,14 @@ class FallbackReads:
         early = soak.mono() < end - 1e-3
         for sport in sports:
             ids = live[sport]
-            covered = sum(1 for eid in ids if soak.read_since(sport, eid, start))
-            # yarım dakika (durduruldu ya da push döndü) atlama oranına sayılmaz
-            soak.on_fallback_minute(sport, start_ts, live=len(ids), made=made[sport], covered=covered,
-                                    priority=sum(1 for eid in ids if eid in self.priority), cap=self.cap, cut=cut,
-                                    partial=early or sport not in led)
+            j = [e for e in ids if e in joined]
+            o = [e for e in ids if e not in joined]
+            soak.on_fallback_minute(
+                sport, start_ts, live=len(ids), joined_live=len(j), made=made[sport],
+                other=soak.reads_between(sport, start, soak.mono(), exclude="fallback"),
+                skipped_joined=sum(1 for e in j if not soak.read_since(sport, e, start)),
+                skipped_listed=sum(1 for e in o if not soak.read_since(sport, e, start)),
+                cap=self.cap, cut=cut, partial=early or sport not in led)  # yarım dakika oranlara sayılmaz
 
 
 # --- push: musluk, soket, okuyucu, bağlantı, sayfa açıcı -------------------------------------------------------
@@ -1167,6 +1230,8 @@ class SportStats:
     open_intervals: List[List[Any]] = field(default_factory=list)  # [başlangıç, bitiş, kapanış nedeni]
     open_since: Optional[float] = None
     fallback: List[Dict[str, Any]] = field(default_factory=list)  # dakika satırları
+    list_reads: List[float] = field(default_factory=list)  # servisin canlı liste okumaları (epoch)
+    read_events: List[Tuple[float, str]] = field(default_factory=list)  # başarılı maç sayfası okuması (mono, kim)
 
 
 class Soak:
@@ -1183,7 +1248,8 @@ class Soak:
                  budget: int, source: str = "direct", hours: Optional[float] = None,
                  kill_every: Optional[float] = None, kill_at: Optional[float] = None, poll_interval: float = 30.0,
                  rate: float = DEFAULT_RATE, list_share: float = DEFAULT_LIST_SHARE,
-                 priority_ids: Iterable[int] = (), fallback_window: float = FALLBACK_WINDOW_SECONDS,
+                 joined_ids: Iterable[int] = (), joined_random: int = DEFAULT_JOINED_RANDOM,
+                 joined_rng: Optional[random.Random] = None, fallback_window: float = FALLBACK_WINDOW_SECONDS,
                  base_fetch: Optional[Callable[[str], Optional[Dict[str, Any]]]] = None,
                  gate: Optional[Callable[[], None]] = None, reader: Any = None, page_opener: Any = None,
                  compare_sports: bool = False, compare_factory: Optional[Callable[[], Any]] = None,
@@ -1212,10 +1278,13 @@ class Soak:
                                  gate=gate if gate is not None else default_gate(rate), mono=self.mono)
         self.tracker = ChangeTracker()
         self.reads = EventReads(self, retry=event_retry_seconds)
-        self.fallback = FallbackReads(self, rate=rate, share=list_share, window=fallback_window,
-                                      priority=priority_ids)
+        self.rate = rate
+        self.list_share = list_share
+        self.joined = JoinedSet(joined_ids, joined_random, rng=joined_rng)
+        self.fallback = FallbackReads(self, rate=rate, share=list_share, window=fallback_window)
         self.stats: Dict[str, SportStats] = {s: SportStats() for s in self.sports}
         self.last_read: Dict[Tuple[str, int], float] = {}  # son başarılı maç sayfası okuması (mono), her yoldan
+        self.read_log: Dict[Tuple[str, int], List[float]] = collections.defaultdict(list)  # okuma anları (epoch)
         self._latest_list: Dict[str, List[int]] = {}
         self._resource_seconds = resource_seconds
         self._reading_resource_seconds = reading_resource_seconds
@@ -1620,14 +1689,23 @@ class Soak:
             self.requests[f"{by}:{kind}:{out.status}"] += 1
             self.request_latency[kind].append(out.seconds)
 
-    def _event_seen(self, sport: Optional[str], eid: int, event: Optional[Mapping[str, Any]]) -> None:
+    def _event_seen(self, sport: Optional[str], eid: int, event: Optional[Mapping[str, Any]], who: str) -> None:
         if not event:
             return
         with self._lock:
             sports = [sport] if sport else [s for s in self.sports if self.tracker.state(s, eid) is not None]
+            now, ts = self.mono(), self.wall()
             for s in sports:
-                self.last_read[(s, eid)] = self.mono()
+                self.last_read[(s, eid)] = now
+                self.read_log[(s, eid)].append(ts)
+                self.stats.setdefault(s, SportStats()).read_events.append((now, who))
                 self.tracker.observe_event(s, event)
+
+    def reads_between(self, sport: str, a: float, b: float, *, exclude: str = "") -> int:
+        """Sporun [a, b] (mono) aralığındaki başarılı maç sayfası okumaları (`exclude` yolundakiler hariç)."""
+        with self._lock:
+            return sum(1 for t, who in self.stats.setdefault(sport, SportStats()).read_events
+                       if a <= t <= b and who != exclude)
 
     def _service_fetch(self, path: str) -> Optional[Dict[str, Any]]:
         """Servisin istek işlevi: bütçe, sıra, kayıt; canlı liste ve maç sayfaları kaydediciye de verilir."""
@@ -1653,7 +1731,7 @@ class Soak:
         if m and events is not None:
             self._on_list(m.group(1), events, trigger_ts)
         if e and out.data is not None:
-            self._event_seen(None, int(e.group(1)), out.data.get("event"))
+            self._event_seen(None, int(e.group(1)), out.data.get("event"), "service")
         if out.blocked is not None:
             raise out.blocked
         return out.data
@@ -1664,6 +1742,7 @@ class Soak:
             changes = self.tracker.listing(sport, events)
             st = self.stats.setdefault(sport, SportStats())
             st.live_counts.append((self.wall(), len(events)))
+            st.list_reads.append(self.wall())
             ids: List[int] = []
             for ev in events:
                 try:
@@ -1674,6 +1753,9 @@ class Soak:
             for _, kinds, _ in changes:
                 for kind in kinds:
                     st.triggers[kind] += 1
+        for change, eid in self.joined.refresh(sport, ids):
+            self.recorder.write("fallback", {"event": "joined_" + change, "sport": sport, "event_id": eid,
+                                             "joined_now": len(self.joined.ids())})
         for eid, kinds, expect in changes:
             self.reads.want(Pending(sport, eid, set(kinds), {"list"}, ts, mono, expect, mono))
 
@@ -1686,19 +1768,11 @@ class Soak:
             last = self.last_read.get((sport, eid))
         return last is not None and last >= since
 
-    def near_end(self, sport: str, eid: int) -> bool:
-        """Servisin yoklama kaynağının işareti (indirgeyicinin `near_end`'i); okunamazsa False."""
-        try:
-            slot = self.service._slots.get(sport)
-            return bool(slot is not None and (slot.tracker.state.get(str(eid)) or {}).get("near_end"))
-        except Exception:
-            return False
-
     def on_event_read(self, p: Pending, out: Outcome, event: Optional[Mapping[str, Any]], *, ok: bool, final: bool,
                       latency: Optional[float], retry_in: Optional[float], ts: float, mono: float) -> None:
         cls = classify_status(dict(event)).value if event else None
         self._count("recorder", "event", out)
-        self._event_seen(p.sport, p.eid, event)
+        self._event_seen(p.sport, p.eid, event, "recorder")
         with self._lock:
             st = self.stats.setdefault(p.sport, SportStats())
             if ok and latency is not None:
@@ -1720,27 +1794,30 @@ class Soak:
         with self._lock:
             self.stats.setdefault(p.sport, SportStats()).skipped_budget += 1
 
-    def fallback_read(self, sport: str, eid: int, *, window_start_ts: float) -> Outcome:
+    def fallback_read(self, sport: str, eid: int, *, reason: str, window_start_ts: float) -> Outcome:
         out = self.client.request(f"/event/{eid}")
         if out.refused:
             self._note_budget()
             return out
         event = (out.data or {}).get("event") if out.data is not None else None
         self._count("fallback", "event", out)
-        self._event_seen(sport, eid, event)
+        self._event_seen(sport, eid, event, "fallback")
         self.recorder.write("reads", {
-            "kind": "event", "by": "fallback", "sport": sport, "event_id": eid, "status": out.status,
+            "kind": "event", "by": "fallback", "reason": reason, "sport": sport, "event_id": eid,
+            "status": out.status,
             "latency_s": round(out.seconds, 3), "waited_s": round(out.waited, 3),
             "read_class": classify_status(dict(event)).value if event else None,
             "minute": round(window_start_ts, 3)})
         return out
 
-    def on_fallback_minute(self, sport: str, start_ts: float, *, live: int, made: int, covered: int, priority: int,
-                           cap: int, cut: Optional[str], partial: bool) -> None:
-        skipped = max(0, live - covered)
-        row = {"sport": sport, "minute": round(start_ts, 3), "live": live, "reads_made": made, "covered": covered,
-               "skipped": skipped, "coverage": round(covered / live, 4) if live else None, "priority_live": priority,
-               "cap": cap, "cut": cut, "partial": partial}
+    def on_fallback_minute(self, sport: str, start_ts: float, *, live: int, joined_live: int,
+                           made: Mapping[str, int], other: int, skipped_joined: int, skipped_listed: int, cap: int,
+                           cut: Optional[str], partial: bool) -> None:
+        row = {"event": "minute", "sport": sport, "minute": round(start_ts, 3), "live": live,
+               "joined_live": joined_live,
+               "reads": {"joined": made.get("joined", 0), "listed": made.get("listed", 0), "other": other},
+               "skipped": {"joined": skipped_joined, "listed": skipped_listed}, "cap": cap, "cut": cut,
+               "partial": partial}
         with self._lock:
             self.stats.setdefault(sport, SportStats()).fallback.append(row)
         self.recorder.write("fallback", row)
@@ -1785,18 +1862,54 @@ class Soak:
 
     @staticmethod
     def _fallback_summary(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
-        full = [r for r in rows if not r.get("partial")]
+        """Dakika satırlarından (yarım dakikalar hariç): okumalar, atlananlar, atlama oranları, en kötü dakika."""
+        full = [r for r in rows if r.get("event") == "minute" and not r.get("partial")]
         live = sum(r["live"] for r in full)
-        skipped = sum(r["skipped"] for r in full)
+        joined_live = sum(r["joined_live"] for r in full)
+        skipped = {k: sum(r["skipped"][k] for r in full) for k in ("joined", "listed")}
+        reads = {k: sum(r["reads"][k] for r in full) for k in ("joined", "listed", "other")}
+
+        def rate(n: int, d: int) -> Optional[float]:
+            return round(n / d, 4) if d else None
+
         scored = [r for r in full if r["live"]]
-        worst = min(scored, key=lambda r: (r["coverage"], -r["skipped"]), default=None)
-        return {"minutes": len(full), "live_total": live, "covered_total": sum(r["covered"] for r in full),
-                "skipped_total": skipped, "reads_made": sum(r["reads_made"] for r in full),
-                "skip_rate": round(skipped / live, 4) if live else None,
+        worst = min(scored, key=lambda r: (-r["skipped"]["joined"],
+                                           -(r["skipped"]["joined"] + r["skipped"]["listed"]) / r["live"]),
+                    default=None)
+        return {"minutes": len(full), "live_total": live, "joined_live_total": joined_live, "reads": reads,
+                "skipped": skipped,
+                "skip_rate": {"joined": rate(skipped["joined"], joined_live),
+                              "listed": rate(skipped["listed"], live - joined_live),
+                              "all": rate(skipped["joined"] + skipped["listed"], live)},
                 "worst_minute": None if worst is None else {
                     "at": utc(worst["minute"]), "sport": worst["sport"], "live": worst["live"],
-                    "covered": worst["covered"], "skipped": worst["skipped"], "coverage": worst["coverage"],
+                    "joined_live": worst["joined_live"], "skipped": worst["skipped"], "reads": worst["reads"],
                     "cut": worst["cut"]}}
+
+    def _read_gaps(self, sport: str, list_led: Sequence[Tuple[float, float]]) -> Dict[str, Any]:
+        """
+        Liste öndeyken maç sayfası okumaları arasındaki süreler: aynı liste-önde aralığındaki ardışık iki okuma (her
+        yoldan). Joined maçlar maç başına ve toplu; diğerleri toplu.
+        """
+        joined: List[float] = []
+        others: List[float] = []
+        per_joined: Dict[str, Any] = {}
+        other_matches = 0
+        for (s, eid), times in sorted(self.read_log.items()):
+            if s != sport:
+                continue
+            ts = sorted(times)
+            gaps = [b - a for a, b in zip(ts, ts[1:], strict=False)
+                    if any(lo <= a and b <= hi for lo, hi in list_led)]
+            if eid in self.joined.ever:
+                joined.extend(gaps)
+                if gaps:
+                    per_joined[str(eid)] = describe(gaps)
+            elif gaps:
+                others.extend(gaps)
+                other_matches += 1
+        return {"joined": describe(joined), "joined_per_match": per_joined, "others": describe(others),
+                "others_matches": other_matches}
 
     def summary(self, *, final: bool) -> Dict[str, Any]:
         with self._lock:
@@ -1808,6 +1921,9 @@ class Soak:
             all_open: List[List[Any]] = []
             sports: Dict[str, Any] = {}
             fallback_rows: List[Mapping[str, Any]] = []
+            pooled: Dict[str, List[float]] = {"joined": [], "others": []}
+            list_led_total = 0.0
+            list_reads_led = 0
             for sport, st in sorted(self.stats.items()):
                 opens = [list(iv) for iv in st.open_intervals]
                 if st.open_since is not None:
@@ -1831,6 +1947,19 @@ class Soak:
                         "longest_without_ping_or_pong_s": round(longest_without(signs, s, e), 3),
                     })
                 fallback_rows.extend(st.fallback)
+                list_led = leader_intervals(st.leader, start, end, LEADER_POLL)
+                led_s = overlap(list_led, start, end)
+                led_lists = sum(1 for t in st.list_reads if any(lo <= t <= hi for lo, hi in list_led))
+                list_led_total += led_s
+                list_reads_led += led_lists
+                read_gaps = self._read_gaps(sport, list_led)
+                for (s_, eid), times in self.read_log.items():
+                    if s_ != sport:
+                        continue
+                    ts_ = sorted(times)
+                    bucket = "joined" if eid in self.joined.ever else "others"
+                    pooled[bucket].extend(b - a for a, b in zip(ts_, ts_[1:], strict=False)
+                                          if any(lo <= a and b <= hi for lo, hi in list_led))
                 sports[sport] = {
                     "frames": len(st.frames), "status_frames": st.status_frames, "score_frames": st.score_frames,
                     "finish_frames": st.finish_frames, "distinct_events": len(st.events),
@@ -1847,6 +1976,10 @@ class Soak:
                     "downtime_windows": self._windows(opens, start, end),
                     "longest_msg_gaps_while_live": gaps,
                     "fallback": self._fallback_summary(st.fallback),
+                    "read_gaps_while_list_leads_s": read_gaps,
+                    "discovery_while_list_leads": {
+                        "minutes": round(led_s / 60, 2), "list_reads": led_lists,
+                        "list_reads_per_minute": round(led_lists / (led_s / 60), 3) if led_s else None},
                 }
             conn_windows = self._windows(all_open, start, end)
             reads = self.credential_reads
@@ -1856,9 +1989,12 @@ class Soak:
                      "longest_msg_gaps_while_live: intervals with no MSG frame of that sport while its last live list "
                      "showed more than 0 matches. leader_push_share 1.0 means the arbiter judged push healthy for the "
                      f"whole gap (a PING or PONG within {SILENCE_SECONDS:.0f} s keeps it healthy without frames).",
-                     "fallback: while polling leads, every live match's /event/{id} at least once a minute within "
-                     f"{self.fallback.cap} reads a minute (rate x (1 - list share)); a match not read within its minute "
-                     "is skipped and counted, never carried over.",
+                     "fallback: while the list leads, joined matches are read every 60 s, other live matches as "
+                     f"the rate allows (longest unread first), within {self.fallback.cap} reads a minute (rate x (1 - "
+                     "list share)); a read that does not fit its minute is skipped and counted, never carried over. "
+                     "Joined = --joined-ids plus --joined-random-soccer random live football matches (refreshed when "
+                     "they finish). Read gaps count two consecutive reads of a match (any path) inside one interval "
+                     "in which the list leads.",
                      "RSS: bridge = the main bridge's browser (REST reads), live = the live profile's browser (page "
                      "source pages or the direct credential reader), other = other children (Playwright driver)."]
             notes.insert(0, CLIENT_NOTE if self.source == "direct" else PAGE_NOTE)
@@ -1868,6 +2004,14 @@ class Soak:
                 "sports": list(self.sports), "args": self.args_note, "notes": notes,
                 "sports_detail": sports,
                 "fallback": self._fallback_summary(fallback_rows),
+                "read_gaps_while_list_leads_s": {"joined": describe(pooled["joined"]),
+                                                 "others": describe(pooled["others"])},
+                "discovery_while_list_leads": {
+                    "sport_minutes": round(list_led_total / 60, 2), "list_reads": list_reads_led,
+                    "list_reads_per_sport_minute": round(list_reads_led / (list_led_total / 60), 3)
+                    if list_led_total else None},
+                "joined": {"fixed": len(self.joined.fixed), "random_n": self.joined.random_n,
+                           "ever": len(self.joined.ever), "now": len(self.joined.ids())},
                 "connection": {
                     "sessions": len(self.sessions),
                     "opens": self.connection.opens if self.connection is not None else None,
@@ -1893,6 +2037,8 @@ class Soak:
                                      "to": s.get("to"), "reason": s.get("reason")} for s in self.switches],
                 "blocked": [{"at": utc(b["ts"]), "type": b["type"]} for b in self.blocked],
                 "requests": {"used": self.client.used, "budget": self.client.budget, "refused": self.client.refused,
+                             "rate": self.rate, "list_share": self.list_share,
+                             "achieved_per_second": round(self.client.used / duration, 4),
                              "by_who_kind_status": dict(sorted(self.requests.items())),
                              "latency_s": {k: describe(v) for k, v in sorted(self.request_latency.items())},
                              "pending_event_reads": self.reads.pending(), "dropped_overflow": self.reads.overflow},
@@ -1917,11 +2063,24 @@ def _sports(value: str) -> List[str]:
     return list(dict.fromkeys(sports))
 
 
-def _ids(value: str) -> List[int]:
+def parse_ids(text: str) -> List[int]:
+    """Bir id dosyasının metni: boşluk, virgül ya da satırla ayrılmış sayılar; `#`'tan sonrası yorum."""
+    ids: List[int] = []
+    for line in text.splitlines():
+        for token in re.split(r"[\s,;]+", line.split("#", 1)[0]):
+            if token:
+                if not token.isdigit():
+                    raise ValueError(f"not an event id: {token[:20]!r}")
+                ids.append(int(token))
+    return list(dict.fromkeys(ids))
+
+
+def _joined_file(path: str) -> List[int]:
     try:
-        return [int(v) for v in value.split(",") if v.strip()]
-    except ValueError:
-        raise argparse.ArgumentTypeError("a comma-separated list of event ids")
+        with open(path, encoding="utf-8") as f:
+            return parse_ids(f.read())
+    except (OSError, ValueError) as e:
+        raise argparse.ArgumentTypeError(f"--joined-ids: {e}")
 
 
 def _share(value: str) -> float:
@@ -1944,8 +2103,11 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--rate", type=float, default=DEFAULT_RATE, help="REST reads per second (default 1)")
     p.add_argument("--list-share", type=_share, default=DEFAULT_LIST_SHARE,
                    help="share of the rate kept for discovery and list reads while polling leads (default 0.5)")
-    p.add_argument("--priority-ids", type=_ids, default=[], metavar="IDS",
-                   help="event ids read first by the per-minute fallback (default none)")
+    p.add_argument("--joined-ids", type=_joined_file, default=[], metavar="FILE",
+                   help="file of event ids treated as joined (read every 60 s while the list leads)")
+    p.add_argument("--joined-random-soccer", type=int, default=DEFAULT_JOINED_RANDOM, metavar="N",
+                   help=f"also join N random live football matches, refreshed when they finish "
+                        f"(default {DEFAULT_JOINED_RANDOM}; 0 turns it off)")
     p.add_argument("--kill-every", type=float, default=None, metavar="MINUTES",
                    help="force-close the push connection (direct) or the pages (page) every MINUTES")
     p.add_argument("--kill-at", type=float, default=None, metavar="MINUTES",
@@ -1984,12 +2146,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     os.environ["SOFASCORE_STORAGE__DATA_DIR"] = data_dir
     os.makedirs(data_dir, exist_ok=True)
     note = {"source": args.source, "hours": args.hours, "max_requests": budget, "rate": args.rate,
-            "list_share": args.list_share, "priority_ids": len(args.priority_ids),
+            "list_share": args.list_share, "joined_ids": len(args.joined_ids),
+            "joined_random_soccer": args.joined_random_soccer,
             "kill_every_min": args.kill_every, "kill_at_min": args.kill_at,
             "compare_credential_sports": args.compare_credential_sports, "poll_interval_s": args.poll_interval}
     soak = Soak(out_dir, args.sports, run_id=run_id, data_dir=data_dir, budget=budget, source=args.source,
                 hours=args.hours, kill_every=args.kill_every, kill_at=args.kill_at, poll_interval=args.poll_interval,
-                rate=args.rate, list_share=args.list_share, priority_ids=args.priority_ids,
+                rate=args.rate, list_share=args.list_share, joined_ids=args.joined_ids,
+                joined_random=args.joined_random_soccer,
                 compare_sports=args.compare_credential_sports, args_note=note)
 
     def on_signal(signum: int, frame: Any) -> None:

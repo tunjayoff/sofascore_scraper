@@ -159,6 +159,7 @@ def soaks() -> Iterator[Any]:
             options["reader"] = reader or FakeReader(fake_credential(srv.url, "soak"))
             options["connection_options"] = conn
         options.setdefault("fallback_window", 60.0)
+        options.setdefault("joined_random", 0)
         soak = soak_live.Soak(
             str(run), list(sports), run_id="t-run", data_dir=str(data_dir), budget=budget, base_fetch=api,
             gate=lambda: None, resource_seconds=0.2, reading_resource_seconds=0.05, event_retry_seconds=0.2,
@@ -369,40 +370,87 @@ def test_the_kill_schedule() -> None:
     assert soak_live.KillSchedule().due(10 ** 6) is None
 
 
-# --- yoklama öndeyken dakikalık okumalar ----------------------------------------------------------------------
+# --- liste öndeyken: joined maçlar 60 sn'de bir, diğerleri hız elverdikçe -----------------------------------
 
 
-def test_while_polling_leads_every_live_match_is_read_each_minute_within_its_share(
+def minute_rows(run: Path) -> List[Dict[str, Any]]:
+    return [r for r in rows(run, "fallback") if r.get("event") == "minute"]
+
+
+def test_while_the_list_leads_joined_matches_are_read_every_minute_and_others_as_the_rate_allows(
         tmp_path: Path, data_dir: Path, fast_service: None, soaks: Any) -> None:
     matches = {eid: first_half(eid) for eid in (601, 602, 603)}
     api = FakeApi({"football": list(matches.values())}, dict(matches))
-    # push hiç bağlanmaz (kimlik bilgisi yok): yoklama hep önde. Dakika 1 sn, hız 4/sn, listeye pay 0,5 → dakikada 2
+    # push hiç bağlanmaz (kimlik bilgisi yok): liste hep önde. Dakika 1 sn, hız 4/sn, listeye pay 0,5 → dakikada 2
     soak, run = soaks(tmp_path, data_dir, None, api, reader=FakeReader(), fallback_window=1.0, rate=4.0,
-                      list_share=0.5, priority_ids=[603], poll_interval=1.0)
+                      list_share=0.5, joined_ids=[603], poll_interval=1.0)
     soak.start()
-    wait_for(lambda: len([r for r in rows(run, "fallback") if r["live"]]) >= 3, seconds=10)
+    wait_for(lambda: len([r for r in minute_rows(run) if r["live"] and not r["partial"]]) >= 4, seconds=15)
     soak.stop()
 
-    minutes = [r for r in rows(run, "fallback") if r["live"] and not r["partial"]]
-    assert all((r["live"], r["reads_made"], r["covered"], r["skipped"], r["cap"]) == (3, 2, 2, 1, 2)
-               for r in minutes)
-    assert all(r["coverage"] == pytest.approx(2 / 3, abs=1e-3) and r["cut"] == "share" for r in minutes)
-    fallback_reads = reads_by(run, "fallback")
-    by_minute: Dict[float, List[int]] = {}
-    for r in fallback_reads:
-        by_minute.setdefault(r["minute"], []).append(r["event_id"])
-    full = [ids for m, ids in sorted(by_minute.items()) if any(x["minute"] == m for x in minutes)]
-    assert all(ids[0] == 603 for ids in full)  # öncelikli id önce
-    # sonra en uzun süredir okunmayan: 601 ile 602 sırayla
-    assert [ids[1] for ids in full[:3]] in ([601, 602, 601], [602, 601, 602])
+    minutes = [r for r in minute_rows(run) if r["live"] and not r["partial"]]
+    assert all((r["live"], r["joined_live"], r["cap"], r["cut"]) == (3, 1, 2, "share") for r in minutes)
+    assert all(r["reads"] == {"joined": 1, "listed": 1, "other": 0} for r in minutes)
+    assert all(r["skipped"] == {"joined": 0, "listed": 1} for r in minutes)
+    by_minute: Dict[float, List[Any]] = {}
+    for r in reads_by(run, "fallback"):
+        by_minute.setdefault(r["minute"], []).append((r["reason"], r["event_id"]))
+    full = [by_minute[m["minute"]] for m in minutes]
+    assert all(reads[0] == ("joined", 603) for reads in full)  # acil: joined önce
+    # sonra birikmiş iş, en uzun süredir okunmayan önce: 601 ile 602 sırayla
+    listed = [reads[1][1] for reads in full[:4]]
+    assert listed in ([601, 602, 601, 602], [602, 601, 602, 601]) and all(r[1][0] == "listed" for r in full)
     assert reads_by(run, "recorder") == []  # liste değişmedi: tetiklenen okuma yok
 
     s = summary(run)
     fb = s["sports_detail"]["football"]["fallback"]
-    assert fb["skip_rate"] == pytest.approx(1 / 3, abs=1e-3) and fb["skipped_total"] == len(minutes)
-    assert fb["worst_minute"]["coverage"] == pytest.approx(2 / 3, abs=1e-3) and fb["worst_minute"]["skipped"] == 1
+    assert fb["skip_rate"]["joined"] == 0.0 and fb["skip_rate"]["listed"] == pytest.approx(0.5, abs=1e-3)
+    assert fb["skipped"] == {"joined": 0, "listed": len(minutes)} and fb["worst_minute"]["skipped"]["listed"] == 1
     assert s["fallback"]["skip_rate"] == fb["skip_rate"]
+    gaps = s["sports_detail"]["football"]["read_gaps_while_list_leads_s"]
+    assert gaps["joined"]["n"] >= 3 and gaps["joined"]["median"] == pytest.approx(1.0, abs=0.3)
+    assert gaps["others"]["median"] == pytest.approx(2.0, abs=0.4) and gaps["others_matches"] == 2
+    assert list(gaps["joined_per_match"]) == ["603"]
+    assert s["read_gaps_while_list_leads_s"]["joined"]["n"] == gaps["joined"]["n"]
+    discovery = s["sports_detail"]["football"]["discovery_while_list_leads"]
+    assert discovery["list_reads"] >= 3 and discovery["list_reads_per_minute"] > 0
     assert s["sports_detail"]["football"]["fallback_time_share"] == 1.0
+    assert s["requests"]["achieved_per_second"] > 0 and s["joined"]["fixed"] == 1
+
+
+def test_random_live_football_matches_are_joined_and_replaced_when_they_finish(
+        tmp_path: Path, data_dir: Path, fast_service: None, soaks: Any) -> None:
+    matches = {eid: first_half(eid) for eid in (601, 602, 603)}
+    api = FakeApi({"football": list(matches.values())}, dict(matches))
+    soak, run = soaks(tmp_path, data_dir, None, api, reader=FakeReader(), fallback_window=0.5, rate=20.0,
+                      joined_random=2, joined_rng=__import__("random").Random(7), poll_interval=1.0)
+    soak.start()
+    wait_for(lambda: len(soak.joined.ids()) == 2)
+    first = set(soak.joined.ids())
+    gone = min(first)
+    api.live["football"] = [m for eid, m in matches.items() if eid != gone]  # biri bitti: listeden düştü
+    wait_for(lambda: gone not in soak.joined.ids() and len(soak.joined.ids()) == 2, seconds=5)
+    wait_for(lambda: any(r["joined_live"] == 2 and r["live"] == 2 for r in minute_rows(run)), seconds=5)
+    soak.stop()
+    assert soak.joined.ids() == frozenset(set(matches) - {gone})
+    changes = [(r["event"], r["event_id"]) for r in rows(run, "fallback") if r["event"].startswith("joined_")]
+    assert changes[:2] == [("joined_join", e) for e in sorted(first)]
+    assert ("joined_leave", gone) in changes and len([c for c in changes if c[0] == "joined_join"]) == 3
+
+
+def test_the_joined_set() -> None:
+    import random
+
+    js = soak_live.JoinedSet([99], 2, rng=random.Random(1))
+    assert js.refresh("tennis", [1, 2, 3]) == [] and js.ids() == {99}
+    joined = js.refresh("football", [1, 2, 3, 99])
+    assert [c for c, _ in joined] == ["join", "join"] and 99 not in {e for _, e in joined}
+    picks = set(js.ids()) - {99}
+    keep = min(picks)
+    changes = js.refresh("football", [keep, 5, 6])
+    assert ("leave", max(picks)) in changes and len(js.ids() - {99}) == 2 and keep in js.ids()
+    assert js.ever >= picks | {99}
+    assert soak_live.JoinedSet([], 0).refresh("football", [1]) == []
 
 
 def test_while_push_leads_there_are_no_minute_reads(
@@ -416,19 +464,20 @@ def test_while_push_leads_there_are_no_minute_reads(
     reads_then = len(reads_by(run, "fallback"))
     time.sleep(1.2)
     soak.stop()
-    later = [r for r in rows(run, "fallback") if r["minute"] > soak.switches[0]["ts"] + 0.5]
+    later = [r for r in minute_rows(run) if r["minute"] > soak.switches[0]["ts"] + 0.5]
     assert later == [] and len(reads_by(run, "fallback")) == reads_then
 
 
-def test_the_fallback_share_and_ranking() -> None:
+def test_the_fallback_share_and_queue_order() -> None:
     fb = soak_live.FallbackReads.__new__(soak_live.FallbackReads)
-    soak_live.FallbackReads.__init__(fb, SimpleNamespace(), rate=1.0, share=0.5, window=60.0, priority=[7])
-    assert fb.cap == 30 and fb.priority == frozenset({7})
-    soak = SimpleNamespace(last_read={("football", 1): 10.0, ("football", 2): 5.0},
-                           near_end=lambda sport, eid: eid == 3)
-    fb._soak = soak
-    ranked = sorted([("football", e) for e in (1, 2, 3, 4, 7)], key=lambda c: fb._rank(*c))
-    assert [e for _, e in ranked] == [7, 3, 4, 2, 1]  # öncelik, bitişe yakın, hiç okunmamış, en eski okuma
+    soak_live.FallbackReads.__init__(fb, SimpleNamespace(), rate=1.0, share=0.5, window=60.0)
+    assert fb.cap == 30
+    fb._soak = SimpleNamespace(last_read={("football", 1): 10.0, ("football", 2): 5.0, ("football", 7): 3.0,
+                                          ("football", 8): 1.0})
+    order = fb.queue(["football"], {"football": [1, 2, 3, 7, 8]}, frozenset({7, 8, 3}))
+    # joined önce (hiç okunmamış, sonra en eski), sonra listed (en uzun süredir okunmayan önce)
+    assert order == [("joined", "football", 3), ("joined", "football", 8), ("joined", "football", 7),
+                     ("listed", "football", 2), ("listed", "football", 1)]
 
 
 # --- bütçe ------------------------------------------------------------------------------------------------------
@@ -622,14 +671,25 @@ def test_a_used_run_id_is_refused_before_anything_starts(tmp_path: Path, capsys:
 
 def test_the_options_parse() -> None:
     args = soak_live._parser().parse_args(["--sports", "football, tennis", "--kill-every", "40", "--kill-at", "5",
-                                           "--compare-credential-sports", "--priority-ids", "1,2", "--rate", "0.8",
-                                           "--list-share", "0.25"])
+                                           "--compare-credential-sports", "--rate", "0.8", "--list-share", "0.25",
+                                           "--joined-random-soccer", "5"])
     assert args.sports == ["football", "tennis"] and args.kill_every == 40 and args.kill_at == 5
     assert args.compare_credential_sports and args.max_requests is None and args.hours == soak_live.DEFAULT_HOURS
-    assert args.priority_ids == [1, 2] and args.rate == 0.8 and args.list_share == 0.25 and args.source == "direct"
-    for bad in (["--sports", "foot ball"], ["--list-share", "1"], ["--source", "auto"], ["--priority-ids", "x"]):
+    assert args.joined_ids == [] and args.joined_random_soccer == 5 and args.rate == 0.8 and args.list_share == 0.25
+    assert args.source == "direct" and soak_live._parser().parse_args([]).joined_random_soccer == 20
+    for bad in (["--sports", "foot ball"], ["--list-share", "1"], ["--source", "auto"],
+                ["--joined-ids", "/nonexistent/ids.txt"]):
         with pytest.raises(SystemExit):
             soak_live._parser().parse_args(bad)
 
 
 assert conftest  # sınır denetimi ve kancalar conftest'te kurulur
+
+
+def test_the_joined_ids_file(tmp_path: Path) -> None:
+    path = tmp_path / "ids.txt"
+    path.write_text("# c fixtures\n17124861, 16947598\n17124861 15453137  # again\n", encoding="utf-8")
+    assert soak_live._parser().parse_args(["--joined-ids", str(path)]).joined_ids == [17124861, 16947598, 15453137]
+    path.write_text("12 abc\n", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        soak_live._parser().parse_args(["--joined-ids", str(path)])
