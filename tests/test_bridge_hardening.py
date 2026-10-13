@@ -184,3 +184,56 @@ def test_exit_closes_every_bridge_with_a_browser_and_creates_none(tmp_path, monk
 def test_exit_without_a_running_loop_does_nothing(monkeypatch):
     monkeypatch.setattr(cs, "_loop", None)
     cs._cleanup()
+
+
+# --- A1: çözüm sayaçları (c: 71c3fad, e8be49b, 19991ad) ------------------------------------------------
+
+
+def _solver(tmp_path, **kw: Any) -> cs.BrowserBridge:
+    b = _bridge(tmp_path, **kw)
+    b.ensure_ready = AsyncMock()
+    return b
+
+
+def test_solves_and_their_failures_are_counted_and_published(tmp_path, caplog):
+    from sofascore_scraper import bridge_health, diagnostics
+
+    b = _solver(tmp_path)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    with caplog.at_level("WARNING"):
+        assert _run(b._solve_challenge()) is None
+        assert _run(b._solve_challenge()) is None
+    assert (b.solves, b.solve_failures, b.consecutive_solve_failures) == (2, 2, 2)
+    assert "(2 in a row)" in caplog.text
+    assert bridge_health.solver()["solves"] == 2
+    assert bridge_health.solver()["consecutive_solve_failures"] == 2
+    b._solve_on_captcha_page = AsyncMock(return_value=_jwt(time.time() + 3600))  # sayfa yok: yoklanmaz
+    assert _run(b._solve_challenge()) is not None
+    assert (b.solves, b.solve_failures, b.consecutive_solve_failures) == (3, 2, 0)
+    solver = diagnostics._bridge()["solver"]
+    assert (solver["solves"], solver["solve_failures"], solver["consecutive_solve_failures"]) == (3, 2, 0)
+    # Durum görüntüsünün alanları değişmez (/health, /api/v1/status)
+    assert "solver" not in bridge_health.snapshot() and "solves" not in bridge_health.public_snapshot()
+
+
+def test_a_live_sources_bridge_does_not_publish_its_solves(tmp_path):
+    from sofascore_scraper import bridge_health
+
+    b = _solver(tmp_path, report_health=False)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    assert _run(b._solve_challenge()) is None
+    assert b.solves == 1 and bridge_health.solver()["solves"] == 0
+
+
+def test_a_launch_solve_is_counted_as_any(tmp_path, monkeypatch, real_launch):
+    _fake_session(monkeypatch, [[], [], [], [], []])
+    b = _bridge(tmp_path)
+    b._solve_on_captcha_page = AsyncMock(return_value=None)
+    _run(b.ensure_ready())
+    assert (b.solves, b.solve_failures, b.consecutive_solve_failures) == (1, 1, 1)
+
+
+def test_a_bridge_made_without_init_has_the_counters():
+    b = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    status = b.solver_status()
+    assert (status["solves"], status["solve_failures"], status["consecutive_solve_failures"]) == (0, 0, 0)

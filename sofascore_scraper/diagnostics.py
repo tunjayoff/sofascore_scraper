@@ -585,7 +585,10 @@ def _jobs(found_hosts: Optional[List[Any]] = None) -> Dict[str, Any]:
 def _bridge() -> Dict[str, Any]:
     from sofascore_scraper import bridge_health
 
-    return bridge_health.snapshot()
+    snap = bridge_health.snapshot()
+    # Turnstile çözümlerinin sayaçları (S1): "SofaScore reddediyor" ile "çözüm başarısız oluyor" ayrılır
+    snap["solver"] = bridge_health.solver()
+    return snap
 
 
 def _throttle() -> Dict[str, Any]:

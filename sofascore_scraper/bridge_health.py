@@ -326,6 +326,25 @@ class ConnectionState:
 _health = BridgeHealth()
 _connection = ConnectionState()
 
+# İndirmelerin köprüsünün çözüm sayaçları (S1, c'nin A1'i): köprü her çözümde yazar, tanılama paketi okur. Durum
+# görüntüsünden (`snapshot`) ayrı tutulur: /health ve /api/v1/status'un alanları değişmez.
+_solver_lock = threading.Lock()
+_solver: Dict[str, Any] = {}
+
+
+def update_solver(fields: Mapping[str, Any]) -> None:
+    """Köprünün çözüm sayaçlarını (ve sonraki düzeltmelerin durum alanlarını) yazar."""
+    with _solver_lock:
+        _solver.update(fields)
+
+
+def solver() -> Dict[str, Any]:
+    """Çözüm sayaçlarının kopyası; köprü henüz çözüm yapmadıysa sıfırlar."""
+    with _solver_lock:
+        out: Dict[str, Any] = {"solves": 0, "solve_failures": 0, "consecutive_solve_failures": 0}
+        out.update(_solver)
+        return out
+
 
 def record_answer() -> None:
     """SofaScore bir isteğe yanıt verdi (istek katmanından; FX-19)."""
@@ -400,6 +419,8 @@ def reset(clock: Callable[[], float] = time.time) -> None:
     global _health, _connection
     _health = BridgeHealth(clock=clock)
     _connection = ConnectionState(clock=clock)
+    with _solver_lock:
+        _solver.clear()
 
 
 # --- CLI ------------------------------------------------------------------------------------

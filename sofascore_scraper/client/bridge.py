@@ -264,6 +264,18 @@ class BrowserBridge:
 
     _instance: Optional["BrowserBridge"] = None
 
+    # Sınıf düzeyindeki varsayılanlar: `__new__` ile kurulan (testlerin) köprüleri de her alanı bulur
+    home_url: Optional[str] = None
+    report_health = True
+    sandbox: Optional[bool] = None
+    session: Any = None
+    context: Any = None
+    page: Any = None
+    # Turnstile çözümleri (açılışta ve 403'te), durum için (c'nin A1'i): toplam, başarısız ve art arda başarısız
+    solves = 0
+    solve_failures = 0
+    consecutive_solve_failures = 0
+
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None, *,
                  report_health: bool = True, sandbox: Optional[bool] = None):
         """
@@ -398,6 +410,7 @@ class BrowserBridge:
         solved_now = None
         if not await self._token_from_context():
             solved_now = await self._solve_on_captcha_page()
+            self._count_solve(solved_now is not None)  # açılışın çözümü de bir çözümdür
 
         self.page = await self.context.new_page()
         try:
@@ -538,6 +551,7 @@ class BrowserBridge:
                 self._set_token(token)
             if token and not await self._api_unlocked():
                 token = None
+        self._count_solve(bool(token))
         if token:
             self._set_token(token)
             self._solve_failed_at = 0.0
@@ -545,9 +559,36 @@ class BrowserBridge:
             return token
         self._solve_failed_at = time.time()
         logger.warning(
-            f"The Turnstile challenge could not be solved; not trying again for {int(_SOLVE_RETRY_AFTER)} s."
+            f"The Turnstile challenge could not be solved ({self.consecutive_solve_failures} in a row); "
+            f"not trying again for {int(_SOLVE_RETRY_AFTER)} s."
         )
         return None
+
+    def _count_solve(self, solved: bool) -> None:
+        """
+        Bir çözümü sayar, açılışınkini de (c'nin A1'i; yalnızca gözlem: çözümün kendisi değişmez). Üretim benzeri
+        koşuda (c, 2026-10-01) her çözüm dakikalarca başarısız oldu ve bunu gösteren bir sayı yoktu.
+        """
+        self.solves += 1
+        if solved:
+            self.consecutive_solve_failures = 0
+        else:
+            self.solve_failures += 1
+            self.consecutive_solve_failures += 1
+        self._publish_solver()
+
+    def solver_status(self) -> Dict[str, Any]:
+        """Çözüm sayaçları (bridge_health.solver(), tanılama paketi)."""
+        return {
+            "solves": self.solves,
+            "solve_failures": self.solve_failures,
+            "consecutive_solve_failures": self.consecutive_solve_failures,
+        }
+
+    def _publish_solver(self) -> None:
+        """Sayaçlar süreç genelindeki köprü sağlığına yazılır (yalnızca indirmelerin köprüsü, `report_health`)."""
+        if self.report_health:
+            bridge_health.update_solver(self.solver_status())
 
     async def fetch_json(self, path_or_url: str) -> Optional[Any]:
         """
