@@ -486,3 +486,119 @@ def test_an_async_page_403_in_browser_first_ends_the_request(monkeypatch, fake_b
         with pytest.raises(APIError):
             asyncio.run(transport.make_api_request_async(session, "/event/1"))
     assert session.get.await_count == 0
+
+
+# --- B6: önce-tarayıcı bitince tek curl denemesi; taşıma hatası ve tarayıcının 404'ü pencereyi açar -------------
+# (c: e8d1986, 09b3830)
+
+
+def test_as_browser_first_lapses_one_request_tries_curl_and_the_others_stay_on_the_browser(monkeypatch, fake_bridge):
+    from unittest.mock import patch
+
+    _patched_curl(monkeypatch, _Resp(403, text=CHALLENGE), _Resp(403, text=CHALLENGE))
+    browser_urls = []
+    nested = []
+
+    def browser(url):
+        browser_urls.append(url)
+        n = len(browser_urls)
+        if n == 2:
+            # curl'ü deneyen istek dışarıdayken gelen istek tarayıcıda kalır
+            nested.append(transport._browser_first())
+            assert transport.make_api_request("/event/other") == {"a": 3}
+        return {"a": n}
+
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", side_effect=browser):
+        assert transport.make_api_request("/event/1") == {"a": 1}  # curl challenge → tarayıcı, pencere açılır
+        assert transport._curl_challenged
+        monkeypatch.setattr(transport, "_browser_first_until", 0.0)  # pencere bitti
+        assert transport.make_api_request("/event/2") == {"a": 2}  # tek istek curl'ü dener: yine challenge
+    assert nested == [True]
+    assert transport.cffi_requests.get.call_count == 2
+    assert browser_urls[-1].endswith("/event/other")
+    assert transport._browser_first() and not transport._curl_probe_out
+
+
+def test_any_other_curl_answer_ends_the_curl_probe_hold(monkeypatch, fake_bridge):
+    from unittest.mock import MagicMock, patch
+
+    _patched_curl(monkeypatch, _Resp(403, text=CHALLENGE), _Resp(200, {"curl": 1}))
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", MagicMock(return_value={"a": 1})):
+        transport.make_api_request("/event/1")
+        monkeypatch.setattr(transport, "_browser_first_until", 0.0)
+        assert transport.make_api_request("/event/2") == {"curl": 1}
+    assert not transport._curl_challenged and not transport._browser_first()
+
+
+def test_a_transport_error_opens_browser_first_when_the_browser_answered_lately(monkeypatch, fake_bridge):
+    import time as _time
+    from unittest.mock import MagicMock, patch
+
+    get = _patched_curl(monkeypatch, RuntimeError("curl: (28) Resolving timed out"))
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: {**_CFG, "max_retries": 3})
+    sleeps = []
+    monkeypatch.setattr(transport, "_sleep", sleeps.append)
+    monkeypatch.setattr(transport, "_browser_answered_at", _time.monotonic() - 60)
+    browser = MagicMock(return_value={"a": 1})
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", browser):
+        assert transport.make_api_request("/event/1") == {"a": 1}
+    assert get.call_count == 1 and browser.call_count == 1
+    assert sleeps == [0.0] or all(s == 0 for s in sleeps)  # geri çekilme yok (yalnızca başarı sonrası bekleme)
+    assert transport._browser_first() and transport._browser_first_transport
+    assert not transport._curl_challenged  # taşıma hatasının penceresi curl'ün challenge'ı hakkında bir şey söylemez
+
+
+def test_without_a_recent_browser_answer_a_transport_error_backs_off_as_before(monkeypatch, fake_bridge):
+    from unittest.mock import MagicMock, patch
+
+    get = _patched_curl(monkeypatch, RuntimeError("curl: (7) Failed to connect"), _Resp(200, {"a": 1}))
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: {**_CFG, "max_retries": 3})
+    sleeps = []
+    monkeypatch.setattr(transport, "_sleep", sleeps.append)
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", MagicMock(return_value=None)) as b:
+        assert transport.make_api_request("/event/1") == {"a": 1}
+    assert get.call_count == 2 and b.call_count == 0 and 3 in sleeps
+    assert not transport._browser_first()
+
+
+def test_a_browser_that_cannot_reach_sofascore_closes_a_transport_window(monkeypatch, fake_bridge):
+    import time as _time
+    from unittest.mock import MagicMock, patch
+
+    _patched_curl(monkeypatch, _Resp(200, {"curl": 1}))
+    monkeypatch.setattr(transport, "_browser_answered_at", _time.monotonic())
+    transport._mark_browser_first("curl cannot reach SofaScore", transport=True)
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser_sync", MagicMock(return_value=None)):
+        assert transport.make_api_request("/event/1") == {"curl": 1}
+    assert not transport._browser_first()
+
+
+def test_an_async_browser_404_after_curls_challenge_opens_browser_first(monkeypatch, fake_bridge):
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from sofascore_scraper.exceptions import ResourceNotFoundError
+
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: dict(_CFG))
+    monkeypatch.setattr(transport, "_get_proxy_config", lambda: (False, ""))
+    monkeypatch.setattr(transport.throttle, "reserve", lambda: 0.0)
+    session = MagicMock()
+    session.get = AsyncMock(return_value=_Resp(403, text=CHALLENGE))
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser", AsyncMock(return_value={"__404__": True})):
+        with pytest.raises(ResourceNotFoundError):
+            asyncio.run(transport.make_api_request_async(session, "/event/1/statistics"))
+    assert transport._browser_first()  # eskiden açmazdı: her sonraki okuma önce curl'ü denerdi
+
+
+def test_an_async_bridge_error_in_browser_first_falls_back_to_curl(monkeypatch, fake_bridge):
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    monkeypatch.setattr(transport, "_get_runtime_request_config", lambda: dict(_CFG))
+    monkeypatch.setattr(transport, "_get_proxy_config", lambda: (False, ""))
+    monkeypatch.setattr(transport.throttle, "reserve", lambda: 0.0)
+    monkeypatch.setattr(transport, "_browser_first_until", float("inf"))
+    session = MagicMock()
+    session.get = AsyncMock(return_value=_Resp(200, {"curl": 1}))
+    with patch("sofascore_scraper.client.bridge.fetch_api_via_browser", AsyncMock(side_effect=RuntimeError("x"))):
+        assert asyncio.run(transport.make_api_request_async(session, "/event/1")) == {"curl": 1}

@@ -272,20 +272,100 @@ def _parse_retry_after_seconds(retry_after: Optional[str], default_wait: int) ->
 # ---- Önce tarayıcı modu ----
 # curl isteği challenge'a takılıp tarayıcı köprüsü aynı isteği alabildiyse, bir süre boyunca
 # istekler doğrudan tarayıcıdan yapılır: her istekte önce reddedilecek bir curl isteği ve
-# ardından gelen bekleme olmasın. Süre dolunca curl yeniden denenir (engel kalkmış olabilir).
+# ardından gelen bekleme olmasın. Süre dolunca curl yeniden denenir (engel kalkmış olabilir): tek bir istekle,
+# ötekiler curl challenge'dan başka bir şey yanıtlayana kadar tarayıcıda kalır (S1-B6, _curl_probe).
 BROWSER_FIRST_SECONDS = 600.0
 _browser_first_until = 0.0
+# Pencereyi bir taşıma hatası açtı (S1-B6): tarayıcı da ulaşamazsa kapanır (_browser_unreachable)
+_browser_first_transport = False
+# curl challenge'a takıldı ve o zamandan beri başka bir şey yanıtlamadı: pencere bitince tek istek curl'ü dener
+_curl_challenged = False
+_curl_probe_out = False
+# Köprünün son 200/404'ü (time.monotonic)
+_browser_answered_at = -math.inf
 
 
 def _browser_first() -> bool:
-    return time.monotonic() < _browser_first_until
+    """
+    İstekler önce tarayıcıdan gider: pencere içinde, ya da challenge'ın açtığı bir pencere bittikten sonra bir istek
+    curl'ü denerken (_curl_probe).
+    """
+    if time.monotonic() < _browser_first_until:
+        return True
+    return _curl_challenged and _curl_probe_out
 
 
-def _mark_browser_first() -> None:
-    global _browser_first_until
-    if not _browser_first():
-        logger.info(f"curl is blocked; requests go through the browser for {int(BROWSER_FIRST_SECONDS)} s")
+def _mark_browser_first(why: str = "curl is blocked", *, transport: bool = False, challenged: bool = True) -> None:
+    """
+    BROWSER_FIRST_SECONDS boyunca önce tarayıcı: curl challenge'a takıldı (ve tarayıcı yanıtladı), ya da `transport`
+    ile curl SofaScore'a ulaşamadı (ve tarayıcı yakın zamanda yanıtladı); challenge'ın açtığı pencere challenge'ın
+    kalır. `challenged`: curl'ün kendisi challenge'a takıldı; pencere bitince tek okuma curl'ü dener (_curl_probe).
+    """
+    global _browser_first_until, _browser_first_transport, _curl_challenged
+    on = _browser_first()
+    if not on:
+        logger.info(f"{why}; requests go through the browser for {int(BROWSER_FIRST_SECONDS)} s")
+    _browser_first_transport = transport and (_browser_first_transport or not on)
     _browser_first_until = time.monotonic() + BROWSER_FIRST_SECONDS
+    if challenged and not transport:
+        _curl_challenged = True
+
+
+def _curl_probe(req: "_Request") -> None:
+    """
+    Challenge'ın açtığı önce-tarayıcı penceresi bitti ve curl o zamandan beri challenge'dan başka bir şey yanıtlamadı:
+    bu istek curl'ü dener (tek başına; o denerken ötekiler tarayıcıda kalır). curl'ün yine challenge'ı, tarayıcı
+    yanıtlarsa yeni bir pencere açar; curl'ün başka her yanıtı bunu bitirir. c'de 2026-10-02'ye kadar (4. koşu) pencere
+    bitince her istek önce curl'ü denerdi: 10 dakikada bir bir turun okumalarının her biri curl'ün 403'üne takılır ve
+    tarayıcının sırasını öbürlerinin arkasında beklerdi.
+    """
+    global _curl_probe_out
+    with _gate.lock:
+        if (_curl_challenged and not _curl_probe_out and not req.single
+                and time.monotonic() >= _browser_first_until):
+            _curl_probe_out = req.curl_probe = True
+    if req.curl_probe:
+        logger.debug("The browser-first window lapsed; one request tries curl")
+
+
+def _end_curl_probe(req: "_Request") -> None:
+    global _curl_probe_out
+    if req.curl_probe:
+        req.curl_probe = False
+        _curl_probe_out = False
+
+
+def _curl_answered(status_code: int, text: Any) -> None:
+    """curl challenge'dan başka bir şey yanıtladı: Cloudflare'i yeniden geçiyor."""
+    global _curl_challenged
+    if not _needs_solve(status_code, text if status_code == 403 else ""):
+        _curl_challenged = False
+
+
+def _browser_unreachable() -> None:
+    """
+    Tarayıcı hiç yanıt vermedi (başarısız oldu ya da sayfası istek atamadı): yanıtlayana kadar curl'ün taşıma hataları
+    için yeniden denenmez; o hataların açtığı önce-tarayıcı penceresi biter.
+    """
+    global _browser_answered_at, _browser_first_until
+    _browser_answered_at = -math.inf
+    if _browser_first() and _browser_first_transport:
+        _browser_first_until = 0.0
+        logger.info("The browser cannot reach SofaScore either; requests go through curl")
+
+
+def _browser_answered_recently() -> bool:
+    """Köprü son BROWSER_FIRST_SECONDS içinde yanıt verdi (200 ya da 404): çalışıyor, sayfası SofaScore'a ulaşıyor."""
+    return time.monotonic() - _browser_answered_at < BROWSER_FIRST_SECONDS
+
+
+def _browser_takes_turn(req: "_Request") -> bool:
+    """
+    Bir curl denemesi beklerken önce-tarayıcı başladı (başka bir istek challenge'a takıldı ya da SofaScore'a
+    ulaşamadı): tarayıcı sırayı alır, bu isteğe zaten başarısız olmadıysa. c'nin 3. koşusundaki DNS kesintisinde
+    birincinin arkasında sıraya giren okumalar curl'ün ad çözmelerine birbiri ardına devam etti.
+    """
+    return not req.browser_failed and not req.curl_probe and _browser_first()
 
 
 def _browser_result(data: Any, url: str) -> Optional[JsonResponse]:
@@ -349,6 +429,7 @@ class _Request:
     # Son denemenin taşıma hatası (ya da ağın kapısı tuttu), o zamandan beri yanıt yok (S1-A4)
     transport_error: Optional[str] = None
     browser_unreached: bool = False  # tarayıcı durum 0 verdi: SofaScore'a hiç ulaşamadı
+    curl_probe: bool = False  # önce-tarayıcı bittiğinde curl'ü deneyen tek istek (S1-B6)
 
 
 class _GateState:
@@ -403,8 +484,11 @@ def _publish_gate() -> None:
 
 
 def reset_gate() -> None:
-    """Kapıyı ve sayaçlarını sıfırlar (testler; süreç başına bir kez başlar)."""
+    """Kapıyı, sayaçlarını ve önce-tarayıcı modunun durumunu (pencerenin sonu hariç) sıfırlar (testler)."""
+    global _browser_first_transport, _curl_challenged, _curl_probe_out, _browser_answered_at
     _gate.reset()
+    _browser_first_transport = _curl_challenged = _curl_probe_out = False
+    _browser_answered_at = -math.inf
 
 
 def _solve_cooldown_left() -> float:
@@ -593,6 +677,7 @@ def _request_done(url: str, req: _Request, exc: Optional[BaseException]) -> None
     """İsteğin son hali kapıya ve sayaçlara: yanıt (200, 404) ya da yanıtsız bitiş."""
     if req.probe:
         _gate.probe_out = False
+    _end_curl_probe(req)
     if exc is None or isinstance(exc, ResourceNotFoundError):
         _answered()
         return
@@ -633,8 +718,82 @@ async def _browser_async(full_url: str, req: _Request) -> "Tuple[Any, Any]":
 
 def _browser_answered(seen: Any) -> None:
     """Tarayıcının sayfası SofaScore'a ulaştı (durum 0 değil): taşıma serisi biter (S1-A4)."""
-    if getattr(seen, "status", None):
+    global _browser_answered_at
+    status = getattr(seen, "status", None)
+    if status:
         _reached()
+    if status in (200, 404):
+        _browser_answered_at = time.monotonic()
+
+
+_NO_ANSWER = object()
+
+
+def _browser_attempt_done(url: str, req: _Request, data: Any, seen: Any, trace: RequestTrace) -> Any:
+    """
+    Köprü denemesinin sonucu: veri (ya da 404'ün işareti) döner; gönderilmemiş 403 ve çözümün yanıtlamadığı 403 isteği
+    bitirir (S1-B4, B5); yanıt yoksa _NO_ANSWER (curl sırası).
+    """
+    global _browser_answered_at
+    _browser_answered(seen)
+    if getattr(seen, "status", None) == 403 and not getattr(seen, "sent", True):
+        # Köprü göndermedi: çözüm soğuyor; sağlığa kendisi yazdı. Gönderilmemiş bir durum 0 (tarayıcı siteye
+        # ulaşamadı, S1-A4) tarayıcının başarısızlığıdır: aşağıda curl (kapı onu da ağın sayar)
+        raise _skip(url, "challenge", req, record=False)
+    if data is not None:
+        trace.bridge()
+        req.challenge_failed = False
+        _browser_answered_at = time.monotonic()
+        if req.single:
+            # Kapı tutulmadan önce curl challenge'a takılmıştı: yoklamadan sonraki okumalar da tarayıcıdan gider
+            _mark_browser_first(challenged=False)
+        return data
+    _browser_unanswered(req, seen)
+    if getattr(seen, "status", None) == 403:
+        # Sayfanın 403'ünü çözüm yanıtlamadı: curl de challenge'a takılırdı, istek biter (S1-B5)
+        raise _browser_forbidden(url, seen)
+    _browser_unreachable()
+    return _NO_ANSWER
+
+
+def _browser_attempt_sync(url: str, full_url: str, req: _Request, trace: RequestTrace, pause: float) -> Any:
+    """Köprüden bir deneme (sync): veri, ya da _NO_ANSWER (curl sırası). `pause`: başarıdan sonraki bekleme."""
+    raise_if_cancelled()
+    data, seen = _browser_sync(full_url, req)
+    data = _browser_attempt_done(url, req, data, seen, trace)
+    if data is _NO_ANSWER:
+        return data
+    try:
+        _sleep(pause)
+    except FetchCancelled:
+        # Yanıt elimizde: curl yolundaki gibi döndür, iptal bir sonraki istekte işlensin (FX-18)
+        pass
+    return _browser_result(data, url)
+
+
+async def _browser_attempt_async(
+    url: str, full_url: str, req: _Request, trace: RequestTrace, pause: float, semaphore: asyncio.Semaphore
+) -> Any:
+    """Köprüden bir deneme (async; istek semaforuyla): veri, ya da _NO_ANSWER (curl sırası)."""
+    raise_if_cancelled()
+    data, seen = None, None
+    try:
+        async with semaphore:
+            # Semafor beklenirken iş durdurulmuş olabilir (curl yoluyla aynı kural)
+            raise_if_cancelled()
+            data, seen = await _browser_async(full_url, req)
+    except Exception as e:
+        logger.debug(f"Browser bridge error: {e!r}")
+    data = _browser_attempt_done(url, req, data, seen, trace)
+    if data is _NO_ANSWER:
+        return data
+    result = _browser_result(data, url)
+    try:
+        await _asleep(pause)
+    except FetchCancelled:
+        # Yanıt elimizde: curl yolundaki gibi döndür, iptal bir sonraki istekte işlensin (FX-18, plan bölüm 15 satır 91)
+        pass
+    return result
 
 
 def _browser_unanswered(req: _Request, seen: Any) -> None:
@@ -771,28 +930,12 @@ def _request_sync_body(
     use_proxy, proxy_url = _get_proxy_config()
     full_url = _full_url(url)
 
-    if _browser_first() or req.single:
+    _curl_probe(req)
+    if (_browser_first() and not req.curl_probe) or req.single:
         # Kapının yoklaması sayfası çözen tarayıcıdan gider: tek istek (c'de 2026-10-02'ye kadar 7'ye kadar)
-        raise_if_cancelled()
-        data, seen = _browser_sync(full_url, req)
-        _browser_answered(seen)
-        if seen.status == 403 and not seen.sent:
-            # Köprü göndermedi: çözüm soğuyor; sağlığa kendisi yazdı. Gönderilmemiş bir durum 0 (tarayıcı siteye
-            # ulaşamadı, S1-A4) tarayıcının başarısızlığıdır: aşağıda curl (kapı onu da ağın sayar)
-            raise _skip(url, "challenge", req, record=False)
-        if data is not None:
-            trace.bridge()
-            req.challenge_failed = False
-            try:
-                _sleep(wait_time_min + random.uniform(0, wait_time_max))
-            except FetchCancelled:
-                # Yanıt elimizde: curl yolundaki gibi döndür, iptal bir sonraki istekte işlensin (FX-18)
-                pass
-            return _browser_result(data, url)
-        _browser_unanswered(req, seen)
-        if seen.status == 403:
-            # Sayfanın 403'ünü çözüm yanıtlamadı: curl de challenge'a takılırdı, istek biter (S1-B5)
-            raise _browser_forbidden(url, seen)
+        got = _browser_attempt_sync(url, full_url, req, trace, wait_time_min + random.uniform(0, wait_time_max))
+        if got is not _NO_ANSWER:
+            return cast(JsonResponse, got)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene (yoklama: tek deneme)
 
     attempts = 1 if req.single else max_retries
@@ -808,6 +951,12 @@ def _request_sync_body(
         breaker.check(url)  # devre açıksa istek gönderilmez, ortak bütçeden sıra ayrılmaz
         trace.attempt()
         last_attempt = attempt == attempts - 1
+        if _browser_takes_turn(req):
+            # Bu deneme beklerken önce-tarayıcı başladı: tarayıcı sırayı alır (S1-B6)
+            got = _browser_attempt_sync(url, full_url, req, trace, wait_time_min + random.uniform(0, wait_time_max))
+            if got is not _NO_ANSWER:
+                return cast(JsonResponse, got)
+            trace.attempt()
         try:
             logger.debug(f"API request ({attempt+1}/{max_retries}): {url}")
 
@@ -829,6 +978,7 @@ def _request_sync_body(
             trace.curl(response.status_code)
             _reached()
             req.transport_error = None
+            _curl_answered(response.status_code, response.text if response.status_code == 403 else "")
 
             if response.status_code in (429, 503):
                 if last_attempt:
@@ -854,6 +1004,7 @@ def _request_sync_body(
                         browser_data, seen = _browser_sync(full_url, req)
                         _browser_answered(seen)
                         if browser_data is not None:
+                            # Tarayıcının curl'ün challenge'ından sonraki her yanıtı (404 de) pencereyi açar (S1-B6)
                             trace.bridge()
                             _mark_browser_first()
                             logger.debug("Fetched through the browser bridge")
@@ -872,6 +1023,8 @@ def _request_sync_body(
                         req.challenge_failed = False
                         return cast(JsonResponse, browser_data)
                     _challenge_unanswered(req, seen)
+                    if getattr(seen, "status", None) in (None, 0):
+                        _browser_unreachable()
                     if _unsolvable_browser_403(seen):
                         # Sayfanın hiçbir çözümün yanıtlamadığı 403'ü: curl yine challenge'a, tarayıcı bu 403'e
                         # takılırdı; istek biter (S1-B5)
@@ -924,12 +1077,20 @@ def _request_sync_body(
             return cast(JsonResponse, data)
 
         except Exception as e:
-            if not isinstance(e, DataParsingError):
+            transport_error = not isinstance(e, DataParsingError)
+            if transport_error:
                 req.transport_error = f"{type(e).__name__}: {e}"[:200]
+                # curl hiç ulaşamıyor: challenge'ın sınaması değil, tarayıcı bu isteğin sonraki denemesini alabilir
+                _end_curl_probe(req)
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
                 logger.error(f"Proxy or connection error: {str(e)} (proxy {'on' if use_proxy else 'off'})")
             else:
                 logger.error(f"Request error: {str(e)}")
+            if transport_error and not last_attempt and not req.browser_failed and _browser_answered_recently():
+                # Tarayıcı yakın zamanda yanıt verdi: sayfası SofaScore'a ulaşabilir (kendi bağlantısı ve ad çözmesi).
+                # Bu isteğin sonraki denemesini geri çekilmeden o alır (_browser_takes_turn), ötekilerinkini de (S1-B6)
+                _mark_browser_first("curl cannot reach SofaScore", transport=True)
+                continue
             if last_attempt:
                 logger.error(f"All attempts failed: {url}")
                 if isinstance(e, DataParsingError):
@@ -1032,40 +1193,13 @@ async def _request_async_body(
     full_url = _full_url(url)
     semaphore = _request_semaphore()
 
-    if _browser_first() or req.single:
+    _curl_probe(req)
+    if (_browser_first() and not req.curl_probe) or req.single:
         # Kapının yoklaması sayfası çözen tarayıcıdan gider: tek istek
-        raise_if_cancelled()
-        browser_data = None
-        seen: Any = None
-        try:
-            async with semaphore:
-                # Semafor beklenirken iş durdurulmuş olabilir (aşağıdaki curl yoluyla aynı kural)
-                raise_if_cancelled()
-                browser_data, seen = await _browser_async(full_url, req)
-        except Exception as e:
-            logger.debug(f"Browser bridge error: {e!r}")
-        _browser_answered(seen)
-        if seen is not None and seen.status == 403 and not seen.sent:
-            # Köprü göndermedi: çözüm soğuyor; sağlığa kendisi yazdı. Gönderilmemiş bir durum 0 (tarayıcı siteye
-            # ulaşamadı, S1-A4) tarayıcının başarısızlığıdır: aşağıda curl (kapı onu da ağın sayar)
-            raise _skip(url, "challenge", req, record=False)
-        if browser_data is not None:
-            trace.bridge()
-            req.challenge_failed = False
-        if isinstance(browser_data, dict) and browser_data.get("__404__"):
-            raise ResourceNotFoundError(f"Not found: {url}")
-        if browser_data is not None:
-            try:
-                await _asleep(wait_time_min + random.uniform(0, wait_time_max))
-            except FetchCancelled:
-                # Yanıt elimizde: curl yolundaki gibi döndür, iptal bir sonraki istekte işlensin
-                # (FX-18, plan bölüm 15 satır 91)
-                pass
-            return cast(JsonResponse, browser_data)
-        _browser_unanswered(req, seen)
-        if seen.status == 403:
-            # Sayfanın 403'ünü çözüm yanıtlamadı: curl de challenge'a takılırdı, istek biter (S1-B5)
-            raise _browser_forbidden(url, seen)
+        got = await _browser_attempt_async(url, full_url, req, trace,
+                                           wait_time_min + random.uniform(0, wait_time_max), semaphore)
+        if got is not _NO_ANSWER:
+            return cast(JsonResponse, got)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene (yoklama: tek deneme)
 
     attempts = 1 if req.single else max_retries
@@ -1076,6 +1210,13 @@ async def _request_async_body(
             raise _skip(url, why, req)
         trace.attempt()
         last_attempt = attempt == attempts - 1
+        if _browser_takes_turn(req):
+            # Bu deneme beklerken önce-tarayıcı başladı: tarayıcı sırayı alır (S1-B6)
+            got = await _browser_attempt_async(url, full_url, req, trace,
+                                               wait_time_min + random.uniform(0, wait_time_max), semaphore)
+            if got is not _NO_ANSWER:
+                return cast(JsonResponse, got)
+            trace.attempt()
         try:
             logger.debug(f"Async API request ({attempt+1}/{max_retries}): {url}")
 
@@ -1099,10 +1240,15 @@ async def _request_async_body(
             raise
         except Exception as e:
             req.transport_error = f"{type(e).__name__}: {e}"[:200]
+            _end_curl_probe(req)
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
                 logger.error(f"Proxy or connection error: {str(e)} (proxy {'on' if use_proxy else 'off'})")
             else:
                 logger.error(f"Async request error: {str(e)}")
+            if not last_attempt and not req.browser_failed and _browser_answered_recently():
+                # Tarayıcı yakın zamanda yanıt verdi: bu isteğin sonraki denemesini geri çekilmeden o alır (S1-B6)
+                _mark_browser_first("curl cannot reach SofaScore", transport=True)
+                continue
             if last_attempt:
                 raise NetworkError(f"Request failed: {url}: {e}") from e
             await _asleep(_retry_wait(attempt))
@@ -1115,6 +1261,7 @@ async def _request_async_body(
         trace.curl(status)
         _reached()
         req.transport_error = None
+        _curl_answered(status, response.text if status == 403 else "")
 
         if status in (429, 503):
             if last_attempt:
@@ -1147,13 +1294,17 @@ async def _request_async_body(
                 if browser_data is not None:
                     trace.bridge()
                     req.challenge_failed = False
+                    # Tarayıcının curl'ün challenge'ından sonraki her yanıtı pencereyi açar, 404 de (S1-B6; c'nin 5.
+                    # koşusu: bir maçın eksik istatistikleri bir dakikada üç kez curl'ün challenge'ına takıldı)
+                    _mark_browser_first()
                 if isinstance(browser_data, dict) and browser_data.get("__404__"):
                     raise ResourceNotFoundError(f"Not found: {url}")
                 if browser_data is not None:
-                    _mark_browser_first()
                     logger.debug("Fetched through the browser bridge")
                     return cast(JsonResponse, browser_data)
                 _challenge_unanswered(req, seen)
+                if getattr(seen, "status", None) in (None, 0):
+                    _browser_unreachable()
                 if _unsolvable_browser_403(seen):
                     # Sayfanın hiçbir çözümün yanıtlamadığı 403'ü: istek biter (S1-B5)
                     raise _browser_forbidden(url, seen)
