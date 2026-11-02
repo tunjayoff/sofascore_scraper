@@ -3,7 +3,7 @@ curl_cffi>=0.11.4,<1
 
 # Tarayıcı ve Challenge Bypass (Cloudflare Turnstile): Scrapling StealthySession
 # (patchright + playwright ile gelir). Sürüm sabit: challenge çözümü bu sürümle doğrulandı.
-scrapling[fetchers]==0.4.15
+scrapling[fetchers]==0.5
 
 # Log satırları (sofascore_scraper/logger.py: renkli konsol çıktısı ve okunur iz dökümleri)
 rich>=13.0.0,<16
