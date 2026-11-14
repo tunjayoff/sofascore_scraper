@@ -400,7 +400,8 @@ that module is deleted; the web's downloads are v1 jobs (`sofascore_scraper/web/
    allows `sofascore_scraper/web` to import `sofascore_scraper.services`, `sofascore_scraper.jobs`, `sofascore_scraper.config`, `sofascore_scraper.errors` and itself, plus the
    modules of `WEB_ALSO_IMPORTS`, each with its reason: 22 modules, most of them for the legacy adapters
    (`sofascore_scraper/web/api/legacy.py`), which P30 deletes. The list is a ratchet: a new module fails, and so does a
-   stale entry. At `216c2f9` it has 16 modules (`tests/test_layers.py:181-198`): P30 (#186) deleted the
+   stale entry. At `216c2f9` it has 15 modules (`tests/test_layers.py:181-198`; this sentence said 16 until
+   2026-11-14, a miscount: the list has had 15 entries since P30): P30 (#186) deleted the
    adapters and the entries only they needed. The web layer does not import `sofascore_scraper.sinks` (decision D11's test); `GET /api/v1/sinks` reads
    through `sofascore_scraper/services/sink_status.py`. The CLI face has no such test yet (P21 left `sofascore_scraper/cli` to P19,
    and P19 did not add it): its data commands (P19 #119) import the Store, `sofascore_scraper.sinks`, the job manager
@@ -3876,7 +3877,7 @@ result only, also for the translated `main.py` runs and for `serve` (uvicorn's a
 | Code | Meaning | Typical source |
 |---|---|---|
 | 0 | success; also a service stopped by SIGTERM/SIGINT | |
-| 1 | general error; `doctor` with a failed check; `status --check` unhealthy store | `internal`, `not_found` |
+| 1 | general error; `doctor` with a failed check; `status --check` unhealthy store | `internal`, `not_found`, `follow_managed`, `follow_exists`, `certificate_changed` |
 | 2 | usage or configuration error | `invalid_request`, `config_invalid`, `confirmation_required`, `not_supported` |
 | 3 | partial success: finished, some items failed | job state `partial` without a breaker stop |
 | 4 | SofaScore blocks or keeps failing; the breaker stopped the job | `blocked`, `rate_limited`, `upstream_error` |
@@ -3921,7 +3922,7 @@ waits for the owner's confirmation.
 
 Since 3.1.2 (PR #230): the error codes of exit 1 are `not_found`, `follow_managed`, `follow_exists`,
 `certificate_changed` and `internal` (`exit_codes.EXIT_CODES`, read from the error table; the row above
-names only two of them). `ssc trust add` exits 1 with `certificate_changed`, 2 without `--sha256` or `--yes`,
+names all five since 2026-11-14). `ssc trust add` exits 1 with `certificate_changed`, 2 without `--sha256` or `--yes`,
 and 1 without an error code when the certificate was stored and the connection still does not verify;
 `ssc doctor --live` exits 1 for each of its failed codes (4.1).
 
@@ -4622,6 +4623,11 @@ routes in `sofascore_scraper/web/api/v1/`, the OpenAPI document regenerated each
   `ok: false` and a `reason` in the words of `sofascore_scraper/web/upstream.py`, plus the bridge snapshot. Because it goes
   through the client and not the browser bridge, it can report `blocked` where the legacy
   `POST /api/bypass/test` (which keeps the browser path, pinned by `tests/test_bypass_test.py`) succeeds.
+  Corrected on 2026-11-14 (`sofascore_scraper/web/api/v1/meta.py` `check_sofascore`, `sofascore_scraper/client/transport.py`):
+  the check calls `make_api_request` with one try, and that call itself goes to the browser bridge when
+  SofaScore answers 403 with its challenge. So the check does reach the bridge on a challenge, and reports
+  `blocked` only when the bridge cannot get the answer either (`browser` when the browser could not start).
+  The legacy route named here was removed in 3.1.0 (P30).
 - **`GET /sinks` (#122)** per configured sink in configuration order: `name`, `type`, `target` (file path
   or masked webhook address), `events`, `state`, `served`, `cursor`, `head_seq`, `lag_events`,
   `lag_seconds`, `last_delivered_at_utc`, `last_error` and `dropped` (5.2).
@@ -6498,6 +6504,13 @@ The work has no plan item and is cited by pull request:
 166. **The four sports' slice rows.** 3.1 and 12 said that the proposal for rugby, floorball, volleyball and
      minifootball waits for the owner. Decided and built on 2026-10-09, after the eleventh revision (FX-36,
      #198), and released in 3.1.1 (3.1, 12).
+167. **Four statements that the code contradicted** (found by the twelfth revision, settled on 2026-11-14).
+     Section 6 said the connection check does not go through the browser bridge: it does when SofaScore
+     answers with its challenge. 2.1 counted 16 modules in `WEB_ALSO_IMPORTS`: there are 15. Row 1 of the
+     exit-code table (4.5) named two error codes: five map to it. And `ssc doctor --live` told the user to
+     stop other running copies of the app because they hold the browser profile: since FX-23 a second
+     process opens a temporary profile next to it, so the hint now says to wait and to look at Health
+     (`locales/en.json`, `locales/tr.json` `doctor_live_fix`; `sofascore_scraper/doctor.py` `check_live`).
 
 ---
 
