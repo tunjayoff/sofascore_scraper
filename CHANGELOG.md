@@ -8,6 +8,25 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-11-14
+
+A maintenance release: dependency versions with published advisories are raised, a default of the
+follows API is corrected, and four sports no longer count data SofaScore does not have for them as
+missing. Nothing has to be changed after upgrading from 3.1.0; the Docker image is
+`ghcr.io/tunjayoff/sofascore_scraper:3.1.1`.
+
+### Changed
+
+- Rugby, volleyball, floorball and minifootball: the data types SofaScore leaves out for part or all
+  of their finished matches no longer make a match incomplete. Rugby and volleyball: statistics,
+  line-ups, incidents and pre-game form are optional. Floorball: line-ups are not requested,
+  statistics and pre-game form are optional. Minifootball: statistics, incidents and pre-game form
+  are optional.
+- The pinned dependency versions (`constraints.txt`, the web app's lockfile) are raised to the
+  current ones, among them `curl-cffi` 0.17.0, `fastapi` 0.162.4 and `pydantic` 2.14.3. The browser
+  stack (`scrapling`, `patchright`, `playwright`) stays at the versions the challenge solve was
+  verified with.
+
 ### Fixed
 
 - `POST /api/v1/follows` without `seasons` now takes `defaults.seasons` (`current` unless changed), as
@@ -1587,6 +1606,7 @@ terminal tool; the web interface arrived in April 2026 (reported as 1.0.0 by `/h
 was replaced by the Vue app on 2026-07-27, when the number became 2.0.0. See `git log` for
 details.
 
-[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.1...HEAD
+[3.1.1]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/tunjayoff/sofascore_scraper/releases/tag/v3.0.0

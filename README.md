@@ -10,7 +10,7 @@
 
 One core, three faces: a **Python library**, the **`ssc` command line** for servers and automation, and a versioned **HTTP API** with a **web app** on top. It runs on your own machine or server.
 
-> **3.1.0 is released from source.** Install it from a checkout (the Docker or pip steps below); each release on GitHub also has a source archive with the built web app, and its Docker image is `ghcr.io/tunjayoff/sofascore_scraper`. There is no package on PyPI. Coming from 3.0: [Upgrading from 3.0](#upgrading-from-30); from 2.x: [Upgrading from 2.x](#upgrading-from-2x).
+> **3.1.1 is released from source.** Install it from a checkout (the Docker or pip steps below); each release on GitHub also has a source archive with the built web app, and its Docker image is `ghcr.io/tunjayoff/sofascore_scraper`. There is no package on PyPI. Coming from 3.0: [Upgrading from 3.0](#upgrading-from-30); from 2.x: [Upgrading from 2.x](#upgrading-from-2x).
 
 Unofficial and not affiliated with SofaScore; see the [disclaimer](#disclaimer).
 
