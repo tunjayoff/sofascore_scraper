@@ -544,7 +544,8 @@ def test_an_answer_fetched_by_the_bridge_says_so(fake: FakeSofaScore, client: Cl
     assert (through_bridge.status, through_bridge.via, through_bridge.http_status) == (SLICE_OK, "bridge", None)
     assert (browser_first.status, browser_first.via) == (SLICE_OK, "bridge")
     assert (missing.status, missing.reason, missing.http_status, missing.via) == (SLICE_EMPTY, "404", 404, "bridge")
-    assert _api_requests(fake) == ["/event/1 403"]
+    # Kapı her profili reddetti: ilk istek başka profillerle yinelendi, sonra köprü; sonrakiler curl'e gitmedi
+    assert _api_requests(fake) == ["/event/1 403"] * (1 + transport.profiles.MAX_SWAPS)
 
 
 def test_a_refused_request_that_the_bridge_cannot_rescue_is_failed_via_curl(

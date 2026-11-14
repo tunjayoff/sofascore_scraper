@@ -23,6 +23,8 @@ from typing import Any, Dict, Final, Optional, Tuple, Union, cast
 from curl_cffi import requests as cffi_requests
 from curl_cffi.requests import AsyncSession
 
+from sofascore_scraper.client import profiles
+
 from sofascore_scraper import breaker, throttle
 from sofascore_scraper.client.context import FetchCancelled, _notify_wait, notify_request, raise_if_cancelled
 from sofascore_scraper.client.endpoints import DEFAULT_BASE_URL
@@ -142,19 +144,8 @@ async def _athrottle() -> None:
     notify_request(waited)
 
 
-IMPERSONATE_PROFILES = [
-    "chrome124",
-    "chrome131",
-    "chrome133a",
-    "chrome136",
-    "chrome142",
-    "chrome145",
-    # Safari profilleri — TLS parmak izi çeşitliliği sağlar
-    "safari17_0",
-    "safari18_0",
-    # Firefox — ek çeşitlilik
-    "firefox133",
-]
+# Tarayıcı profilleri: liste ve challenge alanların kenara alınması sofascore_scraper/client/profiles.py'de
+IMPERSONATE_PROFILES = profiles.PROFILES
 
 # Accept-Language header havuzu — her istekte rastgele seçilir
 _ACCEPT_LANGUAGES = [
@@ -265,6 +256,12 @@ def _parse_retry_after_seconds(retry_after: Optional[str], default_wait: int) ->
 # ardından gelen bekleme olmasın. Süre dolunca curl yeniden denenir (engel kalkmış olabilir).
 BROWSER_FIRST_SECONDS = 600.0
 _browser_first_until = 0.0
+
+
+def _challenged(response: Any) -> bool:
+    """Kapının reddi: 403 ve gövdede "challenge" (`{"error": {"code": 403, "reason": "challenge"}}`)."""
+    text = getattr(response, "text", "")
+    return getattr(response, "status_code", None) == 403 and isinstance(text, str) and "challenge" in text
 
 
 def _browser_first() -> bool:
@@ -386,7 +383,7 @@ def _request_sync(
                 # Her istekte yeniden: 30 dk'lık hash ve yeni çözülen captcha token güncel kalsın
                 "headers": get_request_headers(),
                 "timeout": timeout,
-                "impersonate": random.choice(IMPERSONATE_PROFILES),
+                "impersonate": profiles.pick(),
             }
             if use_proxy and proxy_url:
                 kwargs["proxies"] = {"http": proxy_url, "https": proxy_url}
@@ -394,6 +391,25 @@ def _request_sync(
             _throttle()
             response = cffi_requests.get(full_url, **kwargs)
             trace.curl(response.status_code)
+
+            # Kapı bu profili reddettiyse (challenge) profil kenara alınır ve istek hemen başka bir profille
+            # yinelenir: tarayıcı köprüsü ancak geçen profil kalmadığında açılır (profiles.py)
+            tried = [kwargs["impersonate"]]
+            while _challenged(response) and len(tried) <= profiles.MAX_SWAPS:
+                profiles.refuse(tried[-1])
+                other = profiles.another(tried)
+                if other is None:
+                    break
+                raise_if_cancelled()
+                logger.debug(f"Challenge for profile {tried[-1]}; trying {other}: {url}")
+                tried.append(other)
+                kwargs["impersonate"] = other
+                kwargs["headers"] = get_request_headers()
+                _throttle()
+                response = cffi_requests.get(full_url, **kwargs)
+                trace.curl(response.status_code)
+            if _challenged(response):
+                profiles.refuse(tried[-1])
 
             if response.status_code in (429, 503):
                 if last_attempt:
@@ -595,8 +611,31 @@ async def _request_async(
                 raise_if_cancelled()
                 # Sıra beklerken devre kesilmiş olabilir: istek gönderilmez, ortak bütçeden sıra ayrılmaz
                 breaker.check(url)
+                # Oturumun profili challenge aldıysa yerine geçen profil istekle verilir (aşağıda, profiles.py)
+                override = getattr(session, "ssc_profile_override", None)
+                if isinstance(override, str):
+                    kwargs["impersonate"] = override
                 await _athrottle()
                 response = await session.get(full_url, **kwargs)
+                current = override if isinstance(override, str) else getattr(session, "ssc_profile", None)
+                tried = [current] if isinstance(current, str) else []
+                while tried and _challenged(response) and len(tried) <= profiles.MAX_SWAPS:
+                    profiles.refuse(tried[-1])
+                    other = profiles.another(tried)
+                    if other is None:
+                        break
+                    raise_if_cancelled()
+                    logger.debug(f"Challenge for profile {tried[-1]}; trying {other}: {url}")
+                    tried.append(other)
+                    trace.curl(response.status_code)
+                    kwargs["impersonate"] = other
+                    kwargs["headers"] = get_request_headers()
+                    await _athrottle()
+                    response = await session.get(full_url, **kwargs)
+                    if not _challenged(response):
+                        session.ssc_profile_override = other  # oturumun sonraki istekleri de bununla gider
+                if tried and _challenged(response):
+                    profiles.refuse(tried[-1])
         except CircuitOpenError:
             raise
         except Exception as e:
@@ -714,13 +753,15 @@ class WarmableAsyncSession:
 
     def __init__(self) -> None:
         runtime_config = _get_runtime_request_config()
-        profile = random.choice(IMPERSONATE_PROFILES)
+        profile = profiles.pick()
         logger.debug(f"Async session created, impersonate profile: {profile}")
         self._session = AsyncSession(
             headers=get_request_headers(),
             timeout=int(runtime_config["request_timeout"]),
             impersonate=profile,
         )
+        # İstek katmanı oturumun profilini buradan okur (challenge alırsa kenara almak için)
+        self._session.ssc_profile = profile  # type: ignore[attr-defined]
 
     async def __aenter__(self) -> AsyncSession:
         await self._session.__aenter__()

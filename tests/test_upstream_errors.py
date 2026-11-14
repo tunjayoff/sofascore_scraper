@@ -101,12 +101,15 @@ def test_sync_request_raises_parsing_error_for_a_body_that_is_not_json():
 
 
 def test_sync_request_reports_a_404_seen_through_the_bridge_as_not_found():
-    with _curl(Resp(403, text=CHALLENGE)), \
+    # Kapı her profili reddediyor (gerçek engel): istek önce başka profillerle yinelenir, sonra köprüye düşer
+    refused = [Resp(403, text=CHALLENGE)] * (1 + transport.profiles.MAX_SWAPS)
+    with _curl(*refused), \
             patch.object(cs, "fetch_api_via_browser_sync", return_value={"__404__": True}), \
             pytest.raises(ResourceNotFoundError):
         transport.make_api_request("/x", raise_errors=True)
     # raise_errors olmadan eski sözleşme: None
-    with _curl(Resp(403, text=CHALLENGE)), \
+    transport.profiles.reset()
+    with _curl(*refused), \
             patch.object(cs, "fetch_api_via_browser_sync", return_value={"__404__": True}):
         assert transport.make_api_request("/x") is None
 

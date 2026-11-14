@@ -8,6 +8,16 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Fixed
+
+- Most requests were refused with `403 challenge` and then made through the built-in browser, which is
+  slow and heavy: SofaScore refuses clients that present an outdated Chrome version (and a few
+  client fingerprints whatever they present), and six of the nine browser profiles the request layer
+  chose from were such. The list now holds profiles that pass, and it corrects itself: a profile
+  that is challenged is set aside for six hours and the request is repeated at once with another
+  one; the browser is used only when no profile passes. In a live download of 39 requests none was
+  refused and the browser was not started.
+
 ### Added
 
 - The connection check (Health, `POST /api/v1/status/check`) says what kind of network failure it
