@@ -107,6 +107,8 @@
     "doctor_live_ok": "SofaScore, tarayıcı köprüsü üzerinden atılan isteği ve uygulamanın HTTP istemcisinin attığı isteği yanıtladı",
     "doctor_live_failed": "tarayıcı köprüsü üzerinden SofaScore'dan yanıt alınamadı: {error}",
     "doctor_live_fix": "Uygulamanın çalışan diğer kopyalarını durdurun (tarayıcı profilini tutarlar), birkaç dakika bekleyip yeniden deneyin; README: \"SofaScore bizi engelliyor mu?\"",
+    "doctor_live_browser_tls": "yerleşik tarayıcı kendisine gösterilen sertifikayı doğrulayamadı ({error}). Genellikle bu ağdaki bir şey HTTPS'i yeniden imzalıyordur: HTTPS tarayan bir antivirüs, kurumsal bir proxy ya da sağlayıcının engel sayfası",
+    "doctor_live_browser_tls_fix": "www.sofascore.com adresini taramanın dışında bırakın. Mümkün değilse: HTTP istemcisine CA sertifikasını verin (SSL_CERT_FILE) ve tarayıcı için SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE=true ayarlayın; tarayıcı o zaman bağlantıyı yeniden imzalayana güvenir. docs/deploy/docker.md, \"A network that inspects HTTPS\"",
     "doctor_live_http_tls": "tarayıcı SofaScore'a ulaştı, ama uygulamanın HTTP istemcisi kendisine gösterilen sertifikayı doğrulayamadı ({error}); indirmeler başarısız olur. Çoğunlukla bu ağdaki bir yazılım HTTPS'i yeniden imzalıyordur: HTTPS tarayan bir antivirüs, kurumsal bir proxy ya da bir engelleme sayfası",
     "doctor_live_http_tls_fix": "O yazılımın CA sertifikasını PEM dosyası olarak dışa aktarın ve SSL_CERT_FILE'a dosyanın yolunu verin, ya da www.sofascore.com'u taramanın dışında bırakın; README: \"Bağlantı denetimi sertifika hatasıyla başarısız oluyor\"",
     "doctor_live_http_ca_missing": "{name}, var olmayan {path} yolunu gösteriyor.",

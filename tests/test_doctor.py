@@ -1055,6 +1055,16 @@ def test_live_does_not_send_the_second_request_when_the_bridge_fails(make_ctx):
     assert (res.status, res.code) == (FAIL, "live_failed") and "profile is locked" in res.summary
 
 
+def test_live_names_a_certificate_the_browser_refused(make_ctx):
+    """Tarayıcı artık doğrulayamadığı sertifikayı kabul etmez: denetim nedeni ve çareyi söyler, ikinci isteği atmaz."""
+    res = doctor.check_live(
+        make_ctx(), fetch=_raises(RuntimeError("Page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://www.sofascore.com/tr")),
+        request=lambda path: pytest.fail("köprü başarısızken ikinci istek atılmamalı"),
+    )
+    assert (res.status, res.code) == (FAIL, "live_browser_tls")
+    assert "ERR_CERT_AUTHORITY_INVALID" in res.summary and "SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE" in res.fix
+
+
 def test_live_tls_codes_are_the_tls_codes_of_the_connection_check():
     from sofascore_scraper.web import upstream
 

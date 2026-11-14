@@ -1780,6 +1780,7 @@ const tr: typeof en = {
       captcha_token: 'Doğrulama anahtarı',
       browser_profile: 'Tarayıcı profil klasörü',
       browser_headed: 'Yerleşik tarayıcıyı göster',
+      browser_accept_any_certificate: 'Yerleşik tarayıcı her sertifikayı kabul etsin (güvensiz)',
       throttle_dir: 'Paylaşılan istek bütçesi klasörü',
       odds_provider: 'Oran sağlayıcısı',
     },

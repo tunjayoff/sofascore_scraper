@@ -1118,6 +1118,15 @@ def check_live(
             error = "{}: {}".format(last.get("kind"), last.get("detail")) if last else None
         except Exception:
             pass
+    # Tarayıcı doğrulayamadığı bir sertifikayla karşılaştı (Chromium: net::ERR_CERT_...): ağ HTTPS'i yeniden
+    # imzalıyor. Tarayıcı artık bunu kabul etmez; çaresi bekleyip yeniden denemek değildir.
+    if error and "ERR_CERT_" in error:
+        return _result(
+            ctx, "live", FAIL, "live_browser_tls",
+            ctx.t("doctor_live_browser_tls", error=_first_line(error)),
+            fix=ctx.t("doctor_live_browser_tls_fix"),
+            detail=detail,
+        )
     return _result(
         ctx, "live", FAIL, "live_failed",
         ctx.t("doctor_live_failed", error=_first_line(error) or "?"),

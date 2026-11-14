@@ -144,6 +144,14 @@ def _headless() -> bool:
     return not _client_settings().browser_headed
 
 
+def _accept_any_certificate() -> bool:
+    # Scrapling tarayıcı bağlamını `ignore_https_errors: True` ile kurar: tarayıcı doğrulayamadığı sertifikayı
+    # da kabul eder ve araya giren biri köprüden geçen her şeyi (sayfalar, challenge çözümü, saklanan API
+    # yanıtları) okuyup değiştirebilir. Varsayılanımız sıkıdır (curl yolu gibi); `client.browser_accept_any_certificate`
+    # bunu bilerek gevşetir (HTTPS'i yeniden imzalayan ağlar, #225).
+    return bool(_client_settings().browser_accept_any_certificate)
+
+
 class _SlotWait:
     """
     Bir köprü çağrısının ortak istek bütçesinde (sofascore_scraper/throttle.py) sıra beklediği toplam süre.
@@ -356,6 +364,8 @@ class BrowserBridge:
             block_webrtc=True,
             timeout=60000,
             max_pages=2,
+            # Bağlam seçenekleri Scrapling'inkilerin üstüne yazılır: sertifika hataları yok sayılmaz
+            additional_args={"ignore_https_errors": _accept_any_certificate()},
         )
         await self.session.start()
         # Scrapling'in oturum bağlamı: kendi sayfamızı bunun içinde açıp tekrar tekrar kullanırız

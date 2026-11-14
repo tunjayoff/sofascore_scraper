@@ -130,6 +130,12 @@ class ClientSettings:
     )
     browser_profile: str = setting("", KIND_PATH, "Browser profile directory of the bridge; empty = the default.")
     browser_headed: bool = setting(False, KIND_BOOL, "Show the bridge browser window (debugging).")
+    browser_accept_any_certificate: bool = setting(
+        False, KIND_BOOL, "Let the bridge browser accept HTTPS certificates it cannot verify. Off: the browser "
+        "refuses them, as the HTTP client does. Turn it on only on a network that re-signs HTTPS with a CA of its "
+        "own (TLS inspection) when the browser is needed there; whoever re-signs can then read and change what "
+        "the browser exchanges.",
+    )
     throttle_dir: str = setting("", KIND_PATH, "Directory of the shared request-budget files; empty = the default.")
 
     @property

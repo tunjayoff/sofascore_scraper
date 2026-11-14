@@ -107,6 +107,8 @@
     "doctor_live_ok": "SofaScore answered a request made through the browser bridge and one made by the app's HTTP client",
     "doctor_live_failed": "no answer from SofaScore through the browser bridge: {error}",
     "doctor_live_fix": "Stop other running copies of the app (they hold the browser profile), wait a few minutes and try again; README: \"Is SofaScore blocking us?\"",
+    "doctor_live_browser_tls": "the built-in browser could not verify the certificate it was shown ({error}). Usually something on this network re-signs HTTPS: an antivirus that scans HTTPS, a company proxy, or a provider's block page",
+    "doctor_live_browser_tls_fix": "Exclude www.sofascore.com from the scanning. If that is not possible: give the HTTP client the CA certificate (SSL_CERT_FILE) and, for the browser, set SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE=true; the browser then trusts whoever re-signs the connection. docs/deploy/docker.md, \"A network that inspects HTTPS\"",
     "doctor_live_http_tls": "the browser reached SofaScore, but the app's HTTP client could not verify the certificate it was shown ({error}); downloads will fail. Usually something on this network re-signs HTTPS: an antivirus that scans HTTPS, a company proxy, or a block page",
     "doctor_live_http_tls_fix": "Export the CA certificate of that software as a PEM file and set SSL_CERT_FILE to its path, or exclude www.sofascore.com from the scanning; README: \"The connection check fails with a certificate error\"",
     "doctor_live_http_ca_missing": "{name} is set to {path}, which does not exist.",
