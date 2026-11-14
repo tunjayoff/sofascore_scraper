@@ -346,6 +346,13 @@ class StatusCheck(BaseModel):
     reason: Optional[Literal["blocked", "browser", "rate_limited", "network", "upstream"]] = Field(
         default=None, description="Why the check failed; null when it succeeded.",
     )
+    cause: Optional[Literal["timeout", "dns", "proxy", "tls", "connect", "reset"]] = Field(
+        default=None,
+        description="With `reason` network, what kind of failure it was when that is known: no answer in time, "
+                    "the host name did not resolve, the proxy failed, the TLS handshake failed, no connection "
+                    "could be opened (refused or unreachable; with a proxy set, the proxy), or it was closed. "
+                    "Null otherwise.",
+    )
     message: str = Field(description="English text; clients translate by `reason`.")
     events_count: Optional[int] = Field(default=None, description="Live events in the answer; null on failure.")
     checked_at_utc: str
@@ -733,6 +740,7 @@ def check_sofascore() -> StatusCheck:
 
     before = bridge_health.snapshot()
     reason: Optional[str] = None
+    cause: Optional[str] = None
     count: Optional[int] = None
     try:
         # Etkileşimli: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
@@ -742,7 +750,8 @@ def check_sofascore() -> StatusCheck:
         reason = upstream.reason_for(e, before)
         if reason == upstream.NOT_FOUND:
             reason = upstream.UPSTREAM
-        logger.warning("Connection check failed (%s): %s", reason, type(e).__name__)
+        cause = upstream.network_cause(e) if reason == upstream.NETWORK else None
+        logger.warning("Connection check failed (%s%s): %s", reason, f", {cause}" if cause else "", type(e).__name__)
     else:
         if isinstance(data, dict) and isinstance(data.get("events"), list):
             count = len(data["events"])
@@ -752,7 +761,8 @@ def check_sofascore() -> StatusCheck:
     # Tek saat okuması: yanıttaki an, `/status`un `last_check.at`ıyla aynıdır (FX-30)
     checked_at = bridge_health.record_check(reason is None, reason)
     return StatusCheck(
-        ok=reason is None, reason=reason, message=message, events_count=count,  # type: ignore[arg-type]
+        ok=reason is None, reason=reason, cause=cause, message=message,  # type: ignore[arg-type]
+        events_count=count,
         checked_at_utc=utc_text(checked_at) or "", bridge=_bridge(), connection=_connection(),
     )
 

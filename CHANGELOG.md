@@ -8,6 +8,12 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Added
+
+- The connection check (Health, `POST /api/v1/status/check`) says what kind of network failure it
+  met when SofaScore could not be reached: `cause` is `timeout`, `dns`, `proxy`, `tls`, `connect` or
+  `reset`, and the Health page shows it with a hint (#225).
+
 ## [3.1.1] - 2026-11-14
 
 A maintenance release: dependency versions with published advisories are raised, a default of the
