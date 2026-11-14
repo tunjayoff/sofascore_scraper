@@ -8,6 +8,12 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Security
+
+- Pinned versions with published advisories were raised: `certifi` 2026.10.23 and
+  `opentelemetry-api` 1.45.2 (`constraints.txt`), and in the web app `vue-i18n` (two
+  `escapeParameter` XSS advisories) and `vite` (build tooling), through the lockfile.
+
 ## [3.1.0] - 2026-10-09
 
 3.1.0 removes what 3.0.0 deprecated (the `main.py` flags, the 2.x `/api` routes, the 2.x

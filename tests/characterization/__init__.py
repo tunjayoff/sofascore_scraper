@@ -37,8 +37,9 @@ _LOCAL_DATETIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?")
 # export`'un UTC tarih ve saati (processed/events-wide_<date-time>.csv)
 _EPOCH_IN_NAME = re.compile(r"_\d{9,}(?=\.)")
 _DATE_TIME_IN_NAME = re.compile(r"_\d{4}-\d{2}-\d{2}_\d{6}(?=\.)")
-# Değişiklik günlüğünün ay parçası (changes/<yyyy>-<mm>.jsonl, ST-21): adı satırın yazıldığı aydır
-_MONTH_SEGMENT = re.compile(r"^changes/\d{4}-\d{2}(?=\.jsonl$)")
+# Değişiklik günlüğünün ay parçası (changes/<yyyy>-<mm>.jsonl, ST-21): adı satırın yazıldığı aydır. Kök veri
+# dizini (fetch goldenları) ya da onu içeren kum havuzu (CLI goldenları: data/changes/...) olabilir.
+_MONTH_SEGMENT = re.compile(r"(?:^|(?<=/))changes/\d{4}-\d{2}(?=\.jsonl$)")
 _TEXT_SUFFIXES = frozenset({".json", ".jsonl", ".csv", ".txt"})
 # Veri dizinindeki durum dosyaları (iş geçmişi; ileride katalog) indirilen veri değildir: özete girmez
 STATE_DIR = ".meta"
