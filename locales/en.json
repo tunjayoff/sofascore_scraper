@@ -106,7 +106,7 @@
     "doctor_budget_fix": "Set SOFASCORE_CLIENT__RATE={default} in .env (or rate = {default} under [client] in sofascore.toml), or keep the faster setting knowingly",
     "doctor_live_ok": "SofaScore answered a request made through the browser bridge and one made by the app's HTTP client",
     "doctor_live_failed": "no answer from SofaScore through the browser bridge: {error}",
-    "doctor_live_fix": "Stop other running copies of the app (they hold the browser profile), wait a few minutes and try again; README: \"Is SofaScore blocking us?\"",
+    "doctor_live_fix": "Stop other running copies of the app (they hold the browser profile), wait a few minutes and try again; README: \"Downloads fail or stop with exit code 4. What now?\"",
     "doctor_live_browser_tls": "the built-in browser could not verify the certificate it was shown ({error}). Usually something on this network re-signs HTTPS: an antivirus that scans HTTPS, a company proxy, or a provider's block page",
     "doctor_live_browser_tls_fix": "If this is your network's HTTPS inspection: press \"Trust this certificate\" on the Health page, or run `ssc trust show` and `ssc trust add --sha256 <fingerprint>`; the browser then verifies against that certificate. Or exclude www.sofascore.com from the scanning. Last resort: SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE=true, with which the browser trusts whoever re-signs the connection. docs/deploy/docker.md, \"A network that inspects HTTPS\"",
     "doctor_live_http_tls": "the browser reached SofaScore, but the app's HTTP client could not verify the certificate it was shown ({error}); downloads will fail. Usually something on this network re-signs HTTPS: an antivirus that scans HTTPS, a company proxy, or a block page",

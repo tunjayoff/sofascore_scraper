@@ -245,8 +245,9 @@ Uygulama yalnızca izin verilen sunucu adlarına yanıt verir, başka sitelerin 
 git pull
 pip install -r requirements.txt -c constraints.txt
 pip install -e .
+python -m patchright install chromium --no-shell   # bir sürüm tarayıcı yığınını yükselttiyse (3.1.2 yükseltti)
 cd frontend && npm install && npm run build && cd ..
-ssc doctor                # hâlâ verilmiş her 2.x ayar adını söyler
+ssc doctor                # hâlâ verilmiş her 2.x ayar adını ve eksik tarayıcı derlemesini söyler
 ```
 
 Docker Compose ile: `git pull`, ardından `docker compose pull` (ya da `docker compose build`) ve `docker compose up -d`.
@@ -282,7 +283,7 @@ Değişikliklerin tam listesi [CHANGELOG.md](CHANGELOG.md) dosyasındadır (İng
 Hayır. SofaScore web sitesinin oturum açmadan gösterdiği herkese açık verileri, sitenin yaptığı gibi bir tarayıcı üzerinden okur. SofaScore ile bağlantılı değildir, onun tarafından onaylanmamıştır. İstek bütçesini düşük tutun; SofaScore'un kullanım koşullarına ve bulunduğunuz yerin yasalarına uyun.
 
 **Neden Chromium gerekiyor?**
-SofaScore düz HTTP istemcilerini reddeder; bu yüzden uygulama isteklerini başsız bir tarayıcı sayfasından (patchright'ın Chromium'u) gönderir ve sitenin doğrulamasını orada geçer. Kurulu bir Google Chrome kullanılmaz. `ssc doctor` tarayıcının kurulu olduğunu ve başladığını denetler.
+İsteklerin çoğu, kendini güncel bir tarayıcı olarak tanıtan düz HTTP istekleridir. SofaScore doğrulama istediğinde uygulama başsız bir tarayıcı sayfası (patchright'ın Chromium'u) açar, doğrulamayı orada geçer ve istekleri oradan gönderir; `page` canlı kaynağı da böyle bir sayfa üzerinden dinler. Kurulu bir Google Chrome kullanılmaz. `ssc doctor` tarayıcının kurulu olduğunu ve başladığını denetler.
 
 **Bir indirme ne kadar sürer?**
 Varsayılan veri türleriyle bir futbol maçı 7 istek tutar; 380 maçlık bir sezon yaklaşık 2.700 istektir, varsayılan saniyede 5 istekle kabaca 9 dakika. Bütçeyi yükseltmek (`--rate`, **Ayarlar → İstekler**) hızlandırır ama engellenme olasılığını artırır.

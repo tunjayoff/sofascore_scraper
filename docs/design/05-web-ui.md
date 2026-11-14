@@ -1608,6 +1608,14 @@ row ⋯ : Download · Check (dry run) · Restore…
 ### 6.12 Health (connection, live service, scheduler, storage)
 
 **Purpose.** The state of the services, read-only, with one action: the connection check.
+
+**As built in 3.1.2 (#226, #230).** A failed check names the kind of network failure (`cause`: timeout, dns, proxy,
+tls, connect, reset) with a hint. When the cause is `tls`, the card below the check shows the certificate the
+network presents (subject, issuer, SHA-256 fingerprint, expiry) and **Trust this certificate**, with a typed
+confirmation that states the risk; the trusted certificates are listed there and can be removed
+(`screens/health/TrustPanel.vue`, `GET`/`POST`/`DELETE /api/v1/trust`, `POST /api/v1/trust/probe`). This is the
+screen's second action; it changes what the app trusts, not the data.
+
 **Who / when.** The operator, from the health pill or an alert.
 
 ```
