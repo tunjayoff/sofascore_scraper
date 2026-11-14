@@ -14,7 +14,7 @@ Tek çekirdek, üç yüz: bir **Python kütüphanesi**, sunucular ve otomasyon i
 
 Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#sorumluluk-reddi).
 
-**İçindekiler:** [Özellikler](#özellikler) · [Ekran görüntüleri](#ekran-görüntüleri) · [Hızlı başlangıç](#hızlı-başlangıç) · [Komut satırı](#komut-satırı-ssc) · [HTTP API](#http-api) · [Python kütüphanesi](#python-kütüphanesi) · [Yapılandırma](#yapılandırma) · [Veri ve dışa aktarma](#veri-ve-dışa-aktarma) · [Canlı izleme](#canlı-izleme) · [Güvenlik modeli](#güvenlik-modeli) · [3.0'dan yükseltme](#30dan-yükseltme) · [2.x'ten yükseltme](#2xten-yükseltme) · [SSS](#sss) · [Belgeler](#belgeler) · [Katkı](#katkı-ve-geliştirme) · [Lisans](#lisans)
+**İçindekiler:** [Özellikler](#özellikler) · [Ekran görüntüleri](#ekran-görüntüleri) · [Hızlı başlangıç](#hızlı-başlangıç) · [Komut satırı](#komut-satırı-ssc) · [HTTP API](#http-api) · [Python kütüphanesi](#python-kütüphanesi) · [Yapılandırma](#yapılandırma) · [Veri ve dışa aktarma](#veri-ve-dışa-aktarma) · [Canlı izleme](#canlı-izleme) · [Güvenlik modeli](#güvenlik-modeli) · [3.0'dan yükseltme](#30dan-yükseltme) · [2.x'ten yükseltme](#2xten-yükseltme) · [SSS](#sss) · [Belgeler](#belgeler) · [Katkı](#katkı-ve-geliştirme) · [İletişim](#iletisim) · [Lisans](#lisans)
 
 ## Özellikler
 
@@ -336,9 +336,15 @@ CI, ruff'ı ve Python testlerini (Linux'ta Python 3.10 ve 3.14 ile; Windows ve m
 
 Bir katkı gönderdiğinizde, katkının projenin lisansıyla lisanslanmasını ve bakımcının onu başka koşullarla da (örneğin ticari bir lisansla) sunabilmesini kabul etmiş olursunuz.
 
+<a id="iletisim"></a>
+
+## İletişim
+
+İşbirlikleri, proje bazlı işler (bu projenin üzerine kurulan özel kazıyıcılar, veri hatları, entegrasyonlar) ve ticari lisans için **[tuncay.essiz@outlook.com](mailto:tuncay.essiz@outlook.com)** adresine yazın ya da **[tuncayessiz.dev](https://tuncayessiz.dev)** adresine bakın. Hatalar ve özellik istekleri için [konular](https://github.com/tunjayoff/sofascore_scraper/issues) bölümünü kullanın.
+
 ## Lisans
 
-[PolyForm Noncommercial 1.0.0](LICENSE): **ticari olmayan amaçlarla** (kişisel kullanım, öğrenim, araştırma, hobi projeleri, hayır kurumları, eğitim kurumları, kamu kurumları) kullanabilir, değiştirebilir ve paylaşabilirsiniz. Ticari kullanım ayrı bir lisans gerektirir; bir konu açarak ya da [@tunjayoff](https://github.com/tunjayoff) ile iletişime geçerek sorun. Bu lisanstan önce yayımlanmış sürümler MIT lisansıyla kullanılabilir olmaya devam eder.
+[PolyForm Noncommercial 1.0.0](LICENSE): **ticari olmayan amaçlarla** (kişisel kullanım, öğrenim, araştırma, hobi projeleri, hayır kurumları, eğitim kurumları, kamu kurumları) kullanabilir, değiştirebilir ve paylaşabilirsiniz. Ticari kullanım ayrı bir lisans gerektirir; [İletişim](#iletisim) bölümüne bakın. Bu lisanstan önce yayımlanmış sürümler MIT lisansıyla kullanılabilir olmaya devam eder.
 
 ## Sorumluluk reddi
 
