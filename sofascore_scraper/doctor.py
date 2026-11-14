@@ -1093,8 +1093,9 @@ def check_live(
     """
     SofaScore'a iki gerçek istek: biri köprü (tarayıcı) üzerinden, biri uygulamanın kendi istek yoluyla
     (`_check_live_http`). Yalnızca `--live` / `run_checks(live=True)` ile çalışır; ortak istek bütçesine
-    (sofascore_scraper/throttle.py) uyar. Profil başka bir süreçte açıksa (çalışan web uygulaması) tarayıcı
-    başlayamaz ve denetim başarısız olur; o durumda ikinci istek atılmaz.
+    (sofascore_scraper/throttle.py) uyar. Profil başka bir süreçte açıksa (çalışan web uygulaması) köprü geçici
+    bir kardeş profille açılır (FX-23; sofascore_scraper/client/profile_lock.py), denetim bu yüzden düşmez. Köprü
+    yanıt alamazsa ikinci istek atılmaz.
     """
     if fetch is None:
         from sofascore_scraper.client.bridge import fetch_api_via_browser_sync as fetch
