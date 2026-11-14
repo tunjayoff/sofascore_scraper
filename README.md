@@ -245,8 +245,9 @@ The app itself answers only to allowed host names, refuses state-changing reques
 git pull
 pip install -r requirements.txt -c constraints.txt
 pip install -e .
+python -m patchright install chromium --no-shell   # when a release raised the browser stack (3.1.2 did)
 cd frontend && npm install && npm run build && cd ..
-ssc doctor                # names every 2.x setting name that is still set
+ssc doctor                # names every 2.x setting name that is still set, and a missing browser build
 ```
 
 With Docker Compose: `git pull`, then `docker compose pull` (or `docker compose build`) and `docker compose up -d`.
@@ -282,7 +283,7 @@ The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
 No. It reads the public data the SofaScore website shows without login, through a browser, as the site does. It is not affiliated with or endorsed by SofaScore. Keep the request budget low and follow SofaScore's terms and the law where you are.
 
 **Why does it need Chromium?**
-SofaScore refuses plain HTTP clients, so the app sends its requests from a headless browser page (patchright's Chromium) and solves the site's challenge there. An installed Google Chrome is not used. `ssc doctor` checks that the browser is installed and starts.
+Most requests are plain HTTP requests that present themselves as a current browser. When SofaScore answers with its challenge, the app opens a headless browser page (patchright's Chromium), solves the challenge there and sends the requests from it; the `page` live source listens through such a page too. An installed Google Chrome is not used. `ssc doctor` checks that the browser is installed and starts.
 
 **How long does a download take?**
 With the default data types a football match costs 7 requests, so a 380-match season is about 2,700 requests, roughly 9 minutes at the default 5 requests per second. Raising the budget (`--rate`, **Settings → Requests**) is faster and makes a block more likely.

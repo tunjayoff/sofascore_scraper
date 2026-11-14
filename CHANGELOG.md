@@ -8,6 +8,12 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Fixed
+
+- `ssc doctor --live` pointed to a README heading that does not exist; it now names the FAQ entry about
+  refused downloads. The README's "Why does it need Chromium?" and upgrade steps describe 3.1.2 (most
+  requests are plain HTTP requests; the browser build is installed again after a browser stack update).
+
 ## [3.1.2] - 2026-11-14
 
 Downloads are fast again, and the app works on networks that inspect HTTPS. Most requests had been
@@ -19,7 +25,8 @@ like the HTTP client does. The Docker image is `ghcr.io/tunjayoff/sofascore_scra
 **Upgrading from 3.1.1:**
 
 - **From source:** the browser stack was raised, so install its browser build once more after
-  `pip install`: `python -m patchright install chromium` (`ssc doctor` says so when it is missing).
+  `pip install`: `python -m patchright install chromium --no-shell` (`ssc doctor` says so when it is
+  missing).
   The Docker image has it.
 - **On a network that re-signs HTTPS:** the built-in browser no longer accepts the re-signed
   certificate by itself. Trust the network's certificate on the Health page (or `ssc trust add`);
