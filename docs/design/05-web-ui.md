@@ -79,6 +79,17 @@ root path) and B3 (#189: e-sports maps in the match header, single-set darts as 
 say "As built (FX-28)", "(B1)", "(B2)", "(B3)" or "(B4)" where they changed them; section 11 items 85 to 95. B4
 (#192, merged after `216c2f9`, at `ff6fd7c`) names the odds providers.
 
+Checked an eighth time at `395b6e0` (2026-11-14, the twelfth revision; the eleventh corrected four places
+of this document in place, for FX-35 and the release pull request #195, without a paragraph here), after the
+3.1.1 and 3.1.2 releases of that day. The work has no plan item and is cited
+by pull request: the Health screen names the kind of network failure of a failed connection check (#226) and
+has a second action, trusting the certificate of a network that re-signs HTTPS, with the list of trusted
+certificates (#230; the routes `GET`, `POST`, `DELETE /api/v1/trust` and `POST /api/v1/trust/probe`, the
+error code `certificate_changed`); Settings › Requests shows the new read-only setting
+`client.browser_accept_any_certificate` under the Advanced fold (#229). The screen sections say "As built in
+3.1.2" where they changed; section 11 items 96 to 99. The frontend's dependency updates of that day (#217,
+#218: `vue-i18n`, `vite`, `vue` 3.5.45, `vue-router` 5.5, `pinia` 4.1 and others) changed no screen.
+
 ## Contents
 
 1. What this document decides, and the rules that bind it
@@ -581,7 +592,11 @@ One `DataTable` for every list.
   SofaScore's domains**. Images such as team logos are not loaded (they would come from SofaScore).
 - A `GET` of the API never makes the server call SofaScore (#43). Only explicit buttons do: tournament
   search, the connection check, and starting a job. Each such button says so in its tooltip or text
-  ("Sends a request to SofaScore").
+  ("Sends a request to SofaScore"). As built in 3.1.2 (#230): two more things reach SofaScore's host, both
+  on Health (6.12). After a connection check that failed with the cause `tls`, the page asks the server
+  what the network presents (`POST /api/v1/trust/probe`) without a further click: TLS handshakes to the API
+  host, no HTTP request. **Trust this certificate** (`POST /api/v1/trust`) makes the server run the
+  connection check again, one request. `GET /api/v1/trust` reads files only.
 - Polling, only while the browser tab is visible: `/status` every 15 s; the job list every 10 s while Jobs
   or Overview is open; a running job's progress through its event stream (`/jobs/{id}/events`, SSE). Other
   lists load when opened and on "Refresh".
@@ -607,6 +622,7 @@ Every v1 error has `{"error": {"code", "message", "details", "request_id"}}` (`0
 | 409 | `instance_running` | Restore or clear while the live service runs: "The live service (`ssc watch`, pid 4121 on host X) uses this data folder. Stop it first." |
 | 409 | `follow_exists` | Follow editor: "You already follow this tournament." Link to it. |
 | 409 | `follow_managed` | "This follow comes from the config file. Change it in sofascore.toml." |
+| 409 | `certificate_changed` | New in 3.1.2 (#230), only from **Trust this certificate** on Health (6.12): "The network now presents a different certificate than the one you confirmed, or it can no longer be trusted. Check again." Shown in the confirmation dialog, which stays open; the panel behind it reads what the network presents again (`frontend/src/screens/health/TrustPanel.vue`; the code is in `KNOWN_CODES` of `frontend/src/api/v1/errors.ts`) |
 | 501 | `not_supported` | "Not available on this server: Parquet needs the pyarrow package." Controls that will always give 501 are disabled ahead when the server says so (6.10). |
 | 502 / 503 | `upstream_error`, `blocked`, `rate_limited` | Only from buttons that call SofaScore. A translated reason and a link to Health → Run connection check. |
 | 507 | `storage_error` | "The data folder could not be written: disk full or no permission." Shows `details.store_message` in small text. |
@@ -1616,6 +1632,46 @@ confirmation that states the risk; the trusted certificates are listed there and
 (`screens/health/TrustPanel.vue`, `GET`/`POST`/`DELETE /api/v1/trust`, `POST /api/v1/trust/probe`). This is the
 screen's second action; it changes what the app trusts, not the data.
 
+The details of that note, as built (`frontend/src/screens/HealthScreen.vue`,
+`frontend/src/screens/health/TrustPanel.vue` at `395b6e0`; `02-services.md` 2.4 and 6):
+
+- **The cause** is added in brackets to the failed check's line, from `StatusCheck.cause`: "no answer
+  within 10 seconds", the name that could not be resolved, the proxy that did not work, the secure
+  connection that could not be set up, no connection, or a connection closed before an answer. A cause the
+  page has no text for, and a failure without one, show the reason alone.
+- **The panel** is part of the connection card, under the check's result. It appears when the last check
+  of this page failed with the cause `tls`, and then asks the server by itself what the network presents
+  (a spinner, "Reading the certificate the network presents…"); no button starts that probe.
+- **What it shows when the certificate can be trusted** (`can_trust`): a sentence that an antivirus, a
+  company proxy or someone who intercepts the connection does this; the certificate's name, its issuer, the
+  SHA-256 fingerprint in colon-separated pairs and the day it expires; a note when it is an issuing
+  certificate and not a root; a note when the built-in browser of this system does not use the list
+  (`browser_supported` false: not Linux, or no `libnss3`); and the button **Trust this certificate**.
+- **What it shows when it cannot**: one sentence by the probe's `reason`. A proxy is configured, the API
+  address is not https, the server could not be reached, the network sends no CA certificate
+  (`root_not_sent`: the text names the issuer whose certificate to export and the `ca` folder of the config
+  folder), this Python reads only the server's own certificate (`chain_unavailable`, the same advice), the
+  presented CA has expired, or trusting it would not make the connection verify. For `verified` it shows
+  no sentence.
+- **The confirmation** is the ConfirmDialog in its danger form with a typed word ("TRUST", in either case,
+  as for "DELETE" in 6.11): it names the
+  certificate and repeats the fingerprint, states the risk in bold ("Whoever holds this certificate's key can
+  read and change everything the app downloads."), says to do it only on a network known to inspect HTTPS,
+  and that the name can be imitated, so the fingerprint should be compared with what the antivirus or proxy
+  shows. Confirming sends the fingerprint that was shown, never a certificate. A 409 `certificate_changed`
+  stays in the dialog as its error (5.2).
+- **Afterwards** the server's own connection check is the card's result (the check of `POST /trust`), the
+  status is read again, and the panel says where the certificate is stored, that the built-in browser needs
+  an app restart when it could not be restarted (`browser_restart_needed`), and that a live service that is
+  already running uses it for its browser after its next start.
+- **The list** "Trusted certificates" is shown whenever `GET /api/v1/trust` returns any, with or without a
+  failed check: name, fingerprint, file name, expiry, an "expired" badge, and **Remove** behind a plain
+  confirmation. It lists every PEM file of the `ca` folder, also those put there by hand. When the list
+  cannot be read, the block is left out without an error.
+- Texts are in English and Turkish (`ui.health.check.cause.*`, `ui.health.trust.*`). Not built: no
+  certificate upload or paste (the server reads the certificate from the network itself), and no trust
+  action outside Health (`HealthScreen.vue` is the panel's only user).
+
 **Who / when.** The operator, from the health pill or an alert.
 
 ```
@@ -1648,7 +1704,8 @@ screen's second action; it changes what the app trusts, not the data.
 |---|---|---|---|
 | Connection | | `GET /api/v1/status` | `bridge.state`, `consecutive_failures`, `last_success_at`, `last_failure_at`, `failing_since`, `last_error.kind`, `last_error.at`. As built (FX-14a, FX-14b): "Not tried yet" (grey) while nothing has answered, "Last request failed" and "Last check failed" (amber), from `/status.connection` (`state`: `never_tried`, `ok`, `failed`; `last_check`; FX-19), plus "Last failed request" (the reason in words, the time) and "Last connection check". FX-14a found that `bridge.last_success_at` was set only by the browser bridge, so a download through the direct path still showed "Not tried yet"; FX-19 records every transport. The state is kept per process: requests of `ssc` commands and `ssc watch` do not count in the web server's `/status` (G28). As built (B2, #191): the state is the **last recorded outcome** (every record takes a sequence number), so a failure in the same second as an answer reads "Last request failed" (on whole-second times a tie read `ok` before); `last_check.superseded` says that an answer came after a failed check, and the card then no longer shows "Last check failed" (`frontend/src/ui/status.ts:57` at `216c2f9`; an older server without the flag is judged by the times) |
 | Request rate | | same | `throttle.enabled`, `requests_per_second`, `shared`, `error` |
-| Run connection check | one request through the bridge, on click only | `POST /api/v1/status/check` (P21) | result: success, events count, browser ready, challenge. Built (P21 #122): `ok`, `reason`, `message`, `events_count`, `checked_at_utc`, `bridge` |
+| Run connection check | one request through the bridge, on click only | `POST /api/v1/status/check` (P21) | result: success, events count, browser ready, challenge. Built (P21 #122): `ok`, `reason`, `message`, `events_count`, `checked_at_utc`, `bridge`. As built in 3.1.2 (#226): `cause` (`timeout`, `dns`, `proxy`, `tls`, `connect`, `reset`; null unless `reason` is `network`), shown in brackets after the reason. The request goes through the app's HTTP client and reaches the bridge only when SofaScore challenges it (`02-services.md` 2.4, 6), not "through the bridge" as the second column says |
+| Certificate of the network (3.1.2, #230) | after a check that failed with cause `tls`: the certificate the network presents and **Trust this certificate**; the list of trusted certificates with **Remove** | `POST /api/v1/trust/probe`, `POST /api/v1/trust`, `GET /api/v1/trust`, `DELETE /api/v1/trust/{fingerprint}` | probe: `can_trust`, `presented` (`subject`, `issuer`, `sha256`, `not_after`, `self_signed`), `leaf.issuer`, `reason`, `error`, `browser_supported`; outcome: `stored`, `check`, `browser_supported`, `browser_restart_needed`; list: `file`, `subject`, `sha256`, `not_after`, `expired` |
 | Live service | read-only; no start or stop in the UI (R2) | `/status` live fields (P21, from `live_status(store)`) | `running`, `pid`, `host`, `source`, `sports`, `leaders` (per sport: `page`, `direct` or `poll`), `last_switch`, `heartbeat_at`, `blocked`, `last` (the last run when not running) |
 | `direct` warning | when any sport's source is `direct`: a warn badge "Direct source (opt-in)" with a one-line summary of the four warnings of `02-services.md` 8.3 | same | `source`, `leaders` |
 | Not running | "Not running. Live watching runs on the server: `ssc watch`." + CodeHint; the last run's end time | same | `running`, `last` |
@@ -1829,6 +1886,14 @@ a closed **"Advanced"** ("Gelişmiş") fold with a warning (`advanced: true` in
 has an unsaved change or a refusal. Requests now starts with "Requests per second", where the end-to-end
 test had found the SofaScore address first (F20). The wireframe's "Base address" row is under the fold.
 
+**As built in 3.1.2 (#229).** The Advanced fold of Requests has one more row,
+`client.browser_accept_any_certificate`, labelled **"Built-in browser accepts any certificate (unsafe)"**
+("Yerleşik tarayıcı her sertifikayı kabul etsin (güvensiz)"), a switch (`settingsMeta.ts`, `advanced: true`).
+The API does not let it be changed (it is not in `WRITABLE` of `sofascore_scraper/web/api/v1/settings.py`),
+so the row is read-only, "Can be changed only in sofascore.toml", or locked when the environment sets it;
+it is off by default. The trusted certificates are not a setting and have no row here: they are on Health
+(6.12).
+
 **As built (FX-26, #174; findings M1 to M3 of the live validation).** `fetch.only_finished` is labelled
 **"Finished matches only in a league download"** ("Lig indirmesinde yalnızca bitmiş maçlar"). FX-20's text
 said that it only filters the lists and does not change what is downloaded, which was wrong: with it on, a
@@ -1919,6 +1984,15 @@ Added since, at `216c2f9` (FX-28 and the 3.1 work):
 | `/status.summary.follows[]` (G40); `GET /events?follow=kind:id`; `progress.requests` and `result.requests` (G41); `league_name`, `season_name`, `season_year` in sync log parameters (G37); `last_check.superseded` in `/status.connection`; setting `fetch.confirm_empty_after_seconds` | B2 (#191) | Follows, Follow detail, Job detail, Health, Settings › Data |
 | `SetsScore.sets` of e-sports (`games_won`) and `legs_won` for darts in one set (G43) | B3 (#189) | Event detail, Events |
 | `GET /odds/providers` (`OddsProviderInfo`: `id`, `name`, `country`, `configured`; G38) | B4 (#192) | Event detail (Odds), Data table, Settings |
+
+Added since, at `395b6e0` (3.1.1 and 3.1.2, 2026-11-14; cited by pull request):
+
+| Route or field | Built by | Screens |
+|---|---|---|
+| `POST /follows`: `seasons` optional, null or missing means `defaults.seasons` (it was `all`) | #220 (3.1.1) | none: the Follow editor always sends its choice |
+| `cause` in the answer of `POST /status/check` | #226 (3.1.2) | Health |
+| `GET /trust`, `POST /trust/probe`, `POST /trust`, `DELETE /trust/{fingerprint}`; the error code `certificate_changed` (409) | #230 (3.1.2) | Health |
+| setting `client.browser_accept_any_certificate` (read-only through the API) | #229 (3.1.2) | Settings › Requests, Advanced |
 
 P30 (#186) removed the 2.x `/api` routes; a 2.x path answers 404. No screen used them.
 
@@ -2085,6 +2159,9 @@ went).
 - No images or other content loaded from SofaScore's domains; the only SofaScore link is "Open on
   SofaScore", which the user clicks.
 - No analytics, no charts beyond the small coverage bars (decision 12).
+- No upload or paste of a certificate to trust (3.1.2, #230): the server stores only the certificate it
+  reads from the network itself, after the user confirmed its fingerprint (6.12). A CA certificate the
+  network does not send is put into the `ca` folder of the config folder on the server, by hand.
 
 ## 10. Decisions taken (approved 2026-10-02)
 
@@ -2520,6 +2597,24 @@ at `216c2f9`). FX-28 (#177) merged before the release; 3.0.0 was tagged on 2026-
 95. **Bookmaker names** (6.6, 6.16, 7.3 G38). The Odds tab said "Bookmaker 1". B4 (#192) names the known
     providers from a built-in table (`GET /odds/providers`), in the Odds tab, the Data table and the Settings
     row of `client.odds_provider`; unknown ids stay numbered.
+
+Corrections after the 3.1.1 and 3.1.2 releases (2026-11-14, the twelfth revision; checked at `395b6e0`):
+
+96. **What a failed connection check says** (6.12). The card showed the reason only ("SofaScore could not
+    be reached" for every network failure). Since #226 it adds the cause the server read from curl's error
+    code: timeout, DNS, proxy, TLS, no connection, or a closed connection.
+97. **A second action on Health** (5.1, 5.2, 6.12, 7.1, 9). 6.12 said the screen is read-only with one
+    action. Since #230 a check that failed on TLS shows the certificate the network presents and lets the
+    user trust it, behind a typed confirmation that states the risk; the trusted certificates are listed
+    and can be removed. The server reads the certificate itself and stores it only when its fingerprint is
+    the one shown (409 `certificate_changed` otherwise, a new row of 5.2); nothing is uploaded. The probe
+    starts without a click, which 5.1's rule on buttons did not foresee: it is a TLS handshake, not a
+    request.
+98. **The connection check's path** (6.12). The table said "one request through the bridge". It goes
+    through the app's HTTP client (`02-services.md` 6, since P21), and since #227 the HTTP client is what
+    answers most requests; the bridge is reached only on a challenge no browser profile passes.
+99. **A read-only switch in Settings** (6.16). `client.browser_accept_any_certificate` (#229) is shown
+    under Requests › Advanced and cannot be changed in the UI.
 
 The words, as built (FX-14a, #154; design word → Turkish → English):
 
