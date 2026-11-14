@@ -5420,9 +5420,12 @@ How 3.1.1 and 3.1.2 were released, as far as the repository shows it:
    that re-signs HTTPS: trust its certificate, because the browser no longer accepts it by itself) and
    names the image `ghcr.io/tunjayoff/sofascore_scraper:3.1.2`.
 3. `release.yml` runs on a `v*` tag: it checks the tag against `pyproject.toml`, runs CI, builds and
-   smoke-tests the image, pushes it as `X.Y.Z`, `X.Y` and `latest` and publishes the GitHub Release. This
-   revision did not look at the runs, the GitHub Releases or the registry (it works from the repository
-   only), so it records the tags and what the changelog says, not the outcome of the runs. There is no
+   smoke-tests the image, pushes it as `X.Y.Z`, `X.Y` and `latest` and publishes the GitHub Release. Both
+   runs were checked on 2026-11-14 after their tags: the workflow ended in success with every job green,
+   each GitHub Release has the two archives and `SHA256SUMS.txt`, and each image was pulled and run
+   (3.1.1: the version and the raised `certifi`; 3.1.2: a connection check and the download of one match
+   against SofaScore, with no 403 and without the browser). The release notes of 3.1.2 were edited once
+   afterwards (the browser install command with `--no-shell`, as in the changelog since #233). There is no
    PyPI package; both install from source, like 3.1.0. Which checks of release point D (section 8) ran
    before each tag is not recorded in the repository.
 
