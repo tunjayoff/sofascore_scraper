@@ -8,6 +8,23 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+## [3.1.2] - 2026-11-14
+
+Downloads are fast again, and the app works on networks that inspect HTTPS. Most requests had been
+refused by SofaScore and then made through the built-in browser; the request layer now presents
+clients that pass. A network that re-signs HTTPS (an antivirus that scans HTTPS, a company proxy)
+can be trusted with one click on the Health page, and the built-in browser now verifies certificates
+like the HTTP client does. The Docker image is `ghcr.io/tunjayoff/sofascore_scraper:3.1.2`.
+
+**Upgrading from 3.1.1:**
+
+- **From source:** the browser stack was raised, so install its browser build once more after
+  `pip install`: `python -m patchright install chromium` (`ssc doctor` says so when it is missing).
+  The Docker image has it.
+- **On a network that re-signs HTTPS:** the built-in browser no longer accepts the re-signed
+  certificate by itself. Trust the network's certificate on the Health page (or `ssc trust add`);
+  see "Security" below.
+
 ### Security
 
 - The built-in browser no longer accepts HTTPS certificates it cannot verify. Until now it accepted any
@@ -66,10 +83,11 @@ below (see "Releasing" in the README).
 - `ssc doctor --live` also sends one request the way downloads do, with the app's HTTP client, after
   the one through the browser. Until now it reported success on a network that re-signs HTTPS, where
   the browser gets through and every download fails with a certificate error; it now fails there
-  (`live_http_tls`) and names the fix. The built-in browser accepts any certificate, so its success
-  alone says nothing about the HTTP client (#225).
+  (`live_http_tls`) and names the fix (#225).
 - Health: the hint for a connection check that failed on TLS names the CA certificate and
   `SSL_CERT_FILE` (#225).
+- The browser stack is raised to `scrapling` 0.5.1, `patchright` 1.64.4 and `playwright` 1.65.0,
+  after the challenge solve was verified live with them against the previous versions.
 
 ## [3.1.1] - 2026-11-14
 
@@ -1669,7 +1687,8 @@ terminal tool; the web interface arrived in April 2026 (reported as 1.0.0 by `/h
 was replaced by the Vue app on 2026-07-27, when the number became 2.0.0. See `git log` for
 details.
 
-[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.1...HEAD
+[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.2...HEAD
+[3.1.2]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/tunjayoff/sofascore_scraper/releases/tag/v3.0.0
