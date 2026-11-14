@@ -20,7 +20,7 @@
 annotated-doc==0.0.6
 annotated-types==0.8.0
 anyio==4.16.0
-apify-fingerprint-datapoints==0.15.0
+apify-fingerprint-datapoints==0.16.0
 browserforge==1.2.4
 certifi==2026.10.23
 cffi==2.1.1
@@ -65,9 +65,9 @@ w3lib==2.5.0
 # Turnstile çözümü bu üçlüyle canlıda doğrulandı (requirements.txt'deki nota bakın). CI bu
 # sürümleri yalnızca yerel sahte sayfaya karşı dener (tests/test_bridge_offline_browser.py);
 # yükseltmeden önce `pytest -m "live and browser"` elle çalıştırılmalı.
-scrapling==0.4.15
-patchright==1.63.0
-playwright==1.63.0
+scrapling==0.5.1
+patchright==1.64.4
+playwright==1.65.0
 
 # --- Python sürümüne bağlı sabitler ------------------------------------------------------------
 # numpy yalnızca isteğe bağlı `parquet` ekinin (pyarrow) bağımlılığıdır; pandas 3.0'da kalktı (FX-15). CI'ın
