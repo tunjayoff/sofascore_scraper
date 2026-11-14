@@ -39,11 +39,16 @@ services:
       # SOFASCORE_DISPLAY__LANGUAGE: tr
       # SOFASCORE_SERVER__TOKEN: "a-long-random-value"
       # SOFASCORE_CLIENT__PROXY: "http://user:pass@host:port"   # a proxy given here is used
+      # On a network that inspects HTTPS (antivirus, company proxy) requests fail with "curl: (60) SSL
+      # certificate": give the app that software's CA certificate (PEM) and mount the file below.
+      # See "A network that inspects HTTPS" in docs/deploy/docker.md.
+      # SSL_CERT_FILE: /etc/ssl/inspection-ca.pem
 
     # Chromium needs more shared memory than Docker's 64 MB default
     shm_size: "1gb"
 
     volumes:
+      # - ./inspection-ca.pem:/etc/ssl/inspection-ca.pem:ro # the CA named in SSL_CERT_FILE above
       - data:/app/data # downloaded seasons, matches, details, backups, job history
       - config:/app/config # overrides.json (settings saved in the UI), .env, leagues.txt, league_sports.json
       - browser-profile:/app/browser-profile # solved challenge; makes restarts fast

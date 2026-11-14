@@ -295,6 +295,9 @@ Usually the newest season has only fixtures, and match details are downloaded on
 **Downloads fail or stop with exit code 4. What now?**
 SofaScore is refusing requests and the circuit breaker stopped the job. Look at **Health** (or `ssc status`), lower the request budget, and try later. For a bug report, attach the bundle from `ssc diagnostics` or the **Logs** page; secrets are masked, but read it before you send it.
 
+**The connection check fails with a certificate error. Why?**
+The log says `curl: (60) SSL certificate … self signed certificate in certificate chain`, and **Health** says the secure connection could not be set up. Something between the app and SofaScore re-signs HTTPS with its own CA: an antivirus that scans HTTPS, a company proxy, or a provider's block page. Exclude `www.sofascore.com` from that scanning, or give the app the CA certificate as a PEM file and set the environment variable `SSL_CERT_FILE` to its path (in Docker: mount the file and set the variable on the container, see [docs/deploy/docker.md](docs/deploy/docker.md#a-network-that-inspects-https)). `ssc doctor --live` tells you whether it worked. There is no setting that turns verification off.
+
 **Can I run it on a NAS or a server and use it from my laptop?**
 Yes, with Docker or the systemd units. Set the access token and the allowed host names first, and put TLS in front of it ([Security model](#security-model), [docs/deploy](docs/deploy/README.md)).
 

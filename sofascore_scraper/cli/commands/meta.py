@@ -10,7 +10,7 @@ komutlar.
                                    dosyası; dosyanın yolu
     diagnostics                    tanılama paketi (sofascore_scraper/diagnostics.py)
 
-Yalnızca `doctor --live` gerçek bir istek atar ve yalnızca açıkça istenirse.
+Yalnızca `doctor --live` gerçek istek atar (köprüden bir, istek yolundan bir) ve yalnızca açıkça istenirse.
 
 Ağır içe aktarmalar (ayar yükleyici, log, tanılama) işlevlerin içindedir: modül yüklenirken yalnızca standart
 kütüphane ve saf modüller gerekir, böylece `version` ve `doctor` paketler kurulmadan da çalışır.

@@ -642,7 +642,7 @@ const en = {
         timeout: 'no answer within 10 seconds',
         dns: 'the name www.sofascore.com could not be resolved; check DNS and the internet connection',
         proxy: 'the proxy did not work; check the proxy setting',
-        tls: 'the secure connection could not be set up; check the clock, the proxy and any filter on the network',
+        tls: 'the secure connection could not be set up; check the clock and the proxy. If an antivirus or the network inspects HTTPS, give the app its CA certificate (SSL_CERT_FILE; see the FAQ in the README)',
         connect: 'no connection could be opened; check the internet connection, the firewall and the proxy',
         reset: 'the connection was closed before an answer came',
       },

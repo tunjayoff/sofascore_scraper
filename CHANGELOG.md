@@ -23,6 +23,20 @@ below (see "Releasing" in the README).
 - The connection check (Health, `POST /api/v1/status/check`) says what kind of network failure it
   met when SofaScore could not be reached: `cause` is `timeout`, `dns`, `proxy`, `tls`, `connect` or
   `reset`, and the Health page shows it with a hint (#225).
+- Docker: how to run the image on a network that inspects HTTPS (an antivirus that scans HTTPS, a
+  company proxy): give the container the CA certificate with `SSL_CERT_FILE`, or build it into an
+  image of your own ([docs/deploy/docker.md](docs/deploy/docker.md#a-network-that-inspects-https),
+  FAQ in the README). The Compose example carries the two lines as comments (#225).
+
+### Changed
+
+- `ssc doctor --live` also sends one request the way downloads do, with the app's HTTP client, after
+  the one through the browser. Until now it reported success on a network that re-signs HTTPS, where
+  the browser gets through and every download fails with a certificate error; it now fails there
+  (`live_http_tls`) and names the fix. The built-in browser accepts any certificate, so its success
+  alone says nothing about the HTTP client (#225).
+- Health: the hint for a connection check that failed on TLS names the CA certificate and
+  `SSL_CERT_FILE` (#225).
 
 ## [3.1.1] - 2026-11-14
 

@@ -125,6 +125,65 @@ This suits commands that do not download (`status`, `backup`, `export`, `describ
 way would share the server's browser profile, which one process at a time can use: start downloads from the
 web app or with the one-shot commands above.
 
+## A network that inspects HTTPS
+
+An antivirus that scans HTTPS, a company proxy that inspects TLS, or a provider's block page answers in
+SofaScore's place with a certificate signed by its own CA. Your computer trusts that CA because the software
+installed it there; the container does not. The signs:
+
+- the connection check on **Health** fails with "SofaScore could not be reached (the secure connection could
+  not be set up …)", and downloads fail with `network`;
+- the log has `curl: (60) SSL certificate OpenSSL verify result: self signed certificate in certificate
+  chain (19)` (or `unable to get local issuer certificate (20)`);
+- `ssc doctor --live` fails with "the app's HTTP client could not verify the certificate it was shown".
+
+The cleanest fix is on the other side: exclude `www.sofascore.com` from the scanning. When that is not
+possible, give the container the CA certificate of that software. Export it as a PEM file (Base64, begins with
+`-----BEGIN CERTIFICATE-----`), mount it and name it in `SSL_CERT_FILE`:
+
+```yaml
+services:
+  sofascore-scraper:
+    environment:
+      SSL_CERT_FILE: /etc/ssl/inspection-ca.pem
+    volumes:
+      - ./inspection-ca.pem:/etc/ssl/inspection-ca.pem:ro
+```
+
+```bash
+docker run … -e SSL_CERT_FILE=/etc/ssl/inspection-ca.pem \
+  -v "$PWD/inspection-ca.pem:/etc/ssl/inspection-ca.pem:ro" ghcr.io/tunjayoff/sofascore_scraper:latest
+```
+
+Set the variable in the container's environment, not in `.env`, and on every container that downloads (the
+`sofascore-watch` service too). Then run the connection check again.
+
+- The file **replaces** the image's list of trusted CAs. That is right when everything the container sends is
+  inspected. When only some connections are, append your CA to the image's list and mount the result instead:
+
+  ```bash
+  docker run --rm --entrypoint cat ghcr.io/tunjayoff/sofascore_scraper:latest \
+    /etc/ssl/certs/ca-certificates.crt > ca-bundle.pem
+  cat inspection-ca.pem >> ca-bundle.pem
+  ```
+
+- A path that does not exist is ignored without a message, and the error stays the same; `ssc doctor --live`
+  names the variable when that happens. `CURL_CA_BUNDLE` and `REQUESTS_CA_BUNDLE` are read as well.
+- Or build the CA into an image of your own; the app reads the system store when none of the variables is set:
+
+  ```dockerfile
+  FROM ghcr.io/tunjayoff/sofascore_scraper:latest
+  USER root
+  COPY inspection-ca.pem /usr/local/share/ca-certificates/inspection-ca.crt
+  RUN update-ca-certificates
+  USER app
+  ```
+
+There is no setting that turns certificate verification off, on purpose. Two things to know about such a
+network: whoever runs the inspection can read and change what the app downloads, and the built-in browser
+does not protect against that, because it accepts any certificate (which is why `ssc doctor --live` could
+report success in 3.1.1 and earlier while every download failed).
+
 ## Updating
 
 ```bash

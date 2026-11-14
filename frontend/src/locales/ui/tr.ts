@@ -644,7 +644,7 @@ const tr: typeof en = {
         timeout: '10 saniye içinde yanıt gelmedi',
         dns: 'www.sofascore.com adı çözülemedi; DNS’i ve internet bağlantısını denetleyin',
         proxy: 'proxy çalışmadı; proxy ayarını denetleyin',
-        tls: 'güvenli bağlantı kurulamadı; saati, proxy’yi ve ağdaki süzgeçleri denetleyin',
+        tls: 'güvenli bağlantı kurulamadı; saati ve proxy’yi denetleyin. Bir antivirüs ya da ağ HTTPS’i denetliyorsa uygulamaya onun CA sertifikasını verin (SSL_CERT_FILE; README’deki SSS’ye bakın)',
         connect: 'bağlantı açılamadı; internet bağlantısını, güvenlik duvarını ve proxy’yi denetleyin',
         reset: 'bağlantı yanıt gelmeden kapandı',
       },

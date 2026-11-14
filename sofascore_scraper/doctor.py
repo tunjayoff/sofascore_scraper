@@ -10,8 +10,8 @@ Denetimler SofaScore'a bağlanmaz: Python sürümü, gerekli paketler, köprün�
 (patchright'ın Chromium'u; yerel bir about:blank sayfasıyla denenir), tarayıcı profili, veri ve
 yapılandırma dizinleri, yapılandırma dosyası (sofascore.toml) ve onun verdiği dizinler, web arayüzü derlemesi
 ve .env. Her denetim ok / warn / fail ile tek satırlık
-bir çözüm döndürür. `--live` açıkça istenirse köprü üzerinden TEK gerçek istek atılır; varsayılan
-olarak ve testlerde çalışmaz.
+bir çözüm döndürür. `--live` açıkça istenirse iki gerçek istek atılır (biri köprü üzerinden, biri uygulamanın
+kendi istek yoluyla); varsayılan olarak ve testlerde çalışmaz.
 
 Bu modül yüklenirken yalnızca standart kütüphaneyi kullanır: eksik paket tam da bulması gereken
 sorundur, o yüzden sofascore_scraper.logger (rich) ya da dotenv'e bağımlı olamaz. Python 3.10'dan eski sürümlerde
@@ -1030,11 +1030,71 @@ def check_budget(ctx: Context) -> CheckResult:
 # --- canlı denetim (yalnızca açıkça istenirse) ------------------------------------------------
 
 
-def check_live(ctx: Context, fetch: Optional[Callable[[str], Any]] = None) -> CheckResult:
+# curl'ün güvendiği sertifika dosyasını veren ortam değişkenleri, curl_cffi'nin baktığı sırayla
+CA_FILE_ENV = ("SSL_CERT_FILE", "CURL_CA_BUNDLE", "REQUESTS_CA_BUNDLE")
+_CURL_ERROR = re.compile(r"curl: \((\d+)\) *(.*)")
+# curl'ün TLS hata kodları (sofascore_scraper/web/upstream.py `_CURL_CAUSE` ile aynı küme; doktor web katmanını yüklemez)
+_CURL_TLS_CODES = (35, 51, 58, 59, 60, 77, 83)
+
+
+def _missing_ca_file(ctx: Context) -> Optional[Tuple[str, str]]:
+    """Sertifika dosyası için verilmiş ama var olmayan ilk ortam değişkeni: (ad, yol); yoksa None."""
+    for name in CA_FILE_ENV:
+        path = (ctx.environ.get(name) or "").strip()
+        if path and not os.path.exists(path):
+            return name, path
+    return None
+
+
+def _check_live_http(ctx: Context, request: Optional[Callable[[str], Any]] = None) -> Optional[CheckResult]:
     """
-    Köprü üzerinden SofaScore'a TEK gerçek istek. Yalnızca `--live` / `run_checks(live=True)` ile
-    çalışır; ortak istek bütçesine (sofascore_scraper/throttle.py) uyar. Profil başka bir süreçte açıksa
-    (çalışan web uygulaması) tarayıcı başlayamaz ve denetim başarısız olur.
+    Uygulamanın kendi istek yoluyla (curl_cffi; arayüzdeki bağlantı denetimiyle aynı çağrı) TEK istek. Köprü yanıt
+    alırken bu yol bağlanamıyorsa indirmeler de bağlanamaz: tarayıcı sertifika hatalarını yok sayar (Scrapling
+    `ignore_https_errors`), curl saymaz; ağdaki bir yazılım (HTTPS tarayan antivirüs, kurumsal TLS denetimi)
+    sertifikayı yeniden imzalıyorsa yalnızca curl yolu düşer (#225). Sorun yoksa None döner. SofaScore'un HTTP ile
+    verdiği her yanıt (403, 429 dahil) bağlantının kurulduğunu gösterir; yalnızca bağlantı hatası bildirilir.
+    """
+    from sofascore_scraper.exceptions import NetworkError, SofaScoreScraperError
+
+    if request is None:
+        from sofascore_scraper.client.transport import make_api_request
+
+        def request(path: str) -> Any:
+            return make_api_request(path, max_retries=1, timeout=10, raise_errors=True)
+
+    try:
+        request(LIVE_PROBE_PATH)
+        return None
+    except NetworkError as e:
+        curl = _CURL_ERROR.search(str(e))
+    except SofaScoreScraperError:
+        return None
+    # Hatanın metni adres içerebilir; curl'ün kendi açıklaması yeter ("See https://curl.se/..." eki atılır)
+    error = _first_line(curl.group(2).split(" See https://")[0]).rstrip(". ") if curl else "?"
+    detail: Dict[str, Any] = {"path": LIVE_PROBE_PATH, "error": error, "curl_code": int(curl.group(1)) if curl else None}
+    if detail["curl_code"] in _CURL_TLS_CODES:
+        fix = ctx.t("doctor_live_http_tls_fix")
+        missing = _missing_ca_file(ctx)
+        if missing is not None:
+            detail["missing_ca_file"] = {"name": missing[0], "path": missing[1]}
+            fix = "{} {}".format(ctx.t("doctor_live_http_ca_missing", name=missing[0], path=missing[1]), fix)
+        return _result(
+            ctx, "live", FAIL, "live_http_tls", ctx.t("doctor_live_http_tls", error=error), fix=fix, detail=detail
+        )
+    return _result(
+        ctx, "live", FAIL, "live_http_failed", ctx.t("doctor_live_http_failed", error=error),
+        fix=ctx.t("doctor_live_http_fix"), detail=detail,
+    )
+
+
+def check_live(
+    ctx: Context, fetch: Optional[Callable[[str], Any]] = None, request: Optional[Callable[[str], Any]] = None
+) -> CheckResult:
+    """
+    SofaScore'a iki gerçek istek: biri köprü (tarayıcı) üzerinden, biri uygulamanın kendi istek yoluyla
+    (`_check_live_http`). Yalnızca `--live` / `run_checks(live=True)` ile çalışır; ortak istek bütçesine
+    (sofascore_scraper/throttle.py) uyar. Profil başka bir süreçte açıksa (çalışan web uygulaması) tarayıcı
+    başlayamaz ve denetim başarısız olur; o durumda ikinci istek atılmaz.
     """
     if fetch is None:
         from sofascore_scraper.client.bridge import fetch_api_via_browser_sync as fetch
@@ -1045,7 +1105,9 @@ def check_live(ctx: Context, fetch: Optional[Callable[[str], Any]] = None) -> Ch
     except Exception as e:
         data, error = None, "{}: {}".format(e.__class__.__name__, e)
     if data:
-        return _result(ctx, "live", OK, "live_ok", ctx.t("doctor_live_ok"), detail={"path": LIVE_PROBE_PATH})
+        return _check_live_http(ctx, request) or _result(
+            ctx, "live", OK, "live_ok", ctx.t("doctor_live_ok"), detail={"path": LIVE_PROBE_PATH}
+        )
     detail: Dict[str, Any] = {"path": LIVE_PROBE_PATH}
     if error is None:
         try:
