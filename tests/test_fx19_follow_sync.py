@@ -379,7 +379,7 @@ def jobs(store: Store, monkeypatch: pytest.MonkeyPatch) -> Iterator[JobStore]:
 def test_a_team_follow_added_through_the_api_is_downloaded_by_a_sync_job(store: Store, fake: FakeSofaScore,
                                                                          jobs: JobStore) -> None:
     created = client.post("/api/v1/follows", json={"kind": "team", "entity_id": TEAM, "name": "Team 42",
-                                                   "sport": "football"})
+                                                   "sport": "football", "seasons": "all"})  # sahte maçlar eski
     assert created.status_code == 201, created.text
     started = client.post("/api/v1/jobs", json={"kind": "sync", "spec": {"follows": ["team:42"]}})
     assert started.status_code == 202, started.text

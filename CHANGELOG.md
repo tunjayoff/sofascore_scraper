@@ -8,6 +8,14 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Fixed
+
+- `POST /api/v1/follows` without `seasons` now takes `defaults.seasons` (`current` unless changed), as
+  `ssc follows add` and a `[[follow]]` of the config file do. It took `all` before: a team or a player
+  followed that way had its match list read back to the page limit (about 150 matches and 1,600
+  requests for a national team). The web app always sends its own choice and is not affected; pass
+  `"seasons": "all"` to keep the old behaviour.
+
 ### Security
 
 - Pinned versions with published advisories were raised: `certifi` 2026.10.23 and
