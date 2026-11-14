@@ -20,6 +20,7 @@ import sys
 import tempfile
 import threading
 import time
+import types
 import urllib.parse
 import urllib.request
 from typing import Any, Collection, Dict, FrozenSet, List, Optional, Sequence, Tuple, Union
@@ -589,6 +590,18 @@ def _isolate_request_layer(request, monkeypatch):
             raise RuntimeError("tests must not launch a real browser (mark the test with @pytest.mark.browser)")
 
         monkeypatch.setattr(cs.BrowserBridge, "_launch", _no_real_browser)
+    # Sertifika yoklaması (sofascore_scraper/client/trust.py) gerçek sunucuya soket açar: testlerde yalnızca
+    # yerel adrese izin verilir (yoklamayı sınayan testler 127.0.0.1'de kendi sunucusunu açar)
+    from sofascore_scraper.client import trust
+
+    real_connect = trust.socket.create_connection
+
+    def _local_only(address, *args, **kwargs):
+        if address[0] not in ("127.0.0.1", "localhost", "::1"):
+            raise OSError(f"tests must not open a certificate probe to {address[0]}")
+        return real_connect(address, *args, **kwargs)
+
+    monkeypatch.setattr(trust, "socket", types.SimpleNamespace(create_connection=_local_only))
     yield
 
 
@@ -623,6 +636,18 @@ def _planning_resync() -> None:
     o kadar erken yüklemek loglamanın konsol akışını değiştirir (Windows'ta stderr'e yazan testler bozuldu).
     """
     _resync_before_planning()
+
+
+@pytest.fixture(scope="session")
+def fake_pki() -> Any:
+    """
+    Güvenilen sertifika testlerinin sahte PKI'si (tests/trust_pki.py): oturumda bir kez, yalnızca standart
+    kütüphaneyle üretilir ve geçici bir dizine yazılır; depoda ne anahtar ne sertifika durur. Onu isteyen ilk
+    testte üretilir (bir iki saniye); `trust_pki.pki()` aynı nesneyi verir.
+    """
+    import trust_pki
+
+    return trust_pki.pki()
 
 
 @pytest.fixture(autouse=True)

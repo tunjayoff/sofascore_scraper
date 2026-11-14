@@ -123,6 +123,28 @@ export interface Category {
   country_code: string | null
 }
 
+/** An X.509 certificate as shown to the user. `sha256` is the fingerprint of the whole certificate. */
+export interface CertificateInfo {
+  subject: CertificateName
+  issuer: CertificateName
+  /** Lower-case hex, 64 digits. */
+  sha256: string
+  /** ISO-8601, UTC. */
+  not_before: string
+  /** ISO-8601, UTC. */
+  not_after: string
+  expired: boolean
+  /** A CA certificate (basicConstraints CA). */
+  is_ca: boolean
+  /** Subject and issuer are the same: a root certificate. */
+  self_signed: boolean
+}
+
+export interface CertificateName {
+  common_name?: string | null
+  organization?: string | null
+}
+
 /**
  * A change (schema v1 Change); with `include=names` also the participant names the catalog has for its event
  * now (FX-13). The model keeps the name of the schema record: it is the `Change` of the generated client types.
@@ -1687,6 +1709,87 @@ export interface TournamentSummary {
   finished_details?: number
 }
 
+export interface TrustListResponse {
+  data: TrustedCertificate[]
+  page: PageInfo
+}
+
+export interface TrustOutcome {
+  stored: TrustedCertificate
+  /** The connection check made right after storing, as `POST /status/check`. */
+  check: StatusCheck
+  browser_supported: boolean
+  /** True: the built-in browser of this server could not be restarted and reads the certificate only after the app restarts. Other processes (`ssc watch`) always read it at their next start. */
+  browser_restart_needed: boolean
+}
+
+/** What the network presents for the API host right now. Read without verifying; no HTTP request is sent. */
+export interface TrustProbe {
+  host: string
+  port: number
+  /** The chain verifies with the current trust: nothing needs to be trusted. */
+  verified: boolean
+  /** Certificates the server sent; 0 when none could be read. */
+  chain_length: number
+  /** The server's own certificate. */
+  leaf?: CertificateInfo | null
+  /** The certificate that would be trusted: the top-most CA certificate the server sent. Null unless `can_trust`. */
+  presented?: CertificateInfo | null
+  can_trust: boolean
+  /** Why nothing can be trusted: `verified` (not needed), `proxy` (a proxy is configured; the probe would bypass it), `not_https`, `unreachable`, `root_not_sent` (only the server's own certificate was sent: put the CA certificate into the `ca` folder), `chain_unavailable` (this Python reads only the server's own certificate; 3.13+ reads the chain), `expired`, `not_enough` (trusting the presented CA would still not verify the connection). */
+  reason?: "verified" | "proxy" | "not_https" | "unreachable" | "root_not_sent" | "chain_unavailable" | "expired" | "not_enough" | null
+  /** The verification or connection error, in English. */
+  error?: string | null
+  /** Trusted certificates also reach the built-in browser on this platform (Linux: its NSS database). False: the browser uses the trust store of the operating system. */
+  browser_supported: boolean
+}
+
+/** What to look at. The host cannot be chosen: it is the configured API host. */
+export interface TrustProbeRequest {
+  /** `sofascore`: the host of the API base URL (`client.base_url`). */
+  target: "sofascore"
+}
+
+export interface TrustProbeResponse {
+  data: TrustProbe
+}
+
+export interface TrustRemoveResponse {
+  data: TrustRemoved
+}
+
+export interface TrustRemoved {
+  sha256: string
+  browser_restart_needed: boolean
+}
+
+export interface TrustRequest {
+  /** The fingerprint of the certificate the user was shown (`presented.sha256` of the probe). */
+  sha256: string
+}
+
+export interface TrustResponse {
+  data: TrustOutcome
+}
+
+export interface TrustedCertificate {
+  subject: CertificateName
+  issuer: CertificateName
+  /** Lower-case hex, 64 digits. */
+  sha256: string
+  /** ISO-8601, UTC. */
+  not_before: string
+  /** ISO-8601, UTC. */
+  not_after: string
+  expired: boolean
+  /** A CA certificate (basicConstraints CA). */
+  is_ca: boolean
+  /** Subject and issuer are the same: a root certificate. */
+  self_signed: boolean
+  /** File name in the `ca` folder of the config directory. */
+  file: string
+}
+
 /** Every operation of the document by its operationId. */
 export interface Operations {
   /** Health of the server */
@@ -2129,5 +2232,41 @@ export interface Operations {
     query: {}
     body: SettingsPatch
     response: SettingsResponse
+  }
+  /** List trusted certificates */
+  "listTrusted": {
+    method: "GET"
+    path: "/api/v1/trust"
+    params: {}
+    query: {}
+    body: never
+    response: TrustListResponse
+  }
+  /** Trust the certificate the network presents */
+  "trustCertificate": {
+    method: "POST"
+    path: "/api/v1/trust"
+    params: {}
+    query: {}
+    body: TrustRequest
+    response: TrustResponse
+  }
+  /** Look at the certificate the network presents */
+  "probeTrust": {
+    method: "POST"
+    path: "/api/v1/trust/probe"
+    params: {}
+    query: {}
+    body: TrustProbeRequest
+    response: TrustProbeResponse
+  }
+  /** Stop trusting a certificate */
+  "removeTrusted": {
+    method: "DELETE"
+    path: "/api/v1/trust/{fingerprint}"
+    params: { fingerprint: string }
+    query: {}
+    body: never
+    response: TrustRemoveResponse
   }
 }

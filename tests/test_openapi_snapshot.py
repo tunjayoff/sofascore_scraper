@@ -145,6 +145,10 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "GET /api/v1/diagnostics/bundle",
         "GET /api/v1/settings",
         "PATCH /api/v1/settings",
+        "GET /api/v1/trust",  # güvenilen ek sertifikalar (#225)
+        "POST /api/v1/trust",
+        "POST /api/v1/trust/probe",
+        "DELETE /api/v1/trust/{fingerprint}",
     ]
     # Belge kendi içinde kapalıdır: andığı her şema içindedir, anmadığı yoktur
     referenced = set(re.findall(r'"#/components/schemas/([^"]+)"', json.dumps(document)))
@@ -180,7 +184,7 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
         "getSeasonStandings", "getSeasonSlice", "listEvents", "getEvent", "getEventExtra", "listEventSlices", "getEventSlice",
         "getEventRaw", "getEventSliceRaw", "listEventOdds", "listEventOddsSnapshots", "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "listExports",
         "downloadExport", "listBackups", "downloadBackup", "listLogs", "getDiagnostics", "downloadDiagnosticsBundle",
-        "getSettings", "updateSettings",
+        "getSettings", "updateSettings", "listTrusted", "trustCertificate", "probeTrust", "removeTrusted",
     ]
     assert len(set(ids)) == len(ids)
     for method, path, op in operations(document):
@@ -242,6 +246,7 @@ def test_state_changing_requests_are_never_get(document: Dict[str, Any]) -> None
         "POST /api/v1/jobs", "POST /api/v1/jobs/{job_id}/cancel", "PATCH /api/v1/settings", "POST /api/v1/status/check",
         "POST /api/v1/auth/login", "POST /api/v1/auth/logout", "POST /api/v1/follows", "PATCH /api/v1/follows/{follow_id}",
         "DELETE /api/v1/follows/{follow_id}", "POST /api/v1/tournaments/search",
+        "POST /api/v1/trust", "POST /api/v1/trust/probe", "DELETE /api/v1/trust/{fingerprint}",
     }
 
 

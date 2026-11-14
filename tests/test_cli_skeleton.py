@@ -63,6 +63,7 @@ DESIGN_ERROR_TABLE: Dict[str, Any] = {
     "not_found": ("NotFoundError", 1, (404,)),
     "follow_managed": ("ConflictError", 1, (409,)),
     "follow_exists": ("ConflictError", 1, (409,)),
+    "certificate_changed": ("ConflictError", 1, (409,)),
     "job_running": ("JobRunningError", 6, (409,)),
     "data_operation_running": ("ConflictError", 6, (409,)),
     "instance_running": ("InstanceRunningError", 6, (409,)),
@@ -405,7 +406,7 @@ def test_exit_code_table():
     ]
     by_code = {spec.code: spec.error_codes for spec in exit_codes.EXIT_CODES}
     assert by_code[0] == ()
-    assert by_code[1] == ("not_found", "follow_managed", "follow_exists", "internal")
+    assert by_code[1] == ("not_found", "follow_managed", "follow_exists", "certificate_changed", "internal")
     assert by_code[2] == ("invalid_request", "config_invalid", "confirmation_required", "not_supported")
     assert by_code[3] == ("partial",)
     assert by_code[4] == ("blocked", "rate_limited", "upstream_error")

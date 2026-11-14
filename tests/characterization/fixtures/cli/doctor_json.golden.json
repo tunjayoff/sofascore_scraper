@@ -26,6 +26,7 @@
   "sofascore_scraper.cli.commands.serve",
   "sofascore_scraper.cli.commands.status",
   "sofascore_scraper.cli.commands.sync",
+  "sofascore_scraper.cli.commands.trust",
   "sofascore_scraper.cli.commands.watch",
   "sofascore_scraper.cli.exit_codes",
   "sofascore_scraper.cli.main",

@@ -13,7 +13,8 @@ Kurallar (her rota için):
 
 Bu paketteki rotalar: sağlık, durum, sporlar ve sink'ler (meta.py), oturum (auth.py), takipler (follows.py),
 turnuvalar, sezonlar ve turnuva araması (tournaments.py), maçlar, dilimleri, ham yükler ve değişiklikler (events.py), işler (jobs.py), dışa aktarmalar
-(exports.py), yedekler (backups.py), log ve tanılama (diagnostics.py), ayarlar (settings.py). Şema v1 kayıtlarının yanıt modelleri records.py'dedir. Canlı veri için rota yoktur.
+(exports.py), yedekler (backups.py), log ve tanılama (diagnostics.py), ayarlar (settings.py), güvenilen ek
+sertifikalar (trust.py). Şema v1 kayıtlarının yanıt modelleri records.py'dedir. Canlı veri için rota yoktur.
 """
 from __future__ import annotations
 
@@ -37,7 +38,7 @@ class PageInfo(BaseModel):
 
 # Rota modülleri PageInfo'yu buradan alır: içe aktarma, model tanımlandıktan sonra yapılır
 from sofascore_scraper.web.api.v1 import (  # noqa: E402
-    auth, backups, diagnostics, events, exports, follows, jobs, meta, settings, tournaments,
+    auth, backups, diagnostics, events, exports, follows, jobs, meta, settings, tournaments, trust,
 )
 
 # Her rotanın verebildiği hatalar: belirteç (401), doğrulama (422; FastAPI'nin kendi 422 modelinin yerine) ve
@@ -46,7 +47,7 @@ router = APIRouter(
     prefix=V1_PREFIX,
     responses={**error_responses("unauthorized", "internal"), **validation_response()},
 )
-for _module in (meta, auth, follows, tournaments, events, jobs, exports, backups, diagnostics, settings):
+for _module in (meta, auth, follows, tournaments, events, jobs, exports, backups, diagnostics, settings, trust):
     router.include_router(_module.router)
 
 __all__ = ["PageInfo", "router"]

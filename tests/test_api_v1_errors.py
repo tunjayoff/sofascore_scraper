@@ -408,6 +408,8 @@ WRITE_BODIES: Dict[str, Dict[str, Any]] = {
     "/api/v1/follows": {"entity_id": 8, "name": "LaLiga"},
     "/api/v1/follows/x": {"live": True},
     "/api/v1/tournaments/search": {"q": "premier"},
+    "/api/v1/trust": {"sha256": "ab" * 32},
+    "/api/v1/trust/probe": {"target": "sofascore"},
 }
 
 
@@ -451,10 +453,11 @@ def reached(monkeypatch: pytest.MonkeyPatch) -> List[str]:
 def test_the_v1_operation_list_has_reads_and_writes() -> None:
     assert ("GET", "/api/v1/health") in V1_OPERATIONS and ("GET", "/api/v1/jobs/x/events") in V1_OPERATIONS
     assert V1_WRITES == [
-        ("DELETE", "/api/v1/follows/x"), ("PATCH", "/api/v1/follows/x"), ("PATCH", "/api/v1/settings"),
+        ("DELETE", "/api/v1/follows/x"), ("DELETE", "/api/v1/trust/x"),
+        ("PATCH", "/api/v1/follows/x"), ("PATCH", "/api/v1/settings"),
         ("POST", "/api/v1/auth/login"), ("POST", "/api/v1/auth/logout"), ("POST", "/api/v1/follows"),
         ("POST", "/api/v1/jobs"), ("POST", "/api/v1/jobs/x/cancel"), ("POST", "/api/v1/status/check"),
-        ("POST", "/api/v1/tournaments/search"),
+        ("POST", "/api/v1/tournaments/search"), ("POST", "/api/v1/trust"), ("POST", "/api/v1/trust/probe"),
     ]
     assert [path for _method, path in V1_OPERATIONS if path in security.AUTH_OPEN_PATHS] == [
         "/api/v1/auth", "/api/v1/auth/login", "/api/v1/auth/logout",

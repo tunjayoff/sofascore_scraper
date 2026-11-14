@@ -31,6 +31,28 @@ below (see "Releasing" in the README).
 
 ### Added
 
+- Trusting the certificate of a network that re-signs HTTPS (an antivirus that scans HTTPS, a
+  company proxy), without an environment variable, a Compose change or a restart (#225):
+  - **Health**: when the connection check fails on the certificate, the page shows the certificate
+    the network presents (subject, issuer, SHA-256 fingerprint, expiry) and the button **Trust this
+    certificate**. The confirmation states the risk (whoever holds that certificate's key can read
+    and change what the app downloads) and wants a word typed. The connection check runs again
+    afterwards. The trusted certificates are listed there and can be removed.
+  - `ssc trust show | add --sha256 FINGERPRINT | list | remove FINGERPRINT` for servers without the
+    web app. The command never asks: `add` needs the fingerprint or `--yes`.
+  - The certificates live in the `ca` folder of the config folder (`/app/config/ca/` in the image),
+    and every `*.pem` file put there by hand is trusted as well. They are added to the CAs the app
+    trusts already (the system store, or the file of `SSL_CERT_FILE`, `CURL_CA_BUNDLE` or
+    `REQUESTS_CA_BUNDLE`). The HTTP client reads the folder with every request; the built-in browser
+    reads it at its start (Linux) and verifies against those certificates, so
+    `client.browser_accept_any_certificate` is no longer needed on such a network.
+  - API: `GET /api/v1/trust`, `POST /api/v1/trust/probe`, `POST /api/v1/trust`
+    (`{"sha256": …}`: the server looks at the network itself and stores the certificate only if its
+    fingerprint is the one given; otherwise 409 with the new error code `certificate_changed`) and
+    `DELETE /api/v1/trust/{fingerprint}`.
+  - The button is offered only when it can work: not when the network sends no CA certificate
+    (the page then names the issuer whose certificate to export), and not with a proxy configured.
+  - `ssc doctor --live` names these ways first for a certificate failure.
 - The connection check (Health, `POST /api/v1/status/check`) says what kind of network failure it
   met when SofaScore could not be reached: `cause` is `timeout`, `dns`, `proxy`, `tls`, `connect` or
   `reset`, and the Health page shows it with a hint (#225).

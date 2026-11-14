@@ -81,6 +81,10 @@ ERROR_TABLE: Tuple[ErrorSpec, ...] = (
     ErrorSpec("not_found", "NotFoundError", 1, (404,), "unknown id or slice"),
     ErrorSpec("follow_managed", "ConflictError", 1, (409,), "the follow comes from the config file"),
     ErrorSpec("follow_exists", "ConflictError", 1, (409,), "duplicate follow"),
+    ErrorSpec(
+        "certificate_changed", "ConflictError", 1, (409,),
+        "the network does not present the certificate that was confirmed, or it cannot be trusted",
+    ),
     ErrorSpec("job_running", "JobRunningError", 6, (409,), "a job holds the writer lease in this or another process"),
     ErrorSpec(
         "data_operation_running", "ConflictError", 6, (409,), "backup, clear, restore, migrate or rebuild in progress",
@@ -169,7 +173,7 @@ class NotFoundError(_CodedError):
 class ConflictError(_CodedError):
     """İstek şu anki durumla çakışıyor: takip zaten var ya da dosyadan yönetiliyor, bir veri işlemi sürüyor."""
 
-    codes = ("follow_exists", "follow_managed", "data_operation_running")
+    codes = ("follow_exists", "follow_managed", "data_operation_running", "certificate_changed")
 
 
 class InstanceRunningError(_CodedError):

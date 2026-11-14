@@ -23,7 +23,7 @@ from typing import Any, Dict, Final, Optional, Tuple, Union, cast
 from curl_cffi import requests as cffi_requests
 from curl_cffi.requests import AsyncSession
 
-from sofascore_scraper.client import profiles
+from sofascore_scraper.client import profiles, trust
 
 from sofascore_scraper import breaker, throttle
 from sofascore_scraper.client.context import FetchCancelled, _notify_wait, notify_request, raise_if_cancelled
@@ -233,6 +233,16 @@ def _get_proxy_config() -> Tuple[bool, str]:
     return use_proxy, proxy_url
 
 
+def _trusted_ca() -> Dict[str, Any]:
+    """
+    Kullanıcının güvendiği ek sertifikalar varsa (`<config>/ca/*.pem`; sofascore_scraper/client/trust.py) curl'e
+    birleşik CA dosyasını veren `verify` argümanı, yoksa boş sözlük (curl_cffi'nin varsayılanı değişmez). Her
+    istekte okunur: depo değişince yeniden başlatma gerekmez.
+    """
+    path = trust.bundle_path()
+    return {"verify": path} if path else {}
+
+
 def _parse_retry_after_seconds(retry_after: Optional[str], default_wait: int) -> int:
     """Retry-After header değerini saniye cinsinden parse eder."""
     if not retry_after:
@@ -384,6 +394,7 @@ def _request_sync(
                 "headers": get_request_headers(),
                 "timeout": timeout,
                 "impersonate": profiles.pick(),
+                **_trusted_ca(),
             }
             if use_proxy and proxy_url:
                 kwargs["proxies"] = {"http": proxy_url, "https": proxy_url}
@@ -600,7 +611,7 @@ async def _request_async(
             logger.debug(f"Async API request ({attempt+1}/{max_retries}): {url}")
 
             # Her istekte yeniden: 30 dk'lık hash ve yeni çözülen captcha token güncel kalsın
-            kwargs: Dict[str, Any] = {"timeout": request_timeout, "headers": get_request_headers()}
+            kwargs: Dict[str, Any] = {"timeout": request_timeout, "headers": get_request_headers(), **_trusted_ca()}
             if use_proxy and proxy_url:
                 kwargs["proxy"] = proxy_url
 
@@ -729,7 +740,7 @@ async def _warmup_session(session: AsyncSession) -> None:
     warmup_url = "https://www.sofascore.com/"
     try:
         logger.debug("Session warm-up started")
-        kwargs: Dict[str, Any] = {"timeout": 15}
+        kwargs: Dict[str, Any] = {"timeout": 15, **_trusted_ca()}
         use_proxy, proxy_url = _get_proxy_config()
         if use_proxy and proxy_url:
             kwargs["proxy"] = proxy_url  # warm-up da gerçek IP'yi göstermesin

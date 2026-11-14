@@ -1001,6 +1001,7 @@ Requirements and how they are met:
 | `not_found` | `NotFoundError` | 1 | 404 | unknown id or slice |
 | `follow_managed` | `ConflictError` | 1 | 409 | the follow comes from the config file (`FollowManaged`) |
 | `follow_exists` | `ConflictError` | 1 | 409 | duplicate follow (`FollowExists`) |
+| `certificate_changed` | `ConflictError` | 1 | 409 | the network does not present the certificate that was confirmed, or it cannot be trusted (`POST /trust`, `ssc trust add`; #225) |
 | `job_running` | `JobRunningError` | 6 | 409 | a job holds the `writer` lease in this or another process |
 | `data_operation_running` | `ConflictError` | 6 | 409 | backup/clear/restore/migrate/rebuild in progress |
 | `instance_running` | `InstanceRunningError` | 6 | 409 | live service or dispatcher already running on this data dir |
