@@ -10,7 +10,7 @@
 
 Tek çekirdek, üç yüz: bir **Python kütüphanesi**, sunucular ve otomasyon için **`ssc` komut satırı** ve üzerinde bir **web arayüzü** bulunan sürümlü bir **HTTP API**. Kendi bilgisayarınızda ya da sunucunuzda çalışır.
 
-> **3.1.0 kaynaktan kurulan bir sürüm olarak yayımlandı.** Bir checkout'tan kurun (aşağıdaki Docker ya da pip adımları); GitHub'daki her sürümde derlenmiş web arayüzünü içeren bir kaynak arşivi de vardır, Docker imajı ise `ghcr.io/tunjayoff/sofascore_scraper`'dır. PyPI'de paket yoktur. 3.0'dan geçiyorsanız: [3.0'dan yükseltme](#30dan-yükseltme); 2.x'ten geçiyorsanız: [2.x'ten yükseltme](#2xten-yükseltme).
+> **3.1.1 kaynaktan kurulan bir sürüm olarak yayımlandı.** Bir checkout'tan kurun (aşağıdaki Docker ya da pip adımları); GitHub'daki her sürümde derlenmiş web arayüzünü içeren bir kaynak arşivi de vardır, Docker imajı ise `ghcr.io/tunjayoff/sofascore_scraper`'dır. PyPI'de paket yoktur. 3.0'dan geçiyorsanız: [3.0'dan yükseltme](#30dan-yükseltme); 2.x'ten geçiyorsanız: [2.x'ten yükseltme](#2xten-yükseltme).
 
 Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#sorumluluk-reddi).
 
