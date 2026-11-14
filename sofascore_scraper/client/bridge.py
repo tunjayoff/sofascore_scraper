@@ -428,6 +428,11 @@ class BrowserBridge:
             await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
         except Exception as e:
             logger.warning(f"Opening the SofaScore home page: {e}")
+            if "ERR_CERT_" in str(e):
+                # Tarayıcı sertifikayı doğrulayamadı (ağ HTTPS'i yeniden imzalıyor): bu sayfadan hiçbir istek
+                # geçmez. Başlatma başarısız sayılır ki neden köprü sağlığına yazılsın (`ssc doctor --live` ve
+                # arayüz "yanıt yok" yerine sertifikayı söyleyebilsin; #225) ve istekler boşuna beklemesin.
+                raise RuntimeError(str(e).splitlines()[0]) from None
         token = await self._token_from_context()
         if token:
             self._set_token(token)

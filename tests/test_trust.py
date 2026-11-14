@@ -564,3 +564,60 @@ def test_the_nss_database_is_written_by_the_helper_script(tmp_path: Path, env: D
     assert environment is not None
     database = Path(environment["HOME"]) / ".pki" / "nssdb"
     assert (database / "cert9.db").is_file() and (database / "cert9.db").stat().st_size > 0
+
+
+# --- tarayıcının reddettiği sertifika görünür olmalı ----------------------------------------------------
+
+PRODUCT_LAUNCH = bridge.BrowserBridge._launch  # conftest testlerde `_launch`'ı kapatır; ürününki burada saklanır
+
+
+def test_a_certificate_the_browser_refuses_fails_the_launch_and_doctor_names_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """
+    Docker'da görüldü: sertifika hatası yalnızca bir uyarı satırıydı, köprü "yanıt yok" diyordu ve
+    `ssc doctor --live` nedeni söyleyemiyordu. Artık başlatma başarısız olur ve neden köprü sağlığına yazılır.
+    """
+    from sofascore_scraper import bridge_health, doctor
+
+    class Page:
+        def is_closed(self) -> bool:
+            return False
+
+        async def goto(self, url: str, **kwargs: Any) -> None:
+            raise RuntimeError(f"Page.goto: net::ERR_CERT_AUTHORITY_INVALID at {url}\nCall log:\n  - navigating to …")
+
+        async def close(self) -> None:
+            pass
+
+    class Context:
+        async def new_page(self) -> Page:
+            return Page()
+
+    class Session:
+        def __init__(self, **kwargs: Any) -> None:
+            self.context = Context()
+
+        async def start(self) -> None:
+            pass
+
+        async def close(self) -> None:
+            pass
+
+    async def solved(self: Any) -> str:
+        return "token-from-the-profile"
+
+    monkeypatch.setenv("SOFASCORE_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setattr(bridge.BrowserBridge, "_launch", PRODUCT_LAUNCH)
+    monkeypatch.setattr(bridge.BrowserBridge, "_token_from_context", solved)
+    monkeypatch.setattr(bridge, "_session_class", lambda: Session)
+    instance = bridge.BrowserBridge(profile_dir=str(tmp_path / "profile"))
+    with pytest.raises(RuntimeError, match="ERR_CERT_AUTHORITY_INVALID"):
+        asyncio.run(instance.ensure_ready())
+    last = bridge_health.snapshot()["last_error"]
+    assert last["kind"] == "browser" and "net::ERR_CERT_AUTHORITY_INVALID" in last["detail"]
+    assert "Call log" not in last["detail"] and instance.session is None and instance._launch_failed_at > 0
+
+    ctx = doctor.Context(root=tmp_path, environ={}, lang="en")
+    result = doctor.check_live(ctx, fetch=lambda path: None)  # köprü yanıt vermedi; neden sağlık kaydından okunur
+    assert (result.status, result.code) == ("fail", "live_browser_tls") and "Trust this certificate" in result.fix
