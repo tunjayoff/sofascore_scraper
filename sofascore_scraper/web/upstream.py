@@ -16,6 +16,8 @@ boş dönmesidir ve 200 ile yanıtlanır.
 """
 from __future__ import annotations
 
+import re
+
 from typing import Any, Dict, Optional
 
 from fastapi import HTTPException
@@ -82,6 +84,43 @@ def reason_for(exc: BaseException, before: Optional[Dict[str, Any]] = None) -> s
     if isinstance(exc, NetworkError):
         return NETWORK
     return UPSTREAM
+
+
+# Bağlantı hatasının türü (`network` nedeninin altı): curl'ün hata kodundan. Kullanıcı "ulaşılamadı"dan fazlasını
+# görsün diye: zaman aşımı, ad çözümü, proxy ve TLS hatalarının çaresi farklıdır (#225).
+CAUSE_TIMEOUT = "timeout"
+CAUSE_DNS = "dns"
+CAUSE_PROXY = "proxy"
+CAUSE_TLS = "tls"
+CAUSE_CONNECT = "connect"
+CAUSE_RESET = "reset"
+_CURL_CAUSE = {
+    28: CAUSE_TIMEOUT,
+    6: CAUSE_DNS,
+    5: CAUSE_PROXY, 97: CAUSE_PROXY,
+    35: CAUSE_TLS, 51: CAUSE_TLS, 58: CAUSE_TLS, 59: CAUSE_TLS, 60: CAUSE_TLS, 77: CAUSE_TLS, 83: CAUSE_TLS,
+    7: CAUSE_CONNECT,
+    52: CAUSE_RESET, 55: CAUSE_RESET, 56: CAUSE_RESET,
+}
+_CURL_CODE = re.compile(r"curl: \((\d+)\)")
+
+
+def network_cause(exc: BaseException) -> Optional[str]:
+    """
+    Bağlantı hatasının türü; bilinmiyorsa None. Yalnızca curl'ün hata kodu okunur (istek katmanı hatanın metnini
+    NetworkError'a taşır): metnin kendisi adres ve proxy bilgisi içerebildiği için yanıta konmaz. Bir CONNECT
+    tüneli hatası (kod 56, "CONNECT tunnel failed") ve proxy üzerinden açılamayan bağlantı (kod 7, "over proxy")
+    proxy hatasıdır.
+    """
+    if not isinstance(exc, NetworkError):
+        return None
+    text = str(exc)
+    match = _CURL_CODE.search(text)
+    if match is None:
+        return None
+    if "CONNECT tunnel" in text or " over proxy " in text:  # curl: "Failed to connect to <host> over proxy <p>"
+        return CAUSE_PROXY
+    return _CURL_CAUSE.get(int(match.group(1)))
 
 
 def detail(reason: str) -> Dict[str, str]:

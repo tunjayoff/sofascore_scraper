@@ -11361,6 +11361,26 @@
             "title": "Reason",
             "description": "Why the check failed; null when it succeeded."
           },
+          "cause": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "timeout",
+                  "dns",
+                  "proxy",
+                  "tls",
+                  "connect",
+                  "reset"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cause",
+            "description": "With `reason` network, what kind of failure it was when that is known: no answer in time, the host name did not resolve, the proxy failed, the TLS handshake failed, no connection could be opened (refused or unreachable; with a proxy set, the proxy), or it was closed. Null otherwise."
+          },
           "message": {
             "type": "string",
             "title": "Message",

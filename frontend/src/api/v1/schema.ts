@@ -1503,6 +1503,8 @@ export interface StatusCheck {
   ok: boolean
   /** Why the check failed; null when it succeeded. */
   reason?: "blocked" | "browser" | "rate_limited" | "network" | "upstream" | null
+  /** With `reason` network, what kind of failure it was when that is known: no answer in time, the host name did not resolve, the proxy failed, the TLS handshake failed, no connection could be opened (refused or unreachable; with a proxy set, the proxy), or it was closed. Null otherwise. */
+  cause?: "timeout" | "dns" | "proxy" | "tls" | "connect" | "reset" | null
   /** English text; clients translate by `reason`. */
   message: string
   /** Live events in the answer; null on failure. */

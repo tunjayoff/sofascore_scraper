@@ -9,7 +9,7 @@ Ağ yok: istekler tests/fakes/sofascore.py'nin sahte taşıyıcısına gider. Sa
 """
 from __future__ import annotations
 
-from typing import Any, Iterator, List
+from typing import Any, Iterator, List, Optional
 
 import pytest
 from fastapi.testclient import TestClient
@@ -135,6 +135,28 @@ def test_the_connection_check_reports_it(fake: FakeSofaScore, now: List[float]) 
     assert connection()["last_check"] == {"at": "2026-10-08T22:53:21+00:00", "ok": False, "reason": "network",
                                           "superseded": False}
     assert failed["checked_at_utc"] == "2026-10-08T22:53:21Z"
+    # Bağlantı hatasının türü de söylenir (#225): bağlantı açılamadı
+    assert (failed["reason"], failed["cause"]) == ("network", "connect")
+    assert checked["cause"] is None
+
+
+@pytest.mark.parametrize("text, cause", [
+    ("Request failed: u: Failed to perform, curl: (28) Operation timed out after 10000 milliseconds", "timeout"),
+    ("Request failed: u: curl: (6) Could not resolve host: www.sofascore.com", "dns"),
+    ("Request failed: u: curl: (5) Could not resolve proxy: p", "proxy"),
+    ("Request failed: u: curl: (56) CONNECT tunnel failed, response 407", "proxy"),
+    ("Request failed: u: curl: (7) Failed to connect to www.sofascore.com:443 over proxy 127.0.0.1 after 0 ms", "proxy"),
+    ("Request failed: u: curl: (35) TLS connect error", "tls"),
+    ("Request failed: u: curl: (7) Failed to connect to server.", "connect"),
+    ("Request failed: u: curl: (56) Recv failure: Connection reset by peer", "reset"),
+    ("Request failed: u: something else", None),
+])
+def test_the_kind_of_a_network_failure_is_read_from_the_curl_code(text: str, cause: Optional[str]) -> None:
+    from sofascore_scraper.exceptions import APIError, NetworkError
+    from sofascore_scraper.web import upstream
+
+    assert upstream.network_cause(NetworkError(text)) == cause
+    assert upstream.network_cause(APIError("HTTP 403", status_code=403)) is None
 
 
 # --- eşitlik kuralı: aynı andaki yanıt ve başarısızlık (FX-30'un açık bıraktığı) -------------------------------

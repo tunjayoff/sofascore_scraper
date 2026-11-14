@@ -141,6 +141,12 @@ function reasonText(reason: string | null | undefined) {
   return reason && te(key, 'en') ? t(key) : t('ui.health.check.reason.upstream')
 }
 
+/** What kind of network failure the check met, when the server could tell (#225); empty otherwise. */
+function causeText(cause: string | null | undefined) {
+  const key = `ui.health.check.cause.${cause}`
+  return cause && te(key, 'en') ? ` (${t(key)})` : ''
+}
+
 // Inside the shell the status is already polled; opened on its own, the screen reads it once
 onMounted(() => {
   if (!store.status && !store.loading) void store.refresh().catch(() => {})
@@ -204,7 +210,7 @@ onMounted(() => {
             {{ t('ui.health.check.ok', { n: num(check.events_count ?? 0) }) }} · <TimeText :value="check.checked_at_utc" format="seconds" />
           </p>
           <p v-else-if="check" class="m-0 u-small" role="alert" style="color: var(--danger)">
-            {{ t('ui.health.check.failed', { reason: reasonText(check.reason) }) }} · <TimeText :value="check.checked_at_utc" format="seconds" />
+            {{ t('ui.health.check.failed', { reason: reasonText(check.reason) + causeText(check.cause) }) }} · <TimeText :value="check.checked_at_utc" format="seconds" />
           </p>
           <FormError v-if="checkError" :error="checkError" />
         </div>
