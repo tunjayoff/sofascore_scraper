@@ -20,8 +20,16 @@ def _raw_get(raw_path: bytes):
         "scheme": "http", "server": ("127.0.0.1", 8000), "client": ("127.0.0.1", 1), "root_path": "",
     }
 
+    sent_request = False
+
     async def receive():
-        return {"type": "http.request", "body": b""}
+        # ASGI: gövde bir kez gelir; sonraki çağrı istemci ayrılana kadar bekler (sunucular da böyle yapar).
+        # İstemci burada hiç ayrılmaz: yanıt bitince uygulama bekleyen çağrıyı kendisi iptal eder.
+        nonlocal sent_request
+        if sent_request:
+            await asyncio.Event().wait()
+        sent_request = True
+        return {"type": "http.request", "body": b"", "more_body": False}
 
     async def send(m):
         msgs.append(m)

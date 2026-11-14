@@ -8,7 +8,7 @@
   "exit_code": 0,
   "files": {
    "added": {
-    "data/changes/2026-10.jsonl": [
+    "data/changes/<yyyy-mm>.jsonl": [
      {
       "changed": {
        "homeScore.current": [
