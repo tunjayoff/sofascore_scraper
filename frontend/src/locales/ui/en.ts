@@ -1778,6 +1778,7 @@ const en = {
       captcha_token: 'Challenge token',
       browser_profile: 'Browser profile folder',
       browser_headed: 'Show the built-in browser',
+      browser_accept_any_certificate: 'Built-in browser accepts any certificate (unsafe)',
       throttle_dir: 'Shared request budget folder',
       odds_provider: 'Odds provider',
     },

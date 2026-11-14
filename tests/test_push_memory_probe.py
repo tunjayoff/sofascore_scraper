@@ -299,7 +299,7 @@ async def test_the_probe_bridge_launches_through_the_product_launch(tmp_path, mo
     made = _RecordingSession.made[-1]
     assert made == {"headless": True, "solve_cloudflare": True, "user_data_dir": str(tmp_path / "bridge"),
                     "proxy": {"server": "http://127.0.0.1:3128"}, "block_webrtc": True, "timeout": 60000,
-                    "max_pages": 2}
+                    "max_pages": 2, "additional_args": {"ignore_https_errors": False}}  # sıkı: sertifika doğrulanır
     assert b.applied["args"] == ["--a", "--disable-gpu"]
     assert cs._session_class is not b._session_factory  # geri alındı
 

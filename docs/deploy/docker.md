@@ -179,10 +179,22 @@ Set the variable in the container's environment, not in `.env`, and on every con
   USER app
   ```
 
-There is no setting that turns certificate verification off, on purpose. Two things to know about such a
-network: whoever runs the inspection can read and change what the app downloads, and the built-in browser
-does not protect against that, because it accepts any certificate (which is why `ssc doctor --live` could
-report success in 3.1.1 and earlier while every download failed).
+**The built-in browser.** The app opens its browser when SofaScore asks for a challenge and for the `page`
+and `direct` live sources. The browser refuses a certificate it cannot verify, and it does not read
+`SSL_CERT_FILE` or the system store. On an inspecting network it therefore fails with
+`net::ERR_CERT_AUTHORITY_INVALID` (`ssc doctor --live` says so). If you need the browser there, let it accept
+any certificate:
+
+```yaml
+    environment:
+      SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE: "true"
+```
+
+This is the one switch that relaxes certificate checking, and it covers the browser only: the HTTP client
+always verifies. With it on, whoever re-signs the connection can read and change everything the browser
+exchanges (page loads, the solved challenge, the answers the app stores). In 3.1.1 and earlier the browser
+accepted any certificate on every network, which is also why `ssc doctor --live` could report success there
+while every download failed.
 
 ## Updating
 

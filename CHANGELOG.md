@@ -8,6 +8,17 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Security
+
+- The built-in browser no longer accepts HTTPS certificates it cannot verify. Until now it accepted any
+  certificate (a default of the browser library), so someone able to intercept the connection could read
+  and change what the browser exchanged: page loads, the solved challenge and the API answers the app
+  stores. The HTTP client always verified. On a network that re-signs HTTPS with its own CA the browser
+  now fails with a certificate error; `client.browser_accept_any_certificate`
+  (`SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE=true`) restores the old behaviour for such a
+  network, knowingly ([docs/deploy/docker.md](docs/deploy/docker.md#a-network-that-inspects-https)).
+  `ssc doctor --live` names the case (`live_browser_tls`).
+
 ### Fixed
 
 - Most requests were refused with `403 challenge` and then made through the built-in browser, which is

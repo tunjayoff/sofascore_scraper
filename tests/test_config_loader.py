@@ -341,6 +341,19 @@ def test_browser_headed_matches_the_bridge(monkeypatch):
         assert _from_process_env().client.browser_headed is (not bridge._headless()), repr(raw)
 
 
+def test_the_bridge_browser_verifies_certificates_unless_told_otherwise(monkeypatch):
+    """Varsayılan sıkıdır; yalnızca ayar açıkça verilirse tarayıcı her sertifikayı kabul eder."""
+    from sofascore_scraper.client import bridge
+
+    for raw, accepts in ((None, False), ("", False), ("false", False), ("true", True), ("yes", True)):
+        if raw is None:
+            monkeypatch.delenv("SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE", raising=False)
+        else:
+            monkeypatch.setenv("SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE", raw)
+        assert _from_process_env().client.browser_accept_any_certificate is accepts, repr(raw)
+        assert bridge._accept_any_certificate() is accepts, repr(raw)
+
+
 @pytest.mark.parametrize(
     "env",
     [
