@@ -14,7 +14,7 @@ One core, three faces: a **Python library**, the **`ssc` command line** for serv
 
 Unofficial and not affiliated with SofaScore; see the [disclaimer](#disclaimer).
 
-**Contents:** [Features](#features) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Command line](#command-line-ssc) · [HTTP API](#http-api) · [Python library](#python-library) · [Configuration](#configuration) · [Data and exports](#data-and-exports) · [Live watching](#live-watching) · [Security model](#security-model) · [Upgrading from 3.0](#upgrading-from-30) · [Upgrading from 2.x](#upgrading-from-2x) · [FAQ](#faq) · [Documentation](#documentation) · [Contributing](#contributing-and-development) · [License](#license)
+**Contents:** [Features](#features) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Command line](#command-line-ssc) · [HTTP API](#http-api) · [Python library](#python-library) · [Configuration](#configuration) · [Data and exports](#data-and-exports) · [Live watching](#live-watching) · [Security model](#security-model) · [Upgrading from 3.0](#upgrading-from-30) · [Upgrading from 2.x](#upgrading-from-2x) · [FAQ](#faq) · [Documentation](#documentation) · [Contributing](#contributing-and-development) · [Contact](#contact) · [License](#license)
 
 ## Features
 
@@ -334,9 +334,13 @@ CI runs ruff and the Python tests (Linux with Python 3.10 and 3.14; Windows and 
 
 By submitting a contribution, you agree that it is licensed under the project's license and that the maintainer may also offer it under other terms (for example, a commercial license).
 
+## Contact
+
+For collaborations, project-based work (custom scrapers, data pipelines, integrations built on this project) and commercial licenses, write to **[tuncay.essiz@outlook.com](mailto:tuncay.essiz@outlook.com)** or see **[tuncayessiz.dev](https://tuncayessiz.dev)**. Bugs and feature requests belong in the [issues](https://github.com/tunjayoff/sofascore_scraper/issues).
+
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE): use, change and share it for **noncommercial purposes** (personal use, study, research, hobby projects, charities, education, public bodies). Commercial use needs a separate license; ask in an issue or contact [@tunjayoff](https://github.com/tunjayoff). Versions released before this license remain available under the MIT license.
+[PolyForm Noncommercial 1.0.0](LICENSE): use, change and share it for **noncommercial purposes** (personal use, study, research, hobby projects, charities, education, public bodies). Commercial use needs a separate license; see [Contact](#contact). Versions released before this license remain available under the MIT license.
 
 ## Disclaimer
 
