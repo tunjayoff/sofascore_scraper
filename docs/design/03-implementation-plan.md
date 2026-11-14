@@ -20,8 +20,11 @@ the live validation against the real site, its fix items FX-26 and FX-27, and FX
 after the 3.0.0 release (pull request #179 and the tag `v3.0.0`), P30 and the first items of 3.1 (pull
 requests #177 and #180 to #192); that revision was checked against `origin/main` at `216c2f9`, and B4
 (#192), which merged while it was written, at `ff6fd7c`. Revised an eleventh time, later on 2026-10-09,
-after FX-34, FX-35 and the 3.1.0 release (pull requests #194 to #196 and the tag `v3.1.0`); this revision
-was checked against `origin/main` at `054d8a2`.
+after FX-34, FX-35 and the 3.1.0 release (pull requests #194 to #196 and the tag `v3.1.0`); that revision
+was checked against `origin/main` at `054d8a2`. Revised a twelfth time, on 2026-11-14, after the 3.1.1 and
+3.1.2 releases of that day (pull requests #217, #218, #220 to #224 and #226 to #233, and the tags `v3.1.1`
+and `v3.1.2`), with FX-36 to FX-38 (#198 to #200, 2026-10-09) and the research recorder (#204, #205, #207,
+2026-10-13) that came between; this revision was checked against `origin/main` at `395b6e0`.
 This is the one ordered list of pull requests for `01-storage.md` and `02-services.md`. It replaces the two
 separate PR lists the designs were drafted with; section 12 maps the old ids to the ids used here.
 
@@ -31,11 +34,14 @@ the live validation. Most items are one
 pull request; P21 took five, FE-2 three and FX-13 two. After the 3.0.0 release the orchestrator gave eleven
 more items for 3.1 (FX-29 to FX-35 and B1 to B4; FX-29 took three pull requests). They were written from
 the orchestrator's instructions, not from a brief of this plan, and have no node in the diagram and no row in
-sections 5, 6 and 9; section 19 records them with what is still open after 3.1. Each has an id, a lane, its dependencies, the files it owns, the behaviour change it makes (if any),
+sections 5, 6 and 9; section 19 records them with what is still open after 3.1. After the 3.1.0 release
+three more items got an id (FX-36 to FX-38, the slice decisions of 2026-10-09), and the work of 2026-11-14
+that became 3.1.1 and 3.1.2 got none: it is cited by pull request number, and section 19 records it the same
+way. Each item of the plan has an id, a lane, its dependencies, the files it owns, the behaviour change it makes (if any),
 a size (S: up to about 200 changed lines, M: up to about 600, L: more) and a brief that an implementer can
 work from without reading the other briefs.
 
-## Status (2026-10-09)
+## Status (2026-11-14)
 
 | Item | PR | State | Note |
 |---|---|---|---|
@@ -185,10 +191,46 @@ work from without reading the other briefs.
 | FX-34 | #194 | merged | new on 2026-10-09: the small leftovers the tenth revision found (the `fetch.only_finished` help text, the player export filter on the stored match ids, `ssc export` file names, task options masked, `services/stats.py` removed) |
 | FX-35 | #196 | merged | new on 2026-10-09, blocking the release: `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` are still read in 3.1 with a deprecation warning and removed in 3.2 (owner) |
 | (release) | #195 | merged | not a plan item: the 3.1.0 release pull request (the version, the changelog close with a Deprecated section, both READMEs with "Upgrading from 3.0", two small web fixes of the pre-release check); the tag `v3.1.0` on its merge commit `054d8a2`, 2026-10-09 (section 19) |
+| FX-36 | #198 | merged | new on 2026-10-09, after the 3.1.0 tag: run `lv-20261009b` (top-league finished matches of rugby, volleyball, floorball and minifootball) and the owner's decision on their slice rows, applied in `sofascore_scraper/sports.py`; in 3.1.1 (sections 13 and 19) |
+| FX-37 | #199 | merged | new on 2026-10-09: runs `lv-20261009c` and `lv-20261009d` (25 live match pages of 14 sports, then the finished pages of 13 of those matches and four more live pages; `docs/all-sports/README.md`) counted as repaired evidence; the owner's decision on the endpoints that are not downloaded; tests and documents only (section 13) |
+| FX-38 | #200 | merged | new on 2026-10-09: basketball `lineups`, handball `pregame_form` and MMA `statistics` kept required against the evidence rule (owner); tests and documents only (section 13) |
+| (research) | #204, #205, #207 | merged | not plan items, 2026-10-13: `scripts/soak_live.py`, a recorder for long runs of the live push sources (with `--source off`), and `scripts/push_memory_probe.py`, a probe of the memory of browser push listening; scripts and their offline tests only, nothing under `sofascore_scraper/` |
+| (maintenance) | #217 | merged | not a plan item, 2026-11-14: CI green again (two CLI goldens carried the month of the change log in a file name and failed from 1 November; a raw ASGI stub of `tests/test_web_security.py` that Starlette 1.10 rejects); `certifi` and `opentelemetry-api` raised for advisories; `npm audit fix` in the frontend lockfile (`vue-i18n`, `vite`) |
+| (fix) | #220 | merged | not a plan item, 2026-11-14: `POST /api/v1/follows` without `seasons` takes `defaults.seasons` (it took `all`); the research probe logs the slot time written under the rate lock |
+| (dependencies) | #221, #218, #222 | merged | not plan work, 2026-11-14: the Python pins without the browser stack (#221, replacing Dependabot's #219; `curl-cffi` 0.17.0, `fastapi` 0.162.4, `pydantic` 2.14.3 with `pydantic-core` 2.50.4 by hand), the frontend's minor and patch group (#218), then the browser stack after a live comparison (#222: `scrapling` 0.5.1, `patchright` 1.64.4, `playwright` 1.65.0, `apify-fingerprint-datapoints` 0.16.0) |
+| (release) | #223 | merged | not a plan item: the 3.1.1 release pull request (the version, the changelog close, the READMEs' version line; the usage-error golden); the tag `v3.1.1` on its merge commit `3a8e063`, 2026-11-14 (section 19) |
+| (tests) | #224 | merged | not a plan item, 2026-11-14: the explorer's slot test and the memory probe's offline test measure the request gap from the slot times written under the lock; closes the CI flake of section 19 |
+| (feature) | #226 | merged | not a plan item, 2026-11-14 (issue #225): `cause` in the answer of `POST /api/v1/status/check` and on Health (`sofascore_scraper/web/upstream.py`) |
+| (fix) | #227 | merged | not a plan item, 2026-11-14: browser profiles that pass SofaScore's gate, a challenged profile set aside for six hours, the request repeated with another profile before the bridge (`sofascore_scraper/client/profiles.py`) |
+| (fix) | #228 | merged | not a plan item, 2026-11-14 (issue #225): `ssc doctor --live` also sends one request with the app's HTTP client (`live_http_tls`, `live_http_failed`); `docs/deploy/docker.md`, "A network that inspects HTTPS" |
+| (security) | #229 | merged | not a plan item, 2026-11-14: the bridge browser verifies HTTPS certificates; the setting `client.browser_accept_any_certificate`; the doctor code `live_browser_tls` |
+| (feature) | #230 | merged | not a plan item, 2026-11-14 (issue #225): trusting the certificate of a network that re-signs HTTPS (`client/trust.py`, `client/nssdb.py`, `CONFIG_DIR/ca`, the four `/api/v1/trust` routes, `certificate_changed`, `ssc trust`, the Health card); two fixes of its Docker run in the same pull request (a certificate the browser refuses fails the launch; `ssc trust` logs to stderr) |
+| (release) | #231 | merged | not a plan item: the 3.1.2 release pull request (the version, the changelog close with a Security section and upgrade notes, the READMEs' version line, the usage-error golden); the tag `v3.1.2` on its merge commit `fb0a257`, 2026-11-14 (section 19) |
+| (documents) | #232, #233 | merged | not plan items, 2026-11-14, after the tag: a Contact section in both READMEs; the READMEs' "Why does it need Chromium?" and upgrade steps, the doctor's hint that named a README heading that does not exist (`locales/`), and the as-built note of `05-web-ui.md` 6.12 |
 
-Every item is merged or done: the 97 of the plan and the eleven items of 3.1 (section 19). 3.0.0 was
-released on 2026-10-08 (section 18) and 3.1.0 on 2026-10-09 (section 19, which also lists what is open after
-it). What this revision, the eleventh (2026-10-09), changed:
+Every item is merged or done: the 97 of the plan, the eleven items of 3.1 and the three slice items after
+it (section 19). 3.0.0 was released on 2026-10-08 (section 18), 3.1.0 on 2026-10-09, and 3.1.1 and 3.1.2 on
+2026-11-14 (section 19, which also lists what is open after them). What this revision, the twelfth
+(2026-11-14), changed:
+
+- **3.1.1 and 3.1.2 are released**, both on 2026-11-14 and both from source, like 3.1.0: the tags `v3.1.1`
+  on `3a8e063` and `v3.1.2` on `fb0a257`, the merge commits of their release pull requests (#223, #231).
+  Section 19 records what each has.
+- **The work of the day has no plan item.** It came from a live test of that day (#220 names it), from
+  issue #225 (a network that re-signs HTTPS) and from Dependabot's updates; the rows above cite it by pull
+  request. FX-36 to FX-38 and the research scripts of October, which the eleventh revision
+  could not have, have their rows too.
+- **Design changes** described in `00-platform.md`, `01-storage.md`, `02-services.md`, `04-schema-v1.md` and
+  `05-web-ui.md`: how a request reaches SofaScore (browser profiles first, the bridge only when none
+  passes); a bridge browser that verifies certificates; the trusted certificates in `CONFIG_DIR/ca` with
+  their routes, command, error code and Health card; `cause` of the connection check; the second request
+  of `ssc doctor --live`; the follows default of the API; the four sports' slice rows of FX-36 where the
+  documents still called them a proposal.
+- **Sections 1, 8, 16 and 19** record the pull requests, the state of the release points and the
+  follow-ups; the open list of section 19 is the list after 3.1.2. Section 13 has no new entry: this
+  revision found no owner decision recorded for the work of the day, and it adds none.
+
+What the eleventh revision (PR #197, 2026-10-09) changed:
 
 - **3.1.0 is released.** FX-34 (#194) and FX-35 (#196) merged before the release pull request (#195), which
   merged at `054d8a2`; the owner approved the tag, and `v3.1.0` was set on that commit. `release.yml` ran
@@ -625,6 +667,14 @@ revision (#193) and the 3.1.0 release pull request (#195). The gate "after open 
 `054d8a2` nothing is in progress. The changelog entries up to 3.1.0 are in `CHANGELOG.md`: bookkeeping pull
 requests added them up to #156 (#63, #66, #76, #94, #114 and #158), the 3.0.0 release pull request (#179)
 the rest of 3.0.0, and the 3.1.0 release pull request (#195) those of #180 to #196 from their descriptions.
+Merged since, up to `395b6e0` (2026-11-14): the eleventh revision (#197), FX-36 to FX-38 (#198 to #200), the
+research recorder and probe (#204, #205, #207), and the pull requests of 2026-11-14 with the two release pull
+requests (#217, #218, #220 to #224, #226 to #233); nothing is in progress at `395b6e0`. The pull requests of
+2026-11-14 that change behaviour wrote their own changelog entries under `## [Unreleased]` (#217, #220, #226
+to #230), and the release pull requests closed the sections
+`## [3.1.1] - 2026-11-14` (#223, which also wrote the entries of FX-36's slice rows and of the raised pins)
+and `## [3.1.2] - 2026-11-14` (#231, with the upgrade notes and the browser stack); #233's entry is under
+`## [Unreleased]`.
 Section 5 says what can start. What the merged pull requests mean for every pull request from now on:
 
 - **#41 (G-04).** A pull request that changes a route signature, a docstring, a response model or the FastAPI
@@ -993,6 +1043,32 @@ Section 5 says what can start. What the merged pull requests mean for every pull
   removed without a deprecation release (section 8).
 - **#195 (the 3.1.0 release).** `CHANGELOG.md` has `## [3.1.0] - 2026-10-09` under an empty `## [Unreleased]`;
   the entries of the next release go there (rule 3).
+- **#198 to #200 (FX-36 to FX-38).** The slice rows of a sport are decided cells: `DECIDED` of
+  `tests/test_sport_slices.py` holds the owner's decisions and `DECIDED_AGAINST_THE_RULE` those that differ
+  from what the evidence rule says, each with its recorded answers; `PROPOSALS` is gone. A pull request
+  that changes a row of `DETAIL_SLICES` changes those tables with it.
+- **#217.** The golden harness masks the month of the change log (`changes/<yyyy>-<mm>.jsonl`) wherever
+  the segment appears in a path (`tests/characterization/__init__.py`): a golden must not carry a date part
+  of the day it was written. Two CLI goldens did, and CI was red from 1 November until this pull request.
+- **#220 and #224.** A research script's request slot is the time `_wait_rate_slot` wrote under the rate
+  lock and returns (`scripts/_research_common.py`); a test that checks the gap between requests reads those
+  slot times, not the times requests were sent or arrived, which drift on a loaded runner.
+- **#227.** `sofascore_scraper/client/profiles.py` is the one list of browser profiles;
+  `transport.IMPERSONATE_PROFILES` is that list. The test fixture forgets the set-aside before every test
+  (`profiles.reset()`, `tests/conftest.py`). `WANTED` holds only profiles that were measured to pass
+  SofaScore's gate with their own User-Agent (`chrome152_macos` was not measured and is not in it).
+- **#228 and #229.** The doctor's live check takes two injectable callables (`fetch` for the bridge,
+  `request` for the HTTP client); it keeps its own copy of curl's TLS error codes, because the doctor does
+  not load the web layer, so a change of `upstream._CURL_CAUSE` changes `doctor._CURL_TLS_CODES` too.
+- **#230.** Tests never use a committed certificate or key: `tests/trust_pki.py` generates a small PKI with
+  the standard library at test time (the `fake_pki` fixture), and `tests/conftest.py` refuses a certificate
+  probe to any address but the local one. A new error code needs its row in the table of `02-services.md`
+  2.6, in `DESIGN_ERROR_TABLE` of `tests/test_cli_skeleton.py` and in `KNOWN_CODES` of the frontend. The
+  trust store is outside `DATA_DIR`, so `client/trust.py` and `client/nssdb.py` are on the file-system
+  allowlist of `tests/test_store_boundary.py`.
+- **#222 and #231.** After an update of the browser stack a source installation needs the browser build
+  again (`python -m patchright install chromium --no-shell`); the upgrade notes of a release that raises
+  the stack say so.
 
 Pull requests that are not plan work: the dependency updates. #27 (the frontend's minor and patch updates)
 and #29 (the GitHub Actions, among them `actions/checkout` and `setup-python` to v7) change no file of `src/`
@@ -1437,7 +1513,9 @@ selectable slices, odds and non-match data (P27, P28), the normalized exports (S
 the new web UI (FE-1, FE-2, FX-14a, FX-14b, FX-20), the rename of the package (REN-1), the detail slices of
 the three main sports (FX-16), the fix items FX-1 to FX-28 (FX-23 to FX-25 from the end-to-end test,
 FX-26 to FX-28 from the live validation), the 3.1 clean-up (P30), and X-01, X-02 and X-03, which were done
-outside their briefs. 3.0.0 is released (section 18), and so is 3.1.0 (section 19).
+outside their briefs. 3.0.0 is released (section 18), and so is 3.1.0 (section 19). 3.1.1 and 3.1.2
+followed on 2026-11-14 (section 19); nothing is in progress at `395b6e0`, and what could start next is the
+open list of section 19.
 
 **In progress.** Nothing at `054d8a2`.
 
@@ -1934,6 +2012,11 @@ with the Windows and macOS jobs best-effort (rule 6).
 
 State on 2026-10-09: point D was released as 3.0.0 on 2026-10-08 (section 18) and point E as 3.1.0 on
 2026-10-09 (section 19).
+
+State on 2026-11-14: 3.1.1 and 3.1.2 were released that day as patch releases after point E (section 19);
+neither is a point of this table. 3.1.2 changes a default that concerns security in the safe direction (the
+bridge browser verifies certificates, #229) and says in its changelog what stops working without a change
+by the user (a network that re-signs HTTPS) and the setting that restores the old behaviour.
 
 A check before every release, learned at point E: no configuration name that the release stops reading may
 weaken security or privacy without a word (fail-open). For each removed or renamed name (environment
@@ -4747,7 +4830,21 @@ Pinned, and kept on purpose (not defects of the target design):
 | P30 stopped reading `SOFASCORE_API_TOKEN` and `SOFASCORE_ALLOWED_HOSTS`, which 3.0.0's documents recommended: an upgrade dropped the access token and the allow-list without a word; `USE_PROXY` and `PROXY_URL` likewise sent requests from the user's address; the Docker entrypoint no longer counted the old allow-list name | release check of 3.1.0 | done, FX-35 (#196): the four still read until 3.2 (owner); a release check of section 8 |
 | Other 2.x names whose loss matters, reported and not changed: without `API_BASE_URL` the requests of a user who pointed it at a relay or mirror go straight to SofaScore from the user's address; without `SOFASCORE_THROTTLE_DIR`, `REQUEST_RATE_LIMIT` or `MAX_CONCURRENT` the request rate can rise (several processes no longer share one budget, or the default rate applies) | FX-35 #196 | not changed: the `legacy_name` warning and `ssc doctor` name each one still set; they are removed in 3.1 as announced |
 | The design documents' status texts (`03` section 19, the design README) describe the 3.1 release as to do | #195 | done, this revision |
-| `tests/test_research_explorer.py::test_sofascore_requests_leave_one_slot_apart` failed once on macOS (a gap of 0.0005 s against a minimum of 0.04 s): it measures send times, not slot times | CI, 2026-10-09 | open, small (section 19): read the slot times from the rate file, as FX-29b did for the image-flood test |
+| `tests/test_research_explorer.py::test_sofascore_requests_leave_one_slot_apart` failed once on macOS (a gap of 0.0005 s against a minimum of 0.04 s): it measures send times, not slot times | CI, 2026-10-09 | open, small (section 19): read the slot times from the rate file, as FX-29b did for the image-flood test. Done on 2026-11-14 (#224, after it failed again on CI with 0.0006 s): the test records the times `_wait_rate_slot` returns, which #220 made the time written under the lock |
+| The slice rows of rugby, floorball, volleyball and minifootball waited for more evidence | the owner, 2026-10-09 | done, FX-36 (#198): run `lv-20261009b` and the owner's decision (section 13); in 3.1.1 |
+| Two CLI goldens carried the month of the change log in a file name, so CI failed from 1 November 2026 | CI | done, #217: the month segment is masked under the sandbox root too |
+| `POST /api/v1/follows` without `seasons` took `all` while the CLI and the config file take `defaults.seasons`; a national team followed that way cost about 1,600 requests | live test, 2026-11-14 | done, #220 (in 3.1.1) |
+| The memory probe stamped a request slot after `asyncio.to_thread` returned, so two slots could look 0.25 s apart on a loaded runner | CI of #217 | done, #220 (the slot time is the one written under the lock) and #224 (the tests read it) |
+| Dependabot's Python group (#219) raised the browser stack together with the other pins | Dependabot | done in two steps: #221 without `scrapling`, `patchright`, `playwright` and the fingerprint data, then #222 with them after the live comparison |
+| A failed connection check said "SofaScore could not be reached" for every kind of network failure | issue #225 | done, #226: `cause` |
+| Six of the nine browser profiles of the request layer were refused by SofaScore's gate, so most requests went through the browser | measurement of 2026-11-14 | done, #227; the list has to follow the gate (section 19) |
+| `ssc doctor --live` reported success on a network that re-signs HTTPS, where every download failed | issue #225 | done, #228 (a second request with the HTTP client) and #229 (the browser no longer accepts the certificate) |
+| The bridge browser accepted any HTTPS certificate (a default of Scrapling's browser context) | #228 | done, #229: strict by default, `client.browser_accept_any_certificate` to relax it |
+| On a network that re-signs HTTPS the user had to export a CA, mount it and set `SSL_CERT_FILE`, and the browser could not be given it | issue #225 | done, #230: trust from Health or `ssc trust`, the `ca` folder, the browser's NSS database on Linux; not verified on Windows and macOS or behind a real proxy, and not in backups (section 19) |
+| In the Docker run of #230 a certificate the browser refused was only a warning, so the bridge answered "no answer" and the doctor could not name it; `ssc trust list` and `remove` logged to stdout | #230's Docker run | done in #230 (two more commits): the launch fails on `net::ERR_CERT_`; the two commands load the settings |
+| The READMEs still said that every request goes through the browser; `ssc doctor --live` named a README heading that does not exist; 6.12 of `05-web-ui.md` did not have the Health changes | after 3.1.2 | done, #233; the design documents as a whole: this revision (the twelfth) |
+| `ssc doctor --live` starts the bridge browser, which loads SofaScore's home page, to send one request | this revision | open (section 19) |
+| CI has no path filter: a pull request that changes only documents runs every job | this revision | open (section 19) |
 
 ## 17. Deliberately not planned
 
@@ -5106,13 +5203,21 @@ to SofaScore" in every pull request but the research data; "CHANGELOG.md and doc
 input was the lines after "[orchestrator] MARKER-8" of the orchestrator's feedback file and the
 descriptions of #177 and #179 to #191.
 
+The twelfth revision (2026-11-14) had no feedback file. Its input was the repository alone: the commits of
+`v3.1.0..395b6e0` with their messages, the code they changed, `CHANGELOG.md` and `docs/deploy/docker.md`. It
+did not read the pull requests' descriptions on GitHub or issue #225, so what it says about a live check or
+a Docker run is what a commit message or the changelog says. Recorded without action, as work of a pull
+request and not the product: the live download of 39 requests of #227, the live check of `curl-cffi` 0.17.0
+of #221, the local HTTPS server with a self-signed certificate and the live bridge test of #229, and the
+Docker run of #230.
+
 ## 18. The 3.0.0 release
 
 3.0.0 was released on 2026-10-08: the git tag `v3.0.0`, the GitHub Release and the Docker image
 `ghcr.io/tunjayoff/sofascore_scraper:3.0.0`. There is no PyPI package; users install from source (a
 checkout and `pip install -e .`, the release archive, or the image). Every step ran from the
 orchestrator's session (owner, 2026-10-08). This section keeps the record of the path to the tag; what
-came after it, the 3.1.0 release included, is in section 19.
+came after it, the 3.1.0, 3.1.1 and 3.1.2 releases included, is in section 19.
 
 Done before the release pull request:
 
@@ -5209,7 +5314,10 @@ the Compose recreate.
 3.1 was built on main from 2026-10-08 (owner: start the work after 3.0.0 at once, P30 included) and released
 as 3.1.0 on 2026-10-09 (below). P30 is the last item of the plan (section 10 has its brief and "As built");
 the other items were written from the orchestrator's instructions and have no brief here. The changelog
-entries of all of them are in `CHANGELOG.md` under `## [3.1.0] - 2026-10-09`.
+entries of all of them are in `CHANGELOG.md` under `## [3.1.0] - 2026-10-09`. Since the twelfth revision
+this section also records what came after 3.1.0: FX-36 to FX-38, the research recorder, and the patch
+releases 3.1.1 and 3.1.2 of 2026-11-14 ("After 3.1.0", below); the open list at its end is the list after
+3.1.2.
 
 Done (all merged by 2026-10-09 and in 3.1.0; FX-28 shipped in 3.0.0):
 
@@ -5259,7 +5367,66 @@ How 3.1.0 was released, as section 18 describes for 3.0.0:
    `ghcr.io/tunjayoff/sofascore_scraper:3.1.0` (also `3.1` and `latest`) and published the GitHub Release
    with the source archives (2026-10-09). There is no PyPI package; 3.1.0 installs from source, like 3.0.0.
 
-Open after 3.1, in no fixed order:
+After 3.1.0 (recorded by the twelfth revision, 2026-11-14; checked at `395b6e0`). None of the following has a
+brief of this plan. The first three rows have an id; the work of 2026-11-14 has none and is named by its
+pull request.
+
+Merged on 2026-10-09 and 2026-10-13, after the 3.1.0 tag:
+
+| Item | PR | What it did |
+|---|---|---|
+| FX-36 | #198 | run `lv-20261009b` (top-league finished matches of rugby, volleyball, floorball and minifootball) and the owner's decision on their slice rows (section 13), in `DETAIL_SLICES` of `sofascore_scraper/sports.py`: rugby and volleyball `statistics`, `lineups`, `incidents`, `pregame_form` optional; floorball `lineups` not requested, `statistics` and `pregame_form` optional, `incidents` still counted; minifootball `statistics`, `incidents`, `pregame_form` optional; `DECIDED` replaces `PROPOSALS` in `tests/test_sport_slices.py`. First released in 3.1.1 |
+| FX-37 | #199 | runs `lv-20261009c` and `lv-20261009d` (25 live match pages of 14 sports, then the finished pages of 13 of those matches and four more live pages; `docs/all-sports/README.md`) counted as repaired evidence; the owner's decision that the post-match endpoints and volleyball's `/graph/sequence` are not downloaded (section 13); no change under `sofascore_scraper/` |
+| FX-38 | #200 | basketball `lineups`, handball `pregame_form` and MMA `statistics` stay required against the evidence rule (owner; `DECIDED_AGAINST_THE_RULE`); no change under `sofascore_scraper/` |
+| (research) | #204, #205, #207 | `scripts/soak_live.py`, a recorder for long runs of the live push sources (rate phases, per-minute request counts, `--source off`), and `scripts/push_memory_probe.py` with its helpers, a probe of the memory of browser push listening; offline tests for both; nothing under `sofascore_scraper/`, and no result of a run is recorded in these documents |
+
+Merged on 2026-11-14 and released as 3.1.1 (the changelog entries are under `## [3.1.1] - 2026-11-14`):
+
+| PR | What it did |
+|---|---|
+| #217 | CI green again: the CLI golden harness masks the month of the change log under the sandbox root too (two goldens had `data/changes/2026-10.jsonl` and failed from 1 November); the raw ASGI stub of `tests/test_web_security.py` sends its request once (Starlette 1.10 rejects a second one; the pin is 1.7.0). Pins with advisories: `certifi` 2026.10.23 and `opentelemetry-api` 1.45.2 in `constraints.txt`; `npm audit fix` in the frontend lockfile (`vue-i18n`, `vite`) |
+| #220 | `POST /api/v1/follows` without `seasons` takes `defaults.seasons` (`current` unless changed); it took `all`, which for a team or a player reads the match list back to the page limit (`02-services.md` 6). The memory probe logs the slot time `_wait_rate_slot` wrote under the lock |
+| #221 | the Python pins of `constraints.txt` raised (among them `curl-cffi` 0.17.0, `fastapi` 0.162.4, `pydantic` 2.14.3 with `pydantic-core` 2.50.4 set by hand), without `scrapling`, `patchright`, `playwright`, `apify-fingerprint-datapoints` and `browserforge`, which waited for a live test of the challenge solve; replaces Dependabot's #219 |
+| #218 | the frontend's minor and patch group (13 packages, among them `vue` 3.5.45, `vue-router` 5.5.0, `pinia` 4.1.0, `vitest` 5.1.0) |
+| #223 | the release pull request: `version = "3.1.1"` in `pyproject.toml`, the changelog section (with the entry of FX-36's slice rows and of the pins), the READMEs' version line, the usage-error golden |
+
+Merged on 2026-11-14 after the `v3.1.1` tag and released as 3.1.2 (`## [3.1.2] - 2026-11-14`):
+
+| PR | What it did |
+|---|---|
+| #224 | tests only: the explorer's slot test and the offline test of the memory probe check the request gap on the slot times written under the lock, not on send or arrival times (0.0006 s and 0.23 s had been measured on CI) |
+| #226 | the connection check names the kind of network failure: `cause` (`timeout`, `dns`, `proxy`, `tls`, `connect`, `reset`) in the answer of `POST /api/v1/status/check`, from curl's error code (`upstream.network_cause`); Health shows it with a hint (`02-services.md` 2.7, 6; `05-web-ui.md` 6.12) |
+| #222 | the browser stack: `scrapling` 0.5.1, `patchright` 1.64.4, `playwright` 1.65.0 and `apify-fingerprint-datapoints` 0.16.0, after the challenge solve was verified live with them against the previous versions (Dependabot's Python group) |
+| #227 | browser profiles: `sofascore_scraper/client/profiles.py` with the profiles that passed SofaScore's gate on 2026-11-14; a challenged profile is set aside for six hours and the request repeated with another profile, at most twice, before the bridge; an async session keeps the profile that passed. Live check of the pull request: a download of 39 requests, no 403, no browser (`02-services.md` 2.4) |
+| #228 | `ssc doctor --live` sends a second request with the app's HTTP client and fails with `live_http_tls` (naming a CA variable that points at a missing file) or `live_http_failed`; `docs/deploy/docker.md` "A network that inspects HTTPS", a FAQ entry in both READMEs, two commented lines in `docker-compose.yml`; Health's hint for the `tls` cause (`02-services.md` 4.1) |
+| #229 | the bridge browser verifies HTTPS certificates (`ignore_https_errors` false through `additional_args`); the setting `client.browser_accept_any_certificate` (default false) relaxes it for the browser only; the doctor code `live_browser_tls`; the Settings row, `.env.example`, the Docker page (`02-services.md` 2.4, 4.3) |
+| #230 | trusting the certificate of a network that re-signs HTTPS: `client/trust.py` (the store `CONFIG_DIR/ca/*.pem`, the combined CA file passed to curl with every request, the probe, the browser's NSS home) and `client/nssdb.py`; `GET /api/v1/trust`, `POST /api/v1/trust/probe`, `POST /api/v1/trust`, `DELETE /api/v1/trust/{fingerprint}` and the error code `certificate_changed`; `ssc trust list\|show\|add\|remove`; the Health card (`frontend/src/screens/health/TrustPanel.vue`); the `direct` socket on the same trust; a test PKI generated at test time (`tests/trust_pki.py`). Two fixes from its Docker run, in the same pull request: a certificate the browser refuses fails the launch and reaches the bridge health; `ssc trust list` and `remove` log to stderr (`02-services.md` 2.4, 2.6, 4.1, 4.3, 6) |
+| #231 | the release pull request: `version = "3.1.2"`, the changelog section with "Upgrading from 3.1.1", Security, Fixed, Added and Changed, the READMEs' version line, the usage-error golden |
+
+Merged on 2026-11-14 after the `v3.1.2` tag (not in a release yet):
+
+| PR | What it did |
+|---|---|
+| #232 | a Contact section in `README.md` and `README.tr.md` |
+| #233 | the READMEs' "Why does it need Chromium?" (most requests are plain HTTP requests since 3.1.2) and upgrade steps (the browser build is installed again); the hint of `ssc doctor --live` names the FAQ entry about refused downloads (`locales/en.json`, `locales/tr.json`); the browser install command with `--no-shell` in the changelog of 3.1.2; the as-built note of `05-web-ui.md` 6.12; a changelog entry under `## [Unreleased]` |
+
+How 3.1.1 and 3.1.2 were released, as far as the repository shows it:
+
+1. **3.1.1.** The release pull request (#223) merged at `3a8e063`, and the tag `v3.1.1` is on that commit.
+   Its changelog says that nothing has to be changed after upgrading from 3.1.0 and names the image
+   `ghcr.io/tunjayoff/sofascore_scraper:3.1.1`.
+2. **3.1.2.** The release pull request (#231) merged at `fb0a257`, and the tag `v3.1.2` is on that commit.
+   Its changelog has two upgrade notes (from source: install the browser build once more; on a network
+   that re-signs HTTPS: trust its certificate, because the browser no longer accepts it by itself) and
+   names the image `ghcr.io/tunjayoff/sofascore_scraper:3.1.2`.
+3. `release.yml` runs on a `v*` tag: it checks the tag against `pyproject.toml`, runs CI, builds and
+   smoke-tests the image, pushes it as `X.Y.Z`, `X.Y` and `latest` and publishes the GitHub Release. This
+   revision did not look at the runs, the GitHub Releases or the registry (it works from the repository
+   only), so it records the tags and what the changelog says, not the outcome of the runs. There is no
+   PyPI package; both install from source, like 3.1.0. Which checks of release point D (section 8) ran
+   before each tag is not recorded in the repository.
+
+Open after 3.1.2 (the list after 3.1, brought up to 2026-11-14), in no fixed order:
 
 - **3.2: remove the four deprecated names.** `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY`
   and `PROXY_URL` leave `loader.DEPRECATED_NAMES` and become plain `legacy_name` warnings like the other 2.x
@@ -5294,7 +5461,49 @@ Open after 3.1, in no fixed order:
 - **A CI flake of the explorer's slot test.** `tests/test_research_explorer.py::test_sofascore_requests_leave_one_slot_apart`
   failed once on macOS (a gap of 0.0005 s against a minimum of 0.04 s): it measures when the requests were
   sent, not their slots. It should read the slot times from the rate file, as FX-29b did for the image-flood
-  test.
+  test. **Closed on 2026-11-14 (#224).** The test records the slot times `_wait_rate_slot` returns (the time
+  written under the lock since #220) and checks the gap on them; the offline test of the memory probe, which
+  had the same weakness on arrival times, relies on the probe's own `min_gap_s`.
+
+New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`):
+
+- **The trust feature is not verified on Windows and macOS, or behind a real proxy** (#230). Its tests run
+  against a TLS server on the loopback address with a generated PKI, and it was run in the Docker image
+  (Linux). On Windows and macOS the store, the combined CA file and the probe are the same code but were
+  not run; with a proxy configured the probe is not made at all (`trust.proxy_configured`, reason `proxy`),
+  because a direct socket would bypass the proxy, so there the user must put the CA certificate into the
+  `ca` folder by hand, and whether curl then verifies through the proxy with the combined file was not
+  checked against a real one.
+- **The browser part of the trust feature is Linux only** (#230). `trust.browser_supported()` is true on
+  Linux with `libnss3`; elsewhere the bridge browser is not given the stored certificates and uses the trust
+  store of the operating system (one warning in the log, a note in the UI and the CLI). Giving the browser
+  the store on Windows and macOS needs a mechanism per platform, or the answer that the operating system's
+  store is enough there.
+- **Backups do not include the `ca` folder** (#230). `BackupManager.create` takes the config files its
+  callers name and `overrides.json`; none names `CONFIG_DIR/ca`, and a restore puts back `overrides.json`
+  only (`01-storage.md` 9.1). A restore on another machine, or after the config folder was lost, leaves the
+  network's certificate untrusted until the user trusts it again. Whether a backup should carry it (it
+  holds certificates, not keys, but restoring it restores a trust decision) is a decision.
+- **`ssc doctor --live` costs a full home-page load** (#228). Its first request goes through the bridge
+  browser, whose start opens SofaScore's home page (`BrowserBridge._launch`, `HOME_URL`) before the one API
+  request; only then comes the request with the HTTP client, and it is not sent when the bridge gave no
+  answer. Since #227 downloads normally need no browser, so the check is heavier than what it checks. Open:
+  the HTTP request first and the browser as a second, separate result, or a flag for the browser part.
+- **No path filter in CI for documents-only changes.** `.github/workflows/ci.yml` runs on every pull
+  request and every push to main without a `paths` filter (only `audit.yml` and `latest-deps.yml` have one),
+  so a pull request that changes only `docs/` or a README runs the frontend job and the whole Python matrix.
+  A filter must keep the tests that read documents running (the generated tables of `04-schema-v1.md` in
+  `tests/test_schema_v1.py`, the DDL of `01-storage.md` in `tests/test_store_catalog.py`, the OpenAPI
+  snapshot, and the tests that read the READMEs, such as `tests/test_live_direct_optin.py` and
+  `tests/test_start_web.py`).
+- **The profile list has to follow SofaScore's gate** (#227). `profiles.WANTED` is the measurement of one
+  day; the gate's Chrome threshold moves, and new profiles come only with a newer curl_cffi. The set-aside
+  keeps requests working while one profile passes, and nothing reports how many are set aside except the
+  log (`profiles.refused()` has no caller in a face). Open: the set-aside profiles in `/status` or
+  `ssc doctor`, and a routine for re-measuring the list.
+- **A trusted certificate has no scope and no reminder** (#230). A stored CA is trusted for every host the
+  HTTP client and the bridge browser connect to, and an expired one stays in the folder until the user
+  removes it (the list marks it `expired`). No decision asked for more.
 
 Not in 3.1, by decision: a localized date picker (owner, 2026-10-09; the native date input stays) and
 serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).

@@ -16,9 +16,12 @@ an eighth, on 2026-10-08 after the end-to-end test against the real site and its
 (pull requests #170 to #172), marks its references `48e4c4c`, a ninth, later that day after the live
 validation against the real site, its fixes FX-26 and FX-27, and FX-16 (pull requests #174 to #176), marks
 its references `43ecdfc`, a tenth, on 2026-10-09 after the 3.0.0 release, P30 and the first items of
-3.1 (pull requests #177 and #179 to #192), marks its references `216c2f9` (B4, #192, `ff6fd7c`), and an
+3.1 (pull requests #177 and #179 to #192), marks its references `216c2f9` (B4, #192, `ff6fd7c`), an
 eleventh, later that day after FX-34, FX-35 and the 3.1.0 release (pull requests #194 to #196), marks its
-references `054d8a2`.
+references `054d8a2`, and a twelfth, on 2026-11-14 after the 3.1.1 and 3.1.2 releases of that day (pull
+requests #217 to #233, with FX-36 to FX-38, #198 to #200, and the research scripts #204 to #207 before them),
+marks its references `395b6e0`. The work of 2026-11-14 has no plan item, so the twelfth revision names it by
+pull request ("as built in 3.1.2 (#230)") and gives file paths without line numbers.
 Since REN-1 the import package is `sofascore_scraper` (it was `src`): the documents write its paths with
 the new name, and a `file:line` reference keeps the line it had at the commit its revision names (the rename
 moved no line). Paths of files removed before the rename keep the old `src/` form. Where a section
@@ -32,7 +35,7 @@ pull request.
 | [00-platform.md](00-platform.md) | The owner's platform design in English: decisions (with their state and the decisions taken after the draft), layers, schema v1, storage, API v1, CLI, sinks, live, security, waves. Its last section lists where the detailed designs differ from the draft | you want the goal and the fixed requirements |
 | [01-storage.md](01-storage.md) | The Store: what is on disk today and who touches it, the v3 layout, compression measurements, the catalog and state databases with their DDL, both layouts read side by side, `migrate`, leases and the write protocol, backup and restore | you work on anything under `DATA_DIR` |
 | [02-services.md](02-services.md) | The service layer and the faces: what `match_data_fetcher.py` does today, the client, the one pipeline, jobs across processes, the CLI contract, sinks and webhooks, API v1 resources, the live service, removal of the terminal UI | you work on fetching, jobs, the CLI, the API or live |
-| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 97 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; how 3.0.0 was released (section 18); what 3.1 has, how 3.1.0 was released and what is open after it (section 19) | you are about to start or review a pull request, or you want to know what is open after 3.1 |
+| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 97 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; how 3.0.0 was released (section 18); what 3.1 has, how 3.1.0 was released, what 3.1.1 and 3.1.2 have and what is open after them (section 19) | you are about to start or review a pull request, or you want to know what is open after 3.1.2 |
 | [04-schema-v1.md](04-schema-v1.md) | The normalized schema v1, the public data contract, field by field: every record the platform gives out (Sport, Category, Tournament, Season, Participant, Event with its score by score family, Slice, Change, LiveEvent) with type, unit, null rule, source in SofaScore's payload and meaning; the odds and standings records of P28 (`Odds`, `OddsLine`, `StandingsRow`, in the generated contract since FX-21); the versioning rule; what "raw" means; the 28 decisions taken while it was written. Approved on 2026-10-02 | you consume the platform's data, or you work on the API, the exports, the sinks or a new sport |
 | [05-web-ui.md](05-web-ui.md) | The screens of the web UI, designed from scratch on API v1 (plan item FE-1): users, information architecture, design system, every screen with its routes and fields and states, the routes still missing with their owners, and the decisions taken. Approved by the owner on 2026-10-02 with all 22 decisions; built by FE-2 (#107, #132, #133), then reworked after a first-time-user review (FX-14a #154, FX-14b #161; the classic views removed) and given the search as the user types (FX-20 #167); its last section says what changed while it was built, with the words as built | you work on the frontend |
 
@@ -75,8 +78,9 @@ pull request.
 
 ## Status
 
-As of 2026-10-09, after the eleventh revision (details and pull request numbers in the "Status" section at
-the top of `03`; the 3.0.0 release in its section 18, 3.1 and its release in its section 19):
+As of 2026-11-14, after the twelfth revision (details and pull request numbers in the "Status" section at
+the top of `03`; the 3.0.0 release in its section 18, 3.1 and the releases 3.1.0, 3.1.1 and 3.1.2 in its
+section 19):
 
 - **3.0.0 is released** (2026-10-08): the tag `v3.0.0` on `1c5bab2`, the GitHub Release with the source
   archives and checksums, and the image `ghcr.io/tunjayoff/sofascore_scraper:3.0.0`. There is no PyPI
@@ -100,12 +104,33 @@ the top of `03`; the 3.0.0 release in its section 18, 3.1 and its release in its
   odds providers by name from a built-in table (B4), small leftovers such as `ssc export` file names like a
   web export's and the player export filter on the stored match list (FX-34), and four deprecated 2.x
   names still read so that an upgrade keeps its access token, host allow-list and proxy (FX-35).
-- **Open after 3.1**: removing those four deprecated names in 3.2, the slice rows of rugby, floorball,
-  volleyball and minifootball (the owner decides after more evidence), a rule for team streaks that answer
-  200 with an empty body, baseball's umpires, weather, comments and at-bats, a fetch of the odds providers'
-  listing and a `provider_name` field, live pages of the repaired explorer, a replacement for the events
-  columns `stage_name` and `listed_in`, the Store's durability from its caller, the explorer's unthrottled
-  live-match-tracker document, a CI flake of the explorer's slot test, and a few small leftovers of P30.
+- **3.1.1 and 3.1.2 are released** (both on 2026-11-14, from source like 3.1.0): the tags `v3.1.1` on
+  `3a8e063` and `v3.1.2` on `fb0a257`, the merge commits of their release pull requests (#223, #231); the
+  changelog names the images `ghcr.io/tunjayoff/sofascore_scraper:3.1.1` and `:3.1.2`. The work has no plan
+  item and is cited by pull request.
+- **What 3.1.1 has**: the slice rows of rugby, volleyball, floorball and minifootball as the owner decided
+  them on 2026-10-09 (FX-36, #198; FX-37 and FX-38, #199 and #200, changed tests and documents only), a
+  repaired CI and raised dependency pins, those with advisories first (#217, #218, #221), and `POST
+  /api/v1/follows` without `seasons` taking `defaults.seasons` instead of `all` (#220).
+- **What 3.1.2 has**: browser profiles that pass SofaScore's gate, with a refused profile set aside for six
+  hours and the request repeated with another one, so that the built-in browser is used only when no profile
+  passes (#227; before, most requests ended in the browser); a built-in browser that verifies HTTPS
+  certificates, with `client.browser_accept_any_certificate` as the knowing exception (#229); trust in the
+  certificate of a network that re-signs HTTPS, from the Health screen or `ssc trust`, stored in the `ca`
+  folder of the config directory and given to the browser on Linux, with four `/api/v1/trust` routes and the
+  error code `certificate_changed` (#230); the kind of network failure in the connection check (#226);
+  a second request of `ssc doctor --live` with the app's HTTP client (#228); and the browser stack
+  `scrapling` 0.5.1, `patchright` 1.64.4, `playwright` 1.65.0 (#222).
+- **Open after 3.1.2** (section 19 of `03`): removing the four deprecated names in 3.2, a rule for team
+  streaks that answer 200 with an empty body, baseball's umpires, weather, comments and at-bats, a fetch of
+  the odds providers' listing and a `provider_name` field, a replacement for the events columns `stage_name`
+  and `listed_in`, the Store's durability from its caller, the explorer's unthrottled live-match-tracker
+  document, and a few small leftovers of P30; and, new with 3.1.2: the trust feature is not verified on
+  Windows and macOS or behind a real proxy, its browser part is Linux only, backups do not include the `ca`
+  folder, `ssc doctor --live` costs a full home-page load, CI has no path filter for documents-only
+  changes, the profile list has to follow SofaScore's gate, and a trusted certificate has no scope and no
+  reminder. Closed since the eleventh revision: the four sports' slice rows (FX-36), live pages for the
+  evidence (FX-37) and the CI flake of the explorer's slot test (#224).
   Not in 3.1: a localized date picker (owner) and the web UI under a path prefix.
 - What a user can see: everything a download writes is in the new layout (`v3/`, 8.4 times smaller on the
   owner's data) and the old folders are read in place; `ssc` covers every task of the former terminal menu
@@ -115,7 +140,10 @@ the top of `03`; the 3.0.0 release in its section 18, 3.1 and its release in its
   exports can be narrowed to teams and players; one league's data can be deleted and a backup restored from
   the browser; `ssc watch` follows live matches through the site's own page or, if chosen knowingly, the push
   server directly, and `--idle` waits for a live follow. The library is imported as `sofascore_scraper`. The
-  web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer.
+  web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer. Since 3.1.2 downloads are plain HTTP requests
+  again and the built-in browser starts only for a challenge or a live source; on a network that re-signs
+  HTTPS the Health screen shows the certificate and offers to trust it, and a failed connection check says
+  what kind of failure it was.
 - Decisions: settled on 2026-10-02 and 2026-10-03 are the web UI built from scratch on the same stack, the
   approval of `05` with all its 22 decisions, S18, FX-12, the rule for the Windows CI job, best-effort
   Windows and macOS with merges on a green Linux CI plus a local full run, and the live validation at the
@@ -129,10 +157,13 @@ the top of `03`; the 3.0.0 release in its section 18, 3.1 and its release in its
   step runs from the orchestrator's session, 3.0.0 is not published to PyPI, the `direct` step approved in
   the validation's session, the three slice proposals of #121 applied (FX-16), the tag, and the work after
   3.0.0 started at once with P30; on 2026-10-09 the owner's: FX-31's slice rows kept, the four sports' rows
-  wait for more evidence, no localized date picker now, the 2.x token and allow-list names read until 3.2
-  (with the proxy names, the orchestrator's addition), and the tag `v3.1.0`. The orchestrator's, reversible: one type-ahead
+  wait for more evidence and were decided the same day after a top-league run (FX-36), the post-match
+  endpoints and volleyball's live point sequence are not downloaded (FX-37), three cells stay required
+  against the evidence rule (FX-38), no localized date picker now, the 2.x token and allow-list names read
+  until 3.2 (with the proxy names, the orchestrator's addition), and the tag `v3.1.0`. For the work of
+  2026-11-14 section 13 of `03` records no decision. The orchestrator's, reversible: one type-ahead
   list in SofaScore's order (FX-26), a no-data answer of an unfinished match kept as an uncounted `empty`
   (FX-27), score changes of set sports kept as sets won, and the rules of batch B (a 60 s wait before a
   confirming request, the connection state by the last outcome, a player's matches by the stored match list
   and line-ups).
-  Waiting for the owner: the four sports' slice rows, the team-streaks rule and the baseball proposals.
+  Waiting for the owner: the team-streaks rule and the baseball proposals.

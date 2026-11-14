@@ -104,12 +104,43 @@ sent requests from the user's own address instead of the proxy (owner, 2026-10-0
 "Version", "Platform" and "Data types" of section 1, the notes of sections 6 and 10 and the row of section 13
 on the environment say so.
 
+Revised a twelfth time, on 2026-11-14, after the 3.1.1 and 3.1.2 releases of that day (pull requests #217 to
+#233; checked at `395b6e0`). No decision of the draft changed. Between the eleventh revision and this one the
+owner decided the slice rows of rugby, volleyball, floorball and minifootball after a run over their top
+leagues (FX-36, #198), which endpoints are not downloaded (FX-37, #199) and three cells kept required
+against the evidence rule (FX-38, #200), all on 2026-10-09; and a recorder for long runs of the live push
+sources and a memory probe were added to the research scripts (#204, #205, #207, 2026-10-13), which change
+nothing of the platform. On 2026-11-14:
+
+- **3.1.1** (the tag `v3.1.1` on `3a8e063`; release pull request #223) is a maintenance release: CI green
+  again after two goldens that carried the month in a file name (#217), the pinned dependencies raised,
+  those with published advisories first (#217, #221, #218), `POST /api/v1/follows` without `seasons` takes
+  `defaults.seasons` instead of `all` (#220), and the slice rows of FX-36 reach users.
+- **3.1.2** (the tag `v3.1.2` on `fb0a257`; release pull request #231) changes how requests reach SofaScore
+  and what the application trusts. SofaScore's gate refuses clients that present an outdated Chrome; six of
+  the nine browser profiles of the request layer were such, so most requests were refused and then made
+  through the built-in browser. The request layer now keeps a list of profiles that pass, sets a refused
+  one aside for six hours and repeats the request with another, and uses the browser only when none passes
+  (#227). The built-in browser verifies HTTPS certificates, which it did not (#229). On a network that
+  re-signs HTTPS (an antivirus, a company proxy) the user can trust that network's certificate from the
+  Health screen or with `ssc trust`, for the HTTP client and, on Linux, the browser (#230). A failed
+  connection check names the kind of network failure (#226), and `ssc doctor --live` also sends a request
+  the way downloads do (#228). The browser stack is `scrapling` 0.5.1, `patchright` 1.64.4 and `playwright`
+  1.65.0 (#222).
+- After the tag: a Contact section in the READMEs (#232) and corrections of the READMEs, of a doctor hint and
+  of `05-web-ui.md` 6.12 (#233); they are in the changelog's Unreleased section.
+
+Both releases are from source, like 3.1.0; the changelog names their images
+`ghcr.io/tunjayoff/sofascore_scraper:3.1.1` and `:3.1.2`. The work of 2026-11-14 has no plan item and is
+cited by pull request. The rows "Sports", "Platform", "Network access" and "Version" of section 1, the notes
+dated 2026-11-14 in sections 2, 5, 6, 8, 9, 10 and 11 and a new row of section 13 say what changed.
+
 ## 1. Decisions (Tuncay, 2026-10-01)
 
-| Topic | Decision | State on 2026-10-09 |
+| Topic | Decision | State on 2026-11-14 |
 |---|---|---|
 | Product position | A data foundation: products are built on it, it runs on servers as automation, applications and agents use it | |
-| Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | done: all 21 are in the sport registry with their score mapping (PRs #112, #115, #118). Which detail data each sport requests rests on one match page per sport (PR #121), on the app's own downloads in the live validation for football, basketball and tennis (PR #176), and, since PR #185, on the evidence of the repaired research tool (39 match pages of 21 sports, 2026-10-09). A proposal for rugby, floorball, volleyball and minifootball waits for more evidence (owner, 2026-10-09) |
+| Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | done: all 21 are in the sport registry with their score mapping (PRs #112, #115, #118). Which detail data each sport requests rests on one match page per sport (PR #121), on the app's own downloads in the live validation for football, basketball and tennis (PR #176), and, since PR #185, on the evidence of the repaired research tool (39 match pages of 21 sports, 2026-10-09). A proposal for rugby, floorball, volleyball and minifootball waits for more evidence (owner, 2026-10-09). Decided the same day after a run over top-league matches of the four sports (PR #198, FX-36; in 3.1.1): the data types SofaScore leaves out for part or all of their finished matches are optional or not requested |
 | Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched | done: the selection of data slices end to end, per follow, in the configuration and in the web UI (PRs #134, #161); odds (four slices, the provider id recorded, off by default) and the data of a season, team, player or sport (PR #140). The odds country is recorded only when the user sets `[client] odds_country` (delegated decision of 2026-10-06; PR #155). The live validation found that providers 1 and 5 answer without login and settled the shapes of the odds slices that had only 404 samples; the known providers are named from a built-in table since PR #192 (`GET /api/v1/odds/providers`; no betting link stored); fetching SofaScore's per-country listing is open after 3.1 |
 | History / live | History: by requests. Live: the push channel, with polling as the fallback. How the push channel is used was decided after the draft: see the two rows at the end of this table | measured, PR #42; built, PRs #95 and #101 (the last two rows) |
 | Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table). Changed on 2026-10-02 (owner): the web UI is designed and built from scratch on the same technology stack (Vue 3, TypeScript, Pinia, the same build tooling), as a professional interface for the new platform, not as an incremental change of today's views; only what fits is carried over as code (the API client, the locale files, the eval-free build, the token handling). Added on 2026-10-06 (owner): team, player and single-match follows work in 3.0.0 (search by name, their matches downloaded), and search suggests as the user types, like the site | done for the CLI: the data commands, `serve` and the removal of the terminal menu (PRs #119, #125, #131). The new web UI is built (screen design PR #105, approved with all 22 of its decisions on 2026-10-02; implementation PRs #107, #132, #133). A first-time-user review on 2026-10-06 found it hard for a newcomer; a newcomer pass (PR #154), the backend gaps (PR #156: team, player and match follows that download, per-league delete, the connection state) and the last screens (PR #161) followed, and the old views under `/classic` were removed (PR #161). Search as the user types, one search across kinds and job names are built (PR #167, FX-20). The web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer (Tailwind CSS 4, PR #136) |
@@ -118,12 +149,12 @@ on the environment say so.
 | Data format | A fixed, versioned common schema + raw data for those who want it | done: `04-schema-v1.md`, approved on 2026-10-02 (PR #72), is served by API v1 (PRs #122 to #127) and by the normalized exports (PR #130); raw payloads by the raw routes and the raw export (PRs #108, #123) |
 | Match status | Every status is stored (fixture, live, finished, cancelled); filtering happens when reading | done, PR #129: the downloads store every status and `FETCH_ONLY_FINISHED` is a filter when the counts, the lists and the planning read (decision D21) |
 | Language | Default English; Turkish when the system language is Turkish | done, PR #39 |
-| Platform | Linux and Docker are official; Windows and macOS best-effort | the Docker image is built when a release is tagged; the image of 3.0.0 was smoke-tested and published as `ghcr.io/tunjayoff/sofascore_scraper:3.0.0` (2026-10-08), that of 3.1.0 as `:3.1.0` and `:latest` (2026-10-09) |
-| Network access | No account system. Local-only by default; exposing it is the responsibility of whoever installs it (see section 9) | done, PR #43 |
+| Platform | Linux and Docker are official; Windows and macOS best-effort | the Docker image is built when a release is tagged; the image of 3.0.0 was smoke-tested and published as `ghcr.io/tunjayoff/sofascore_scraper:3.0.0` (2026-10-08), that of 3.1.0 as `:3.1.0` and `:latest` (2026-10-09); the changelog names `:3.1.1` and `:3.1.2` for the releases of 2026-11-14. Trusting a network's certificate (PR #230) reaches the built-in browser on Linux only, and is not verified on Windows and macOS |
+| Network access | No account system. Local-only by default; exposing it is the responsibility of whoever installs it (see section 9) | done, PR #43. Outgoing connections since 3.1.2: the built-in browser verifies HTTPS certificates like the HTTP client (PR #229), and an extra certificate is trusted only by the user's explicit decision (PR #230; section 9) |
 | Raw payloads | Stored compressed; the application and the CLI export them at full size (plain JSON) on request | done: compressed in the new layout (PR #104); exported by `ssc export` and API v1 (PRs #108, #123, #130) |
 | Old data layout | No automatic migration. New writes use the new layout; old data is read in place; whoever wants to moves it with the `migrate` command (manager decision) | done: `ssc migrate` (PR #110) |
 | Scheduler | In-app automatic updating is optional, off by default | done, PR #128: `ssc serve --scheduler` or `[schedule] enabled = true`. Since PR #155 a task that runs `every` some time counts from its last run in the job history, not from the start of the server, and a `prune-history` task (off by default) removes old odds snapshots |
-| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | released on 2026-10-08: the `v3.0.0` tag (Tuncay's), the GitHub Release and the Docker image, from source only, without a PyPI package (PR #179; `03-implementation-plan.md` section 18). 3.1.0 released on 2026-10-09 the same way: the `v3.1.0` tag (Tuncay's) on `054d8a2`, the GitHub Release and the image (PR #195; `03-implementation-plan.md` section 19). P30 (PR #186) removed in it what 3.0.0 deprecated (the 2.x flags, `/api` routes, environment names and backup scopes); four of the environment names stay readable, deprecated, until 3.2 (PR #196). The import package is `sofascore_scraper` since REN-1 (#168; decision D1, owner, 2026-10-03), and the Docker image has the `ssc` command |
+| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | released on 2026-10-08: the `v3.0.0` tag (Tuncay's), the GitHub Release and the Docker image, from source only, without a PyPI package (PR #179; `03-implementation-plan.md` section 18). 3.1.0 released on 2026-10-09 the same way: the `v3.1.0` tag (Tuncay's) on `054d8a2`, the GitHub Release and the image (PR #195; `03-implementation-plan.md` section 19). P30 (PR #186) removed in it what 3.0.0 deprecated (the 2.x flags, `/api` routes, environment names and backup scopes); four of the environment names stay readable, deprecated, until 3.2 (PR #196). 3.1.1 and 3.1.2 followed on 2026-11-14 (the tags `v3.1.1` on `3a8e063` and `v3.1.2` on `fb0a257`; PRs #223, #231; `03-implementation-plan.md` section 19): a maintenance release, and one that changes the request layer's browser profiles and adds certificate trust; neither changes the storage layout, the schema or an existing route incompatibly, except the default of `POST /api/v1/follows` without `seasons` (PR #220). The import package is `sofascore_scraper` since REN-1 (#168; decision D1, owner, 2026-10-03), and the Docker image has the `ssc` command |
 | Merging | The manager session reviews and merges; the release tag is Tuncay's | since 2026-10-03 a pull request merges on a green Linux CI plus a local run of the full suite on its merge with main; the Windows and macOS jobs of CI are best-effort (Platform) |
 | Live is not a web feature (2026-10-01, after the draft) | Live data is not part of the web UI and is not exposed over an HTTP endpoint (no SSE stream). A person at a screen can watch live scores on SofaScore itself; the value of the live stream is for servers and programs. Live watching is a CLI service (`watch`) that delivers events to sinks: stdout (JSON lines), file, webhook. A program that wants live data over the network uses the webhook. The event stream is still stored with sequence numbers | done: `ssc watch` delivers to the configured sinks (PR #91); no route of API v1 and no screen of the new web UI carries live data |
 | Live sources (2026-10-01, after the draft) | Two selectable push sources in the CLI, plus polling as the fallback that is always present. `page` (default): the service keeps a real browser page open and listens to the page's own push connection; no credential is handled. `direct` (explicit opt-in): a lightweight client connects to the push server itself with the credential read at runtime from the bridge page's own connection, kept in memory only. `direct` is never the default, is never enabled implicitly, and carries clear warnings wherever it is configured or documented (section 8) | built: `page`, the default (PR #95), and `direct` (PR #101). Run against the real site in the live validation of 2026-10-08, the `direct` step with the owner's approval: both worked (section 8). `direct` stays off in every default |
@@ -169,6 +200,13 @@ Note. The file is 2,482 lines at `3ae2599`.
 
 Note. The owner's brief for the detailed designs words the diagram as "one core, three faces": the Python
 library, the CLI and the HTTP API sit on the same services, and the web UI sits on the API.
+
+Note (2026-11-14). What "bridge" means in the Client box, since 3.1.2 (PR #227): a request goes out as a
+plain HTTP request under a browser profile that SofaScore's gate accepts; a profile that is challenged is
+set aside for six hours and the request is repeated with another one; the browser bridge answers only a
+request that no profile gets through, and it serves the `page` and `direct` live sources. Before, six of
+the nine profiles were refused, so most requests ended in the browser. The Client also holds the extra
+certificates the user trusts (PR #230; section 9). `02-services.md` 2.4 has the details.
 
 ## 3. Common data schema (v1)
 
@@ -297,6 +335,14 @@ with a player follow's matches (`events?follow=kind:id`), and request counters i
 result. Behind a proxy with an ASGI root path the access token is checked on the routed path (it was not,
 PR #191); the web UI itself is served at the root of its host only.
 
+Note (2026-11-14). 3.1.1 changed one default: `POST /api/v1/follows` without `seasons` takes
+`defaults.seasons` (`current` unless changed), as the CLI and the config file do; it took `all` (PR #220).
+3.1.2 added to the connection check (`POST /api/v1/status/check`) the kind of a network failure, `cause`
+(PR #226), and a `trust` resource for the certificate of a network that re-signs HTTPS: `GET /api/v1/trust`,
+`POST /api/v1/trust/probe`, `POST /api/v1/trust` and `DELETE /api/v1/trust/{fingerprint}`, with one new
+error code, `certificate_changed` (409), for a certificate that is no longer the one the user confirmed
+(PR #230). Neither is in the resource list of the draft; `02-services.md` section 6 describes them.
+
 ## 6. CLI (servers and automation)
 
 Principles: it asks no questions; output is JSON on request; logs go to a separate channel; running it again
@@ -355,6 +401,14 @@ replacement in `ssc config show`, `config validate`, `ssc doctor` and the diagno
 value is a configuration error, and `ssc config init --from-legacy` turns an old `.env` into a config file.
 `ssc export` takes `--team` and `--player` (PR #190), and `ssc watch --idle` (PR #179) keeps running without
 a live follow (section 8).
+
+Note (2026-11-14). 3.1.2 added one command group and one check. `ssc trust list|show|add|remove` (PR #230)
+manages the extra certificates the application trusts, for servers without the web UI; it never asks a
+question: `add` needs the fingerprint `show` printed, or `--yes`. `ssc doctor --live` sends, after its
+request through the browser, one request with the application's HTTP client (PR #228): on a network that
+re-signs HTTPS it used to report success while every download failed. Its new failure codes are
+`live_http_tls`, `live_http_failed` and `live_browser_tls` (PR #229). One setting is new,
+`client.browser_accept_any_certificate` (`SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE`, default false).
 
 ## 7. Output targets (pluggable)
 
@@ -436,6 +490,11 @@ one; nothing is requested while idle. The Compose example's live service uses it
 in a loop. 3.1 removed the old `--watch` flag (PR #186), and the 2.x file `watch_events.jsonl` is no longer
 written; the events are kept in the state database.
 
+Note (2026-11-14). Since 3.1.2 the browsers of the `page` source and of the credential read of `direct`
+verify HTTPS certificates like the bridge browser (PR #229), and the socket of `direct` trusts the
+certificates the user stored (PR #230). A certificate trusted while `ssc watch` runs reaches its browser at
+the next start of that process. Neither source was run again against the real site for these changes.
+
 ## 9. Network access and security
 
 No account system; access control is in the network layer of whoever installs it (firewall, reverse proxy,
@@ -453,6 +512,39 @@ Note. PR #43 (merged on 2026-10-01) implements this section for the current web 
 the explicit Host allow-list (a wildcard bind does not start without one), the optional access token, the
 security headers with a Content-Security-Policy, the two state-changing GET routes turned into POST, and the
 startup warning.
+
+Note (2026-11-14). The draft's section is about who may reach the application. 3.1.2 added rules for what
+the application itself trusts when it connects to SofaScore (PRs #229, #230; `02-services.md` 2.4 and 6):
+
+- **Both transports verify.** The HTTP client always verified HTTPS certificates. The built-in browser did
+  not: the browser library opens its context with certificate errors ignored, so anyone able to intercept
+  the connection could read and change what the browser exchanged (page loads, the solved challenge, the
+  answers the application stores). It verifies now. One setting, `client.browser_accept_any_certificate`
+  (default false), restores the old behaviour for the browser only; it cannot be changed from the web UI.
+- **The trust decision is the user's, for one certificate.** A network that re-signs HTTPS with a CA of
+  its own (an antivirus that scans HTTPS, a company proxy) makes every download fail. The user can trust
+  that network's certificate: on the Health screen, behind a confirmation that states the risk and wants a
+  word typed, or with `ssc trust add`, which never asks and needs the fingerprint or `--yes`. Whoever holds
+  the key of a trusted certificate can read and change everything the application downloads; the UI, the
+  CLI and the file's own header say so. The certificates are files in the `ca` folder of the config
+  folder, readable by the application's user only, and removing the file ends the trust.
+- **The server stores only what it sees itself.** A certificate is never uploaded. The server reads the
+  chain the network presents, and stores its top CA certificate only when the SHA-256 fingerprint is the
+  one the user confirmed; when the network presents another certificate by then, the answer is 409
+  `certificate_changed` and nothing is stored. That protects the moment between reading the fingerprint and
+  storing the certificate. It does not protect a user who confirms an attacker's certificate, which looks
+  the same on the screen as an antivirus's; hence the advice to compare the fingerprint with what the
+  inspecting software shows.
+- **The browser stays strict with trusted certificates.** On Linux the stored certificates are given to
+  the browser as trusted CAs in a certificate database of its own, so it verifies the chain up to them and
+  still refuses a connection re-signed by anyone else. A browser option that accepts any chain merely
+  carrying the trusted certificate was measured and rejected. Outside Linux the browser uses the operating
+  system's trust store.
+- The trust routes are under `/api/v1` and pass the access token, the origin check and the Host check like
+  every other route; none of the three that change or probe something is a GET.
+
+Not verified: the feature on Windows and macOS, and behind a real proxy (with a proxy configured the
+application does not look at the certificate at all, because a direct connection would bypass the proxy).
 
 ## 10. Work packages and order
 
@@ -528,6 +620,14 @@ gaps B1 to B4 (PRs #190, #191, #189, #192), small leftovers (FX-34, PR #194) and
 (FX-35, PR #196). `03-implementation-plan.md` has the release records (sections 18 and 19) and what is open
 after 3.1.
 
+Note (2026-11-14). Two patch releases followed on 2026-11-14, with no work package of this section behind
+them. 3.1.1 (PR #223): CI repaired, dependency pins raised, the follows default of the API, and the slice
+rows of four sports decided on 2026-10-09 (PRs #217, #218, #220, #221; FX-36, PR #198). 3.1.2 (PR #231): the
+browser profiles of the request layer, the certificate checks of the built-in browser, the trust in a
+network's certificate, the cause of a failed connection check, the second request of `ssc doctor --live`
+and the newer browser stack (PRs #222, #226 to #230). `03-implementation-plan.md` section 19 records both
+and lists what is open after them.
+
 ## 11. Open questions
 
 - Is the push channel robust in production (this evening's test). Changed on 2026-10-01: answered for one
@@ -576,6 +676,13 @@ after 3.1.
   open: live match pages for the evidence, top-league pages of rugby, floorball, volleyball and minifootball
   before the owner decides their slice rows, a fetch of the odds providers' listing (the known names are a
   built-in table since PR #192), and how long the push credential lives.
+- Changed on 2026-11-14: the top-league pages of the four sports were recorded and their slice rows decided
+  on 2026-10-09 (PR #198), and live match pages with the same matches after the final whistle were
+  recorded that evening (PR #199). A question the draft did not have was answered by measurement: what
+  SofaScore's gate refuses. On 2026-11-14 it refused a User-Agent naming Chrome 147 or older and a few
+  client fingerprints whatever they presented, and let newer Chrome, Safari and Firefox profiles pass
+  (PR #227). New and open: whether trusting a network's certificate works on Windows and macOS and behind
+  a real proxy (PR #230), and how fast the gate's Chrome threshold moves.
 
 ## 12. Old data and migration (detail of the decision)
 
@@ -613,6 +720,7 @@ needed" in `03-implementation-plan.md`.
 | One sequence of live events (sections 3, 8) | One sequence for four streams (live, change, job, system) | `01-storage.md` 2.3, `02-services.md` 5.1 |
 | Push or polling (section 8) | `--source page\|direct\|poll`: polling can also be chosen alone, and the old `--watch` alias kept polling so that it never started a browser (decision D18, settled on 2026-10-02; the alias was removed in 3.1, PR #186) | `02-services.md` 8.2, 8.4 |
 | Security: basic headers, optional key (section 9) | Implemented by PR #43 with more than the draft asks: a session cookie next to the bearer token, a full Content-Security-Policy, tightened file modes | `03-implementation-plan.md` X-03, P20, P25 |
+| What the application trusts when it connects out (not in the draft; section 9 is about incoming access) | Both transports verify HTTPS certificates; an extra certificate is trusted only by an explicit decision of the user, stored as a file in `CONFIG_DIR/ca`, read from the network by the server itself and checked against the fingerprint the user confirmed; one setting lets the browser alone accept any certificate (3.1.2, PRs #229, #230; built for issue #225) | `02-services.md` 2.4, 4.3, 6 |
 | Follow list in the configuration file (section 6) | Three origins of follows: the config file, the API/web UI, and the existing `leagues.txt` for installations without a config file | `02-services.md` 4.3 |
 | Follow list in the configuration file (section 6) | Since PR #156 a follow added through the API or the web UI is always kept in the state database, with or without a config file; `leagues.txt` is a read-only legacy list whose rows can be moved into the database one by one | `02-services.md` 2.7 |
 | Every setting can be overridden by an environment variable (section 6) | The same. Decision D19 (2026-10-02) had made the `.env` file a layer of its own below the configuration file; since 3.1 (PR #186) its lines are loaded into the environment at start and are the environment layer: they win over the file and lock the setting in the web UI, which writes only `config/overrides.json`. The order is default < overrides < file < environment < flags, and only `SOFASCORE_<SECTION>__<KEY>` names are read, apart from four deprecated 2.x names that 3.1 still reads in the environment layer, below their new names, and 3.2 removes (FX-35, PR #196) | `02-services.md` 4.3 |
