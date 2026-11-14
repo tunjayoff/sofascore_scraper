@@ -74,7 +74,7 @@ def _reason(inv: Invocation, probe: Dict[str, Any]) -> str:
 
 # --- list -----------------------------------------------------------------------------------------------
 
-@command("trust list", help="ssc_help_cmd_trust_list")
+@command("trust list", help="ssc_help_cmd_trust_list", settings=True)
 def trust_list(inv: Invocation) -> CommandResult:
     from sofascore_scraper.client import trust
 
@@ -156,7 +156,7 @@ def _remove_arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("sha256", metavar="FINGERPRINT", help=t("ssc_help_trust_fingerprint"))
 
 
-@command("trust remove", help="ssc_help_cmd_trust_remove", configure=_remove_arguments)
+@command("trust remove", help="ssc_help_cmd_trust_remove", configure=_remove_arguments, settings=True)
 def trust_remove(inv: Invocation) -> CommandResult:
     from sofascore_scraper.client import trust
 
