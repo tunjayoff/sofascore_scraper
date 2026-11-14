@@ -324,7 +324,10 @@ def open_socket(host: str, port: int, tls: bool, timeout: float) -> socket.socke
     raw = socket.create_connection((host, port), timeout=timeout)
     if not tls:
         return raw
-    context = ssl.create_default_context()
+    from sofascore_scraper.client import trust
+
+    # Kullanıcının güvendiği ek sertifikalar (HTTPS'i yeniden imzalayan ağlar) burada da geçerlidir
+    context = trust.client_context() or ssl.create_default_context()
     try:
         return context.wrap_socket(raw, server_hostname=host)
     except BaseException:

@@ -1065,6 +1065,22 @@ def test_live_names_a_certificate_the_browser_refused(make_ctx):
     assert "ERR_CERT_AUTHORITY_INVALID" in res.summary and "SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE" in res.fix
 
 
+def test_the_tls_fixes_name_the_button_and_the_command_before_the_environment(make_ctx):
+    """Önce tek tıkla güvenme (Sağlık sayfası, `ssc trust add`), sonra elle yollar (#225)."""
+    from sofascore_scraper.exceptions import NetworkError
+
+    http = doctor.check_live(make_ctx(), fetch=lambda path: {"seasons": []}, request=_raises(NetworkError(_CURL_60)))
+    browser = doctor.check_live(
+        make_ctx(), fetch=_raises(RuntimeError("Page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://x")),
+    )
+    for fix, last in ((http.fix, "SSL_CERT_FILE"), (browser.fix, "SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE")):
+        assert 0 <= fix.index("Trust this certificate") < fix.index("ssc trust add --sha256") < fix.index(last)
+    tr = doctor.check_live(
+        make_ctx(lang="tr"), fetch=lambda path: {"seasons": []}, request=_raises(NetworkError(_CURL_60)),
+    )
+    assert "Bu sertifikaya güven" in tr.fix and "ssc trust add" in tr.fix
+
+
 def test_live_tls_codes_are_the_tls_codes_of_the_connection_check():
     from sofascore_scraper.web import upstream
 

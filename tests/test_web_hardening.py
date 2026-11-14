@@ -213,6 +213,7 @@ READ_ONLY_GETS = {
     "/api/v1/tournaments",
     "/api/v1/tournaments/1",
     "/api/v1/tournaments/1/seasons",
+    "/api/v1/trust",  # güvenilen ek sertifikaların listesi: dosyaları okur, ağa bakmaz (#225)
     "/api/v1/teams/1",  # B1: yarışmacının katalog kaydı
 }
 

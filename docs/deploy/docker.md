@@ -138,8 +138,63 @@ installed it there; the container does not. The signs:
 - `ssc doctor --live` fails with "the app's HTTP client could not verify the certificate it was shown".
 
 The cleanest fix is on the other side: exclude `www.sofascore.com` from the scanning. When that is not
-possible, give the container the CA certificate of that software. Export it as a PEM file (Base64, begins with
-`-----BEGIN CERTIFICATE-----`), mount it and name it in `SSL_CERT_FILE`:
+possible, let the app trust the certificate of that software. There are three ways; the first needs no change
+to the container.
+
+**What trusting means.** Whoever holds the key of a trusted certificate can read and change everything the app
+downloads. Trust the certificate of an inspection you know about (your antivirus, your company's proxy), never
+one you did not expect: an attacker who intercepts the connection presents an untrusted certificate too.
+
+### 1. Trust the certificate the network presents
+
+On **Health**, run the connection check. When it fails on the certificate, the page shows the certificate the
+network presents (who it belongs to, who issued it, its SHA-256 fingerprint, its expiry) and the button
+**Trust this certificate**. Compare the name and, if you can, the fingerprint with the CA certificate your
+antivirus or company proxy shows in its settings, confirm, and the connection check runs again. No restart,
+no environment variable, no change to the Compose file.
+
+Without the web app:
+
+```bash
+docker exec <container> ssc trust show                       # what the network presents now
+docker exec <container> ssc trust add --sha256 <fingerprint>  # trust exactly that certificate
+docker exec <container> ssc trust list
+docker exec <container> ssc trust remove <fingerprint>
+```
+
+`ssc trust add` never asks a question: it needs the fingerprint `ssc trust show` printed (and stores the
+certificate only if the network still presents that one), or `--yes`.
+
+- The certificate is stored in the `ca` folder of the config volume (`/app/config/ca/`), readable by the app
+  only, so it survives a new container. The app reads the certificate from the network itself; it is never
+  uploaded.
+- It takes effect at once for the HTTP client (every request reads the folder). The built-in browser of the
+  server restarts with it; a container that is already running `ssc watch` uses it for its browser after its
+  next restart.
+- The built-in browser verifies against the trusted certificate (on Linux, so in the image): a connection
+  re-signed by somebody else is still refused, by the HTTP client and by the browser.
+- The button is offered only when it can work. Some inspection software does not send its CA certificate,
+  only the certificate of the site; then the page says so and names the issuer: use the folder below. With a
+  proxy configured for the app the page cannot look at the certificate either (it would bypass the proxy).
+
+### 2. Put the CA certificate into the `ca` folder
+
+Export the CA certificate of the software as a PEM file (Base64, begins with `-----BEGIN CERTIFICATE-----`)
+and copy it into the `ca` folder of the config volume; every `*.pem` file there is trusted, by the HTTP
+client with its next request and by the browser at its next start:
+
+```bash
+docker exec <container> mkdir -p /app/config/ca
+docker cp inspection-ca.pem <container>:/app/config/ca/inspection-ca.pem
+```
+
+The certificates in the folder are added to the list of CAs the app trusts anyway (the image's system store,
+or the file named by one of the variables below); they do not replace it. **Health** and `ssc trust list`
+show what is in the folder.
+
+### 3. A CA file from the environment
+
+Mount the PEM file and name it in `SSL_CERT_FILE`. This reaches the HTTP client only, not the browser:
 
 ```yaml
 services:
@@ -179,20 +234,27 @@ Set the variable in the container's environment, not in `.env`, and on every con
   USER app
   ```
 
-**The built-in browser.** The app opens its browser when SofaScore asks for a challenge and for the `page`
-and `direct` live sources. The browser refuses a certificate it cannot verify, and it does not read
-`SSL_CERT_FILE` or the system store. On an inspecting network it therefore fails with
-`net::ERR_CERT_AUTHORITY_INVALID` (`ssc doctor --live` says so). If you need the browser there, let it accept
-any certificate:
+### The built-in browser
+
+The app opens its browser when SofaScore asks for a challenge and for the `page` and `direct` live sources.
+The browser refuses a certificate it cannot verify, and it does not read `SSL_CERT_FILE` or the system store.
+It does read the `ca` folder (ways 1 and 2): at its start the app writes those certificates into a
+certificate database of its own inside the browser profile, and the browser verifies against them. Without
+them it fails on an inspecting network with `net::ERR_CERT_AUTHORITY_INVALID` (`ssc doctor --live` says so).
+
+Outside Linux the browser uses the trust store of the operating system instead of the folder, where an
+antivirus or a company has usually installed its CA already.
+
+The last resort, when neither works, is to let the browser accept any certificate:
 
 ```yaml
     environment:
       SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE: "true"
 ```
 
-This is the one switch that relaxes certificate checking, and it covers the browser only: the HTTP client
-always verifies. With it on, whoever re-signs the connection can read and change everything the browser
-exchanges (page loads, the solved challenge, the answers the app stores). In 3.1.1 and earlier the browser
+This is the one switch that turns certificate checking off, and it covers the browser only: the HTTP client
+always verifies. With it on, anybody who can intercept the connection can read and change everything the
+browser exchanges (page loads, the solved challenge, the answers the app stores). In 3.1.1 and earlier the browser
 accepted any certificate on every network, which is also why `ssc doctor --live` could report success there
 while every download failed.
 

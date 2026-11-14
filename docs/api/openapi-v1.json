@@ -4826,6 +4826,306 @@
           }
         }
       }
+    },
+    "/api/v1/trust": {
+      "get": {
+        "tags": [
+          "trust"
+        ],
+        "summary": "List trusted certificates",
+        "description": "The extra certificates the app trusts: every PEM certificate in the `ca` folder of the config directory,\nwhether stored with `POST /trust` or put there by hand.",
+        "operationId": "listTrusted",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "trust"
+        ],
+        "summary": "Trust the certificate the network presents",
+        "description": "Store the certificate the network presents now, so that the HTTP client and the built-in browser accept\nconnections signed by it. Whoever holds that certificate's key can read and change what the app downloads.\nThe server probes again and stores only what it sees itself: when the fingerprint is not the one given, or\nnothing can be trusted any more, the answer is 409 `certificate_changed` (`details.reason`,\n`details.presented_sha256`). Then the connection check runs and its outcome is returned.",
+        "operationId": "trustCertificate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrustRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "certificate_changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trust/probe": {
+      "post": {
+        "tags": [
+          "trust"
+        ],
+        "summary": "Look at the certificate the network presents",
+        "description": "Open a TLS connection to the API host without verifying it and report who signed what the network\npresents, whether it verifies with the current trust, and which certificate could be trusted. At most\nthree TLS handshakes; no HTTP request is sent. A failure is a result (`can_trust: false` with a `reason`).",
+        "operationId": "probeTrust",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrustProbeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustProbeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trust/{fingerprint}": {
+      "delete": {
+        "tags": [
+          "trust"
+        ],
+        "summary": "Stop trusting a certificate",
+        "description": "Remove the certificate from the `ca` folder. The HTTP client stops accepting it with the next request.",
+        "operationId": "removeTrusted",
+        "parameters": [
+          {
+            "name": "fingerprint",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F:]{64,95}$",
+              "description": "SHA-256 fingerprint of the certificate (hex; colons allowed).",
+              "title": "Fingerprint"
+            },
+            "description": "SHA-256 fingerprint of the certificate (hex; colons allowed)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustRemoveResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5299,6 +5599,86 @@
         ],
         "title": "Category",
         "description": "A country or region, or a tour such as ATP, that groups tournaments."
+      },
+      "CertificateInfo": {
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/CertificateName"
+          },
+          "issuer": {
+            "$ref": "#/components/schemas/CertificateName"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256",
+            "description": "Lower-case hex, 64 digits."
+          },
+          "not_before": {
+            "type": "string",
+            "title": "Not Before",
+            "description": "ISO-8601, UTC."
+          },
+          "not_after": {
+            "type": "string",
+            "title": "Not After",
+            "description": "ISO-8601, UTC."
+          },
+          "expired": {
+            "type": "boolean",
+            "title": "Expired"
+          },
+          "is_ca": {
+            "type": "boolean",
+            "title": "Is Ca",
+            "description": "A CA certificate (basicConstraints CA)."
+          },
+          "self_signed": {
+            "type": "boolean",
+            "title": "Self Signed",
+            "description": "Subject and issuer are the same: a root certificate."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "issuer",
+          "sha256",
+          "not_before",
+          "not_after",
+          "expired",
+          "is_ca",
+          "self_signed"
+        ],
+        "title": "CertificateInfo",
+        "description": "An X.509 certificate as shown to the user. `sha256` is the fingerprint of the whole certificate."
+      },
+      "CertificateName": {
+        "properties": {
+          "common_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Common Name"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization"
+          }
+        },
+        "type": "object",
+        "title": "CertificateName"
       },
       "Change": {
         "properties": {
@@ -12151,6 +12531,296 @@
         ],
         "title": "TournamentSummary",
         "description": "Counts of one tournament. `tournament_id` null: the events without a unique tournament."
+      },
+      "TrustListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TrustedCertificate"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "TrustListResponse"
+      },
+      "TrustOutcome": {
+        "properties": {
+          "stored": {
+            "$ref": "#/components/schemas/TrustedCertificate"
+          },
+          "check": {
+            "$ref": "#/components/schemas/StatusCheck",
+            "description": "The connection check made right after storing, as `POST /status/check`."
+          },
+          "browser_supported": {
+            "type": "boolean",
+            "title": "Browser Supported"
+          },
+          "browser_restart_needed": {
+            "type": "boolean",
+            "title": "Browser Restart Needed",
+            "description": "True: the built-in browser of this server could not be restarted and reads the certificate only after the app restarts. Other processes (`ssc watch`) always read it at their next start."
+          }
+        },
+        "type": "object",
+        "required": [
+          "stored",
+          "check",
+          "browser_supported",
+          "browser_restart_needed"
+        ],
+        "title": "TrustOutcome"
+      },
+      "TrustProbe": {
+        "properties": {
+          "host": {
+            "type": "string",
+            "title": "Host"
+          },
+          "port": {
+            "type": "integer",
+            "title": "Port"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "description": "The chain verifies with the current trust: nothing needs to be trusted."
+          },
+          "chain_length": {
+            "type": "integer",
+            "title": "Chain Length",
+            "description": "Certificates the server sent; 0 when none could be read."
+          },
+          "leaf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CertificateInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The server's own certificate."
+          },
+          "presented": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CertificateInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The certificate that would be trusted: the top-most CA certificate the server sent. Null unless `can_trust`."
+          },
+          "can_trust": {
+            "type": "boolean",
+            "title": "Can Trust"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "verified",
+                  "proxy",
+                  "not_https",
+                  "unreachable",
+                  "root_not_sent",
+                  "chain_unavailable",
+                  "expired",
+                  "not_enough"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why nothing can be trusted: `verified` (not needed), `proxy` (a proxy is configured; the probe would bypass it), `not_https`, `unreachable`, `root_not_sent` (only the server's own certificate was sent: put the CA certificate into the `ca` folder), `chain_unavailable` (this Python reads only the server's own certificate; 3.13+ reads the chain), `expired`, `not_enough` (trusting the presented CA would still not verify the connection)."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "The verification or connection error, in English."
+          },
+          "browser_supported": {
+            "type": "boolean",
+            "title": "Browser Supported",
+            "description": "Trusted certificates also reach the built-in browser on this platform (Linux: its NSS database). False: the browser uses the trust store of the operating system."
+          }
+        },
+        "type": "object",
+        "required": [
+          "host",
+          "port",
+          "verified",
+          "chain_length",
+          "can_trust",
+          "browser_supported"
+        ],
+        "title": "TrustProbe",
+        "description": "What the network presents for the API host right now. Read without verifying; no HTTP request is sent."
+      },
+      "TrustProbeRequest": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "const": "sofascore",
+            "title": "Target",
+            "description": "`sofascore`: the host of the API base URL (`client.base_url`)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "title": "TrustProbeRequest",
+        "description": "What to look at. The host cannot be chosen: it is the configured API host."
+      },
+      "TrustProbeResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TrustProbe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "TrustProbeResponse"
+      },
+      "TrustRemoveResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TrustRemoved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "TrustRemoveResponse"
+      },
+      "TrustRemoved": {
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "title": "Sha256"
+          },
+          "browser_restart_needed": {
+            "type": "boolean",
+            "title": "Browser Restart Needed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sha256",
+          "browser_restart_needed"
+        ],
+        "title": "TrustRemoved"
+      },
+      "TrustRequest": {
+        "properties": {
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F:]{64,95}$",
+            "title": "Sha256",
+            "description": "The fingerprint of the certificate the user was shown (`presented.sha256` of the probe)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sha256"
+        ],
+        "title": "TrustRequest"
+      },
+      "TrustResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TrustOutcome"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "TrustResponse"
+      },
+      "TrustedCertificate": {
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/CertificateName"
+          },
+          "issuer": {
+            "$ref": "#/components/schemas/CertificateName"
+          },
+          "sha256": {
+            "type": "string",
+            "title": "Sha256",
+            "description": "Lower-case hex, 64 digits."
+          },
+          "not_before": {
+            "type": "string",
+            "title": "Not Before",
+            "description": "ISO-8601, UTC."
+          },
+          "not_after": {
+            "type": "string",
+            "title": "Not After",
+            "description": "ISO-8601, UTC."
+          },
+          "expired": {
+            "type": "boolean",
+            "title": "Expired"
+          },
+          "is_ca": {
+            "type": "boolean",
+            "title": "Is Ca",
+            "description": "A CA certificate (basicConstraints CA)."
+          },
+          "self_signed": {
+            "type": "boolean",
+            "title": "Self Signed",
+            "description": "Subject and issuer are the same: a root certificate."
+          },
+          "file": {
+            "type": "string",
+            "title": "File",
+            "description": "File name in the `ca` folder of the config directory."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "issuer",
+          "sha256",
+          "not_before",
+          "not_after",
+          "expired",
+          "is_ca",
+          "self_signed",
+          "file"
+        ],
+        "title": "TrustedCertificate"
       }
     }
   }

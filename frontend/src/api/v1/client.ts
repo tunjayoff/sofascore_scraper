@@ -204,6 +204,17 @@ export const v1 = {
   oddsProviders: () => request<Op<'listOddsProviders'>['response']>('GET', '/api/v1/odds/providers').then((r) => r.data),
   sinks: (signal?: AbortSignal) => request<Op<'listSinks'>['response']>('GET', '/api/v1/sinks', { signal }).then((r) => r.data),
 
+  // ---- extra certificates the app trusts, for a network that re-signs HTTPS (#225) ----
+  trusted: (signal?: AbortSignal) => request<Op<'listTrusted'>['response']>('GET', '/api/v1/trust', { signal }),
+  /** What the network presents for the API host now: a TLS handshake by the server, no request to SofaScore. */
+  probeTrust: (): Promise<Data<'probeTrust'>> =>
+    request<Op<'probeTrust'>['response']>('POST', '/api/v1/trust/probe', { body: { target: 'sofascore' } }).then((r) => r.data),
+  /** Trust what the network presents, if its fingerprint is still the one the user was shown (409 otherwise). */
+  trustCertificate: (sha256: string): Promise<Data<'trustCertificate'>> =>
+    request<Op<'trustCertificate'>['response']>('POST', '/api/v1/trust', { body: { sha256 } }).then((r) => r.data),
+  removeTrusted: (sha256: string): Promise<Data<'removeTrusted'>> =>
+    request<Op<'removeTrusted'>['response']>('DELETE', `/api/v1/trust/${enc(sha256)}`).then((r) => r.data),
+
   // ---- follows and the catalog ----
   follows: (query: ListFollowsQuery = {}, signal?: AbortSignal) =>
     request<Op<'listFollows'>['response']>('GET', '/api/v1/follows', { query, signal }),

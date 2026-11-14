@@ -152,6 +152,49 @@ def _accept_any_certificate() -> bool:
     return bool(_client_settings().browser_accept_any_certificate)
 
 
+def _context_args(user_data_dir: str) -> Dict[str, Any]:
+    """
+    Scrapling'in tarayıcı bağlamı seçeneklerinin üstüne yazılanlar. Sertifika hataları yok sayılmaz
+    (`ignore_https_errors`). Kullanıcının güvendiği ek sertifikalar varsa (sofascore_scraper/client/trust.py)
+    tarayıcı, onları taşıyan NSS veritabanının bulunduğu köprüye özel HOME ile başlar (`env`): Chromium zinciri o
+    CA'lara kadar gerçekten doğrular.
+    """
+    args: Dict[str, Any] = {"ignore_https_errors": _accept_any_certificate()}
+    from sofascore_scraper.client import trust
+
+    environment = trust.browser_environment(user_data_dir)
+    if environment is not None:
+        args["env"] = environment
+    return args
+
+
+def restart_for_trust_change(timeout: float = 20.0) -> bool:
+    """
+    Güvenilen sertifikalar değişti: bu sürecin köprü tarayıcısı açıksa kapatılır, bir sonraki istek onu yeni
+    depoyla yeniden başlatır. Tarayıcı açık değilse yapılacak bir şey yoktur. Kapatılamadıysa False: sertifika
+    tarayıcıya ancak uygulama yeniden başlayınca ulaşır. Başka süreçlerin (ör. `ssc watch`) tarayıcıları
+    kendi yeniden başlatmalarında depoyu okur.
+    """
+    instance = BrowserBridge._instance
+    loop = _loop
+    if instance is None:
+        return True
+    instance._launch_failed_at = 0.0  # sertifika yüzünden başarısız olmuş başlatma hemen yeniden denensin
+    if loop is None or not loop.is_running() or instance.session is None:
+        return True
+
+    async def _close() -> None:
+        async with instance._init_lock:
+            await instance.close()
+
+    try:
+        asyncio.run_coroutine_threadsafe(_close(), loop).result(timeout=timeout)
+        return True
+    except Exception as e:
+        logger.warning(f"The browser could not be closed after the trusted certificates changed: {e}")
+        return False
+
+
 class _SlotWait:
     """
     Bir köprü çağrısının ortak istek bütçesinde (sofascore_scraper/throttle.py) sıra beklediği toplam süre.
@@ -356,16 +399,18 @@ class BrowserBridge:
         AsyncStealthySession = _session_class()
         headless = _headless()
         logger.info(f"Starting the browser session (Scrapling StealthySession, headless={headless})")
+        user_data_dir = self._launch_dir or self.profile_dir
+        # NSS veritabanı ayrı bir süreçte kurulur (kısa ama engelleyen iş): köprünün döngüsünü tutmasın
+        context_args = await asyncio.to_thread(_context_args, user_data_dir)
         self.session = AsyncStealthySession(
             headless=headless,
             solve_cloudflare=True,
-            user_data_dir=self._launch_dir or self.profile_dir,
+            user_data_dir=user_data_dir,
             proxy=_proxy_settings(),
             block_webrtc=True,
             timeout=60000,
             max_pages=2,
-            # Bağlam seçenekleri Scrapling'inkilerin üstüne yazılır: sertifika hataları yok sayılmaz
-            additional_args={"ignore_https_errors": _accept_any_certificate()},
+            additional_args=context_args,
         )
         await self.session.start()
         # Scrapling'in oturum bağlamı: kendi sayfamızı bunun içinde açıp tekrar tekrar kullanırız
@@ -383,6 +428,11 @@ class BrowserBridge:
             await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
         except Exception as e:
             logger.warning(f"Opening the SofaScore home page: {e}")
+            if "ERR_CERT_" in str(e):
+                # Tarayıcı sertifikayı doğrulayamadı (ağ HTTPS'i yeniden imzalıyor): bu sayfadan hiçbir istek
+                # geçmez. Başlatma başarısız sayılır ki neden köprü sağlığına yazılsın (`ssc doctor --live` ve
+                # arayüz "yanıt yok" yerine sertifikayı söyleyebilsin; #225) ve istekler boşuna beklemesin.
+                raise RuntimeError(str(e).splitlines()[0]) from None
         token = await self._token_from_context()
         if token:
             self._set_token(token)

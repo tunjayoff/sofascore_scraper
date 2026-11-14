@@ -13,6 +13,7 @@ import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import CodeHint from '@/ui/CodeHint.vue'
 import HelpTip from '@/ui/HelpTip.vue'
 import UiIcon from '@/ui/UiIcon.vue'
+import TrustPanel from '@/screens/health/TrustPanel.vue'
 import { v1 } from '@/api/v1/client'
 import type { StatusCheck } from '@/api/v1/schema'
 import { diskBytes, useStatusStore } from '@/app/statusStore'
@@ -136,6 +137,13 @@ async function runCheck() {
     checking.value = false
   }
 }
+/** A certificate was trusted (#225): the server ran the connection check again; show its result here. */
+function onTrustChecked(result: StatusCheck) {
+  check.value = result
+  checkError.value = null
+  store.noteCheck(result)
+  void store.refresh().catch(() => {})
+}
 function reasonText(reason: string | null | undefined) {
   const key = `ui.health.check.reason.${reason}`
   return reason && te(key, 'en') ? t(key) : t('ui.health.check.reason.upstream')
@@ -214,6 +222,7 @@ onMounted(() => {
           </p>
           <FormError v-if="checkError" :error="checkError" />
         </div>
+        <TrustPanel :tls-failed="check?.cause === 'tls'" @checked="onTrustChecked" />
       </section>
 
       <section class="u-card p-6 flex flex-col gap-4" data-testid="health-live">

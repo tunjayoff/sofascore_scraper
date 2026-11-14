@@ -21,6 +21,7 @@ export const KNOWN_CODES = [
   'instance_running',
   'follow_exists',
   'follow_managed',
+  'certificate_changed',
   'not_supported',
   'upstream_error',
   'blocked',
