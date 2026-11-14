@@ -963,6 +963,104 @@ def test_main_py_lists_doctor_in_help():
     assert proc.returncode == 0 and "--json" in out and "--live" in out and "--strict" in out
 
 
+# --- canlı denetim: köprü ve uygulamanın kendi istek yolu (#225) --------------------------------
+# Gerçek istek atılmaz: köprü (`fetch`) ve istek yolu (`request`) sahtedir.
+
+_CURL_60 = (
+    "Request failed: /unique-tournament/17/seasons: Failed to perform, curl: (60) SSL certificate OpenSSL verify "
+    "result: self signed certificate in certificate chain (19). See https://curl.se/libcurl/c/libcurl-errors.html "
+    "first for more details."
+)
+
+
+def _raises(exc):
+    def request(path):
+        raise exc
+
+    return request
+
+
+def test_live_is_ok_when_the_bridge_and_the_http_client_both_answer(make_ctx):
+    asked = []
+    res = doctor.check_live(
+        make_ctx(), fetch=lambda path: asked.append(("bridge", path)) or {"seasons": []},
+        request=lambda path: asked.append(("http", path)) or {"seasons": []},
+    )
+    assert (res.status, res.code, res.fix) == (OK, "live_ok", None)
+    assert asked == [("bridge", doctor.LIVE_PROBE_PATH), ("http", doctor.LIVE_PROBE_PATH)]  # birer istek, bu sırayla
+
+
+def test_live_fails_when_only_the_browser_gets_through_a_resigned_certificate(make_ctx):
+    """#225: tarayıcı yeniden imzalanmış sertifikayı kabul eder, curl etmez; doktor "her şey yerinde" dememeli."""
+    from sofascore_scraper.exceptions import NetworkError
+
+    res = doctor.check_live(make_ctx(), fetch=lambda path: {"seasons": []}, request=_raises(NetworkError(_CURL_60)))
+    assert (res.status, res.code) == (FAIL, "live_http_tls")
+    assert "self signed certificate in certificate chain (19));" in res.summary and "re-signs HTTPS" in res.summary
+    assert "curl.se" not in res.summary and "/unique-tournament" not in res.summary  # yalnızca curl'ün açıklaması
+    assert "SSL_CERT_FILE" in res.fix and "does not exist" not in res.fix
+    assert res.detail["curl_code"] == 60 and "missing_ca_file" not in res.detail
+    assert doctor.exit_code([res]) == 1
+    tr = doctor.check_live(
+        make_ctx(lang="tr"), fetch=lambda path: {"seasons": []}, request=_raises(NetworkError(_CURL_60))
+    )
+    assert "sertifikayı doğrulayamadı" in tr.summary and "SSL_CERT_FILE" in tr.fix
+
+
+@pytest.mark.parametrize("name", doctor.CA_FILE_ENV)
+def test_live_names_a_ca_variable_that_points_at_a_missing_file(make_ctx, tmp_path, name):
+    """SSL_CERT_FILE var olmayan bir dosyayı gösterirse curl_cffi onu sessizce yok sayar: hata aynı kalır."""
+    from sofascore_scraper.exceptions import NetworkError
+
+    missing = str(tmp_path / "no-such-ca.pem")
+    res = doctor.check_live(
+        make_ctx(environ={name: missing}), fetch=lambda path: {"seasons": []}, request=_raises(NetworkError(_CURL_60))
+    )
+    assert res.code == "live_http_tls" and res.detail["missing_ca_file"] == {"name": name, "path": missing}
+    assert res.fix.startswith(f"{name} is set to {missing}, which does not exist.")
+    present = tmp_path / "ca.pem"
+    present.write_text("-----BEGIN CERTIFICATE-----\n", encoding="utf-8")
+    res = doctor.check_live(
+        make_ctx(environ={name: str(present)}), fetch=lambda path: {"seasons": []},
+        request=_raises(NetworkError(_CURL_60)),
+    )
+    assert res.code == "live_http_tls" and "missing_ca_file" not in res.detail
+
+
+def test_live_reports_another_connection_failure_of_the_http_client(make_ctx):
+    from sofascore_scraper.exceptions import NetworkError
+
+    error = NetworkError("Request failed: /x: Failed to perform, curl: (28) Connection timed out after 10002 ms")
+    res = doctor.check_live(make_ctx(), fetch=lambda path: {"seasons": []}, request=_raises(error))
+    assert (res.status, res.code) == (FAIL, "live_http_failed")
+    assert "Connection timed out" in res.summary and res.fix and "SSL_CERT_FILE" not in res.fix
+    bare = doctor.check_live(make_ctx(), fetch=lambda path: {"seasons": []}, request=_raises(NetworkError("boom")))
+    assert bare.code == "live_http_failed" and bare.detail["curl_code"] is None
+
+
+def test_live_counts_any_http_answer_of_sofascore_as_a_working_connection(make_ctx):
+    """403 ve 429 SofaScore'un yanıtıdır: bağlantı kurulmuştur, uygulama böyle isteklerde köprüye düşer."""
+    from sofascore_scraper.exceptions import APIError, RateLimitError
+
+    for error in (APIError("HTTP 403 Forbidden", status_code=403), RateLimitError(status_code=429)):
+        res = doctor.check_live(make_ctx(), fetch=lambda path: {"seasons": []}, request=_raises(error))
+        assert (res.status, res.code) == (OK, "live_ok"), error
+
+
+def test_live_does_not_send_the_second_request_when_the_bridge_fails(make_ctx):
+    res = doctor.check_live(
+        make_ctx(), fetch=_raises(RuntimeError("profile is locked")),
+        request=lambda path: pytest.fail("köprü başarısızken ikinci istek atılmamalı"),
+    )
+    assert (res.status, res.code) == (FAIL, "live_failed") and "profile is locked" in res.summary
+
+
+def test_live_tls_codes_are_the_tls_codes_of_the_connection_check():
+    from sofascore_scraper.web import upstream
+
+    assert set(doctor._CURL_TLS_CODES) == {c for c, cause in upstream._CURL_CAUSE.items() if cause == upstream.CAUSE_TLS}
+
+
 # --- köprünün hata iletileri ------------------------------------------------------------------
 
 

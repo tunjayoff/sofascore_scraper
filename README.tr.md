@@ -295,6 +295,9 @@ Hayır, bilerek böyle: web arayüzü saklanan veriyi gösterir. Canlı değişi
 **İndirmeler başarısız oluyor ya da 4 koduyla duruyor. Ne yapmalıyım?**
 SofaScore istekleri reddediyor ve devre kesici işi durdurdu. **Sağlık** sayfasına (ya da `ssc status`'a) bakın, istek bütçesini düşürün ve sonra yeniden deneyin. Hata bildirimine `ssc diagnostics` ile ya da **Günlükler** sayfasından alınan paketi ekleyin; gizli değerler maskelidir ama göndermeden önce okuyun.
 
+**Bağlantı denetimi sertifika hatasıyla başarısız oluyor. Neden?**
+Günlükte `curl: (60) SSL certificate … self signed certificate in certificate chain` yazar, **Sağlık** sayfası da güvenli bağlantının kurulamadığını söyler. Uygulama ile SofaScore arasındaki bir yazılım HTTPS'i kendi CA'sıyla yeniden imzalıyordur: HTTPS tarayan bir antivirüs, kurumsal bir proxy ya da servis sağlayıcının engelleme sayfası. `www.sofascore.com`'u o taramanın dışında bırakın, ya da uygulamaya CA sertifikasını PEM dosyası olarak verin ve `SSL_CERT_FILE` ortam değişkenine dosyanın yolunu yazın (Docker'da: dosyayı bağlayın ve değişkeni konteynere verin, bkz. [docs/deploy/docker.md](docs/deploy/docker.md#a-network-that-inspects-https)). İşe yarayıp yaramadığını `ssc doctor --live` söyler. Doğrulamayı kapatan bir ayar yoktur.
+
 **Bir NAS'ta ya da sunucuda çalıştırıp dizüstü bilgisayarımdan kullanabilir miyim?**
 Evet, Docker ya da systemd birimleriyle. Önce erişim anahtarını ve izin verilen sunucu adlarını ayarlayın ve önüne TLS koyun ([Güvenlik modeli](#güvenlik-modeli), [docs/deploy](docs/deploy/README.md)).
 
