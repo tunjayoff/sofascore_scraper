@@ -1048,8 +1048,10 @@ class SlotLog:
         self.interval: collections.Counter = collections.Counter()
 
     async def take(self, source: str) -> None:
-        await asyncio.to_thread(rc._wait_rate_slot)
-        self.slots.append((time.time(), source))
+        # Sıranın anı kilidin altında yazılan andır: `to_thread` dönüşü yüklü bir olay döngüsünde gecikebilir ve
+        # o zaman burada okunan saat iki sırayı olduğundan yakın gösterir (CI'da 0.25 sn ölçüldü)
+        taken = await asyncio.to_thread(rc._wait_rate_slot)
+        self.slots.append((taken if isinstance(taken, float) else time.time(), source))
         self.interval[source] += 1
 
     def take_interval(self) -> Dict[str, int]:

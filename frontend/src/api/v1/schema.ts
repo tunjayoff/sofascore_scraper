@@ -522,7 +522,8 @@ export interface FollowCreate {
   entity_id: number
   name: string
   sport?: string | null
-  seasons?: string | number[]
+  /** `all`, `current`, `last:N` or a list of season ids. Left out or null: `defaults.seasons` of GET /settings (`current` unless changed), as `ssc follows add` and a `[[follow]]` of the config file do. For a team or a player the choice is a time window: `all` reads their match list back to the page limit. */
+  seasons?: string | number[] | null
   /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. */
   slices?: Record<string, string[]> | null
   live?: boolean

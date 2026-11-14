@@ -69,8 +69,12 @@ def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
 
 
-def _wait_rate_slot() -> None:
-    """Tüm araştırma süreçleri için ortak: son istekten bu yana en az MIN_REQUEST_GAP saniye."""
+def _wait_rate_slot() -> float:
+    """
+    Tüm araştırma süreçleri için ortak: son istekten bu yana en az MIN_REQUEST_GAP saniye. Alınan sıranın anını
+    (kilit dosyasına yazılan değer) döndürür: çağıran iş parçacığı ya da olay döngüsü sonradan gecikse de sıraların
+    arası bu değerlerle ölçülür.
+    """
     with open(_RATE_FILE, "a+") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
@@ -82,8 +86,10 @@ def _wait_rate_slot() -> None:
                 time.sleep(wait)
             f.seek(0)
             f.truncate()
-            f.write(str(time.time()))
+            taken = time.time()
+            f.write(str(taken))
             f.flush()
+            return taken
         finally:
             fcntl.flock(f, fcntl.LOCK_UN)
 

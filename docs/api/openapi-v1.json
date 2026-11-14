@@ -7140,10 +7140,13 @@
                   "type": "integer"
                 },
                 "type": "array"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Seasons",
-            "default": "all"
+            "description": "`all`, `current`, `last:N` or a list of season ids. Left out or null: `defaults.seasons` of GET /settings (`current` unless changed), as `ssc follows add` and a `[[follow]]` of the config file do. For a team or a player the choice is a time window: `all` reads their match list back to the page limit."
           },
           "slices": {
             "anyOf": [

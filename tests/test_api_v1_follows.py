@@ -202,6 +202,19 @@ def test_teams_players_and_events_are_kept_in_the_follows_table(leagues: Path) -
     assert file_lines(leagues) == ["Premier League: 17"]
 
 
+def test_a_follow_without_seasons_takes_the_default_of_the_settings(leagues: Path,
+                                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """`seasons` verilmeyen takip `defaults.seasons`'ı alır (`ssc follows add` gibi), "all"ı değil."""
+    team = data(client.post("/api/v1/follows", json={"kind": "team", "entity_id": 42, "name": "Arsenal"}), 201)
+    assert team["seasons"] == "current"
+    explicit = data(client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "seasons": "all"}), 201)
+    assert explicit["seasons"] == "all"
+    monkeypatch.setenv("SOFASCORE_DEFAULTS__SEASONS", "last:2")
+    player = data(client.post("/api/v1/follows", json={"kind": "player", "entity_id": 7, "name": "Saka",
+                                                       "seasons": None}), 201)
+    assert player["seasons"] == "last:2"
+
+
 def test_with_a_config_file_a_new_tournament_follow_is_an_api_row(leagues: Path, config_file: None) -> None:
     follow = data(client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "live": True}), 201)
     assert (follow["origin"], follow["live"]) == ("api", True)

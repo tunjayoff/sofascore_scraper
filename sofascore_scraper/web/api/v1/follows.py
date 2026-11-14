@@ -102,7 +102,12 @@ class FollowCreate(BaseModel):
     entity_id: int = Field(gt=0, lt=2 ** 63)
     name: str = Field(min_length=1, max_length=80)
     sport: Optional[str] = Field(default=None, max_length=40)
-    seasons: SeasonChoice = "all"
+    seasons: Optional[SeasonChoice] = Field(
+        default=None,
+        description="`all`, `current`, `last:N` or a list of season ids. Left out or null: `defaults.seasons` of "
+                    "GET /settings (`current` unless changed), as `ssc follows add` and a `[[follow]]` of the "
+                    "config file do. For a team or a player the choice is a time window: `all` reads their match "
+                    "list back to the page limit.")
     slices: Optional[SliceChoice] = Field(default=None, description=_SLICES_TEXT)
     live: bool = False
     enabled: bool = True
@@ -205,7 +210,13 @@ def add_follow(response: Response, body: FollowCreate) -> FollowResponse:
     from sofascore_scraper.services.follows import NewFollow, follow_id
 
     service = deps.follows_service()
-    seasons: Any = body.seasons if isinstance(body.seasons, str) else tuple(body.seasons)
+    seasons: Any = body.seasons
+    if seasons is None:
+        from sofascore_scraper.config import loader
+
+        seasons = loader.active_settings().defaults.seasons
+    if not isinstance(seasons, str):
+        seasons = tuple(seasons)
     created = service.add(NewFollow(kind=body.kind, entity_id=body.entity_id, name=body.name, sport=body.sport,
                                     seasons=seasons, live=body.live, enabled=body.enabled, slices=body.slices))
     response.headers["Location"] = f"{V1_PREFIX}/follows/{follow_id(created.kind, created.entity_id)}"
