@@ -17,7 +17,7 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     ignore:
-      # pydantic pins pydantic-core exactly (2.13.5 -> pydantic-core==2.46.5) and pydantic-core is
+      # pydantic pins pydantic-core exactly (2.14.3 -> pydantic-core==2.50.4) and pydantic-core is
       # released ahead of pydantic. Dependabot does not resolve requirements/constraints files
       # against each other, so it kept proposing pydantic-core alone, which cannot install.
       # pydantic-core therefore never gets a pull request of its own; in a "pydantic" pull
