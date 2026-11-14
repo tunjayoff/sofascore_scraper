@@ -119,6 +119,20 @@ itself), FX-35 (#196) and the 3.1.0 release (#195): the four deprecated 2.x name
 4.6) are described as built. References marked `054d8a2` are to `origin/main` at that commit; section 11,
 item 160.
 
+Revised a twelfth time on 2026-11-14, after the 3.1.1 release (#223: the tag `v3.1.1` on `3a8e063`) and the
+3.1.2 release (#231: the tag `v3.1.2` on `fb0a257`), both of that day. FX-36 (#198), which merged on
+2026-10-09 after the eleventh revision, is recorded with them, because 3.1.1 is the release that carries it.
+The work of 2026-11-14 has no plan item; it is cited by pull request: the follows default of the API (#220),
+the cause of a failed connection check (#226), the browser profiles of the request layer (#227), the second
+request of `ssc doctor --live` (#228), a bridge browser that verifies certificates (#229) and the trust in
+the certificate of a network that re-signs HTTPS (#230; issue #225). The request path with its profiles and
+the trusted certificates (2.2, 2.4), the new error code (2.6), the cause of a network failure (2.7), `ssc
+trust` and the live check of the doctor (4.1, 4.5), the setting `client.browser_accept_any_certificate` and
+the `ca` folder of the config directory (4.3), the trust routes, the follows default and `cause` (6), and
+what the live browsers and the `direct` socket trust (8.2, 8.3) are described as built; the four sports'
+slice rows of FX-36 are noted in 3.1 and 12. References marked `395b6e0` are to `origin/main` at that
+commit. Section 11 lists the corrections from item 161 on.
+
 Conventions used here: "event" is a SofaScore match; "slice" is one data type of an owner entity
 (event, season, team, player); "face" is one of Python library, CLI, HTTP API.
 The CLI executable is written `ssc` below (final name: decision D2).
@@ -539,6 +553,17 @@ exist: `services/follow_sync.py` (team, player and match follows, FX-19), `servi
 recorded job spec, FX-20) and `services/owner_data.py` (P28). Still not there: `api.py` and
 `services/refresh.py`.
 
+What was added by `395b6e0` (3.1.2; #227, #230). In `client/`: `profiles.py` (the list of curl_cffi browser
+profiles the request layer picks from, and the set-aside of a challenged one; `transport.IMPERSONATE_PROFILES`
+is now that module's `PROFILES`), `trust.py` (the store of extra trusted certificates in `CONFIG_DIR/ca`, the
+combined CA file for curl, the browser's NSS home and the probe of what the network presents) and `nssdb.py`
+(a script that `trust.py` runs in a child process to write an NSS database; it imports nothing of the
+package). `client/profile_lock.py` (FX-23) is not in the layout above either. In the faces:
+`cli/commands/trust.py` (`ssc trust`, 4.1) and `web/api/v1/trust.py` (the trust routes, 6). Both faces call
+`sofascore_scraper.client.trust` directly: there is no service between them, and
+`sofascore_scraper.client` was already among the modules the web face may import (`WEB_ALSO_IMPORTS`,
+`tests/test_layers.py`; 2.1). The cause of a network failure is in `web/upstream.py` (`network_cause`).
+
 The package was `src/` during the build-out. The owner decided on 2026-10-03 that it becomes
 `sofascore_scraper` (decision D1), and REN-1 (#168, `6f79344`) renamed it in one pull request: the folder
 moved with its history, every import and module-path string followed, the console script is
@@ -899,6 +924,101 @@ Semantics:
   shared budget; a request cancelled while it waited is not reported, and a failing notifier never breaks the
   request. A job's progress counts them (2.8), together with the back-off waits that already reached it
   through `on_wait`.
+- **Browser profiles and the way of a request (3.1.2, PR #227; `395b6e0`).** A request goes out with
+  curl_cffi under a browser profile (`impersonate`). SofaScore's gate answers 403 with
+  `{"error": {"code": 403, "reason": "challenge"}}` to a client it does not accept; measured on 2026-11-14
+  (one address, 1 to 3 requests per cell; the docstring of `sofascore_scraper/client/profiles.py`): a
+  User-Agent that names Chrome 147 or older is refused and 148 or newer passes, Safari, Firefox and names
+  that are not Chrome pass, and the fingerprints of curl_cffi's `chrome124`, `chrome131` and Windows
+  `chrome151` profiles are refused whatever User-Agent they send. Six of the nine profiles of the old list
+  (`chrome124` to `chrome145`) were therefore refused on every request, and each refusal opened the browser
+  bridge and put the process into browser-first mode for ten minutes (below), so most downloads ran through
+  the browser. As built:
+  - `profiles.WANTED` is the list that passed as it is, with its own User-Agent: `chrome150`,
+    `chrome151_macos`, `chrome152`, `safari17_0`, `safari18_0`, `safari260`, `firefox133`, `firefox155`.
+    `PROFILES` is those of them the installed curl_cffi knows; when it knows fewer than three of the Chrome
+    ones (an old curl_cffi inside the range of `requirements.txt`), the old list (`LEGACY`) is used, because
+    an unknown profile name sends nothing at all.
+  - The list corrects itself. A profile that gets the challenge is set aside for six hours
+    (`REFUSED_SECONDS`; `profiles.refuse`, one INFO line per profile) and the request is repeated at once
+    with another profile that is not set aside and was not tried for this request (`profiles.another`), at
+    most twice (`MAX_SWAPS`); each repeat takes its own slot of the request budget and is counted like any
+    request, and the request of a cancelled job is not repeated. The sync body picks a profile per request
+    (`profiles.pick`); an async session keeps the profile it was opened with, and after a swap that passed
+    it sends its later requests with the passing one (`ssc_profile_override` on the session). The set-aside
+    is in memory and per process; a restart forgets it. When every profile is set aside, the pick falls
+    back to the whole list.
+  - The browser bridge is used only when the answer is still the challenge after the swaps, as before:
+    `fetch_api_via_browser` for the same URL, and when the bridge brings the answer, the process is in
+    **browser-first mode** for 600 s (`BROWSER_FIRST_SECONDS`, `sofascore_scraper/client/transport.py`):
+    during that time a request goes to the bridge first, and to curl only when the bridge gives nothing;
+    afterwards curl is tried first again. So the bridge serves a real refusal (no profile passes, an address SofaScore challenges) and
+    the `page` and `direct` live sources, not the ordinary download.
+  - Nothing is asked of an outside service: no current Chrome version is read anywhere, SofaScore's own
+    answer says what passes, and no extra request is made to find out. Checked against the real site on
+    2026-11-14: a download of 39 requests, no 403 and no browser start (the pull request's own check).
+- **Trusted certificates (3.1.2, PR #230; `395b6e0`).** On a network that re-signs HTTPS with a CA of its
+  own (an antivirus that scans HTTPS, a company proxy) curl refuses the certificate (error 60) and every
+  download fails with `network`. `sofascore_scraper/client/trust.py` lets the user trust that network's
+  certificate:
+  - **The store** is `CONFIG_DIR/ca/*.pem` (`ca_dir()`, the config directory of
+    `sofascore_scraper/config/overrides.py`; `/app/config/ca` in the image). Every PEM certificate in it
+    counts, whether `add` wrote it (`trusted-<first 16 hex digits of the fingerprint>.pem`, mode 0600 in a
+    0700 folder, with a comment header) or the user put it there by hand. `remove` takes one certificate out
+    by its SHA-256 fingerprint and keeps the others of a hand-made bundle file. Certificates are decoded
+    with the standard library (a small DER reader); there is no `cryptography` dependency.
+  - **The HTTP client.** With a non-empty store every request, the session warm-up included, passes
+    `verify=<bundle>` to curl (`transport._trusted_ca`, `trust.bundle_path`): the CA file curl_cffi would
+    use anyway (`REQUESTS_CA_BUNDLE` or `CURL_CA_BUNDLE`, else its default from `SSL_CERT_FILE`, the system
+    store or certifi; `base_bundle`) with the stored certificates appended, written to
+    `ca/.bundle/ca-bundle.pem` (to a private folder under the temporary directory when `ca` is read-only)
+    and rewritten only when a file changed. It is read with every request, so a change needs no restart.
+    With an empty store nothing is passed and curl_cffi's default is unchanged. The stored certificates are
+    added to the trust the installation has; they never replace it.
+  - **The probe** (`trust.probe`) answers "what does the network present for the API host, and can it be
+    trusted": it reads the chain of the host of `client.base_url` without verifying it, checks it against
+    the current trust, and, when it does not verify, offers the top-most certificate that was sent if that
+    one is a CA certificate, is not expired and trusting it makes the connection verify. At most three TLS
+    handshakes and no HTTP request. Otherwise `can_trust` is false with a `reason`: `verified` (nothing to
+    trust), `proxy` (a proxy is configured; a direct socket would bypass it, so no probe is made),
+    `not_https`, `unreachable`, `root_not_sent` (only the server's own certificate was sent),
+    `chain_unavailable` (a Python older than 3.13 reads only the server's own certificate), `expired`,
+    `not_enough`.
+  - **The decision** is `trust_presented(sha256)`: the process probes again and stores what it sees itself,
+    and only when the fingerprint is the one the user confirmed; otherwise `TrustRefused`, which the faces
+    answer with `certificate_changed` (2.6). A certificate is never taken from the caller.
+  - Not built: no expiry reminder for a stored certificate (the list shows `expired`), no trust per host
+    (a stored CA is trusted for every host the client or the bridge browser connects to), and no probe
+    through a proxy.
+- **The bridge browser verifies certificates (3.1.2, PRs #229 and #230; `395b6e0`).** Scrapling opens its
+  browser context with `ignore_https_errors: True`, so until 3.1.1 the bridge browser accepted any
+  certificate on every network, while the HTTP client always verified: whoever could intercept the
+  connection could read and change what the browser exchanged (page loads, the solved challenge, the API
+  answers the app stores). As built, `BrowserBridge._launch` passes `additional_args` to the session
+  (`bridge._context_args`): `ignore_https_errors` is false unless the setting
+  `client.browser_accept_any_certificate` is on (4.3), and when the store above is not empty and the
+  platform supports it (`trust.browser_supported()`: Linux with `libnss3`), the browser is started with a
+  `HOME` of its own, `<profile>/trust-home`, whose NSS database (`.pki/nssdb`) holds the stored
+  certificates as trusted CAs. `sofascore_scraper/client/nssdb.py` writes it through `libnss3` with ctypes,
+  in a child process, because the image has no `certutil` and NSS keeps process-wide state; the database is
+  built again at every launch, so a removed certificate leaves the browser too, and the user's own
+  `~/.pki/nssdb` is not touched. Chromium then verifies the chain up to those CAs.
+  `--ignore-certificate-errors-spki-list` was measured and not used: it accepts any chain that merely
+  carries the trusted certificate. Outside Linux the browser is not given the store and uses the trust
+  store of the operating system (one warning line). A home page that fails with `net::ERR_CERT_…` fails the
+  launch (`RuntimeError` with Chromium's first line), so the reason reaches the bridge health and requests
+  do not wait for a page that cannot load. After a change of the store, `bridge.restart_for_trust_change()`
+  closes the bridge browser of the process, and the next request starts it with the new store; it returns
+  false when the browser could not be closed, and the faces then say that a restart of the app is needed.
+  The live browsers of `ssc watch` are `BrowserBridge` instances of their own (8.2): they verify the same
+  way and read the store when they start, not while they run.
+- **The browser stack (3.1.2, PR #222).** `scrapling` 0.5.1, `patchright` 1.64.4 and `playwright` 1.65.0
+  (`requirements.txt` pins `scrapling[fetchers]` exactly; `constraints.txt` the three). 3.1.1 raised the
+  other pins (#221, among them `curl-cffi` 0.17.0) and left these three at the versions the challenge solve
+  had been verified with (0.4.15, 1.63.0, 1.63.0); they followed after the solve was verified live with the
+  new versions against the old ones. A source installation installs the browser build once more after the
+  update (`python -m patchright install chromium --no-shell`; `ssc doctor` says so when it is missing); the
+  Docker image has it.
 - The client writes nothing under `DATA_DIR`. It reports each bridge-health transition through
   `on_health_change`; since P11 (PR #69) `build_context` stores the snapshot with
   `store.runtime.set("bridge_health", ...)`, so another process (`ssc status`, a second server) can read
@@ -1088,6 +1208,15 @@ table above, row by row.
   with exit 3 like `partial` (ST-23 #110). `POST /api/v1/tournaments/search` answers 503 `blocked` or
   `rate_limited` and 502 `upstream_error`, with `details.reason` in the words of `sofascore_scraper/web/upstream.py`
   (P21 #124). A Parquet export without `pyarrow` is `not_supported` (SC-2 #130).
+- Since 3.1.2 (PR #230; `395b6e0`) the table has one more row, `certificate_changed` (`ConflictError`,
+  exit 1, HTTP 409). It is what `POST /api/v1/trust` and `ssc trust add`
+  answer when the certificate cannot be stored: the network no longer presents the one the user confirmed
+  (`details.reason = "changed"`), or the probe finds nothing that can be trusted (`details.reason` is the
+  probe's reason of 2.4). The API adds `details.presented_sha256`, the CLI `details.probe`. `ConflictError.codes`
+  names it next to `follow_exists`, `follow_managed` and `data_operation_running`
+  (`sofascore_scraper/errors.py`). A fingerprint that is not 64 hexadecimal digits is `invalid_request`, an
+  unknown one on removal `not_found`, and `ssc trust add` without `--sha256` or `--yes` is
+  `confirmation_required` (4.1); none of these is new.
 
 `describe errors` prints this table; a test asserts that every `PlatformError` subclass has a row.
 
@@ -1739,6 +1868,14 @@ def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC da
   failed check, by the same order; the web UI uses it. Since FX-30 (PR #180) `record_check()` returns the
   moment it recorded, and `POST /status/check` stamps `checked_at_utc` with it, so the two are equal (they
   were two clock reads).
+  Since 3.1.2 (PR #226; `395b6e0`) a failed connection check also says what kind of network failure it met.
+  The reason `network` covered a timeout, a name that does not resolve, a dead proxy, a TLS failure and a
+  refused or closed connection alike, and the difference was only in the log. `upstream.network_cause(exc)`
+  (`sofascore_scraper/web/upstream.py`) reads curl's error code from the `NetworkError` and gives `timeout`
+  (28), `dns` (6), `proxy` (5, 97, a failed CONNECT tunnel, or a connection that could not be opened "over
+  proxy"), `tls` (35, 51, 58, 59, 60, 77, 83), `connect` (7) or `reset` (52, 55, 56), else None. Only the
+  code is read: the error text can hold addresses and proxy details and stays out of the answer. `cause` is
+  a field of the check's answer only (6); `ConnectionState` and `last_check` do not keep it.
 - **Export names (FX-19).** An export job writes `exports/<label>_<UTC date>_<id8>.<ext>`
   (`sofascore_scraper/services/data_jobs.py:157-174`): the label is the tournament's name (from the follows table, else
   the catalog) when the filter names one tournament, else the dataset, as a lower-case ASCII slug of at most
@@ -2498,6 +2635,16 @@ As built by FX-31 (PR #185, with the research data of #183; `sofascore_scraper/s
   status codes, so `team_streaks` stays required everywhere; a body-aware rule is a decision of its own.
   Baseball's `/umpires`, `/weather`, `/comments` and `/at-bats` answer 200 on finished and live matches;
   they are proposals, not slices.
+  Decided on 2026-10-09, after the eleventh revision (FX-36, #198; released in 3.1.1 on 2026-11-14): the
+  run `lv-20261009b` recorded top-league finished matches of the four sports, and the owner's decision is
+  in the registry (`DETAIL_SLICES`, `sofascore_scraper/sports.py`): rugby and volleyball `statistics`,
+  `lineups`, `incidents` and `pregame_form` optional; floorball `lineups` not requested, `statistics` and
+  `pregame_form` optional and `incidents` still counted, against the rule's verdict; minifootball
+  `statistics`, `incidents` and `pregame_form` optional (`lineups` already was). `PROPOSALS` is gone:
+  `DECIDED` and `DECIDED_AGAINST_THE_RULE` of `tests/test_sport_slices.py` pin the cells, the second also
+  the three that FX-38 (#200) kept required against the rule (basketball `lineups`, handball `pregame_form`,
+  MMA `statistics`). The team-streaks rule and the baseball endpoints are still open
+  (`03-implementation-plan.md` sections 13 and 19).
 
 **The research explorer** (`scripts/explore_all_sports.py`; FX-29 #181, FX-29b #182, FX-29c #184, FX-32
 #187). It is research tooling outside the application, and the evidence above rests on it:
@@ -2877,6 +3024,7 @@ is safe to repeat; exit codes are part of the contract.
 | `ssc backup create\|list\|verify\|restore PATH` | backups | `--scope`, `--include-secrets`, `--force`, `--dry-run`, `--yes` |
 | `ssc data clear\|recheck-unavailable` | destructive maintenance | `--scope`, `--all`, `--yes` |
 | `ssc config show\|validate\|init\|path` | effective configuration with the source of each value; secrets masked | |
+| `ssc trust list\|show\|add\|remove FINGERPRINT` | extra certificates the app trusts, for a network that re-signs HTTPS (3.1.2, PR #230; below) | `add --sha256 FINGERPRINT`, `add --yes` |
 | `ssc version` | version, schema versions | |
 
 `describe` is generated from the argparse tree, the slice registry, the error table and the response models,
@@ -3070,6 +3218,43 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   `max_age_seconds` and `selected_in` (the sports whose configured defaults select it; P27, P28). `describe
   config` lists `schedule_runs` (FX-13).
 
+As built at `395b6e0` (3.1.2; PRs #228, #229 and #230):
+
+- **`doctor --live`** sends two real requests, and only when the flag is given (`check_live`,
+  `sofascore_scraper/doctor.py`). First, as before, one through the browser bridge
+  (`fetch_api_via_browser_sync` for `LIVE_PROBE_PATH`, `/unique-tournament/17/seasons`), which starts the
+  bridge browser and so loads SofaScore's home page once (`BrowserBridge._launch` opens `HOME_URL`). Then, new (#228), one with the app's
+  HTTP client, the way downloads go: `make_api_request` for the same path, one try, 10 s, on the shared
+  request budget (`_check_live_http`). Until 3.1.1 the check asked through the browser only, and the
+  browser accepted any certificate, so on a network that re-signs HTTPS it reported that everything was in
+  place while every download failed with a certificate error. Any HTTP answer of SofaScore to the second
+  request (a 403 or 429 too) counts as reached; only a connection failure fails the check. The codes of
+  the `live` check are `live_ok`, `live_failed` (no answer through the bridge; the second request is then
+  not sent), `live_browser_tls` (#229: the browser met a certificate it cannot verify, `ERR_CERT_` in the
+  bridge's error), `live_http_tls` (curl's TLS codes 35, 51, 58, 59, 60, 77, 83, the set of
+  `upstream._CURL_CAUSE`, kept as a copy because the doctor does not load the web layer) and
+  `live_http_failed` (any other connection failure). The detail of the two HTTP codes has curl's own
+  description and code, never the full error text, and `missing_ca_file {name, path}` when `SSL_CERT_FILE`,
+  `CURL_CA_BUNDLE` or `REQUESTS_CA_BUNDLE` names a file that does not exist (curl ignores such a path
+  without a word). The fixes of the two TLS codes name the Health page's button and `ssc trust add` first.
+  The check list without `--live` is unchanged; the tests call `check_live` with a fake bridge fetch and a
+  fake request (`tests/test_doctor.py`), never against the site.
+- **`trust`** (`sofascore_scraper/cli/commands/trust.py`), for servers without the web app; the same
+  functions of `client/trust.py` as the routes of section 6. `trust list` prints the certificates of
+  `CONFIG_DIR/ca` (file, subject, issuer, SHA-256 fingerprint in colon form, expiry; `--json`: `directory`
+  and `certificates`). `trust show` probes and prints what the network presents and the command that would
+  trust it, or the reason why nothing can be trusted (`--json`: the probe). `trust add --sha256
+  FINGERPRINT` trusts the presented certificate only if its fingerprint is the given one; `trust add --yes`
+  trusts whatever is presented and prints what it was. Without either the command is
+  `confirmation_required` (exit 2) and names the certificate it would trust: it never asks a question
+  (the principle at the top of this section). A certificate that changed or cannot be trusted is
+  `certificate_changed` (exit 1). After storing, the command probes once more and exits 0 when the
+  connection now verifies and 1 when it still does not. `trust remove FINGERPRINT` is `not_found` (exit 1)
+  for a fingerprint that is not stored. `add` and `remove` add the note that the HTTP client uses the
+  change with its next request and a running browser (`ssc serve`, `ssc watch`) when its process restarts:
+  the CLI cannot restart another process's bridge browser, which only `POST /trust` does for its own
+  server. The four subcommands load the settings (`settings=True`), so their log lines go to stderr.
+
 ### 4.2 Global flags
 
 `--config PATH`, `--data-dir PATH`, `--json` (same as `--output json`), `--output text|json|ndjson`,
@@ -3138,6 +3323,10 @@ odds_provider = 1
 odds_country = ""         # recorded with every odds read when set (e.g. "TR"); never derived from the machine (FX-15)
 browser_profile = ""      # empty = the default profile directory of the bridge
 browser_headed = false
+browser_accept_any_certificate = false   # true: the bridge browser accepts certificates it cannot verify.
+                          # Only for a network that re-signs HTTPS, and only when trusting its certificate
+                          # (the ca folder, below) is not possible; whoever re-signs can then read and
+                          # change what the browser exchanges (3.1.2)
 throttle_dir = ""         # empty = the default directory of the shared budget files
 
 [breaker]
@@ -3236,6 +3425,29 @@ code's values. It also had no place for many of today's settings: the sections `
 `use_proxy`, `browser_profile`, `browser_headed`, `throttle_dir`, `include_legacy`, `max_event_polls`,
 `debug`, `dir`, `to_file`, `max_mb` and `backup_count` were added for them. Two values exist only in the
 environment and are rejected in the file: the access token and the captcha token.
+
+As built since 3.1.2 (PR #229; `395b6e0`): `client.browser_accept_any_certificate` (boolean, default false;
+`SOFASCORE_CLIENT__BROWSER_ACCEPT_ANY_CERTIFICATE`; `sofascore_scraper/config/settings.py`). Off, the bridge
+browser refuses an HTTPS certificate it cannot verify, as the HTTP client always has; on, it accepts any, as
+it did on every network until 3.1.1 (2.4). It is the one switch that relaxes certificate checking, it covers
+the browser only, and it is the last resort on a network that re-signs HTTPS: the first is to trust that
+network's certificate. The setting is not in `WRITABLE`, so the API shows it read-only and the Settings page
+cannot change it (`05-web-ui.md` 6.16); it is set in `sofascore.toml` or the environment. The bridge reads it
+at each browser launch.
+
+**Trusted certificates** (3.1.2, PR #230). They are not a setting and not in `sofascore.toml`: the store is
+the folder `CONFIG_DIR/ca` next to `overrides.json` (`SOFASCORE_CONFIG_DIR`, else `config`), and every
+`*.pem` file in it is trusted (2.4). It is written by `ssc trust add` (4.1) and `POST /api/v1/trust` (6) and
+may be filled by hand; nothing else in the configuration names it, and no layer of the table below applies
+to it: a certificate is trusted because its file is there. The folder is 0700 and the files the application
+writes are 0600. A backup does not contain it: `BackupManager.create` takes the config files it is handed
+(`leagues.txt` and `league_sports.json`, and from `ssc backup create` and the scheduler also the active
+`sofascore.toml`), `overrides.json` and, on request, `.env` (`sofascore_scraper/store/backup.py`; the three
+callers' lists in `cli/commands/backup.py`, `jobs/scheduler.py` and `web/api/v1/jobs.py`), and a restore
+puts back `overrides.json` only. So on another machine, or after the config folder is lost, the certificate
+is trusted again by hand (`01-storage.md` 9.1; open, `03-implementation-plan.md` section 19). `SSL_CERT_FILE`, `CURL_CA_BUNDLE` and `REQUESTS_CA_BUNDLE` are
+read by curl_cffi, not by the loader; they still work and are the base the stored certificates are added to
+(`docs/deploy/docker.md`, "A network that inspects HTTPS").
 
 **Layers**, weakest to strongest (`loader.LAYERS`, `sofascore_scraper/config/loader.py:73-81` at `216c2f9`):
 
@@ -3706,6 +3918,12 @@ must be rebuilt. `serve` exits 0 on SIGINT and SIGTERM and 1 when the server can
 `backup verify` and the catalog commands exit 1 for a result that is not clean; `migrate` exits 3 when items
 are left (ST-23 #110). The codes 130 and 143 are built as decision D6 chose them; D6 still
 waits for the owner's confirmation.
+
+Since 3.1.2 (PR #230): the error codes of exit 1 are `not_found`, `follow_managed`, `follow_exists`,
+`certificate_changed` and `internal` (`exit_codes.EXIT_CODES`, read from the error table; the row above
+names only two of them). `ssc trust add` exits 1 with `certificate_changed`, 2 without `--sha256` or `--yes`,
+and 1 without an error code when the certificate was stored and the connection still does not verify;
+`ssc doctor --live` exits 1 for each of its failed codes (4.1).
 
 ### 4.6 Signals, single instance, running as a service
 
@@ -4273,6 +4491,7 @@ paragraph describes the foundation.
 | `/health`, `/status`, `/diagnostics`, `/diagnostics/bundle`, `/logs` | GET | status |
 | `/status/check`, body `{target: "sofascore"}` | POST (one request to SofaScore) | the connection check through the client |
 | `/sinks` | GET (read-only; added by P21) | `sink_status.sink_states` (5.2) |
+| `/trust`, `/trust/probe` body `{target: "sofascore"}`, `/trust` body `{sha256}`, `/trust/{fingerprint}` | GET, POST (TLS handshakes to the API host, no HTTP request), POST (then one request to SofaScore), DELETE | no service: `sofascore_scraper/client/trust.py` (3.1.2, PR #230; below) |
 | `/auth`, `/auth/login`, `/auth/logout` | GET, POST, POST (open without a token) | the session cookie of PR #43 |
 
 SSE (`/jobs/{id}/events` only): each message has `id: <seq>`, `event: <type>`, `data: <JobEvent>`, where
@@ -4641,6 +4860,50 @@ As built at `216c2f9` (P30 #186, FX-30 #180, B1 #190, B2 #191). `docs/api/openap
   `provider_name` field in schema v1 (`Odds.provider_id` and `OddsLine.provider_id` are unchanged; an
   additive change with the generated tables of `04-schema-v1.md`). The help text of `client.odds_provider`
   (`ssc describe config`, the config JSON Schema) names `1 = bet365 (international)` and the route.
+
+As built at `395b6e0` (3.1.1 and 3.1.2: #220, #226, #230). `docs/api/openapi-v1.json` and
+`frontend/src/api/v1/schema.ts` were regenerated each time, with additions and one changed default:
+
+- **`POST /follows` without `seasons`** (#220, in 3.1.1; a changed default). `FollowCreate.seasons` is
+  optional: left out or null it takes `defaults.seasons` of the settings (`current` unless changed), as
+  `ssc follows add` and a `[[follow]]` of the config file always did (`add_follow`,
+  `sofascore_scraper/web/api/v1/follows.py`). Until 3.1.0 the body's default was `all`, and for a team or a
+  player the choice is a time window, so such a follow had its match list read back to the page limit:
+  about 150 matches and 1,600 requests for a national team in the live test of 2026-11-14. The web app
+  always sends its own choice and is not affected; `"seasons": "all"` asks for the old behaviour.
+- **`POST /status/check`: `cause`** (#226). `StatusCheck` has a nullable `cause` (`timeout`, `dns`, `proxy`,
+  `tls`, `connect`, `reset`), set only when `reason` is `network` and curl's code says which (2.7). The
+  answer is still 200 with `ok: false`; the message is unchanged, and clients translate by `reason` and
+  `cause`.
+- **The trust routes** (#230; `sofascore_scraper/web/api/v1/trust.py`, tag `trust`), four operations:
+  - `GET /trust` (`listTrusted`): every certificate of `CONFIG_DIR/ca`, stored through the API or put there
+    by hand: `TrustedCertificate {file, subject {common_name, organization}, issuer, sha256, not_before,
+    not_after, expired, is_ca, self_signed}`, in the collection envelope with a null cursor. It reads files
+    only and is among the reviewed read-only GETs of `tests/test_web_hardening.py`.
+  - `POST /trust/probe` (`probeTrust`), body `{"target": "sofascore"}` for the reason `POST /status/check`
+    has one: an empty POST must not reach the network. The host cannot be chosen; it is the host of
+    `client.base_url`. Answer `TrustProbe {host, port, verified, chain_length, leaf, presented, can_trust,
+    reason, error, browser_supported}` (2.4). A probe that finds nothing to trust is a 200 with
+    `can_trust: false`, not an error.
+  - `POST /trust` (`trustCertificate`), body `{"sha256": "<fingerprint>"}` (64 hex digits, colons allowed).
+    The body carries no certificate: the server probes again and stores the certificate it sees itself,
+    and only if its fingerprint is the given one. Otherwise 409 `certificate_changed` with
+    `details.reason` and `details.presented_sha256` (2.6). On success it closes the bridge browser of the
+    server so that it starts with the new store, runs the connection check, and answers `TrustOutcome
+    {stored, check (a StatusCheck), browser_supported, browser_restart_needed}`.
+  - `DELETE /trust/{fingerprint}` (`removeTrusted`): `TrustRemoved {sha256, browser_restart_needed}`, 404
+    `not_found` for a fingerprint that is not stored. The HTTP client stops accepting the certificate with
+    its next request.
+  The three writes are among the state-changing operations the tests list, so none is a GET, and like every
+  `/api` path they pass the access token, the Origin check and the Host check of the security middleware
+  (`error_responses("forbidden_origin")`). They are security decisions: whoever holds the key of a stored
+  certificate can read and change what the application downloads. What the 409 protects: between the
+  moment the user reads a fingerprint on the screen and the moment the server stores a certificate, the
+  network may present another one (an attacker who starts intercepting then, or a different middlebox); the
+  server never stores a certificate the user did not see. What it does not protect: the user confirming a
+  certificate that was presented by an attacker in the first place, which is why the UI and the CLI state
+  the risk and show the fingerprint for comparison (`05-web-ui.md` 6.12). There is no rate limit of its own
+  on the probe; each call is at most three TLS handshakes to one fixed host.
 
 ### 6.1 Existing `/api` routes
 
@@ -5121,6 +5384,15 @@ value) becomes `poll` inside the service, never `direct`; the flag and the envir
   `direct_source.py:261`, `push_source.py:703`). A single sport page that closes keeps the context's rules,
   because the other pages need them. `"wait"` was not chosen, because a handler waiting for a budget slot
   would hold up the close. A guard test checks that patchright still offers both calls.
+- **Certificates (3.1.2, PRs #229, #230; `395b6e0`).** The live browser and the credential reader of 8.3
+  are `BrowserBridge` instances, so they launch like the bridge (2.4): certificate errors are not ignored
+  unless `client.browser_accept_any_certificate` is on, and on Linux the stored certificates of
+  `CONFIG_DIR/ca` are given to the browser through an NSS home inside the live profile. A first page that
+  fails with `net::ERR_CERT_…` fails the launch, as for the bridge. A certificate trusted while `ssc watch`
+  runs reaches its browser at the next start of that process: the restart after a trust change
+  (`bridge.restart_for_trust_change`) covers only the bridge browser of the process that made the change.
+  The polling requests of the same process use the store at once, like every curl request. Until 3.1.1
+  these browsers accepted any certificate. Not checked on a network that re-signs HTTPS with a live match.
 
 ### 8.3 The `direct` source: opt-in, and what the user is told
 
@@ -5186,6 +5458,13 @@ As built (P31, PR #101; `sofascore_scraper/services/live/direct_source.py:71-96`
 - **Proxies.** The design did not mention them. With a proxy configured, `direct` never connects, because
   the connection would bypass the proxy and show the real address; the source counts as unavailable and the
   service polls. Tunnelling through the proxy is not built.
+- **Certificates (3.1.2, PR #230).** The socket still verifies. `open_socket`
+  (`sofascore_scraper/services/live/direct_source.py`) takes `trust.client_context()`, a verifying context
+  over the combined CA file of 2.4, when certificates are stored in `CONFIG_DIR/ca`, and the default
+  context otherwise; so a certificate the user trusted for downloads holds for the push connection too,
+  whatever host it goes to. Like curl it accepts a stored intermediate CA as a trust anchor
+  (`VERIFY_X509_PARTIAL_CHAIN`) and does not apply the strict X.509 checks of newer Pythons. The credential
+  reader's browser follows 8.2.
 - **Warnings.** The four warnings are in `watch --help`, `describe config`, `config validate --json`, the
   `config init` example and both READMEs. The P09 note has the warning logged at the first load; it is also
   logged by the service at every start with `direct` and by `ssc watch` when the flag selects `direct`, so a
@@ -6192,6 +6471,34 @@ Corrections after FX-35 and the 3.1.0 release (2026-10-09, the eleventh revision
      new name winning, and removed in 3.2; `replaced_by` on the setting rows; the entrypoint counts the old
      allow-list name again (4.3, 4.6, 6, 12).
 
+Corrections after the 3.1.1 and 3.1.2 releases (2026-11-14, the twelfth revision; checked at `395b6e0`).
+The work has no plan item and is cited by pull request:
+
+161. **How a request reaches SofaScore.** 2.4 named the browser-first path without saying when it starts,
+     and the list of browser profiles was a constant of the transport. Built (#227): the profiles are a
+     module (`client/profiles.py`) with the list that passed SofaScore's gate on 2026-11-14, a challenged
+     profile is set aside for six hours and the request repeated with another one, and the bridge and the
+     ten minutes of browser-first mode follow only when no profile passes (2.2, 2.4).
+162. **The bridge browser and certificates.** No section said that the bridge browser accepted any
+     certificate (a default of Scrapling). Built (#229, #230): it verifies; the setting
+     `client.browser_accept_any_certificate` relaxes it; on Linux the browser trusts the certificates of
+     `CONFIG_DIR/ca` through an NSS home of its own; a certificate error fails the launch and reaches the
+     bridge health (2.4, 4.3, 8.2).
+163. **Trusting a network's certificate.** The design had no way to add a CA other than the environment of
+     curl. Built (#230): the store `CONFIG_DIR/ca/*.pem`, the combined CA file per request, the probe, `ssc
+     trust`, the four trust routes and the error code `certificate_changed`; the `direct` socket uses the
+     same trust. The faces call `client/trust.py` without a service. Backups do not take the folder (2.2,
+     2.4, 2.6, 4.1, 4.3, 4.5, 6, 8.3).
+164. **The connection check and the doctor's live check.** 2.7 and 6 gave a failed check a `reason` only,
+     and 4.1 described `doctor --live` only as a flag. Built (#226, #228, #229): `cause` for the reason
+     `network`, from curl's code; a second request of the live check with the app's HTTP client, and the
+     codes `live_http_tls`, `live_http_failed` and `live_browser_tls` (2.7, 4.1, 6).
+165. **The follows default.** 6 did not state the season choice of a `POST /follows` without one; the code
+     had `all`, unlike the CLI and the config file. Built (#220, in 3.1.1): `defaults.seasons` (6).
+166. **The four sports' slice rows.** 3.1 and 12 said that the proposal for rugby, floorball, volleyball and
+     minifootball waits for the owner. Decided and built on 2026-10-09, after the eleventh revision (FX-36,
+     #198), and released in 3.1.1 (3.1, 12).
+
 ---
 
 ## 12. Risks
@@ -6324,6 +6631,27 @@ Corrections after FX-35 and the 3.1.0 release (2026-10-09, the eleventh revision
   six counting slices that their lower-tier matches did not answer, so each finished match of theirs costs a
   confirmation round, until the owner decides on more evidence. A 200 with an empty body (team-streaks in
   11 sports) counts as an answer with data by the status-code rule.
+  Since FX-36 (#198, 2026-10-09; in 3.1.1) the four sports' rows follow the owner's decision on the
+  top-league run `lv-20261009b` (3.1), so that cost is gone for them; the team-streaks point stands.
+- The profile list ages (3.1.2, #227; 2.4). The gate's threshold moves with Chrome's versions: a profile
+  that passes today is refused once its Chrome version is old enough. The set-aside keeps the request layer
+  working without a code change while at least one profile passes (the Safari and Firefox profiles do not
+  depend on the Chrome rule), at the price of one refused request per profile and process every six hours.
+  When all are refused, every request goes through the browser again, as before 3.1.2; the INFO line of
+  the set-aside and the bridge's use are the signs, and the remedy is a newer curl_cffi with newer profiles
+  in `profiles.WANTED`. The measurement behind the list is one address on one day.
+- A trusted certificate is trusted for everything (3.1.2, #230; 2.4). Whoever holds the key of a stored CA
+  can read and change every download, for every host the client or the browser connects to, until the
+  certificate is removed; the store has no scope per host and no expiry of its own. The confirmation in the
+  UI and the fingerprint in the CLI are the only guard against trusting an attacker's certificate. The
+  feature was verified in the Docker image on Linux; on Windows and macOS the HTTP client part is not
+  verified and the browser part does not exist (the browser uses the operating system's store there), the
+  probe is not made behind a configured proxy, and a backup does not carry the `ca` folder
+  (`03-implementation-plan.md` section 19).
+- The strict browser can stop a working installation (3.1.2, #229). Where the bridge browser used to get
+  through a network that re-signs HTTPS, it now fails with a certificate error until the certificate is
+  trusted or `client.browser_accept_any_certificate` is set; the changelog of 3.1.2 says so under Security
+  and in its upgrade notes, and `ssc doctor --live` names the case.
 - The player filter of an export reads the stored line-ups of every event inside the other filters' scope
   (2.7): on a large data folder without another filter that is one payload read per event with line-ups.
 - Closing a Store under a job. Since #93 a job store does not close the state database under a finishing

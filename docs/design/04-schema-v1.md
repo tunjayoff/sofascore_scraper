@@ -73,6 +73,13 @@ slice keys in "Slice"). B1 (#190) changed API v1 next to this schema, not the sc
 the API's registry item of `/sports` has an `individual` flag ("Sport"), and a search hit no longer reports
 SofaScore's placeholder team "No team" as a player's team.
 
+Revised on 2026-11-14 (the twelfth revision, checked against `origin/main` at `395b6e0`), after the 3.1.1
+and 3.1.2 releases of that day. No model and no generated table changed (`sofascore_scraper/schema/` is as
+it was at `v3.1.0`), so `schema_version` stays 1. One hand-written table follows the code again: the detail
+slices of rugby, volleyball, floorball and minifootball after the owner's decision of 2026-10-09 (FX-36,
+#198, in 3.1.1; section 5). The trust routes, `cause` of the connection check and the follows default of
+API v1 (`02-services.md` 6) return no record of this schema.
+
 ## 1. What the schema is, and what it is not
 
 The platform stores SofaScore's responses as they are (one file per response, see `01-storage.md`). The
@@ -1196,14 +1203,14 @@ sport, and no live payload for most of them; the run of 2026-10-09 (PR #183) add
 not-started match page for most sports. What differs, in short (the score columns are section 4,
 "Score"):
 
-| Sport | `score.family`, format | Headline score | `Participant.type` | Extra or missing slices (PR #121, FX-31) |
+| Sport | `score.family`, format | Headline score | `Participant.type` | Extra or missing slices (PR #121, FX-31, FX-36) |
 |---|---|---|---|---|
 | American football, Aussie rules | `periods`, `quarters` | points incl. overtime | `team` | American football: `pregame_form` optional |
-| ice hockey, floorball | `periods`, `thirds` | goals incl. overtime | `team` | ice hockey: `pregame_form` optional |
+| ice hockey, floorball | `periods`, `thirds` | goals incl. overtime | `team` | ice hockey: `pregame_form` optional; floorball (FX-36): no `lineups`; `statistics`, `pregame_form` optional |
 | handball | `periods`, `halves` | goals incl. overtime and the shoot-out | `team` | |
-| rugby | `periods`, `halves` | points incl. overtime | `team` | |
-| futsal, minifootball | `periods`, `halves` | goals incl. overtime | `team` | futsal: `statistics`, `lineups`, `incidents`, `pregame_form` optional; minifootball: `lineups` optional |
-| volleyball, badminton, table tennis | `sets`, `points` | sets won | volleyball `team`; badminton `player` or `pair`; table tennis `player` | badminton, table tennis: `point_by_point`; no `lineups`; `pregame_form` optional |
+| rugby | `periods`, `halves` | points incl. overtime | `team` | (FX-36) `statistics`, `lineups`, `incidents`, `pregame_form` optional |
+| futsal, minifootball | `periods`, `halves` | goals incl. overtime | `team` | futsal: `statistics`, `lineups`, `incidents`, `pregame_form` optional; minifootball: `lineups` optional, and (FX-36) `statistics`, `incidents`, `pregame_form` optional |
+| volleyball, badminton, table tennis | `sets`, `points` | sets won | volleyball `team`; badminton `player` or `pair`; table tennis `player` | badminton, table tennis: `point_by_point`; no `lineups`; `pregame_form` optional; volleyball (FX-36): `statistics`, `lineups`, `incidents`, `pregame_form` optional |
 | padel | `sets`, `games` | sets won | `pair` | no `lineups`, `incidents`; `statistics`, `pregame_form` optional |
 | snooker | `sets`, `frames` | frames won | `player` | no `lineups`, `incidents`; `statistics`, `pregame_form` optional |
 | darts | `sets`, `legs` or `legs_won` | sets or legs won | `player` | `point_by_point`; no `lineups`, `incidents`; `pregame_form` optional |
@@ -1219,6 +1226,11 @@ absence of a request only from the repaired run, and a match's state is the one 
 `statistics` and `point_by_point` are requested for live and finished matches only. A proposal for rugby,
 floorball, volleyball and minifootball (some of their common slices optional or not requested) is not
 applied; it waits for more evidence and the owner's decision (`docs/all-sports/README.md`).
+Decided since (owner, 2026-10-09; FX-36, PR #198; released in 3.1.1 on 2026-11-14): after the run
+`lv-20261009b` over top-league finished matches of the four sports, the registry has the rows marked FX-36
+in the table (`DETAIL_SLICES`, `sofascore_scraper/sports.py`); floorball `incidents` still counts for
+completeness, against the evidence rule's verdict. The slice rows are not part of the schema's definitions,
+so `schema_version` stays 1.
 
 Codes 91 and 92 give `decided_without_play` in every sport (which of these sports use them was not
 checked), and only football and handball fill `aggregate`. The `Participant.type` of darts and MMA (`player`) and of

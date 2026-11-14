@@ -102,6 +102,14 @@ creates the data directory on its first open (2.4); the runtime facts of `state.
 player follow's last match list (7.3). References marked `216c2f9` are to `origin/main` at that commit.
 Section 12 lists the corrections from item 148 on.
 
+Revised on 2026-11-14 (the twelfth revision of the design documents; the eleventh, for FX-35 and the 3.1.0
+release, changed nothing here), after the 3.1.1 and 3.1.2 releases of that day. Nothing under `DATA_DIR`
+changed: no layout, catalog or state version moved, and no pull request of the day touched
+`sofascore_scraper/store/`. Two points of this document are affected by the trusted certificates of 3.1.2
+(#230; `02-services.md` 2.4 and 4.3), which are files outside `DATA_DIR`: the allowlist of 2.4 names two more
+modules, and a backup does not contain the folder `CONFIG_DIR/ca` (9.1). References marked `395b6e0`
+are to `origin/main` at that commit. Section 12, items 157 and 158.
+
 Terms used throughout:
 
 - **payload**: one SofaScore JSON response, stored as a file.
@@ -1538,7 +1546,13 @@ describes them as built by plan item ST-04 (PR #47).
    browser profile), `sofascore_scraper/redact.py` (when `.env` changed), `sofascore_scraper/version.py` (`pyproject.toml`; the Store
    may import it), `sofascore_scraper/web/security.py` (the UI's `index.html`, for the CSP decision),
    `sofascore_scraper/web/league_sports.py` (`league_sports.json`) and `sofascore_scraper/web/openapi.py` (the committed OpenAPI
-   document, a developer tool).
+   document, a developer tool). At `395b6e0` the list (`FS_ALLOWLIST`, 21 entries) also names three modules
+   of the client: `sofascore_scraper/client/profile_lock.py` (the lock of the browser profile and the
+   temporary sibling profiles; FX-23, #171) and, since 3.1.2 (#230), `sofascore_scraper/client/trust.py` (the
+   trusted certificates: the `ca` folder of the config directory, the combined CA file and the browser's NSS
+   database) and `sofascore_scraper/client/nssdb.py` (the script that writes that NSS database). None of
+   them touches `DATA_DIR`: the folder is `CONFIG_DIR/ca`, the combined file lies in it or in the temporary
+   directory, and the NSS database inside the browser profile.
 2. **Runtime check** (`tests/conftest.py`, `sys.addaudithook`). CPython raises audit events for `open`,
    `os.listdir`, `os.scandir`, `os.remove`, `os.rename`, `os.mkdir`, `os.rmdir`, `shutil.rmtree`,
    `sqlite3.connect` and others. The hook looks at paths inside the test data directory, walks the call stack
@@ -4325,6 +4339,14 @@ archive is created 0600 from the start, as one with `.env` is; its name does not
 `_with_env`). `data` never takes it. Archives made before FX-22 have no such member. Only the settings files
 are taken by name; a `.lock` file next to them is never a member (FX-25, #172).
 
+Not in a backup (3.1.2, #230; `395b6e0`): the trusted certificates of `CONFIG_DIR/ca`
+(`sofascore_scraper/client/trust.py`). `create` adds the files it is handed, by name, and no caller hands
+it that folder (`ssc backup create` and the scheduler pass `leagues.txt`, `league_sports.json` and the
+active `sofascore.toml`, the v1 backup job the first two); `restore` puts back `config/overrides.json`
+only (9.2). They are certificates, not keys, so nothing secret is missing from the archive; what is
+missing is the user's decision to trust them, which has to be made again on a new machine. Whether a
+backup should carry the folder is open (`03-implementation-plan.md` section 19).
+
 Since FX-23 (#171; finding F30 of the end-to-end test) a backup records the job that makes it. The web and
 scheduler `backup` jobs pass their id (`BackupManager.create(..., job_id=)`,
 `sofascore_scraper/store/backup.py:448` at `48e4c4c`), and the archive's copy of `state.db` holds that job
@@ -5251,6 +5273,16 @@ Corrections after the 3.0.0 release and the first 3.1 work (2026-10-09, the tent
      count and list a player's matches; no state migration. Section 7.3 (B2 #191).
 156. **The texts of `verify` and the scans are English.** Section 7.3 said they were still Turkish; B2 made
      them English and the CLI adds a localized description per code. Section 7.3 (B2 #191).
+
+Corrections after the 3.1.1 and 3.1.2 releases (2026-11-14, the twelfth revision; checked at `395b6e0`):
+
+157. **Three client modules on the allowlist.** Section 2.4 listed the allowlist without
+     `client/profile_lock.py` (FX-23) and without the two modules of the trusted certificates,
+     `client/trust.py` and `client/nssdb.py`. All three touch files outside `DATA_DIR` only. Section 2.4
+     (FX-23 #171, #230).
+158. **The `ca` folder is not in a backup.** Section 9 named what a backup takes from the config directory
+     before the folder existed. As built it takes none of it, and a restore does not bring it back.
+     Section 9.1 (#230).
 
 ---
 
