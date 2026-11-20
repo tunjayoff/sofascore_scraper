@@ -569,8 +569,51 @@ def pytest_runtest_protocol(item: "pytest.Item"):
     STORE_BOUNDARY.current_test = ""
 
 
+def _restore_environ(snapshot: Dict[str, str]) -> None:
+    """Süreç ortamını `snapshot`'a döndürür: eklenen ad silinir, silinen ya da değişen ad eski değerini alır."""
+    for name in [name for name in os.environ if name not in snapshot]:
+        del os.environ[name]
+    for name, value in snapshot.items():
+        if os.environ.get(name) != value:
+            os.environ[name] = value
+
+
 @pytest.fixture(autouse=True)
-def _isolate_request_layer(request, monkeypatch):
+def _restore_the_environment_and_resync_the_settings():
+    """
+    Her test, süreç ortamını bulduğu gibi bırakır. Ortama monkeypatch'siz yazan her yol burada geri alınır:
+    uygulama `.env`'i ortama yükler (python-dotenv; logger.setup_logger ayar değişiminde de yeniden yükler),
+    ayarlar API'si ve köprü ortama yazar, bir fixture monkeypatch.undo()'dan sonra kendi anlık görüntüsünü geri
+    yükleyip testin başında sabitlenmiş bir değeri ortamda bırakabilir. Önceden yalnızca 2.x adları siliniyordu;
+    ör. tests/test_slice_selection.py `sandbox`ının geri yüklediği SOFASCORE_CLIENT__MAX_CONCURRENT=5 sonraki
+    dosyalara taşınıp tests/test_config_loader.py ve `config show` testlerini bozuyordu.
+
+    Önce kurulur, en son kapanır (monkeypatch'in geri alımından da sonra): conftest'in öteki işlev kapsamlı
+    autouse fixture'ları onu ister. pytest autouse fixture'ları ada göre sıralar; bağımlılık olmasa
+    `_close_stores_opened_by_the_test` ve monkeypatch önce kurulurdu ve monkeypatch'in geri yüklediği bir değer
+    (ör. testin silmeden önce doğrudan yazdığı: tests/test_logger.py `reconfigure`) sonraki teste taşınırdı.
+    Anlık görüntü daha geniş kapsamlı fixture'lar kurulduktan sonra alınır; onların ortam değişiklikleri
+    (ör. modül kapsamlı TZ=UTC) korunur. Ardından etkin ayarlar geri alınmış ortamla yeniden kurulur (testin
+    değiştirdiği log seviyesi sonrakine taşınmaz); bu kurulum `.env`'i yeniden yükleyebildiği için ortam bir kez
+    daha geri alınır.
+    """
+    from sofascore_scraper.config import loader
+
+    snapshot = dict(os.environ)
+    yield
+    _restore_environ(snapshot)
+    # Günlükçü ayarları yeniden kurulumda izler (logger.follow_settings): seviyesi bir sonraki testin ilk
+    # satırlarına taşınmasın
+    try:
+        if loader.current() is not None:
+            loader.active()
+    except Exception:  # geçersiz bir ayarı sınayan test ortamı bırakmışsa: o testin sorunu, burada değil
+        pass
+    _restore_environ(snapshot)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_request_layer(_restore_the_environment_and_resync_the_settings, request, monkeypatch):
     """
     Her test temiz bir istek katmanıyla başlar: "önce tarayıcı" modu bir testten diğerine
     taşınmaz. `browser` işaretli olmayan testler gerçek bir tarayıcı başlatamaz.
@@ -605,30 +648,6 @@ def _isolate_request_layer(request, monkeypatch):
     yield
 
 
-@pytest.fixture(autouse=True)
-def _forget_2x_names_and_resync_the_settings():
-    """
-    2.x adlarıyla `.env` yazan bir test (eski kurulumun uyarısını sınayan) dosyayı süreç ortamına yükletebilir:
-    uygulama `.env`'i ortama yükler (python-dotenv, logger.setup_logger da). 3.1 bu adları okumaz ama her biri
-    için uyarı verir; sonraki testlerin uyarı listelerine taşınmasın diye test bitince ortamdan silinir. Ardından
-    etkin ayarlar geri alınmış ortamla yeniden kurulur (testin değiştirdiği log seviyesi sonrakine taşınmaz).
-    """
-    from sofascore_scraper.config import loader
-
-    before = {name for name in loader.LEGACY_NAMES if name in os.environ}
-    yield
-    for name in loader.LEGACY_NAMES:
-        if name in os.environ and name not in before:
-            del os.environ[name]
-    # Test ortamı (monkeypatch) geri aldı; ayarlar bir sonraki okumada yeniden kurulur. Günlükçü ayarları
-    # yeniden kurulumda izler (logger.follow_settings): seviyesi bir sonraki testin ilk satırlarına taşınmasın
-    try:
-        if loader.current() is not None:
-            loader.active()
-    except Exception:  # geçersiz bir ayarı sınayan test ortamı bırakmışsa: o testin sorunu, burada değil
-        pass
-
-
 @pytest.fixture(scope="session", autouse=True)
 def _planning_resync() -> None:
     """
@@ -651,7 +670,7 @@ def fake_pki() -> Any:
 
 
 @pytest.fixture(autouse=True)
-def _close_stores_opened_by_the_test():
+def _close_stores_opened_by_the_test(_restore_the_environment_and_resync_the_settings):
     """
     Testin `open_store` ile açtığı depolar test bitince kapatılır. Depolar süreç boyunca kayıt defterinde
     açık kalır (dizin başına bir tane); her testin kendi geçici dizinini açtığı bir oturumda bu, test başına

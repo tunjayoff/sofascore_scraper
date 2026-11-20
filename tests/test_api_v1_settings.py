@@ -51,14 +51,16 @@ def sandbox(monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     yield path
     if store.snapshot().get("is_running"):
         store.update(status="Cancelled", finished=True)
+    # Ortam da eski haline döner: eski ayar rotası yazdığı değeri ortamda bırakır, köprü de kendi yazdıklarını.
+    # monkeypatch'ten önce: anlık görüntü daha önce kurulan fixture'ların monkeypatch'le sabitlediklerini de
+    # taşır; undo()'dan sonra geri yüklenirse onları ortamda bırakırdı (tests/test_slice_selection.py `sandbox`)
+    for name in set(os.environ) - set(environ_before):
+        del os.environ[name]
+    os.environ.update(environ_before)
     monkeypatch.undo()
     for leftover in (path, Path(f"{path}.lock")):
         leftover.unlink(missing_ok=True)
     Path(conftest.ENV_FILE).write_bytes(env_before)
-    # Ortam da eski haline döner: eski ayar rotası yazdığı değeri ortamda bırakır, köprü de kendi yazdıklarını
-    for name in set(os.environ) - set(environ_before):
-        del os.environ[name]
-    os.environ.update(environ_before)
     loader.reload()
     redact.refresh()
     store.rebind(default_db_path(conftest.DATA_DIR))
