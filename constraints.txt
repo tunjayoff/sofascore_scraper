@@ -27,7 +27,7 @@ cffi==2.1.1
 click==8.5.1
 cssselect==1.5.0
 curl-cffi==0.17.0
-fastapi==0.162.4
+fastapi==0.162.5
 greenlet==3.5.6
 h11==0.16.0
 httpcore==1.0.9
@@ -49,10 +49,10 @@ pydantic-core==2.50.4
 pyee==13.0.1
 pygments==2.21.0
 pytest==9.2.0
-pytest-asyncio==1.4.1.post1
+pytest-asyncio==1.5.0
 python-dotenv==1.2.4
 rich==15.0.0
-ruff==0.17.4
+ruff==0.17.5
 sse-starlette==3.5.1
 starlette==1.7.0
 tld==0.13.2
