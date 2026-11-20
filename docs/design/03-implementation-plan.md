@@ -4082,6 +4082,19 @@ the eleventh):
   fight's 404; the pages' own matches answered 200); pinned in `DECIDED_AGAINST_THE_RULE` of
   `tests/test_sport_slices.py`.
 
+Settled on 2026-11-20 (the owner):
+
+- How the four deprecated names leave in 3.2 (`SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY`,
+  `PROXY_URL`). The decision of 2026-10-09 (above) and section 19 said they would become plain `legacy_name`
+  warnings like the other 2.x names. The owner chose instead that they **fail closed**. If one of them is set
+  and its setting is not given under the new name, loading the settings is a configuration error: exit code 2
+  in the CLI, the server and the container refuse to start, and `ssc doctor` fails with `config_removed_name`.
+  The message names the old variable, the new one and the release that removed it. With the new name set
+  too, the old one is ignored with a warning. The reason: two of them protect the server and two keep
+  requests on the proxy. An upgrade that quietly stopped reading them would run the server open, or send
+  requests from the user's own address, without a word. That is the fail-open FX-35 caught at the 3.1.0
+  release check. Section 19 records what was built.
+
 Open:
 
 - S1. Two SQLite files or one? The draft lists follows, `live_events` and jobs as catalog tables and also says the catalog can be deleted and rebuilt. Chosen: `catalog.db` fully derived, `.meta/state.db` for everything that cannot be rebuilt, included in every backup. Alternative: one file whose rebuild must preserve some tables and which must be in every backup. Reason: a corrupt or deleted catalog can never lose follows or job history.
@@ -5431,10 +5444,23 @@ How 3.1.1 and 3.1.2 were released, as far as the repository shows it:
 
 Open after 3.1.2 (the list after 3.1, brought up to 2026-11-14), in no fixed order:
 
-- **3.2: remove the four deprecated names.** `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY`
-  and `PROXY_URL` leave `loader.DEPRECATED_NAMES` and become plain `legacy_name` warnings like the other 2.x
-  names, the Docker entrypoint stops counting the old allow-list name, and the changelog of 3.2 says so
-  under Removed (owner, 2026-10-09; section 13). Reported and not changed by FX-35: without `API_BASE_URL` a
+- **3.2: remove the four deprecated names.** Done on 2026-11-20 (pull request `feat/retire-deprecated-names`;
+  in 3.2, not released). The plan said that `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and
+  `PROXY_URL` would leave `loader.DEPRECATED_NAMES` and become plain `legacy_name` warnings. The owner chose
+  that they fail closed instead (section 13, 2026-11-20). Built: no value is read from them any more, and
+  `DEPRECATED_NAMES` became `loader.GUARDED_NAMES`. If one of them is set (in the environment or in `.env`)
+  while its setting is not given by the environment name, a flag, or a variable named by `token_env` or
+  `proxy_env`, the loader raises `GuardedNameError`, a `ConfigError` (`config_invalid`, exit code 2). The
+  message names every blocking old name, where it is set, the environment name to set and "removed in 3.2",
+  never the value. The web app and the container do not start. `ssc doctor` fails, with a FAIL row in the
+  `env` check and the code `config_removed_name` in the `config` check. A value in the config file or
+  `overrides.json` does not count, because the old name used to override it. With the new name set too, the
+  old one is ignored with a `legacy_name` warning. Also removed: `replaced_by` (from the Settings API, `ssc
+  config show` and the Settings page), `Source.deprecated`, and the 3.1 rule that `PROXY_URL` alone does not
+  switch the proxy on. The Docker entrypoint no longer counts the old allow-list name. While that name is set
+  without the new one, the entrypoint does not fill in the local names, so `serve` stops with the loader's
+  message. The changelog has it under Removed, with an upgrade note (`02-services.md` 4.3 "Guarded names",
+  4.6). Reported and not changed by FX-35: without `API_BASE_URL` a
   user who pointed it at a relay or mirror sends requests straight to SofaScore from the user's own address,
   and without `SOFASCORE_THROTTLE_DIR`, `REQUEST_RATE_LIMIT` or `MAX_CONCURRENT` the request rate can rise
   (a block risk, not a privacy one); the warnings and `ssc doctor` name each one still set.

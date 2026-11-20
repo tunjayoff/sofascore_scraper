@@ -678,6 +678,13 @@ def check_config(ctx: Context) -> CheckResult:
         overrides = ctx.config_dir() / loader.OVERRIDES_FILE_NAME
         loaded = loader.load_settings(config_file=path, environ={**ctx.file_env, **ctx.environ},
                                       dotenv_values=ctx.file_env, overrides_file=overrides)
+    except loader.GuardedNameError as e:  # 3.2'de kalkan korumalı ad, yeni adı verilmeden (kapalı kalarak düşer)
+        detail["error"] = str(e)
+        detail["removed_names"] = list(e.names)
+        pairs = ", ".join("{} -> {}".format(name, loader.env_name(loader.GUARDED_NAMES[name])) for name in e.names)
+        return _result(ctx, "config", FAIL, "config_removed_name",
+                       ctx.t("doctor_config_removed_name", names=", ".join(e.names)),
+                       fix=ctx.t("doctor_config_removed_name_fix", pairs=pairs), detail=detail)
     except Exception as e:  # ConfigError: bozuk TOML, bilinmeyen anahtar, aralık dışı değer, eksik dosya
         detail["error"] = str(e)
         return _result(ctx, "config", FAIL, "config_invalid",
@@ -846,27 +853,36 @@ def check_frontend(ctx: Context, node_version: Callable[[], Optional[Tuple[int, 
 def _legacy_names(ctx: Context) -> List[Tuple[str, str, str, str]]:
     """
     Ortamda ya da `.env`'de duran 2.x adları (sofascore_scraper/config/loader.py `LEGACY_NAMES`): (ad, yerine geçen
-    ad, durum, yerine okunan kaynak). Durum loader.LEGACY_REMOVED (3.1 okumaz), LEGACY_READ (kullanımdan kalktı,
-    3.1'de hâlâ okunur, 3.2'de kalkar: `DEPRECATED_NAMES`) ya da LEGACY_IGNORED (kullanımdan kalktı; yeni adı da
-    verildiği için okunmadı). Yükleyici içe aktarılamıyorsa (paketler eksik) boş: eksik paketi `packages` denetimi
-    bildirir.
+    ad, durum, yerine okunan kaynak). Durum loader.LEGACY_REMOVED (3.1 okumaz), LEGACY_BLOCKED (korumalı dört addan
+    biri, `GUARDED_NAMES`: 3.2'de kalktı ve yeni adı verilmedi, ayarlar yüklenmez) ya da LEGACY_IGNORED (korumalı ad;
+    yeni adı da verildiği için yok sayıldı). Korumalı adın yerine geçen ad yalnızca ortam adıdır: dosyadaki değer onun
+    yerini tutmaz. Yükleyici içe aktarılamıyorsa (paketler eksik) boş: eksik paketi `packages` denetimi bildirir.
     """
     try:
         from sofascore_scraper.config import loader
     except Exception:
         return []
+    environ = {**ctx.file_env, **ctx.environ}
     named: Tuple[str, ...] = ()
-    sources = None
+    sources: Optional[Mapping[str, Any]] = None
     try:  # proxy_env / token_env'in adını verdiği değişken okunur: eski bir ad olsa da sorun değildir
         path, _disabled = _config_file(ctx)
         loaded = loader.load_settings(
-            config_file=path, environ={**ctx.file_env, **ctx.environ}, dotenv_values=ctx.file_env,
+            config_file=path, environ=environ, dotenv_values=ctx.file_env,
             overrides_file=ctx.config_dir() / loader.OVERRIDES_FILE_NAME)
         named, sources = loader.named_variables(loaded.settings), loaded.sources
-    except Exception:  # ayarlar kurulamıyor: `config` denetimi bildirir
-        pass
-    return [(name, loader.legacy_replacement(name), *loader.legacy_state(name, sources))
-            for name in loader.legacy_names_in(ctx.environ, ctx.file_env, named)]
+    except loader.GuardedNameError as e:  # korumalı ad: yükleyici o ana kadar kurduğu kaynakları verir
+        named, sources = e.named, e.sources
+    except Exception:  # ayarlar başka bir nedenle kurulamıyor (`config` denetimi bildirir): yalnızca ortamdan
+        sources = {key: loader.Source(loader.LAYER_ENV, loader.env_name(key))
+                   for key in loader.GUARDED_NAMES.values() if (environ.get(loader.env_name(key)) or "").strip()}
+    out = []
+    for name in loader.legacy_names_in(ctx.environ, ctx.file_env, named):
+        state, winner = loader.legacy_state(name, sources, named)
+        replacement = (loader.env_name(loader.GUARDED_NAMES[name]) if state == loader.LEGACY_BLOCKED
+                       else loader.legacy_replacement(name))
+        out.append((name, replacement, state, winner))
+    return out
 
 
 # Bir değişkenin bulunduğu yer: `.env` dosyası ya da sürecin ortamı (kabuk, hizmet dosyası, konteyner)
@@ -897,19 +913,22 @@ def _env_problems(ctx: Context) -> List[Tuple[str, str, str, str]]:
         problems.append((FAIL, "line {}".format(number), ctx.t("doctor_env_bad_line", line=number, text=text),
                          ORIGIN_FILE))
 
-    # 2.x'in adları 3.1'de okunmaz (plan maddesi P30): her biri bulunduğu yer ve yeni adıyla söylenir. Kullanımdan
-    # kalkan dördü 3.1'de hâlâ okunur (FX-35): ileti bunu ve 3.2'de kalkacaklarını, ya da yok sayıldıklarını söyler
+    # 2.x'in adları 3.1'de okunmaz (plan maddesi P30): her biri bulunduğu yer ve yeni adıyla söylenir. Korumalı
+    # dördü 3.2'de kalktı ve kapalı kalarak düşer: yeni adı verilmemişse ayarlar yüklenmez (FAIL), verilmişse eski ad
+    # yok sayılır (uyarı)
     for name, replacement, state, winner in _legacy_names(ctx):
         origin = _origin(ctx, name)
         where = (ctx.t("doctor_env_in_file", file=ctx.env_file.name) if origin == ORIGIN_FILE
                  else ctx.t("doctor_env_in_environ"))
-        if state == "read":
-            message = ctx.t("doctor_env_deprecated_name", name=name, where=where, new=replacement)
+        status = WARN
+        if state == "blocked":
+            status = FAIL
+            message = ctx.t("doctor_env_guarded_name", name=name, where=where, new=replacement)
         elif state == "ignored":
-            message = ctx.t("doctor_env_deprecated_ignored", name=name, where=where, winner=winner)
+            message = ctx.t("doctor_env_guarded_ignored", name=name, where=where, winner=winner)
         else:
             message = ctx.t("doctor_env_legacy_name", name=name, where=where, new=replacement)
-        problems.append((WARN, name, message, origin))
+        problems.append((status, name, message, origin))
 
     api = ctx.get(_ENV_BASE_URL)
     if api:

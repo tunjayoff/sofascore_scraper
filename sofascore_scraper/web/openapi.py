@@ -141,7 +141,9 @@ def _isolate(directory: str) -> None:
     os.environ["SOFASCORE_CONFIG"] = "none"
     os.environ.pop("SOFASCORE_SERVER__TOKEN", None)
     os.environ.pop("SOFASCORE_SERVER__TOKEN_ENV", None)
-    os.environ.pop("SOFASCORE_API_TOKEN", None)  # kullanımdan kalkan ad, 3.1'de hâlâ okunur (FX-35)
+    # 3.2'de kalkan korumalı adlar (loader.GUARDED_NAMES): yeni adları olmadan ortamda dururlarsa ayarlar yüklenmez
+    for name in ("SOFASCORE_API_TOKEN", "SOFASCORE_ALLOWED_HOSTS", "USE_PROXY", "PROXY_URL"):
+        os.environ.pop(name, None)
     # Günlükçü içe aktarılırken kurulur ve log dizinini oluşturur: ortam ondan önce hazır olmalı
     from sofascore_scraper.logger import set_console_stream
 

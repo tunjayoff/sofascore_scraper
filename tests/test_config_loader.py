@@ -256,8 +256,8 @@ def test_modules_read_the_effective_settings(monkeypatch, tmp_path):
 
 def test_legacy_names_are_not_read_and_each_one_names_its_replacement(monkeypatch):
     """
-    2.x'in adları 3.1'de okunmaz (plan maddesi P30): ayarları değiştirmez, her biri için bir uyarı. Kullanımdan
-    kalkan dördü (DEPRECATED_NAMES) okunur: tests/test_fx35_deprecated_names.py.
+    2.x'in adları 3.1'de okunmaz (plan maddesi P30): ayarları değiştirmez, her biri için bir uyarı. Korumalı dördü
+    (GUARDED_NAMES) 3.2'de kapalı kalarak düşer: tests/test_guarded_names.py.
     """
     env = {"MAX_CONCURRENT": "4", "REQUEST_RATE_LIMIT": "fast", "SAVE_EMPTY_ROUNDS": "true", "SOFA_CAPTCHA_TOKEN": "t"}
     loaded = _load(env=env, dotenv={"MAX_CONCURRENT": "4"})
@@ -667,10 +667,10 @@ def test_proxy_and_token_come_from_named_environment_variables(tmp_path):
     assert _load(tmp_path, toml=off).settings.client.use_proxy is False
     assert _load(tmp_path, toml='[client]\nproxy = "http://proxy.example.com:1"\n').settings.client.use_proxy is True
     assert _load(env={"SOFASCORE_CLIENT__PROXY": "http://proxy.example.com:1"}).settings.client.use_proxy is True
-    # Kullanımdan kalkan PROXY_URL ve SOFASCORE_API_TOKEN 3.1'de hâlâ okunur (FX-35); PROXY_URL, 3.0'daki gibi,
-    # proxy'yi tek başına açmaz (ayrıntılar: tests/test_fx35_deprecated_names.py). Diğer 2.x adları okunmaz
-    old = _load(env={"PROXY_URL": "http://proxy.example.com:1", "SOFASCORE_API_TOKEN": "abc"}).settings
-    assert (old.client.proxy, old.client.use_proxy, old.server.token) == ("http://proxy.example.com:1", False, "abc")
+    # 3.2'de kalkan PROXY_URL ve SOFASCORE_API_TOKEN hiç okunmaz: yeni adları olmadan dururlarsa ayarlar yüklenmez
+    # (ayrıntılar: tests/test_guarded_names.py). Diğer 2.x adları okunmaz
+    with pytest.raises(loader.GuardedNameError):
+        _load(env={"PROXY_URL": "http://proxy.example.com:1", "SOFASCORE_API_TOKEN": "abc"})
     assert _load(env={"SOFA_CAPTCHA_TOKEN": "abcdef"}).settings.client.captcha_token == ""
     # token_env boşsa SOFASCORE_SERVER__TOKEN
     plain = _load(tmp_path, toml='[server]\ntoken_env = ""\n', env={"SOFASCORE_SERVER__TOKEN": " abc "})
@@ -1148,8 +1148,8 @@ GETTERS = {
 @pytest.mark.parametrize("getter", sorted(GETTERS))
 def test_config_manager_getter_reads_the_effective_settings(active, monkeypatch, getter):
     """
-    Her getter etkin ayarı verir; ortam değişikliği bir sonraki çağrıda görülür. 2.x adı görülmez; kullanımdan
-    kalkan dördü (USE_PROXY, PROXY_URL; FX-35) 3.1'de görülür, yeni ad verilmişse o kazanır.
+    Her getter etkin ayarı verir; ortam değişikliği bir sonraki çağrıda görülür. 2.x adı görülmez; korumalı dördü
+    (USE_PROXY, PROXY_URL) hiç okunmaz: yeni ad olmadan ayarları yüklemez, yeni adla yok sayılır.
     """
     name, raw, expected = GETTERS[getter]
     key = name[len(loader.ENV_PREFIX):].lower().replace(loader.ENV_SEPARATOR, ".", 1)
@@ -1162,11 +1162,12 @@ def test_config_manager_getter_reads_the_effective_settings(active, monkeypatch,
     assert _same(read(), expected)
     monkeypatch.delenv(name)
     monkeypatch.setenv(old, raw)
-    if old in loader.DEPRECATED_NAMES:
-        assert _same(read(), expected)
+    if old in loader.GUARDED_NAMES:
+        with pytest.raises(loader.GuardedNameError):
+            read()
         monkeypatch.setenv(name, raw)
         monkeypatch.setenv(old, "false" if isinstance(expected, bool) else "http://other.example.com:2")
-        assert _same(read(), expected)  # yeni ad kazanır
+        assert _same(read(), expected)  # yeni ad geçerli, eski ad yok sayılır
     else:
         assert _same(read(), unset)
 

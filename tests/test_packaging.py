@@ -241,7 +241,9 @@ def test_entrypoint_starts_serve_on_every_interface_with_the_loopback_names(tmp_
     ({}, {"sofascore.toml": "schema = 1\n"}),
     ({}, {"config/sofascore.toml": "schema = 1\n"}),
     ({"SOFASCORE_CONFIG": "/somewhere/sofascore.toml"}, {}),
-    # Kullanımdan kalkan 2.x adı 3.1'de hâlâ okunur (FX-35): giriş noktası yeni adı yazıp onu ezmemeli
+    # 3.2'de kalkan 2.x adı liste sayılmaz ama giriş noktası yerel adları da yazmaz: yazsaydı eski ad yok sayılır ve
+    # konteyner kullanıcının listesi olmadan başlardı; `serve` ayarları yükleyemez ve durur
+    # (tests/test_guarded_names.py gerçek `serve` ile denetler)
     ({"SOFASCORE_ALLOWED_HOSTS": "box.lan"}, {}),
     ({}, {"config/.env": "SOFASCORE_ALLOWED_HOSTS=box.lan\n"}),
 ])

@@ -3574,8 +3574,8 @@ empty value in such a variable counts as not set (an empty secret too): it leave
 `SOFASCORE_ALLOWED_HOSTS`, `SOFASCORE_BROWSER_PROFILE`, …; the table `loader.LEGACY`, 38 names, and two
 language names), each parsed with the rule of the 2.x code that read it, below the new names, and logged a
 deprecation warning only when a config file was present. As built since P30 (#186;
-`sofascore_scraper/config/loader.py:276-391` at `216c2f9`) they are not read, except the four deprecated
-names below, which FX-35 (#196) reads again until 3.2. `LEGACY_NAMES` (40 names) maps each to its setting
+`sofascore_scraper/config/loader.py:276-391` at `216c2f9`) they are not read. The four guarded names below were
+read again by FX-35 (#196) in 3.1; since 3.2 they are not read either and fail closed. `LEGACY_NAMES` (40 names) maps each to its setting
 key, or to None for a removed setting (`SAVE_EMPTY_ROUNDS`), only to tell the user:
 
 - Every 2.x name that is set, non-empty, in the environment or in `.env` gives a `legacy_name` warning, with
@@ -3601,13 +3601,15 @@ key, or to None for a removed setting (`SAVE_EMPTY_ROUNDS`), only to tell the us
 - `ssc config init --from-legacy` writes the TOML equivalent of an old `.env`, with `proxy_env` and
   `token_env` pointing at the secret variables.
 
-**Deprecated names** (FX-35, #196; owner, 2026-10-09). 3.0.0's README and `docs/deploy` told users to protect
-the server with `SOFASCORE_API_TOKEN` and `SOFASCORE_ALLOWED_HOSTS`; P30 stopped reading them, so an upgrade
-would have dropped the access token and the host allow-list without a word, and `USE_PROXY` / `PROXY_URL`
-would have sent SofaScore's requests from the user's own address instead of the proxy. The table
-`loader.DEPRECATED_NAMES` keeps these four in 3.1 (`sofascore_scraper/config/loader.py:345-350` and
-`:1182-1193` at `054d8a2`); 3.2 removes them. The release check this taught, that no removed name may
-silently weaken security or privacy, is in section 8 of `03-implementation-plan.md`.
+**Guarded names** (FX-35, #196, owner 2026-10-09; removed in 3.2, owner's decision). 3.0.0's README and
+`docs/deploy` told users to protect the server with `SOFASCORE_API_TOKEN` and `SOFASCORE_ALLOWED_HOSTS`; P30
+stopped reading them, so an upgrade would have dropped the access token and the host allow-list without a
+word, and `USE_PROXY` / `PROXY_URL` would have sent SofaScore's requests from the user's own address instead
+of the proxy. FX-35 kept reading these four in 3.1, with a deprecation warning. 3.2 no longer reads them, and
+they do not become plain `legacy_name` warnings like the other 2.x names: they **fail closed** (the owner
+chose this over the plan's "plain warnings", `03-implementation-plan.md` section 13). The table is
+`loader.GUARDED_NAMES`. The release check this taught, that no removed name may silently weaken security or
+privacy, is in section 8 of `03-implementation-plan.md`.
 
 | Old name | Setting | New name |
 |---|---|---|
@@ -3616,31 +3618,41 @@ silently weaken security or privacy, is in section 8 of `03-implementation-plan.
 | `USE_PROXY` | `client.use_proxy` | `SOFASCORE_CLIENT__USE_PROXY` |
 | `PROXY_URL` | `client.proxy` | `SOFASCORE_CLIENT__PROXY` |
 
-- An old name is parsed like its new environment variable (the same `coerce`; a secret is stripped) and sits
-  in the environment layer: it wins over `sofascore.toml` and `overrides.json`, loses to a flag, and locks
-  the row like any environment value. Its `Source` has `deprecated=True`. A line of `.env` counts as the
-  environment, as for the new names.
-- **The new name wins.** When the new environment variable or a flag gives the setting, or, for the token
-  and the proxy address, `token_env` / `proxy_env` names a variable, the old name is not read and the
-  warning says it is ignored: `SOFASCORE_API_TOKEN (set in .env) is ignored because SOFASCORE_SERVER__TOKEN
-  is also set; SOFASCORE_API_TOKEN is deprecated and removed in 3.2: remove it.` A variable that `token_env`
-  or `proxy_env` names itself (what `config init --from-legacy` writes) is read through that setting and
-  gives no warning.
-- When it is read, the `legacy_name` warning says so: `SOFASCORE_API_TOKEN (set in the environment) is
-  deprecated; still read in 3.1, removed in 3.2; use SOFASCORE_SERVER__TOKEN.` `ssc doctor` says the same
-  (`doctor_env_deprecated_name`, `doctor_env_deprecated_ignored`), with the place of the name.
-- Each setting row of `GET /api/v1/settings` and `ssc config show` has `replaced_by`: the new name when the
-  value came from a deprecated one, else null (an additive API field). The text of `config show` reads
-  `server.token = "***"  [env: SOFASCORE_API_TOKEN, deprecated, use SOFASCORE_SERVER__TOKEN]`, and the
-  Settings page names the old variable in the lock (`05-web-ui.md` 6.16).
-- An invalid old value is a `ConfigError` naming the old variable (`USE_PROXY: expected true or false…`);
-  3.0 had read `USE_PROXY=maybe` as false.
-- `PROXY_URL` alone does not switch the proxy on, as in 2.x and 3.0: it needs `USE_PROXY=true` (D19's rule
-  below is for the new names).
-- A token from the old name is treated as one from the new name: environment only, locked, refused by
-  `PATCH /settings`, never written to `overrides.json`, masked everywhere; `security.token_variable()`
-  names `SOFASCORE_API_TOKEN` when it came from there. `USE_PROXY` and `PROXY_URL` are watched names, so a
-  change is seen without a reload.
+- **No value is ever taken from an old name.** Only whether it is set (non-empty, in the environment or in
+  `.env`) counts; an invalid old value is not parsed.
+- **Set without its new name: the settings do not load.** The loader raises `GuardedNameError`, a
+  `ConfigError` (`config_invalid`): every command that loads the settings exits with 2, the web app does not
+  start (its import reads the token and the allow-list), the Docker container stops at start, and `ssc
+  doctor` fails (below). One message names every blocking name, where it is set, the environment name to
+  set, and that it was removed in 3.2, never the value: `SOFASCORE_API_TOKEN (set in the environment) was
+  removed in 3.2 and is no longer read: set SOFASCORE_SERVER__TOKEN instead, or remove
+  SOFASCORE_API_TOKEN. The settings are not loaded, so that the access token is not dropped without a word.`
+- **"Given by its new name"** is exactly where 3.1 did not read the old name: the setting comes from the
+  environment layer (`SOFASCORE_*__*`) or a flag, or its value is read from the variable `token_env` /
+  `proxy_env` names, from any layer. A value in `sofascore.toml` or `overrides.json` does not count: the old
+  name sat in the environment layer and overrode it, so falling back to it would silently change what 3.1
+  used (a file's `use_proxy = false` would switch a proxy off). For `client.use_proxy`, a proxy given by its
+  new name or through `proxy_env` counts, since D19 then switches the proxy on. So `ssc serve
+  --allowed-hosts` with the old allow-list name still set also stops: the settings load before the flag of
+  `serve` is applied.
+- **Given by its new name too: a warning.** The old name is ignored, as the other 2.x names are:
+  `SOFASCORE_API_TOKEN (set in .env) is ignored because SOFASCORE_SERVER__TOKEN is also set;
+  SOFASCORE_API_TOKEN was removed in 3.2: remove it.` A variable that `token_env` or `proxy_env` names itself
+  (what `config init --from-legacy` writes) is read through that setting and gives no warning.
+- **`ssc doctor`.** The `env` check lists the name as FAIL (`doctor_env_guarded_name`) when it blocks and as a
+  WARN (`doctor_env_guarded_ignored`) when it is ignored, with its place; the `config` check fails with the
+  code `config_removed_name` (`doctor_config_removed_name`, the fix naming each `old -> new` pair, the names
+  in `detail.removed_names`). When the settings fail to load for another reason, the env check counts the new
+  environment name alone.
+- **Removed with the read path:** `Source.deprecated`, `LoadedSettings.replaced_by` and the `replaced_by`
+  field of the setting rows of `GET /api/v1/settings` and `ssc config show` (it only said that a value came
+  from an old name), the Settings page's lock text for it, the 3.1 rule that `PROXY_URL` alone does not
+  switch the proxy on, and the old token variable in `security.token_variable()`. A proxy given by its new
+  name is switched on by D19 whatever an old `USE_PROXY` says. The four stay watched names, so setting one
+  in a running process is seen at the next read. Their values stay masked in logs and the diagnostics bundle.
+- **Docker.** The entrypoint (4.6) does not count `SOFASCORE_ALLOWED_HOSTS` as an allow-list, and does not
+  fill in the local names while it is set without the new name either (that would make the old name
+  "ignored" and start the container without the user's list): `serve` stops with the loader's message.
 
 Every other 2.x name stays unread. FX-35 reported two more whose loss matters and left them as they are:
 without `API_BASE_URL` a user who pointed it at a relay or mirror sends requests straight to SofaScore from
@@ -3680,7 +3692,7 @@ unset variable stops the start of the web app.
 
 **Proxy.** In the config file, the environment and the flags, giving `proxy` or `proxy_env` switches the
 proxy on, unless `use_proxy = false` is set in the same or a stronger layer (2.x used a proxy only with
-`USE_PROXY=true`, and the deprecated `PROXY_URL` still needs it). The first version said nothing either way.
+`USE_PROXY=true`; that name is removed in 3.2, see "Guarded names"). The first version said nothing either way.
 
 **Lists.** `[slices.<sport>]` merges sport by sport across layers; `[[follow]]`, `[[sink]]` and
 `[[schedule.task]]` are replaced as a whole by the strongest layer that gives them. Sport names are checked
@@ -3761,7 +3773,8 @@ durability from its caller, as the plan said: the Store may not import the confi
 `sys.modules` and uses the defaults when no loader is loaded (`01-storage.md`).
 
 **What stops the start.** A broken config file, an unknown `SOFASCORE_*__*` variable, an invalid value under
-a new or a deprecated name or an invalid `overrides.json` raises `ConfigError` (`config_invalid`); the CLI renders it as exit
+a new name, one of the guarded 2.x names set without its new name (`GuardedNameError`) or an invalid
+`overrides.json` raises `ConfigError` (`config_invalid`); the CLI renders it as exit
 code 2 (since P18), with the file or the variable and the key in the message. `loader.reload()` re-reads the
 overrides file and the config file (not `.env`); if one of them is invalid the previous settings stay in
 force.
@@ -4026,9 +4039,9 @@ As built at `b3cb819` (P19 #119, P25 #125):
   `server.allowed_hosts` from the settings; `--allowed-hosts` goes into the flag layer, and a list derived
   from the bind address or given by the flag is also written to `SOFASCORE_SERVER__ALLOWED_HOSTS` for the
   reloading child process of `--dev` (`_apply_allowed_hosts`, `sofascore_scraper/cli/commands/serve.py:165-182`
-  at `216c2f9`). Since FX-35 (#196) a `--host 0.0.0.0` start also accepts a list given under the deprecated
-  `SOFASCORE_ALLOWED_HOSTS` (it comes from the settings, `allowed_hosts_from = "settings"`, and nothing is
-  written to the environment). The `*` warning of `sofascore_scraper/web/app.py` is still
+  at `216c2f9`). FX-35 (#196) let a `--host 0.0.0.0` start in 3.1 accept a list given under the deprecated
+  `SOFASCORE_ALLOWED_HOSTS`; since 3.2 that name is not read, and while it is set without
+  `SOFASCORE_SERVER__ALLOWED_HOSTS` `serve` does not start at all (4.3, "Guarded names"). The `*` warning of `sofascore_scraper/web/app.py` is still
   logged in Turkish (rule 8 of the plan; P30). English since FX-23 (PR #171; `sofascore_scraper/web/app.py:61`
   at `48e4c4c`), with the other start-up warnings of the web app.
 - **No SIGHUP reload.** Neither `watch` nor `serve` reloads anything on SIGHUP; a changed `[[sink]]`,
@@ -4053,10 +4066,12 @@ As built at `b3cb819` (P19 #119, P25 #125):
   works; the entrypoint is unchanged. D17 said
   only that the Compose example sets the allowed hosts. As built the entrypoint also exports the loopback
   names (`SOFASCORE_SERVER__ALLOWED_HOSTS=localhost,127.0.0.1,[::1]`) when no allow-list is set anywhere
-  (no `SOFASCORE_SERVER__ALLOWED_HOSTS` in the environment or the env file, no config file found; the
-  deprecated `SOFASCORE_ALLOWED_HOSTS` counts too, from either place: P30 had dropped it, so the exported
-  default would have overridden an old list, and FX-35 (#196) restored it until 3.2), so a plain `docker run`
-  keeps working; a config file disables that default. The Compose example adds an opt-in `ssc watch`
+  (no `SOFASCORE_SERVER__ALLOWED_HOSTS` in the environment or the env file, no config file found), so a
+  plain `docker run` keeps working; a config file disables that default. The 2.x `SOFASCORE_ALLOWED_HOSTS`
+  is not an allow-list since 3.2, but while it is set (in either place) without the new name the entrypoint
+  does not export the default either: the default would make the old name "ignored" and start the container
+  without the user's list. `serve` then stops with the loader's message and exit code 2, so the container
+  fails closed (FX-35 had counted the old name as a list until 3.2; 4.3, "Guarded names"). The Compose example adds an opt-in `ssc watch`
   service (`profiles: ["live"]`). The image creates `/app/browser-profile-live` for the app user, because
   `ssc watch` uses `<profile>-live` and `/app` belongs to root (not a volume; 8.4 and D10 did not mention
   Docker). Since FX-22 (#165) the Compose `sofascore-watch` service mounts the volume
@@ -6551,6 +6566,17 @@ The work has no plan item and is cited by pull request:
      stop other running copies of the app because they hold the browser profile: since FX-23 a second
      process opens a temporary profile next to it, so the hint now says to wait and to look at Health
      (`locales/en.json`, `locales/tr.json` `doctor_live_fix`; `sofascore_scraper/doctor.py` `check_live`).
+
+Corrections after the removal of the guarded 2.x names (2026-11-20, for 3.2; not released):
+
+168. **The four guarded 2.x names fail closed.** 4.3 described `SOFASCORE_API_TOKEN`,
+     `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` as read in 3.1 and removed in 3.2, and the plan
+     said they would then become plain `legacy_name` warnings. The owner chose instead that they fail
+     closed. Built: none of them is read. One of them set without its new name stops the settings from
+     loading (`GuardedNameError`, `config_invalid`, exit code 2; the web app and the container do not start;
+     the doctor's `config` check fails with `config_removed_name`). With the new name set too, it is ignored
+     with a warning. `replaced_by` and `Source.deprecated` are gone, and the Docker entrypoint does not count
+     the old allow-list name or fill in the local names while it is set (4.3, 4.6, 6).
 
 ---
 
