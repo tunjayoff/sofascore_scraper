@@ -67,7 +67,7 @@ w3lib==2.5.0
 # yükseltmeden önce `pytest -m "live and browser"` elle çalıştırılmalı.
 scrapling==0.5.1
 patchright==1.64.4
-playwright==1.65.0
+playwright==1.65.1
 
 # --- Python sürümüne bağlı sabitler ------------------------------------------------------------
 # numpy yalnızca isteğe bağlı `parquet` ekinin (pyarrow) bağımlılığıdır; pandas 3.0'da kalktı (FX-15). CI'ın
