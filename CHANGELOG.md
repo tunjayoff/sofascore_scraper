@@ -8,14 +8,43 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
-**Upgrading from 3.0 or 3.1:** if `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` or
-`PROXY_URL` is still set anywhere (`.env`, the shell, a service file, the container settings), rename
-it before you upgrade: `SOFASCORE_SERVER__TOKEN`, `SOFASCORE_SERVER__ALLOWED_HOSTS`,
-`SOFASCORE_CLIENT__USE_PROXY`, `SOFASCORE_CLIENT__PROXY` (or point `[server] token_env` /
-`[client] proxy_env` at the old variable). 3.1 printed a deprecation warning for each one. Otherwise
-nothing starts: every command stops with exit code 2, the web app and the container refuse to start, and
-`ssc doctor` fails with `config_removed_name`. Each message names the old variable and the one to set,
-never its value.
+## [3.2.0] - 2026-11-20
+
+3.2.0 removes the four 2.x environment names that 3.1 still read with a warning; set without their new
+names, they now stop the app. `ssc doctor --live` checks the way downloads really go, backups carry the
+certificates trusted for a network that re-signs HTTPS, and the browser profiles set aside after a
+challenge show in `/api/v1/status` and on the Health page. Like 3.1 it is installed from source: a
+checkout of the `v3.2.0` tag with `pip install -e .`, the release archive (the source with the built web
+app), or the Docker image `ghcr.io/tunjayoff/sofascore_scraper:3.2.0`. It is not published on PyPI.
+
+**Upgrading from 3.1** (also in the README, "Upgrading from 3.1"):
+
+- **Rename four environment names before you upgrade, or nothing starts.** `SOFASCORE_API_TOKEN`,
+  `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` are no longer read. If one of them is still set
+  anywhere (`.env`, the shell, a service file, the container settings) and its new name is not, nothing
+  starts: every command stops with exit code 2, the web app and the container refuse to start, and
+  `ssc doctor` fails with `config_removed_name`. Rename them:
+  `SOFASCORE_API_TOKEN` → `SOFASCORE_SERVER__TOKEN`, `SOFASCORE_ALLOWED_HOSTS` →
+  `SOFASCORE_SERVER__ALLOWED_HOSTS`, `USE_PROXY` → `SOFASCORE_CLIENT__USE_PROXY`, `PROXY_URL` →
+  `SOFASCORE_CLIENT__PROXY` (or point `[server] token_env` / `[client] proxy_env` at the old variable).
+  3.1 printed a deprecation warning for each one. `ssc doctor` shows every old name still set, where it is
+  set and the name to set; each message names the old variable and the one to set, never its value. See
+  "Removed" below.
+- **`ssc doctor --live` sends one request the way downloads do**, with the app's HTTP client, and uses the
+  built-in browser only when no browser profile gets through. It no longer starts the browser first; to
+  check the browser on its own, run `ssc doctor --live --browser`. A refusal or rate limit the request
+  could not get past is now a failure (`live_failed`).
+- **Backups now carry the trusted certificates** (the `ca` folder of the config directory), and a restore
+  puts them back. Backups from earlier versions restore as before; nothing to do.
+- Run `pip install -r requirements.txt -c constraints.txt` and `pip install -e .` again after updating a
+  checkout, as after every update.
+
+### Added
+
+- `ssc doctor --live --browser` also checks the built-in browser on its own line (`live_browser`).
+- `GET /api/v1/status` (and `/health`, `POST /status/check`) reports the browser profiles the server set
+  aside after a challenge: `connection.profiles {total, set_aside: [{name, until_utc}]}`. Health shows one
+  line when any is set aside.
 
 ### Changed
 
@@ -31,13 +60,8 @@ never its value.
   but other content, and never removes certificates that are not in the backup; the built-in browser
   is restarted to pick them up. `ssc backup verify` checks them. Backups from earlier versions restore
   as before, and 3.1.2 can still restore a backup made by this version (it skips the certificates).
-
-### Added
-
-- `ssc doctor --live --browser` also checks the built-in browser on its own line (`live_browser`).
-- `GET /api/v1/status` (and `/health`, `POST /status/check`) reports the browser profiles the server set
-  aside after a challenge: `connection.profiles {total, set_aside: [{name, until_utc}]}`. Health shows one
-  line when any is set aside.
+- Dependencies raised: `fastapi` 0.162.5 and `playwright` 1.65.1 (browser stack), and for development
+  `pytest-asyncio` 1.5.0, `ruff` 0.17.5, `jsdom` 31.0.1 and `@vitejs/plugin-vue` 6.0.11 (#236 to #239).
 
 ### Removed
 
@@ -1748,7 +1772,8 @@ terminal tool; the web interface arrived in April 2026 (reported as 1.0.0 by `/h
 was replaced by the Vue app on 2026-07-27, when the number became 2.0.0. See `git log` for
 details.
 
-[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.2...HEAD
+[Unreleased]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.2...v3.2.0
 [3.1.2]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.1...v3.1.2
 [3.1.1]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/tunjayoff/sofascore_scraper/compare/v3.0.0...v3.1.0
