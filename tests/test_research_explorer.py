@@ -970,9 +970,14 @@ async def test_explorer_records_every_request_under_an_image_flood(tmp_path, rat
                 t0 = time.monotonic()
                 res = await ex.goto({"url": "http://www.fakescore.test/page", "sport": "football",
                                      "page_type": "event", "settle": 2, "dwell": 90})
-                ex.active = False
                 assert res["error"] is None, res
-                assert await page.title() == str(N_API)
+                # `settle` is a quiet window (no API slot/response for 2 s), not "all page requests answered": under
+                # the flood the interceptor can stay quiet that long (e.g. before the first slot) and goto returns
+                # early. Wait for what the test means, every API answer reached the page, while the step is still
+                # active; only then end it (an inactive step would drop the requests still queued).
+                await page.wait_for_function(f"document.title === '{N_API}'",
+                                             timeout=(N_API * gap + 60) * 1000)
+                ex.active = False
                 elapsed = time.monotonic() - t0
                 for _ in range(120):  # selin sonu (görseller kesiciden geçmeye devam ediyor olabilir)
                     if ex.blocked >= FLOOD:
