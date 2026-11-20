@@ -15,10 +15,11 @@ Katmanlar, zayıftan güçlüye:
 ezmeden); oradaki SOFASCORE_*__* satırları ortam katmanıdır. 2.x'in ortam adları (DATA_DIR, MAX_CONCURRENT,
 APP_LANGUAGE...) 3.0'da bir sürüm daha okunuyordu; 3.1'de okunmaz (plan maddesi P30). Ortamda ya da `.env`'de
 duran eski ad bir uyarıdır (`legacy_name`): ileti yeni adı söyler (LEGACY_NAMES). `ssc doctor` ve
-`ssc config init --from-legacy` aynı tabloyu kullanır. İstisna: korumayı ya da gizliliği açan dört ad
-(SOFASCORE_API_TOKEN, SOFASCORE_ALLOWED_HOSTS, USE_PROXY, PROXY_URL; DEPRECATED_NAMES) 3.1'de okunmaya devam
-eder, kullanımdan kalktıklarını söyleyen bir uyarıyla; 3.2'de kalkarlar (plan maddesi FX-35, sahibin kararı
-2026-10-09).
+`ssc config init --from-legacy` aynı tabloyu kullanır. Korumayı ya da gizliliği taşıyan dört ad
+(SOFASCORE_API_TOKEN, SOFASCORE_ALLOWED_HOSTS, USE_PROXY, PROXY_URL; GUARDED_NAMES) 3.1'de bir uyarıyla hâlâ
+okunuyordu (plan maddesi FX-35); 3.2'de hiç okunmazlar ve kapalı kalarak düşerler (sahibin kararı): biri yeni adı
+verilmeden duruyorsa ayarlar yüklenmez (GuardedNameError, bir ConfigError), yeni adı da verilmişse eski ad
+diğerleri gibi bir uyarıdır.
 
 Ayarları okuyan modüller (throttle, refresh, logger, köprü sağlığı, devre kesici, istek katmanı...) değeri
 `active_settings()`ten alır; ortamdan doğrudan okumazlar. 3.0'ın geçiş köprüsü (etkin değeri eski adıyla
@@ -111,13 +112,11 @@ class _Reject(ValueError):
 @dataclass(frozen=True)
 class Source:
     """
-    Bir değerin geldiği yer: katman ve kaynağın adı (dosya yolu, ortam değişkeni, bayrak). `deprecated`: değer
-    kullanımdan kalkmış bir 2.x adından okundu (DEPRECATED_NAMES; katmanı ortamdır).
+    Bir değerin geldiği yer: katman ve kaynağın adı (dosya yolu, ortam değişkeni, bayrak).
     """
 
     layer: str
     name: str = ""
-    deprecated: bool = False
 
     @property
     def locked(self) -> bool:
@@ -283,7 +282,7 @@ def _resolve_path(value: str, base: Optional[Path]) -> str:
 
 
 # === 2.x'in ortam adları ===========================================================================
-# 3.0'a kadar okunan adlar, 3.1'de okunmaz (plan maddesi P30; dördü dışında, bkz. DEPRECATED_NAMES). Tablo
+# 3.0'a kadar okunan adlar, 3.1'de okunmaz (plan maddesi P30; dördü 3.2'ye kadar okundu, bkz. GUARDED_NAMES). Tablo
 # yalnızca kullanıcıya yeni adı söylemek içindir: yükleyicinin uyarısı (`legacy_name`), `ssc doctor` ve
 # `ssc config init --from-legacy`. Eski ad -> ayar anahtarı; anahtar None ise ayar kalktı (yeni adı yok).
 
@@ -333,23 +332,51 @@ LEGACY_NAMES: Mapping[str, Optional[str]] = MappingProxyType({
 })
 LEGACY_ENV_NAMES: Tuple[str, ...] = tuple(LEGACY_NAMES)
 
-# Kullanımdan kalkmış ama 3.1'de hâlâ okunan 2.x adları (plan maddesi FX-35, sahibin kararı 2026-10-09). 3.0'ın
-# belgeleri sunucuyu bunlarla korumayı söylüyordu: sessizce okunmasalar erişim belirteci ve Host izin listesi
-# kapanır, SofaScore istekleri yapılandırılmış proxy yerine kullanıcının kendi adresinden gider. 3.2'de kalkarlar.
+# Korumayı ya da gizliliği taşıyan 2.x adları. 3.0'ın belgeleri sunucuyu ilk ikisiyle korumayı söylüyordu; son
+# ikisi SofaScore isteklerini proxy'den geçirir. 3.1 onları bir uyarıyla hâlâ okuyordu (plan maddesi FX-35, sahibin
+# kararı 2026-10-09); 3.2'de hiç okunmazlar. Sessizce okunmamaları yükseltmede erişim belirtecini ve Host izin
+# listesini kapatır, istekleri kullanıcının kendi adresinden gönderirdi (3.1.0'ın sürüm denetiminde yakalanan açık
+# kalma, FX-35). Bu yüzden kapalı kalarak düşerler (sahibin kararı, 3.2):
 #
-# Kural: eski ad, yeni adının ortam değişkeni gibi okunur (aynı ayrıştırma, aynı gizli değer işlemi) ve ortam
-# katmanındadır: yapılandırma dosyasını ve overrides.json'ı, 3.0'daki gibi, ezer. Ayar yeni ortam adıyla ya da bir
-# bayrakla verildiyse eski ad okunmaz; belirteç için `token_env`, proxy adresi için `proxy_env` bir değişken adı
-# verdiyse de. Okunmayan eski ad da bir uyarıdır (yok sayıldığını söyler). 3.0'daki gibi PROXY_URL tek başına
-# proxy'yi açmaz (karar D19 yalnızca yeni adlar içindir): USE_PROXY=true gerekir.
-DEPRECATED_NAMES: Mapping[str, str] = MappingProxyType({
+#   * eski ad duruyor ve ayar yeni adıyla verilmemiş: ayarlar yüklenmez (GuardedNameError; CLI'de çıkış kodu 2,
+#     sunucu başlamaz, `ssc doctor` FAIL). İleti eski adı, yerine geçen ortam adını ve 3.2'de kalktığını söyler;
+#     değeri yazmaz.
+#   * yeni adıyla da verilmiş: eski ad diğer 2.x adları gibi yok sayılır ve bir uyarıdır (`legacy_name`).
+#
+# "Yeni adıyla verilmiş", 3.1'in eski adı okumadığı durumdur: ayar ortam katmanından (SOFASCORE_*__*) ya da bir
+# bayraktan gelir, ya da değeri `token_env` / `proxy_env`in adını verdiği değişkenden okunur (yeni yapılandırma;
+# `ssc config init --from-legacy` eski adı da böyle adlandırır, o zaman eski ad okunan değişkendir, sorun değildir).
+# Yapılandırma dosyasındaki ya da overrides.json'daki değer saymaz: eski ad ortam katmanındaydı ve onları ezerdi;
+# onlara düşmek 3.1'in kullandığı değeri sessizce değiştirirdi (örneğin dosyadaki `use_proxy = false`).
+GUARDED_NAMES: Mapping[str, str] = MappingProxyType({
     "SOFASCORE_API_TOKEN": "server.token",
     "SOFASCORE_ALLOWED_HOSTS": "server.allowed_hosts",
     "USE_PROXY": "client.use_proxy",
     "PROXY_URL": "client.proxy",
 })
-DEPRECATED_LAST_READ_IN = "3.1"
-DEPRECATED_REMOVED_IN = "3.2"
+GUARDED_REMOVED_IN = "3.2"
+# İletide korunan şey: düşmemesi için ayarlar yüklenmez
+_GUARDED_PROTECTS: Mapping[str, str] = MappingProxyType({
+    "SOFASCORE_API_TOKEN": "the access token",
+    "SOFASCORE_ALLOWED_HOSTS": "the Host allow-list",
+    "USE_PROXY": "the proxy",
+    "PROXY_URL": "the proxy",
+})
+
+
+class GuardedNameError(ConfigError):
+    """
+    GUARDED_NAMES'ten biri yeni adı verilmeden duruyor: ayarlar yüklenmez (`config_invalid`, çıkış kodu 2).
+    `names`: engelleyen eski adlar (tablo sırasıyla); `sources` ve `named`: yükleyicinin o ana kadar kurduğu
+    kaynaklar ve adı verilen değişkenler (`ssc doctor` her adın durumunu bunlarla söyler).
+    """
+
+    def __init__(self, message: str, names: Sequence[str], sources: Mapping[str, Source], named: Sequence[str]):
+        super().__init__(message)
+        self.names = tuple(names)
+        self.sources = MappingProxyType(dict(sources))
+        self.named = tuple(named)
+
 
 # 3.1'de kalkan ayarlar: dosyada, overrides.json'da ya da SOFASCORE_*__* adıyla verilirse hata değil uyarıdır
 # (3.0'ın Ayarlar sayfası onu overrides.json'a yazmış olabilir). Anahtar -> neden.
@@ -357,9 +384,9 @@ RETIRED_SETTINGS: Mapping[str, str] = MappingProxyType({
     "fetch.save_empty_rounds": "a round without a match is never stored",
 })
 
-# Değeri değişince ayarların yeniden kurulması gereken, önekle bulunamayan adlar: sistem dili ve hâlâ okunan
-# eski adlar (USE_PROXY, PROXY_URL)
-_WATCHED_ENV: Tuple[str, ...] = tuple(language.LOCALE_KEYS) + tuple(DEPRECATED_NAMES)
+# Değeri değişince ayarların yeniden kurulması gereken, önekle bulunamayan adlar: sistem dili ve ayarları
+# yüklenmez kılabilen eski adlar (GUARDED_NAMES)
+_WATCHED_ENV: Tuple[str, ...] = tuple(language.LOCALE_KEYS) + tuple(GUARDED_NAMES)
 
 
 def env_name(key: str) -> str:
@@ -400,23 +427,30 @@ def named_variables(settings: Settings) -> Tuple[str, ...]:
 
 
 LEGACY_REMOVED = "removed"    # 3.1 okumaz (P30)
-LEGACY_READ = "read"          # kullanımdan kalktı, 3.1'de okunuyor (DEPRECATED_NAMES)
-LEGACY_IGNORED = "ignored"    # kullanımdan kalktı; yeni adı da verildiği için okunmadı
+LEGACY_BLOCKED = "blocked"    # GUARDED_NAMES: 3.2'de kalktı, yeni adı verilmedi: ayarlar yüklenmez
+LEGACY_IGNORED = "ignored"    # GUARDED_NAMES: 3.2'de kalktı, yeni adı da verildiği için yok sayıldı
 
 
-def legacy_state(name: str, sources: Optional[Mapping[str, Source]] = None) -> Tuple[str, str]:
+def _given_by_new_name(source: Source, named: Sequence[str]) -> bool:
+    """Ayar, korumalı eski adın yerine geçecek biçimde verilmiş mi (GUARDED_NAMES'in kuralı)."""
+    return _rank(source) >= _rank(Source(LAYER_ENV)) or (bool(source.name) and source.name in named)
+
+
+def legacy_state(name: str, sources: Optional[Mapping[str, Source]] = None,
+                 named: Sequence[str] = ()) -> Tuple[str, str]:
     """
-    Ortamda duran eski bir adın durumu ve (yok sayıldıysa) yerine okunan kaynağın adı: (LEGACY_*, ad). `sources`:
-    yükleyicinin kaynakları; verilmezse kullanımdan kalkan ad okunuyor sayılır.
+    Ortamda duran eski bir adın durumu ve (yok sayıldıysa) yerine okunan kaynağın adı: (LEGACY_*, ad). `sources`
+    ve `named`: yükleyicinin kaynakları (proxy ve belirteç çözülmüş) ve adı verilen değişkenler; verilmezse
+    (ayarlar kurulamadı) korumalı ad engelleyici sayılır.
     """
-    key = DEPRECATED_NAMES.get(name)
+    key = GUARDED_NAMES.get(name)
     if key is None:
         return LEGACY_REMOVED, ""
     if sources is None:
-        return LEGACY_READ, ""
+        return LEGACY_BLOCKED, ""
     source = sources.get(key, _DEFAULT_SOURCE)
-    if source.deprecated and source.name == name:
-        return LEGACY_READ, ""
+    if not _given_by_new_name(source, named):
+        return LEGACY_BLOCKED, ""
     return LEGACY_IGNORED, "a command-line flag" if source.layer == LAYER_FLAG else (source.name or key)
 
 
@@ -426,42 +460,45 @@ def legacy_origin(name: str, environ: Mapping[str, str], dotenv_values: Mapping[
     return ".env" if in_file and environ.get(name) in (None, dotenv_values.get(name)) else "the environment"
 
 
+def guarded_message(names: Sequence[str], environ: Mapping[str, str],
+                    dotenv_values: Mapping[str, str] = MappingProxyType({})) -> str:
+    """
+    Engelleyen korumalı adların hata iletisi (GuardedNameError): her ad, durduğu yer ve yerine geçen ortam adı;
+    sonra neden yüklenmediği. Değerler yazılmaz.
+    """
+    parts = [f"{name} (set in {legacy_origin(name, environ, dotenv_values)}) was removed in {GUARDED_REMOVED_IN} "
+             f"and is no longer read: set {env_name(GUARDED_NAMES[name])} instead, or remove {name}"
+             for name in names]
+    protects: List[str] = []
+    for name in names:
+        if _GUARDED_PROTECTS[name] not in protects:
+            protects.append(_GUARDED_PROTECTS[name])
+    what = protects[0] if len(protects) == 1 else ", ".join(protects[:-1]) + " and " + protects[-1]
+    verb = "is" if len(protects) == 1 else "are"
+    return "; ".join(parts) + f". The settings are not loaded, so that {what} {verb} not dropped without a word."
+
+
 def legacy_warnings(environ: Mapping[str, str], dotenv_values: Mapping[str, str] = MappingProxyType({}),
                     named: Sequence[str] = (), sources: Optional[Mapping[str, Source]] = None) -> List["ConfigWarning"]:
     """
-    Her eski ad için bir uyarı (`legacy_name`): okunmadığını ve yerine geçen adı söyler. Kullanımdan kalkan ad
-    (DEPRECATED_NAMES) için: 3.1'de hâlâ okunduğunu ve 3.2'de kalkacağını, ya da yeni adı da verildiği için yok
-    sayıldığını söyler.
+    Her eski ad için bir uyarı (`legacy_name`): okunmadığını ve yerine geçen adı söyler. Korumalı ad (GUARDED_NAMES)
+    yeni adı da verildiği için yok sayıldıysa bunu söyler; yeni adı verilmemişse yükleyici zaten hata verir
+    (burada yine de söylenir: `sources` verilmeden çağrılırsa).
     """
     out: List[ConfigWarning] = []
     for name in legacy_names_in(environ, dotenv_values, named):
         where = legacy_origin(name, environ, dotenv_values)
-        state, winner = legacy_state(name, sources)
-        if state == LEGACY_READ:
-            message = (f"{name} (set in {where}) is deprecated; still read in {DEPRECATED_LAST_READ_IN}, removed in "
-                       f"{DEPRECATED_REMOVED_IN}; use {legacy_replacement(name)}.")
-        elif state == LEGACY_IGNORED:
-            message = (f"{name} (set in {where}) is ignored because {winner} is also set; {name} is deprecated "
-                       f"and removed in {DEPRECATED_REMOVED_IN}: remove it.")
+        state, winner = legacy_state(name, sources, named)
+        if state == LEGACY_IGNORED:
+            message = (f"{name} (set in {where}) is ignored because {winner} is also set; {name} was removed in "
+                       f"{GUARDED_REMOVED_IN}: remove it.")
+        elif state == LEGACY_BLOCKED:
+            message = (f"{name} (set in {where}) was removed in {GUARDED_REMOVED_IN} and is no longer read: set "
+                       f"{env_name(GUARDED_NAMES[name])} instead, or remove {name}.")
         else:
             message = f"{name} (set in {where}) is no longer read since 3.1; use {legacy_replacement(name)}."
         out.append(ConfigWarning("legacy_name", message))
     return out
-
-
-def _deprecated_value(name: str, key: str, raw: str, base: Optional[Path]) -> Any:
-    """Kullanımdan kalkan adın değeri, yeni adının ortam değişkeni gibi ayrıştırılmış (_new_env_layer)."""
-    section, _, field_name = key.partition(".")
-    f = model.SETTING_KEYS[section][field_name]
-    try:
-        value = coerce(f, raw, text=True)
-    except _Reject as e:
-        raise ConfigError(f"{name}: {e}") from None
-    if f.metadata["kind"] == model.KIND_PATH:
-        value = _resolve_path(value, base)
-    if f.metadata["secret"]:
-        value = value.strip()
-    return value
 
 
 # === dosyalar ======================================================================================
@@ -1017,14 +1054,9 @@ class LoadedSettings:
     def source(self, key: str) -> Source:
         return self.sources.get(key, _DEFAULT_SOURCE)
 
-    def replaced_by(self, key: str) -> Optional[str]:
-        """Değer kullanımdan kalkan bir 2.x adından okunduysa (DEPRECATED_NAMES) yerine kullanılacak ad; yoksa None."""
-        return env_name(key) if self.source(key).deprecated else None
-
     def describe(self, *, mask_secrets: bool = True) -> List[Dict[str, Any]]:
         """
-        Her sayıl ayar için bir satır: anahtar, değer (gizliler maskeli), kaynak, kilitli mi, ve değer kullanımdan
-        kalkan bir 2.x adından okunduysa yerine kullanılacak ad (`replaced_by`); sonra listeler.
+        Her sayıl ayar için bir satır: anahtar, değer (gizliler maskeli), kaynak, kilitli mi; sonra listeler.
         """
         rows: List[Dict[str, Any]] = []
         for key, f in model.iter_settings():
@@ -1035,7 +1067,6 @@ class LoadedSettings:
             rows.append({
                 "key": key, "value": list(value) if isinstance(value, tuple) else value,
                 "source": source.layer, "from": source.name, "locked": source.locked,
-                "replaced_by": self.replaced_by(key),
             })
         for key, value in (
             ("slices", {sport: _override_row(override) for sport, override in self.settings.slices.items()}),
@@ -1044,8 +1075,7 @@ class LoadedSettings:
             ("schedule.tasks", [_task_row(task, mask_secrets) for task in self.settings.schedule.tasks]),
         ):
             source = self.source(key)
-            rows.append({"key": key, "value": value, "source": source.layer, "from": source.name, "locked": source.locked,
-                         "replaced_by": None})
+            rows.append({"key": key, "value": value, "source": source.layer, "from": source.name, "locked": source.locked})
         return rows
 
 
@@ -1179,19 +1209,6 @@ def _build(
     # proxy_env / token_env'in adını verdiği değişken okunur: eski bir ad olsa da uyarı verilmez
     named = tuple(name for name in (proxy_env, token_env) if name)
 
-    # Kullanımdan kalkan 2.x adları (DEPRECATED_NAMES; plan maddesi FX-35): ayar yeni ortam adıyla ya da bayrakla
-    # verilmediyse (belirteç ve proxy adresi için token_env / proxy_env de bir değişken adı vermediyse) okunur
-    for name, key in DEPRECATED_NAMES.items():
-        raw = env.get(name) or ""
-        if not raw.strip() or name in named:
-            continue
-        if _rank(sources.get(key, _DEFAULT_SOURCE)) >= _rank(Source(LAYER_ENV)):
-            continue
-        if (key == "client.proxy" and proxy_env) or (key == "server.token" and token_env):
-            continue
-        values[key] = _deprecated_value(name, key, raw, base)
-        sources[key] = Source(LAYER_ENV, name, deprecated=True)
-
     # Proxy: proxy_env değişkenin adını verir. Aynı ya da daha güçlü katmandan geliyorsa `proxy`nin yerini alır.
     proxy_source = sources.get("client.proxy", _DEFAULT_SOURCE)
     proxy_env_source = sources.get("client.proxy_env", _DEFAULT_SOURCE)
@@ -1201,11 +1218,9 @@ def _build(
         if _rank(proxy_env_source) >= _rank(proxy_source):
             values["client.proxy"] = _named_secret(env, proxy_env, f"{proxy_env_source.name}: [client] proxy_env")
             proxy_source = sources["client.proxy"] = Source(proxy_env_source.layer, proxy_env)
-    # Bir proxy verildiyse ve daha güçlü bir yerde use_proxy söylenmediyse proxy kullanılır (karar D19). Eski
-    # PROXY_URL ise 3.0'daki gibi tek başına açmaz: USE_PROXY=true gerekir
+    # Bir proxy verildiyse ve daha güçlü bir yerde use_proxy söylenmediyse proxy kullanılır (karar D19)
     use_source = sources.get("client.use_proxy", _DEFAULT_SOURCE)
-    if values["client.proxy"] and proxy_source.layer != LAYER_DEFAULT and not proxy_source.deprecated \
-            and _rank(use_source) < _rank(proxy_source):
+    if values["client.proxy"] and proxy_source.layer != LAYER_DEFAULT and _rank(use_source) < _rank(proxy_source):
         values["client.use_proxy"] = True
         sources["client.use_proxy"] = proxy_source
 
@@ -1214,6 +1229,13 @@ def _build(
     if token_env and _rank(token_env_source) >= _rank(sources.get("server.token", _DEFAULT_SOURCE)):
         values["server.token"] = _named_secret(env, token_env, f"{token_env_source.name}: [server] token_env")
         sources["server.token"] = Source(token_env_source.layer, token_env)
+
+    # Korumalı 2.x adları (GUARDED_NAMES; sahibin kararı, 3.2): yeni adı verilmeden duran biri ayarları yüklemez.
+    # Değeri hiçbir zaman okunmaz
+    blocked = [name for name in legacy_names_in(env, dotenv_values, named)
+               if legacy_state(name, sources, named)[0] == LEGACY_BLOCKED]
+    if blocked:
+        raise GuardedNameError(guarded_message(blocked, env, dotenv_values), blocked, sources, named)
 
     # sofascore_scraper/bridge_health.thresholds: "engelli" eşiği "bozulmuş" eşiğinin altında olamaz
     values["bridge.blocked_after"] = max(values["bridge.blocked_after"], values["bridge.degraded_after"])
@@ -1227,8 +1249,8 @@ def _build(
             warnings.append(ConfigWarning(
                 "retired_setting", f"{where} is no longer read since 3.1: {RETIRED_SETTINGS[key]}.",
             ))
-    # 2.x'in ortam adları okunmaz: her biri için yeni adı söyleyen bir uyarı (plan maddesi P30); kullanımdan
-    # kalkan dördü için okunduğunu ya da yok sayıldığını söyleyen bir uyarı (FX-35)
+    # 2.x'in ortam adları okunmaz: her biri için yeni adı söyleyen bir uyarı (plan maddesi P30); korumalı dördü
+    # buraya yalnızca yeni adları da verilmişse gelir: yok sayıldıklarını söyleyen bir uyarı
     warnings.extend(legacy_warnings(env, dotenv_values, named, sources))
 
     sections = {
@@ -1428,13 +1450,13 @@ __all__ = [
     "LAYER_FILE",
     "LAYER_FLAG",
     "LAYER_OVERRIDES",
-    "DEPRECATED_LAST_READ_IN",
-    "DEPRECATED_NAMES",
-    "DEPRECATED_REMOVED_IN",
+    "GUARDED_NAMES",
+    "GUARDED_REMOVED_IN",
+    "GuardedNameError",
+    "LEGACY_BLOCKED",
     "LEGACY_ENV_NAMES",
     "LEGACY_IGNORED",
     "LEGACY_NAMES",
-    "LEGACY_READ",
     "LEGACY_REMOVED",
     "RETIRED_SETTINGS",
     "TOKEN_ENV",
@@ -1449,6 +1471,7 @@ __all__ = [
     "current",
     "env_name",
     "find_config_file",
+    "guarded_message",
     "legacy_names_in",
     "legacy_origin",
     "legacy_state",

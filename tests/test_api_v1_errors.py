@@ -25,6 +25,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from sofascore_scraper import redact
+from sofascore_scraper.config import loader
 from sofascore_scraper.errors import (
     ERROR_TABLE,
     ERRORS,
@@ -649,15 +650,16 @@ def test_the_default_token_variable_works_without_a_config_file(monkeypatch: pyt
     assert security.token_variable() == "SOFASCORE_SERVER__TOKEN"
 
 
-def test_the_deprecated_2x_token_variable_is_still_read(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_removed_2x_token_variable_is_never_read_and_never_drops_the_token(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    3.1: kullanımdan kalkan SOFASCORE_API_TOKEN hâlâ okunur (FX-35; 3.2'de kalkar): koruma sessizce kapanmaz.
-    İletiler belirtecin okunduğu adı söyler. `token_env` onu adıyla da verebilir; yeni ad verilmişse o kazanır.
+    3.2: SOFASCORE_API_TOKEN kalktı ve okunmaz; yeni adı olmadan duruyorsa belirteç sessizce kapanmaz, ayarlar
+    yüklenmez (kapalı kalarak düşer). Yeni ad verilmişse o geçerlidir; `token_env` onu adıyla da verebilir.
     """
     monkeypatch.delenv(security.TOKEN_ENV, raising=False)
     monkeypatch.setenv("SOFASCORE_API_TOKEN", TOKEN)
-    assert security.api_token() == TOKEN == deps.server_token()
-    assert security.token_variable() == "SOFASCORE_API_TOKEN"
+    with pytest.raises(loader.GuardedNameError, match="SOFASCORE_API_TOKEN .* removed in 3.2") as refused:
+        security.api_token()
+    assert TOKEN not in str(refused.value)
     monkeypatch.setenv(security.TOKEN_ENV, "x" * 40)
     assert security.api_token() == "x" * 40 and security.token_variable() == "SOFASCORE_SERVER__TOKEN"
     monkeypatch.delenv(security.TOKEN_ENV)

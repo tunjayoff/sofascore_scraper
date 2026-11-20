@@ -166,16 +166,15 @@ describe('Settings', () => {
     expect(row('brand.new_key').text()).toContain('brand.new_key')
   })
 
-  it('a value read from a deprecated 2.x name is locked and names the variable to use instead', async () => {
+  it('a secret set in the environment is locked, names its variable and is never shown', async () => {
     const token = setting('server.token', '***', {
-      source: 'env', source_name: 'SOFASCORE_API_TOKEN', locked: true, writable: false, secret: true, replaced_by: 'SOFASCORE_SERVER__TOKEN',
+      source: 'env', source_name: 'SOFASCORE_SERVER__TOKEN', locked: true, writable: false, secret: true,
     })
     mockFetch({ 'GET /api/v1/settings': { data: settingsDoc([...SETTINGS, token]) }, 'GET /api/v1/status': { data: status() } })
     ;({ w, router } = await mountScreen('/settings?tab=server'))
     await flush()
     const lock = row('server.token').find('[data-testid="lock"]').text()
-    expect(lock).toBe(t('ui.settings.lock.envDeprecated', { name: 'SOFASCORE_API_TOKEN', replacement: 'SOFASCORE_SERVER__TOKEN' }))
-    expect(lock).toContain('3.2')
+    expect(lock).toBe(t('ui.settings.lock.env', { name: 'SOFASCORE_SERVER__TOKEN' }))
     expect(row('server.token').find('input').exists()).toBe(false)
     expect(row('server.token').findAll('button').some((b) => b.text() === t('ui.settings.replace'))).toBe(false)
     expect(row('server.token').text()).not.toContain('***')

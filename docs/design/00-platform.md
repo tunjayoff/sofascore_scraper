@@ -395,7 +395,9 @@ and an old flag (`--headless`, `--watch`, `--web`, `--doctor`, …) is a usage e
 command replacing it; the backup scopes are `all`, `state` and `data`; the 2.x environment names are no
 longer read, except four that protect the server or the user's address (`SOFASCORE_API_TOKEN`,
 `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY`, `PROXY_URL`), which 3.1 still reads with a deprecation warning and
-3.2 removes (PR #196). The environment overrides a setting as `SOFASCORE_<SECTION>__<KEY>`, and the lines of `.env`
+3.2 removes (PR #196). In 3.2 they fail closed (owner's decision): one of them set without its new name stops
+the settings from loading, so no upgrade runs the server open or sends requests from the user's address
+(`02-services.md` 4.3). The environment overrides a setting as `SOFASCORE_<SECTION>__<KEY>`, and the lines of `.env`
 are part of the environment (section 13); a 2.x name that is still set gets a warning naming its
 replacement in `ssc config show`, `config validate`, `ssc doctor` and the diagnostics bundle, an invalid
 value is a configuration error, and `ssc config init --from-legacy` turns an old `.env` into a config file.

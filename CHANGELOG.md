@@ -8,6 +8,15 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+**Upgrading from 3.0 or 3.1:** if `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` or
+`PROXY_URL` is still set anywhere (`.env`, the shell, a service file, the container settings), rename
+it before you upgrade: `SOFASCORE_SERVER__TOKEN`, `SOFASCORE_SERVER__ALLOWED_HOSTS`,
+`SOFASCORE_CLIENT__USE_PROXY`, `SOFASCORE_CLIENT__PROXY` (or point `[server] token_env` /
+`[client] proxy_env` at the old variable). 3.1 printed a deprecation warning for each one. Otherwise
+nothing starts: every command stops with exit code 2, the web app and the container refuse to start, and
+`ssc doctor` fails with `config_removed_name`. Each message names the old variable and the one to set,
+never its value.
+
 ### Changed
 
 - `ssc doctor --live` sends one request the way downloads do: with the app's HTTP client, other browser
@@ -25,6 +34,25 @@ below (see "Releasing" in the README).
 
 ### Removed
 
+- **`SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` are no longer
+  read** (deprecated in 3.1). Unlike the other 2.x names, which are only warnings, these four fail
+  closed. Two of them protect the web app (the access token and the Host allow-list), and two send
+  SofaScore requests through a proxy. If the app quietly stopped reading them, an upgrade would run the
+  web app without its token or allow-list, or send requests from your own address, without a word. So
+  when one of them is set and its new name is not, the settings are not loaded: a configuration error
+  (`config_invalid`, exit code 2) that names the old variable, the new one and the release that removed
+  it. If the new name is set too, the old one is ignored with a warning, like the other 2.x names. A value
+  in the config file does not take the place of the new name, because the old variable used to override
+  the file. `[server] token_env` or `[client] proxy_env` naming another variable does count, and
+  naming the old variable itself, as `ssc config init --from-legacy` does, still works. A value is never
+  taken from an old name. A proxy given under the new name now switches the proxy on, whatever an old
+  `USE_PROXY` says.
+- **Docker:** the entrypoint no longer counts `SOFASCORE_ALLOWED_HOSTS` as an allow-list. If the old name is
+  set without `SOFASCORE_SERVER__ALLOWED_HOSTS`, the entrypoint does not fill in the local names either.
+  The container stops at start with the message above instead of starting without your list.
+- `replaced_by` on the settings of `GET /api/v1/settings` and on the rows of `ssc config show --json`
+  (added in 3.1 for the four names; no value comes from an old name any more). The Settings page no
+  longer has the "Set by the old environment variable" lock text.
 - Internal: unused helpers removed (no command, route, setting or file format changes).
 
 ### Fixed

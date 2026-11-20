@@ -81,10 +81,11 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"   # a long random v
 
 Set it as `SOFASCORE_SERVER__TOKEN` in the service's environment (an `EnvironmentFile` with mode 0600, or
 `.env`), or name another variable with `[server] token_env` in the config file. Restart the service after
-changing it. The 2.x name `SOFASCORE_API_TOKEN`, which 3.0 documented, is deprecated: 3.1 still reads it, with a
-warning in the log, `ssc config show` and `ssc doctor`, and 3.2 removes it. Rename it to `SOFASCORE_SERVER__TOKEN`
-(or keep the variable by setting `token_env = "SOFASCORE_API_TOKEN"` under `[server]`). When both names are set,
-`SOFASCORE_SERVER__TOKEN` wins and the old one is ignored with a warning.
+changing it. The 2.x name `SOFASCORE_API_TOKEN`, which 3.0 documented, was read with a warning until 3.1 and is
+removed in 3.2. It is not dropped quietly: while it is set without the new name, the settings do not load, the
+server does not start and `ssc doctor` fails, with a message that names `SOFASCORE_SERVER__TOKEN`. Rename it (or
+keep the variable by setting `token_env = "SOFASCORE_API_TOKEN"` under `[server]`). When both names are set, the
+old one is ignored with a warning.
 Programs send `Authorization: Bearer <token>`; the web app asks for it once and keeps a session cookie.
 `GET /health` stays open for health checks and says only `{"status": "ok"}` without the token.
 
@@ -112,8 +113,9 @@ an attack that comes through your own browser and that no firewall stops. The ru
 
 Set the names with `--allowed-hosts localhost,127.0.0.1,scraper.example.org`, `[server] allowed_hosts` in the
 config file, or `SOFASCORE_SERVER__ALLOWED_HOSTS` in the environment or `.env` (the flag wins over the others).
-The 2.x name `SOFASCORE_ALLOWED_HOSTS`, which 3.0 documented, is deprecated: 3.1 still reads it, with a warning,
-and 3.2 removes it; rename it to `SOFASCORE_SERVER__ALLOWED_HOSTS`, which wins when both are set. Include every name and address clients use, and keep `127.0.0.1` when
+The 2.x name `SOFASCORE_ALLOWED_HOSTS`, which 3.0 documented, was read with a warning until 3.1 and is removed in
+3.2: while it is set without `SOFASCORE_SERVER__ALLOWED_HOSTS`, the server (and the Docker container) does not
+start; rename it. When both are set, the old one is ignored with a warning. Include every name and address clients use, and keep `127.0.0.1` when
 something on the machine checks `/health`. `--allow-any-host` (or the value `*`) answers to any name: it turns
 the protection off and is only for a server that is reachable through a trusted proxy alone.
 

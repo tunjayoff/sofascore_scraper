@@ -384,9 +384,9 @@ def _settings() -> Dict[str, Any]:
     değerler `***`, webhook adresleri maskeli; proxy adresinin yalnızca kullanıcı bilgisi maskeli, sunucusu sorun
     ararken gerekir). Ayarlar kurulamıyorsa (geçersiz yapılandırma) yalnızca hata. Ayar olmayan SOFASCORE_
     değişkenleri (sink'lerin `secret_env`i, SOFASCORE_CONFIG_DIR...) maskeli değerleriyle ayrıca yazılır. 2.x'in
-    ortamda ya da `.env`'de duran adlarının (3.1 okumaz; kullanımdan kalkan dördü okunur ve kaynağı "deprecated"
-    der) yalnızca adları yazılır, yükleyicinin uyarılarıyla (`warnings`); `.env`'in uygulamanın tanımadığı
-    anahtarlarının da yalnızca adları.
+    ortamda ya da `.env`'de duran adlarının (hiçbiri okunmaz; korumalı dördünden biri yeni adı olmadan duruyorsa
+    ayarlar kurulamaz ve hata onu söyler) yalnızca adları yazılır, yükleyicinin uyarılarıyla (`warnings`); `.env`'in
+    uygulamanın tanımadığı anahtarlarının da yalnızca adları.
     """
     from sofascore_scraper.config import loader
 
@@ -400,9 +400,8 @@ def _settings() -> Dict[str, Any]:
         named = loader.named_variables(loaded.settings)
         for row in loaded.describe(mask_secrets=True):
             values[row["key"]] = row["value"]
-            sources[row["key"]] = row["source"] + (f": {row['from']}" if row["from"] else "") + (
-                f", deprecated, use {row['replaced_by']}" if row["replaced_by"] else "")
-        # Yükleyicinin uyarıları (`config show` ile aynı): eski adlar, kullanımdan kalkanlar... Yalnızca ad taşırlar
+            sources[row["key"]] = row["source"] + (f": {row['from']}" if row["from"] else "")
+        # Yükleyicinin uyarıları (`config show` ile aynı): eski adlar, kalkmış ayarlar... Yalnızca ad taşırlar
         warnings = [redact_text(warning.message) for warning in loaded.warnings]
         if loaded.settings.client.proxy:
             values["client.proxy"] = redact_text(mask_url_userinfo(loaded.settings.client.proxy))
