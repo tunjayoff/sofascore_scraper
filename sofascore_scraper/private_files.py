@@ -6,7 +6,6 @@ taşır. İkisi de yalnızca sahibince okunmalı: dosyalar 0600, dizinler 0700 i
 olanlar başlangıçta daraltılır. Windows'ta POSIX izin bitleri yoktur: işlemler orada hiçbir şey
 yapmaz (dosyalar kullanıcının profil dizininin ACL'lerini devralır).
 """
-import contextlib
 import logging
 import os
 from typing import List
@@ -34,15 +33,6 @@ def restrict_permissions(path: str, mode: int) -> bool:
         return True
     except OSError:
         return False
-
-
-def create_private_file(path: str) -> None:
-    """Dosya yoksa boş ve yalnızca sahibince okunur (0600) oluşturur; varsa içeriğine dokunmaz."""
-    directory = os.path.dirname(os.path.abspath(path))
-    os.makedirs(directory, exist_ok=True)
-    with contextlib.suppress(FileExistsError):
-        os.close(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, PRIVATE_FILE_MODE))
-    restrict_permissions(path, PRIVATE_FILE_MODE)
 
 
 def make_private_dir(path: str) -> None:

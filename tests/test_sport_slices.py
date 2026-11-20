@@ -667,7 +667,7 @@ def _recorded(name: str) -> Any:
 def test_cricket_innings_recorded_answer_has_data():
     body = _recorded("cricket_innings__16526539.json")
     assert slices.slice_body_state("innings", body) == BODY_DATA
-    assert slices.has_innings_data_dict({"innings": body})
+    assert slices.match_detail_slice_present("innings", {"innings": body})
     assert slices.slice_body_state("innings", {"error": {"code": 404, "message": "Not Found"}}) == BODY_NO_DATA
 
 

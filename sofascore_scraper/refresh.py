@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from sofascore_scraper.status import StatusClass, classify_status
 
@@ -143,10 +143,3 @@ def change_row(
     if status_regressed(old, new):
         row["status_regressed"] = True
     return row
-
-
-def split_by_need(needs: List[Tuple[str, str]]) -> Tuple[List[str], List[str]]:
-    """(id, need) listesinden: önce full/refill, sonra refresh (yenileme en sona)."""
-    first = [mid for mid, need in needs if need in ("full", "refill")]
-    refresh = [mid for mid, need in needs if need == "refresh"]
-    return first, refresh

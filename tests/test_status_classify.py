@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from sofascore_scraper.services.pipeline import is_finished
-from sofascore_scraper.status import StatusClass, classify_status, is_played
+from sofascore_scraper.status import StatusClass, classify_status
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 ALL = sorted(FIXTURES.glob("*/*.json"))
@@ -117,20 +117,14 @@ def test_abandoned_with_full_score_is_void():
     event = _load("basketball/B9_abandoned__17060394")
     assert event["homeScore"]["current"] == 59 and event["awayScore"]["current"] == 57
     assert classify_status(event) is StatusClass.VOID
-    assert not is_played(event)
     assert not is_finished(event)
 
 
-def test_walkover_and_retired_are_finished_but_not_played():
+def test_walkover_and_retired_are_finished_but_not_completed():
     for rel in ("tennis/T2_retired__17081861", "tennis/T3_walkover__17058663"):
         event = _load(rel)
         assert is_finished(event)  # FETCH_ONLY_FINISHED anlamı değişmedi
-        assert not is_played(event)
-
-
-def test_is_played_only_for_completed():
-    assert is_played(_load("football/F2_penalties__16950622"))
-    assert not is_played(_load("football/A_inprogress-20-started__16982821"))
+        assert classify_status(event) is not StatusClass.COMPLETED
 
 
 @pytest.mark.parametrize("rel", [
@@ -168,7 +162,6 @@ def test_cricket_end_of_day_is_live_and_not_finished():
     """
     event = _load("cricket/A_willcontinue-141-end-of-day-1__16586046")
     assert classify_status(event) is StatusClass.LIVE
-    assert not is_played(event)
     assert not is_finished(event)
     del event["status"]["type"]  # kod tek başına da canlı
     assert classify_status(event) is StatusClass.LIVE
@@ -241,7 +234,6 @@ def test_unseen_inning_codes_stay_unknown_without_a_type():
 ])
 def test_unknown(event, caplog):
     assert classify_status(event) is StatusClass.UNKNOWN
-    assert not is_played(event)
 
 
 def test_unknown_finished_code_is_logged(caplog):

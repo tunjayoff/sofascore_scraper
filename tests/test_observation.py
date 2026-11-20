@@ -10,7 +10,7 @@ from typing import Any
 import legacy_writer
 import detail_fetch
 from detail_fetch import Details
-from sofascore_scraper.status import OBSERVATION_KEY, observation_record, read_observation
+from sofascore_scraper.status import OBSERVATION_KEY, observation_record
 from sofascore_scraper.store import open_store
 
 FIXTURE = Path(__file__).parent / "fixtures" / "status" / "basketball" / "K6_score_changed_after_finished__17006262.json"
@@ -58,7 +58,7 @@ def test_fetch_saves_observation_with_the_match(tmp_path):
     assert row.observed_at == int(observed)  # katalog tam saniye tutar
     assert not list(Path(tmp_path).rglob(f"{OBSERVATION_KEY}.json"))  # eski düzene yazılmaz
     loaded = f.stored(str(event["event_id"]))
-    assert read_observation(loaded) == data[OBSERVATION_KEY]
+    assert loaded[OBSERVATION_KEY] == data[OBSERVATION_KEY]
 
 
 def test_the_returned_observation_is_the_moment_the_store_keeps(tmp_path, monkeypatch):
@@ -91,5 +91,4 @@ def test_old_records_without_observation_read_as_none(tmp_path):
     legacy_writer.save_legacy(tmp_path, event["event_id"], {"basic": event})  # gözlemden önceki bir sürümün kaydı
     loaded = f.stored(str(event["event_id"]))
     assert "basic" in loaded
-    assert read_observation(loaded) == {"observed_at_utc": None, "change_ts": None}
-    assert read_observation(None) == {"observed_at_utc": None, "change_ts": None}
+    assert OBSERVATION_KEY not in loaded
