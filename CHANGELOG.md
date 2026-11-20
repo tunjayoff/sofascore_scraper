@@ -65,7 +65,6 @@ app), or the Docker image `ghcr.io/tunjayoff/sofascore_scraper:3.2.0`. It is not
 
 ### Removed
 
-
 - **`SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` are no longer
   read** (deprecated in 3.1). Unlike the other 2.x names, which are only warnings, these four fail
   closed. Two of them protect the web app (the access token and the Host allow-list), and two send
