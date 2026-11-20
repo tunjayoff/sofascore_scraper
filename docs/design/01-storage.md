@@ -4339,13 +4339,30 @@ archive is created 0600 from the start, as one with `.env` is; its name does not
 `_with_env`). `data` never takes it. Archives made before FX-22 have no such member. Only the settings files
 are taken by name; a `.lock` file next to them is never a member (FX-25, #172).
 
-Not in a backup (3.1.2, #230; `395b6e0`): the trusted certificates of `CONFIG_DIR/ca`
-(`sofascore_scraper/client/trust.py`). `create` adds the files it is handed, by name, and no caller hands
-it that folder (`ssc backup create` and the scheduler pass `leagues.txt`, `league_sports.json` and the
-active `sofascore.toml`, the v1 backup job the first two); `restore` puts back `config/overrides.json`
-only (9.2). They are certificates, not keys, so nothing secret is missing from the archive; what is
-missing is the user's decision to trust them, which has to be made again on a new machine. Whether a
-backup should carry the folder is open (`03-implementation-plan.md` section 19).
+Not in a backup in 3.1.2 (#230; `395b6e0`): the trusted certificates of `CONFIG_DIR/ca`
+(`sofascore_scraper/client/trust.py`); no caller handed `create` that folder, so the user's decision to
+trust a network's certificate had to be made again on a new machine. Since the owner's decision of
+2026-11-20 (`03-implementation-plan.md` section 19: they are public certificates without keys, and a restore
+is the user's own act of putting back their configuration, trust decisions included) a backup carries them:
+
+- `BackupManager.create(..., ca_dir=)` adds, in the scopes that take config files (`all`, `state`), every
+  file of that folder the trust store loads: a regular file (or a link to one) whose extension is `.pem` in
+  any case (the rule of `trust._pem_files`, repeated in `store/backup.py:ca_files` because the Store may
+  not import the client). The folder's other files, `.bundle/ca-bundle.pem` (the combined CA file) and the
+  browser's NSS database (in the browser profile) are derived and never included. A file that cannot be
+  read is left out with a warning, as the trust store skips it.
+- Each file is the member `config/ca.<file name>`, flat under `config/`, not `config/ca/<file name>`: an
+  archive reader of 3.1.2 and older skips a `config/<name>` member as a config file, but rejects a member in
+  a subfolder of `config/` as unknown (`BackupInvalid`), which would make the whole archive unrestorable
+  and unverifiable for it. A config file handed to `create` whose member would fall in that name space is
+  left out.
+- `backup.json` gets `trusted_ca`, a list of `{"file", "file_sha256"}` (the SHA-256 of the file's bytes, not
+  the certificate's fingerprint), and `counts.trusted_ca_files`; both are absent when there are no files.
+  Older readers ignore unknown manifest keys, and the format stays 2. `verify` checks that every listed
+  file is in the archive with that checksum, on top of the CRC check every member gets.
+- `BackupService.create` passes `ca_dir=trust.ca_dir()`, so `ssc backup create`, the scheduler and the v1
+  backup job all carry the folder. Since the files may sit in an archive without `.env` or
+  `overrides.json`, they do not make the archive 0600 by themselves; they hold no secret.
 
 Since FX-23 (#171; finding F30 of the end-to-end test) a backup records the job that makes it. The web and
 scheduler `backup` jobs pass their id (`BackupManager.create(..., job_id=)`,
@@ -4399,6 +4416,20 @@ NAME [--force] [--dry-run] [--yes]`):
 - **Step 4.** On success the catalog is rebuilt in place (the internal path `Store.clear` uses) and
   `catalog.verify()` runs; staging and trash are then removed. There is no `include_catalog`: a
   `catalog.db` member is accepted and skipped.
+- **Trusted certificates** (since 2026-11-20, 9.1). With `restore(..., ca_dir=)` each `config/ca.<file
+  name>` member is written to `<ca_dir>/<file name>` atomically with mode 0600 (the folder is created 0700
+  when missing), after the data and before `overrides.json`, and the rollback puts every written file back
+  as it was (or removes it). A file already there with the same bytes is left alone and is in neither
+  `restored` nor `replaced`; one with the same name and other bytes is replaced by the archive's
+  (`restored` and `replaced`), as `overrides.json` is; certificates in the folder that the archive does not
+  have are never removed. Without `ca_dir`, or for a member larger than 1 MB or unreadable, the member is
+  `skipped`. An archive without such members (every archive older than this, and every `data` archive)
+  leaves the folder alone. Nothing derived needs a step of its own: `trust.bundle_path` rewrites the
+  combined CA file when the folder's files change, and the browser's NSS database is built from the folder
+  at each browser start. `BackupService.restore` passes the folder, then logs one line with the number of
+  restored certificates and their fingerprints and closes this process's bridge browser
+  (`bridge.restart_for_trust_change`) so that its next start trusts them; another process (`ssc watch`)
+  picks them up at its next browser start.
 - **Config files and `.env`** are never restored; they are listed in `RestoreReport.skipped`. One exception
   since FX-22 (#165): `config/overrides.json`, the settings saved on the Settings page, which would
   otherwise be lost with a restore. It is restored only when the caller passes its place
@@ -5282,7 +5313,8 @@ Corrections after the 3.1.1 and 3.1.2 releases (2026-11-14, the twelfth revision
      (FX-23 #171, #230).
 158. **The `ca` folder is not in a backup.** Section 9 named what a backup takes from the config directory
      before the folder existed. As built it takes none of it, and a restore does not bring it back.
-     Section 9.1 (#230).
+     Section 9.1 (#230). Changed since by the owner's decision of 2026-11-20: a backup carries the folder's
+     certificates and a restore puts them back (9.1, 9.2).
 
 ---
 

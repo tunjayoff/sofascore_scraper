@@ -1603,6 +1603,7 @@ const en = {
       legacy_events: 'Matches in the old layout',
       files: 'Files',
       stream_events: 'Change records',
+      trusted_ca_files: 'Trusted certificate files',
     },
     next: 'Next',
   },

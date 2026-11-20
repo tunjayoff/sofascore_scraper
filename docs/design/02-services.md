@@ -1688,7 +1688,17 @@ def sink_states(store, specs: Sequence[SinkSpec], *, now=None) -> list[SinkState
   job `interrupted` and the Overview warned about it (finding F30). A restore of an older archive keeps the
   finished live record of a job that is running in the archive but finished in this data folder. A
   settings file's `.lock` is never in an archive: the scopes pass the settings files by name, and the data
-  walk covers only the data trees (FX-25, 4.3). `prune` keeps
+  walk covers only the data trees (FX-25, 4.3). Since the owner's decision of 2026-11-20 the trusted
+  certificates travel too: `create` passes `ca_dir=trust.ca_dir()` and the Store adds every `*.pem` file of
+  `CONFIG_DIR/ca` (members `config/ca.<file name>`, listed with their checksums under `trusted_ca` in
+  `backup.json`, `counts.trusted_ca_files`), and `restore` passes the same folder: the Store writes each file
+  atomically (0600) in the step that writes `overrides.json`, leaves a file with the same bytes alone,
+  replaces one with other bytes (the report's `replaced`) and keeps certificates the archive does not have.
+  Afterwards, when at least one file was written, the service logs one line with the number of
+  certificates and their SHA-256 fingerprints and closes this process's bridge browser
+  (`bridge.restart_for_trust_change`, as `POST /api/v1/trust` does), so that its next start builds the NSS
+  database from the restored folder; the HTTP client's combined CA file is rewritten at its next request
+  because the files changed (2.4). A dry run reports the same members and writes nothing. `prune` keeps
   everything by default and nothing calls it: there is no `ssc backup prune`. The design's `dest` and
   `handle` arguments are not built, and there is no `path_of` on the service: the download route asks the
   Store (`Store.backup.path_of`). `BackupInfo` has a `format` field read from the zip (1 for 2.x and ST-19
@@ -3188,7 +3198,8 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   `backups/` are accepted. `restore` without `--yes` (and without `--dry-run`) is `confirmation_required`.
   `create` holds `writer` (`op:backup`) for every scope (`config` was the one without it); the config files
   it packs, for `all` and `state`, are `leagues.txt`, `league_sports.json`, the active `sofascore.toml` and
-  `config/overrides.json`. There is no `backup prune`.
+  `config/overrides.json`, and the trusted certificates of `CONFIG_DIR/ca` (`config/ca.<file name>`, since
+  2026-11-20; `restore` puts them back, 2.7). There is no `backup prune`.
 - `data clear` takes `--scope events|schedules|seasons|all` (the Store's names) or `--all`, and `--yes`;
   `data recheck-unavailable` takes `--all` and `--tournament ID` and holds `writer` (purpose
   `recheck-unavailable`); it is not a job.
@@ -3474,12 +3485,13 @@ the folder `CONFIG_DIR/ca` next to `overrides.json` (`SOFASCORE_CONFIG_DIR`, els
 `*.pem` file in it is trusted (2.4). It is written by `ssc trust add` (4.1) and `POST /api/v1/trust` (6) and
 may be filled by hand; nothing else in the configuration names it, and no layer of the table below applies
 to it: a certificate is trusted because its file is there. The folder is 0700 and the files the application
-writes are 0600. A backup does not contain it: `BackupManager.create` takes the config files it is handed
-(`leagues.txt` and `league_sports.json`, and from `ssc backup create` and the scheduler also the active
-`sofascore.toml`), `overrides.json` and, on request, `.env` (`sofascore_scraper/store/backup.py`; the three
-callers' lists in `cli/commands/backup.py`, `jobs/scheduler.py` and `web/api/v1/jobs.py`), and a restore
-puts back `overrides.json` only. So on another machine, or after the config folder is lost, the certificate
-is trusted again by hand (`01-storage.md` 9.1; open, `03-implementation-plan.md` section 19). `SSL_CERT_FILE`, `CURL_CA_BUNDLE` and `REQUESTS_CA_BUNDLE` are
+writes are 0600. Until 3.1.2 a backup did not contain it. Since the owner's decision of 2026-11-20
+(`03-implementation-plan.md` section 19) `BackupService` hands the folder to the Store on both sides: a
+backup of the scopes `all` and `state` carries every `*.pem` file the store loads (member
+`config/ca.<file name>`, listed with its checksum in `backup.json`), and a restore writes them back, leaves
+an identical file alone, replaces one with the same name and other bytes, and keeps certificates the backup
+does not have (`01-storage.md` 9.1 and 9.2; 2.7). The combined CA file and the browser's NSS database are
+not in a backup; they are rebuilt from the folder. `SSL_CERT_FILE`, `CURL_CA_BUNDLE` and `REQUESTS_CA_BUNDLE` are
 read by curl_cffi, not by the loader; they still work and are the base the stored certificates are added to
 (`docs/deploy/docker.md`, "A network that inspects HTTPS").
 
