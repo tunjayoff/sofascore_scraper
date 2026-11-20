@@ -7,25 +7,9 @@ import pytest
 
 from sofascore_scraper.client.bridge import (
     BrowserBridge,
-    apply_token_to_headers,
     fetch_api_via_browser,
 )
 from sofascore_scraper.client.transport import make_api_request, make_api_request_async
-
-
-def test_apply_token_to_headers_adds_cookie_and_header():
-    headers = {"Accept": "*/*"}
-    token = "test_jwt_token_123"
-    result = apply_token_to_headers(headers, token=token)
-    assert result["X-Captcha"] == token
-    assert "sofa_captcha=test_jwt_token_123" in result["Cookie"]
-
-
-def test_apply_token_to_headers_preserves_existing_cookies():
-    headers = {"Cookie": "existing=val"}
-    token = "test_jwt_token_123"
-    result = apply_token_to_headers(headers, token=token)
-    assert result["Cookie"] == "existing=val; sofa_captcha=test_jwt_token_123"
 
 
 @pytest.mark.asyncio

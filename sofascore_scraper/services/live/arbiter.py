@@ -157,12 +157,6 @@ class SportArbiter:
             return True
         return now - self.last_poll >= self.interval()
 
-    def next_poll_in(self, now: float) -> float:
-        if self.poll_due(now):
-            return 0.0
-        assert self.last_poll is not None
-        return max(0.0, self.last_poll + self.interval() - now)
-
     def to_dict(self) -> Dict[str, Any]:
         sw = self.last_switch
         return {

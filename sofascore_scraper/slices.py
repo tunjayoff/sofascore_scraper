@@ -274,47 +274,11 @@ def slice_body_state(key: str, body: Any) -> BodyState:
     return BODY_DATA if body else BODY_NO_DATA
 
 
-# --- yüklemler -------------------------------------------------------------------------------
+# --- yüklem ---------------------------------------------------------------------------------
 #
-# Hepsi maçın birleşik sözlüğünü ({"basic": ..., "statistics": ..., ...}) alır ve yalnızca kendi anahtarına
+# Maçın birleşik sözlüğünü ({"basic": ..., "statistics": ..., ...}) alır ve yalnızca istenen anahtara
 # bakar. Tek bir yanıt gövdesi için {anahtar: gövde} verilir. Okunamayan gövde de False verir; "veri yok"
 # ile "okunamadı"yı ayırması gereken çağıran slice_body_state'i kullanır.
-
-
-def statistics_has_data(d: Mapping[str, Any]) -> bool:
-    return _statistics_state(d.get("statistics")) == BODY_DATA
-
-
-def has_lineups_data_dict(d: Mapping[str, Any]) -> bool:
-    return _lineups_state(d.get("lineups")) == BODY_DATA
-
-
-def has_h2h_data_dict(d: Mapping[str, Any]) -> bool:
-    return _h2h_state(d.get("h2h")) == BODY_DATA
-
-
-def has_pregame_form_data_dict(d: Mapping[str, Any]) -> bool:
-    return _pregame_form_state(d.get("pregame_form")) == BODY_DATA
-
-
-def has_team_streaks_data_dict(d: Mapping[str, Any]) -> bool:
-    return _team_streaks_state(d.get("team_streaks")) == BODY_DATA
-
-
-def has_incidents_data_dict(d: Mapping[str, Any]) -> bool:
-    return _incidents_state(d.get("incidents")) == BODY_DATA
-
-
-def has_point_by_point_data_dict(d: Mapping[str, Any]) -> bool:
-    return _point_by_point_state(d.get("point_by_point")) == BODY_DATA
-
-
-def has_esports_games_data_dict(d: Mapping[str, Any]) -> bool:
-    return _esports_games_state(d.get("esports_games")) == BODY_DATA
-
-
-def has_innings_data_dict(d: Mapping[str, Any]) -> bool:
-    return _innings_state(d.get("innings")) == BODY_DATA
 
 
 def match_detail_slice_present(key: str, d: Mapping[str, Any]) -> bool:

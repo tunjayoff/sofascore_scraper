@@ -23,6 +23,10 @@ below (see "Releasing" in the README).
   aside after a challenge: `connection.profiles {total, set_aside: [{name, until_utc}]}`. Health shows one
   line when any is set aside.
 
+### Removed
+
+- Internal: unused helpers removed (no command, route, setting or file format changes).
+
 ### Fixed
 
 - `ssc doctor --live` pointed to a README heading that does not exist; it now names the FAQ entry about

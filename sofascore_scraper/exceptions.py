@@ -52,16 +52,6 @@ class ResourceNotFoundError(APIError):
         super().__init__(message, 404)
 
 
-class DataNotFoundError(SofaScoreScraperError):
-    """Veri bulunamadığında oluşan hatalar için özel sınıf."""
-
-    def __init__(self, data_type: str = "Data", identifier: Optional[str] = None):
-        message = f"{data_type} not found"
-        if identifier:
-            message += f": {identifier}"
-        super().__init__(message)
-
-
 class DataParsingError(SofaScoreScraperError):
     """Veri ayrıştırma hatası için özel sınıf."""
 
@@ -73,15 +63,6 @@ class NetworkError(SofaScoreScraperError):
     """Ağ hatası için özel sınıf."""
 
     def __init__(self, message: str = "A network error occurred"):
-        super().__init__(message)
-
-
-class ValidationError(SofaScoreScraperError):
-    """Veri doğrulama hatası için özel sınıf."""
-
-    def __init__(self, field: Optional[str] = None, message: str = "validation error"):
-        if field:
-            message = f"{field}: {message}"
         super().__init__(message)
 
 

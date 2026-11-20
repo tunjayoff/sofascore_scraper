@@ -73,11 +73,6 @@ _wait_notifier: "contextvars.ContextVar[Optional[WaitNotifier]]" = contextvars.C
 )
 
 
-def set_wait_notifier(fn: Optional[WaitNotifier]) -> "contextvars.Token":
-    """Bu bağlamdaki uzun beklemeler için (reason, seconds) bildirimini ayarlar."""
-    return _wait_notifier.set(fn)
-
-
 def _notify_wait(reason: str, seconds: float) -> None:
     fn = _wait_notifier.get()
     if fn is None:

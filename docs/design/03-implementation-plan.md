@@ -4595,7 +4595,7 @@ Pinned, and kept on purpose (not defects of the target design):
 | One pipeline session per job (listing and event items in one run) | P14 #116 | not done by P15 (#117); P30 (with `SyncService` straight on `FetchPipeline`); not done by P30 (#186): `DetailPhase` builds one `FetchPipeline` per `fetch` or `refresh` call, one per league batch of a sync job (section 19) |
 | The three fetcher modules stay as compatibility faces; `SyncService` reaches the listings and details through them | P14 #116, P15 #117 | done, P30 (#186) |
 | Menu-only fetcher methods and `legacy_file_report` without a product caller since P26; stale docstrings naming removed helpers | P15 #117 | done, FX-15 (#155); the entry points that only tests use (`fetch_match_data`, `refill_missing_match_slices`, `refresh_match`, `SingleFetchReport`, `_save_match_data`): P30; done, P30 (#186) (the tests use `tests/detail_fetch.py`) |
-| `ssc status --coverage` reads the per-tournament counts of `summary()`, not `StatusService.coverage` | P15 #117 | the per-season counts: done, FX-13 (#152), `StatusService.season_counts` (`include=counts`); `ssc status --coverage` still reads `summary()`: P30, with `sofascore_scraper/services/status.py`; not done by P30 (#186) (section 19) |
+| `ssc status --coverage` reads the per-tournament counts of `summary()`, not `StatusService.coverage` | P15 #117 | the per-season counts: done, FX-13 (#152), `StatusService.season_counts` (`include=counts`); `ssc status --coverage` still reads `summary()`: P30, with `sofascore_scraper/services/status.py`; not done by P30 (#186); closed without a change on 2026-11-20, both faces share `summary()` (section 19) |
 | The locale keys that only the removed fetcher prints used | P15 #117 | done, P26 (#131) |
 | `01-storage.md` 5.1 lists the two report files under `match_details/processed/` | P15 #117 | done, this revision (`01-storage.md` 5.1) |
 | Football, basketball and tennis: `pregame_form` optional, tennis `lineups` and `incidents` not requested, tennis `point_by_point` required | #121 | done, FX-16 (#176), on the owner's decision of 2026-10-08 (section 13) |
@@ -5458,9 +5458,36 @@ Open after 3.1.2 (the list after 3.1, brought up to 2026-11-14), in no fixed ord
 - **The live-match-tracker document in the explorer.** The iframe document under `/api/v1/event/{id}/live-match-tracker/`
   is a Document request, outside the explorer's `Fetch` patterns, so it is sent without a slot and not
   counted (one per event page). Holding Document requests in the interceptor would fix it.
-- Small leftovers of P30 (section 16): `ssc status --coverage` reads `summary()`, not `StatusService.coverage`; a
-  neutral `/search` for `/tournaments/search`; one `FetchPipeline` per `DetailPhase` call instead of one
-  session per job.
+- Small leftovers of P30 (section 16): a neutral `/search` for `/tournaments/search`; one `FetchPipeline` per
+  `DetailPhase` call instead of one session per job. The third, `ssc status --coverage` reading `summary()`
+  instead of `StatusService.coverage`, is **closed without a code change (2026-11-20)**: the two compute
+  different things. The per-tournament `coverage` of `summary()` (`TournamentCounts.coverage`) is details over
+  matches, the share of matches whose `/event` payload is stored, with one decimal, and `/api/v1/status` shows
+  the same rows, so the two faces already share one implementation. `StatusService.coverage` is the slice
+  report: per tournament and season, how many matches with a stored payload miss no selected slice (two
+  decimals) and how many miss each slice; `02-services.md` ("Coverage and the scheduler") keeps it off the
+  polled faces because it reads every slice row. Switching the CLI would change what `--coverage` means and
+  its output, and set it apart from the web. `StatusService.coverage` has no caller outside the tests now
+  that the old file report is gone; it stays as the service's slice report.
+- **Unused code removed (2026-11-20).** Helpers that nothing in the package, `scripts/` or the frontend
+  called (vulture, then checked by hand): the `ConfigManager` getters `get_league_ids`, `get_league_names`,
+  `get_league_name_by_id`, `get_league_id_by_name`, `get_match_data_dir`, `get_api_base_url`,
+  `get_use_color`, `get_date_format`, `get_request_rate_limit` and `get_language` and the `League` dataclass
+  of `sofascore_scraper/config_manager.py` (the values are `get_settings()`'s); `solve_turnstile_challenge`,
+  `solve_turnstile_challenge_sync` and `apply_token_to_headers` of `sofascore_scraper/client/bridge.py`;
+  `set_wait_notifier` of `sofascore_scraper/client/context.py` (`request_context(on_wait=)` sets it);
+  `DataNotFoundError` and `ValidationError` of `sofascore_scraper/exceptions.py`; `upstream.http_error` and
+  its status table (the v1 routes answer through `sofascore_scraper/web/errors.py`); `is_played` and
+  `read_observation` of `sofascore_scraper/status.py`; `split_by_need` of `sofascore_scraper/refresh.py`;
+  `create_private_file` of `sofascore_scraper/private_files.py`; `SportArbiter.next_poll_in`; and the nine
+  per-slice predicates of `sofascore_scraper/slices.py` (`statistics_has_data`, `has_lineups_data_dict` ...;
+  `match_detail_slice_present` and `slice_body_state` stay). Older entries of this plan that name them
+  describe the code of their time. Kept although nothing in the package calls them: what a design document
+  lists as an interface (for example `ExportService.write_legacy_csv_by_league`,
+  `FollowsService.search_tournaments`, `StatusService.coverage`, `CatalogAdmin.ensure`,
+  `EventStore.open_events`, `JobStore.writer_busy`), `ConfigManager.reload_config` (the docstring of
+  `sofascore_scraper/config/loader.py` names it), and helpers the tests use as tools (`JobStore.list_jobs` and
+  `get_job`, `StateDb.meta_set`, `set_cancel_check`, `I18nManager.set_language`, `RequestThrottle.reserve_slot`).
 - **A CI flake of the explorer's slot test.** `tests/test_research_explorer.py::test_sofascore_requests_leave_one_slot_apart`
   failed once on macOS (a gap of 0.0005 s against a minimum of 0.04 s): it measures when the requests were
   sent, not their slots. It should read the slot times from the rate file, as FX-29b did for the image-flood

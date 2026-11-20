@@ -3,8 +3,9 @@ sofascore_scraper/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı"
 
 Beklenen değerler tabloya elle yazıldı ve yüklemler sofascore_scraper/slices.py'ye taşınmadan ÖNCEKİ kodla
 (2.x'te MatchDataFetcher metotları ve match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
-IMPLEMENTATIONS'taki her uygulamaya uygulanır (sofascore_scraper.slices'taki işlevler, tek tek ve dağıtıcı üzerinden).
-MatchDataFetcher'ın vekil metotları P15'te kalktı; onların iki satırı tablodan çıktı.
+IMPLEMENTATIONS'taki her uygulamaya uygulanır (sofascore_scraper.slices'taki dağıtıcı). MatchDataFetcher'ın vekil
+metotları P15'te kalktı; onların iki satırı tablodan çıktı. Dilim başına ayrı yüklemler (`has_lineups_data_dict`...)
+hiçbir yerden çağrılmadığı için kalktı; "doğrudan" satırı da onlarla gitti.
 
 Kurallar toplamdır ve üç yanıt verir (slice_body_state: veri var, veri yok, okunamadı). Altı eski kuralın
 yanıtı, taşınan yüklemlerin bu dosyada saklanan kopyasıyla (`_REFERENCE`) üretilmiş gövdeler üzerinde
@@ -37,21 +38,11 @@ from sofascore_scraper.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA, SL
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
-# sofascore_scraper.slices'ta kendi işlevi olan dilimler: anahtar → işlev adı (ilk altısı eskiden MatchDataFetcher'ın
-# metotlarıydı, adları baştaki alt çizgiyle)
-TYPED_FUNCTIONS = {
-    "statistics": "statistics_has_data",
-    "lineups": "has_lineups_data_dict",
-    "h2h": "has_h2h_data_dict",
-    "pregame_form": "has_pregame_form_data_dict",
-    "team_streaks": "has_team_streaks_data_dict",
-    "incidents": "has_incidents_data_dict",
-    "point_by_point": "has_point_by_point_data_dict",
-    "esports_games": "has_esports_games_data_dict",
-    "innings": "has_innings_data_dict",
-}
 # Kendi kuralı olan dilimler: kayıt defterindeki her dilim
-RULE_KEYS = tuple(TYPED_FUNCTIONS)
+RULE_KEYS = (
+    "statistics", "lineups", "h2h", "pregame_form", "team_streaks", "incidents", "point_by_point", "esports_games",
+    "innings",
+)
 # Kendi kuralı olmayan anahtarlar (kayıt defterinde olmayanlar): değer "truthy" ise veri var sayılır
 GENERIC_KEYS = ("basic", "graph")
 ALL_KEYS = RULE_KEYS + GENERIC_KEYS
@@ -64,14 +55,8 @@ def _answered(key: str, body: Any) -> SliceOutcome:
     return pipeline.answered_outcome(key, SliceOutcome(SLICE_OK, data=body))
 
 
-def _function_direct(key: str, d: Dict[str, Any]) -> bool:
-    name = TYPED_FUNCTIONS.get(key)
-    return getattr(slices, name)(d) if name else slices.match_detail_slice_present(key, d)
-
-
 IMPLEMENTATIONS: List[Tuple[str, Predicate]] = [
     ("function-dispatch", slices.match_detail_slice_present),
-    ("function-direct", _function_direct),
 ]
 
 # İçinde veri olan gerçekçi yanıtlar (tests/test_data_integrity.py'deki PRESENT ile aynı biçimler)
@@ -635,8 +620,7 @@ def test_outcome_is_frozen_and_compares_by_value():
 
 def test_the_moved_names_live_in_slices():
     assert slices.SliceOutcome is Outcome
-    for name in list(TYPED_FUNCTIONS.values()) + ["match_detail_slice_present"]:
-        assert callable(getattr(slices, name))
+    assert callable(slices.match_detail_slice_present)
 
 
 def test_outcome_fields_and_new_defaults():

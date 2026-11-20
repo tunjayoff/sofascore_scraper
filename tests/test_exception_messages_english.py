@@ -38,10 +38,8 @@ def test_default_messages_are_english() -> None:
     assert str(ex.ConfigError()) == "Configuration error"
     assert str(ex.RateLimitError(wait_time=30, url="https://x.test/b")) == \
         "Rate limited by the API: https://x.test/b, waiting 30 s (status code 429)"
-    assert str(ex.DataNotFoundError("Season", "17")) == "Season not found: 17"
     assert str(ex.DataParsingError()) == "The data could not be parsed"
     assert str(ex.NetworkError()) == "A network error occurred"
-    assert str(ex.ValidationError("name")) == "name: validation error"
     assert str(ex.CircuitOpenError("https://x.test/c")) == "Circuit breaker open, request not sent: https://x.test/c"
 
 

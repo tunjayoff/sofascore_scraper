@@ -15,8 +15,7 @@ yazılmaz; ayna yazılamazsa lig işlemleri etkilenmez.
 
 import os
 import dotenv
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Optional, Set
-from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Optional
 
 from sofascore_scraper.config import Settings
 from sofascore_scraper.config import loader as settings_loader
@@ -36,13 +35,6 @@ settings_loader.active()
 
 # Logger'ı alın
 logger = get_logger("ConfigManager")
-
-@dataclass
-class League:
-    """Lig bilgilerini içeren veri sınıfı."""
-    id: int
-    name: str
-
 
 def read_league_file(path: str) -> Dict[int, str]:
     """
@@ -321,26 +313,6 @@ class ConfigManager:
         self._refresh_if_changed()
         return self.leagues.copy()
 
-    def get_league_ids(self) -> Set[int]:
-        """
-        Tüm lig ID'lerini döndürür.
-
-        Returns:
-            Set[int]: Lig ID'leri kümesi
-        """
-        self._refresh_if_changed()
-        return set(self.leagues.keys())
-
-    def get_league_names(self) -> Set[str]:
-        """
-        Tüm lig isimlerini döndürür.
-
-        Returns:
-            Set[str]: Lig isimleri kümesi
-        """
-        self._refresh_if_changed()
-        return set(self.leagues.values())
-
     def get_league_by_name(self, league_name: str) -> Optional[int]:
         """
         İsme göre lig ID'sini döndürür.
@@ -367,30 +339,6 @@ class ConfigManager:
         self._refresh_if_changed()
         return self.leagues.get(league_id)
 
-    def get_league_name_by_id(self, league_id: int) -> Optional[str]:
-        """
-        ID'ye göre lig adını döndürür. get_league_by_id ile aynı işlevi görür.
-
-        Args:
-            league_id: Lig ID'si
-
-        Returns:
-            Optional[str]: Lig adı veya bulunamazsa None
-        """
-        return self.get_league_by_id(league_id)
-
-    def get_league_id_by_name(self, league_name: str) -> Optional[int]:
-        """
-        İsme göre lig ID'sini döndürür. get_league_by_name ile aynı işlevi görür.
-
-        Args:
-            league_name: Lig adı
-
-        Returns:
-            Optional[int]: Lig ID'si veya bulunamazsa None
-        """
-        return self.get_league_by_name(league_name)
-
     def get_settings(self) -> Settings:
         """Etkin ayarlar (sofascore_scraper/config). Ortam değişkeni değişmişse yeni bir nesne döner."""
         return settings_loader.active_settings()
@@ -403,25 +351,6 @@ class ConfigManager:
             str: Yapılandırmada tanımlanan veri dizini
         """
         return self.get_settings().storage.data_dir
-
-    def get_match_data_dir(self) -> str:
-        """
-        Maç verilerinin saklandığı dizini döndürür.
-
-        Returns:
-            str: Maç verilerinin saklandığı dizin
-        """
-        data_dir = self.get_data_dir()
-        return os.path.join(data_dir, "matches")
-
-    def get_api_base_url(self) -> str:
-        """
-        API temel URL'sini döndürür.
-
-        Returns:
-            str: API temel URL'si
-        """
-        return self.get_settings().client.base_url
 
     def get_use_proxy(self) -> bool:
         """
@@ -441,31 +370,9 @@ class ConfigManager:
         """
         return self.get_settings().client.proxy
 
-    def get_use_color(self) -> bool:
-        """
-        Renk kullanımı ayarını döndürür.
-
-        Returns:
-            bool: Renk kullanılacaksa True, değilse False
-        """
-        return self.get_settings().display.use_color
-
-    def get_date_format(self) -> str:
-        """
-        Tarih formatını döndürür.
-
-        Returns:
-            str: Tarih formatı
-        """
-        return self.get_settings().display.date_format
-
     def get_max_concurrent(self) -> int:
         """Maksimum paralel istek sayısını döndürür."""
         return self.get_settings().client.max_concurrent
-
-    def get_request_rate_limit(self) -> float:
-        """Tüm süreçlerin paylaştığı istek bütçesi (istek/sn); 0 = kapalı. Bkz. sofascore_scraper/throttle.py."""
-        return self.get_settings().client.rate
 
     def get_wait_time_min(self) -> float:
         """İstekler arası minimum bekleme süresini döndürür."""
@@ -494,15 +401,6 @@ class ConfigManager:
     def get_server_error_threshold_consecutive(self) -> int:
         """Arka arkaya 5xx hataları için eşik döndürür."""
         return self.get_settings().breaker.server_error_consecutive
-
-    def get_language(self) -> str:
-        """
-        Uygulama dilini döndürür.
-
-        Returns:
-            str: Dil kodu (tr, en, vs.)
-        """
-        return self.get_settings().display.language
 
     def reload_config(self) -> bool:
         """

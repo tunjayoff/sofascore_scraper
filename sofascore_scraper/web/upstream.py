@@ -20,8 +20,6 @@ import re
 
 from typing import Any, Dict, Optional
 
-from fastapi import HTTPException
-
 from sofascore_scraper import bridge_health
 from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
 
@@ -31,16 +29,6 @@ RATE_LIMITED = "rate_limited"
 NETWORK = "network"
 NOT_FOUND = "not_found"
 UPSTREAM = "upstream"
-
-# Yanıtın HTTP durumu: arayüz `reason`a bakar; durum kodu API'yi doğrudan kullananlar içindir
-_STATUS = {
-    BLOCKED: 502,
-    BROWSER: 502,
-    RATE_LIMITED: 503,
-    NETWORK: 502,
-    NOT_FOUND: 404,
-    UPSTREAM: 502,
-}
 
 # API'yi doğrudan kullananlar için kısa İngilizce açıklama (arayüz kendi çevirisini gösterir)
 _MESSAGE = {
@@ -125,8 +113,3 @@ def network_cause(exc: BaseException) -> Optional[str]:
 
 def detail(reason: str) -> Dict[str, str]:
     return {"reason": reason, "message": _MESSAGE[reason]}
-
-
-def http_error(reason: str) -> HTTPException:
-    """Tipli hata yanıtı: {"detail": {"reason": ..., "message": ...}}."""
-    return HTTPException(status_code=_STATUS[reason], detail=detail(reason))

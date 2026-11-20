@@ -1714,8 +1714,8 @@ def sink_states(store, specs: Sequence[SinkSpec], *, now=None) -> list[SinkState
   FX-13 and FX-19 (below): the CLI's follows commands use the service, the sync reads the follows table,
   and a new follow is always an `api` row.
 - **Coverage and the scheduler.** `StatusService.coverage(scope)` exists since P15 (#117) and reads the
-  slice rows of the catalog; its only caller is `MatchDataFetcher.generate_file_report`, the old file
-  report. Neither face uses it: `ssc status --coverage` and `/api/v1/status` show the per-tournament
+  slice rows of the catalog; its only caller was `MatchDataFetcher.generate_file_report`, the old file
+  report, which is gone. Neither face uses it: `ssc status --coverage` and `/api/v1/status` show the per-tournament
   details over matches of `summary()`, because the slice-level report is too heavy for a route the UI
   polls (P21 part 1).
   `schedule_status()` reports the scheduler of this process only (P29; 2.8).
@@ -3656,7 +3656,7 @@ there; a problem found only in the environment says to remove or rename it where
 set (shell profile, service file, container settings).
 
 Two settings had two readers with different rules. `API_BASE_URL`: `ConfigManager.get_api_base_url`
-returned it as written (an empty value stayed empty, pinned by G-04), while the transport turns an empty
+(removed in 3.2 with the other unused getters) returned it as written (an empty value stayed empty, pinned by G-04), while the transport turns an empty
 value into the default and strips a trailing slash; the model has `client.base_url` for the first and
 `client.effective_base_url` for the second, and both stay. `DEBUG` had the logger's rule and that of the
 legacy settings route; since P30 there is one rule, `log.debug` with the loader's booleans.

@@ -8,8 +8,6 @@ Kaynak hakemi (sofascore_scraper/services/live/arbiter.py; plan maddesi P24): sa
 """
 from __future__ import annotations
 
-import pytest
-
 from sofascore_scraper.services.live import arbiter as arb
 from sofascore_scraper.services.live.arbiter import SportArbiter
 
@@ -23,10 +21,9 @@ def make(push: bool = True, poll_interval: float = 30.0) -> SportArbiter:
 def test_it_starts_on_polling_and_polls_at_once() -> None:
     a = make()
     assert a.leader == "poll" and a.update(T0) is None
-    assert a.poll_due(T0) and a.next_poll_in(T0) == 0.0
+    assert a.poll_due(T0)
     a.polled(T0)
     assert not a.poll_due(T0 + 29) and a.poll_due(T0 + 30)
-    assert a.next_poll_in(T0 + 10) == pytest.approx(20.0)
 
 
 def test_an_open_connection_leads_and_slows_polling_down() -> None:

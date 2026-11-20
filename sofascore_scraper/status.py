@@ -130,11 +130,6 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
     return result
 
 
-def is_played(event: Optional[Dict[str, Any]]) -> bool:
-    """Maç oynandı ve bitti (hükmen / çekilme / iptal değil)."""
-    return classify_status(event) is StatusClass.COMPLETED
-
-
 # --- Skor çıkarımı ---------------------------------------------------------------------
 
 
@@ -521,10 +516,3 @@ def observation_record(event: Dict[str, Any], observed_at: Optional[dt.datetime]
         "observed_at_utc": when.astimezone(dt.timezone.utc).isoformat(timespec="seconds"),
         "change_ts": ((event or {}).get("changes") or {}).get("changeTimestamp"),
     }
-
-
-def read_observation(match_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """Eski kayıtlarda alan yok: eksik olan None döner."""
-    stored = (match_data or {}).get(OBSERVATION_KEY)
-    stored = stored if isinstance(stored, dict) else {}
-    return {"observed_at_utc": stored.get("observed_at_utc"), "change_ts": stored.get("change_ts")}
