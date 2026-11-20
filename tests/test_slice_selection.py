@@ -326,13 +326,15 @@ def sandbox(monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     environ_before = dict(os.environ)
     loader.reload()
     yield path
+    # Önce testin ortama yazdıkları, sonra monkeypatch: anlık görüntü `_settings`in sabitlediği değerleri de
+    # taşır; undo()'dan sonra geri yüklenirse onları (SOFASCORE_CLIENT__MAX_CONCURRENT=5) ortamda bırakırdı
+    for name in set(os.environ) - set(environ_before):
+        del os.environ[name]
+    os.environ.update(environ_before)
     monkeypatch.undo()
     for leftover in (path, Path(f"{path}.lock")):
         leftover.unlink(missing_ok=True)
     Path(conftest.ENV_FILE).write_bytes(env_before)
-    for name in set(os.environ) - set(environ_before):
-        del os.environ[name]
-    os.environ.update(environ_before)
     loader.reload()
     redact.refresh()
     deps.job_store().rebind(default_db_path(conftest.DATA_DIR))
