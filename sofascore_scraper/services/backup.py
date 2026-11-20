@@ -44,6 +44,9 @@ logger = get_logger("BackupService")
 
 # Yedekteki ayar belgesinin üye adı (sofascore_scraper/store/backup.py OVERRIDES_MEMBER; rapor bu adla söyler)
 OVERRIDES_MEMBER = "config/overrides.json"
+# Yedekteki güvenilen sertifikaların üye adı öneki (sofascore_scraper/store/backup.py CA_MEMBER_PREFIX):
+# `config/ca.<dosya adı>`
+CA_MEMBER_PREFIX = "config/ca."
 
 # 2.x'in dört kapsamı (`config`, `seasons`, `matches`, `match_details`) 3.1'de kalktı (plan maddesi P30)
 BackupScope = Literal["all", "state", "data"]
@@ -159,19 +162,11 @@ def _apply_certificates(report: RestoreReport) -> None:
     kapatılır (`POST /api/v1/trust` ile aynı yol). Günlüğe tek satır: sertifika sayısı ve parmak izleri.
     """
     from sofascore_scraper.client import trust
-    from sofascore_scraper.store.backup import CA_MEMBER_PREFIX
 
     written = [member[len(CA_MEMBER_PREFIX):] for member in report.restored if member.startswith(CA_MEMBER_PREFIX)]
     if not written:
         return
-    directory = trust.ca_dir()
-    fingerprints: List[str] = []
-    for file_name in written:
-        try:
-            text = (directory / file_name).read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        fingerprints += [certificate.sha256 for certificate in trust.pem_certificates(text)]
+    fingerprints = [item.certificate.sha256 for item in trust.stored() if item.file in written]
     logger.warning("Trusted certificates restored from backup %s: %d certificate(s) in %d file(s) of the ca "
                    "folder (sha256 %s)", report.name, len(fingerprints), len(written),
                    ", ".join(fingerprints) or "-")
