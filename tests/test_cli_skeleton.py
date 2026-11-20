@@ -655,7 +655,7 @@ def test_doctor_rejects_unknown_check_ids(cli):
     run = cli("doctor", "--only", "env,nope", "--json")
     assert run.exit_code == 2
     assert run.error["code"] == "invalid_request" and run.error["details"]["unknown"] == ["nope"]
-    assert run.error["details"]["valid"] == [*doctor.CHECK_IDS, "live"] and "budget" in doctor.CHECK_IDS
+    assert run.error["details"]["valid"] == [*doctor.CHECK_IDS, "live", "live_browser"] and "budget" in doctor.CHECK_IDS
 
 
 def test_doctor_checks_the_data_dir_of_the_flag(cli, tmp_path):
@@ -707,9 +707,25 @@ def test_doctor_live_runs_only_when_asked_and_with_the_settings_loaded(cli, tmp_
     assert throttle.configured_rate() == 2.0  # istek bütçesi de dosyadaki değeri görür
 
 
+def test_doctor_checks_the_browser_only_with_live_and_the_flag(cli, monkeypatch):
+    """Gerçek istek atılmaz: iki canlı denetim de sahtedir. Tarayıcı ayrı bir satırdır ve `--browser` ister."""
+    calls: List[str] = []
+    monkeypatch.setattr(doctor, "check_live", lambda ctx: calls.append("live") or doctor.check_python(ctx))
+    monkeypatch.setattr(doctor, "check_live_browser", lambda ctx: calls.append("browser") or doctor.check_python(ctx))
+
+    run = cli("doctor", "--browser", "--only", "live,live_browser", "--json")
+    assert run.exit_code == 2 and run.error["code"] == "invalid_request" and "--live" in run.error["message"]
+    assert calls == []
+    assert cli("doctor", "--live", "--only", "live,live_browser", "--json").exit_code == 0 and calls == ["live"]
+    calls.clear()
+    run = cli("doctor", "--live", "--browser", "--only", "live,live_browser", "--json")
+    assert run.exit_code == 0 and calls == ["live", "browser"] and len(run.data["checks"]) == 2
+
+
 def test_doctor_help_lists_the_extra_check(cli):
     run = cli("doctor", "--help")
     assert run.exit_code == 0 and "budget" in run.stdout and "--strict" in run.stdout and "--live" in run.stdout
+    assert "--browser" in run.stdout
 
 
 # === config ======================================================================================

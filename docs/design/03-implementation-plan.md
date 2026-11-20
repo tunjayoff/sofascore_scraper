@@ -5492,6 +5492,13 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   request; only then comes the request with the HTTP client, and it is not sent when the bridge gave no
   answer. Since #227 downloads normally need no browser, so the check is heavier than what it checks. Open:
   the HTTP request first and the browser as a second, separate result, or a flag for the browser part.
+  **Done (this PR, "doctor --live follows the real request path").** `ssc doctor --live` sends one request
+  the way a download does (`make_api_request`: the HTTP client, other profiles on a challenge, the bridge
+  only when none passes), so the browser starts only when the request path falls back to it; `live_ok` names
+  the path (`detail.via`, `detail.profile`). A 403, 429 or other answer the path could not get past is now
+  `live_failed` (it used to count as reached); `live_http_tls`, `live_http_failed` and `live_browser_tls`
+  (the fallback browser) stay. `--live --browser` checks the bridge on its own line (`live_browser`:
+  `live_browser_ok`, `live_browser_tls`, `live_browser_failed`) (`02-services.md` 4.1).
 - **No path filter in CI for documents-only changes.** `.github/workflows/ci.yml` runs on every pull
   request and every push to main without a `paths` filter (only `audit.yml` and `latest-deps.yml` have one),
   so a pull request that changes only `docs/` or a README runs the frontend job and the whole Python matrix.
@@ -5503,7 +5510,12 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   day; the gate's Chrome threshold moves, and new profiles come only with a newer curl_cffi. The set-aside
   keeps requests working while one profile passes, and nothing reports how many are set aside except the
   log (`profiles.refused()` has no caller in a face). Open: the set-aside profiles in `/status` or
-  `ssc doctor`, and a routine for re-measuring the list.
+  `ssc doctor`, and a routine for re-measuring the list. **The first part is done (this PR, "doctor --live
+  follows the real request path").** `GET /status` (also `/health` and `POST /status/check`) carries
+  `connection.profiles {total, set_aside: [{name, until_utc}]}` from `profiles.status()`, and Health shows
+  one line when a profile is set aside (`02-services.md` 2.4, 6; `05-web-ui.md` 6.12). Not in `ssc doctor`:
+  the set-aside is per process, and a doctor process starts with none. Still open: a routine for
+  re-measuring the list.
 - **A trusted certificate has no scope and no reminder** (#230). A stored CA is trusted for every host the
   HTTP client and the bridge browser connect to, and an expired one stays in the folder until the user
   removes it (the list marks it `expired`). No decision asked for more.

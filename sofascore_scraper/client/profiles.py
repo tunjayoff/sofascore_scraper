@@ -29,7 +29,7 @@ import logging
 import random
 import threading
 import time
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +118,18 @@ def refused() -> List[str]:
     now = time.monotonic()
     with _lock:
         return [p for p in PROFILES if _refused_until.get(p, 0.0) > now]
+
+
+def status() -> Dict[str, Any]:
+    """
+    Arayüzün görüntüsü (`GET /api/v1/status` `connection.profiles`): profil sayısı ve kenarda olanlar, her biri ne
+    zamana kadar. Süreler monoton saatle tutulur; burada duvar saatine (epoch saniye) çevrilir. Yalnızca bu sürecin
+    bilgisidir: başka bir süreç (ayrı bir `ssc` komutu) kendi kenara aldıklarını bilir.
+    """
+    now, wall = time.monotonic(), time.time()
+    with _lock:
+        aside = [(p, _refused_until[p]) for p in PROFILES if _refused_until.get(p, 0.0) > now]
+    return {"total": len(PROFILES), "set_aside": [{"name": p, "until": wall + (until - now)} for p, until in aside]}
 
 
 def reset() -> None:

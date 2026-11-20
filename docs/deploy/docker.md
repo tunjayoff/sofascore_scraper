@@ -240,7 +240,8 @@ The app opens its browser when SofaScore asks for a challenge and for the `page`
 The browser refuses a certificate it cannot verify, and it does not read `SSL_CERT_FILE` or the system store.
 It does read the `ca` folder (ways 1 and 2): at its start the app writes those certificates into a
 certificate database of its own inside the browser profile, and the browser verifies against them. Without
-them it fails on an inspecting network with `net::ERR_CERT_AUTHORITY_INVALID` (`ssc doctor --live` says so).
+them it fails on an inspecting network with `net::ERR_CERT_AUTHORITY_INVALID` (`ssc doctor --live --browser`
+says so).
 
 Outside Linux the browser uses the trust store of the operating system instead of the folder, where an
 antivirus or a company has usually installed its CA already.

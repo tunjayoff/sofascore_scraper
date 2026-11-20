@@ -742,6 +742,7 @@ const tr: typeof en = {
     token: 'Erişim anahtarı kullanılıyor',
     untried: 'Sunucu başladığından beri SofaScore’a giden hiçbir istek yanıt almadı. İlk indirmeyle ya da aşağıdaki bağlantı denetimiyle denenir.',
     failing: 'SofaScore’a giden son istek başarısız oldu.',
+    profilesSetAside: '{total} tarayıcı profilinden {n} tanesi bot doğrulamasından sonra kenara alındı (6 saat sonra yeniden denenir)',
   },
   follows: {
     description: 'İndirilenler: ligler, takımlar, oyuncular ve tek maçlar; sezonları ve verileriyle.',

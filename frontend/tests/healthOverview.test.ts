@@ -93,6 +93,26 @@ describe('Health', () => {
     expect(live.findAll('button:not([data-testid="help-tip"])').map((b) => b.attributes('aria-label'))).toEqual([t('ui.common.copyCommand')])
   })
 
+  it('names the browser profiles set aside after a challenge, and nothing while none is', async () => {
+    const connection = (setAside: string[]) => ({
+      state: 'ok' as const, last_success_at: '2026-10-02T10:00:00Z', last_failure_at: null, last_failure_reason: null,
+      last_failure_status: null, last_check: null,
+      profiles: { total: 8, set_aside: setAside.map((name) => ({ name, until_utc: '2026-10-02T16:00:00Z' })) },
+    })
+    mockFetch({ 'GET /api/v1/status': { data: status({ connection: connection(['chrome150', 'safari17_0']) }) } })
+    ;({ w } = await mountScreen(HealthScreen, '/system/health'))
+    await flush()
+    const line = w.find('[data-testid="health-connection"] [data-testid="connection-profiles"]')
+    expect(line.text()).toBe(t('ui.health.profilesSetAside', { n: '2', total: '8' }))
+    expect(line.text()).toContain('2 of 8')
+    w.unmount()
+
+    mockFetch({ 'GET /api/v1/status': { data: status({ connection: connection([]) }) } })
+    ;({ w } = await mountScreen(HealthScreen, '/system/health'))
+    await flush()
+    expect(w.find('[data-testid="connection-profiles"]').exists()).toBe(false)
+  })
+
   it('runs the connection check only on click: one request, its result, a refusal by code', async () => {
     let answer: () => Response | object = () => ({
       data: { ok: true, reason: null, message: 'ok', events_count: 37, checked_at_utc: '2026-10-02T10:00:00Z', bridge: status().bridge },

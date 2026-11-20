@@ -6090,11 +6090,16 @@
               }
             ],
             "description": "The last connection check since the server started; null: none yet."
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileStatus",
+            "description": "The browser profiles of the HTTP client, and which are set aside."
           }
         },
         "type": "object",
         "required": [
-          "state"
+          "state",
+          "profiles"
         ],
         "title": "ConnectionStatus",
         "description": "Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,\na search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`\nbefore any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here."
@@ -9373,6 +9378,30 @@
         "title": "PlainScore",
         "description": "The score of an event whose sport has no score family: only the headline score."
       },
+      "ProfileStatus": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Profiles in the list."
+          },
+          "set_aside": {
+            "items": {
+              "$ref": "#/components/schemas/SetAsideProfile"
+            },
+            "type": "array",
+            "title": "Set Aside",
+            "description": "Profiles set aside after a challenge; empty: none."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "set_aside"
+        ],
+        "title": "ProfileStatus",
+        "description": "The browser profiles of this server's HTTP client. A profile SofaScore challenged is set aside for six hours and\nthe request is repeated with another one; the browser bridge is used only when none passes. Kept in the\nserver's memory: a restart forgets it, and other processes (`ssc` commands, `ssc watch`) keep their own."
+      },
       "Quality": {
         "properties": {
           "source": {
@@ -10171,6 +10200,32 @@
           "page"
         ],
         "title": "SeasonSliceListResponse"
+      },
+      "SetAsideProfile": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The browser profile the HTTP client presents itself as (e.g. chrome150)."
+          },
+          "until_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Until Utc",
+            "description": "ISO-8601, UTC: when it is used again."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SetAsideProfile"
       },
       "SetScore": {
         "properties": {

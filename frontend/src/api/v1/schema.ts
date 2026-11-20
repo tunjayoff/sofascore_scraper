@@ -238,6 +238,8 @@ export interface ConnectionStatus {
   last_failure_status?: number | null
   /** The last connection check since the server started; null: none yet. */
   last_check?: ConnectionCheck | null
+  /** The browser profiles of the HTTP client, and which are set aside. */
+  profiles: ProfileStatus
 }
 
 /** One innings of one side in cricket. */
@@ -947,6 +949,18 @@ export interface PlainScore {
   away: number | null
 }
 
+/**
+ * The browser profiles of this server's HTTP client. A profile SofaScore challenged is set aside for six hours and
+ * the request is repeated with another one; the browser bridge is used only when none passes. Kept in the
+ * server's memory: a restart forgets it, and other processes (`ssc` commands, `ssc watch`) keep their own.
+ */
+export interface ProfileStatus {
+  /** Profiles in the list. */
+  total: number
+  /** Profiles set aside after a challenge; empty: none. */
+  set_aside: SetAsideProfile[]
+}
+
 /** How much the record can be trusted, and where it comes from. */
 export interface Quality {
   /** `event`: the record derives from the stored `/event/{id}` payload. `listing`: the event is known only from a schedule page (a fixture, or a match whose details were never fetched); slices do not exist. */
@@ -1131,6 +1145,13 @@ export interface SeasonResponse {
 export interface SeasonSliceListResponse {
   data: Slice[]
   page: PageInfo
+}
+
+export interface SetAsideProfile {
+  /** The browser profile the HTTP client presents itself as (e.g. chrome150). */
+  name: string
+  /** ISO-8601, UTC: when it is used again. */
+  until_utc?: string | null
 }
 
 /** One set. */
