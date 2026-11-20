@@ -207,11 +207,19 @@ work from without reading the other briefs.
 | (feature) | #230 | merged | not a plan item, 2026-11-14 (issue #225): trusting the certificate of a network that re-signs HTTPS (`client/trust.py`, `client/nssdb.py`, `CONFIG_DIR/ca`, the four `/api/v1/trust` routes, `certificate_changed`, `ssc trust`, the Health card); two fixes of its Docker run in the same pull request (a certificate the browser refuses fails the launch; `ssc trust` logs to stderr) |
 | (release) | #231 | merged | not a plan item: the 3.1.2 release pull request (the version, the changelog close with a Security section and upgrade notes, the READMEs' version line, the usage-error golden); the tag `v3.1.2` on its merge commit `fb0a257`, 2026-11-14 (section 19) |
 | (documents) | #232, #233 | merged | not plan items, 2026-11-14, after the tag: a Contact section in both READMEs; the READMEs' "Why does it need Chromium?" and upgrade steps, the doctor's hint that named a README heading that does not exist (`locales/`), and the as-built note of `05-web-ui.md` 6.12 |
+| (documents) | #234, #235 | merged | not plan items, 2026-11-14: the design documents brought up to 3.1.1 and 3.1.2; four places where they and the code disagreed settled (one of them the hint of `ssc doctor --live`, in both languages) |
+| (dependencies) | #236 to #239 | merged | not plan work, 2026-11-20 (Dependabot): `playwright` 1.65.1, `fastapi` 0.162.5, `pytest-asyncio` 1.5.0, `ruff` 0.17.5, `@vitejs/plugin-vue` 6.0.11, `jsdom` 31.0.1 (section 20) |
+| (feature) | #240 | merged | not a plan item, 2026-11-20: `ssc doctor --live` sends one request the way a download does (the browser only as the fallback, or with `--browser`); the set-aside browser profiles in `/status` and on Health (section 20) |
+| (clean-up) | #242 | merged | not a plan item, 2026-11-20: unused helpers removed (section 19, "Unused code removed") |
+| (removal) | #241 | merged | not a plan item, 2026-11-20 (owner decision, section 13): `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` no longer read; set without their new names they stop the app (`config_invalid`, exit code 2; `ssc doctor`: `config_removed_name`) (section 20) |
+| (feature) | #243 | merged | not a plan item, 2026-11-20 (owner decision): backups carry the trusted certificates of `CONFIG_DIR/ca` and a restore puts them back (section 20) |
+| (tests) | #244 | merged | not a plan item, 2026-11-20: every test restores the whole process environment (`tests/conftest.py`); three order-dependent config test failures gone |
+| (release) | #245 | open | not a plan item: the 3.2.0 release pull request (the version, the changelog close with "Upgrading from 3.1", both READMEs with "Upgrading from 3.1", the usage-error golden); the tag follows the merge (section 20) |
 
 Every item is merged or done: the 97 of the plan, the eleven items of 3.1 and the three slice items after
 it (section 19). 3.0.0 was released on 2026-10-08 (section 18), 3.1.0 on 2026-10-09, and 3.1.1 and 3.1.2 on
-2026-11-14 (section 19, which also lists what is open after them). What this revision, the twelfth
-(2026-11-14), changed:
+2026-11-14 (section 19, which also lists what is open after them). 3.2.0 follows on 2026-11-20 (section 20,
+with the list of what is open after it). What this revision, the twelfth (2026-11-14), changed:
 
 - **3.1.1 and 3.1.2 are released**, both on 2026-11-14 and both from source, like 3.1.0: the tags `v3.1.1`
   on `3a8e063` and `v3.1.2` on `fb0a257`, the merge commits of their release pull requests (#223, #231).
@@ -5330,7 +5338,7 @@ the other items were written from the orchestrator's instructions and have no br
 entries of all of them are in `CHANGELOG.md` under `## [3.1.0] - 2026-10-09`. Since the twelfth revision
 this section also records what came after 3.1.0: FX-36 to FX-38, the research recorder, and the patch
 releases 3.1.1 and 3.1.2 of 2026-11-14 ("After 3.1.0", below); the open list at its end is the list after
-3.1.2.
+3.1.2. Section 20 records 3.2 and carries the items of that list that are still open.
 
 Done (all merged by 2026-10-09 and in 3.1.0; FX-28 shipped in 3.0.0):
 
@@ -5444,8 +5452,8 @@ How 3.1.1 and 3.1.2 were released, as far as the repository shows it:
 
 Open after 3.1.2 (the list after 3.1, brought up to 2026-11-14), in no fixed order:
 
-- **3.2: remove the four deprecated names.** Done on 2026-11-20 (pull request `feat/retire-deprecated-names`;
-  in 3.2, not released). The plan said that `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and
+- **3.2: remove the four deprecated names.** Done on 2026-11-20 (#241;
+  in 3.2.0, section 20). The plan said that `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and
   `PROXY_URL` would leave `loader.DEPRECATED_NAMES` and become plain `legacy_name` warnings. The owner chose
   that they fail closed instead (section 13, 2026-11-20). Built: no value is read from them any more, and
   `DEPRECATED_NAMES` became `loader.GUARDED_NAMES`. If one of them is set (in the environment or in `.env`)
@@ -5495,7 +5503,7 @@ Open after 3.1.2 (the list after 3.1, brought up to 2026-11-14), in no fixed ord
   polled faces because it reads every slice row. Switching the CLI would change what `--coverage` means and
   its output, and set it apart from the web. `StatusService.coverage` has no caller outside the tests now
   that the old file report is gone; it stays as the service's slice report.
-- **Unused code removed (2026-11-20).** Helpers that nothing in the package, `scripts/` or the frontend
+- **Unused code removed (2026-11-20, #242; in 3.2.0).** Helpers that nothing in the package, `scripts/` or the frontend
   called (vulture, then checked by hand): the `ConfigManager` getters `get_league_ids`, `get_league_names`,
   `get_league_name_by_id`, `get_league_id_by_name`, `get_match_data_dir`, `get_api_base_url`,
   `get_use_color`, `get_date_format`, `get_request_rate_limit` and `get_language` and the `League` dataclass
@@ -5535,7 +5543,7 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   store of the operating system (one warning in the log, a note in the UI and the CLI). Giving the browser
   the store on Windows and macOS needs a mechanism per platform, or the answer that the operating system's
   store is enough there.
-- **Done (after 3.1.2, for 3.2): backups include the `ca` folder** (#230 left it out). Owner decision
+- **Done (after 3.1.2, #243; in 3.2.0): backups include the `ca` folder** (#230 left it out). Owner decision
   (2026-11-20): a backup carries the trusted certificates and a restore puts them back. They are public
   certificates without keys, and a restore is the user's explicit act of putting back their own
   configuration, trust decisions included. As built (`01-storage.md` 9.1 and 9.2, `02-services.md` 2.7):
@@ -5559,7 +5567,7 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   request; only then comes the request with the HTTP client, and it is not sent when the bridge gave no
   answer. Since #227 downloads normally need no browser, so the check is heavier than what it checks. Open:
   the HTTP request first and the browser as a second, separate result, or a flag for the browser part.
-  **Done (this PR, "doctor --live follows the real request path").** `ssc doctor --live` sends one request
+  **Done (#240, 2026-11-20; in 3.2.0).** `ssc doctor --live` sends one request
   the way a download does (`make_api_request`: the HTTP client, other profiles on a challenge, the bridge
   only when none passes), so the browser starts only when the request path falls back to it; `live_ok` names
   the path (`detail.via`, `detail.profile`). A 403, 429 or other answer the path could not get past is now
@@ -5577,8 +5585,8 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   day; the gate's Chrome threshold moves, and new profiles come only with a newer curl_cffi. The set-aside
   keeps requests working while one profile passes, and nothing reports how many are set aside except the
   log (`profiles.refused()` has no caller in a face). Open: the set-aside profiles in `/status` or
-  `ssc doctor`, and a routine for re-measuring the list. **The first part is done (this PR, "doctor --live
-  follows the real request path").** `GET /status` (also `/health` and `POST /status/check`) carries
+  `ssc doctor`, and a routine for re-measuring the list. **The first part is done (#240, 2026-11-20; in
+  3.2.0).** `GET /status` (also `/health` and `POST /status/check`) carries
   `connection.profiles {total, set_aside: [{name, until_utc}]}` from `profiles.status()`, and Health shows
   one line when a profile is set aside (`02-services.md` 2.4, 6; `05-web-ui.md` 6.12). Not in `ssc doctor`:
   the set-aside is per process, and a doctor process starts with none. Still open: a routine for
@@ -5589,3 +5597,128 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
 
 Not in 3.1, by decision: a localized date picker (owner, 2026-10-09; the native date input stays) and
 serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).
+
+## 20. 3.2: what was done, the release, and what is open
+
+3.2 was built on main on 2026-11-20, after the `v3.1.2` tag, and is released as 3.2.0 (below). Like the work
+of 2026-11-14 (section 19) none of it has a brief of this plan or an id; it is cited by pull request number.
+The changelog entries are in `CHANGELOG.md` under `## [3.2.0] - 2026-11-20`. Its one incompatible change is
+the owner's decision of 2026-11-20 (section 13): the four 2.x names that FX-35 kept readable for 3.1 are no
+longer read and fail closed while set without their new names. The documents-only pull requests merged
+after the `v3.1.2` tag (#232 to #235: the READMEs' Contact section and corrections, the design documents
+brought up to 3.1.2, four disagreements between the design documents and the code settled) are in 3.2.0 too;
+#233's changelog entry is under Fixed, and #235 changed the hint of `ssc doctor --live` in both languages.
+
+What 3.2.0 contains (merged on 2026-11-20 unless noted):
+
+| PR | What it did |
+|---|---|
+| #240 | `ssc doctor --live` sends one request the way a download does (`make_api_request`: the HTTP client, other profiles on a challenge, the bridge only when none passes), so the browser starts only when the request path falls back to it; `live_ok` names the path (`detail.via`, `detail.profile`); a 403, 429 or other answer the path could not get past is `live_failed`; `--live --browser` checks the bridge on its own line (`live_browser`). `GET /status` (also `/health` and `POST /status/check`) carries `connection.profiles {total, set_aside: [{name, until_utc}]}`, and Health shows one line when a profile is set aside (section 19, "doctor --live" and "The profile list"; `02-services.md` 2.4, 4.1, 6; `05-web-ui.md` 6.12) |
+| #241 | `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` fail closed: no value is read from them; `loader.GUARDED_NAMES` replaces `DEPRECATED_NAMES`, and one of them set without its setting given by the new environment name, a flag or a variable named by `token_env` / `proxy_env` raises `GuardedNameError` (`config_invalid`, exit code 2; `ssc doctor`: `config_removed_name`); the web app and the container do not start; the Docker entrypoint no longer counts the old allow-list name; `replaced_by`, `Source.deprecated` and the 3.1 rule that `PROXY_URL` alone does not switch the proxy on removed (section 19, "3.2: remove the four deprecated names"; `02-services.md` 4.3, 4.6) |
+| #242 | unused helpers removed (vulture, then checked by hand); no command, route, setting or file format changes (section 19, "Unused code removed") |
+| #243 | backups carry the trusted certificates of `CONFIG_DIR/ca` as flat `config/ca.<file name>` members listed under `trusted_ca` in `backup.json`, `verify` checks them, a restore writes them back and restarts the bridge browser; the backup format number stays 2, and 3.1.2 still restores such a backup without the certificates (section 19, "backups include the `ca` folder"; `01-storage.md` 9.1, 9.2; `02-services.md` 2.7) |
+| #244 | tests only: the autouse guard of `tests/conftest.py` snapshots `os.environ` and restores it exactly after every test, set up first and torn down last, which ends three leaks that made config tests fail by test order; no product code, no changelog entry |
+| #236 to #239 | Dependabot: `playwright` 1.65.1 (the browser stack group; `scrapling` and `patchright` unchanged), `fastapi` 0.162.5, `pytest-asyncio` 1.5.0 and `ruff` 0.17.5 (the Python group), `@vitejs/plugin-vue` 6.0.11 and `jsdom` 31.0.1 (frontend); one changelog line under Changed |
+| (release) | the release pull request: `version = "3.2.0"`, the changelog section, the READMEs, the usage-error golden, `00-platform.md`'s Version row and this section |
+
+How 3.2.0 is released, as for 3.1.0 to 3.1.2 (section 19):
+
+1. **Live checks before the release pull request**, by the maintainer on main at `1e84efb` (#243, before #244,
+   which changes tests only): `ssc doctor --live` answered over HTTP without starting the browser; one match
+   was downloaded with no 403; the container refuses to start with `SOFASCORE_ALLOWED_HOSTS` set and
+   `SOFASCORE_SERVER__ALLOWED_HOSTS` not; a backup and its restore brought a trusted certificate back. The
+   Docker smoke test ran on the same commit. The release pull request sends no request to SofaScore.
+2. **The release pull request** (#245):
+   - **The version.** `pyproject.toml` says `version = "3.2.0"` (the one source); the usage-error golden of the
+     CLI and `00-platform.md`'s Version row follow.
+   - **The changelog close.** `## [3.2.0] - 2026-11-20` under an empty `## [Unreleased]`: an introduction
+     that names the image `ghcr.io/tunjayoff/sofascore_scraper:3.2.0`, "Upgrading from 3.1" (the four names
+     first: what stops, what to rename to, `ssc doctor`; then `ssc doctor --live`, the certificates in
+     backups, the reinstall after updating a checkout), then Added, Changed (with the dependency line of #236
+     to #239), Removed and Fixed. #244 and #232 to #235 have no entry, apart from #233's line under Fixed.
+   - **Both READMEs.** "3.2.0 is released from source", and a section "Upgrading from 3.1" / "3.1'den
+     yükseltme" (the renames as a table, `ssc doctor --live`, the certificates in backups) linked from the
+     note and the contents line; every relative link and anchor resolves.
+   - **The checks of release point D** (section 8): `ruff check sofascore_scraper tests scripts` clean; the full
+     suite with `STORE_SHADOW_CHECK=1` (9,885 passed, 40 skipped, 27 deselected); the offline browser tests
+     (`-m "browser and not live"`: 22 passed, 1 skipped because camoufox is not installed); the frontend
+     (`npm ci`, `eslint .` clean, `vitest run` 31 files and 388 tests, `npm run build`); `scripts/release.py
+     version`, `check-tag v3.2.0` and `notes 3.2.0`, which set no tag and push nothing.
+   - The check learned at point E (section 8) holds: no name stops being read in a way that weakens security
+     or privacy; the four names stop the app instead.
+3. **The tag** is the owner's, on the merge commit of the release pull request. `release.yml` checks the tag
+   against `pyproject.toml`, runs CI, builds and smoke-tests the image, pushes
+   `ghcr.io/tunjayoff/sofascore_scraper:3.2.0` (also `3.2` and `latest`) and publishes the GitHub Release
+   with the source archives. There is no PyPI package; 3.2.0 installs from source, like 3.1.
+
+Open after 3.2.0 (the items of section 19's list that are not done, copied), in no fixed order:
+
+- **Team streaks that answer 200 with an empty body.** A body-aware rule for `team_streaks` is a decision
+  (section 13).
+- **Baseball `/umpires`, `/weather`, `/comments` and `/at-bats`.** They answer 200 on finished and live
+  matches; slices for them are a proposal (section 13).
+- **A fetch of SofaScore's odds provider listing** (B4's proposal). An optional reference fetch of
+  `/odds/providers/{cc}/web`, at most weekly, only when `client.odds_country` is set (never from the
+  machine's address), through the client and the throttle and never part of a match download, every link
+  field stripped before it is stored and the result merged over the built-in table; `GET /odds/providers`
+  would then say where each entry comes from. It needs a place in the Store for reference data.
+- **A `provider_name` field in schema v1** (`Odds`, `OddsLine`). Additive, with the generated tables of
+  `04-schema-v1.md`; until then a consumer reads the names from `GET /odds/providers`.
+- **A replacement for `stage_name` and `listed_in`.** P30 dropped only the two score columns of the events
+  table: schema v1 reads `stage.name` from `stage_name`, and the listing rules (staleness, the reconcile of
+  a season's pages, the planner's listed events) read `listed_in`. Dropping them needs a design first.
+- **`sofascore_scraper/store/files.py` gets its durability from the caller.** It reads `storage.durability`
+  through the loader module in `sys.modules` (the Store may not import the configuration); no Store caller
+  has the settings today.
+- **The live-match-tracker document in the explorer.** The iframe document under `/api/v1/event/{id}/live-match-tracker/`
+  is a Document request, outside the explorer's `Fetch` patterns, so it is sent without a slot and not
+  counted (one per event page). Holding Document requests in the interceptor would fix it.
+- Small leftovers of P30 (section 16): a neutral `/search` for `/tournaments/search`; one `FetchPipeline` per
+  `DetailPhase` call instead of one session per job. The third, `ssc status --coverage` reading `summary()`
+  instead of `StatusService.coverage`, is **closed without a code change (2026-11-20)**: the two compute
+  different things. The per-tournament `coverage` of `summary()` (`TournamentCounts.coverage`) is details over
+  matches, the share of matches whose `/event` payload is stored, with one decimal, and `/api/v1/status` shows
+  the same rows, so the two faces already share one implementation. `StatusService.coverage` is the slice
+  report: per tournament and season, how many matches with a stored payload miss no selected slice (two
+  decimals) and how many miss each slice; `02-services.md` ("Coverage and the scheduler") keeps it off the
+  polled faces because it reads every slice row. Switching the CLI would change what `--coverage` means and
+  its output, and set it apart from the web. `StatusService.coverage` has no caller outside the tests now
+  that the old file report is gone; it stays as the service's slice report.
+
+New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`), still open:
+
+- **The trust feature is not verified on Windows and macOS, or behind a real proxy** (#230). Its tests run
+  against a TLS server on the loopback address with a generated PKI, and it was run in the Docker image
+  (Linux). On Windows and macOS the store, the combined CA file and the probe are the same code but were
+  not run; with a proxy configured the probe is not made at all (`trust.proxy_configured`, reason `proxy`),
+  because a direct socket would bypass the proxy, so there the user must put the CA certificate into the
+  `ca` folder by hand, and whether curl then verifies through the proxy with the combined file was not
+  checked against a real one.
+- **The browser part of the trust feature is Linux only** (#230). `trust.browser_supported()` is true on
+  Linux with `libnss3`; elsewhere the bridge browser is not given the stored certificates and uses the trust
+  store of the operating system (one warning in the log, a note in the UI and the CLI). Giving the browser
+  the store on Windows and macOS needs a mechanism per platform, or the answer that the operating system's
+  store is enough there.
+- **No path filter in CI for documents-only changes.** `.github/workflows/ci.yml` runs on every pull
+  request and every push to main without a `paths` filter (only `audit.yml` and `latest-deps.yml` have one),
+  so a pull request that changes only `docs/` or a README runs the frontend job and the whole Python matrix.
+  A filter must keep the tests that read documents running (the generated tables of `04-schema-v1.md` in
+  `tests/test_schema_v1.py`, the DDL of `01-storage.md` in `tests/test_store_catalog.py`, the OpenAPI
+  snapshot, and the tests that read the READMEs, such as `tests/test_live_direct_optin.py` and
+  `tests/test_start_web.py`).
+- **The profile list has to follow SofaScore's gate** (#227). `profiles.WANTED` is the measurement of one
+  day; the gate's Chrome threshold moves, and new profiles come only with a newer curl_cffi. The set-aside
+  keeps requests working while one profile passes, and nothing reports how many are set aside except the
+  log (`profiles.refused()` has no caller in a face). Open: the set-aside profiles in `/status` or
+  `ssc doctor`, and a routine for re-measuring the list. **The first part is done (#240, 2026-11-20; in
+  3.2.0).** `GET /status` (also `/health` and `POST /status/check`) carries
+  `connection.profiles {total, set_aside: [{name, until_utc}]}` from `profiles.status()`, and Health shows
+  one line when a profile is set aside (`02-services.md` 2.4, 6; `05-web-ui.md` 6.12). Not in `ssc doctor`:
+  the set-aside is per process, and a doctor process starts with none. Still open: a routine for
+  re-measuring the list.
+- **A trusted certificate has no scope and no reminder** (#230). A stored CA is trusted for every host the
+  HTTP client and the bridge browser connect to, and an expired one stays in the folder until the user
+  removes it (the list marks it `expired`). No decision asked for more.
+
+Not in 3.2, by decision, as for 3.1: a localized date picker (owner, 2026-10-09; the native date input
+stays) and serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).

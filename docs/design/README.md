@@ -35,7 +35,7 @@ pull request.
 | [00-platform.md](00-platform.md) | The owner's platform design in English: decisions (with their state and the decisions taken after the draft), layers, schema v1, storage, API v1, CLI, sinks, live, security, waves. Its last section lists where the detailed designs differ from the draft | you want the goal and the fixed requirements |
 | [01-storage.md](01-storage.md) | The Store: what is on disk today and who touches it, the v3 layout, compression measurements, the catalog and state databases with their DDL, both layouts read side by side, `migrate`, leases and the write protocol, backup and restore | you work on anything under `DATA_DIR` |
 | [02-services.md](02-services.md) | The service layer and the faces: what `match_data_fetcher.py` does today, the client, the one pipeline, jobs across processes, the CLI contract, sinks and webhooks, API v1 resources, the live service, removal of the terminal UI | you work on fetching, jobs, the CLI, the API or live |
-| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 97 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; how 3.0.0 was released (section 18); what 3.1 has, how 3.1.0 was released, what 3.1.1 and 3.1.2 have and what is open after them (section 19) | you are about to start or review a pull request, or you want to know what is open after 3.1.2 |
+| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 97 items with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned; how 3.0.0 was released (section 18); what 3.1 has, how 3.1.0 was released, what 3.1.1 and 3.1.2 have (section 19); what 3.2 has, how 3.2.0 is released and what is open after it (section 20) | you are about to start or review a pull request, or you want to know what is open after 3.2.0 |
 | [04-schema-v1.md](04-schema-v1.md) | The normalized schema v1, the public data contract, field by field: every record the platform gives out (Sport, Category, Tournament, Season, Participant, Event with its score by score family, Slice, Change, LiveEvent) with type, unit, null rule, source in SofaScore's payload and meaning; the odds and standings records of P28 (`Odds`, `OddsLine`, `StandingsRow`, in the generated contract since FX-21); the versioning rule; what "raw" means; the 28 decisions taken while it was written. Approved on 2026-10-02 | you consume the platform's data, or you work on the API, the exports, the sinks or a new sport |
 | [05-web-ui.md](05-web-ui.md) | The screens of the web UI, designed from scratch on API v1 (plan item FE-1): users, information architecture, design system, every screen with its routes and fields and states, the routes still missing with their owners, and the decisions taken. Approved by the owner on 2026-10-02 with all 22 decisions; built by FE-2 (#107, #132, #133), then reworked after a first-time-user review (FX-14a #154, FX-14b #161; the classic views removed) and given the search as the user types (FX-20 #167); its last section says what changed while it was built, with the words as built | you work on the frontend |
 
@@ -80,7 +80,7 @@ pull request.
 
 As of 2026-11-14, after the twelfth revision (details and pull request numbers in the "Status" section at
 the top of `03`; the 3.0.0 release in its section 18, 3.1 and the releases 3.1.0, 3.1.1 and 3.1.2 in its
-section 19):
+section 19, 3.2 and the release 3.2.0 in its section 20):
 
 - **3.0.0 is released** (2026-10-08): the tag `v3.0.0` on `1c5bab2`, the GitHub Release with the source
   archives and checksums, and the image `ghcr.io/tunjayoff/sofascore_scraper:3.0.0`. There is no PyPI
@@ -121,17 +121,24 @@ section 19):
   error code `certificate_changed` (#230); the kind of network failure in the connection check (#226);
   a second request of `ssc doctor --live` with the app's HTTP client (#228); and the browser stack
   `scrapling` 0.5.1, `patchright` 1.64.4, `playwright` 1.65.0 (#222).
-- **Open after 3.1.2** (section 19 of `03`): removing the four deprecated names in 3.2, a rule for team
-  streaks that answer 200 with an empty body, baseball's umpires, weather, comments and at-bats, a fetch of
-  the odds providers' listing and a `provider_name` field, a replacement for the events columns `stage_name`
-  and `listed_in`, the Store's durability from its caller, the explorer's unthrottled live-match-tracker
-  document, and a few small leftovers of P30; and, new with 3.1.2: the trust feature is not verified on
-  Windows and macOS or behind a real proxy, its browser part is Linux only, backups do not include the `ca`
-  folder, `ssc doctor --live` costs a full home-page load, CI has no path filter for documents-only
-  changes, the profile list has to follow SofaScore's gate, and a trusted certificate has no scope and no
-  reminder. Closed since the eleventh revision: the four sports' slice rows (FX-36), live pages for the
-  evidence (FX-37) and the CI flake of the explorer's slot test (#224).
-  Not in 3.1: a localized date picker (owner) and the web UI under a path prefix.
+- **3.2.0** (2026-11-20, release pull request #245; section 20 of `03`; the tag is the owner's, after the
+  merge): the four deprecated 2.x names `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and
+  `PROXY_URL` are no longer read, and set without their new names they stop the application (#241, owner's
+  decision); `ssc doctor --live` sends one request the way a download does, and the set-aside browser
+  profiles show in `/status` and on Health (#240); backups carry the trusted certificates (#243); unused
+  helpers removed (#242); every test restores the process environment (#244); dependency updates (#236 to
+  #239). The image is `ghcr.io/tunjayoff/sofascore_scraper:3.2.0`, from source like 3.1.
+- **Open after 3.2.0** (section 20 of `03`): a rule for team streaks that answer 200 with an empty body,
+  baseball's umpires, weather, comments and at-bats, a fetch of the odds providers' listing and a
+  `provider_name` field, a replacement for the events columns `stage_name` and `listed_in`, the Store's
+  durability from its caller, the explorer's unthrottled live-match-tracker document, and two small
+  leftovers of P30; from 3.1.2: the trust feature is not verified on Windows and macOS or behind a real
+  proxy, its browser part is Linux only, CI has no path filter for documents-only changes, the profile
+  list has no routine for re-measuring it, and a trusted certificate has no scope and no reminder. Closed
+  in 3.2: the four deprecated names, backups without the `ca` folder, the home-page load of `ssc doctor
+  --live`, the set-aside profiles in no face, unused code, and the third P30 leftover (closed without a
+  code change).
+  Not in 3.1 or 3.2: a localized date picker (owner) and the web UI under a path prefix.
 - What a user can see: everything a download writes is in the new layout (`v3/`, 8.4 times smaller on the
   owner's data) and the old folders are read in place; `ssc` covers every task of the former terminal menu
   and of `main.py`, whose old flags are now usage errors that name their command; the web app runs on
