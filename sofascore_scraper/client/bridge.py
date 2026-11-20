@@ -800,28 +800,6 @@ async def fetch_api_via_browser(path_or_url: str) -> Optional[Any]:
     return await _run_on_background_loop(bridge.fetch_json(path_or_url), REQUEST_TIMEOUT, cancellable=True)
 
 
-async def solve_turnstile_challenge(timeout_ms: int = 35000, headless: Optional[bool] = None) -> Optional[str]:
-    """Turnstile challenge çözücü."""
-    bridge = BrowserBridge.get_instance()
-    await _run_on_background_loop(bridge.ensure_ready(), STARTUP_TIMEOUT)
-    return await _run_on_background_loop(bridge.solve_challenge(), timeout_ms / 1000 + 10, cancellable=True)
-
-
-def solve_turnstile_challenge_sync(timeout_ms: int = 30000) -> Optional[str]:
-    """Senkron Turnstile challenge çözücü."""
-    cached = get_cached_token()
-    if cached:
-        return cached
-
-    bridge = BrowserBridge.get_instance()
-    try:
-        _run_sync(bridge.ensure_ready(), STARTUP_TIMEOUT)
-        return _run_sync(bridge.solve_challenge(), timeout_ms / 1000 + 10, cancellable=True)
-    except Exception as e:
-        logger.error(f"solve_turnstile_challenge_sync failed: {e}")
-        return None
-
-
 import atexit
 
 
@@ -842,20 +820,3 @@ def _cleanup():
 
 
 atexit.register(_cleanup)
-
-
-def apply_token_to_headers(headers: dict, token: Optional[str] = None) -> dict:
-    """Token'ı header'lara ekler."""
-    token = token or get_cached_token()
-    if not token:
-        return headers
-
-    existing_cookies = headers.get("Cookie", "")
-    if "sofa_captcha=" not in existing_cookies:
-        cookie_val = f"sofa_captcha={token}"
-        headers["Cookie"] = f"{existing_cookies}; {cookie_val}" if existing_cookies else cookie_val
-
-    if "X-Captcha" not in headers:
-        headers["X-Captcha"] = token
-
-    return headers
