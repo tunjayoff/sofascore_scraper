@@ -154,13 +154,13 @@ def test_global_options_are_the_ones_of_the_design(described: Dict[str, Any]):
 
 def test_command_options_of_this_item(described: Dict[str, Any]):
     commands = {command["name"]: command for command in described["commands"]["commands"]}
-    assert [option["flags"][0] for option in commands["doctor"]["options"]] == ["--strict", "--live", "--only", "--skip"]
+    assert [option["flags"][0] for option in commands["doctor"]["options"]] == ["--strict", "--live", "--browser", "--only", "--skip"]
     assert commands["describe"]["arguments"][0]["choices"] == list(meta.DESCRIBE_TOPICS)
     assert commands["describe"]["arguments"][0]["nargs"] == "?"
     assert [option["flags"] for option in commands["config init"]["options"]] == [["--from-legacy"]]
     assert [option["flags"] for option in commands["diagnostics"]["options"]] == [["--out"]]
     assert commands["version"]["options"] == [] and commands["config show"]["options"] == []
-    assert "budget" in commands["doctor"]["options"][2]["help"]  # --only: denetim adları, ek denetim dahil
+    assert "budget" in commands["doctor"]["options"][3]["help"]  # --only: denetim adları, ek denetim dahil
 
 
 # --- sports, slices: kayıt defteri ---------------------------------------------------------------

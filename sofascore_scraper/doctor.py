@@ -10,8 +10,9 @@ Denetimler SofaScore'a bağlanmaz: Python sürümü, gerekli paketler, köprün�
 (patchright'ın Chromium'u; yerel bir about:blank sayfasıyla denenir), tarayıcı profili, veri ve
 yapılandırma dizinleri, yapılandırma dosyası (sofascore.toml) ve onun verdiği dizinler, web arayüzü derlemesi
 ve .env. Her denetim ok / warn / fail ile tek satırlık
-bir çözüm döndürür. `--live` açıkça istenirse iki gerçek istek atılır (biri köprü üzerinden, biri uygulamanın
-kendi istek yoluyla); varsayılan olarak ve testlerde çalışmaz.
+bir çözüm döndürür. `--live` açıkça istenirse tek gerçek istek atılır, bir indirmenin attığı gibi (HTTP istemcisi;
+SofaScore challenge verirse başka profiller ve en son tarayıcı köprüsü); `--live --browser` köprüyü ayrıca sınar.
+Varsayılan olarak ve testlerde çalışmazlar.
 
 Bu modül yüklenirken yalnızca standart kütüphaneyi kullanır: eksik paket tam da bulması gereken
 sorundur, o yüzden sofascore_scraper.logger (rich) ya da dotenv'e bağımlı olamaz. Python 3.10'dan eski sürümlerde
@@ -1035,6 +1036,9 @@ CA_FILE_ENV = ("SSL_CERT_FILE", "CURL_CA_BUNDLE", "REQUESTS_CA_BUNDLE")
 _CURL_ERROR = re.compile(r"curl: \((\d+)\) *(.*)")
 # curl'ün TLS hata kodları (sofascore_scraper/web/upstream.py `_CURL_CAUSE` ile aynı küme; doktor web katmanını yüklemez)
 _CURL_TLS_CODES = (35, 51, 58, 59, 60, 77, 83)
+# Yanıtı getiren yol (sofascore_scraper/client/transport.py VIA_CURL, VIA_BRIDGE)
+_VIA_CURL = "curl"
+_VIA_BRIDGE = "bridge"
 
 
 def _missing_ca_file(ctx: Context) -> Optional[Tuple[str, str]]:
@@ -1046,29 +1050,74 @@ def _missing_ca_file(ctx: Context) -> Optional[Tuple[str, str]]:
     return None
 
 
-def _check_live_http(ctx: Context, request: Optional[Callable[[str], Any]] = None) -> Optional[CheckResult]:
+def _live_request(path: str) -> Tuple[Any, Dict[str, Any]]:
     """
-    Uygulamanın kendi istek yoluyla (curl_cffi; arayüzdeki bağlantı denetimiyle aynı çağrı) TEK istek. Köprü yanıt
-    alırken bu yol bağlanamıyorsa indirmeler de bağlanamaz: tarayıcı sertifika hatalarını yok sayar (Scrapling
-    `ignore_https_errors`), curl saymaz; ağdaki bir yazılım (HTTPS tarayan antivirüs, kurumsal TLS denetimi)
-    sertifikayı yeniden imzalıyorsa yalnızca curl yolu düşer (#225). Sorun yoksa None döner. SofaScore'un HTTP ile
-    verdiği her yanıt (403, 429 dahil) bağlantının kurulduğunu gösterir; yalnızca bağlantı hatası bildirilir.
+    İndirmelerin istek yolu (sofascore_scraper/client/transport.py `make_api_request`): HTTP istemcisi bir tarayıcı
+    profiliyle sorar; SofaScore challenge verirse istek başka profillerle yinelenir, geçen profil kalmazsa tarayıcı
+    köprüsüne düşer. Arayüzdeki bağlantı denetimi gibi tek deneme ve 10 sn: 403 bekleme döngüsü yoktur. (yanıt,
+    yanıtı getiren yol) döner: {"via": "curl" | "bridge", "profile": profil adı ya da None}.
     """
-    from sofascore_scraper.exceptions import NetworkError, SofaScoreScraperError
+    from sofascore_scraper.client.transport import RequestTrace, make_api_request
 
-    if request is None:
-        from sofascore_scraper.client.transport import make_api_request
+    trace = RequestTrace()
+    data = make_api_request(path, max_retries=1, timeout=10, raise_errors=True, trace=trace)
+    return data, {"via": trace.via, "profile": trace.profile if trace.via == _VIA_CURL else None}
 
-        def request(path: str) -> Any:
-            return make_api_request(path, max_retries=1, timeout=10, raise_errors=True)
 
+def _bridge_snapshot() -> Optional[Dict[str, Any]]:
     try:
-        request(LIVE_PROBE_PATH)
+        from sofascore_scraper import bridge_health
+
+        return dict(bridge_health.snapshot())
+    except Exception:
         return None
-    except NetworkError as e:
-        curl = _CURL_ERROR.search(str(e))
-    except SofaScoreScraperError:
+
+
+def _bridge_error_since(before: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    İstek sırasında köprünün kaydettiği hata (bridge_health `last_error`); kaydetmediyse None. `before` isteğe
+    başlamadan alınan görüntüdür (sofascore_scraper/web/upstream.py `browser_failed_since` ile aynı karşılaştırma).
+    """
+    now = _bridge_snapshot()
+    err = (now or {}).get("last_error")
+    if not now or not err:
         return None
+    if before is None:
+        return dict(err)
+    if (
+        now.get("consecutive_failures", 0) > before.get("consecutive_failures", 0)
+        or now.get("last_failure_at") != before.get("last_failure_at")
+    ):
+        return dict(err)
+    return None
+
+
+def _challenged_profiles() -> List[str]:
+    """Bu süreçte challenge alıp kenara alınan profiller (doktorun kendi süreci: yalnızca bu denetimin isteği)."""
+    try:
+        from sofascore_scraper.client import profiles
+
+        return list(profiles.refused())
+    except Exception:
+        return []
+
+
+def _profile_count() -> Optional[int]:
+    try:
+        from sofascore_scraper.client import profiles
+
+        return len(profiles.PROFILES)
+    except Exception:
+        return None
+
+
+def _live_network_failure(ctx: Context, exc: BaseException) -> CheckResult:
+    """
+    HTTP istemcisi bağlanamadı (#225). Tarayıcı köprüsüne yalnızca challenge'da düşülür, bağlantı hatasında değil:
+    indirmeler de aynı yerde düşer. Ağdaki bir yazılım (HTTPS tarayan antivirüs, kurumsal TLS denetimi) sertifikayı
+    yeniden imzalıyorsa curl'ün TLS kodlarından biri gelir.
+    """
+    curl = _CURL_ERROR.search(str(exc))
     # Hatanın metni adres içerebilir; curl'ün kendi açıklaması yeter ("See https://curl.se/..." eki atılır)
     error = _first_line(curl.group(2).split(" See https://")[0]).rstrip(". ") if curl else "?"
     detail: Dict[str, Any] = {"path": LIVE_PROBE_PATH, "error": error, "curl_code": int(curl.group(1)) if curl else None}
@@ -1087,15 +1136,100 @@ def _check_live_http(ctx: Context, request: Optional[Callable[[str], Any]] = Non
     )
 
 
-def check_live(
-    ctx: Context, fetch: Optional[Callable[[str], Any]] = None, request: Optional[Callable[[str], Any]] = None
-) -> CheckResult:
+def _live_refused(ctx: Context, exc: BaseException, before: Optional[Dict[str, Any]]) -> CheckResult:
     """
-    SofaScore'a iki gerçek istek: biri köprü (tarayıcı) üzerinden, biri uygulamanın kendi istek yoluyla
-    (`_check_live_http`). Yalnızca `--live` / `run_checks(live=True)` ile çalışır; ortak istek bütçesine
-    (sofascore_scraper/throttle.py) uyar. Profil başka bir süreçte açıksa (çalışan web uygulaması) köprü geçici
-    bir kardeş profille açılır (FX-23; sofascore_scraper/client/profile_lock.py), denetim bu yüzden düşmez. Köprü
-    yanıt alamazsa ikinci istek atılmaz.
+    SofaScore HTTP ile yanıt verdi ama veri vermedi ve istek yolu bunu aşamadı. 403'te challenge alan profiller ve
+    köprünün o sırada kaydettiği hata söylenir; köprü sertifikayı doğrulayamadıysa (`ERR_CERT_`) `live_browser_tls`.
+    """
+    status = getattr(exc, "status_code", None)
+    detail: Dict[str, Any] = {"path": LIVE_PROBE_PATH, "status": status}
+    fix = ctx.t("doctor_live_fix")
+    if status == 429:
+        return _result(
+            ctx, "live", FAIL, "live_failed", ctx.t("doctor_live_rate_limited", status=status), fix=fix, detail=detail
+        )
+    if status != 403:
+        return _result(
+            ctx, "live", FAIL, "live_failed", ctx.t("doctor_live_status", status=status or "?"), fix=fix, detail=detail
+        )
+    challenged = _challenged_profiles()
+    bridge = _bridge_error_since(before)
+    detail["challenged_profiles"] = challenged
+    if bridge is None and not challenged:
+        # Challenge değil, düz bir ret: istek yolu tarayıcıya düşmez
+        return _result(
+            ctx, "live", FAIL, "live_failed", ctx.t("doctor_live_refused", status=status), fix=fix, detail=detail
+        )
+    error = "?"
+    if bridge is not None:
+        detail["bridge"] = bridge
+        error = _first_line("{}: {}".format(bridge.get("kind"), bridge.get("detail")))
+    if "ERR_CERT_" in error:
+        return _result(
+            ctx, "live", FAIL, "live_browser_tls", ctx.t("doctor_live_browser_tls", error=error),
+            fix=ctx.t("doctor_live_browser_tls_fix"), detail=detail,
+        )
+    total = _profile_count()
+    return _result(
+        ctx, "live", FAIL, "live_failed",
+        ctx.t("doctor_live_challenged", count=len(challenged), total=total if total is not None else "?", error=error),
+        fix=fix, detail=detail,
+    )
+
+
+def check_live(ctx: Context, request: Optional[Callable[[str], Tuple[Any, Dict[str, Any]]]] = None) -> CheckResult:
+    """
+    SofaScore'a TEK gerçek istek, bir indirmenin attığı gibi (`_live_request`): önce HTTP istemcisi, challenge'da
+    başka profiller, en son tarayıcı köprüsü. Köprü yalnızca istek yolu ona düşerse açılır (açılışı SofaScore'un ana
+    sayfasını yükler); köprüyü ayrıca sınamak `--browser` ile (`check_live_browser`). Yalnızca `--live` /
+    `run_checks(live=True)` ile çalışır; ortak istek bütçesine (sofascore_scraper/throttle.py) uyar.
+
+    Sonuçlar: `live_ok` (yanıtı getiren yol `detail.via`, HTTP istemcisininse profil `detail.profile`),
+    `live_http_tls` / `live_http_failed` (bağlantı hatası), `live_browser_tls` (düşülen tarayıcı sertifikayı
+    doğrulayamadı), `live_failed` (SofaScore'un aşılamayan yanıtı: challenge, ret, 429, beklenmeyen yanıt).
+    `request` testlerde sahte istek yoludur: (yanıt, {"via", "profile"}) döner ya da istek katmanının hatasını
+    fırlatır.
+    """
+    from sofascore_scraper.exceptions import APIError, NetworkError
+
+    request = request or _live_request
+    before = _bridge_snapshot()
+    try:
+        data, answered = request(LIVE_PROBE_PATH)
+    except NetworkError as e:
+        return _live_network_failure(ctx, e)
+    except APIError as e:  # 404 de: durağan uç noktanın yokluğu beklenmeyen bir yanıttır
+        return _live_refused(ctx, e, before)
+    except Exception as e:
+        return _result(
+            ctx, "live", FAIL, "live_failed",
+            ctx.t("doctor_live_failed", error=_first_line("{}: {}".format(e.__class__.__name__, e))),
+            fix=ctx.t("doctor_live_fix"), detail={"path": LIVE_PROBE_PATH},
+        )
+    via = (answered or {}).get("via")
+    profile = (answered or {}).get("profile")
+    detail: Dict[str, Any] = {"path": LIVE_PROBE_PATH, "via": via, "profile": profile}
+    if not data:
+        return _result(
+            ctx, "live", FAIL, "live_failed", ctx.t("doctor_live_failed", error=ctx.t("doctor_live_empty")),
+            fix=ctx.t("doctor_live_fix"), detail=detail,
+        )
+    if via == _VIA_BRIDGE:
+        summary = ctx.t("doctor_live_ok_bridge")
+    elif profile:
+        summary = ctx.t("doctor_live_ok_profile", profile=profile)
+    else:
+        summary = ctx.t("doctor_live_ok")
+    return _result(ctx, "live", OK, "live_ok", summary, detail=detail)
+
+
+def check_live_browser(ctx: Context, fetch: Optional[Callable[[str], Any]] = None) -> CheckResult:
+    """
+    Tarayıcı köprüsünü ayrıca sınar (`--live --browser`): köprü üzerinden TEK istek. Açılışı SofaScore'un ana
+    sayfasını yükler; indirmeler köprüye yalnızca challenge'da düşer, bu yüzden varsayılan olarak çalışmaz. Profil
+    başka bir süreçte açıksa (çalışan web uygulaması) köprü geçici bir kardeş profille açılır (FX-23;
+    sofascore_scraper/client/profile_lock.py). `live` denetimi köprüye düştüyse aynı süreçteki köprü yeniden
+    kullanılır (ikinci açılış yok).
     """
     if fetch is None:
         from sofascore_scraper.client.bridge import fetch_api_via_browser_sync as fetch
@@ -1106,8 +1240,9 @@ def check_live(
     except Exception as e:
         data, error = None, "{}: {}".format(e.__class__.__name__, e)
     if data:
-        return _check_live_http(ctx, request) or _result(
-            ctx, "live", OK, "live_ok", ctx.t("doctor_live_ok"), detail={"path": LIVE_PROBE_PATH}
+        return _result(
+            ctx, "live_browser", OK, "live_browser_ok", ctx.t("doctor_live_browser_ok"),
+            detail={"path": LIVE_PROBE_PATH},
         )
     detail: Dict[str, Any] = {"path": LIVE_PROBE_PATH}
     if error is None:
@@ -1123,15 +1258,15 @@ def check_live(
     # imzalıyor. Tarayıcı artık bunu kabul etmez; çaresi bekleyip yeniden denemek değildir.
     if error and "ERR_CERT_" in error:
         return _result(
-            ctx, "live", FAIL, "live_browser_tls",
+            ctx, "live_browser", FAIL, "live_browser_tls",
             ctx.t("doctor_live_browser_tls", error=_first_line(error)),
             fix=ctx.t("doctor_live_browser_tls_fix"),
             detail=detail,
         )
     return _result(
-        ctx, "live", FAIL, "live_failed",
-        ctx.t("doctor_live_failed", error=_first_line(error) or "?"),
-        fix=ctx.t("doctor_live_fix"),
+        ctx, "live_browser", FAIL, "live_browser_failed",
+        ctx.t("doctor_live_browser_failed", error=_first_line(error) or "?"),
+        fix=ctx.t("doctor_live_browser_fix"),
         detail=detail,
     )
 
@@ -1151,6 +1286,8 @@ CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
     ("budget", check_budget),
 )
 CHECK_IDS = tuple(check_id for check_id, _ in CHECKS)
+# Yalnızca `--live` (ve `--browser`) ile çalışan denetimler; `--only` / `--skip` bunları da tanır
+LIVE_CHECK_IDS = ("live", "live_browser")
 
 # Eskiden yalnızca yeni CLI'nin (`run_checks(extra=True)`) çalıştırdığı denetimler. 2.x'in `python main.py --doctor`u
 # `ssc doctor`un takma adı olunca (plan maddesi P19) istek bütçesi denetimi CHECKS'e katıldı; liste boş kalır,
@@ -1166,10 +1303,13 @@ def run_checks(
     live: bool = False,
     browser_probe: Optional[Callable[..., Dict[str, Any]]] = None,
     extra: bool = False,
+    live_browser: bool = False,
 ) -> List[CheckResult]:
     """
     Denetimleri sırayla çalıştırır. Bir denetimin çökmesi diğerlerini durdurmaz. `extra=True`: EXTRA_CHECKS
-    de çalışır (bugün boştur; istek bütçesi denetimi CHECKS'tedir).
+    de çalışır (bugün boştur; istek bütçesi denetimi CHECKS'tedir). `live=True`: indirmelerin istek yoluyla tek
+    istek (`check_live`); `live_browser=True` yalnızca `live` ile birlikte anlamlıdır ve tarayıcı köprüsünü ayrı bir
+    satırda sınar (`check_live_browser`).
     """
     ctx = ctx or Context()
     wanted = set(only) if only else None
@@ -1183,6 +1323,8 @@ def run_checks(
         checks.extend(EXTRA_CHECKS)
     if live:
         checks.append(("live", check_live))
+        if live_browser:
+            checks.append(("live_browser", check_live_browser))
 
     results: List[CheckResult] = []
     for check_id, fn in checks:
@@ -1269,14 +1411,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--json", action="store_true", help=ctx.t("doctor_cli_json"))
     parser.add_argument("--strict", action="store_true", help=ctx.t("doctor_cli_strict"))
     parser.add_argument("--live", action="store_true", help=ctx.t("doctor_cli_live"))
+    parser.add_argument("--browser", action="store_true", help=ctx.t("doctor_cli_browser"))
     parser.add_argument("--only", metavar="IDS", help=ctx.t("doctor_cli_only", ids=", ".join(CHECK_IDS)))
     parser.add_argument("--skip", metavar="IDS", help=ctx.t("doctor_cli_skip"))
     parser.add_argument("--lang", choices=SUPPORTED_LANGUAGES, help=ctx.t("doctor_cli_lang"))
     args = parser.parse_args(argv)
 
-    unknown = [i for i in (_split_ids(args.only) or []) + (_split_ids(args.skip) or []) if i not in CHECK_IDS + ("live",)]
+    unknown = [i for i in (_split_ids(args.only) or []) + (_split_ids(args.skip) or []) if i not in CHECK_IDS + LIVE_CHECK_IDS]
     if unknown:
         parser.error(ctx.t("doctor_cli_unknown_ids", ids=", ".join(unknown), valid=", ".join(CHECK_IDS)))
+    if args.browser and not args.live:
+        parser.error(ctx.t("doctor_cli_browser_needs_live"))
 
     if args.live:
         # Canlı istek uygulamanın ayarlarıyla (proxy, profil, istek bütçesi) atılır: .env yüklenir
@@ -1290,7 +1435,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # Denetimler sırasında stdout'a yazılan her şey (ör. --live'da uygulamanın log satırları)
     # stderr'e gider: stdout'ta yalnızca rapor kalır, JSON çıktısı ayrıştırılabilir olur
     with contextlib.redirect_stdout(sys.stderr):
-        results = run_checks(ctx, only=_split_ids(args.only), skip=_split_ids(args.skip), live=args.live)
+        results = run_checks(
+            ctx, only=_split_ids(args.only), skip=_split_ids(args.skip), live=args.live, live_browser=args.browser
+        )
 
     if args.json:
         # ensure_ascii: konsolun kod sayfası ne olursa olsun ayrıştırılabilir çıktı

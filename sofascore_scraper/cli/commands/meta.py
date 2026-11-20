@@ -122,6 +122,7 @@ def _doctor_arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     ids = ", ".join(doctor.CHECK_IDS + doctor.EXTRA_CHECK_IDS)
     parser.add_argument("--strict", action="store_true", help=t("doctor_cli_strict"))
     parser.add_argument("--live", action="store_true", help=t("doctor_cli_live"))
+    parser.add_argument("--browser", action="store_true", help=t("doctor_cli_browser"))
     parser.add_argument("--only", metavar="IDS", help=t("doctor_cli_only", ids=ids))
     parser.add_argument("--skip", metavar="IDS", help=t("doctor_cli_skip"))
 
@@ -152,13 +153,15 @@ def doctor(inv: Invocation) -> CommandResult:
     from sofascore_scraper import doctor as checks
 
     only, skip = _ids(inv.args.only), _ids(inv.args.skip)
-    valid = checks.CHECK_IDS + checks.EXTRA_CHECK_IDS + ("live",)
+    valid = checks.CHECK_IDS + checks.EXTRA_CHECK_IDS + checks.LIVE_CHECK_IDS
     unknown = [check_id for check_id in (only or []) + (skip or []) if check_id not in valid]
     if unknown:
         raise UsageError(
             f"unknown check id: {', '.join(unknown)} (valid: {', '.join(valid)})",
             {"unknown": unknown, "valid": list(valid)},
         )
+    if inv.args.browser and not inv.args.live:
+        raise UsageError("--browser is an option of --live")
 
     if inv.args.live:
         # Canlı istek uygulamanın ayarlarıyla atılır (proxy, profil, istek bütçesi): ayarlar yüklenir, loglar stderr'e
@@ -175,7 +178,9 @@ def doctor(inv: Invocation) -> CommandResult:
 
     # Denetimler sırasında stdout'a yazılan her şey stderr'e gider: stdout'ta yalnızca rapor kalır
     with contextlib.redirect_stdout(sys.stderr):
-        results = checks.run_checks(ctx, only=only, skip=skip, live=inv.args.live, extra=True)
+        results = checks.run_checks(
+            ctx, only=only, skip=skip, live=inv.args.live, extra=True, live_browser=inv.args.browser
+        )
     return CommandResult(
         data=checks.report(results, ctx),
         text=checks.render_text(results, ctx),

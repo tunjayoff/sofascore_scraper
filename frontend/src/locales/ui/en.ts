@@ -740,6 +740,7 @@ const en = {
     token: 'Access key in use',
     untried: 'No request to SofaScore has been answered since the server started. It is tried with the first download or with the connection check below.',
     failing: 'The last request to SofaScore failed.',
+    profilesSetAside: '{n} of {total} browser profiles set aside after an anti-bot challenge (tried again after 6 h)',
   },
   follows: {
     description: 'What is downloaded: leagues, teams, players and single matches, with their seasons and data.',

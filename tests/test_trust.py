@@ -619,5 +619,5 @@ def test_a_certificate_the_browser_refuses_fails_the_launch_and_doctor_names_it(
     assert "Call log" not in last["detail"] and instance.session is None and instance._launch_failed_at > 0
 
     ctx = doctor.Context(root=tmp_path, environ={}, lang="en")
-    result = doctor.check_live(ctx, fetch=lambda path: None)  # köprü yanıt vermedi; neden sağlık kaydından okunur
+    result = doctor.check_live_browser(ctx, fetch=lambda path: None)  # köprü yanıt vermedi; neden sağlık kaydından
     assert (result.status, result.code) == ("fail", "live_browser_tls") and "Trust this certificate" in result.fix

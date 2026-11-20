@@ -8,6 +8,21 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Changed
+
+- `ssc doctor --live` sends one request the way downloads do: with the app's HTTP client, other browser
+  profiles when SofaScore challenges one, and the built-in browser only when none passes. It no longer
+  starts the browser (and loads SofaScore's home page) first. The result says which way answered (the HTTP
+  client and its browser profile, or the browser). A refusal or rate limit that the request could not get
+  past is now a failure (`live_failed`); before, any answer of the HTTP request counted as reached.
+
+### Added
+
+- `ssc doctor --live --browser` also checks the built-in browser on its own line (`live_browser`).
+- `GET /api/v1/status` (and `/health`, `POST /status/check`) reports the browser profiles the server set
+  aside after a challenge: `connection.profiles {total, set_aside: [{name, until_utc}]}`. Health shows one
+  line when any is set aside.
+
 ### Fixed
 
 - `ssc doctor --live` pointed to a README heading that does not exist; it now names the FAQ entry about

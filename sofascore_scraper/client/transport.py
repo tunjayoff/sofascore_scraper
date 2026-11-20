@@ -79,20 +79,22 @@ class RequestTrace:
 
     via          yanıtı getiren yol: "curl" ya da "bridge"; hiç yanıt alınmadıysa (bağlantı hatası, açık devre) None
     http_status  curl'den gelen son yanıtın durum kodu; yanıt köprüden geldiyse None (köprü kodu bildirmez)
+    profile      son curl yanıtını alan tarayıcı profili (profiles.py); bilinmiyorsa ya da yanıt köprüden geldiyse None
     """
 
     via: Optional[OutcomeVia] = None
     http_status: Optional[int] = None
+    profile: Optional[str] = None
 
     def attempt(self) -> None:
         """Yeni bir deneme başlıyor: önceki denemenin izi son hali anlatmaz."""
-        self.via, self.http_status = None, None
+        self.via, self.http_status, self.profile = None, None, None
 
-    def curl(self, status_code: int) -> None:
-        self.via, self.http_status = VIA_CURL, status_code
+    def curl(self, status_code: int, profile: Optional[str] = None) -> None:
+        self.via, self.http_status, self.profile = VIA_CURL, status_code, profile
 
     def bridge(self) -> None:
-        self.via, self.http_status = VIA_BRIDGE, None
+        self.via, self.http_status, self.profile = VIA_BRIDGE, None, None
 
 
 def _sleep(seconds: float) -> None:
@@ -401,7 +403,7 @@ def _request_sync(
 
             _throttle()
             response = cffi_requests.get(full_url, **kwargs)
-            trace.curl(response.status_code)
+            trace.curl(response.status_code, kwargs["impersonate"])
 
             # Kapı bu profili reddettiyse (challenge) profil kenara alınır ve istek hemen başka bir profille
             # yinelenir: tarayıcı köprüsü ancak geçen profil kalmadığında açılır (profiles.py)
@@ -418,7 +420,7 @@ def _request_sync(
                 kwargs["headers"] = get_request_headers()
                 _throttle()
                 response = cffi_requests.get(full_url, **kwargs)
-                trace.curl(response.status_code)
+                trace.curl(response.status_code, other)
             if _challenged(response):
                 profiles.refuse(tried[-1])
 
@@ -637,8 +639,8 @@ async def _request_async(
                         break
                     raise_if_cancelled()
                     logger.debug(f"Challenge for profile {tried[-1]}; trying {other}: {url}")
+                    trace.curl(response.status_code, tried[-1])
                     tried.append(other)
-                    trace.curl(response.status_code)
                     kwargs["impersonate"] = other
                     kwargs["headers"] = get_request_headers()
                     await _athrottle()
@@ -660,7 +662,7 @@ async def _request_async(
             continue
 
         status = response.status_code
-        trace.curl(status)
+        trace.curl(status, tried[-1] if tried else None)
 
         if status in (429, 503):
             if last_attempt:

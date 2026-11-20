@@ -33,6 +33,7 @@ import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
  * (`/status.schedule`, P29; shown since FX-20), with a run that was skipped last time marked.
  * The connection is "Not tried yet" while no request has been answered, and amber when the last request
  * or the server's last connection check failed (FX-14a; read from `/status.connection` since FX-14b).
+ * One line names the browser profiles of the HTTP client that SofaScore challenged and that are set aside.
  */
 const STALE_LIVE_S = 120
 
@@ -59,6 +60,11 @@ const connection = computed(() => {
     { key: 'lastError', label: t('ui.health.lastError') },
     { key: 'changedAt', label: t('ui.health.changedAt') },
   ]
+})
+/** Browser profiles the HTTP client set aside after a challenge (`/status.connection.profiles`, #227); null: none. */
+const setAside = computed(() => {
+  const p = s.value?.connection?.profiles
+  return p && p.set_aside.length ? { count: p.set_aside.length, total: p.total } : null
 })
 const throttle = computed(() => {
   const th = s.value?.throttle
@@ -180,6 +186,7 @@ onMounted(() => {
       <section class="u-card p-6 flex flex-col gap-4" data-testid="health-connection">
         <header class="flex items-center gap-3"><h2 class="u-h3 flex-1">{{ t('ui.health.connection') }}</h2><StatusBadge kind="connection" :value="store.connection ?? s.bridge.state" /></header>
         <p v-if="store.connection === 'untried' || store.connection === 'failing'" class="m-0 u-small u-muted" data-testid="connection-note">{{ store.connection === 'untried' ? t('ui.health.untried') : t('ui.health.failing') }}</p>
+        <p v-if="setAside" class="m-0 u-small u-muted" data-testid="connection-profiles">{{ t('ui.health.profilesSetAside', { n: num(setAside.count), total: num(setAside.total) }) }}</p>
         <FactList :items="connection">
           <template #value-lastSuccess><TimeText :value="s.connection?.last_success_at ?? s.bridge.last_success_at" relative /></template>
           <template #value-lastFailure>

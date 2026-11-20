@@ -948,7 +948,11 @@ Semantics:
     (`profiles.pick`); an async session keeps the profile it was opened with, and after a swap that passed
     it sends its later requests with the passing one (`ssc_profile_override` on the session). The set-aside
     is in memory and per process; a restart forgets it. When every profile is set aside, the pick falls
-    back to the whole list.
+    back to the whole list. After 3.1.2 the server shows its own set-aside profiles in `connection.profiles`
+    of `GET /status` (also `/health` and `POST /status/check`; section 6): `profiles.status()` returns the
+    count and each set-aside profile with the moment it is used again, the monotonic deadline converted to
+    wall-clock time. Health shows one line for it (`05-web-ui.md` 6.12). `ssc doctor` does not: its own
+    process starts with none set aside.
   - The browser bridge is used only when the answer is still the challenge after the swaps, as before:
     `fetch_api_via_browser` for the same URL, and when the bridge brings the answer, the process is in
     **browser-first mode** for 600 s (`BROWSER_FIRST_SECONDS`, `sofascore_scraper/client/transport.py`):
@@ -3256,6 +3260,35 @@ As built at `395b6e0` (3.1.2; PRs #228, #229 and #230):
   the CLI cannot restart another process's bridge browser, which only `POST /trust` does for its own
   server. The four subcommands load the settings (`settings=True`), so their log lines go to stderr.
 
+As built after 3.1.2 (the pull request "doctor --live follows the real request path"; it replaces the
+`doctor --live` bullet above):
+
+- **`doctor --live`** sends one real request, the way a download sends it (`check_live`, `_live_request`):
+  `make_api_request` for `LIVE_PROBE_PATH`, one try, 10 s, on the shared request budget. The HTTP client asks
+  with a browser profile; when SofaScore challenges it, the profile is set aside and the request repeated with
+  another one (at most `profiles.MAX_SWAPS`), and only when none passes does the request fall back to the
+  bridge browser, as in a download (2.4). So the browser starts, and loads SofaScore's home page, only when
+  the request path needs it. `RequestTrace` carries the profile of the last curl answer (`profile`, new), so
+  `live_ok` says which path answered: `detail.via` (`curl` or `bridge`) and `detail.profile`; an answer
+  through the browser is still `live_ok`, with a summary that says downloads go through the browser for now.
+  Codes of the `live` check: `live_ok`; `live_http_tls` and `live_http_failed` (a connection failure of the
+  HTTP client, unchanged: curl's TLS codes, `missing_ca_file`; the request path does not fall back to the
+  browser on a connection failure, and neither does a download); `live_browser_tls` (the fallback browser
+  met a certificate it cannot verify: `ERR_CERT_` in the error the bridge recorded in `bridge_health` during
+  the request); `live_failed` (an answer of SofaScore the request path could not get past, with `detail.status`:
+  a challenge that the browser did not pass either, with `detail.challenged_profiles` and the bridge's
+  `detail.bridge`; a plain 403; a 429; another status (a 503 too); an empty answer; or an unexpected error).
+  Until this change a 403 or 429 of the HTTP request counted as reached, because the browser had answered
+  first.
+- **`doctor --live --browser`** adds the check `live_browser` (a separate result line): one request through
+  the bridge (`check_live_browser`, `fetch_api_via_browser_sync`), as the whole live check did until 3.1.1.
+  Codes: `live_browser_ok`, `live_browser_tls`, `live_browser_failed`. If `live` already fell back to the
+  browser, the same process reuses the running bridge. `--browser` without `--live` is a usage error (exit
+  2); `--only` and `--skip` accept `live` and `live_browser` (`doctor.LIVE_CHECK_IDS`); `run_checks(live=True,
+  live_browser=True)`. The doctor does not report the profiles set aside: a separate `ssc doctor` process
+  starts with none; the running server reports its own in `GET /status` (6). Tests: fakes for curl and the
+  bridge under the real `make_api_request` (`tests/test_doctor.py`), never against the site.
+
 ### 4.2 Global flags
 
 `--config PATH`, `--data-dir PATH`, `--json` (same as `--output json`), `--output text|json|ndjson`,
@@ -4828,6 +4861,13 @@ As built at `216c2f9` (P30 #186, FX-30 #180, B1 #190, B2 #191). `docs/api/openap
   (`sofascore_scraper/web/api/v1/meta.py:173-195`, `:568-605`); `coverage` is `finished_details / finished` in
   percent. `connection.last_check.superseded` (2.7). `POST /status/check` stamps `checked_at_utc` with the
   moment of `last_check.at` (FX-30).
+- **`connection.profiles`** (after 3.1.2, the pull request "doctor --live follows the real request path"),
+  required in `ConnectionStatus`, so in `/status`, `/health` and `POST /status/check`: `{total, set_aside:
+  [{name, until_utc}]}`, the browser profiles of this server's HTTP client (`ProfileStatus`,
+  `SetAsideProfile`; `client/profiles.py` `status()`, 2.4). `set_aside` lists the profiles SofaScore
+  challenged in the last six hours, in list order, each with the moment it is used again (ISO-8601 UTC,
+  from the monotonic deadline); empty when none is. It is the server process's memory: a restart forgets it,
+  and other processes (`ssc` commands, `ssc watch`) are not counted.
 - **`GET /events?follow=kind:id`** lists the stored events of one follow (a tournament's, a team's as a
   participant, the event itself, or a player's last listed matches); the follow need not exist
   (`sofascore_scraper/web/api/v1/events.py:240-292`).

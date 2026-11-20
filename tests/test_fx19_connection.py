@@ -204,3 +204,30 @@ def test_a_failed_check_is_superseded_by_a_later_answer_in_the_same_second(fake:
     after = connection()
     assert after["last_check"]["at"] == after["last_success_at"] == "2026-10-08T22:53:20+00:00"
     assert (after["state"], after["last_check"]["superseded"]) == ("ok", True)
+
+
+def test_the_status_names_the_browser_profiles_set_aside_after_a_challenge(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Kenara alınan profiller yalnızca sunucunun belleğindedir (client/profiles.py): `/status` onları sayar, monoton
+    saatin süresini duvar saatine çevirir. Ayrı bir `ssc doctor` süreci onları göremez; bu yüzden burada durur.
+    """
+    from sofascore_scraper.client import profiles
+
+    assert connection()["profiles"] == {"total": len(profiles.PROFILES), "set_aside": []}
+
+    mono = [500.0]
+    monkeypatch.setattr(profiles.time, "monotonic", lambda: mono[0])
+    monkeypatch.setattr(profiles.time, "time", lambda: START)
+    first, second = profiles.PROFILES[:2]
+    profiles.refuse(first)
+    mono[0] += 3600.0
+    profiles.refuse(second)
+    seen = connection()["profiles"]
+    # İlki bir saat önce kenara alındı: beş saat sonra yeniden denenir (START + 5 h), ikincisi altı saat sonra
+    assert seen == {"total": len(profiles.PROFILES), "set_aside": [
+        {"name": first, "until_utc": "2026-10-09T03:53:20Z"},
+        {"name": second, "until_utc": "2026-10-09T04:53:20Z"},
+    ]}
+    assert client.get("/api/v1/health").json()["data"]["connection"]["profiles"] == seen
+    mono[0] += profiles.REFUSED_SECONDS
+    assert connection()["profiles"]["set_aside"] == []

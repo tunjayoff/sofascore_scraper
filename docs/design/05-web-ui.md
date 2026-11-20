@@ -1672,6 +1672,13 @@ The details of that note, as built (`frontend/src/screens/HealthScreen.vue`,
   certificate upload or paste (the server reads the certificate from the network itself), and no trust
   action outside Health (`HealthScreen.vue` is the panel's only user).
 
+**As built after 3.1.2 (the pull request "doctor --live follows the real request path").** One short line
+in the connection card, under the card's note, when the server has set aside at least one browser profile
+of its HTTP client after a challenge: "2 of 8 browser profiles set aside after an anti-bot challenge (tried
+again after 6 h)" (`ui.health.profilesSetAside`, English and Turkish), from `/status.connection.profiles`
+(`total`, `set_aside`; `02-services.md` 2.4, 6). No line while none is set aside, and no new card; the
+profile names and their times are in the API answer only.
+
 **Who / when.** The operator, from the health pill or an alert.
 
 ```

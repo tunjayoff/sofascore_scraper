@@ -89,6 +89,22 @@ class ConnectionCheck(BaseModel):
     )
 
 
+class SetAsideProfile(BaseModel):
+    name: str = Field(description="The browser profile the HTTP client presents itself as (e.g. chrome150).")
+    until_utc: Optional[str] = Field(default=None, description="ISO-8601, UTC: when it is used again.")
+
+
+class ProfileStatus(BaseModel):
+    """
+    The browser profiles of this server's HTTP client. A profile SofaScore challenged is set aside for six hours and
+    the request is repeated with another one; the browser bridge is used only when none passes. Kept in the
+    server's memory: a restart forgets it, and other processes (`ssc` commands, `ssc watch`) keep their own.
+    """
+
+    total: int = Field(description="Profiles in the list.")
+    set_aside: List[SetAsideProfile] = Field(description="Profiles set aside after a challenge; empty: none.")
+
+
 class ConnectionStatus(BaseModel):
     """
     Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,
@@ -110,6 +126,7 @@ class ConnectionStatus(BaseModel):
     last_check: Optional[ConnectionCheck] = Field(
         default=None, description="The last connection check since the server started; null: none yet.",
     )
+    profiles: ProfileStatus = Field(description="The browser profiles of the HTTP client, and which are set aside.")
 
 
 class ThrottleStatus(BaseModel):
@@ -461,8 +478,16 @@ def _bridge() -> BridgeHealth:
 
 def _connection() -> ConnectionStatus:
     from sofascore_scraper import bridge_health
+    from sofascore_scraper.client import profiles
 
-    return ConnectionStatus.model_validate(bridge_health.connection())
+    state = profiles.status()
+    return ConnectionStatus.model_validate({
+        **bridge_health.connection(),
+        "profiles": {
+            "total": state["total"],
+            "set_aside": [{"name": p["name"], "until_utc": utc_text(p["until"])} for p in state["set_aside"]],
+        },
+    })
 
 
 def _throttle() -> ThrottleStatus:
