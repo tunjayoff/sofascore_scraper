@@ -810,7 +810,7 @@ def test_the_api_base_setting_is_normalised(monkeypatch: pytest.MonkeyPatch, val
 def test_no_module_of_the_request_path_hard_codes_the_api_base() -> None:
     """API kökü yalnızca sofascore_scraper/client/endpoints.py'de yazılıdır; aşağıdakiler bu işin dışında kalan bilinen yerlerdir."""
     known_elsewhere = {
-        "config/settings.py",  # ayar modelindeki varsayılan (ConfigManager.get_api_base_url oradan okur)
+        "config/settings.py",  # ayar modelindeki varsayılan (client.base_url)
     }
     hard_coded = {
         path.relative_to(SRC).as_posix()

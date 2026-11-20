@@ -1126,17 +1126,14 @@ def test_without_a_config_file_nothing_is_written_to_the_environment(active):
     # conftest: veri dizini ve istek bütçesi süreç ortamından (yeni adlarıyla) gelir; test `.env`'i boş
     assert loaded.source("storage.data_dir") == loader.Source("env", "SOFASCORE_STORAGE__DATA_DIR")
     assert loaded.source("client.max_concurrent").layer == "default"
-    assert (cm.get_max_concurrent(), cm.get_data_dir(), cm.get_request_rate_limit()) == (10, conftest.DATA_DIR, 0.0)
+    assert (cm.get_max_concurrent(), cm.get_data_dir(), cm.get_settings().client.rate) == (10, conftest.DATA_DIR, 0.0)
 
 
 GETTERS = {
     # getter -> (ayarın ortam adı, ham değer, sonuç)
     "get_data_dir": ("SOFASCORE_STORAGE__DATA_DIR", "relative/store", "relative/store"),
-    "get_api_base_url": ("SOFASCORE_CLIENT__BASE_URL", "https://api.example.invalid/api/v1", "https://api.example.invalid/api/v1"),
     "get_use_proxy": ("SOFASCORE_CLIENT__USE_PROXY", "true", True),
     "get_proxy_url": ("SOFASCORE_CLIENT__PROXY", "http://proxy.example.com:1", "http://proxy.example.com:1"),
-    "get_use_color": ("SOFASCORE_DISPLAY__USE_COLOR", "false", False),
-    "get_date_format": ("SOFASCORE_DISPLAY__DATE_FORMAT", "%d.%m.%Y", "%d.%m.%Y"),
     "get_max_concurrent": ("SOFASCORE_CLIENT__MAX_CONCURRENT", "7", 7),
     "get_wait_time_min": ("SOFASCORE_CLIENT__WAIT_TIME_MIN", "0.05", 0.05),
     "get_wait_time_max": ("SOFASCORE_CLIENT__WAIT_TIME_MAX", "2.5", 2.5),
@@ -1174,13 +1171,13 @@ def test_config_manager_getter_reads_the_effective_settings(active, monkeypatch,
         assert _same(read(), unset)
 
 
-def test_config_manager_rate_and_language_getters(active, monkeypatch):
+def test_rate_and_language_follow_the_settings(active, monkeypatch):
     cm = ConfigManager()
     for raw, expected in (("2.5", 2.5), ("off", 0.0), ("0", 0.0)):
         monkeypatch.setenv("SOFASCORE_CLIENT__RATE", raw)
-        assert cm.get_request_rate_limit() == throttle.configured_rate() == expected, raw
+        assert cm.get_settings().client.rate == throttle.configured_rate() == expected, raw
     monkeypatch.delenv("SOFASCORE_CLIENT__RATE")
-    assert cm.get_request_rate_limit() == throttle.DEFAULT_RATE_LIMIT
+    assert cm.get_settings().client.rate == throttle.DEFAULT_RATE_LIMIT
 
     from sofascore_scraper.i18n import app_language
 
@@ -1193,8 +1190,7 @@ def test_config_manager_rate_and_language_getters(active, monkeypatch):
                 patch.delenv(key, raising=False)
             for key, value in env.items():
                 patch.setenv(key, value)
-            assert cm.get_language() == app_language() == expected, env
-    assert cm.get_match_data_dir() == os.path.join(cm.get_data_dir(), "matches")
+            assert cm.get_settings().display.language == app_language() == expected, env
 
 
 def test_config_file_is_honoured_by_getters_and_by_the_modules(active, monkeypatch):
@@ -1216,9 +1212,9 @@ def test_config_file_is_honoured_by_getters_and_by_the_modules(active, monkeypat
     cm = ConfigManager()
     assert loaded.config_file == str(config_dir / "sofascore.toml")
     # Süreç ortamındaki SOFASCORE_CLIENT__RATE=0 (conftest) dosyanın üstünde
-    assert (cm.get_max_concurrent(), cm.get_request_timeout(), cm.get_request_rate_limit()) == (4, 33, 0.0)
+    assert (cm.get_max_concurrent(), cm.get_request_timeout(), cm.get_settings().client.rate) == (4, 33, 0.0)
     assert cm.get_data_dir() == str(config_dir / "store")
-    assert cm.get_language() == app_language() == "tr"
+    assert cm.get_settings().display.language == app_language() == "tr"
     assert loaded.source("client.rate") == loader.Source("env", "SOFASCORE_CLIENT__RATE")
 
     assert dict(os.environ) == before
@@ -1378,7 +1374,7 @@ def test_at_start_up_the_config_file_reaches_the_modules(tmp_path):
         "from sofascore_scraper.client import transport\n"
         "from sofascore_scraper.services.status import only_finished_setting\n"
         "print(json.dumps([throttle.configured_rate(), refresh.refresh_window_hours(), cm.ConfigManager().get_data_dir(),"
-        " cm.ConfigManager().get_request_rate_limit(), transport.API_BASE_URL, only_finished_setting()]))\n"
+        " cm.ConfigManager().get_settings().client.rate, transport.API_BASE_URL, only_finished_setting()]))\n"
     )
     done = _run_python(code, tmp_path, SOFASCORE_CONFIG=str(config))
     assert done.returncode == 0, done.stderr
