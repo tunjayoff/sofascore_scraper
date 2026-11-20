@@ -10,11 +10,11 @@
 
 One core, three faces: a **Python library**, the **`ssc` command line** for servers and automation, and a versioned **HTTP API** with a **web app** on top. It runs on your own machine or server.
 
-> **3.1.2 is released from source.** Install it from a checkout (the Docker or pip steps below); each release on GitHub also has a source archive with the built web app, and its Docker image is `ghcr.io/tunjayoff/sofascore_scraper`. There is no package on PyPI. Coming from 3.0: [Upgrading from 3.0](#upgrading-from-30); from 2.x: [Upgrading from 2.x](#upgrading-from-2x).
+> **3.2.0 is released from source.** Install it from a checkout (the Docker or pip steps below); each release on GitHub also has a source archive with the built web app, and its Docker image is `ghcr.io/tunjayoff/sofascore_scraper`. There is no package on PyPI. Coming from 3.1: [Upgrading from 3.1](#upgrading-from-31); from 3.0: [Upgrading from 3.0](#upgrading-from-30); from 2.x: [Upgrading from 2.x](#upgrading-from-2x).
 
 Unofficial and not affiliated with SofaScore; see the [disclaimer](#disclaimer).
 
-**Contents:** [Features](#features) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Command line](#command-line-ssc) · [HTTP API](#http-api) · [Python library](#python-library) · [Configuration](#configuration) · [Data and exports](#data-and-exports) · [Live watching](#live-watching) · [Security model](#security-model) · [Upgrading from 3.0](#upgrading-from-30) · [Upgrading from 2.x](#upgrading-from-2x) · [FAQ](#faq) · [Documentation](#documentation) · [Contributing](#contributing-and-development) · [Contact](#contact) · [License](#license)
+**Contents:** [Features](#features) · [Screenshots](#screenshots) · [Quick start](#quick-start) · [Command line](#command-line-ssc) · [HTTP API](#http-api) · [Python library](#python-library) · [Configuration](#configuration) · [Data and exports](#data-and-exports) · [Live watching](#live-watching) · [Security model](#security-model) · [Upgrading from 3.1](#upgrading-from-31) · [Upgrading from 3.0](#upgrading-from-30) · [Upgrading from 2.x](#upgrading-from-2x) · [FAQ](#faq) · [Documentation](#documentation) · [Contributing](#contributing-and-development) · [Contact](#contact) · [License](#license)
 
 ## Features
 
@@ -238,6 +238,33 @@ The web app has **no user accounts** and listens on `127.0.0.1` by default. Open
 - put a firewall or VPN and TLS (a reverse proxy) in front of it.
 
 The app itself answers only to allowed host names, refuses state-changing requests sent by other sites, sends a strict Content-Security-Policy, warns when it is exposed without a token, and keeps `.env`, the settings file and the browser profile readable by their owner only. Details: [docs/deploy](docs/deploy/README.md#access-token).
+
+## Upgrading from 3.1
+
+```bash
+git pull
+pip install -r requirements.txt -c constraints.txt
+pip install -e .
+cd frontend && npm install && npm run build && cd ..
+ssc doctor                # fails on an old name below that is still set, and names the one to set
+```
+
+With Docker Compose: `git pull`, then `docker compose pull` (or `docker compose build`) and `docker compose up -d`. The image of this release is `ghcr.io/tunjayoff/sofascore_scraper:3.2.0`.
+
+- **Rename four environment names before you upgrade.** `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` and `PROXY_URL` (deprecated in 3.1, with a warning) are no longer read. If one of them is still set anywhere (`.env`, the shell, a service file, the container settings) and its new name is not, nothing starts: commands exit with `2`, the web app and the container refuse to start, and `ssc doctor` fails and shows each old name, where it is set and the name to set (never the value). Rename them:
+
+  | Old name (3.1) | New name (3.2) |
+  |---|---|
+  | `SOFASCORE_API_TOKEN` | `SOFASCORE_SERVER__TOKEN` |
+  | `SOFASCORE_ALLOWED_HOSTS` | `SOFASCORE_SERVER__ALLOWED_HOSTS` |
+  | `USE_PROXY` | `SOFASCORE_CLIENT__USE_PROXY` |
+  | `PROXY_URL` | `SOFASCORE_CLIENT__PROXY` |
+
+  Instead of renaming, `[server] token_env` or `[client] proxy_env` in the config file may name the variable that holds the token or the proxy, the old one included. The Docker entrypoint no longer reads the old allow-list name either.
+- **`ssc doctor --live`** now sends one request the way downloads do, and uses the built-in browser only when that request falls back to it. `ssc doctor --live --browser` checks the browser as well.
+- **Backups carry the trusted certificates** of a network that re-signs HTTPS (the `ca` folder of the config directory), and a restore puts them back. Older backups restore as before.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md#320---2026-11-20).
 
 ## Upgrading from 3.0
 

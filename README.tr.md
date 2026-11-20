@@ -10,11 +10,11 @@
 
 Tek çekirdek, üç yüz: bir **Python kütüphanesi**, sunucular ve otomasyon için **`ssc` komut satırı** ve üzerinde bir **web arayüzü** bulunan sürümlü bir **HTTP API**. Kendi bilgisayarınızda ya da sunucunuzda çalışır.
 
-> **3.1.2 kaynaktan kurulan bir sürüm olarak yayımlandı.** Bir checkout'tan kurun (aşağıdaki Docker ya da pip adımları); GitHub'daki her sürümde derlenmiş web arayüzünü içeren bir kaynak arşivi de vardır, Docker imajı ise `ghcr.io/tunjayoff/sofascore_scraper`'dır. PyPI'de paket yoktur. 3.0'dan geçiyorsanız: [3.0'dan yükseltme](#30dan-yükseltme); 2.x'ten geçiyorsanız: [2.x'ten yükseltme](#2xten-yükseltme).
+> **3.2.0 kaynaktan kurulan bir sürüm olarak yayımlandı.** Bir checkout'tan kurun (aşağıdaki Docker ya da pip adımları); GitHub'daki her sürümde derlenmiş web arayüzünü içeren bir kaynak arşivi de vardır, Docker imajı ise `ghcr.io/tunjayoff/sofascore_scraper`'dır. PyPI'de paket yoktur. 3.1'den geçiyorsanız: [3.1'den yükseltme](#31den-yükseltme); 3.0'dan geçiyorsanız: [3.0'dan yükseltme](#30dan-yükseltme); 2.x'ten geçiyorsanız: [2.x'ten yükseltme](#2xten-yükseltme).
 
 Resmî değildir, SofaScore ile bir bağı yoktur; bkz. [sorumluluk reddi](#sorumluluk-reddi).
 
-**İçindekiler:** [Özellikler](#özellikler) · [Ekran görüntüleri](#ekran-görüntüleri) · [Hızlı başlangıç](#hızlı-başlangıç) · [Komut satırı](#komut-satırı-ssc) · [HTTP API](#http-api) · [Python kütüphanesi](#python-kütüphanesi) · [Yapılandırma](#yapılandırma) · [Veri ve dışa aktarma](#veri-ve-dışa-aktarma) · [Canlı izleme](#canlı-izleme) · [Güvenlik modeli](#güvenlik-modeli) · [3.0'dan yükseltme](#30dan-yükseltme) · [2.x'ten yükseltme](#2xten-yükseltme) · [SSS](#sss) · [Belgeler](#belgeler) · [Katkı](#katkı-ve-geliştirme) · [İletişim](#iletisim) · [Lisans](#lisans)
+**İçindekiler:** [Özellikler](#özellikler) · [Ekran görüntüleri](#ekran-görüntüleri) · [Hızlı başlangıç](#hızlı-başlangıç) · [Komut satırı](#komut-satırı-ssc) · [HTTP API](#http-api) · [Python kütüphanesi](#python-kütüphanesi) · [Yapılandırma](#yapılandırma) · [Veri ve dışa aktarma](#veri-ve-dışa-aktarma) · [Canlı izleme](#canlı-izleme) · [Güvenlik modeli](#güvenlik-modeli) · [3.1'den yükseltme](#31den-yükseltme) · [3.0'dan yükseltme](#30dan-yükseltme) · [2.x'ten yükseltme](#2xten-yükseltme) · [SSS](#sss) · [Belgeler](#belgeler) · [Katkı](#katkı-ve-geliştirme) · [İletişim](#iletisim) · [Lisans](#lisans)
 
 ## Özellikler
 
@@ -238,6 +238,33 @@ Web arayüzünde **kullanıcı hesabı yoktur** ve varsayılan olarak `127.0.0.1
 - önüne bir güvenlik duvarı ya da VPN ve TLS (bir ters vekil sunucu) koyun.
 
 Uygulama yalnızca izin verilen sunucu adlarına yanıt verir, başka sitelerin gönderdiği durum değiştiren istekleri reddeder, sıkı bir Content-Security-Policy gönderir, anahtarsız açıldığında uyarır ve `.env`'i, ayar dosyasını ve tarayıcı profilini yalnızca sahibinin okuyabileceği biçimde tutar. Ayrıntılar: [docs/deploy](docs/deploy/README.md#access-token) (İngilizce).
+
+## 3.1'den yükseltme
+
+```bash
+git pull
+pip install -r requirements.txt -c constraints.txt
+pip install -e .
+cd frontend && npm install && npm run build && cd ..
+ssc doctor                # aşağıdaki eski adlardan biri hâlâ duruyorsa başarısız olur ve verilecek adı söyler
+```
+
+Docker Compose ile: `git pull`, ardından `docker compose pull` (ya da `docker compose build`) ve `docker compose up -d`. Bu sürümün imajı `ghcr.io/tunjayoff/sofascore_scraper:3.2.0`'dır.
+
+- **Yükseltmeden önce dört ortam adını değiştirin.** `SOFASCORE_API_TOKEN`, `SOFASCORE_ALLOWED_HOSTS`, `USE_PROXY` ve `PROXY_URL` (3.1'de bir uyarıyla kullanımdan kalkmıştı) artık okunmaz. Biri hâlâ bir yerde (`.env`, kabuk, bir servis dosyası, konteyner ayarları) duruyor ve yeni adı verilmemişse hiçbir şey başlamaz: komutlar `2` ile çıkar, web uygulaması ve konteyner başlamaz, `ssc doctor` başarısız olur ve her eski adı, nerede verildiğini ve verilecek adı gösterir (değeri asla). Adları şöyle değiştirin:
+
+  | Eski ad (3.1) | Yeni ad (3.2) |
+  |---|---|
+  | `SOFASCORE_API_TOKEN` | `SOFASCORE_SERVER__TOKEN` |
+  | `SOFASCORE_ALLOWED_HOSTS` | `SOFASCORE_SERVER__ALLOWED_HOSTS` |
+  | `USE_PROXY` | `SOFASCORE_CLIENT__USE_PROXY` |
+  | `PROXY_URL` | `SOFASCORE_CLIENT__PROXY` |
+
+  Adı değiştirmek yerine yapılandırma dosyasındaki `[server] token_env` ya da `[client] proxy_env`, belirteci ya da proxy'yi taşıyan değişkenin adını (eskisi de olabilir) verebilir. Docker giriş betiği de eski izin listesi adını artık okumaz.
+- **`ssc doctor --live`** artık indirmelerin yaptığı gibi tek bir istek gönderir ve yerleşik tarayıcıyı yalnızca bu istek ona düştüğünde kullanır. `ssc doctor --live --browser` tarayıcıyı da denetler.
+- **Yedekler güvenilen sertifikaları taşır**: HTTPS'i yeniden imzalayan bir ağ için güvenilen sertifikalar (yapılandırma klasörünün `ca` klasörü) yedeğe girer ve geri yükleme onları geri koyar. Eski yedekler eskisi gibi geri yüklenir.
+
+Tam liste [CHANGELOG.md](CHANGELOG.md#320---2026-11-20) dosyasındadır (İngilizce).
 
 ## 3.0'dan yükseltme
 
