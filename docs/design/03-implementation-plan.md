@@ -5535,11 +5535,25 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   store of the operating system (one warning in the log, a note in the UI and the CLI). Giving the browser
   the store on Windows and macOS needs a mechanism per platform, or the answer that the operating system's
   store is enough there.
-- **Backups do not include the `ca` folder** (#230). `BackupManager.create` takes the config files its
-  callers name and `overrides.json`; none names `CONFIG_DIR/ca`, and a restore puts back `overrides.json`
-  only (`01-storage.md` 9.1). A restore on another machine, or after the config folder was lost, leaves the
-  network's certificate untrusted until the user trusts it again. Whether a backup should carry it (it
-  holds certificates, not keys, but restoring it restores a trust decision) is a decision.
+- **Done (after 3.1.2, for 3.2): backups include the `ca` folder** (#230 left it out). Owner decision
+  (2026-11-20): a backup carries the trusted certificates and a restore puts them back. They are public
+  certificates without keys, and a restore is the user's explicit act of putting back their own
+  configuration, trust decisions included. As built (`01-storage.md` 9.1 and 9.2, `02-services.md` 2.7):
+  `BackupManager.create(..., ca_dir=)` adds, in the scopes that take config files (`all`, `state`), every
+  `CONFIG_DIR/ca` file the trust store loads (`*.pem`, any case; not `.bundle/`, not the NSS database, not
+  temporary files) as the flat member `config/ca.<file name>`, lists each file with the SHA-256 of its
+  bytes under `trusted_ca` in `backup.json` and counts them (`counts.trusted_ca_files`); `verify` checks
+  that every listed file is there with that checksum. `restore(..., ca_dir=)` writes each file atomically
+  with mode 0600 (the folder 0700 when it is created), in the step that writes `overrides.json` and with
+  the same rollback; a file already there with the same bytes is left alone, one with the same name and
+  other bytes is replaced (`replaced`; the backup wins, as for `overrides.json`), and certificates that
+  are not in the backup stay. `BackupService` passes the folder on both sides, logs one line with the
+  number of certificates and their fingerprints, and closes this process's bridge browser
+  (`bridge.restart_for_trust_change`, the path of `POST /api/v1/trust`); the combined CA file follows the
+  files by itself. Archives without the members restore as before. The members are flat because 3.1.2 and
+  older treat `config/<name>` as a config file and skip it, but reject a member in a subfolder of `config/`
+  as unknown, which would make the whole archive unrestorable for them; the new manifest key is ignored by
+  them. The format number stays 2.
 - **`ssc doctor --live` costs a full home-page load** (#228). Its first request goes through the bridge
   browser, whose start opens SofaScore's home page (`BrowserBridge._launch`, `HOME_URL`) before the one API
   request; only then comes the request with the HTTP client, and it is not sent when the bridge gave no

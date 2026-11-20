@@ -24,6 +24,13 @@ never its value.
   starts the browser (and loads SofaScore's home page) first. The result says which way answered (the HTTP
   client and its browser profile, or the browser). A refusal or rate limit that the request could not get
   past is now a failure (`live_failed`); before, any answer of the HTTP request counted as reached.
+- Backups now carry the certificates you trusted for a network that re-signs HTTPS (the `ca` folder of
+  the config directory), and a restore puts them back, so a restore on another machine or after the
+  config folder was lost keeps that network working. Only the certificates are included (they are
+  public and hold no keys). A restore adds missing certificates, replaces one with the same file name
+  but other content, and never removes certificates that are not in the backup; the built-in browser
+  is restarted to pick them up. `ssc backup verify` checks them. Backups from earlier versions restore
+  as before, and 3.1.2 can still restore a backup made by this version (it skips the certificates).
 
 ### Added
 

@@ -16,6 +16,7 @@ kaydedilen ayarlar; proxy adresi parola taşıyabilir) pakete giriyorsa dosya yi
     seasons/, matches/, match_details/         +           +
     config/<ad> (verilen ayar dosyaları)       +    +
     config/overrides.json (verildiyse)         +    +
+    config/ca.<ad>.pem (güvenilen sertifikalar) +    +
     config/.env (yalnızca istenirse)           +    +
 
 `all`, `state` ve `data` tasarımın kapsamlarıdır. 2.x web API'sinin dört kapsamı (`config`, `seasons`, `matches`,
@@ -34,11 +35,22 @@ ağaçları olarak yerine konur (Store onları yerinde okur).
 
 Geri yükleme yalnızca `backups/` dizinindeki bir yedeği adıyla alır (web arayüzü kararı 15: yükleme yok).
 Ayar dosyaları ve `.env` geri yüklenmez: veri dizininin dışındadırlar ve çalışan kurulumun ayarlarını
-değiştirmek geri yüklemenin işi değildir; rapor onları `skipped` olarak adlandırır. Tek istisna
-`config/overrides.json`: web arayüzünde kaydedilen ayarlar yoksa geri yüklemeden sonra kaybolurdu (FX-22).
+değiştirmek geri yüklemenin işi değildir; rapor onları `skipped` olarak adlandırır. İki istisna var:
+ilki `config/overrides.json`: web arayüzünde kaydedilen ayarlar yoksa geri yüklemeden sonra kaybolurdu (FX-22).
 Çağıran onun yerini verirse (`restore(overrides_file=...)`) veriyle aynı adımda, 0600 izniyle yerine konur
 ve bir adım başarısız olursa önceki hali geri gelir; vermezse ya da yedekte yoksa (eski yedekler) dosyaya
 dokunulmaz. İçeriği hiçbir zaman günlüğe yazılmaz.
+
+İkincisi güvenilen sertifikalar (`CONFIG_DIR/ca/*.pem`, sofascore_scraper/client/trust.py; #230): çağıran
+deponun yerini verirse (`create(ca_dir=...)`) güven deposunun okuyacağı her `.pem` dosyası `config/ca.<dosya adı>`
+olarak pakete girer, adı ve baytlarının SHA-256'sı `backup.json`'ın `trusted_ca` listesine yazılır (`verify`
+denetler). Üyeler `config/` altında düz durur (alt dizin yok): `config/<ad>` biçimindeki üyeyi eski sürümler ayar
+dosyası sayıp atlar, alt dizindeki bir üyeyi ise tanımaz ve bütün yedeği reddederdi. Kopya (`ca/.bundle`) ve
+tarayıcının NSS veritabanı pakete girmez: depodan yeniden kurulurlar. Geri yüklemede (`restore(ca_dir=...)`)
+her dosya veriyle aynı adımda, 0600 izniyle atomik olarak yazılır; aynı içerikle zaten olan dosyaya dokunulmaz,
+aynı adla başka içerik taşıyan dosyanın yerine yedektekini konur (`replaced`; `overrides.json` gibi yedek
+kazanır), yedekte olmayan sertifikalar silinmez. Sertifikalar gizli değildir (özel anahtar yoktur); geri
+yükleme kullanıcının kendi güven kararlarını geri koymasıdır.
 
 Kilitler: `create` kilit almaz, veri içeren bir yedek için `writer` kilidini (amaç `op:backup`) çağıran tutar
 (web'in iş deposu, `JobStore.exclusive("backup")`, ya da `ssc backup create`). `restore` `maintenance`
@@ -48,6 +60,7 @@ Yarım kalan zip silinir; dosya sistemi hatası StoreError olarak çıkar.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import logging
 import os
@@ -87,6 +100,13 @@ CONFIG_MEMBER_DIR = "config"
 ENV_MEMBER = ".env"
 OVERRIDES_MEMBER = f"{CONFIG_MEMBER_DIR}/overrides.json"  # web arayüzünde kaydedilen ayarlar (geri yüklenir)
 _OVERRIDES_MAX_BYTES = 1024 * 1024  # ayar belgesi küçüktür; daha büyüğü açılmaz
+# Güvenilen sertifikalar: `CONFIG_DIR/ca/<ad>.pem` → üye `config/ca.<ad>.pem` (düz; modül belgesi)
+CA_MEMBER_PREFIX = f"{CONFIG_MEMBER_DIR}/ca."
+CA_MANIFEST_KEY = "trusted_ca"  # backup.json: [{"file": <ad>, "file_sha256": <baytların SHA-256'sı>}]
+CA_COUNT = "trusted_ca_files"  # backup.json sayımı: pakete giren sertifika dosyaları
+_CA_SUFFIX = ".pem"
+_CA_MAX_BYTES = 1024 * 1024  # bir sertifika dosyası küçüktür; daha büyüğü geri yüklenmez
+_CA_DIR_MODE = 0o700  # sofascore_scraper/client/trust.py `add` ile aynı izinler
 STATE_MEMBER = layout.STATE_DB  # ".meta/state.db"
 SCHEMA_MEMBER = layout.SCHEMA_FILE  # ".meta/schema.json"
 CATALOG_MEMBER = layout.CATALOG_DB  # biçim 2'de yazılmaz; başka bir araçla eklenmişse yok sayılır
@@ -181,12 +201,14 @@ class RestoreReport:
     """
     `BackupManager.restore` sonucu (deneme çalıştırmasında: olacak olan).
 
-    restored         yerine konan üst düzey girdiler ("v3", "match_details", ".meta/state.db", ...) ve
-                     yerine konan ayar belgesi ("config/overrides.json")
+    restored         yerine konan üst düzey girdiler ("v3", "match_details", ".meta/state.db", ...), yerine
+                     konan ayar belgesi ("config/overrides.json") ve yazılan sertifika dosyaları
+                     ("config/ca.<ad>.pem"; aynı içerikle zaten olan dosya yazılmaz, burada da yoktur)
     replaced         hedefte bulunup çöpe taşınan girdiler (geri yükleme bitince silinir); üzerine yazılan
-                     ayar belgesi de ("config/overrides.json") burada adlandırılır
+                     ayar belgesi ("config/overrides.json") ve başka içerikli sertifika dosyaları da burada
+                     adlandırılır
     skipped          geri yüklenmeyen üyeler: ayar dosyaları, `.env`, katalog; yeri verilmeyen ya da
-                     okunamayan `config/overrides.json`
+                     okunamayan `config/overrides.json` ve sertifika dosyaları
     occupied         hedefte bulunan ve `force` gerektiren şeyler; boşsa hedef boştu
     counts           yedeğin sayımları (`backup.json`; biçim 1'de üyelerden sayılır)
     catalog_rebuilt  katalog geri yüklenen dosyalardan yeniden kuruldu
@@ -219,6 +241,7 @@ class _Plan:
     state: Optional[zipfile.ZipInfo] = None
     schema: Optional[zipfile.ZipInfo] = None
     overrides: Optional[zipfile.ZipInfo] = None  # config/overrides.json
+    certificates: List[zipfile.ZipInfo] = field(default_factory=list)  # config/ca.<ad>.pem
     skipped: List[str] = field(default_factory=list)
 
     @property
@@ -230,6 +253,45 @@ class _Plan:
         """Planın yerine koyacağı üst düzey veri girdileri (DATA_ENTRIES sırasıyla)."""
         found = {target.split("/", 1)[0] for _, target in self.data}
         return [entry for entry in DATA_ENTRIES if entry in found]
+
+
+def ca_files(directory: str) -> List[Tuple[str, str]]:
+    """
+    Güven deposunun okuyacağı sertifika dosyaları: (dosya adı, yol), ada göre sıralı. Kural
+    sofascore_scraper/client/trust.py `_pem_files` ile aynıdır (uzantısı büyük/küçük harf fark etmeksizin `.pem`
+    olan dosyalar; `.bundle/` ve geçici dosyalar girmez). Store o modülü içe aktaramaz (tests/test_layers.py).
+    Dizin yoksa ya da okunamıyorsa boş.
+    """
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return []
+    found = []
+    for name in names:
+        path = os.path.join(directory, name)
+        if _ca_name_ok(name) and os.path.isfile(path):
+            found.append((name, path))
+    return sorted(found)
+
+
+def _ca_name_ok(name: str) -> bool:
+    """Ad güven deposunun okuyacağı bir sertifika dosyasının adı mı (ayırıcısız, `.pem` uzantılı)?"""
+    if not name or "/" in name or "\\" in name or "\x00" in name or name in (".", ".."):
+        return False
+    stem, suffix = os.path.splitext(name)
+    return bool(stem) and suffix.lower() == _CA_SUFFIX
+
+
+def _ca_file_of(member: str) -> Optional[str]:
+    """Üye bir sertifika dosyasıysa (`config/ca.<ad>.pem`) dosyanın adı; değilse None."""
+    if not member.startswith(CA_MEMBER_PREFIX):
+        return None
+    name = member[len(CA_MEMBER_PREFIX):]
+    return name if _ca_name_ok(name) else None
+
+
+def _sha256_of(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
 def _stamp_of(name: str) -> Optional[re.Match[str]]:
@@ -318,6 +380,8 @@ def _plan_v2(infos: Sequence[zipfile.ZipInfo], manifest: Dict[str, Any]) -> _Pla
             plan.skipped.append(name)
         elif name == OVERRIDES_MEMBER:
             plan.overrides = info
+        elif _ca_file_of(name) is not None:
+            plan.certificates.append(info)
         elif top == CONFIG_MEMBER_DIR and name.count("/") == 1:
             plan.skipped.append(name)
         elif (top in DATA_ENTRIES and top != LEGACY_CHANGES and "/" in name) or name == LEGACY_CHANGES:
@@ -385,6 +449,75 @@ def _rows_of(conn: sqlite3.Connection, sql: str, params: Sequence[Any] = ()) -> 
     return [str(column[0]) for column in cursor.description or ()], cursor.fetchall()
 
 
+def _check_certificates(zf: zipfile.ZipFile, plan: _Plan) -> List[str]:
+    """`backup.json`'ın `trusted_ca` listesi: her dosya yedekte ve SHA-256'sı tutuyor mu (`verify`)."""
+    listed = plan.manifest.get(CA_MANIFEST_KEY)
+    if listed is None:
+        return []
+    if not isinstance(listed, list):
+        return [f"{MANIFEST_MEMBER}: {CA_MANIFEST_KEY} is not a list"]
+    problems: List[str] = []
+    for entry in listed:
+        file_name = entry.get("file") if isinstance(entry, dict) else None
+        expected = entry.get("file_sha256") if isinstance(entry, dict) else None
+        if not isinstance(file_name, str) or not _ca_name_ok(file_name) or not isinstance(expected, str):
+            problems.append(f"{MANIFEST_MEMBER}: {CA_MANIFEST_KEY} has an entry that is not a certificate file: "
+                            f"{entry!r}")
+            continue
+        member = CA_MEMBER_PREFIX + file_name
+        if member not in zf.NameToInfo:
+            problems.append(f"{member}: listed in {MANIFEST_MEMBER} but missing")
+            continue
+        try:
+            actual = _sha256_of(zf.read(member))
+        except (zipfile.BadZipFile, OSError, RuntimeError, EOFError, ValueError):
+            continue  # okuma hatası CRC denetiminde zaten adlandırıldı
+        if actual != expected.lower():
+            problems.append(f"{member}: the SHA-256 does not match {MANIFEST_MEMBER}")
+    return problems
+
+
+def _certificate_payload(zf: zipfile.ZipFile, info: zipfile.ZipInfo) -> Optional[bytes]:
+    """Yedekteki sertifika dosyasının baytları; çok büyükse ya da okunamıyorsa None (uyarı günlüğüyle)."""
+    if info.file_size > _CA_MAX_BYTES:
+        logger.warning("The backup's %s is larger than %d bytes and was not restored", info.filename, _CA_MAX_BYTES)
+        return None
+    try:
+        return zf.read(info)
+    except (zipfile.BadZipFile, OSError, RuntimeError, EOFError) as e:
+        logger.warning("The backup's %s is unreadable (%s) and was not restored", info.filename,
+                       e.__class__.__name__)
+        return None
+
+
+def _plan_certificates(zf: zipfile.ZipFile, plan: _Plan, ca_dir: Optional[str]
+                       ) -> Tuple[List[Tuple[str, bytes]], List[str], List[str], List[str]]:
+    """
+    Yedekteki sertifika dosyalarının geri yükleme planı: (yazılacak (yol, içerik) çiftleri, yazılacak üyeler,
+    bunlardan başka içerikli bir dosyanın yerine geçenler, atlananlar). Aynı içerikle zaten olan dosya hiçbirinde
+    yoktur: ona dokunulmaz.
+    """
+    writes: List[Tuple[str, bytes]] = []
+    restored: List[str] = []
+    replaced: List[str] = []
+    skipped: List[str] = []
+    for info in plan.certificates:
+        file_name = _ca_file_of(info.filename)
+        payload = _certificate_payload(zf, info) if ca_dir is not None else None
+        if ca_dir is None or file_name is None or payload is None:
+            skipped.append(info.filename)
+            continue
+        target = os.path.join(ca_dir, file_name)
+        current = _read_if_present(target)
+        if current == payload:
+            continue
+        writes.append((target, payload))
+        restored.append(info.filename)
+        if current is not None:
+            replaced.append(info.filename)
+    return writes, restored, replaced, skipped
+
+
 def _overrides_payload(zf: zipfile.ZipFile, info: zipfile.ZipInfo) -> Optional[bytes]:
     """
     Yedekteki `config/overrides.json`'ın baytları; bir JSON nesnesi değilse ya da çok büyükse None (uyarı
@@ -443,8 +576,8 @@ class BackupManager:
     # --- yazma -----------------------------------------------------------------------------------
 
     def create(self, scope: str = "all", *, config_files: Sequence[str] = (), env_file: Optional[str] = None,
-               overrides_file: Optional[str] = None, now: Optional[datetime] = None,
-               job_id: Optional[str] = None) -> BackupInfo:
+               overrides_file: Optional[str] = None, ca_dir: Optional[str] = None,
+               now: Optional[datetime] = None, job_id: Optional[str] = None) -> BackupInfo:
         """
         Yedeği biçim 2'de yazar ve bilgisini döndürür (modül belgesindeki tablo).
 
@@ -454,6 +587,9 @@ class BackupManager:
                       eklenir; dosya adı `_with_env` taşır ve izni 0600 olur
         overrides_file  verilirse, aynı kapsamlarda ve dosya varsa `config/overrides.json` olarak eklenir;
                       proxy adresi parola taşıyabildiği için dosyanın izni 0600 olur (adı değişmez)
+        ca_dir        verilirse, aynı kapsamlarda güven deposunun (`CONFIG_DIR/ca`) her `.pem` dosyası
+                      `config/ca.<ad>` olarak eklenir; adları ve SHA-256'ları `backup.json`'ın `trusted_ca`
+                      listesine, sayıları `counts.trusted_ca_files`'a yazılır (dosya yoksa ikisi de yazılmaz)
         now           dosya adındaki zaman (yerel); verilmezse şimdi
         job_id        yedeği alan iş (web'in ya da zamanlayıcının `backup` işi). Kopyadaki satırı bitmiş
                       (`completed`) yazılır: yedek alınırken iş henüz çalışıyordur, geri yüklenen geçmişte
@@ -500,18 +636,32 @@ class BackupManager:
                     zf.write(file_path, member, compress_type=compress)
                     members.append(member)
                 counts.update(_count_members(iter(members)))
+                trusted: List[Dict[str, str]] = []
                 if scope in CONFIG_SCOPES:
                     for config_file in config_files:
                         member = f"{CONFIG_MEMBER_DIR}/{os.path.basename(config_file)}"
-                        if os.path.exists(config_file) and not (with_overrides and member == OVERRIDES_MEMBER):
+                        if (os.path.exists(config_file) and not (with_overrides and member == OVERRIDES_MEMBER)
+                                and _ca_file_of(member) is None):  # sertifikaların ad alanı onlarındır
                             zf.write(config_file, member)
+                    for file_name, file_path in ca_files(ca_dir) if ca_dir is not None else ():
+                        try:
+                            with open(file_path, "rb") as source:
+                                payload = source.read()
+                        except OSError as e:  # güven deposu da okunamayan dosyayı atlar
+                            logger.warning("Trusted certificate file %s cannot be read and is not in the backup: %s",
+                                           file_name, e.strerror or e)
+                            continue
+                        zf.writestr(CA_MEMBER_PREFIX + file_name, payload)
+                        trusted.append({"file": file_name, "file_sha256": _sha256_of(payload)})
+                    if trusted:
+                        counts[CA_COUNT] = len(trusted)
                     if with_overrides:
                         assert overrides_file is not None
                         zf.write(overrides_file, OVERRIDES_MEMBER)
                     if with_env:
                         assert env_file is not None
                         zf.write(env_file, f"{CONFIG_MEMBER_DIR}/{ENV_MEMBER}")
-                zf.writestr(MANIFEST_MEMBER, self._manifest(scope, with_env, moment, state_schema, counts))
+                zf.writestr(MANIFEST_MEMBER, self._manifest(scope, with_env, moment, state_schema, counts, trusted))
         except BaseException as e:
             try:
                 if os.path.exists(path):
@@ -580,7 +730,7 @@ class BackupManager:
                 yield file_path, f"{base}/{file_name}"
 
     def _manifest(self, scope: str, with_env: bool, moment: datetime, state_schema: Optional[int],
-                  counts: Mapping[str, int]) -> str:
+                  counts: Mapping[str, int], trusted: Sequence[Mapping[str, str]] = ()) -> str:
         from sofascore_scraper.store.api import LAYOUT_VERSION
         from sofascore_scraper.version import __version__
 
@@ -596,6 +746,8 @@ class BackupManager:
             "store_id": self._store.store_id,
             "counts": dict(sorted(counts.items())),
         }
+        if trusted:  # eski okuyucular bilmedikleri anahtarı okumaz
+            document[CA_MANIFEST_KEY] = [dict(entry) for entry in trusted]
         return json.dumps(document, indent=2, ensure_ascii=False) + "\n"
 
     # --- okuma -----------------------------------------------------------------------------------
@@ -624,7 +776,9 @@ class BackupManager:
     def verify(self, name: str) -> BackupCheck:
         """
         Yedeği okur ve denetler; hiçbir şey yazmaz (state.db denetim için `.meta/tmp` altına açılır). Her
-        üyenin CRC'si okunarak denetlendiği için süre arşivin boyutuyla artar. Bilinmeyen ad BackupNotFound.
+        üyenin CRC'si okunarak denetlendiği için süre arşivin boyutuyla artar. `backup.json`'ın `trusted_ca`
+        listesindeki her sertifika dosyası yedekte olmalı ve baytlarının SHA-256'sı tutmalıdır. Bilinmeyen ad
+        BackupNotFound.
         """
         path = self.path_of(name)
         problems: List[str] = []
@@ -653,6 +807,7 @@ class BackupManager:
                     problems.append(str(e))
                 if plan.state is not None and not any(p.startswith(STATE_MEMBER) for p in problems):
                     problems.extend(self._check_state_member(zf, plan.state))
+                problems.extend(_check_certificates(zf, plan))
         fmt = plan.format if plan is not None else archive_format(path)
         scope = plan.scope if plan is not None and plan.format == FORMAT else None
         if scope is None:
@@ -704,7 +859,7 @@ class BackupManager:
     # --- geri yükleme ----------------------------------------------------------------------------
 
     def restore(self, name: str, *, force: bool = False, dry_run: bool = False,
-                overrides_file: Optional[str] = None) -> RestoreReport:
+                overrides_file: Optional[str] = None, ca_dir: Optional[str] = None) -> RestoreReport:
         """
         `backups/` altındaki yedeği bu veri dizinine geri yükler (bölüm 9.2).
 
@@ -729,6 +884,13 @@ class BackupManager:
         almada geri gelir); yedekte yoksa (eski yedekler) dosyaya dokunulmaz. Bir JSON nesnesi değilse geri
         yüklenmez (`skipped`, uyarı günlüğü; içerik günlüğe yazılmaz).
 
+        Güvenilen sertifikalar (`config/ca.<ad>.pem`): `ca_dir` verilirse her dosya 3. adımın sonunda oraya 0600
+        izniyle atomik olarak yazılır (dizin yoksa 0700 yaratılır; önceki hali geri almada geri gelir). Aynı
+        içerikle zaten olan dosyaya dokunulmaz; başka içerikli dosyanın yerine yedektekini konur (`replaced`);
+        yedekte olmayan sertifikalar silinmez. `ca_dir` verilmezse ya da dosya 1 MB'tan büyükse `skipped`.
+        Birleşik CA dosyası dosyaların değişmesinden kendiliğinden yeniden yazılır; çalışan tarayıcıyı yeniden
+        başlatmak çağıranın işidir (BackupService). Yedekte yoksa (eski yedekler) depoya dokunulmaz.
+
         Bilinmeyen ad BackupNotFound, okunamayan ya da güvensiz yedek BackupInvalid, daha yeni sürüm
         SchemaTooNew, salt okunur depo StoreError.
         """
@@ -752,6 +914,10 @@ class BackupManager:
                     settings = (overrides_file, payload)
                     restored.append(OVERRIDES_MEMBER)
             settings_replaced = [OVERRIDES_MEMBER] if settings is not None and os.path.lexists(settings[0]) else []
+            certificates, ca_restored, ca_replaced, ca_skipped = _plan_certificates(zf, plan, ca_dir)
+            restored += ca_restored
+            skipped += ca_skipped
+            settings_replaced += ca_replaced
             if dry_run:
                 occupied = self._occupied(plan)
                 return RestoreReport(
@@ -772,7 +938,8 @@ class BackupManager:
                         f"The data directory is not empty ({', '.join(occupied)}); a restore never merges. "
                         f"Restore with force to move the current data to the trash first: {self._store.data_dir}",
                         path=str(self._store.data_dir), reasons=occupied)
-                replaced = self._apply(zf, plan, force=force, settings=settings) + settings_replaced
+                replaced = self._apply(zf, plan, force=force, settings=settings,
+                                       certificates=certificates) + settings_replaced
                 rebuilt, verify_ok, verify_issues = self._after_restore()
             finally:
                 if lease is not None:
@@ -808,9 +975,11 @@ class BackupManager:
             shutil.copyfileobj(source, sink, _COPY_CHUNK)
 
     def _apply(self, zf: zipfile.ZipFile, plan: _Plan, *, force: bool,
-               settings: Optional[Tuple[str, bytes]] = None) -> List[str]:
+               settings: Optional[Tuple[str, bytes]] = None,
+               certificates: Sequence[Tuple[str, bytes]] = ()) -> List[str]:
         """
         Planı uygular (kilit altında); çöpe taşınan girdileri döndürür. Hata olursa yapılanı geri alır.
+        certificates: (yol, içerik) çiftleri; sertifika dosyaları veriden sonra, 0600 izniyle yazılır.
         settings: (yol, içerik) verilirse ayar belgesi en son, 0600 izniyle yazılır.
         """
         data_dir = str(self._store.data_dir)
@@ -821,7 +990,7 @@ class BackupManager:
         moved_aside: List[Tuple[str, str]] = []  # (asıl yer, çöpteki yer)
         placed: List[str] = []  # yerine konan girdiler
         state_saved: Optional[str] = None
-        settings_saved: Optional[Tuple[str, Optional[bytes]]] = None  # (yol, önceki içerik; dosya yoksa None)
+        files_saved: List[Tuple[str, Optional[bytes]]] = []  # yazılan ayar dosyaları: (yol, önceki içerik; yoksa None)
         keep_trash = False  # geri alma başarısız oldu: önceki veri çöpte kalır
         try:
             try:
@@ -848,13 +1017,17 @@ class BackupManager:
                     self._copy_db(self._store._state.connection(), saved)
                     state_saved = saved  # yalnızca tam kopya geri yüklenir
                     self._load_state(staged_state)
+                for target, payload in certificates:
+                    os.makedirs(os.path.dirname(target), mode=_CA_DIR_MODE, exist_ok=True)
+                    files_saved.append((target, _read_if_present(target)))
+                    files.write_bytes(target, payload, durable=True, mode=_PRIVATE_MODE)
                 if settings is not None:
                     target, payload = settings
-                    settings_saved = (target, _read_if_present(target))
+                    files_saved.append((target, _read_if_present(target)))
                     files.write_bytes(target, payload, durable=True, mode=_PRIVATE_MODE)
             except BaseException as e:
                 try:
-                    self._roll_back(moved_aside, placed, state_saved, settings_saved)
+                    self._roll_back(moved_aside, placed, state_saved, files_saved)
                 except StoreError:
                     keep_trash = True
                     raise
@@ -968,14 +1141,13 @@ class BackupManager:
         return ids, rows, events
 
     def _roll_back(self, moved_aside: Sequence[Tuple[str, str]], placed: Sequence[str],
-                   state_saved: Optional[str], settings_saved: Optional[Tuple[str, Optional[bytes]]] = None) -> None:
+                   state_saved: Optional[str], files_saved: Sequence[Tuple[str, Optional[bytes]]] = ()) -> None:
         """
-        Yarıda kalan geri yüklemeyi geri alır: yerine konanlar silinir, çöpe taşınanlar geri gelir, ayar belgesi
-        önceki haline döner (yoksa silinir).
+        Yarıda kalan geri yüklemeyi geri alır: yerine konanlar silinir, çöpe taşınanlar geri gelir, yazılan ayar
+        belgesi ve sertifika dosyaları önceki haline döner (önceden yoksa silinir).
         """
         try:
-            if settings_saved is not None:
-                target, before = settings_saved
+            for target, before in reversed(files_saved):
                 if before is None:
                     files.remove(target)
                 else:

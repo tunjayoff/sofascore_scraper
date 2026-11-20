@@ -1605,6 +1605,7 @@ const tr: typeof en = {
       legacy_events: 'Eski düzendeki maçlar',
       files: 'Dosyalar',
       stream_events: 'Değişiklik kayıtları',
+      trusted_ca_files: 'Güvenilen sertifika dosyaları',
     },
     next: 'İleri',
   },

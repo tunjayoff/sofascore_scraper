@@ -6,7 +6,10 @@ yüzlerden (CLI, web) bağımsız giriş noktasıdır: hangi ayar dosyalarının
 `.env` yalnızca `include_secrets=True` ile girer (proxy parolası, captcha ve erişim belirteci taşıyabilir).
 Web arayüzünde kaydedilen ayarlar (`CONFIG_DIR/overrides.json`) ayar taşıyan her kapsamda pakete girer ve
 geri yüklemede yerine konur (FX-22): yoksa geri yüklemeden sonra kaybolurlardı. Proxy adresi parola
-taşıyabildiği için bu dosyayı taşıyan yedek de geri yüklenen dosya da 0600'dür.
+taşıyabildiği için bu dosyayı taşıyan yedek de geri yüklenen dosya da 0600'dür. Güvenilen sertifikalar
+(`CONFIG_DIR/ca/*.pem`, sofascore_scraper/client/trust.py) da aynı kapsamlarda pakete girer ve geri yüklemede
+yerine konur (yedek kazanır, yedekte olmayan sertifika silinmez); ardından bu sürecin köprü tarayıcısı yeni
+depoyla yeniden başlatılmak üzere kapatılır (`POST /api/v1/trust` ile aynı yol).
 
 Yedekler biçim 2'dedir (`backup.json`, `state.db`, v3 ağacı, değişiklik günlüğü); geri yükleme bugünkü
 (biçim 1) zip'leri de okur. Geri yükleme yalnızca `backups/` dizinindeki bir yedeği adıyla alır (web arayüzü
@@ -41,6 +44,9 @@ logger = get_logger("BackupService")
 
 # Yedekteki ayar belgesinin üye adı (sofascore_scraper/store/backup.py OVERRIDES_MEMBER; rapor bu adla söyler)
 OVERRIDES_MEMBER = "config/overrides.json"
+# Yedekteki güvenilen sertifikaların üye adı öneki (sofascore_scraper/store/backup.py CA_MEMBER_PREFIX):
+# `config/ca.<dosya adı>`
+CA_MEMBER_PREFIX = "config/ca."
 
 # 2.x'in dört kapsamı (`config`, `seasons`, `matches`, `match_details`) 3.1'de kalktı (plan maddesi P30)
 BackupScope = Literal["all", "state", "data"]
@@ -64,11 +70,12 @@ class BackupService:
         job_id           yedeği alan iş; yedekteki iş geçmişinde bitmiş görünür (geri yüklemeden sonra
                          "yarıda kaldı" uyarısı vermesin, FX-23)
 
-        `overrides.json` (web arayüzünde kaydedilen ayarlar) aynı kapsamlarda, dosya varsa her zaman girer.
+        `overrides.json` (web arayüzünde kaydedilen ayarlar) ve güvenilen sertifikalar (`CONFIG_DIR/ca/*.pem`)
+        aynı kapsamlarda, varsa her zaman girer.
         """
         info = self._store.backup.create(
             scope, config_files=config_files, env_file=env_file_path() if include_secrets else None,
-            overrides_file=str(_overrides_path()), job_id=job_id)
+            overrides_file=str(_overrides_path()), ca_dir=str(_ca_dir()), job_id=job_id)
         logger.info("Backup created: %s (scope=%s, with_env=%s, %d bytes)", info.name, info.scope, info.with_env,
                     info.size)
         return info
@@ -98,6 +105,10 @@ class BackupService:
         onunla değiştirilir ve ayarlar yeniden yüklenir; ayarlar arayüzünün yazdığı dosyayla aynı kilit altında.
         Geri yüklenen belgeyle ayarlar kurulamıyorsa (ör. başka bir sürümün bilmediği anahtar) önceki dosya geri
         konur, önceki ayarlar yürürlükte kalır ve rapor dosyayı `skipped` olarak adlandırır.
+
+        Yedekteki güvenilen sertifikalar (`config/ca.<ad>.pem`) `CONFIG_DIR/ca`'ya yazılır; biri yazıldıysa
+        günlüğe sayıları ve parmak izleri yazılır ve bu sürecin köprü tarayıcısı kapatılır (bir sonraki istek
+        onu yeni depoyla başlatır). HTTP istemcisi değişikliği bir sonraki istekte kendisi görür.
         """
         if dry_run:
             return self._restore(name, force=force, dry_run=True)
@@ -109,12 +120,13 @@ class BackupService:
             report = self._restore(name, force=force, dry_run=False)
             if OVERRIDES_MEMBER in report.restored:
                 report = _reload_settings(report, before)
+        _apply_certificates(report)
         return report
 
     def _restore(self, name: str, *, force: bool, dry_run: bool) -> RestoreReport:
         try:
             return self._store.backup.restore(name, force=force, dry_run=dry_run,
-                                              overrides_file=str(_overrides_path()))
+                                              overrides_file=str(_overrides_path()), ca_dir=str(_ca_dir()))
         except BackupNotFound as e:
             raise NotFoundError(str(e), {"name": name}) from e
         except BackupInvalid as e:
@@ -134,6 +146,34 @@ def _overrides_path() -> Path:
     from sofascore_scraper.config.overrides import overrides_path
 
     return overrides_path()
+
+
+def _ca_dir() -> Path:
+    """Güvenilen sertifikaların deposu (CONFIG_DIR / ca)."""
+    from sofascore_scraper.client.trust import ca_dir
+
+    return ca_dir()
+
+
+def _apply_certificates(report: RestoreReport) -> None:
+    """
+    Geri yüklenen sertifikalar yürürlüğe girer: birleşik CA dosyası (`trust.bundle_path`) dosyaların değiştiğini
+    kendisi görür; tarayıcının NSS veritabanı her başlatmada depodan kurulduğu için bu sürecin köprü tarayıcısı
+    kapatılır (`POST /api/v1/trust` ile aynı yol). Günlüğe tek satır: sertifika sayısı ve parmak izleri.
+    """
+    from sofascore_scraper.client import trust
+
+    written = [member[len(CA_MEMBER_PREFIX):] for member in report.restored if member.startswith(CA_MEMBER_PREFIX)]
+    if not written:
+        return
+    fingerprints = [item.certificate.sha256 for item in trust.stored() if item.file in written]
+    logger.warning("Trusted certificates restored from backup %s: %d certificate(s) in %d file(s) of the ca "
+                   "folder (sha256 %s)", report.name, len(fingerprints), len(written),
+                   ", ".join(fingerprints) or "-")
+    from sofascore_scraper.client import bridge
+
+    if not bridge.restart_for_trust_change():
+        logger.warning("The built-in browser trusts the restored certificates after the app restarts")
 
 
 def _reload_settings(report: RestoreReport, before: Optional[bytes]) -> RestoreReport:
