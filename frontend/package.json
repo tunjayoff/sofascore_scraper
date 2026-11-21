@@ -41,5 +41,11 @@
     "vitest": "^5.1.0",
     "vue-eslint-parser": "^10.4.2",
     "vue-tsc": "^3.3.14"
+  },
+  "overrides": {
+    "js-beautify": {
+      "glob": "^14.0.2",
+      "editorconfig": "^4.0.1"
+    }
   }
 }
