@@ -4156,10 +4156,11 @@ Open:
 - Team streaks that answer 200 with an empty body (new; a finding of FX-31, #185). The slice rules read status
   codes, so `team_streaks` stays required everywhere, while the explorer saw an empty 200 (`no_data`) in 11
   sports and the app-side finished matrix "-" in 9. Chosen: as built (status codes only). Alternative: a
-  body-aware rule that counts an empty 200 like a 404. Open (section 19).
+  body-aware rule that counts an empty 200 like a 404. Decided by the maintainer on 2026-11-21: as built
+  (section 20).
 - Baseball `/umpires`, `/weather`, `/comments` and `/at-bats` (new; a finding of FX-31). They answer 200 on
   finished and live matches. Chosen: not requested (no slice, no schema record). Alternative: new slices for
-  baseball. Open, a proposal only (section 19).
+  baseball. Decided by the maintainer on 2026-11-21: not requested (section 20).
 
 ## 14. Open questions
 
@@ -5654,14 +5655,24 @@ How 3.2.0 is released, as for 3.1.0 to 3.1.2 (section 19):
 Open after 3.2.0 (the items of section 19's list that are not done, copied), in no fixed order:
 
 - **Team streaks that answer 200 with an empty body.** A body-aware rule for `team_streaks` is a decision
-  (section 13).
+  (section 13). **Closed (maintainer, 2026-11-21): as built.** The slice rules keep reading status codes
+  only. An empty 200 is SofaScore's answer for that match and is stored as such; it is never requested
+  again, so it costs no requests, and a body-aware rule would add a second meaning of "missing" to one
+  slice only.
 - **Baseball `/umpires`, `/weather`, `/comments` and `/at-bats`.** They answer 200 on finished and live
-  matches; slices for them are a proposal (section 13).
+  matches; slices for them are a proposal (section 13). **Closed (maintainer, 2026-11-21): not
+  requested.** Four more requests per baseball match for data no user asked for, with no schema record;
+  the same reasoning as the owner's decision on the post-match endpoints (FX-37, section 13). A request
+  for them reopens it as a new slice item.
 - **A fetch of SofaScore's odds provider listing** (B4's proposal). An optional reference fetch of
   `/odds/providers/{cc}/web`, at most weekly, only when `client.odds_country` is set (never from the
   machine's address), through the client and the throttle and never part of a match download, every link
   field stripped before it is stored and the result merged over the built-in table; `GET /odds/providers`
   would then say where each entry comes from. It needs a place in the Store for reference data.
+  **Closed (maintainer, 2026-11-21): not planned.** The built-in table names the providers that answer
+  (only 1 and 5 answered with data in the live validation), the free id covers any other, and the fetch
+  would need a new Store area, a schedule and link stripping for a list that rarely changes. The table is
+  refreshed by hand when a provider is reported missing.
 - **A `provider_name` field in schema v1** (`Odds`, `OddsLine`). Additive, with the generated tables of
   `04-schema-v1.md`; until then a consumer reads the names from `GET /odds/providers`.
 - **A replacement for `stage_name` and `listed_in`.** P30 dropped only the two score columns of the events
@@ -5705,7 +5716,10 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   A filter must keep the tests that read documents running (the generated tables of `04-schema-v1.md` in
   `tests/test_schema_v1.py`, the DDL of `01-storage.md` in `tests/test_store_catalog.py`, the OpenAPI
   snapshot, and the tests that read the READMEs, such as `tests/test_live_direct_optin.py` and
-  `tests/test_start_web.py`).
+  `tests/test_start_web.py`). **Closed (maintainer, 2026-11-21): not planned.** With the tests that read
+  documents, a filter would still have to run the Python matrix for most documents-only pull requests,
+  and every pull request is merged on a full green run, which a filter would turn into a list of paths to
+  keep in step with the tests. The saving is CI minutes on a public repository, where they are free.
 - **The profile list has to follow SofaScore's gate** (#227). `profiles.WANTED` is the measurement of one
   day; the gate's Chrome threshold moves, and new profiles come only with a newer curl_cffi. The set-aside
   keeps requests working while one profile passes, and nothing reports how many are set aside except the
@@ -5718,7 +5732,10 @@ New on 2026-11-14, from the work of 3.1.2 (each checked in the code at `395b6e0`
   re-measuring the list.
 - **A trusted certificate has no scope and no reminder** (#230). A stored CA is trusted for every host the
   HTTP client and the bridge browser connect to, and an expired one stays in the folder until the user
-  removes it (the list marks it `expired`). No decision asked for more.
+  removes it (the list marks it `expired`). No decision asked for more. **Closed (maintainer, 2026-11-21):
+  as built.** The certificate is the one the user's own network uses to re-sign every HTTPS connection,
+  so a scope narrower than "every host" would break the hosts left out; an expired certificate already
+  stops verifying by itself and the list marks it.
 
 Not in 3.2, by decision, as for 3.1: a localized date picker (owner, 2026-10-09; the native date input
 stays) and serving the web UI under a path prefix (section 17). Publishing to PyPI has no date (section 13).
