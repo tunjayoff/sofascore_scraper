@@ -44,6 +44,10 @@
   "sofascore_scraper.paths",
   "sofascore_scraper.redact",
   "sofascore_scraper.sports",
+  "sofascore_scraper.store",
+  "sofascore_scraper.store.errors",
+  "sofascore_scraper.store.files",
+  "sofascore_scraper.store.layout",
   "sofascore_scraper.version"
  ],
  "stderr": [],

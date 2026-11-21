@@ -3019,11 +3019,21 @@ Conclusions:
   P09). ST-22 (#98) added the line to `.env.example` (`normal` or `full`); since ST-21 and ST-22 the
   writers of matches, schedules and season lists honour it, because they write through the Store. Since P30
   (#186) it is the setting `storage.durability` (`SOFASCORE_STORAGE__DURABILITY`; `STORE_DURABILITY` is no
-  longer read and only gives a `legacy_name` warning). `sofascore_scraper/store/files.py` reads it, and
-  `storage.open_reconcile_seconds`, from the active settings of the loader through `sys.modules`
-  (`_storage_settings`, `:54-66` at `216c2f9`), because the Store may not import the configuration; a process
-  without a loader (a tool, a test) uses the defaults. The plan's wish that the Store gets them from its
-  caller is open: no caller of the Store has the settings (`03-implementation-plan.md` section 19).
+  longer read and only gives a `legacy_name` warning). Until 2026-11-21 `sofascore_scraper/store/files.py`
+  read it, and `storage.open_reconcile_seconds`, from the active settings of the loader through `sys.modules`
+  (`_storage_settings`, `:54-66` at `216c2f9`), because the Store may not import the configuration. Since
+  then the Store gets them from its caller: `sofascore_scraper.store.use_settings(source)` takes a function
+  that returns the `[storage]` section (`data_dir`, `durability`, `open_reconcile_seconds`), and the settings
+  loader passes its own (`loader._store_settings`, the active settings' `storage`) when it is imported, so
+  every process that has settings has given them to the Store before its first write. The Store calls the
+  function on every read: a changed environment variable or a reload of `sofascore.toml` or `overrides.json`
+  applies to the next write, as before (the Settings page does not edit `storage.durability` and marks it
+  as needing a restart). A process that never imports the loader (a tool, a test) and a function that
+  raises use the defaults: no `fsync`, `data`, 60 seconds. The `durable=` argument of `write_bytes` and
+  `publish_dir` still overrides the setting per call (a restore writes the certificates and the settings
+  file with `fsync`). `tests/test_layers.py` checks that no Store module looks into `sys.modules`. Importing
+  the configuration now loads the Store's root and `files` (with `errors` and `layout`; no SQLite), which the
+  CLI goldens of `ssc doctor` list.
 - Windows: `os.replace` fails while another process has the target open. Store readers read a file in one
   call and close it; the writer retries a failed replace up to 10 times with 20 ms pauses, then raises a
   non-fatal `StoreError`. That holds for the Store-layer functions (`write_bytes`, `replace`, `publish_dir`,
@@ -5283,7 +5293,8 @@ Corrections after the 3.0.0 release and the first 3.1 work (2026-10-09, the tent
      `storage.durability` and `storage.open_reconcile_seconds`, which `sofascore_scraper/store/files.py`
      reads from the loader through `sys.modules`; the old names only give a `legacy_name` warning. The plan
      wanted the durability from the Store's caller, which no caller can give; it stays open. Sections 3.5,
-     4.4 (P30 #186).
+     4.4 (P30 #186). Closed on 2026-11-21: the loader gives the Store a function for its settings
+     (`store.use_settings`), and the Store no longer looks into `sys.modules` (4.4).
 151. **Three backup scopes.** Section 9.1 still listed the four 2.x scopes as deprecated. P30 removed them
      everywhere; archives with an old scope name are still recognised and restored. Sections 2.3, 6.1, 9.1
      (P30 #186).

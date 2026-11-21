@@ -7,8 +7,9 @@ os.replace ile yerine konur. Okuyan taraf ya eski ya yeni dosyayı görür, yar�
 dosyaya aynı anda yazan iki süreç birbirinin geçici dosyasını ezmez.
 
 Her OSError bir StoreError'a çevrilir (`fatal` errno'dan hesaplanır) ve `storage.durability` "full" ise dosya ve
-dizini fsync edilir (`durability_full`). Veri dizini dışındaki yapılandırma dosyaları (leagues.txt, league_sports.json,
-overrides.json) bu modülle değil sofascore_scraper/config_files.py ile yazılır.
+dizini fsync edilir (`durability_full`). Ayarları Store'a çağıranı verir (`use_settings`); Store ayarları içe
+aktarmaz. Veri dizini dışındaki yapılandırma dosyaları (leagues.txt, league_sports.json, overrides.json) bu modülle
+değil sofascore_scraper/config_files.py ile yazılır.
 
 Dosya izinleri (karar S12): Store katmanının yazdığı dosyalar (yükler, manifestler, .meta/schema.json)
 sürecin umask'ine uyar: umask 022 ile 0644, 077 ile 0600. Böylece Docker bağlama noktasını başka bir
@@ -26,7 +27,6 @@ import contextlib
 import errno
 import os
 import shutil
-import sys
 import time
 import uuid
 from typing import Any, Callable, Collection, Optional, Tuple, Union
@@ -52,17 +52,29 @@ class ReplaceBusy(PermissionError):
     """Yerine koyma, yeniden denemelere rağmen başarısız: hedef başka bir süreçte açık (Windows)."""
 
 
+# Store'un `[storage]` ayarlarını veren işlev: üst katman (ayar yükleyicisi, sofascore_scraper/config/loader.py) kendisi
+# yüklenirken `use_settings` ile verir. Store ayarları içe aktarmaz (katman kuralı; ayarlar Store'un üstündedir).
+_settings_source: Optional[Callable[[], Any]] = None
+
+
+def use_settings(source: Optional[Callable[[], Any]]) -> None:
+    """
+    Store'un ayarlarını nereden okuyacağını söyler. `source()` her okumada çağrılır ve `data_dir`, `durability`,
+    `open_reconcile_seconds` öznitelikleri olan bir nesne döndürür (uygulamada etkin ayarların `[storage]`
+    bölümü): ayar değişince (ortam, Ayarlar sayfasının yeniden yüklemesi) sonraki yazma yeni değeri görür.
+    None kaynağı kaldırır. Kaynağı verilmemiş bir süreç (yönetim aracı, test) varsayılanlarla çalışır.
+    """
+    global _settings_source
+    _settings_source = source
+
+
 def _storage_settings() -> Any:
-    """
-    Uygulamanın `[storage]` ayarları; ayar yükleyicisi bu süreçte yüklenmemişse None. Store ayar yükleyicisini içe
-    aktaramaz (katman kuralı; ayarlar Store'un üstündedir): değerler yükleyicinin modülünden, yüklenmişse,
-    `sys.modules` üzerinden okunur. Yükleyicisi olmayan bir süreç (yönetim aracı, test) varsayılanlarla çalışır.
-    """
-    loader = sys.modules.get("sofascore_scraper.config.loader")
-    if loader is None:
+    """Çağıranın verdiği `[storage]` ayarları (`use_settings`); kaynak yoksa ya da okunamıyorsa None."""
+    source = _settings_source
+    if source is None:
         return None
     try:
-        return loader.active_settings().storage
+        return source()
     except Exception:  # geçersiz yapılandırma: yazma durmasın, varsayılanlar
         return None
 

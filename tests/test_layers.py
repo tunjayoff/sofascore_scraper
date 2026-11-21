@@ -135,6 +135,20 @@ def test_store_has_no_network_code():
     assert not problems, "sofascore_scraper/store/ ağ kodu içermez (docs/design/01-storage.md bölüm 2.1):\n  " + "\n  ".join(problems)
 
 
+def test_the_store_does_not_look_up_other_layers_in_sys_modules():
+    """
+    İçe aktarma yasağının arka kapısı da kapalı: Store başka bir katmanın modülünü `sys.modules`'tan almaz. Ayarlarını
+    (`[storage]`) ona çağıranı verir (`sofascore_scraper.store.use_settings`; 03-implementation-plan.md bölüm 20).
+    """
+    found = [
+        f"{path.relative_to(ROOT).as_posix()}:{number}"
+        for path in sorted(STORE_DIR.rglob("*.py"))
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+        if "sys.modules" in line
+    ]
+    assert not found, "sofascore_scraper/store/ sys.modules'a bakmaz; değeri çağıran versin:\n  " + "\n  ".join(found)
+
+
 def test_the_modules_the_store_may_import_exist():
     for module in sorted(STORE_MAY_IMPORT):
         assert (ROOT / (module.replace(".", "/") + ".py")).is_file(), f"{module} yok: izin listesi güncel değil"

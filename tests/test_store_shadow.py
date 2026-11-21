@@ -88,7 +88,7 @@ def no_check(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(api_mod.SHADOW_CHECK_ENV)
 
 
-# `storage.open_reconcile_seconds`in ortamdaki adı (Store onu ayar yükleyicisinden okur)
+# `storage.open_reconcile_seconds`in ortamdaki adı (yükleyici onu Store'a verir: store.use_settings)
 OPEN_RECONCILE_ENV = "SOFASCORE_STORAGE__OPEN_RECONCILE_SECONDS"
 
 
