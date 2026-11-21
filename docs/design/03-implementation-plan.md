@@ -5669,8 +5669,10 @@ Open after 3.2.0 (the items of section 19's list that are not done, copied), in 
   machine's address), through the client and the throttle and never part of a match download, every link
   field stripped before it is stored and the result merged over the built-in table; `GET /odds/providers`
   would then say where each entry comes from. It needs a place in the Store for reference data.
-  **Closed (maintainer, 2026-11-21): not planned.** The built-in table names the providers that answer
-  (only 1 and 5 answered with data in the live validation), the free id covers any other, and the fetch
+  **Closed (maintainer, 2026-11-21): not planned.** The built-in table names provider 1 (the default) and
+  the providers of the country listings of 2026-10-09; provider 5, the only other id that answered with data
+  in the live validation, is in no listing and shows as its id (`provider_name` null). The free id covers any
+  other, and the fetch
   would need a new Store area, a schedule and link stripping for a list that rarely changes. The table is
   refreshed by hand when a provider is reported missing.
 - **A `provider_name` field in schema v1** (`Odds`, `OddsLine`). Additive, with the generated tables of
