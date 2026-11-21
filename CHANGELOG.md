@@ -8,6 +8,15 @@ below (see "Releasing" in the README).
 
 ## [Unreleased]
 
+### Added
+
+- **The bookmaker's name in the odds records.** Schema v1's `Odds` and `OddsLine` have a new field
+  `provider_name` next to `provider_id`, for example `"bet365"` for provider 1: the same names as
+  `GET /api/v1/odds/providers`, taken from the built-in table when the record is built (no request to
+  SofaScore, nothing stored changes). It is null for a provider the table does not know. The odds routes
+  of API v1 return it, and the `odds` export dataset has a `provider_name` column after `provider_id`.
+  An added field is free in schema v1, so `schema_version` stays 1.
+
 ## [3.2.0] - 2026-11-20
 
 3.2.0 removes the four 2.x environment names that 3.1 still read with a warning; set without their new

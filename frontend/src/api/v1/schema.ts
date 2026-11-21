@@ -831,6 +831,8 @@ export interface Odds {
   key: string
   /** SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine. */
   provider_id: number | null
+  /** Name of the bookmaker of `provider_id`, as SofaScore writes it (the same names as `GET /api/v1/odds/providers`); null when the platform's built-in list of bookmakers does not know the id. */
+  provider_name: string | null
   /** When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price. */
   fetched_at_utc: string | null
   /** The markets, in SofaScore's order. */

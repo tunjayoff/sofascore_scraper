@@ -803,6 +803,11 @@ class Odds(Model):
                                       "SofaScore offers depends on the country it sees the request from; the "
                                       "platform stores no address or location of the machine.",
                                       source="the request that fetched it")
+    provider_name: Optional[str] = spec("Name of the bookmaker of `provider_id`, as SofaScore writes it (the same "
+                                        "names as `GET /api/v1/odds/providers`); null when the platform's "
+                                        "built-in list of bookmakers does not know the id.",
+                                        source="derived from `provider_id` (`sofascore_scraper/sports.py`, "
+                                        "`ODDS_PROVIDERS`)")
     fetched_at_utc: Optional[str] = spec("When the odds were read. A read is a snapshot: odds change until the "
                                          "event ends, and only a later read shows a later price.",
                                          unit="ISO 8601 UTC", fmt="date-time",
@@ -821,6 +826,9 @@ class OddsLine(Model):
     key: str = spec("Odds slice the row comes from.", source="slice registry (`sofascore_scraper/sports.py`)", open_enum=True,
                     known=("odds_all", "odds_featured"))
     provider_id: Optional[int] = spec("As `Odds.provider_id`.", source="the request that fetched it")
+    provider_name: Optional[str] = spec("As `Odds.provider_name`.",
+                                        source="derived from `provider_id` (`sofascore_scraper/sports.py`, "
+                                        "`ODDS_PROVIDERS`)")
     fetched_at_utc: Optional[str] = spec("When the snapshot was read.", unit="ISO 8601 UTC", fmt="date-time",
                                          source="time of the platform's request")
     market_id: Optional[int] = spec("As `OddsMarket.market_id`.", source="`marketId`")

@@ -8832,6 +8832,18 @@
             "title": "Provider Id",
             "description": "SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine."
           },
+          "provider_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Name",
+            "description": "Name of the bookmaker of `provider_id`, as SofaScore writes it (the same names as `GET /api/v1/odds/providers`); null when the platform's built-in list of bookmakers does not know the id."
+          },
           "fetched_at_utc": {
             "anyOf": [
               {
@@ -8858,6 +8870,7 @@
           "event_id",
           "key",
           "provider_id",
+          "provider_name",
           "fetched_at_utc",
           "markets"
         ],

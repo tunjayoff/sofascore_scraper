@@ -4929,9 +4929,10 @@ As built at `216c2f9` (P30 #186, FX-30 #180, B1 #190, B2 #191). `docs/api/openap
   reference data, and the platform never derives a country from the machine (`client.odds_country` comes
   only from the user). Open (`03-implementation-plan.md` section 19): an optional reference fetch of the
   listing, at most weekly, only when `client.odds_country` is set, through the client and the throttle and
-  never part of a match download, with every link stripped and the result merged over the table; and a
-  `provider_name` field in schema v1 (`Odds.provider_id` and `OddsLine.provider_id` are unchanged; an
-  additive change with the generated tables of `04-schema-v1.md`). The help text of `client.odds_provider`
+  never part of a match download, with every link stripped and the result merged over the table. Done on
+  2026-11-21: schema v1's `Odds` and `OddsLine` carry `provider_name` next to the unchanged `provider_id`,
+  looked up in the same table when the record is mapped (null for an unknown id; `04-schema-v1.md`, "Odds
+  and standings"). The help text of `client.odds_provider`
   (`ssc describe config`, the config JSON Schema) names `1 = bet365 (international)` and the route.
 
 As built at `395b6e0` (3.1.1 and 3.1.2: #220, #226, #230). `docs/api/openapi-v1.json` and
