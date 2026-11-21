@@ -22,7 +22,8 @@ verilmeden duruyorsa ayarlar yüklenmez (GuardedNameError, bir ConfigError), yen
 diğerleri gibi bir uyarıdır.
 
 Ayarları okuyan modüller (throttle, refresh, logger, köprü sağlığı, devre kesici, istek katmanı...) değeri
-`active_settings()`ten alır; ortamdan doğrudan okumazlar. 3.0'ın geçiş köprüsü (etkin değeri eski adıyla
+`active_settings()`ten alır; ortamdan doğrudan okumazlar. Store ayarları içe aktaramaz: `[storage]` bölümünü ona
+bu modül verir (`sofascore_scraper.store.use_settings`, yüklenirken). 3.0'ın geçiş köprüsü (etkin değeri eski adıyla
 ortama yazan `projection`) 3.1'de kalktı.
 
 Yapılandırma dosyası süreç başına bir kez okunur; yeniden okumak açık bir çağrıdır (`reload`,
@@ -60,6 +61,7 @@ from sofascore_scraper.config.settings import (
 from sofascore_scraper.exceptions import ConfigError
 from sofascore_scraper.redact import MASK, mask_webhook_url
 from sofascore_scraper.sports import UnknownSliceName, check_slice_names, sport_slugs
+from sofascore_scraper.store import use_settings as use_store_settings
 
 logger = logging.getLogger("Config")
 
@@ -1380,6 +1382,19 @@ def active() -> LoadedSettings:
 
 def active_settings() -> Settings:
     return active().settings
+
+
+def _store_settings() -> model.StorageSettings:
+    """
+    Store'un ayar kaynağı (`sofascore_scraper.store.use_settings`): etkin ayarların `[storage]` bölümü. Store onu her
+    okumada çağırır; ortamdaki ya da yeniden yüklenen dosyalardaki değişiklik sonraki yazmada geçerlidir.
+    """
+    return active_settings().storage
+
+
+# Store ayarları içe aktaramaz (katman kuralı): dayanıklılığı, varsayılan veri dizinini ve açılış taramasının süresini
+# ona yükleyici verir, kendisi yüklenir yüklenmez (docs/design/01-storage.md bölüm 4.4)
+use_store_settings(_store_settings)
 
 
 def current() -> Optional[LoadedSettings]:

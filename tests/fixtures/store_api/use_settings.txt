@@ -1,0 +1,3 @@
+# sofascore_scraper.store.use_settings
+# kaynak: sofascore_scraper/store/files.py
+def use_settings(source: Optional[Callable[[], Any]]) -> None

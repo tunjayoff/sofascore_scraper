@@ -5680,7 +5680,9 @@ Open after 3.2.0 (the items of section 19's list that are not done, copied), in 
   a season's pages, the planner's listed events) read `listed_in`. Dropping them needs a design first.
 - **`sofascore_scraper/store/files.py` gets its durability from the caller.** It reads `storage.durability`
   through the loader module in `sys.modules` (the Store may not import the configuration); no Store caller
-  has the settings today.
+  has the settings today. **Done (this PR, 2026-11-21).** The Store takes a function for its `[storage]`
+  settings (`sofascore_scraper.store.use_settings`), the loader passes its own when it is imported and the
+  Store calls it on every read, so changed settings still apply to the next write (`01-storage.md` 4.4).
 - **The live-match-tracker document in the explorer.** The iframe document under `/api/v1/event/{id}/live-match-tracker/`
   is a Document request, outside the explorer's `Fetch` patterns, so it is sent without a slot and not
   counted (one per event page). Holding Document requests in the interceptor would fix it.

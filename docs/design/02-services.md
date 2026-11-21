@@ -3779,10 +3779,12 @@ config file too, the loader wrote the effective value of every setting back into
 legacy name (`loader.projection`). P30 (#186) removed it with the legacy table and the dotenv layer: the
 throttle, the refresh policy, the bridge health, the breaker, the logger, the paths module, the transport,
 the bridge, the web security module and `sofascore_scraper/store/files.py` read the active settings, and the
-logger follows every rebuild of the settings (`logger.follow_settings`). `store/files.py` does not get its
-durability from its caller, as the plan said: the Store may not import the configuration, so it reads
-`storage.durability`, `storage.open_reconcile_seconds` and `storage.data_dir` from the loader module through
-`sys.modules` and uses the defaults when no loader is loaded (`01-storage.md`).
+logger follows every rebuild of the settings (`logger.follow_settings`). The Store may not import the
+configuration, so `store/files.py` gets `storage.durability`, `storage.open_reconcile_seconds` and
+`storage.data_dir` from its caller: the loader, when it is imported, gives it a function that returns the
+active settings' `[storage]` section (`sofascore_scraper.store.use_settings`), and the Store calls it on every
+read, so changed settings apply to the next write. Without the loader the Store uses the defaults
+(`01-storage.md` 4.4). Until 2026-11-21 it read the loader module through `sys.modules`.
 
 **What stops the start.** A broken config file, an unknown `SOFASCORE_*__*` variable, an invalid value under
 a new name, one of the guarded 2.x names set without its new name (`GuardedNameError`) or an invalid
@@ -6659,8 +6661,8 @@ Corrections after the removal of the guarded 2.x names (2026-11-20, for 3.2; not
   relay set as `API_BASE_URL` is not, so such a user's requests go straight to SofaScore.
   A value in `.env` under a new name pins the setting above `sofascore.toml` and locks it on the Settings
   page, which a user who edits the config file may not expect; the lock shows its source.
-  `sofascore_scraper/store/files.py` reads the storage settings through `sys.modules` (4.3), so a process
-  that never loads the settings loader writes with the default durability.
+  The settings loader gives the Store its storage settings when it is imported (`store.use_settings`, 4.3),
+  so a process that never loads the settings loader writes with the default durability.
 - Webhook head-of-line blocking: a receiver that is down blocks its sink for up to `max_age` (24 h by
   default); a low `max_age` loses events. Operators need the lag shown in status.
   As built (P22) the lag is not shown anywhere yet (`ssc status` per sink is ST-24's), and one thread

@@ -7,7 +7,8 @@ değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, 
 (`EventStore`, `EntityStore`, `ChangeLog` ile sorgu ve sonuç türleri: `Ref`, `Scope`, `EventQuery`, `Page`,
 `EventRow`, `SliceInfo`, ...) ve kataloğun yönetimi (`CatalogAdmin` ve raporları). Eski düzen yazıcılarının gölge
 kip kancaları (`shadow_*`) plan maddesi FX-15'te kalktı. Maçların yazma API'si `EventStore.put` / `observe` / `reset_empty_markers` /
-`delete` (sonucu `PutResult`) ve `ChangeLog.append`'tir; maç dışı varlıklarınki `EntityStore.put`.
+`delete` (sonucu `PutResult`) ve `ChangeLog.append`'tir; maç dışı varlıklarınki `EntityStore.put`. Store'un `[storage]`
+ayarlarını (dayanıklılık, varsayılan veri dizini, açılış taraması) çağıran `use_settings` ile verir.
 
 Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
 aktarmadan da alınabilmelidir: hata sınıflarını uygulamanın en alt katmanları kullanır ve bir alt modülü
@@ -76,6 +77,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from sofascore_scraper.store.state import load_migrations
     from sofascore_scraper.store.legacy import league_dir_name
     from sofascore_scraper.store.purge import Purger, TournamentClearReport
+    from sofascore_scraper.store.files import use_settings
 
 _LAZY = {
     "open_store": "sofascore_scraper.store.api",
@@ -157,6 +159,7 @@ _LAZY = {
     "league_dir_name": "sofascore_scraper.store.legacy",
     "Purger": "sofascore_scraper.store.purge",
     "TournamentClearReport": "sofascore_scraper.store.purge",
+    "use_settings": "sofascore_scraper.store.files",
 }
 
 
@@ -253,6 +256,7 @@ __all__ = [
     "league_dir_name",
     "Purger",
     "TournamentClearReport",
+    "use_settings",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

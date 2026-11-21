@@ -1339,6 +1339,45 @@ def test_log_settings_from_the_config_file_reach_the_running_logger(active):
     assert app_logger._file_handler.backupCount == app_logger.DEFAULT_BACKUP_COUNT
 
 
+def test_the_store_reads_its_settings_through_the_loader(active, monkeypatch, tmp_path):
+    """
+    Store ayarları içe aktaramaz (tests/test_layers.py): `[storage]` bölümünü ona yükleyici verir
+    (`store.use_settings`), Store onu her okumada çağırır. Dosyadaki değer ve yeniden yükleme sonraki yazmada geçerlidir;
+    ortamdaki değer dosyayı ezer ve değişimi de hemen görülür; 2.x'in adı okunmaz.
+    """
+    assert store_files._settings_source is loader._store_settings
+    monkeypatch.delenv("SOFASCORE_STORAGE__DATA_DIR")
+    data_dir = (tmp_path / "from-file").as_posix()
+    active(f'[storage]\ndurability = "full"\ndata_dir = "{data_dir}"\nopen_reconcile_seconds = 5\n')
+    assert (store_files.durability_full(), store_files.default_data_dir(), store_files.open_reconcile_seconds()) == (
+        True, str(Path(data_dir)), 5.0)
+    active("[storage]\n")
+    assert (store_files.durability_full(), store_files.default_data_dir(), store_files.open_reconcile_seconds()) == (
+        False, "data", 60.0)
+    for raw in ("full", "FULL", " full "):
+        monkeypatch.setenv("SOFASCORE_STORAGE__DURABILITY", raw)
+        assert store_files.durability_full() is True, raw
+    monkeypatch.delenv("SOFASCORE_STORAGE__DURABILITY")
+    monkeypatch.setenv("STORE_DURABILITY", "full")
+    assert store_files.durability_full() is False
+
+
+def test_importing_the_loader_gives_the_store_its_settings(tmp_path):
+    """Ayrı bir süreçte: yükleyiciyi içe aktaran süreçte Store ortamdaki `storage.durability`yi görür, kendisi ayarları yüklemez."""
+    code = (
+        "import sys\n"
+        "from sofascore_scraper.store import files\n"
+        "assert files._settings_source is None and files.durability_full() is False\n"
+        "assert 'sofascore_scraper.config.loader' not in sys.modules\n"
+        "import sofascore_scraper.config\n"
+        "print(files.durability_full(), files.open_reconcile_seconds())\n"
+    )
+    done = _run_python(code, tmp_path, SOFASCORE_STORAGE__DURABILITY="full",
+                       SOFASCORE_STORAGE__OPEN_RECONCILE_SECONDS="7", SOFASCORE_CONFIG="none")
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip().splitlines()[-1] == "True 7.0"
+
+
 def _run_python(code: str, tmp_path: Path, **env: str) -> subprocess.CompletedProcess:
     """Kodu temiz bir süreçte çalıştırır: gerçek `.env`, config/ ve log dizinine dokunmaz."""
     clean = {k: v for k, v in os.environ.items() if k not in loader.LEGACY_ENV_NAMES and not k.startswith("SOFASCORE_")}

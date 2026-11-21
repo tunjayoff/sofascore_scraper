@@ -14,6 +14,7 @@ import os
 import stat
 import sys
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from typing import Iterator
 
 import pytest
@@ -259,7 +260,7 @@ def test_permission_error_is_not_retried_outside_windows(tmp_path, monkeypatch, 
     assert not isinstance(caught.value.__cause__, files.ReplaceBusy)
 
 
-# --- fsync (STORE_DURABILITY) -----------------------------------------------------------------------
+# --- fsync (`storage.durability`; değeri çağıran verir: files.use_settings) ----------------------------
 
 @pytest.fixture
 def fsyncs(monkeypatch):
@@ -268,12 +269,24 @@ def fsyncs(monkeypatch):
     return recorded
 
 
-# `storage.durability`in ortamdaki adı: Store onu ayar yükleyicisinden okur (sofascore_scraper/store/files.py)
-DURABILITY_ENV = "SOFASCORE_STORAGE__DURABILITY"
+def _storage(durability="normal", data_dir="data", open_reconcile_seconds=60.0):
+    """Çağıranın Store'a verdiği `[storage]` bölümünün yerine geçen nesne (`files.use_settings`)."""
+    return SimpleNamespace(durability=durability, data_dir=data_dir, open_reconcile_seconds=open_reconcile_seconds)
 
 
-def test_nothing_is_fsynced_by_default(tmp_path, monkeypatch, fsyncs):
-    monkeypatch.delenv(DURABILITY_ENV, raising=False)
+@pytest.fixture
+def storage_source(monkeypatch):
+    """`files.use_settings` ile verilecek ayarları test seçer; test bitince süreçteki kaynak (yükleyici) geri gelir."""
+    monkeypatch.setattr(files, "_settings_source", files._settings_source)
+
+    def use(**values):
+        files.use_settings(lambda: _storage(**values))
+
+    return use
+
+
+def test_nothing_is_fsynced_by_default(tmp_path, storage_source, fsyncs):
+    storage_source()
 
     files.write_bytes(tmp_path / "a.json.gz", b"x")
 
@@ -281,9 +294,8 @@ def test_nothing_is_fsynced_by_default(tmp_path, monkeypatch, fsyncs):
     assert fsyncs == []
 
 
-@pytest.mark.parametrize("value", ["full", "FULL", " full "])
-def test_store_durability_full_fsyncs_the_file_and_its_directory(tmp_path, monkeypatch, fsyncs, value):
-    monkeypatch.setenv(DURABILITY_ENV, value)
+def test_store_durability_full_fsyncs_the_file_and_its_directory(tmp_path, storage_source, fsyncs):
+    storage_source(durability="full")
 
     files.write_bytes(tmp_path / "a.json.gz", b"x")
 
@@ -292,21 +304,49 @@ def test_store_durability_full_fsyncs_the_file_and_its_directory(tmp_path, monke
     assert (tmp_path / "a.json.gz").read_bytes() == b"x"
 
 
-def test_the_2x_durability_name_is_not_read(tmp_path, monkeypatch, fsyncs):
-    monkeypatch.delenv(DURABILITY_ENV, raising=False)
-    monkeypatch.setenv("STORE_DURABILITY", "full")
-    files.write_bytes(tmp_path / "a.json.gz", b"x")
-    assert files.durability_full() is False and fsyncs == []
-
-
-def test_durable_argument_overrides_the_environment(tmp_path, monkeypatch, fsyncs):
-    monkeypatch.setenv(DURABILITY_ENV, "full")
+def test_durable_argument_overrides_the_setting(tmp_path, storage_source, fsyncs):
+    storage_source(durability="full")
     files.write_bytes(tmp_path / "a.json.gz", b"x", durable=False)
     assert fsyncs == []
 
-    monkeypatch.setenv(DURABILITY_ENV, "normal")
+    storage_source(durability="normal")
     files.write_bytes(tmp_path / "b.json.gz", b"x", durable=True)
     assert len(fsyncs) == (1 if WINDOWS else 2)
+
+
+def test_the_source_is_read_on_every_write(tmp_path, monkeypatch, fsyncs):
+    """Kaynak her okumada çağrılır: ayar değişince (ortam, yeniden yükleme) sonraki yazma yeni değeri görür."""
+    monkeypatch.setattr(files, "_settings_source", None)
+    current = {"durability": "normal"}
+    files.use_settings(lambda: _storage(**current))
+    files.write_bytes(tmp_path / "a.json.gz", b"x")
+    assert fsyncs == []
+
+    current["durability"] = "full"
+    files.write_bytes(tmp_path / "b.json.gz", b"x")
+    assert len(fsyncs) == (1 if WINDOWS else 2)
+
+
+def test_the_other_storage_settings_come_from_the_same_source(storage_source):
+    storage_source(data_dir="/srv/sofascore", open_reconcile_seconds=5.0)
+    assert (files.default_data_dir(), files.open_reconcile_seconds()) == ("/srv/sofascore", 5.0)
+    storage_source(data_dir="", open_reconcile_seconds=-3)
+    assert (files.default_data_dir(), files.open_reconcile_seconds()) == ("data", 0.0)
+
+
+def test_without_a_source_or_with_a_failing_one_the_defaults_apply(tmp_path, monkeypatch, fsyncs):
+    """Kaynağı verilmemiş süreç (yönetim aracı, test) ya da okunamayan ayarlar: yazma durmaz, varsayılanlar."""
+    monkeypatch.setattr(files, "_settings_source", None)
+    defaults = (files.durability_full(), files.default_data_dir(), files.open_reconcile_seconds())
+    assert defaults == (False, "data", files.OPEN_RECONCILE_SECONDS)
+
+    def broken():
+        raise ValueError("invalid configuration")
+
+    files.use_settings(broken)
+    files.write_bytes(tmp_path / "a.json.gz", b"x")
+    assert (files.durability_full(), files.default_data_dir(), files.open_reconcile_seconds()) == defaults
+    assert fsyncs == []
 
 
 # --- dosya izinleri (karar S12) ----------------------------------------------------------------------

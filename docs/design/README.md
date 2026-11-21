@@ -130,14 +130,14 @@ section 19, 3.2 and the release 3.2.0 in its section 20):
   #239). The image is `ghcr.io/tunjayoff/sofascore_scraper:3.2.0`, from source like 3.1.
 - **Open after 3.2.0** (section 20 of `03`): a rule for team streaks that answer 200 with an empty body,
   baseball's umpires, weather, comments and at-bats, a fetch of the odds providers' listing and a
-  `provider_name` field, a replacement for the events columns `stage_name` and `listed_in`, the Store's
-  durability from its caller, the explorer's unthrottled live-match-tracker document, and two small
+  `provider_name` field, a replacement for the events columns `stage_name` and `listed_in`, the explorer's
+  unthrottled live-match-tracker document, and two small
   leftovers of P30; from 3.1.2: the trust feature is not verified on Windows and macOS or behind a real
   proxy, its browser part is Linux only, CI has no path filter for documents-only changes, the profile
   list has no routine for re-measuring it, and a trusted certificate has no scope and no reminder. Closed
   in 3.2: the four deprecated names, backups without the `ca` folder, the home-page load of `ssc doctor
   --live`, the set-aside profiles in no face, unused code, and the third P30 leftover (closed without a
-  code change).
+  code change). Closed after 3.2.0: the Store's durability from its caller (2026-11-21).
   Not in 3.1 or 3.2: a localized date picker (owner) and the web UI under a path prefix.
 - What a user can see: everything a download writes is in the new layout (`v3/`, 8.4 times smaller on the
   owner's data) and the old folders are read in place; `ssc` covers every task of the former terminal menu
