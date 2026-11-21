@@ -80,6 +80,15 @@ slices of rugby, volleyball, floorball and minifootball after the owner's decisi
 #198, in 3.1.1; section 5). The trust routes, `cause` of the connection check and the follows default of
 API v1 (`02-services.md` 6) return no record of this schema.
 
+Amended on 2026-11-21, after the 3.2.0 release (not a numbered revision of the design documents). `Odds` and
+`OddsLine` have a new nullable field `provider_name`, next to `provider_id`: the bookmaker's name from the
+built-in table `ODDS_PROVIDERS` (`sofascore_scraper/sports.py`, B4, #192), null for an id the table does not
+know ("Odds and standings"). Adding a field is free (section 3), so `schema_version` stays 1. The name is
+derived when the record is mapped, so nothing stored changes and no request is made; the `odds` export
+dataset has the column `provider_name` after `provider_id` (tabular columns follow the model's field order).
+The generated tables, the two examples and the JSON Schema golden (`tests/golden/schema/json_schema.json`)
+were regenerated (`REGEN_SCHEMA_DOC=1`, `REGEN_SCHEMA_GOLDEN=1`).
+
 ## 1. What the schema is, and what it is not
 
 The platform stores SofaScore's responses as they are (one file per response, see `01-storage.md`). The
@@ -1031,7 +1040,10 @@ gives them, with a decimal derived as 1 + the fraction, rounded to three places 
 `sofascore_scraper/schema/mappers.py:632`). The mappers are `odds_from_payload`, `odds_lines` and `standings_rows`
 (`:680-742`); `standings_rows` skips rows that have neither a team nor a position. The country SofaScore
 answered for is not a field of `Odds`: it is in the slice's meta (`meta.country`) when the user set `[client]
-odds_country`, and the provider id is in `meta.provider_id` as well as in the record. `winning_odds` and
+odds_country`, and the provider id is in `meta.provider_id` as well as in the record. The bookmaker's name
+(`provider_name`, since 2026-11-21) is not stored either: the mapper looks the id up in the built-in table
+`ODDS_PROVIDERS` of `sofascore_scraper/sports.py` (B4, #192; the same names as `GET /api/v1/odds/providers`)
+each time it builds the record, and an id the table does not know gives null. `winning_odds` and
 `season_odds` have no model (their only samples were 404s); they are raw slices.
 
 Since FX-21 (#164) the five models are in `MODELS` (after `LiveEvent`, `sofascore_scraper/schema/models.py:859` at
@@ -1054,12 +1066,14 @@ One read of an odds slice of an event: a snapshot.
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
 | `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`sofascore_scraper/sports.py`) | Odds slice the record comes from: `odds_all` or `odds_featured`. |
 | `provider_id` | integer | yes |  | the request that fetched it | SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine. |
+| `provider_name` | string | yes |  | derived from `provider_id` (`sofascore_scraper/sports.py`, `ODDS_PROVIDERS`) | Name of the bookmaker of `provider_id`, as SofaScore writes it (the same names as `GET /api/v1/odds/providers`); null when the platform's built-in list of bookmakers does not know the id. |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price. |
 | `markets` | array of [OddsMarket](#oddsmarket) | no |  | `markets`, or the values of `featured` | The markets, in SofaScore's order. |
 <!-- /fields:Odds -->
 
 ```json example:Odds
-{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "fetched_at_utc": "2026-09-21T14:13:20Z",
+{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "provider_name": "bet365",
+ "fetched_at_utc": "2026-09-21T14:13:20Z",
  "markets": [{"market_id": 1, "name": "Full time", "group": "1X2", "period": "Full-time",
   "choice_group": null, "label": null, "is_live": true, "suspended": false,
   "choices": [{"name": "1", "fractional": "11/5", "decimal": 3.2, "initial_fractional": "13/10",
@@ -1114,6 +1128,7 @@ The flat row of the `odds` export dataset: one outcome of one market of one snap
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
 | `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`sofascore_scraper/sports.py`) | Odds slice the row comes from. |
 | `provider_id` | integer | yes |  | the request that fetched it | As `Odds.provider_id`. |
+| `provider_name` | string | yes |  | derived from `provider_id` (`sofascore_scraper/sports.py`, `ODDS_PROVIDERS`) | As `Odds.provider_name`. |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the snapshot was read. |
 | `market_id` | integer | yes |  | `marketId` | As `OddsMarket.market_id`. |
 | `market_name` | string | yes |  | `marketName` | As `OddsMarket.name`. |
@@ -1133,8 +1148,8 @@ The flat row of the `odds` export dataset: one outcome of one market of one snap
 <!-- /fields:OddsLine -->
 
 ```json example:OddsLine
-{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "fetched_at_utc": "2026-09-21T14:13:20Z",
- "market_id": 1, "market_name": "Full time", "market_group": "1X2", "market_period": "Full-time",
+{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "provider_name": "bet365",
+ "fetched_at_utc": "2026-09-21T14:13:20Z", "market_id": 1, "market_name": "Full time", "market_group": "1X2", "market_period": "Full-time",
  "choice_group": null, "label": null, "is_live": true, "suspended": false, "choice": "1",
  "fractional": "11/5", "decimal": 3.2, "initial_fractional": "13/10", "initial_decimal": 2.3,
  "change": 1, "winning": null}

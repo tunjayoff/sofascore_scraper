@@ -4844,7 +4844,7 @@ Pinned, and kept on purpose (not defects of the target design):
 | Under an ASGI root path, `/<prefix>/api/v1` was answered without the access token | B2 #191 | done, B2 (#191); 3.0.0's default deployments never set a root path |
 | The web UI cannot be served under a path prefix; an aborted search's cancel relies on the proxy closing its upstream connection | B2 #191 | documented in `docs/deploy/README.md`; the prefix: not planned (section 17) |
 | The help text of `fetch.only_finished` in the web UI still names the 2.x match lists | the tenth revision | done, FX-34 (#194) (`05-web-ui.md` 6.16) |
-| The Odds tab says "Bookmaker 1" (live validation M20); the providers' names are known only from SofaScore's per-country listing, which carries affiliate links | live validation, FX-24 gap 5 | done, B4 (#192): a built-in table and `GET /odds/providers`; a fetch of the listing and a schema field `provider_name`: open (section 19) |
+| The Odds tab says "Bookmaker 1" (live validation M20); the providers' names are known only from SofaScore's per-country listing, which carries affiliate links | live validation, FX-24 gap 5 | done, B4 (#192): a built-in table and `GET /odds/providers`; the schema field `provider_name`: done (2026-11-21, section 20); a fetch of the listing: open (section 19) |
 | The changelog entries of #180 to #192 (in their descriptions; P30's and FX-33's list the removals) | #180 to #192 | the 3.1 release pull request (section 19); done, #195 |
 | The design documents were not updated by the live validation, FX-26, FX-27 and FX-16 | #174 to #176 | this revision (the ninth) |
 | The sync's fallback to `leagues.txt` when the follows table cannot be read; `services/stats.py` with one used function; the docstrings of `cli/commands/watch.py`, `services/live/supervisor.py` (`--watch`, `watcher:<sport>`) and `services/follow_sync.py` (the player list "not stored"); `_task_row` of `ssc config show` printing a task's options as they are | the tenth revision | done, FX-34 (#194): the fallback stays and is logged as an error; the module removed; the docstrings corrected; an option the task does not define shown as `***` |
@@ -5674,7 +5674,11 @@ Open after 3.2.0 (the items of section 19's list that are not done, copied), in 
   would need a new Store area, a schedule and link stripping for a list that rarely changes. The table is
   refreshed by hand when a provider is reported missing.
 - **A `provider_name` field in schema v1** (`Odds`, `OddsLine`). Additive, with the generated tables of
-  `04-schema-v1.md`; until then a consumer reads the names from `GET /odds/providers`.
+  `04-schema-v1.md`; until then a consumer reads the names from `GET /odds/providers`. **Done (this PR,
+  2026-11-21).** `Odds` and `OddsLine` carry a nullable `provider_name` next to `provider_id`, filled by
+  `odds_from_payload` from the built-in table `sports.ODDS_PROVIDERS` (null for an unknown id), so the API's
+  odds records, the `odds` export dataset (column after `provider_id`) and the JSON Schema have it;
+  `schema_version` stays 1.
 - **A replacement for `stage_name` and `listed_in`.** P30 dropped only the two score columns of the events
   table: schema v1 reads `stage.name` from `stage_name`, and the listing rules (staleness, the reconcile of
   a season's pages, the planner's listed events) read `listed_in`. Dropping them needs a design first.

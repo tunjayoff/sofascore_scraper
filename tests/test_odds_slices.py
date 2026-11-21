@@ -364,6 +364,7 @@ def test_the_new_models_carry_their_contract(model: type) -> None:
 def test_odds_map_to_markets_and_flat_lines() -> None:
     odds = mappers.odds_from_payload(5, "odds_all", body("odds_all"), provider_id=1, fetched_at=1_790_000_000)
     assert odds is not None and odds.provider_id == 1 and odds.fetched_at_utc == "2026-09-21T14:13:20Z"
+    assert odds.provider_name == "bet365"  # yerleşik tablodan (sports.ODDS_PROVIDERS), istek yok
     first = odds.markets[0]
     assert (first.market_id, first.name, first.group, first.period, first.is_live) == (
         1, "Full time", "1X2", "Full-time", True)
@@ -372,11 +373,19 @@ def test_odds_map_to_markets_and_flat_lines() -> None:
     lines = mappers.odds_lines(odds)
     assert len(lines) == sum(len(market.choices) for market in odds.markets) == 6
     assert lines[0].to_dict()["choice"] == "1" and lines[0].market_name == "Full time"
+    assert {(line.provider_id, line.provider_name) for line in lines} == {(1, "bet365")}
     featured = mappers.odds_from_payload(5, "odds_featured", body("odds_featured"))
     assert featured is not None and [m.label for m in featured.markets] == ["default", "asian", "fullTime"]
+    assert featured.provider_id is None and featured.provider_name is None
     assert mappers.odds_from_payload(5, "odds_changes", body("odds_changes")) is None
     assert mappers.odds_from_payload(5, "odds_all", ["x"]) is None
     assert mappers.odds_from_payload(5, "odds_all", {"markets": ["x", {"choices": [{"x": 1}, "y"]}]}).markets[0].choices == ()
+    # Sağlayıcının adı kimlikten türetilir; tabloda olmayan kimliğin adı null
+    named = {pid: mappers.odds_from_payload(5, "odds_all", body("odds_all"), provider_id=pid)
+             for pid in (1528, 1781, 5)}
+    assert {pid: (o.provider_id, o.provider_name) for pid, o in named.items() if o is not None} == {
+        1528: (1528, "bet365 Türkiye"), 1781: (1781, "bet365 UK"), 5: (5, None)}
+    assert [line.provider_name for line in mappers.odds_lines(named[5])] == [None] * 6
     assert [mappers.fraction_decimal(v) for v in ("1/1", "0/1", "3/0", "x", None, "1/2/3")] == [
         2.0, 1.0, None, None, None, None]
 
@@ -431,7 +440,8 @@ def test_the_odds_dataset_has_one_row_per_outcome_and_snapshot(fake: FakeSofaSco
     assert len(rows) == 6 + featured
     assert {row["key"] for row in rows} == {"odds_all", "odds_featured"}
     assert {row["event_id"] for row in rows} == {FINISHED}
+    assert {(row["provider_id"], row["provider_name"]) for row in rows} == {(1, "bet365")}
     result = ExportService(store).export(DatasetSpec(dataset="odds", format="csv"), tmp_path / "odds.csv")
     assert result.rows == len(rows)
     header = (tmp_path / "odds.csv").read_text(encoding="utf-8").splitlines()[0]
-    assert header.startswith("event_id,key,provider_id,fetched_at_utc,market_id,")
+    assert header.startswith("event_id,key,provider_id,provider_name,fetched_at_utc,market_id,")

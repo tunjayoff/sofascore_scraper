@@ -57,7 +57,7 @@ from sofascore_scraper.schema.models import (
     Status,
     Tournament,
 )
-from sofascore_scraper.sports import SPORTS, PeriodFormat, SetFormat, SportSpec, get_sport, score_family
+from sofascore_scraper.sports import SPORTS, PeriodFormat, SetFormat, SportSpec, get_sport, odds_provider, score_family
 from sofascore_scraper.status import StatusClass
 
 if TYPE_CHECKING:
@@ -693,15 +693,19 @@ def odds_from_payload(event_id: int, key: str, payload: Any, *, provider_id: Opt
         featured = payload.get("featured") if isinstance(payload.get("featured"), Mapping) else {}
         markets = [market for market in (_odds_market(item, str(label)) for label, item in featured.items())
                    if market is not None]
-    return Odds(event_id=int(event_id), key=key, provider_id=_int(provider_id), fetched_at_utc=utc_text(fetched_at),
-                markets=tuple(markets))
+    provider = _int(provider_id)
+    # Sağlayıcının adı yerleşik tablodan (B4, sports.ODDS_PROVIDERS); tabloda olmayan kimlik adsız kalır (null).
+    known = odds_provider(provider) if provider is not None else None
+    return Odds(event_id=int(event_id), key=key, provider_id=provider, provider_name=known.name if known else None,
+                fetched_at_utc=utc_text(fetched_at), markets=tuple(markets))
 
 
 def odds_lines(odds: Odds) -> List[OddsLine]:
     """Bir Odds kaydının düz satırları: pazar ve seçenek başına bir satır, yükün sırasıyla."""
     return [
         OddsLine(
-            event_id=odds.event_id, key=odds.key, provider_id=odds.provider_id, fetched_at_utc=odds.fetched_at_utc,
+            event_id=odds.event_id, key=odds.key, provider_id=odds.provider_id, provider_name=odds.provider_name,
+            fetched_at_utc=odds.fetched_at_utc,
             market_id=market.market_id, market_name=market.name, market_group=market.group,
             market_period=market.period, choice_group=market.choice_group, label=market.label,
             is_live=market.is_live, suspended=market.suspended, choice=choice.name, fractional=choice.fractional,

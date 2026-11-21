@@ -1980,6 +1980,7 @@
     "event_id",
     "key",
     "provider_id",
+    "provider_name",
     "fetched_at_utc",
     "markets"
    ],
@@ -2005,6 +2006,14 @@
      ],
      "description": "SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine.",
      "x-source": "the request that fetched it"
+    },
+    "provider_name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the bookmaker of `provider_id`, as SofaScore writes it (the same names as `GET /api/v1/odds/providers`); null when the platform's built-in list of bookmakers does not know the id.",
+     "x-source": "derived from `provider_id` (`sofascore_scraper/sports.py`, `ODDS_PROVIDERS`)"
     },
     "fetched_at_utc": {
      "type": [
@@ -2193,6 +2202,7 @@
     "event_id",
     "key",
     "provider_id",
+    "provider_name",
     "fetched_at_utc",
     "market_id",
     "market_name",
@@ -2232,6 +2242,14 @@
      ],
      "description": "As `Odds.provider_id`.",
      "x-source": "the request that fetched it"
+    },
+    "provider_name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `Odds.provider_name`.",
+     "x-source": "derived from `provider_id` (`sofascore_scraper/sports.py`, `ODDS_PROVIDERS`)"
     },
     "fetched_at_utc": {
      "type": [
